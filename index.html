@@ -99,6 +99,29 @@
             <div class="mastery-list" id="mastery-list"></div>
           </div>
         </section>
+
+        <section class="screen screen-social" data-screen="social">
+          <div class="screen-title">Rede Social</div>
+          <div class="social-profile">
+            <div class="social-avatar">
+              <div class="loading-diamond">
+                <div class="loading-core"></div>
+              </div>
+            </div>
+            <div class="social-level">
+              Nivel Geral: <span id="social-level">0</span>
+            </div>
+          </div>
+          <div class="social-pins">
+            <div class="slot-header">Vitrine Custom</div>
+            <div class="pin-grid" id="pin-grid"></div>
+          </div>
+          <div class="social-alliance">
+            <div class="slot-header">Alianca</div>
+            <input type="text" class="profile-input" id="alliance-search" placeholder="Buscar @id" />
+            <div class="alliance-list" id="alliance-list"></div>
+          </div>
+        </section>
       </main>
 
       <nav class="bottom-nav">
@@ -139,6 +162,15 @@
             </svg>
           </span>
           <span class="nav-label">Config</span>
+        </button>
+        <button class="nav-item" data-target="social">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M16 11a4 4 0 1 0-8 0" />
+              <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" />
+            </svg>
+          </span>
+          <span class="nav-label">Rede</span>
         </button>
       </nav>
     </div>

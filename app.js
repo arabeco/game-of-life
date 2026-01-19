@@ -5,6 +5,8 @@ const LOGIN_KEY = "game_of_life.last_login";
 const HIATO_KEY = "game_of_life.hiato_active";
 const GLITCH_KEY = "game_of_life.glitch_until";
 const MODE_KEY = "game_of_life.mastery_mode";
+const V2_RESET_KEY = "game_of_life.v2_reset";
+const PINS_KEY = "game_of_life.profile_pins";
 
 const SEPHIROT = [
   { id: "kether", label: "Gratidao", row: 1, col: 2 },
@@ -37,6 +39,7 @@ const ICON_BY_ID = {
   kether: "crown",
 };
 const BRONZE_ICONS = ["dumbbell", "book", "code", "dollar-sign", "flame", "leaf", "coffee", "music"];
+const ALLIANCE_MOCK = ["@vitali", "@nyx", "@atlas", "@onyx"];
 const MASTERY_PHRASES = {
   gratidao: [
     "Ódio constante",
@@ -323,6 +326,27 @@ const parseDurationToMinutes = (raw) => {
   const asNumber = Number(value);
   if (!Number.isNaN(asNumber)) return asNumber;
   return 30;
+};
+
+const ensureV2Reset = () => {
+  const resetDone = localStorage.getItem(V2_RESET_KEY) === "true";
+  if (resetDone) return;
+  localStorage.clear();
+  localStorage.setItem(V2_RESET_KEY, "true");
+};
+
+const loadPins = () => {
+  try {
+    const raw = localStorage.getItem(PINS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const savePins = (pins) => {
+  localStorage.setItem(PINS_KEY, JSON.stringify(pins));
 };
 
 const nowClock = () =>
@@ -1035,6 +1059,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
   if (!asset) return;
   const slots = PROTOCOL_SLOTS[assetId] || [];
   asset.profileSlots = asset.profileSlots || {};
+  const pins = loadPins();
   slots.forEach((slot) => {
     const slotEl = document.createElement("div");
     slotEl.className = `profile-slot profile-slot--${slot.type}`;
@@ -1057,9 +1082,41 @@ const renderTreeEditorSlots = (dna, assetId) => {
         };
         dna.lastUpdatedAt = new Date().toISOString();
         saveDNA(dna);
+        renderSocial();
       });
       slotEl.appendChild(input);
     });
+
+    const pinButton = document.createElement("button");
+    pinButton.className = "silver-button";
+    pinButton.type = "button";
+    const isPinned = pins.some((pin) => pin.slotId === slot.id && pin.assetId === assetId);
+    pinButton.textContent = isPinned ? "Fixado" : "Fixar";
+    pinButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const currentPins = loadPins();
+      const exists = currentPins.find(
+        (pin) => pin.slotId === slot.id && pin.assetId === assetId
+      );
+      if (exists) {
+        savePins(currentPins.filter((pin) => pin !== exists));
+        pinButton.textContent = "Fixar";
+        renderSocial();
+        return;
+      }
+      if (currentPins.length >= 4) return;
+      const data = asset.profileSlots[slot.id] || {};
+      currentPins.push({
+        assetId,
+        slotId: slot.id,
+        label: slot.label,
+        value: JSON.stringify(data),
+      });
+      savePins(currentPins);
+      pinButton.textContent = "Fixado";
+      renderSocial();
+    });
+    slotEl.appendChild(pinButton);
 
     slotEl.addEventListener("click", () => {
       const focusable = slotEl.querySelector("input");
@@ -1213,6 +1270,48 @@ const openArenaDossier = (arenaId) => {
   if (window.lucide) window.lucide.createIcons();
   modal.dataset.arenaId = arenaId;
   modal.classList.add("is-open");
+};
+
+const renderSocial = () => {
+  const levelEl = document.getElementById("social-level");
+  const pinGrid = document.getElementById("pin-grid");
+  const allianceList = document.getElementById("alliance-list");
+  if (!levelEl || !pinGrid || !allianceList) return;
+  const dna = seedDNAIfMissing();
+  const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
+  levelEl.textContent = String(Math.round(total));
+
+  const pins = loadPins();
+  pinGrid.innerHTML = "";
+  if (pins.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "pin-item";
+    empty.textContent = "Sem pins ainda.";
+    pinGrid.appendChild(empty);
+  } else {
+    pins.forEach((pin) => {
+      const item = document.createElement("div");
+      item.className = "pin-item";
+      let value = "";
+      try {
+        const parsed = JSON.parse(pin.value || "{}");
+        value = Object.values(parsed).filter(Boolean).join(" | ");
+      } catch {
+        value = pin.value || "";
+      }
+      item.textContent = `${pin.label}: ${value || "-"}`;
+      pinGrid.appendChild(item);
+    });
+  }
+
+  allianceList.innerHTML = "";
+  const search = document.getElementById("alliance-search")?.value?.toLowerCase() || "";
+  ALLIANCE_MOCK.filter((name) => name.toLowerCase().includes(search)).forEach((name) => {
+    const row = document.createElement("div");
+    row.className = "alliance-item";
+    row.textContent = name;
+    allianceList.appendChild(row);
+  });
 };
 
 const openBronzeModal = (arenaId) => {
@@ -1555,6 +1654,7 @@ const initClock = () => {
 };
 
 const init = () => {
+  ensureV2Reset();
   applyHiatoIfNeeded();
   initClock();
   initNav();
@@ -1562,6 +1662,7 @@ const init = () => {
   initPlanner();
   initConfig();
   renderArenas();
+  renderSocial();
   applyGlitch();
   if (window.lucide) window.lucide.createIcons();
   const hiatoAck = document.getElementById("hiato-ack");
@@ -1693,6 +1794,12 @@ const init = () => {
       profileModal.classList.remove("is-open");
     });
   }
+  const allianceSearch = document.getElementById("alliance-search");
+  if (allianceSearch) {
+    allianceSearch.addEventListener("input", () => {
+      renderSocial();
+    });
+  }
   const treeCancel = document.getElementById("tree-edit-back");
   if (treeCancel) {
     treeCancel.addEventListener("click", () => {
@@ -1703,6 +1810,7 @@ const init = () => {
     renderTree();
     renderPlanner();
     renderArenas();
+    renderSocial();
     applyGlitch();
   });
 };

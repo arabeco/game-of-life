@@ -23,6 +23,27 @@
         </div>
       </div>
     </div>
+    <div id="auth-screen" class="auth-screen">
+      <div class="auth-card">
+        <div class="loading-logo auth-logo">
+          <div class="loading-diamond">
+            <div class="loading-core"></div>
+          </div>
+        </div>
+        <div class="drawer-title">Login</div>
+        <button class="gold-button auth-button" id="login-google">
+          <i data-lucide="chrome"></i>
+          Entrar com Google
+        </button>
+        <div class="auth-divider">ou</div>
+        <label class="field-label" for="login-email">E-mail</label>
+        <input type="email" id="login-email" class="auth-input" />
+        <label class="field-label" for="login-password">Senha</label>
+        <input type="password" id="login-password" class="auth-input" />
+        <button class="silver-button auth-button" id="login-email-btn">Entrar</button>
+        <div class="auth-error" id="login-error"></div>
+      </div>
+    </div>
     <div class="app">
       <header class="hud">
         <div class="hud-clock" id="hud-clock">00:00</div>

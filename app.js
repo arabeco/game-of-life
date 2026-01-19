@@ -403,6 +403,107 @@ const withTimeout = (promise, ms, label) =>
       });
   });
 
+const setAuthLocked = (locked) => {
+  document.body.classList.toggle("auth-locked", locked);
+  const screen = document.getElementById("auth-screen");
+  if (screen) screen.classList.toggle("is-open", locked);
+  if (locked) showMissionsLoading(false);
+};
+
+const ensureUserMissionsRow = async (userId) => {
+  if (!isSupabaseEnabled() || !userId) return;
+  try {
+    const { data, error } = await supabase
+      .from("user_missions")
+      .select("user_id")
+      .eq("user_id", userId)
+      .single();
+    if (error) {
+      logSupabaseError("user_missions.select", error);
+    }
+    if (!data) {
+      const payload = { user_id: userId, ...defaultMissionState() };
+      const { error: upsertError } = await supabase.from("user_missions").upsert(payload);
+      if (upsertError) logSupabaseError("user_missions.upsert (init)", upsertError);
+    }
+  } catch (error) {
+    logSupabaseError("ensureUserMissionsRow", error);
+  }
+};
+
+const initAuth = () => {
+  const googleBtn = document.getElementById("login-google");
+  const emailInput = document.getElementById("login-email");
+  const passInput = document.getElementById("login-password");
+  const emailBtn = document.getElementById("login-email-btn");
+  const errorEl = document.getElementById("login-error");
+
+  if (!isSupabaseEnabled()) {
+    setAuthLocked(false);
+    initApp();
+    return;
+  }
+
+  if (googleBtn) {
+    googleBtn.addEventListener("click", async () => {
+      if (errorEl) errorEl.textContent = "";
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
+        if (error) logSupabaseError("auth.signInWithOAuth", error);
+      } catch (error) {
+        logSupabaseError("auth.signInWithOAuth", error);
+      }
+    });
+  }
+
+  if (emailBtn) {
+    emailBtn.addEventListener("click", async () => {
+      if (errorEl) errorEl.textContent = "";
+      const email = emailInput?.value?.trim();
+      const password = passInput?.value || "";
+      if (!email || !password) {
+        if (errorEl) errorEl.textContent = "Preencha e-mail e senha.";
+        return;
+      }
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          logSupabaseError("auth.signInWithPassword", error);
+          if (errorEl) errorEl.textContent = "Falha no login.";
+        }
+      } catch (error) {
+        logSupabaseError("auth.signInWithPassword", error);
+        if (errorEl) errorEl.textContent = "Falha no login.";
+      }
+    });
+  }
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) {
+      setAuthLocked(false);
+      initApp();
+      ensureUserMissionsRow(session.user.id);
+    } else {
+      setAuthLocked(true);
+    }
+  });
+
+  withTimeout(supabase.auth.getSession(), 3000, "auth.getSession")
+    .then((session) => {
+      if (session?.data?.session?.user) {
+        setAuthLocked(false);
+        initApp();
+        ensureUserMissionsRow(session.data.session.user.id);
+      } else {
+        setAuthLocked(true);
+      }
+    })
+    .catch((error) => {
+      logSupabaseError("auth.getSession.timeout", error);
+      setAuthLocked(true);
+    });
+};
+
 const uploadToSupabase = async (file, path) => {
   if (!isSupabaseEnabled() || !file) return null;
   try {
@@ -2390,7 +2491,11 @@ const initClock = () => {
   setInterval(tick, 1000);
 };
 
-const init = () => {
+let appInitialized = false;
+
+const initApp = () => {
+  if (appInitialized) return;
+  appInitialized = true;
   ensureV2Reset();
   const initialProfile = loadProfile();
   applyTheme(initialProfile.theme || "gold");
@@ -2833,7 +2938,7 @@ const startAppWithSplash = () => {
     if (started) return;
     started = true;
     if (loading) loading.remove();
-    init();
+    initAuth();
   };
   if (!loading) {
     start();

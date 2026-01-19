@@ -438,10 +438,15 @@ const ensureProfilesRow = async (user) => {
     if (error) logSupabaseError("profiles.select", error);
     if (!data) {
       const profile = loadProfile();
+      const fallbackName =
+        profile.nickname ||
+        profile.userId ||
+        (user.email ? user.email.split("@")[0] : "") ||
+        "";
       const { error: upsertError } = await supabase.from("profiles").upsert({
         id: user.id,
         user_id: user.id,
-        nickname: profile.nickname || profile.userId || "",
+        nickname: fallbackName,
         banner: profile.banner || "",
         avatar_url: profile.avatar || "",
         status: profile.status || "sovereign",
@@ -556,6 +561,7 @@ const initAuth = () => {
 
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session?.user) {
+      console.info("[supabase] session user", session.user.id);
       setAuthLocked(false);
       initApp();
       ensureProfilesRow(session.user);
@@ -569,6 +575,7 @@ const initAuth = () => {
   withTimeout(supabase.auth.getSession(), 3000, "auth.getSession")
     .then((session) => {
       if (session?.data?.session?.user) {
+        console.info("[supabase] session user", session.data.session.user.id);
         setAuthLocked(false);
         initApp();
         ensureProfilesRow(session.data.session.user);
@@ -1300,6 +1307,28 @@ const renderArenas = () => {
     card.addEventListener("click", (event) => {
       if (event.target === addBronze) return;
       openArenaDossier(arena.id);
+    });
+    card.addEventListener("dragover", (event) => {
+      event.preventDefault();
+    });
+    card.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const payload = event.dataTransfer?.getData("text/plain");
+      if (!payload || !payload.startsWith("bronze:")) return;
+      const actionId = payload.replace("bronze:", "");
+      const planner = loadPlanner();
+      const updated = planner.bronzeActions.map((action) => {
+        if (action.id !== actionId) return action;
+        return {
+          ...action,
+          status: "backlog",
+          scheduledHour: undefined,
+          scheduledMinute: undefined,
+          scheduledDayOffset: undefined,
+        };
+      });
+      savePlanner({ ...planner, bronzeActions: updated });
+      renderPlanner();
     });
     card.appendChild(title);
     card.appendChild(progress);

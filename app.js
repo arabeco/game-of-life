@@ -471,11 +471,27 @@ const initAuth = () => {
   const guestBtn = document.getElementById("login-guest-btn");
   const errorEl = document.getElementById("login-error");
   const warnEl = document.getElementById("login-warning");
+  const authTabs = document.querySelectorAll(".auth-tab");
+  const authViews = document.querySelectorAll("[data-auth-view]");
   setAuthLocked(true);
 
   if (guestMode) {
     if (warnEl) warnEl.textContent = "Dados salvos apenas localmente. Clique em Convidado para continuar.";
   }
+
+  const setAuthMode = (mode) => {
+    authTabs.forEach((tab) => {
+      tab.classList.toggle("is-active", tab.dataset.auth === mode);
+    });
+    authViews.forEach((view) => {
+      view.classList.toggle("is-hidden", view.dataset.authView !== mode);
+    });
+  };
+
+  setAuthMode("login");
+  authTabs.forEach((tab) => {
+    tab.addEventListener("click", () => setAuthMode(tab.dataset.auth || "login"));
+  });
 
   const requireSupabase = () => {
     if (isSupabaseEnabled()) return true;

@@ -34,19 +34,30 @@
             <div class="loading-core"></div>
           </div>
         </div>
-        <div class="drawer-title">Login</div>
-        <button class="gold-button auth-button" id="login-google">
-          <i data-lucide="chrome"></i>
-          Entrar com Google
-        </button>
-        <div class="auth-divider">ou</div>
+        <div class="drawer-title">Acesso</div>
+        <div class="auth-mode" id="auth-mode">
+          <button class="auth-tab is-active" data-auth="login">Entrar</button>
+          <button class="auth-tab" data-auth="signup">Criar Conta</button>
+        </div>
+        <div class="auth-actions" data-auth-view="login">
+          <button class="gold-button auth-button" id="login-google">
+            <i data-lucide="chrome"></i>
+            Entrar com Google
+          </button>
+          <div class="auth-divider">ou</div>
+        </div>
         <label class="field-label" for="login-email">E-mail</label>
         <input type="email" id="login-email" class="auth-input" />
         <label class="field-label" for="login-password">Senha</label>
         <input type="password" id="login-password" class="auth-input" />
-        <button class="silver-button auth-button" id="login-email-btn">Entrar</button>
-        <button class="silver-button auth-button" id="login-signup-btn">Criar Conta</button>
-        <button class="silver-button auth-button" id="login-guest-btn">Entrar como Convidado</button>
+        <div class="auth-actions" data-auth-view="login">
+          <button class="silver-button auth-button" id="login-email-btn">Entrar</button>
+          <button class="silver-button auth-button" id="login-guest-btn">Entrar como Convidado</button>
+        </div>
+        <div class="auth-actions is-hidden" data-auth-view="signup">
+          <button class="silver-button auth-button" id="login-signup-btn">Criar Conta</button>
+          <div class="auth-helper">Já tem conta? Clique em Entrar.</div>
+        </div>
         <div class="auth-error" id="login-error"></div>
         <div class="auth-warning" id="login-warning"></div>
       </div>

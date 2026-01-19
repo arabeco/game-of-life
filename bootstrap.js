@@ -50,9 +50,18 @@ const withTimeout = (promise, ms) =>
 setLoadingStatus("iniciando", 5);
 await withTimeout(loadEnv(), 2000);
 setLoadingStatus("carregando app", 85);
-await import("./app.js");
+try {
+  await import("./app.js");
+} catch (error) {
+  console.error("[bootstrap] falha ao carregar app.js", error);
+}
 setLoadingStatus("finalizando", 100);
+
 setTimeout(() => {
+  if (window.__APP_LOADED__) return;
   const loading = document.getElementById("loading-screen");
   if (loading) loading.remove();
-}, 400);
+  document.body.classList.add("auth-locked");
+  const screen = document.getElementById("auth-screen");
+  if (screen) screen.classList.add("is-open");
+}, 3600);

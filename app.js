@@ -1,5 +1,7 @@
 import { supabase, supabaseConfig } from "./src/lib/supabaseClient.js";
 
+window.__APP_LOADED__ = true;
+
 const STORAGE_KEY = "game_of_life.module1_dna";
 const PLANNER_KEY = "game_of_life.planner";
 const ARENAS_KEY = "game_of_life.arenas";
@@ -480,7 +482,7 @@ const initAuth = () => {
   const requireSupabase = () => {
     if (isSupabaseEnabled()) return true;
     if (warnEl) {
-      warnEl.textContent = "Supabase indisponivel.";
+      warnEl.textContent = "Supabase indisponivel. Use Convidado.";
     }
     if (errorEl) {
       errorEl.textContent = "Supabase nao configurado.";

@@ -52,3 +52,7 @@ await withTimeout(loadEnv(), 2000);
 setLoadingStatus("carregando app", 85);
 await import("./app.js");
 setLoadingStatus("finalizando", 100);
+setTimeout(() => {
+  const loading = document.getElementById("loading-screen");
+  if (loading) loading.remove();
+}, 400);

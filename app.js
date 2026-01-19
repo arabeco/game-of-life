@@ -36,6 +36,7 @@ const ICON_BY_ID = {
   yesod: "gamepad-2",
   kether: "crown",
 };
+const BRONZE_ICONS = ["dumbbell", "book", "code", "dollar-sign", "flame", "leaf", "coffee", "music"];
 
 const nowClock = () =>
   new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -109,17 +110,54 @@ const renderTree = () => {
 const loadPlanner = () => {
   try {
     const raw = localStorage.getItem(PLANNER_KEY);
-    if (!raw) return { pills: [], logistics: {} };
+    if (!raw) return { pills: [], logistics: {}, bronzeActions: [] };
     const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.pills)) return { pills: [], logistics: {} };
-    return { pills: parsed.pills, logistics: parsed.logistics ?? {} };
+    if (!parsed || !Array.isArray(parsed.pills)) {
+      return { pills: [], logistics: {}, bronzeActions: [] };
+    }
+    return {
+      pills: parsed.pills,
+      logistics: parsed.logistics ?? {},
+      bronzeActions: Array.isArray(parsed.bronzeActions) ? parsed.bronzeActions : [],
+    };
   } catch {
-    return { pills: [], logistics: {} };
+    return { pills: [], logistics: {}, bronzeActions: [] };
   }
 };
 
 const savePlanner = (planner) => {
   localStorage.setItem(PLANNER_KEY, JSON.stringify(planner));
+};
+
+const buildBronzeElement = (action) => {
+  const bronze = document.createElement("div");
+  bronze.className = "bronze-item";
+  bronze.dataset.id = action.id;
+  bronze.draggable = action.status === "backlog";
+  if (action.serious) bronze.classList.add("serious");
+  if (action.locked) bronze.classList.add("locked");
+  const icon = document.createElement("i");
+  icon.setAttribute("data-lucide", action.icon || "circle");
+  bronze.appendChild(icon);
+  bronze.addEventListener("dragstart", (event) => {
+    if (!bronze.draggable) return;
+    event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
+  });
+  return bronze;
+};
+
+const createPlannerActionFromArena = (arena) => {
+  const planner = loadPlanner();
+  const action = {
+    id: crypto.randomUUID(),
+    title: arena.title || "Acao",
+    status: "backlog",
+    arenaId: arena.id,
+    createdDate: new Date().toISOString(),
+  };
+  planner.pills.push(action);
+  savePlanner(planner);
+  renderPlanner();
 };
 
 const loadArenas = () => {
@@ -195,9 +233,15 @@ const renderArenas = () => {
     const assetLabel = document.createElement("div");
     assetLabel.className = "arena-progress";
     assetLabel.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
+    const addBronze = document.createElement("button");
+    addBronze.className = "silver-button";
+    addBronze.type = "button";
+    addBronze.textContent = "Adicionar Bronze";
+    addBronze.addEventListener("click", () => openBronzeModal(arena.id));
     card.appendChild(title);
     card.appendChild(progress);
     card.appendChild(assetLabel);
+    card.appendChild(addBronze);
     arenaList.appendChild(card);
   });
 };
@@ -295,7 +339,8 @@ const applyGlitch = () => {
 const renderPlanner = () => {
   const timeline = document.getElementById("timeline");
   const backlogList = document.getElementById("backlog-list");
-  if (!timeline || !backlogList) return;
+  const bronzeList = document.getElementById("bronze-list");
+  if (!timeline || !backlogList || !bronzeList) return;
 
   const planner = loadPlanner();
   const arenas = loadArenas();
@@ -316,9 +361,15 @@ const renderPlanner = () => {
     const pillsForHour = planner.pills.filter(
       (pill) => pill.status === "scheduled" && pill.scheduledHour === hour
     );
+    const bronzeForHour = planner.bronzeActions.filter(
+      (action) => action.status === "scheduled" && action.scheduledHour === hour
+    );
 
     pillsForHour.forEach((pill) => {
       slot.appendChild(buildPillElement(pill, getArenaTitle(pill.arenaId)));
+    });
+    bronzeForHour.forEach((action) => {
+      slot.appendChild(buildBronzeElement(action));
     });
 
     slot.addEventListener("dragover", (event) => {
@@ -327,14 +378,25 @@ const renderPlanner = () => {
 
     slot.addEventListener("drop", (event) => {
       event.preventDefault();
-      const pillId = event.dataTransfer?.getData("text/plain");
-      if (!pillId) return;
+      const payload = event.dataTransfer?.getData("text/plain");
+      if (!payload) return;
+      if (payload.startsWith("bronze:")) {
+        const actionId = payload.replace("bronze:", "");
+        const updated = planner.bronzeActions.map((action) => {
+          if (action.id !== actionId) return action;
+          const locked = action.serious ? true : action.locked;
+          return { ...action, status: "scheduled", scheduledHour: hour, locked };
+        });
+        savePlanner({ ...planner, bronzeActions: updated });
+        renderPlanner();
+        return;
+      }
+      const pillId = payload;
       const updated = planner.pills.map((pill) => {
         if (pill.id !== pillId) return pill;
         return { ...pill, status: "scheduled", scheduledHour: hour };
       });
-      const nextPlanner = { ...planner, pills: updated };
-      savePlanner(nextPlanner);
+      savePlanner({ ...planner, pills: updated });
       renderPlanner();
     });
 
@@ -353,6 +415,21 @@ const renderPlanner = () => {
       backlogList.appendChild(buildPillElement(pill, getArenaTitle(pill.arenaId)));
     });
   }
+
+  bronzeList.innerHTML = "";
+  const bronzeBacklog = planner.bronzeActions.filter((action) => action.status === "backlog");
+  if (bronzeBacklog.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "backlog-empty";
+    empty.textContent = "Sem acoes de bronze.";
+    bronzeList.appendChild(empty);
+  } else {
+    bronzeBacklog.forEach((action) => {
+      bronzeList.appendChild(buildBronzeElement(action));
+    });
+  }
+
+  if (window.lucide) window.lucide.createIcons();
 };
 
 const buildPillElement = (pill, arenaTitle) => {
@@ -596,8 +673,15 @@ const openTreeEditor = (assetId) => {
         name.textContent = arena.title || "Arena";
         const pct = document.createElement("span");
         pct.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+        const actionButton = document.createElement("button");
+        actionButton.type = "button";
+        actionButton.textContent = "Gerar Acao";
+        actionButton.addEventListener("click", () => {
+          createPlannerActionFromArena(arena);
+        });
         row.appendChild(name);
         row.appendChild(pct);
+        row.appendChild(actionButton);
         linkedArenasList.appendChild(row);
       });
     }
@@ -632,6 +716,50 @@ const closeArenaModal = () => {
   const modal = document.getElementById("arena-modal");
   if (!modal) return;
   modal.classList.remove("is-open");
+};
+
+const openBronzeModal = (arenaId) => {
+  const modal = document.getElementById("bronze-modal");
+  const iconGrid = document.getElementById("bronze-icon-grid");
+  const durationInput = document.getElementById("bronze-duration");
+  const seriousToggle = document.getElementById("bronze-serious");
+  if (!modal || !iconGrid || !durationInput || !seriousToggle) return;
+  modal.dataset.arenaId = arenaId;
+  modal.dataset.icon = BRONZE_ICONS[0];
+  durationInput.value = "";
+  seriousToggle.checked = false;
+  modal.querySelectorAll(".weekday-grid input[type='checkbox']").forEach((input) => {
+    input.checked = false;
+  });
+  iconGrid.innerHTML = "";
+  BRONZE_ICONS.forEach((iconName) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "icon-option";
+    if (iconName === BRONZE_ICONS[0]) option.classList.add("is-selected");
+    option.dataset.icon = iconName;
+    const icon = document.createElement("i");
+    icon.setAttribute("data-lucide", iconName);
+    option.appendChild(icon);
+    option.addEventListener("click", () => {
+      iconGrid.querySelectorAll(".icon-option").forEach((el) => {
+        el.classList.remove("is-selected");
+      });
+      option.classList.add("is-selected");
+      modal.dataset.icon = iconName;
+      if (window.lucide) window.lucide.createIcons();
+    });
+    iconGrid.appendChild(option);
+  });
+  if (window.lucide) window.lucide.createIcons();
+  modal.classList.add("is-open");
+};
+
+const closeBronzeModal = () => {
+  const modal = document.getElementById("bronze-modal");
+  if (!modal) return;
+  modal.classList.remove("is-open");
+  modal.dataset.arenaId = "";
 };
 
 const buildOracleForm = (dna) => {
@@ -902,6 +1030,44 @@ const init = () => {
       saveArenas(arenas);
       renderArenas();
       closeArenaModal();
+    });
+  }
+
+  const bronzeSave = document.getElementById("bronze-save");
+  const bronzeCancel = document.getElementById("bronze-cancel");
+  if (bronzeCancel) {
+    bronzeCancel.addEventListener("click", closeBronzeModal);
+  }
+  if (bronzeSave) {
+    bronzeSave.addEventListener("click", () => {
+      const modal = document.getElementById("bronze-modal");
+      const durationInput = document.getElementById("bronze-duration");
+      const seriousToggle = document.getElementById("bronze-serious");
+      if (!modal || !durationInput || !seriousToggle) return;
+      const arenaId = modal.dataset.arenaId;
+      if (!arenaId) return;
+      const duration = durationInput.value.trim();
+      const selectedIcon = modal.dataset.icon || BRONZE_ICONS[0];
+      const weekdays = Array.from(
+        modal.querySelectorAll(".weekday-grid input[type='checkbox']")
+      )
+        .filter((input) => input.checked)
+        .map((input) => input.value);
+      const planner = loadPlanner();
+      planner.bronzeActions.push({
+        id: crypto.randomUUID(),
+        arenaId,
+        icon: selectedIcon,
+        duration,
+        weekdays,
+        serious: !!seriousToggle.checked,
+        status: "backlog",
+        locked: false,
+        createdDate: new Date().toISOString(),
+      });
+      savePlanner(planner);
+      renderPlanner();
+      closeBronzeModal();
     });
   }
   const treeSave = document.getElementById("tree-edit-save");

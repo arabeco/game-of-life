@@ -18,15 +18,9 @@
   <body>
     <div class="app">
       <header class="hud">
-        <div class="hud-date" id="hud-date">SEG, 19 JAN</div>
-        <div class="hud-clock-wrapper">
-          <span class="hud-line"></span>
-          <span class="hud-dot"></span>
-          <div class="hud-clock" id="hud-clock">00:00</div>
-          <span class="hud-dot"></span>
-          <span class="hud-line"></span>
-        </div>
+        <div class="hud-clock" id="hud-clock">00:00</div>
         <div class="hud-avatar energy-ring" id="hud-avatar" aria-label="Avatar"></div>
+        <div class="hud-date" id="hud-date">SEG, 19 JAN</div>
       </header>
 
       <main class="content">
@@ -56,6 +50,11 @@
             </aside>
 
             <div class="timeline" id="timeline"></div>
+
+            <aside class="bronze-backlog">
+              <div class="drawer-title">Acoes de Bronze</div>
+              <div class="bronze-list" id="bronze-list"></div>
+            </aside>
 
             <div class="notes-panel">
               <button class="notes-toggle" id="notes-toggle" aria-label="Notas">
@@ -231,6 +230,40 @@
           <select id="arena-asset"></select>
         </div>
         <button class="primary-button" id="arena-save" aria-label="Salvar">
+          <i data-lucide="check"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="modal" id="bronze-modal">
+      <div class="modal-card dossier-card bronze-card">
+        <div class="dossier-header">
+          <div class="drawer-title">Nova Acao de Bronze</div>
+          <button class="close-button" id="bronze-cancel" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body dossier-body">
+          <label class="field-label" for="bronze-icon">Icone</label>
+          <div class="icon-grid" id="bronze-icon-grid"></div>
+          <label class="field-label" for="bronze-duration">Duracao</label>
+          <input type="text" id="bronze-duration" placeholder="30min, 1h, 2h" />
+          <div class="field-label">Frequencia Semanal</div>
+          <div class="weekday-grid">
+            <label><input type="checkbox" value="D" /> D</label>
+            <label><input type="checkbox" value="S" /> S</label>
+            <label><input type="checkbox" value="T" /> T</label>
+            <label><input type="checkbox" value="Q" /> Q</label>
+            <label><input type="checkbox" value="Q2" /> Q</label>
+            <label><input type="checkbox" value="S2" /> S</label>
+            <label><input type="checkbox" value="S3" /> S</label>
+          </div>
+          <label class="toggle-row">
+            <input type="checkbox" id="bronze-serious" />
+            Compromisso Serio
+          </label>
+        </div>
+        <button class="primary-button" id="bronze-save" aria-label="Salvar">
           <i data-lucide="check"></i>
         </button>
       </div>

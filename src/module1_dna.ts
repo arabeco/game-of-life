@@ -19,7 +19,7 @@ interface SephirotAsset {
   label: string;
   level: number;
   slots: AssetSlot[];
-}
+} 
 
 interface HobbyDefinition {
   id: string;
@@ -50,16 +50,16 @@ const SEPHIROT_IDS = [
 ];
 
 const SEPHIROT_LABELS: Record<string, string> = {
-  conexao: "Conexao",
-  espiritualidade: "Espiritualidade",
-  mente: "Espaco Mental",
-  verdade: "Verdade",
-  inspiracao: "Inspiracao",
-  amor: "Amor",
-  abundancia: "Abundancia",
-  trabalho: "Trabalho",
-  autenticidade: "Autenticidade",
-  fisico: "Forca Fisica",
+  conexao: "CONSCIÊNCIA",
+  espiritualidade: "ESPIRITUALIDADE",
+  mente: "ESPAÇO MENTAL",
+  verdade: "PROPÓSITO",
+  inspiracao: "PROJETOS",
+  amor: "CONEXÕES",
+  abundancia: "FINANÇAS",
+  trabalho: "TRABALHO/ESTUDOS",
+  autenticidade: "HOBBIES",
+  fisico: "FÍSICO",
 };
 
 const createEmptyAssets = (): SephirotAsset[] =>

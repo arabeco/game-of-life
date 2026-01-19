@@ -9,18 +9,20 @@ const GLITCH_KEY = "game_of_life.glitch_until";
 const MODE_KEY = "game_of_life.mastery_mode";
 const V2_RESET_KEY = "game_of_life.v2_reset";
 const PROFILE_KEY = "game_of_life.profile";
+const MISSIONS_KEY = "game_of_life.missions";
+const HOLD_DURATION_MS = 5000;
 
 const SEPHIROT = [
-  { id: "conexao", label: "Conexao", row: 1, col: 2 },
-  { id: "mente", label: "Espaco Mental", row: 2, col: 1 },
-  { id: "espiritualidade", label: "Espiritualidade", row: 2, col: 3 },
-  { id: "verdade", label: "Verdade", row: 3, col: 1 },
-  { id: "inspiracao", label: "Inspiracao", row: 3, col: 3 },
-  { id: "amor", label: "Amor", row: 4, col: 2 },
-  { id: "trabalho", label: "Trabalho", row: 5, col: 1 },
-  { id: "abundancia", label: "Abundancia", row: 5, col: 3 },
-  { id: "autenticidade", label: "Autenticidade", row: 6, col: 2 },
-  { id: "fisico", label: "Forca Fisica", row: 7, col: 2 },
+  { id: "conexao", label: "CONSCIÊNCIA", row: 1, col: 2 },
+  { id: "mente", label: "ESPAÇO MENTAL", row: 2, col: 1 },
+  { id: "espiritualidade", label: "ESPIRITUALIDADE", row: 2, col: 3 },
+  { id: "verdade", label: "PROPÓSITO", row: 3, col: 1 },
+  { id: "inspiracao", label: "PROJETOS", row: 3, col: 3 },
+  { id: "amor", label: "CONEXÕES", row: 4, col: 2 },
+  { id: "trabalho", label: "TRABALHO/ESTUDOS", row: 5, col: 1 },
+  { id: "abundancia", label: "FINANÇAS", row: 5, col: 3 },
+  { id: "autenticidade", label: "HOBBIES", row: 6, col: 2 },
+  { id: "fisico", label: "FÍSICO", row: 7, col: 2 },
 ];
 
 const LABEL_BY_ID = new Map(SEPHIROT.map((asset) => [asset.id, asset.label]));
@@ -48,124 +50,124 @@ const SLOT_ICON_BY_ID = {
 };
 const MASTERY_PHRASES = {
   conexao: [
-    "Ódio constante",
-    "Reclamação automática",
-    "Vitimismo",
-    "Indiferença",
-    "Agradecimento Social: Digo 'obrigado' por educação, mas não sinto a emoção real.",
-    "Otimismo básico",
-    "Antifrágil",
-    "Flow intermitente",
-    "Bênção constante",
-    "Unidade Absoluta",
+    "Nível 1: Sinto-me totalmente desconectado; a vida é um caos sem propósito.",
+    "Nível 2: Raramente percebo beleza ou ordem; sinto-me isolado.",
+    "Nível 3: Às vezes sinto uma breve gratidão, mas o ceticismo domina.",
+    "Nível 4: Começo a praticar gratidão, mas ainda me sinto vítima das circunstâncias.",
+    "Nível 5: Pratico a gratidão diariamente e percebo as primeiras sincronicidades.",
+    "Nível 6: Sinto uma conexão frequente com a natureza e com o fluxo da vida.",
+    "Nível 7: Confio no processo da vida; a gratidão é um estado quase constante.",
+    "Nível 8: Percebo a interconexão entre todos os eventos e pessoas.",
+    "Nível 9: Vivo em harmonia com as leis universais; paz profunda e duradoura.",
+    "Nível 10: Estado de presença absoluta; sinto a Unidade com o Todo em cada respiração.",
   ],
   espiritualidade: [
-    "Desconexão total",
-    "Ceticismo agressivo",
-    "Curiosidade superficial",
-    "Ritualista vazio",
-    "Buscador",
-    "Intuitivo",
-    "Praticante constante",
-    "Místico",
-    "Iluminado",
-    "Avatar",
+    "Nível 1: Sem qualquer prática ou crença; vazio espiritual absoluto.",
+    "Nível 2: Curiosidade vaga, mas sem disciplina ou rituais.",
+    "Nível 3: Pratico rituais esporádicos quando estou em crise.",
+    "Nível 4: Tenho um altar ou espaço, mas raramente o utilizo com foco.",
+    "Nível 5: Rituais semanais estabelecidos; sinto o despertar da intuição.",
+    "Nível 6: Prática diária constante; sinto proteção e orientação espiritual.",
+    "Nível 7: Meus rituais são minha âncora; diálogo fluido com o sagrado.",
+    "Nível 8: Intuição aguçada; recebo orientações claras através de rituais.",
+    "Nível 9: Vida consagrada; cada ação é um ato de conexão espiritual.",
+    "Nível 10: Mestria espiritual; canalização direta e comunhão ininterrupta.",
   ],
   mente: [
-    "Colapso",
-    "Reatividade",
-    "Ruído constante",
-    "Observador iniciante",
-    "Foco básico",
-    "Concentração",
-    "Shadow Worker",
-    "Arquiteto Mental",
-    "Serenidade",
-    "No-Mind",
+    "Nível 1: Mente barulhenta, ansiosa e impossível de controlar.",
+    "Nível 2: Pensamentos negativos dominam; sono perturbado pelo estresse.",
+    "Nível 3: Tento meditar, mas me distraio em segundos; foco muito baixo.",
+    "Nível 4: Consigo momentos breves de silêncio, mas a ansiedade retorna rápido.",
+    "Nível 5: Meditação diária de 10 min; começo a observar os pensamentos.",
+    "Nível 6: Capacidade de manter o foco por períodos longos; mente clara.",
+    "Nível 7: Domínio sobre as reações emocionais; paz mental resiliente.",
+    "Nível 8: Estado de Flow acessado à vontade; alta clareza cognitiva.",
+    "Nível 9: Silêncio interior profundo; a mente é uma ferramenta perfeitamente afiada.",
+    "Nível 10: Equanimidade absoluta; consciência pura acima de qualquer turbulência.",
   ],
   verdade: [
-    "Mentiroso compulsivo",
-    "Máscara social",
-    "Confusão de identidade",
-    "Sincero parcial",
-    "Autoconsciente",
-    "Integridade",
-    "Transparência",
-    "Autenticidade Radical",
-    "Profeta",
-    "A Verdade",
+    "Nível 1: Não sei quem sou; vivo baseado nas expectativas dos outros.",
+    "Nível 2: Evito olhar para minhas sombras; minto para mim mesmo com frequência.",
+    "Nível 3: Sinto que algo está errado, mas tenho medo de olhar para dentro.",
+    "Nível 4: Começo a identificar meus padrões, mas ainda me autossaboto.",
+    "Nível 5: Honestidade constante sobre minhas falhas; busca ativa por verdade.",
+    "Nível 6: Clareza sobre meu MTP (Propósito Transformativo Massivo).",
+    "Nível 7: Integridade total entre pensamento, palavra e ação.",
+    "Nível 8: Conhecimento profundo da própria psique e arquétipos.",
+    "Nível 9: Sabedoria pessoal cristalizada; vivo minha verdade sem medo.",
+    "Nível 10: Alinhamento supremo; minha identidade é um reflexo do meu destino.",
   ],
   inspiracao: [
-    "Inércia",
-    "Sonhador passivo",
-    "Iniciador",
-    "Executor básico",
-    "Criativo",
-    "Realizador",
-    "Mentor",
-    "Visionário",
-    "Mestre",
-    "Demiurgo",
+    "Nível 1: Sem sonhos ou projetos; a vida é uma repetição monótona.",
+    "Nível 2: Tenho ideias, mas nunca começo nada por medo do fracasso.",
+    "Nível 3: Começo projetos, mas desisto na primeira dificuldade.",
+    "Nível 4: Trabalho em projetos, mas sem consistência ou visão clara.",
+    "Nível 5: Um projeto ativo e consistente; criatividade fluindo semanalmente.",
+    "Nível 6: Criatividade estratégica; executo ideias com eficiência.",
+    "Nível 7: Projetos geram impacto real; sinto-me inspirado diariamente.",
+    "Nível 8: Magnetismo criativo; ideias e recursos convergem para mim.",
+    "Nível 9: Legado em construção; meus projetos expressam minha essência.",
+    "Nível 10: Gênio criativo; canalização ininterrupta de inovação e beleza.",
   ],
   amor: [
-    "Ódio social",
-    "Egoísmo",
-    "Dependência",
-    "Cordialidade",
-    "Empático",
-    "Companheiro",
-    "Doador",
-    "Magnetismo",
-    "Amor Incondicional",
-    "Amor Ágape",
+    "Nível 1: Relacionamentos tóxicos ou isolamento total com rancor.",
+    "Nível 2: Dificuldade em confiar; sinto-me carente ou defensivo.",
+    "Nível 3: Relações superficiais; medo de vulnerabilidade.",
+    "Nível 4: Tento me abrir, mas ainda carrego muitas mágoas do passado.",
+    "Nível 5: Relacionamentos saudáveis; prática ativa de perdão e escuta.",
+    "Nível 6: Círculo íntimo de alta confiança; sinto-me valorizado.",
+    "Nível 7: Capacidade de amar incondicionalmente sem perder os limites.",
+    "Nível 8: Mentor e apoio para outros; relações baseadas em crescimento.",
+    "Nível 9: Irradio compaixão; presença que cura e acolhe.",
+    "Nível 10: União profunda; mestre em criar e nutrir vínculos sagrados.",
   ],
   abundancia: [
-    "Miséria",
-    "Sobrevivência",
-    "Insegurança",
-    "Estabilidade",
-    "Poupador Iniciante",
-    "Investidor",
-    "Confortável",
-    "Riqueza",
-    "Filantropo",
-    "Soberano",
+    "Nível 1: Escassez total; dívidas fora de controle e medo do amanhã.",
+    "Nível 2: Vivo para pagar contas; o dinheiro é fonte de estresse.",
+    "Nível 3: Ganho o suficiente para sobreviver, mas não tenho reservas.",
+    "Nível 4: Dificuldade em gerir o que ganho; mentalidade de escassez.",
+    "Nível 5: Orçamento controlado; investimentos iniciados.",
+    "Nível 6: Fluxo de caixa positivo; clareza total sobre ativos.",
+    "Nível 7: Independência financeira crescendo; o dinheiro trabalha para mim.",
+    "Nível 8: Abundância gerada por propósito; recursos sobram para sonhos.",
+    "Nível 9: Liberdade total; riqueza flui de múltiplas fontes estáveis.",
+    "Nível 10: Consciência de prosperidade infinita; mestre da manifestação.",
   ],
   trabalho: [
-    "Inutilidade",
-    "Procrastinador",
-    "Operacional",
-    "Esforçado",
-    "Profissional",
-    "Especialista",
-    "Gestor",
-    "Autoridade",
-    "Ícone",
-    "A Lenda",
+    "Nível 1: Odeio minha rotina; sinto-me escravizado pelas tarefas.",
+    "Nível 2: Trabalho apenas pelo dinheiro; produtividade baixa.",
+    "Nível 3: Busco melhorar, mas sinto-me perdido profissionalmente.",
+    "Nível 4: Executo minhas tarefas, mas sem brilho ou excelência.",
+    "Nível 5: Profissional competente; estudo e evoluo constantemente.",
+    "Nível 6: Excelência reconhecida; entrego valor real ao mundo.",
+    "Nível 7: Trabalho alinhado ao propósito; satisfação no esforço.",
+    "Nível 8: Autoridade na minha área; mestre em gestão de tempo.",
+    "Nível 9: Liderança inspiradora; meu trabalho é minha arte.",
+    "Nível 10: Maestria profissional; impacto global através da vocação.",
   ],
   autenticidade: [
-    "Anedonia",
-    "Copiador",
-    "Amador",
-    "Entusiasta",
-    "Expressivo",
-    "Talentoso",
-    "Virtuoso",
-    "Original",
-    "Inspirador",
-    "Criança Divina",
+    "Nível 1: Sem hobbies; tempo gasto em distrações vazias.",
+    "Nível 2: Sinto tédio; esqueci o que me dava prazer.",
+    "Nível 3: Tenho um hobby, mas sinto culpa ao dedicar tempo.",
+    "Nível 4: Pratico hobbies raramente; falta de autenticidade.",
+    "Nível 5: Tempo semanal sagrado para hobbies; renovação de energia.",
+    "Nível 6: Desenvolvo habilidades únicas por puro prazer.",
+    "Nível 7: Minha personalidade brilha através dos meus interesses.",
+    "Nível 8: Mestre em um hobby; criatividade e diversão integradas.",
+    "Nível 9: Estilo de vida autêntico; sou fiel a mim mesmo sempre.",
+    "Nível 10: Expressão pura do Ser; minha existência é uma arte única.",
   ],
   fisico: [
-    "Colapso",
-    "Frágil",
-    "Iniciante",
-    "Ativo",
-    "Saudável",
-    "Acrobata",
-    "Atleta Amador",
-    "Guerreiro",
-    "Espécime",
-    "Imortal",
+    "Nível 1: Sedentarismo total; corpo fraco ou sem energia.",
+    "Nível 2: Alimentação péssima; cansaço crônico e sono ruim.",
+    "Nível 3: Tento treinar, mas desisto em duas semanas.",
+    "Nível 4: Treino esporádico; desconforto com a própria forma.",
+    "Nível 5: Treino 3x por semana; consciência alimentar iniciada.",
+    "Nível 6: Corpo atlético e funcional; energia estável.",
+    "Nível 7: Alta performance física; disciplina inabalável.",
+    "Nível 8: Conexão mente-músculo profunda; vitalidade radiante.",
+    "Nível 9: Templo físico otimizado; saúde máxima.",
+    "Nível 10: Expressão máxima da biologia; vitalidade inesgotável.",
   ],
 };
 const ASSET_TO_PHRASE = {
@@ -182,10 +184,10 @@ const ASSET_TO_PHRASE = {
 };
 const PROTOCOL_SLOTS = {
   conexao: [
+    { id: "conexao.lema", label: "Lema", type: "rect-wide" },
     { id: "conexao.crenca1", label: "Crenca 1", type: "rect" },
     { id: "conexao.crenca2", label: "Crenca 2", type: "rect" },
     { id: "conexao.crenca3", label: "Crenca 3", type: "rect" },
-    { id: "conexao.lema", label: "Lema de Vida", type: "rect-wide" },
   ],
   espiritualidade: [
     { id: "espiritualidade.sistema", label: "Sistema", type: "rect" },
@@ -309,10 +311,18 @@ const PROTOCOL_SLOTS = {
   ],
 };
 
+const getDossierSlots = (assetId) => {
+  const base = PROTOCOL_SLOTS[assetId] || [];
+  const lemaId = `${assetId}.lema`;
+  const lemaSlot = { id: lemaId, label: "Lema", type: "rect-wide" };
+  const withoutLema = base.filter((slot) => slot.id !== lemaId);
+  return [lemaSlot, ...withoutLema];
+};
+
 const getSlotOptions = () => {
   const options = [];
   Object.entries(PROTOCOL_SLOTS).forEach(([assetId, slots]) => {
-    slots.forEach((slot) => {
+    getDossierSlots(assetId).forEach((slot) => {
       options.push({
         id: `${assetId}.${slot.id}`,
         label: `${LABEL_BY_ID.get(assetId) ?? assetId} - ${slot.label}`,
@@ -427,6 +437,73 @@ const ensureSupabaseProfile = async (profile) => {
   });
 };
 
+const getSupabaseUser = async () => {
+  if (!supabase) return null;
+  const session = await supabase.auth.getSession();
+  if (session.data?.session?.user) return session.data.session.user;
+  const profile = loadProfile();
+  await ensureSupabaseProfile(profile);
+  const nextSession = await supabase.auth.getSession();
+  return nextSession.data?.session?.user || null;
+};
+
+const defaultMissionState = () => ({
+  m1: false,
+  m2: false,
+  m3: false,
+  m4: false,
+  m5: false,
+  initiation_finished: false,
+});
+
+const loadMissionStateLocal = () => {
+  try {
+    const raw = localStorage.getItem(MISSIONS_KEY);
+    if (!raw) return defaultMissionState();
+    const parsed = JSON.parse(raw);
+    return { ...defaultMissionState(), ...(parsed || {}) };
+  } catch {
+    return defaultMissionState();
+  }
+};
+
+const saveMissionStateLocal = (state) => {
+  localStorage.setItem(MISSIONS_KEY, JSON.stringify(state));
+};
+
+const syncMissionState = async (state) => {
+  const user = await getSupabaseUser();
+  if (!user) return;
+  await supabase.from("user_missions").upsert({
+    user_id: user.id,
+    ...state,
+  });
+};
+
+const syncProfileTotals = async (nextProfile = {}) => {
+  const user = await getSupabaseUser();
+  if (!user) return;
+  const profile = { ...loadProfile(), ...nextProfile };
+  await supabase.from("profiles").upsert({
+    id: user.id,
+    nickname: profile.nickname || "",
+    user_id: profile.userId || "",
+    banner: profile.banner || "",
+    avatar_url: profile.avatar || "",
+    status: profile.status || "sovereign",
+    total_level: Number(profile.total_level || 0),
+  });
+};
+
+const fetchMissionState = async () => {
+  const user = await getSupabaseUser();
+  if (!user) return loadMissionStateLocal();
+  const { data } = await supabase.from("user_missions").select("*").eq("user_id", user.id).single();
+  if (!data) return loadMissionStateLocal();
+  const { m1, m2, m3, m4, m5, initiation_finished } = data;
+  return { m1, m2, m3, m4, m5, initiation_finished };
+};
+
 const nowClock = () =>
   new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
@@ -466,6 +543,7 @@ const renderTree = () => {
   const isStandby = localStorage.getItem(HIATO_KEY) === "true";
   treeGrid.innerHTML = "";
   const assets = getAssets();
+  const vitalityStats = buildVitalityStats();
   const hudLevel = document.getElementById("hud-level");
   if (hudLevel) {
     const total = assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
@@ -481,6 +559,11 @@ const renderTree = () => {
     sphere.dataset.assetId = asset.id;
     if (asset.level === 0) sphere.classList.add("is-empty");
     if (isStandby) sphere.classList.add("is-empty");
+    const vitality = vitalityStats.get(asset.id);
+    if (vitality) {
+      const className = getVitalityClass(vitality);
+      if (className) sphere.classList.add(className);
+    }
 
     const label = document.createElement("div");
     label.className = "sephirot-label";
@@ -491,8 +574,11 @@ const renderTree = () => {
     const roundedLevel = Math.round(asset.level);
     level.textContent = String(roundedLevel);
     const intensity = Math.min(1, Math.max(0.2, roundedLevel / 10));
-    sphere.style.background = `rgba(255, 255, 255, ${0.05 + intensity * 0.2})`;
-    sphere.style.borderColor = `rgba(255, 255, 255, ${0.12 + intensity * 0.3})`;
+    sphere.style.setProperty("--vitality-bg", `rgba(255, 255, 255, ${0.05 + intensity * 0.2})`);
+    sphere.style.setProperty(
+      "--vitality-border",
+      `rgba(255, 255, 255, ${0.12 + intensity * 0.3})`,
+    );
 
     sphere.appendChild(label);
     sphere.appendChild(level);
@@ -521,6 +607,173 @@ const loadPlanner = () => {
 
 const savePlanner = (planner) => {
   localStorage.setItem(PLANNER_KEY, JSON.stringify(planner));
+};
+
+let plannerDayOffset = 0;
+let missionState = defaultMissionState();
+let vitalityLogs = [];
+
+const showMissionsLoading = (isLoading) => {
+  const loading = document.getElementById("missions-loading");
+  if (!loading) return;
+  loading.classList.toggle("is-hidden", !isLoading);
+  loading.classList.toggle("is-open", isLoading);
+};
+
+const applyOracleStatus = () => {
+  document.documentElement.dataset.status = "oracle";
+  const profile = loadProfile();
+  saveProfile({ ...profile, status: "oracle" });
+  syncProfileTotals({ status: "oracle" });
+};
+
+const computeTotalLevel = () => {
+  const dna = seedDNAIfMissing();
+  return dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
+};
+
+const updateIntegrityBar = () => {
+  const fill = document.getElementById("integrity-fill");
+  if (!fill) return;
+  const planner = loadPlanner();
+  const now = Date.now();
+  const doneRecent = planner.bronzeActions.filter((action) => {
+    if (action.status !== "done" || !action.completedAt) return false;
+    return now - new Date(action.completedAt).getTime() < 24 * 60 * 60 * 1000;
+  }).length;
+  const scheduledToday = planner.bronzeActions.filter(
+    (action) => Number(action.scheduledDayOffset || 0) === 0,
+  ).length;
+  const total = Math.max(1, scheduledToday);
+  const ratio = Math.min(1, doneRecent / total);
+  fill.style.width = `${Math.round(ratio * 100)}%`;
+  fill.style.boxShadow =
+    ratio > 0 ? "0 0 8px rgba(46, 204, 113, 0.6)" : "0 0 0 rgba(0,0,0,0)";
+};
+
+const fetchVitalityLogs = async () => {
+  const user = await getSupabaseUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from("action_logs")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) return [];
+  return Array.isArray(data) ? data : [];
+};
+
+const parseLogTime = (log) => {
+  const raw = log.created_at || log.createdAt || log.timestamp || log.date;
+  const parsed = raw ? new Date(raw).getTime() : 0;
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const buildVitalityStats = () => {
+  const planner = loadPlanner();
+  const arenas = loadArenas();
+  const profile = loadProfile();
+  const now = Date.now();
+  const stats = new Map(
+    SEPHIROT.map((asset) => [
+      asset.id,
+      { hasPendingToday: false, hasDone24h: false, hasFlames: false, lastActivityAt: 0 },
+    ]),
+  );
+  const arenasById = new Map(arenas.map((arena) => [arena.id, arena]));
+
+  planner.bronzeActions.forEach((action) => {
+    const arena = arenasById.get(action.arenaId);
+    if (!arena) return;
+    const assetId = arena.assetId;
+    const stat = stats.get(assetId);
+    if (!stat) return;
+    const scheduledToday = Number(action.scheduledDayOffset || 0) === 0;
+    if (scheduledToday && action.status !== "done") stat.hasPendingToday = true;
+    const completedAt = action.completedAt ? new Date(action.completedAt).getTime() : 0;
+    if (completedAt && now - completedAt < 24 * 60 * 60 * 1000) {
+      stat.hasDone24h = true;
+    }
+    const createdAt = action.createdDate ? new Date(action.createdDate).getTime() : 0;
+    stat.lastActivityAt = Math.max(stat.lastActivityAt, completedAt, createdAt);
+  });
+
+  arenas.forEach((arena) => {
+    const stat = stats.get(arena.assetId);
+    if (!stat) return;
+    const completedAt = arena.completedAt ? new Date(arena.completedAt).getTime() : 0;
+    if (completedAt && now - completedAt < 48 * 60 * 60 * 1000) {
+      stat.hasFlames = true;
+    }
+    stat.lastActivityAt = Math.max(stat.lastActivityAt, completedAt);
+  });
+
+  if (profile.lemaUpdatedAt) {
+    const lemaUpdated = new Date(profile.lemaUpdatedAt).getTime();
+    if (now - lemaUpdated < 48 * 60 * 60 * 1000) {
+      const targetId = profile.lemaUpdatedAssetId;
+      if (targetId && stats.has(targetId)) {
+        stats.get(targetId).hasFlames = true;
+        stats.get(targetId).lastActivityAt = Math.max(stats.get(targetId).lastActivityAt, lemaUpdated);
+      }
+    }
+  }
+
+  if (vitalityLogs.length > 0) {
+    vitalityLogs.forEach((log) => {
+      const assetId = log.asset_id || log.assetId;
+      const stat = stats.get(assetId);
+      if (!stat) return;
+      const time = parseLogTime(log);
+      if (!time) return;
+      stat.lastActivityAt = Math.max(stat.lastActivityAt, time);
+      const type = (log.type || log.action_type || log.kind || "").toString().toLowerCase();
+      if (type.includes("pending")) stat.hasPendingToday = true;
+      if (type.includes("done") && now - time < 24 * 60 * 60 * 1000) stat.hasDone24h = true;
+      if (type.includes("silver") || type.includes("gold")) {
+        if (now - time < 48 * 60 * 60 * 1000) stat.hasFlames = true;
+      }
+    });
+  }
+
+  return stats;
+};
+
+const getVitalityClass = (stat) => {
+  const now = Date.now();
+  if (stat.hasFlames) return "vitality-flames";
+  if (stat.hasDone24h) return "vitality-energized";
+  if (stat.hasPendingToday) return "vitality-vibrant";
+  if (!stat.lastActivityAt || now - stat.lastActivityAt > 72 * 60 * 60 * 1000) {
+    return "vitality-fossil";
+  }
+  return "";
+};
+
+const updateMissionState = async (nextState) => {
+  missionState = { ...missionState, ...nextState };
+  saveMissionStateLocal(missionState);
+  await syncMissionState(missionState);
+  renderInitiationOverlay();
+};
+
+const updateDayLabel = () => {
+  const label = document.getElementById("day-label");
+  if (!label) return;
+  if (plannerDayOffset === 0) {
+    label.textContent = "Hoje";
+  } else if (plannerDayOffset > 0) {
+    label.textContent = `+${plannerDayOffset}d`;
+  } else {
+    label.textContent = `${plannerDayOffset}d`;
+  }
+};
+
+const setPlannerDayOffset = (nextOffset) => {
+  plannerDayOffset = Math.max(-7, Math.min(7, nextOffset));
+  updateDayLabel();
+  renderPlanner();
 };
 
 const buildBronzeElement = (action) => {
@@ -569,6 +822,8 @@ const renderWeekView = () => {
     weekGrid.appendChild(column);
   });
   if (window.lucide) window.lucide.createIcons();
+  updateIntegrityBar();
+  renderTree();
 };
 
 const buildBronzeBlock = (action) => {
@@ -599,13 +854,14 @@ const buildBronzeBlock = (action) => {
       const planner = loadPlanner();
       const updated = planner.bronzeActions.map((item) => {
         if (item.id !== action.id) return item;
-        return { ...item, status: "done" };
+        return { ...item, status: "done", completedAt: new Date().toISOString() };
       });
       savePlanner({ ...planner, bronzeActions: updated });
       updateArenaCountsForBronze(action.arenaId, 1);
       renderPlanner();
       renderArenas();
-    }, 3000);
+      checkMissionProgress();
+    }, HOLD_DURATION_MS);
     block.dataset.timer = String(timer);
   };
 
@@ -701,7 +957,8 @@ const updateArenaCountsForBronze = (arenaId, delta) => {
     const completion = arena.targetCount
       ? Math.round((next / arena.targetCount) * 100)
       : arena.completion;
-    return { ...arena, completedCount: next, completion };
+    const completedAt = completion >= 100 ? new Date().toISOString() : arena.completedAt;
+    return { ...arena, completedCount: next, completion, completedAt };
   });
   saveArenas(updated);
 
@@ -718,7 +975,8 @@ const updateArenaCountsForBronze = (arenaId, delta) => {
       const completion = arena.targetCount
         ? Math.round((next / arena.targetCount) * 100)
         : arena.completion;
-      return { ...arena, completedCount: next, completion };
+      const completedAt = completion >= 100 ? new Date().toISOString() : arena.completedAt;
+      return { ...arena, completedCount: next, completion, completedAt };
     });
     dna.arenas = merged;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dna));
@@ -741,7 +999,7 @@ const renderArenas = () => {
   }
   arenas.forEach((arena) => {
     const card = document.createElement("div");
-    card.className = "arena-card";
+    card.className = "arena-card scan-card";
     const title = document.createElement("div");
     title.className = "arena-title";
     title.textContent = arena.title || "Arena";
@@ -901,16 +1159,18 @@ const renderPlanner = () => {
           if (action.id !== actionId) return action;
           const locked = action.serious ? true : action.locked;
           if (action.locked && action.status === "scheduled") return action;
-          return {
+        return {
             ...action,
             status: "scheduled",
             scheduledHour: hour,
             scheduledMinute: 0,
+          scheduledDayOffset: plannerDayOffset,
             locked,
           };
         });
         savePlanner({ ...planner, bronzeActions: updated });
         renderPlanner();
+      checkMissionProgress();
         return;
       }
       return;
@@ -921,7 +1181,11 @@ const renderPlanner = () => {
 
   const timelineTopPadding = 16;
   planner.bronzeActions
-    .filter((action) => action.status === "scheduled" || action.status === "done")
+    .filter(
+      (action) =>
+        (action.status === "scheduled" || action.status === "done") &&
+        Number(action.scheduledDayOffset || 0) === plannerDayOffset,
+    )
     .forEach((action) => {
       const startHour = Number(action.scheduledHour || 6);
       const startMinute = Number(action.scheduledMinute || 0);
@@ -1140,7 +1404,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
   const asset = getAssetFromDNA(dna, assetId);
   list.innerHTML = "";
   if (!asset) return;
-  const slots = PROTOCOL_SLOTS[assetId] || [];
+  const slots = getDossierSlots(assetId);
   asset.profileSlots = asset.profileSlots || {};
   slots.forEach((slot, index) => {
     const slotEl = document.createElement("div");
@@ -1212,6 +1476,15 @@ const renderTreeEditorSlots = (dna, assetId) => {
         dna.lastUpdatedAt = new Date().toISOString();
         saveDNA(dna);
         renderSocial();
+        if (slot.id.endsWith(".lema")) {
+          const profile = loadProfile();
+          saveProfile({
+            ...profile,
+            lemaUpdatedAt: new Date().toISOString(),
+            lemaUpdatedAssetId: asset.id,
+          });
+        }
+        checkMissionProgress();
       });
       slotEl.appendChild(input);
     });
@@ -1585,6 +1858,269 @@ const renderSlotEditor = (dna, assetId) => {
   if (window.lucide) window.lucide.createIcons();
 };
 
+const createArenaFromInit = (title) => {
+  const arenas = loadArenas();
+  const nextArena = {
+    id: crypto.randomUUID(),
+    title: title || "Arena Inicial",
+    description: "",
+    assetId: "trabalho",
+    completion: 0,
+    createdAt: new Date().toISOString(),
+  };
+  arenas.push(nextArena);
+  saveArenas(arenas);
+  renderArenas();
+  return nextArena;
+};
+
+const createBronzeFromInit = (title, icon) => {
+  const planner = loadPlanner();
+  const action = {
+    id: crypto.randomUUID(),
+    title: title || "Acao Inicial",
+    icon: icon || "flame",
+    durationMinutes: 30,
+    status: "backlog",
+    createdDate: new Date().toISOString(),
+  };
+  planner.bronzeActions.push(action);
+  savePlanner(planner);
+  renderPlanner();
+  return action;
+};
+
+const getConexaoLema = () => {
+  const dna = seedDNAIfMissing();
+  const asset = getAssetFromDNA(dna, "conexao");
+  const slot = asset?.profileSlots?.["conexao.lema"];
+  return (slot?.value || "").trim();
+};
+
+const reconcileMissionState = (nextState) => {
+  const updates = {};
+  let changed = false;
+  Object.entries(nextState).forEach(([key, value]) => {
+    if (missionState[key] !== value) {
+      updates[key] = value;
+      changed = true;
+    }
+  });
+  if (changed) updateMissionState(updates);
+};
+
+const checkMissionProgress = () => {
+  const arenas = loadArenas();
+  const planner = loadPlanner();
+  const m1 = arenas.length > 0;
+  const m2 = planner.bronzeActions.length > 0;
+  const m3 = planner.bronzeActions.some(
+    (action) =>
+      action.status === "done" && Number(action.scheduledDayOffset || 0) !== 0,
+  );
+  const m4 = Boolean(getConexaoLema());
+  const m5 = missionState.m5;
+  reconcileMissionState({
+    m1,
+    m2,
+    m3,
+    m4,
+    m5,
+    initiation_finished: m1 && m2 && m3 && m4 && m5,
+  });
+};
+
+const renderInitiationOverlay = () => {
+  const overlay = document.getElementById("init-overlay");
+  const body = document.getElementById("init-body");
+  const title = document.getElementById("init-title");
+  if (!overlay || !body || !title) return;
+
+  if (missionState.initiation_finished) {
+    overlay.classList.add("is-hidden");
+    return;
+  }
+
+  overlay.classList.remove("is-hidden");
+  overlay.classList.remove("is-pass-through");
+  const step = !missionState.m1
+    ? "m1"
+    : !missionState.m2
+      ? "m2"
+      : !missionState.m3
+        ? "m3"
+        : !missionState.m4
+          ? "m4"
+          : "m5";
+
+  if (step === "m1") {
+    title.textContent = "M1 - Arenas";
+    body.innerHTML = `
+      <div class="drawer-title">O que voce costuma fazer?</div>
+      <div class="init-actions">
+        <input class="init-input" id="init-arena-title" placeholder="Ex: Estudo, Trabalho, Treino" />
+        <button class="gold-button" id="init-arena-create">Criar primeira Arena</button>
+      </div>
+    `;
+    const button = document.getElementById("init-arena-create");
+    button?.addEventListener("click", () => {
+      const input = document.getElementById("init-arena-title");
+      const value = input?.value?.trim();
+      createArenaFromInit(value);
+      updateMissionState({ m1: true });
+      checkMissionProgress();
+    });
+    return;
+  }
+
+  if (step === "m2") {
+    title.textContent = "M2 - Bronze";
+    body.innerHTML = `
+      <div class="drawer-title">Crie sua primeira Acao</div>
+      <div class="init-actions">
+        <input class="init-input" id="init-bronze-title" placeholder="Ex: 20min leitura" />
+        <div class="bronze-icon-grid" id="init-bronze-icons"></div>
+        <button class="gold-button" id="init-bronze-create">Salvar Acao</button>
+      </div>
+    `;
+    const iconGrid = document.getElementById("init-bronze-icons");
+    let selectedIcon = "flame";
+    if (iconGrid) {
+      BRONZE_ICONS.forEach((iconName) => {
+        const btn = document.createElement("button");
+        btn.className = "bronze-icon";
+        if (iconName === selectedIcon) btn.classList.add("is-active");
+        btn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+        btn.addEventListener("click", () => {
+          selectedIcon = iconName;
+          iconGrid.querySelectorAll(".bronze-icon").forEach((el) => el.classList.remove("is-active"));
+          btn.classList.add("is-active");
+        });
+        iconGrid.appendChild(btn);
+      });
+      if (window.lucide) window.lucide.createIcons();
+    }
+    const button = document.getElementById("init-bronze-create");
+    button?.addEventListener("click", () => {
+      const input = document.getElementById("init-bronze-title");
+      const value = input?.value?.trim();
+      createBronzeFromInit(value, selectedIcon);
+      updateMissionState({ m2: true });
+      checkMissionProgress();
+    });
+    return;
+  }
+
+  if (step === "m3") {
+    title.textContent = "M3 - Planner";
+    body.innerHTML = `
+      <div class="drawer-title">Arraste para o Planner</div>
+      <div class="modal-body">
+        Arraste sua Acao para um horario futuro, depois segure 5s para concluir.
+      </div>
+      <div class="init-actions">
+        <button class="gold-button" id="init-open-planner">Abrir Planner</button>
+        <button class="silver-button" id="init-pass-through">Liberar interacao</button>
+      </div>
+    `;
+    const button = document.getElementById("init-open-planner");
+    button?.addEventListener("click", () => {
+      setActiveScreen("planner");
+    });
+    const passThrough = document.getElementById("init-pass-through");
+    passThrough?.addEventListener("click", () => {
+      overlay.classList.add("is-pass-through");
+      setActiveScreen("planner");
+    });
+    return;
+  }
+
+  if (step === "m4") {
+    title.textContent = "M4 - Lema";
+    body.innerHTML = `
+      <div class="drawer-title">Defina seu Lema no Ativo Conexao</div>
+      <div class="init-actions">
+        <button class="gold-button" id="init-open-conexao">Abrir Conexao</button>
+        <button class="silver-button" id="init-pass-through">Liberar interacao</button>
+      </div>
+    `;
+    const button = document.getElementById("init-open-conexao");
+    button?.addEventListener("click", () => {
+      openTreeEditor("conexao");
+    });
+    const passThrough = document.getElementById("init-pass-through");
+    passThrough?.addEventListener("click", () => {
+      overlay.classList.add("is-pass-through");
+      openTreeEditor("conexao");
+    });
+    return;
+  }
+
+  title.textContent = "M5 - Oraculo";
+  body.innerHTML = `
+    <div class="drawer-title">Validacao dos Ativos</div>
+    <div class="init-actions">
+      <button class="gold-button" id="init-start-oracle">Iniciar Oraculo</button>
+    </div>
+  `;
+  const button = document.getElementById("init-start-oracle");
+  button?.addEventListener("click", () => {
+    startOracleFlow();
+  });
+};
+
+const startOracleFlow = () => {
+  const modal = document.getElementById("oracle-modal");
+  const question = document.getElementById("oracle-question");
+  const levels = document.getElementById("oracle-levels");
+  if (!modal || !question || !levels) return;
+  let index = 0;
+  const assets = SEPHIROT.map((asset) => asset.id);
+
+  const renderStep = () => {
+    const assetId = assets[index];
+    const phraseKey = ASSET_TO_PHRASE[assetId];
+    const phrases = phraseKey ? MASTERY_PHRASES[phraseKey] : [];
+    const label = LABEL_BY_ID.get(assetId) || assetId;
+    question.textContent = `Nivel de ${label}`;
+    levels.innerHTML = "";
+    phrases.forEach((phrase, levelIndex) => {
+      const button = document.createElement("button");
+      button.className = "level-btn";
+      button.textContent = `${levelIndex + 1} - ${phrase}`;
+      button.addEventListener("click", () => {
+        const dna = seedDNAIfMissing();
+        const asset = getAssetFromDNA(dna, assetId);
+        if (asset) {
+          asset.level = levelIndex + 1;
+          dna.lastUpdatedAt = new Date().toISOString();
+          saveDNA(dna);
+          renderTree();
+        }
+        const total = computeTotalLevel();
+        const profile = loadProfile();
+        saveProfile({ ...profile, total_level: total });
+        syncProfileTotals({ total_level: total });
+        index += 1;
+        if (index >= assets.length) {
+          modal.classList.remove("is-open");
+          updateMissionState({ m5: true, initiation_finished: true });
+          const finishedProfile = loadProfile();
+          saveProfile({ ...finishedProfile, total_level: total, status: "oracle" });
+          applyOracleStatus();
+          checkMissionProgress();
+          return;
+        }
+        renderStep();
+      });
+      levels.appendChild(button);
+    });
+  };
+
+  renderStep();
+  modal.classList.add("is-open");
+};
+
 const initConfig = () => {
   const dna = seedDNAIfMissing();
   const renderMastery = (mode) => {
@@ -1676,11 +2212,38 @@ const initConfig = () => {
 
 const initPlanner = () => {
   renderPlanner();
+  updateDayLabel();
   const notesToggle = document.getElementById("notes-toggle");
   const notesContent = document.getElementById("notes-content");
   if (notesToggle && notesContent) {
     notesToggle.addEventListener("click", () => {
       notesContent.classList.toggle("is-collapsed");
+    });
+  }
+  const dayPrev = document.getElementById("day-prev");
+  const dayNext = document.getElementById("day-next");
+  if (dayPrev) dayPrev.addEventListener("click", () => setPlannerDayOffset(plannerDayOffset - 1));
+  if (dayNext) dayNext.addEventListener("click", () => setPlannerDayOffset(plannerDayOffset + 1));
+  let touchStartX = 0;
+  let touchStartY = 0;
+  if (plannerLayout) {
+    plannerLayout.addEventListener("touchstart", (event) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    });
+    plannerLayout.addEventListener("touchend", (event) => {
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+      if (deltaX < 0) {
+        setPlannerDayOffset(plannerDayOffset + 1);
+      } else {
+        setPlannerDayOffset(plannerDayOffset - 1);
+      }
     });
   }
   const viewDay = document.getElementById("view-day");
@@ -1720,11 +2283,13 @@ const initPlanner = () => {
           status: "backlog",
           scheduledHour: undefined,
           scheduledMinute: undefined,
+          scheduledDayOffset: undefined,
           locked: false,
         };
       });
       savePlanner({ ...planner, bronzeActions: updated });
       renderPlanner();
+      checkMissionProgress();
     });
   }
 };
@@ -1745,6 +2310,11 @@ const init = () => {
   ensureV2Reset();
   const initialProfile = loadProfile();
   applyTheme(initialProfile.theme || "gold");
+  if (initialProfile.status === "oracle") {
+    applyOracleStatus();
+  } else {
+    document.documentElement.dataset.status = "sovereign";
+  }
   applyHiatoIfNeeded();
   initClock();
   initNav();
@@ -1754,6 +2324,21 @@ const init = () => {
   renderArenas();
   renderSocial();
   applyGlitch();
+  showMissionsLoading(true);
+  fetchMissionState()
+    .then((state) => {
+      missionState = { ...defaultMissionState(), ...(state || {}) };
+      saveMissionStateLocal(missionState);
+      renderInitiationOverlay();
+      checkMissionProgress();
+    })
+    .finally(() => {
+      showMissionsLoading(false);
+    });
+  fetchVitalityLogs().then((logs) => {
+    vitalityLogs = logs;
+    renderTree();
+  });
   if (window.lucide) window.lucide.createIcons();
   const hiatoAck = document.getElementById("hiato-ack");
   if (hiatoAck) {
@@ -1796,6 +2381,7 @@ const init = () => {
       saveArenas(arenas);
       renderArenas();
       closeArenaModal();
+      checkMissionProgress();
     });
   }
 
@@ -1840,6 +2426,7 @@ const init = () => {
       savePlanner(planner);
       renderPlanner();
       closeBronzeModal();
+      checkMissionProgress();
     });
   }
 
@@ -2029,9 +2616,9 @@ const init = () => {
 
   const configNickname = document.getElementById("config-nickname");
   const configId = document.getElementById("config-id");
-  const initialProfile = loadProfile();
-  if (configNickname) configNickname.value = initialProfile.nickname || "";
-  if (configId) configId.value = initialProfile.userId || "";
+  const configProfile = loadProfile();
+  if (configNickname) configNickname.value = configProfile.nickname || "";
+  if (configId) configId.value = configProfile.userId || "";
   if (configNickname) {
     configNickname.addEventListener("change", () => {
       const profile = loadProfile();

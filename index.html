@@ -29,6 +29,9 @@
         <div class="hud-avatar-wrap">
           <div class="hud-avatar energy-ring" id="hud-avatar" aria-label="Avatar"></div>
           <div class="hud-badge" id="hud-level">Nivel 0</div>
+          <div class="integrity-bar">
+            <div class="integrity-fill" id="integrity-fill"></div>
+          </div>
           <button class="hud-edit" id="hud-edit" aria-label="Editar Perfil">
             <i data-lucide="pencil"></i>
           </button>
@@ -85,6 +88,9 @@
             </div>
           </div>
           <div class="planner-toggle">
+            <button class="toggle-button" id="day-prev" aria-label="Dia anterior">◀</button>
+            <div class="toggle-button is-active" id="day-label">Hoje</div>
+            <button class="toggle-button" id="day-next" aria-label="Dia seguinte">▶</button>
             <button class="toggle-button is-active" id="view-day">Dia</button>
             <button class="toggle-button" id="view-week">Semana</button>
           </div>
@@ -234,6 +240,34 @@
     </div>
 
     <script type="module" src="app.js"></script>
+
+    <div id="missions-loading" class="modal is-open">
+      <div class="modal-card dossier-card">
+        <div class="drawer-title">Sincronizando Missões</div>
+        <div class="modal-body">Carregando progresso...</div>
+      </div>
+    </div>
+
+    <div id="init-overlay" class="modal is-open">
+      <div class="modal-card dossier-card gold-overlay">
+        <div class="dossier-header">
+          <div class="drawer-title" id="init-title">Iniciacao</div>
+        </div>
+        <div class="modal-body dossier-body" id="init-body"></div>
+      </div>
+    </div>
+
+    <div id="oracle-modal" class="modal">
+      <div class="modal-card dossier-card gold-overlay">
+        <div class="dossier-header">
+          <div class="drawer-title" id="oracle-title">Oraculo</div>
+        </div>
+        <div class="modal-body dossier-body">
+          <div class="oracle-phrase" id="oracle-question"></div>
+          <div class="oracle-levels" id="oracle-levels"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="modal" id="hiato-modal">
       <div class="modal-card">

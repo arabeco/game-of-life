@@ -1,0 +1,25 @@
+{
+  "name": "gameoflife",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "dev": "vite",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/misterxhermit/game-of-life.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/misterxhermit/game-of-life/issues"
+  },
+  "homepage": "https://github.com/misterxhermit/game-of-life#readme",
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}

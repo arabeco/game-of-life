@@ -468,10 +468,6 @@ const initAuth = () => {
   const guestBtn = document.getElementById("login-guest-btn");
   const errorEl = document.getElementById("login-error");
   const warnEl = document.getElementById("login-warning");
-  const supabaseUrlInput = document.getElementById("supabase-url");
-  const supabaseAnonInput = document.getElementById("supabase-anon");
-  const supabaseSave = document.getElementById("supabase-save");
-  const supabaseConfig = document.getElementById("supabase-config");
   setAuthLocked(true);
 
   if (guestMode) {
@@ -481,47 +477,10 @@ const initAuth = () => {
     return;
   }
 
-  const showSupabaseConfig = (show) => {
-    if (!supabaseConfig) return;
-    supabaseConfig.classList.toggle("is-hidden", !show);
-    if (show) localStorage.setItem("game_of_life.supabase_config_visible", "true");
-  };
-
-  const shouldShowSupabaseConfig =
-    location.hash === "#supabase" ||
-    localStorage.getItem("game_of_life.supabase_config_visible") === "true";
-  showSupabaseConfig(shouldShowSupabaseConfig);
-
-  document.addEventListener("keydown", (event) => {
-    if (event.ctrlKey && event.altKey && event.key.toLowerCase() === "s") {
-      showSupabaseConfig(true);
-    }
-  });
-
-  if (supabaseUrlInput) {
-    supabaseUrlInput.value = localStorage.getItem("game_of_life.supabase_url") || "";
-  }
-  if (supabaseAnonInput) {
-    supabaseAnonInput.value = localStorage.getItem("game_of_life.supabase_anon") || "";
-  }
-  if (supabaseSave) {
-    supabaseSave.addEventListener("click", () => {
-      const url = supabaseUrlInput?.value?.trim();
-      const anon = supabaseAnonInput?.value?.trim();
-      if (!url || !anon) {
-        if (warnEl) warnEl.textContent = "Preencha URL e Anon Key.";
-        return;
-      }
-      localStorage.setItem("game_of_life.supabase_url", url);
-      localStorage.setItem("game_of_life.supabase_anon", anon);
-      location.reload();
-    });
-  }
-
   const requireSupabase = () => {
     if (isSupabaseEnabled()) return true;
     if (warnEl) {
-      warnEl.textContent = "Supabase indisponivel. Use Convidado.";
+      warnEl.textContent = "Supabase indisponivel.";
     }
     if (errorEl) {
       errorEl.textContent = "Supabase nao configurado.";
@@ -607,7 +566,7 @@ const initAuth = () => {
   }
 
   if (!isSupabaseEnabled()) {
-    if (warnEl) warnEl.textContent = "Supabase indisponivel. Use Convidado.";
+    if (warnEl) warnEl.textContent = "Supabase indisponivel.";
     return;
   }
 

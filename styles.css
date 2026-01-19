@@ -153,6 +153,24 @@ body {
   box-shadow: none;
 }
 
+.hud-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #d4af37 0%, #f1d279 50%, #d4af37 100%);
+  color: #111111;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.35);
+}
+
 .energy-ring {
   position: relative;
   border: 1px solid var(--accent-energy);
@@ -565,11 +583,13 @@ body {
   padding: 10px;
   border-radius: 8px;
   border: 1px solid rgba(212, 175, 55, 0.6);
-  background: rgba(12, 12, 12, 0.9);
+  background: rgba(255, 255, 255, 0.05);
   min-height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.08);
 }
 
 .slot-item input {
@@ -592,12 +612,27 @@ body {
   position: relative;
   border: 1px solid rgba(212, 175, 55, 0.6);
   border-radius: 8px;
-  background: rgba(12, 12, 12, 0.9);
+  background: rgba(255, 255, 255, 0.05);
   padding: 10px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 6px;
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.08);
+}
+
+.slot-animate {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: slot-fade 0.4s ease forwards;
+}
+
+@keyframes slot-fade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .profile-slot--rect {
@@ -632,6 +667,12 @@ body {
   left: 10px;
 }
 
+.slot-icon {
+  width: 20px;
+  height: 20px;
+  color: #d4af37;
+}
+
 .profile-input {
   background: transparent;
   border: none;
@@ -643,6 +684,55 @@ body {
 .profile-input:focus {
   outline: none;
   border-bottom: 1px solid rgba(212, 175, 55, 0.8);
+}
+
+.profile-card {
+  padding: 20px;
+}
+
+.profile-header {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: center;
+  justify-items: center;
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-name,
+.profile-banner {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+}
+
+.profile-edit {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.widget-item {
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e8d9a8;
+  font-size: 11px;
 }
 
 .metric-row {
@@ -766,7 +856,20 @@ body {
   height: 100%;
   border-radius: 0;
   background: #0a0a0a;
-  border: 1px solid rgba(212, 175, 55, 0.5);
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.2;
+  pointer-events: none;
 }
 
 .social-profile {
@@ -1275,10 +1378,9 @@ body {
 }
 
 .silver-card {
-  border: 1px solid transparent;
-  background: linear-gradient(#101010, #101010) padding-box,
-    linear-gradient(135deg, rgba(195, 199, 207, 0.9), rgba(90, 94, 102, 0.8))
-      border-box;
+  border: 2px solid transparent;
+  background: linear-gradient(#0e0e0e, #0e0e0e) padding-box,
+    linear-gradient(135deg, #cfd3da 0%, #f1f4f7 50%, #b2b8c2 100%) border-box;
 }
 
 .arena-macro {
@@ -1288,6 +1390,12 @@ body {
   border: 1px solid rgba(195, 199, 207, 0.4);
   color: #d5d9e1;
   font-size: 12px;
+}
+
+.arena-card-body .arena-macro {
+  background: rgba(255, 255, 255, 0.65);
+  color: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 #arena-dossier .modal-card {

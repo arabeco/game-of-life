@@ -26,7 +26,10 @@
     <div class="app">
       <header class="hud">
         <div class="hud-clock" id="hud-clock">00:00</div>
-        <div class="hud-avatar energy-ring" id="hud-avatar" aria-label="Avatar"></div>
+        <div class="hud-avatar-wrap">
+          <div class="hud-avatar energy-ring" id="hud-avatar" aria-label="Avatar"></div>
+          <div class="hud-badge" id="hud-level">Nivel 0</div>
+        </div>
         <div class="hud-date" id="hud-date">SEG, 19 JAN</div>
       </header>
 
@@ -239,7 +242,7 @@
     </div>
 
     <div class="modal" id="bronze-modal">
-      <div class="modal-card dossier-card bronze-card">
+      <div class="modal-card dossier-card bronze-card bronze-card-elite">
         <div class="dossier-header">
           <div class="drawer-title">Nova Acao de Bronze</div>
           <button class="close-button" id="bronze-cancel" aria-label="Fechar">
@@ -286,7 +289,7 @@
     </div>
 
     <div class="modal" id="arena-dossier">
-      <div class="modal-card dossier-card silver-card">
+      <div class="modal-card dossier-card silver-card arena-card-full">
         <div class="dossier-header">
           <button class="close-button" id="arena-dossier-back" aria-label="Voltar">
             <i data-lucide="arrow-left"></i>
@@ -296,12 +299,12 @@
             <div class="dossier-level" id="arena-dossier-progress">0/0</div>
           </div>
         </div>
-        <div class="modal-body dossier-body">
+        <div class="modal-body dossier-body arena-card-body">
           <div class="field-label">Objetivo Macro</div>
           <div class="arena-macro" id="arena-dossier-macro">Sem objetivo</div>
           <div class="slot-header">Acoes de Bronze</div>
           <div class="bronze-list" id="arena-dossier-bronze"></div>
-          <button class="silver-button" id="arena-dossier-add" aria-label="Adicionar Bronze">
+          <button class="silver-button arena-add-bronze" id="arena-dossier-add" aria-label="Adicionar Bronze">
             <i data-lucide="plus"></i>
           </button>
         </div>
@@ -313,16 +316,30 @@
     </div>
 
     <div class="modal" id="profile-modal">
-      <div class="modal-card dossier-card">
-        <div class="dossier-header">
-          <div class="drawer-title">Resumo de Perfil</div>
-          <button class="close-button" id="profile-close" aria-label="Fechar">
-            <i data-lucide="x"></i>
-          </button>
+      <div class="modal-card dossier-card gold-overlay profile-card">
+        <button class="close-button" id="profile-close" aria-label="Fechar">
+          <i data-lucide="x"></i>
+        </button>
+        <button class="silver-button profile-edit" id="profile-edit" aria-label="Editar">
+          <i data-lucide="pencil"></i>
+        </button>
+        <div class="profile-header">
+          <div class="profile-avatar">
+            <div class="loading-diamond">
+              <div class="loading-core"></div>
+            </div>
+          </div>
+          <div class="profile-name">
+            <input type="text" id="profile-nickname" class="profile-input" placeholder="Nickname" />
+            <input type="text" id="profile-id" class="profile-input" placeholder="@id" />
+          </div>
+          <div class="profile-banner">
+            <input type="text" id="profile-banner" class="profile-input" placeholder="Banner de Titulo" />
+          </div>
         </div>
-        <div class="modal-body dossier-body">
-          <div class="arena-macro">Status: Ativo</div>
-          <div class="arena-macro">Ultimo Login: <span id="profile-last-login">-</span></div>
+        <div class="profile-widgets">
+          <div class="slot-header">Widgets</div>
+          <div class="widget-grid" id="widget-grid"></div>
         </div>
       </div>
     </div>

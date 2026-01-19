@@ -6,7 +6,7 @@ const HIATO_KEY = "game_of_life.hiato_active";
 const GLITCH_KEY = "game_of_life.glitch_until";
 const MODE_KEY = "game_of_life.mastery_mode";
 const V2_RESET_KEY = "game_of_life.v2_reset";
-const PINS_KEY = "game_of_life.profile_pins";
+const PROFILE_KEY = "game_of_life.profile";
 
 const SEPHIROT = [
   { id: "kether", label: "Gratidao", row: 1, col: 2 },
@@ -40,6 +40,14 @@ const ICON_BY_ID = {
 };
 const BRONZE_ICONS = ["dumbbell", "book", "code", "dollar-sign", "flame", "leaf", "coffee", "music"];
 const ALLIANCE_MOCK = ["@vitali", "@nyx", "@atlas", "@onyx"];
+const SLOT_ICON_BY_ID = {
+  "abund.ativo1": "car",
+  "abund.ativo2": "building-2",
+  "abund.ativo3": "briefcase",
+  "trab.pec": "badge-check",
+  "trab.unip": "graduation-cap",
+  "trab.personal": "dumbbell",
+};
 const MASTERY_PHRASES = {
   gratidao: [
     "Ódio constante",
@@ -305,6 +313,19 @@ const PROTOCOL_SLOTS = {
     { id: "fis.corrida", label: "Corrida", type: "square" },
   ],
 };
+
+const getSlotOptions = () => {
+  const options = [];
+  Object.entries(PROTOCOL_SLOTS).forEach(([assetId, slots]) => {
+    slots.forEach((slot) => {
+      options.push({
+        id: `${assetId}.${slot.id}`,
+        label: `${LABEL_BY_ID.get(assetId) ?? assetId} - ${slot.label}`,
+      });
+    });
+  });
+  return options;
+};
 const WEEKDAYS = [
   { label: "SEG", key: "S" },
   { label: "TER", key: "T" },
@@ -335,18 +356,17 @@ const ensureV2Reset = () => {
   localStorage.setItem(V2_RESET_KEY, "true");
 };
 
-const loadPins = () => {
+const loadProfile = () => {
   try {
-    const raw = localStorage.getItem(PINS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    const raw = localStorage.getItem(PROFILE_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch {
-    return [];
+    return {};
   }
 };
 
-const savePins = (pins) => {
-  localStorage.setItem(PINS_KEY, JSON.stringify(pins));
+const saveProfile = (profile) => {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
 };
 
 const nowClock = () =>
@@ -388,6 +408,11 @@ const renderTree = () => {
   const isStandby = localStorage.getItem(HIATO_KEY) === "true";
   treeGrid.innerHTML = "";
   const assets = getAssets();
+  const hudLevel = document.getElementById("hud-level");
+  if (hudLevel) {
+    const total = assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
+    hudLevel.textContent = `Nivel ${Math.round(total)}`;
+  }
 
   assets.forEach((asset) => {
     const sphere = document.createElement("button");
@@ -1059,15 +1084,23 @@ const renderTreeEditorSlots = (dna, assetId) => {
   if (!asset) return;
   const slots = PROTOCOL_SLOTS[assetId] || [];
   asset.profileSlots = asset.profileSlots || {};
-  const pins = loadPins();
-  slots.forEach((slot) => {
+  slots.forEach((slot, index) => {
     const slotEl = document.createElement("div");
-    slotEl.className = `profile-slot profile-slot--${slot.type}`;
+    slotEl.className = `profile-slot profile-slot--${slot.type} slot-animate`;
+    slotEl.style.animationDelay = `${index * 40}ms`;
     slotEl.dataset.slotId = slot.id;
     const label = document.createElement("div");
     label.className = `slot-label${slot.type.startsWith("square") ? " bottom" : ""}`;
     label.textContent = slot.label;
     slotEl.appendChild(label);
+
+    const iconName = SLOT_ICON_BY_ID[slot.id];
+    if (iconName) {
+      const icon = document.createElement("i");
+      icon.className = "slot-icon";
+      icon.setAttribute("data-lucide", iconName);
+      slotEl.appendChild(icon);
+    }
 
     const fields = slot.fields || [{ key: "value", label: slot.label }];
     fields.forEach((field) => {
@@ -1087,36 +1120,6 @@ const renderTreeEditorSlots = (dna, assetId) => {
       slotEl.appendChild(input);
     });
 
-    const pinButton = document.createElement("button");
-    pinButton.className = "silver-button";
-    pinButton.type = "button";
-    const isPinned = pins.some((pin) => pin.slotId === slot.id && pin.assetId === assetId);
-    pinButton.textContent = isPinned ? "Fixado" : "Fixar";
-    pinButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const currentPins = loadPins();
-      const exists = currentPins.find(
-        (pin) => pin.slotId === slot.id && pin.assetId === assetId
-      );
-      if (exists) {
-        savePins(currentPins.filter((pin) => pin !== exists));
-        pinButton.textContent = "Fixar";
-        renderSocial();
-        return;
-      }
-      if (currentPins.length >= 4) return;
-      const data = asset.profileSlots[slot.id] || {};
-      currentPins.push({
-        assetId,
-        slotId: slot.id,
-        label: slot.label,
-        value: JSON.stringify(data),
-      });
-      savePins(currentPins);
-      pinButton.textContent = "Fixado";
-      renderSocial();
-    });
-    slotEl.appendChild(pinButton);
 
     slotEl.addEventListener("click", () => {
       const focusable = slotEl.querySelector("input");
@@ -1281,25 +1284,29 @@ const renderSocial = () => {
   const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
   levelEl.textContent = String(Math.round(total));
 
-  const pins = loadPins();
+  const profile = loadProfile();
+  if (profile.borderColor) {
+    document.documentElement.style.setProperty("--accent-energy", profile.borderColor);
+  }
+  const widgets = Array.isArray(profile.widgets) ? profile.widgets : [];
   pinGrid.innerHTML = "";
-  if (pins.length === 0) {
+  const options = getSlotOptions();
+  if (widgets.length === 0) {
     const empty = document.createElement("div");
     empty.className = "pin-item";
-    empty.textContent = "Sem pins ainda.";
+    empty.textContent = "Sem widgets ainda.";
     pinGrid.appendChild(empty);
   } else {
-    pins.forEach((pin) => {
+    widgets.forEach((widgetId) => {
+      const option = options.find((opt) => opt.id === widgetId);
+      if (!option) return;
+      const [assetId, slotId] = widgetId.split(".");
+      const asset = dna.assets.find((item) => item.id === assetId);
+      const data = asset?.profileSlots?.[slotId] || {};
+      const value = Object.values(data).filter(Boolean).join(" | ") || "-";
       const item = document.createElement("div");
       item.className = "pin-item";
-      let value = "";
-      try {
-        const parsed = JSON.parse(pin.value || "{}");
-        value = Object.values(parsed).filter(Boolean).join(" | ");
-      } catch {
-        value = pin.value || "";
-      }
-      item.textContent = `${pin.label}: ${value || "-"}`;
+      item.textContent = `${option.label}: ${value}`;
       pinGrid.appendChild(item);
     });
   }
@@ -1328,6 +1335,8 @@ const openBronzeModal = (arenaId) => {
   durationInput.value = "60";
   if (durationValue) durationValue.textContent = "60 min";
   seriousToggle.checked = false;
+  const card = modal.querySelector(".bronze-card-elite");
+  if (card) card.classList.remove("serious-on");
   modal.querySelectorAll(".weekday-grid input[type='checkbox']").forEach((input) => {
     input.checked = false;
   });
@@ -1760,6 +1769,15 @@ const init = () => {
       bronzeDurationValue.textContent = `${bronzeDuration.value} min`;
     });
   }
+  const bronzeSerious = document.getElementById("bronze-serious");
+  const bronzeModal = document.getElementById("bronze-modal");
+  if (bronzeSerious && bronzeModal) {
+    bronzeSerious.addEventListener("change", () => {
+      const card = bronzeModal.querySelector(".bronze-card-elite");
+      if (!card) return;
+      card.classList.toggle("serious-on", bronzeSerious.checked);
+    });
+  }
 
   const arenaDossierClose = document.getElementById("arena-dossier-back");
   const arenaDossier = document.getElementById("arena-dossier");
@@ -1779,12 +1797,48 @@ const init = () => {
   const avatar = document.getElementById("hud-avatar");
   const profileModal = document.getElementById("profile-modal");
   const profileClose = document.getElementById("profile-close");
-  const profileLastLogin = document.getElementById("profile-last-login");
+  const profileNickname = document.getElementById("profile-nickname");
+  const profileId = document.getElementById("profile-id");
+  const profileBanner = document.getElementById("profile-banner");
+  const widgetGrid = document.getElementById("widget-grid");
+  const profileEdit = document.getElementById("profile-edit");
   if (avatar && profileModal) {
     avatar.addEventListener("click", () => {
-      const lastLogin = localStorage.getItem(LOGIN_KEY);
-      if (profileLastLogin) {
-        profileLastLogin.textContent = lastLogin ? new Date(lastLogin).toLocaleString("pt-BR") : "-";
+      const profile = loadProfile();
+      if (profileNickname) profileNickname.value = profile.nickname || "";
+      if (profileId) profileId.value = profile.userId || "";
+      if (profileBanner) profileBanner.value = profile.banner || "";
+      if (widgetGrid) {
+        widgetGrid.innerHTML = "";
+        const options = getSlotOptions();
+        const selected = Array.isArray(profile.widgets) ? profile.widgets : [];
+        for (let i = 0; i < 5; i += 1) {
+          const select = document.createElement("select");
+          select.className = "profile-input";
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "Selecionar Slot";
+          select.appendChild(empty);
+          options.forEach((opt) => {
+            const option = document.createElement("option");
+            option.value = opt.id;
+            option.textContent = opt.label;
+            select.appendChild(option);
+          });
+          select.value = selected[i] || "";
+          select.addEventListener("change", () => {
+            const updated = Array.isArray(loadProfile().widgets)
+              ? [...loadProfile().widgets]
+              : [];
+            updated[i] = select.value;
+            saveProfile({ ...loadProfile(), widgets: updated.filter(Boolean) });
+            renderSocial();
+          });
+          const wrapper = document.createElement("div");
+          wrapper.className = "widget-item";
+          wrapper.appendChild(select);
+          widgetGrid.appendChild(wrapper);
+        }
       }
       profileModal.classList.add("is-open");
     });
@@ -1792,6 +1846,19 @@ const init = () => {
   if (profileClose && profileModal) {
     profileClose.addEventListener("click", () => {
       profileModal.classList.remove("is-open");
+    });
+  }
+  if (profileEdit) {
+    profileEdit.addEventListener("click", () => {
+      const profile = loadProfile();
+      const updated = {
+        ...profile,
+        nickname: profileNickname?.value || "",
+        userId: profileId?.value || "",
+        banner: profileBanner?.value || "",
+      };
+      saveProfile(updated);
+      renderSocial();
     });
   }
   const allianceSearch = document.getElementById("alliance-search");

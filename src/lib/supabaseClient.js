@@ -10,4 +10,10 @@ const supabaseAnonKey =
   (typeof process !== "undefined" ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY : undefined) ||
   window.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabaseConfig = {
+  url: supabaseUrl,
+  anonKey: supabaseAnonKey,
+  enabled: Boolean(supabaseUrl && supabaseAnonKey),
+};
+
+export const supabase = supabaseConfig.enabled ? createClient(supabaseUrl, supabaseAnonKey) : null;

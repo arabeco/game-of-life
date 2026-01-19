@@ -1,4 +1,4 @@
-import { supabase } from "./src/lib/supabaseClient.js";
+import { supabase, supabaseConfig } from "./src/lib/supabaseClient.js";
 
 const STORAGE_KEY = "game_of_life.module1_dna";
 const PLANNER_KEY = "game_of_life.planner";
@@ -380,14 +380,45 @@ const applyTheme = (theme) => {
   saveProfile({ ...profile, theme: theme || "gold" });
 };
 
-const uploadToSupabase = async (file, path) => {
-  if (!supabase || !file) return null;
-  const { error } = await supabase.storage.from("avatars").upload(path, file, {
-    upsert: true,
+const logSupabaseError = (context, error) => {
+  if (!error) return;
+  console.error(`[supabase] ${context}`, error);
+};
+
+const isSupabaseEnabled = () => Boolean(supabaseConfig?.enabled && supabase);
+
+const withTimeout = (promise, ms, label) =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timeout ${label} (${ms}ms)`));
+    }, ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
   });
-  if (error) return null;
-  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-  return data?.publicUrl || null;
+
+const uploadToSupabase = async (file, path) => {
+  if (!isSupabaseEnabled() || !file) return null;
+  try {
+    const { error } = await supabase.storage.from("avatars").upload(path, file, {
+      upsert: true,
+    });
+    if (error) {
+      logSupabaseError("storage.upload", error);
+      return null;
+    }
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    return data?.publicUrl || null;
+  } catch (error) {
+    logSupabaseError("storage.upload", error);
+    return null;
+  }
 };
 
 const playMetalClick = () => {
@@ -411,40 +442,57 @@ const playMetalClick = () => {
 };
 
 const ensureSupabaseProfile = async (profile) => {
-  if (!supabase) return;
-  const userId = profile.userId?.replace("@", "").trim();
-  const nickname = profile.nickname?.trim();
-  if (!userId || !nickname) return;
-  const email = `${userId}@gameoflife.local`;
-  const passwordKey = "game_of_life.supabase_pass";
-  let password = localStorage.getItem(passwordKey);
-  if (!password) {
-    password = crypto.randomUUID();
-    localStorage.setItem(passwordKey, password);
+  if (!isSupabaseEnabled()) return;
+  try {
+    const userId = profile.userId?.replace("@", "").trim();
+    const nickname = profile.nickname?.trim();
+    if (!userId || !nickname) return;
+    const email = `${userId}@gameoflife.local`;
+    const passwordKey = "game_of_life.supabase_pass";
+    let password = localStorage.getItem(passwordKey);
+    if (!password) {
+      password = crypto.randomUUID();
+      localStorage.setItem(passwordKey, password);
+    }
+    let auth = await supabase.auth.signInWithPassword({ email, password });
+    if (auth.error) {
+      logSupabaseError("auth.signInWithPassword", auth.error);
+      auth = await supabase.auth.signUp({ email, password });
+      if (auth.error) logSupabaseError("auth.signUp", auth.error);
+    }
+    const user = auth.data?.user;
+    if (!user) return;
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      nickname,
+      user_id: profile.userId,
+      banner: profile.banner || "",
+      avatar_url: profile.avatar || "",
+    });
+    if (error) logSupabaseError("profiles.upsert", error);
+  } catch (error) {
+    logSupabaseError("ensureSupabaseProfile", error);
   }
-  let auth = await supabase.auth.signInWithPassword({ email, password });
-  if (auth.error) {
-    auth = await supabase.auth.signUp({ email, password });
-  }
-  const user = auth.data?.user;
-  if (!user) return;
-  await supabase.from("profiles").upsert({
-    id: user.id,
-    nickname,
-    user_id: profile.userId,
-    banner: profile.banner || "",
-    avatar_url: profile.avatar || "",
-  });
 };
 
 const getSupabaseUser = async () => {
-  if (!supabase) return null;
-  const session = await supabase.auth.getSession();
-  if (session.data?.session?.user) return session.data.session.user;
-  const profile = loadProfile();
-  await ensureSupabaseProfile(profile);
-  const nextSession = await supabase.auth.getSession();
-  return nextSession.data?.session?.user || null;
+  if (!isSupabaseEnabled()) {
+    console.error("[supabase] configuracao ausente ou invalida");
+    return null;
+  }
+  try {
+    const session = await supabase.auth.getSession();
+    if (session.error) logSupabaseError("auth.getSession", session.error);
+    if (session.data?.session?.user) return session.data.session.user;
+    const profile = loadProfile();
+    await ensureSupabaseProfile(profile);
+    const nextSession = await supabase.auth.getSession();
+    if (nextSession.error) logSupabaseError("auth.getSession (retry)", nextSession.error);
+    return nextSession.data?.session?.user || null;
+  } catch (error) {
+    logSupabaseError("getSupabaseUser", error);
+    return null;
+  }
 };
 
 const defaultMissionState = () => ({
@@ -472,36 +520,62 @@ const saveMissionStateLocal = (state) => {
 };
 
 const syncMissionState = async (state) => {
-  const user = await getSupabaseUser();
-  if (!user) return;
-  await supabase.from("user_missions").upsert({
-    user_id: user.id,
-    ...state,
-  });
+  if (!isSupabaseEnabled()) return;
+  try {
+    const user = await getSupabaseUser();
+    if (!user) return;
+    const { error } = await supabase.from("user_missions").upsert({
+      user_id: user.id,
+      ...state,
+    });
+    if (error) logSupabaseError("user_missions.upsert", error);
+  } catch (error) {
+    logSupabaseError("syncMissionState", error);
+  }
 };
 
 const syncProfileTotals = async (nextProfile = {}) => {
-  const user = await getSupabaseUser();
-  if (!user) return;
-  const profile = { ...loadProfile(), ...nextProfile };
-  await supabase.from("profiles").upsert({
-    id: user.id,
-    nickname: profile.nickname || "",
-    user_id: profile.userId || "",
-    banner: profile.banner || "",
-    avatar_url: profile.avatar || "",
-    status: profile.status || "sovereign",
-    total_level: Number(profile.total_level || 0),
-  });
+  if (!isSupabaseEnabled()) return;
+  try {
+    const user = await getSupabaseUser();
+    if (!user) return;
+    const profile = { ...loadProfile(), ...nextProfile };
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      nickname: profile.nickname || "",
+      user_id: profile.userId || "",
+      banner: profile.banner || "",
+      avatar_url: profile.avatar || "",
+      status: profile.status || "sovereign",
+      total_level: Number(profile.total_level || 0),
+    });
+    if (error) logSupabaseError("profiles.upsert (totals)", error);
+  } catch (error) {
+    logSupabaseError("syncProfileTotals", error);
+  }
 };
 
 const fetchMissionState = async () => {
-  const user = await getSupabaseUser();
-  if (!user) return loadMissionStateLocal();
-  const { data } = await supabase.from("user_missions").select("*").eq("user_id", user.id).single();
-  if (!data) return loadMissionStateLocal();
-  const { m1, m2, m3, m4, m5, initiation_finished } = data;
-  return { m1, m2, m3, m4, m5, initiation_finished };
+  if (!isSupabaseEnabled()) return loadMissionStateLocal();
+  try {
+    const user = await getSupabaseUser();
+    if (!user) return loadMissionStateLocal();
+    const { data, error } = await supabase
+      .from("user_missions")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+    if (error) {
+      logSupabaseError("user_missions.select", error);
+      return loadMissionStateLocal();
+    }
+    if (!data) return loadMissionStateLocal();
+    const { m1, m2, m3, m4, m5, initiation_finished } = data;
+    return { m1, m2, m3, m4, m5, initiation_finished };
+  } catch (error) {
+    logSupabaseError("fetchMissionState", error);
+    return loadMissionStateLocal();
+  }
 };
 
 const nowClock = () =>
@@ -652,16 +726,25 @@ const updateIntegrityBar = () => {
 };
 
 const fetchVitalityLogs = async () => {
-  const user = await getSupabaseUser();
-  if (!user) return [];
-  const { data, error } = await supabase
-    .from("action_logs")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(200);
-  if (error) return [];
-  return Array.isArray(data) ? data : [];
+  if (!isSupabaseEnabled()) return [];
+  try {
+    const user = await getSupabaseUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("action_logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) {
+      logSupabaseError("action_logs.select", error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    logSupabaseError("fetchVitalityLogs", error);
+    return [];
+  }
 };
 
 const parseLogTime = (log) => {
@@ -2324,21 +2407,37 @@ const init = () => {
   renderArenas();
   renderSocial();
   applyGlitch();
-  showMissionsLoading(true);
-  fetchMissionState()
-    .then((state) => {
-      missionState = { ...defaultMissionState(), ...(state || {}) };
-      saveMissionStateLocal(missionState);
-      renderInitiationOverlay();
-      checkMissionProgress();
-    })
-    .finally(() => {
-      showMissionsLoading(false);
-    });
-  fetchVitalityLogs().then((logs) => {
-    vitalityLogs = logs;
-    renderTree();
-  });
+  if (!isSupabaseEnabled()) {
+    showMissionsLoading(false);
+    missionState = loadMissionStateLocal();
+    renderInitiationOverlay();
+    checkMissionProgress();
+  } else {
+    showMissionsLoading(true);
+    withTimeout(fetchMissionState(), 5000, "user_missions")
+      .then((state) => {
+        missionState = { ...defaultMissionState(), ...(state || {}) };
+        saveMissionStateLocal(missionState);
+        renderInitiationOverlay();
+        checkMissionProgress();
+      })
+      .catch((error) => {
+        logSupabaseError("fetchMissionState.timeout", error);
+        missionState = loadMissionStateLocal();
+        renderInitiationOverlay();
+      })
+      .finally(() => {
+        showMissionsLoading(false);
+      });
+    withTimeout(fetchVitalityLogs(), 5000, "action_logs")
+      .then((logs) => {
+        vitalityLogs = logs;
+        renderTree();
+      })
+      .catch((error) => {
+        logSupabaseError("fetchVitalityLogs.timeout", error);
+      });
+  }
   if (window.lucide) window.lucide.createIcons();
   const hiatoAck = document.getElementById("hiato-ack");
   if (hiatoAck) {

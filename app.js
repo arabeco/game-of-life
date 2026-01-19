@@ -473,12 +473,10 @@ const initAuth = () => {
   }
 
   if (!isSupabaseEnabled()) {
-    setAuthLocked(true);
     if (warnEl) warnEl.textContent = "Supabase indisponivel. Use Convidado.";
-    return;
   }
 
-  if (googleBtn) {
+  if (googleBtn && isSupabaseEnabled()) {
     googleBtn.addEventListener("click", async () => {
       if (errorEl) errorEl.textContent = "";
       try {
@@ -490,7 +488,7 @@ const initAuth = () => {
     });
   }
 
-  if (emailBtn) {
+  if (emailBtn && isSupabaseEnabled()) {
     emailBtn.addEventListener("click", async () => {
       if (errorEl) errorEl.textContent = "";
       const email = emailInput?.value?.trim();
@@ -512,7 +510,7 @@ const initAuth = () => {
     });
   }
 
-  if (signupBtn) {
+  if (signupBtn && isSupabaseEnabled()) {
     signupBtn.addEventListener("click", async () => {
       if (errorEl) errorEl.textContent = "";
       const email = emailInput?.value?.trim();
@@ -550,6 +548,10 @@ const initAuth = () => {
       initApp();
       if (warnEl) warnEl.textContent = "Dados salvos apenas localmente.";
     });
+  }
+
+  if (!isSupabaseEnabled()) {
+    return;
   }
 
   supabase.auth.onAuthStateChange((_event, session) => {
@@ -2612,6 +2614,7 @@ const initPlanner = () => {
   const timeline = document.getElementById("timeline");
   const bronzeBacklog = document.querySelector(".bronze-backlog");
   const weekGrid = document.getElementById("week-grid");
+  const unscheduleDrop = document.getElementById("unschedule-drop");
   const setView = (mode) => {
     if (viewDay && viewWeek) {
       viewDay.classList.toggle("is-active", mode === "day");
@@ -2650,6 +2653,35 @@ const initPlanner = () => {
       savePlanner({ ...planner, bronzeActions: updated });
       renderPlanner();
       checkMissionProgress();
+    });
+  }
+  if (unscheduleDrop) {
+    unscheduleDrop.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      unscheduleDrop.classList.add("is-over");
+    });
+    unscheduleDrop.addEventListener("dragleave", () => {
+      unscheduleDrop.classList.remove("is-over");
+    });
+    unscheduleDrop.addEventListener("drop", (event) => {
+      event.preventDefault();
+      unscheduleDrop.classList.remove("is-over");
+      const payload = event.dataTransfer?.getData("text/plain");
+      if (!payload || !payload.startsWith("bronze:")) return;
+      const actionId = payload.replace("bronze:", "");
+      const planner = loadPlanner();
+      const updated = planner.bronzeActions.map((action) => {
+        if (action.id !== actionId) return action;
+        return {
+          ...action,
+          status: "backlog",
+          scheduledHour: undefined,
+          scheduledMinute: undefined,
+          scheduledDayOffset: undefined,
+        };
+      });
+      savePlanner({ ...planner, bronzeActions: updated });
+      renderPlanner();
     });
   }
 };

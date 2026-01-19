@@ -56,6 +56,19 @@ body {
   background: radial-gradient(circle at 30% 30%, #a26bff, #4b1f7a 70%);
   box-shadow: 0 0 12px rgba(162, 107, 255, 0.6);
   transform: rotate(-45deg);
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(162, 107, 255, 0.9), rgba(75, 31, 122, 0.6));
+  transform: scale(0.6);
+  opacity: 0.6;
+  animation: core-fill 2.5s ease-in-out infinite;
 }
 
 @keyframes logo-breathe {
@@ -67,6 +80,21 @@ body {
   }
   100% {
     transform: scale(0.96);
+  }
+}
+
+@keyframes core-fill {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  60% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 1;
   }
 }
 
@@ -942,7 +970,7 @@ body {
 .planner-layout {
   position: relative;
   display: grid;
-  grid-template-columns: 220px 1fr 220px;
+  grid-template-columns: 220px 1fr;
   gap: 16px;
   height: calc(100% - 36px);
 }
@@ -1184,6 +1212,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 12px;
 }
 
 .bronze-list {
@@ -1193,8 +1222,8 @@ body {
 }
 
 .bronze-item {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 8px;
   border: 1px solid rgba(182, 128, 74, 0.6);
   background: rgba(24, 18, 14, 0.9);
@@ -1225,6 +1254,15 @@ body {
 .bronze-item i {
   width: 20px;
   height: 20px;
+}
+
+.oracle-phrase {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(217, 182, 92, 0.25);
+  color: #e8d9a8;
+  background: rgba(16, 16, 16, 0.85);
+  font-size: 12px;
 }
 
 .notes-toggle {
@@ -1394,9 +1432,6 @@ button i {
     grid-column: 1;
   }
 
-  .bronze-backlog {
-    order: 3;
-  }
 
   .tree-grid {
     width: 100%;

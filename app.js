@@ -937,14 +937,19 @@ const openTreeEditor = (assetId) => {
   if (!asset) return;
   const modal = document.getElementById("tree-edit-modal");
   const title = document.getElementById("tree-edit-title");
-  const levelInput = document.getElementById("tree-edit-level");
   const levelText = document.getElementById("tree-edit-level-text");
+  const phraseText = document.getElementById("tree-edit-phrase");
   const icon = document.getElementById("tree-edit-icon");
   const linkedArenasList = document.getElementById("linked-arenas-list");
-  if (!modal || !title || !levelInput) return;
+  if (!modal || !title || !levelText) return;
   title.textContent = `Editar ${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
-  levelInput.value = String(Math.round(Number(asset.level || 0)));
-  if (levelText) levelText.textContent = `Nivel ${Math.round(Number(asset.level || 0))}`;
+  const levelValue = Math.round(Number(asset.level || 0));
+  levelText.textContent = `Nivel ${levelValue}`;
+  if (phraseText) {
+    const phraseKey = ASSET_TO_PHRASE[asset.id];
+    const phrases = phraseKey ? MASTERY_PHRASES[phraseKey] : [];
+    phraseText.textContent = phrases[Math.max(0, Math.min(9, levelValue - 1))] || "";
+  }
   if (icon) {
     icon.setAttribute("data-lucide", ICON_BY_ID[asset.id] ?? "circle");
     if (window.lucide) window.lucide.createIcons();
@@ -1491,30 +1496,27 @@ const init = () => {
       arenaDossier.classList.remove("is-open");
     });
   }
-  const treeSave = document.getElementById("tree-edit-save");
+  const avatar = document.getElementById("hud-avatar");
+  const profileModal = document.getElementById("profile-modal");
+  const profileClose = document.getElementById("profile-close");
+  const profileLastLogin = document.getElementById("profile-last-login");
+  if (avatar && profileModal) {
+    avatar.addEventListener("click", () => {
+      const lastLogin = localStorage.getItem(LOGIN_KEY);
+      if (profileLastLogin) {
+        profileLastLogin.textContent = lastLogin ? new Date(lastLogin).toLocaleString("pt-BR") : "-";
+      }
+      profileModal.classList.add("is-open");
+    });
+  }
+  if (profileClose && profileModal) {
+    profileClose.addEventListener("click", () => {
+      profileModal.classList.remove("is-open");
+    });
+  }
   const treeCancel = document.getElementById("tree-edit-cancel");
   const treeSlotAdd = document.getElementById("tree-slot-add");
   const treeSlotName = document.getElementById("tree-slot-name");
-  if (treeSave) {
-    treeSave.addEventListener("click", () => {
-      const modal = document.getElementById("tree-edit-modal");
-      const levelInput = document.getElementById("tree-edit-level");
-      const levelText = document.getElementById("tree-edit-level-text");
-      if (!modal || !levelInput) return;
-      const assetId = modal.dataset.assetId;
-      if (!assetId) return;
-      const dna = seedDNAIfMissing();
-      const asset = getAssetFromDNA(dna, assetId);
-      if (!asset) return;
-      const raw = Number(levelInput.value || 0);
-      asset.level = Math.max(0, Math.min(10, Math.round(raw)));
-      if (levelText) levelText.textContent = `Nivel ${asset.level}`;
-      dna.lastUpdatedAt = new Date().toISOString();
-      saveDNA(dna);
-      renderTree();
-      closeTreeEditor();
-    });
-  }
   if (treeCancel) {
     treeCancel.addEventListener("click", () => {
       closeTreeEditor();
@@ -1552,10 +1554,12 @@ document.addEventListener("DOMContentLoaded", init);
 window.addEventListener("load", () => {
   const loading = document.getElementById("loading-screen");
   if (!loading) return;
-  loading.classList.add("fade-out");
-  const handle = () => {
-    loading.removeEventListener("transitionend", handle);
-    loading.remove();
-  };
-  loading.addEventListener("transitionend", handle);
+  setTimeout(() => {
+    loading.classList.add("fade-out");
+    const handle = () => {
+      loading.removeEventListener("transitionend", handle);
+      loading.remove();
+    };
+    loading.addEventListener("transitionend", handle);
+  }, 2500);
 });

@@ -52,6 +52,10 @@
             <button class="toggle-button is-active" id="view-day">Dia</button>
             <button class="toggle-button" id="view-week">Semana</button>
           </div>
+          <div class="bronze-backlog" id="bronze-backlog">
+            <div class="drawer-title">Acoes de Bronze</div>
+            <div class="bronze-list" id="bronze-list"></div>
+          </div>
           <div class="planner-layout">
             <aside class="backlog-drawer">
               <div class="drawer-title">Backlog</div>
@@ -62,11 +66,6 @@
 
             <div class="timeline" id="timeline"></div>
             <div class="week-grid is-hidden" id="week-grid"></div>
-
-            <aside class="bronze-backlog">
-              <div class="drawer-title">Acoes de Bronze</div>
-              <div class="bronze-list" id="bronze-list"></div>
-            </aside>
 
             <div class="notes-panel">
               <button class="notes-toggle" id="notes-toggle" aria-label="Notas">
@@ -177,8 +176,7 @@
           </button>
         </div>
         <div class="modal-body dossier-body">
-          <label class="field-label" for="tree-edit-level">Nivel (0-10)</label>
-          <input type="number" id="tree-edit-level" min="0" max="10" step="1" />
+          <div class="oracle-phrase" id="tree-edit-phrase"></div>
           <div class="status-section">
             <div class="slot-header">Status Tecnicos</div>
             <div class="status-list" id="tree-status-list"></div>
@@ -198,9 +196,6 @@
             <div class="linked-arenas-list" id="linked-arenas-list"></div>
           </div>
         </div>
-        <button class="primary-button" id="tree-edit-save" aria-label="Salvar">
-          <i data-lucide="check"></i>
-        </button>
       </div>
     </div>
 
@@ -289,6 +284,21 @@
           <div class="arena-macro" id="arena-dossier-macro">Sem objetivo</div>
           <div class="slot-header">Acoes de Bronze</div>
           <div class="linked-arenas-list" id="arena-dossier-bronze"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="profile-modal">
+      <div class="modal-card dossier-card">
+        <div class="dossier-header">
+          <div class="drawer-title">Resumo de Perfil</div>
+          <button class="close-button" id="profile-close" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body dossier-body">
+          <div class="arena-macro">Status: Ativo</div>
+          <div class="arena-macro">Ultimo Login: <span id="profile-last-login">-</span></div>
         </div>
       </div>
     </div>

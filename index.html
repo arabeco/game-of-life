@@ -101,30 +101,6 @@
               <i data-lucide="folder"></i>
               Checklist de Saude
             </button>
-            <div class="notes-content" id="notes-content">
-              <ul class="logistics-list">
-                <li class="logistics-item">
-                  <input type="checkbox" /> Agua
-                  <button class="inline-btn">Editar</button>
-                  <button class="inline-btn">Excluir</button>
-                </li>
-                <li class="logistics-item">
-                  <input type="checkbox" /> Alimentacao
-                  <button class="inline-btn">Editar</button>
-                  <button class="inline-btn">Excluir</button>
-                </li>
-                <li class="logistics-item">
-                  <input type="checkbox" /> Sono
-                  <button class="inline-btn">Editar</button>
-                  <button class="inline-btn">Excluir</button>
-                </li>
-                <li class="logistics-item">
-                  <input type="checkbox" /> Limpeza
-                  <button class="inline-btn">Editar</button>
-                  <button class="inline-btn">Excluir</button>
-                </li>
-              </ul>
-            </div>
           </div>
           <div class="planner-toggle">
             <button class="toggle-button" id="day-prev" aria-label="Dia anterior">◀</button>
@@ -321,6 +297,24 @@
       </div>
     </div>
 
+    <div id="checklist-modal" class="modal">
+      <div class="modal-card dossier-card checklist-card">
+        <div class="dossier-header">
+          <div class="drawer-title">Checklist Diario</div>
+          <button class="close-button" id="checklist-close" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="checklist-list" id="checklist-list"></div>
+          <button class="silver-button checklist-add" id="checklist-add">
+            <i data-lucide="plus"></i>
+            Adicionar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal" id="hiato-modal">
       <div class="modal-card">
         <div class="drawer-title">Restauracao de Sistema</div>
@@ -474,6 +468,7 @@
             </div>
             <input type="file" id="profile-avatar-file" class="hidden-file" accept="image/*" />
           </div>
+          <div class="profile-level" id="profile-level">Nivel 0</div>
           <div class="profile-name">
             <input type="text" id="profile-identity" class="profile-input" placeholder="Nickname / @ID" />
           </div>
@@ -484,6 +479,7 @@
         </div>
         <div class="profile-widgets">
           <div class="slot-header">Widgets</div>
+          <div class="widget-display" id="widget-display"></div>
           <div class="widget-grid" id="widget-grid"></div>
         </div>
       </div>

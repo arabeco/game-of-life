@@ -1003,6 +1003,28 @@ const savePlanner = (planner) => {
   localStorage.setItem(PLANNER_KEY, JSON.stringify(planner));
 };
 
+const DEFAULT_CHECKLIST_ITEMS = ["Agua", "Alimentacao", "Sono", "Limpeza"];
+
+const loadChecklistItems = () => {
+  const planner = loadPlanner();
+  const current = planner.logistics?.items;
+  if (Array.isArray(current) && current.length) return current;
+  const seeded = DEFAULT_CHECKLIST_ITEMS.map((label) => ({
+    id: crypto.randomUUID(),
+    label,
+    done: false,
+  }));
+  planner.logistics = { ...(planner.logistics || {}), items: seeded };
+  savePlanner(planner);
+  return seeded;
+};
+
+const saveChecklistItems = (items) => {
+  const planner = loadPlanner();
+  planner.logistics = { ...(planner.logistics || {}), items };
+  savePlanner(planner);
+};
+
 let plannerDayOffset = 0;
 let missionState = defaultMissionState();
 let bypassInitiation = false;
@@ -1828,6 +1850,12 @@ const renderTreeEditorSlots = (dna, assetId) => {
   if (!asset) return;
   const slots = getDossierSlots(assetId);
   asset.profileSlots = asset.profileSlots || {};
+  const getSlotDisplayText = (slot) => {
+    const data = asset.profileSlots?.[slot.id] || {};
+    const fields = slot.fields || [{ key: "value" }];
+    const key = fields[0]?.key || "value";
+    return data[key] || "";
+  };
   slots.forEach((slot, index) => {
     const slotEl = document.createElement("div");
     slotEl.className = `profile-slot profile-slot--${slot.type} slot-animate`;
@@ -1837,6 +1865,11 @@ const renderTreeEditorSlots = (dna, assetId) => {
     label.className = `slot-label${slot.type.startsWith("square") ? " bottom" : ""}`;
     label.textContent = slot.label;
     slotEl.appendChild(label);
+
+    const caption = document.createElement("div");
+    caption.className = `slot-caption ${slot.type.startsWith("square") ? "bottom" : "top"}`;
+    caption.textContent = getSlotDisplayText(slot);
+    slotEl.appendChild(caption);
 
     const iconName = SLOT_ICON_BY_ID[slot.id];
     if (iconName) {
@@ -1895,6 +1928,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
           ...(asset.profileSlots[slot.id] || {}),
           [field.key]: input.value,
         };
+        caption.textContent = getSlotDisplayText(slot);
         dna.lastUpdatedAt = new Date().toISOString();
         saveDNA(dna);
         renderSocial();
@@ -2122,6 +2156,7 @@ const renderSocial = () => {
   const nickEl = document.getElementById("social-nick");
   const idEl = document.getElementById("social-id");
   const socialAvatar = document.querySelector(".social-avatar");
+  const hudAvatar = document.getElementById("hud-avatar");
   if (!levelEl) return;
   const dna = seedDNAIfMissing();
   const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
@@ -2139,6 +2174,71 @@ const renderSocial = () => {
     socialAvatar.style.backgroundSize = "cover";
     socialAvatar.style.backgroundPosition = "center";
   }
+  if (hudAvatar && profile.avatar) {
+    hudAvatar.style.backgroundImage = `url(${profile.avatar})`;
+    hudAvatar.style.backgroundSize = "cover";
+    hudAvatar.style.backgroundPosition = "center";
+  }
+};
+
+const renderProfileWidgetDisplay = (profile, dna) => {
+  const container = document.getElementById("widget-display");
+  if (!container) return;
+  container.innerHTML = "";
+  const widgets = Array.isArray(profile.widgets) ? profile.widgets : [];
+  if (!widgets.length) return;
+
+  const resolveSlotRef = (widgetId) => {
+    if (!widgetId) return null;
+    const parts = widgetId.split(".");
+    if (parts.length < 2) return null;
+    const assetId = parts[0];
+    let slotId = widgetId;
+    if (parts[1] === assetId) {
+      slotId = parts.slice(1).join(".");
+    }
+    if (!slotId.startsWith(`${assetId}.`)) {
+      slotId = `${assetId}.${parts.slice(1).join(".")}`;
+    }
+    return { assetId, slotId };
+  };
+
+  const getSlotLabel = (assetId, slotId) => {
+    const slots = getDossierSlots(assetId);
+    const slot = slots.find((item) => item.id === slotId);
+    return slot?.label || slotId.split(".").slice(1).join(" ") || "Slot";
+  };
+
+  const getSlotValue = (asset, slotId) => {
+    const data = asset.profileSlots?.[slotId] || {};
+    const slots = getDossierSlots(asset.id);
+    const slot = slots.find((item) => item.id === slotId);
+    const fields = slot?.fields || [{ key: "value" }];
+    const key = fields[0]?.key || "value";
+    return data[key] || "";
+  };
+
+  widgets.forEach((widgetId) => {
+    const ref = resolveSlotRef(widgetId);
+    if (!ref) return;
+    const asset = getAssetFromDNA(dna, ref.assetId);
+    if (!asset) return;
+    const value = getSlotValue(asset, ref.slotId);
+    const label = getSlotLabel(ref.assetId, ref.slotId);
+    const image = asset.profileSlots?.[ref.slotId]?.image;
+    const card = document.createElement("div");
+    card.className = `widget-card${image ? " has-image" : ""}`;
+    if (image) card.style.backgroundImage = `url(${image})`;
+    const labelEl = document.createElement("div");
+    labelEl.className = "widget-label";
+    labelEl.textContent = label;
+    const valueEl = document.createElement("div");
+    valueEl.className = "widget-value";
+    valueEl.textContent = value || "Sem dado";
+    card.appendChild(labelEl);
+    card.appendChild(valueEl);
+    container.appendChild(card);
+  });
 };
 
 const openBronzeModal = (arenaId) => {
@@ -2725,10 +2825,89 @@ const initPlanner = () => {
   renderPlanner();
   updateDayLabel();
   const notesToggle = document.getElementById("notes-toggle");
-  const notesContent = document.getElementById("notes-content");
-  if (notesToggle && notesContent) {
+  const checklistModal = document.getElementById("checklist-modal");
+  const checklistClose = document.getElementById("checklist-close");
+  const checklistAdd = document.getElementById("checklist-add");
+  const checklistList = document.getElementById("checklist-list");
+  const renderChecklistModal = (focusId) => {
+    if (!checklistList) return;
+    const items = loadChecklistItems();
+    checklistList.innerHTML = "";
+    items.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = `checklist-item${item.done ? " is-done" : ""}`;
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = Boolean(item.done);
+      checkbox.addEventListener("change", () => {
+        const updated = loadChecklistItems().map((entry) =>
+          entry.id === item.id ? { ...entry, done: checkbox.checked } : entry,
+        );
+        saveChecklistItems(updated);
+        renderChecklistModal(item.id);
+      });
+      const input = document.createElement("input");
+      input.className = "checklist-input";
+      input.value = item.label || "";
+      input.addEventListener("change", () => {
+        const updated = loadChecklistItems().map((entry) =>
+          entry.id === item.id ? { ...entry, label: input.value.trim() } : entry,
+        );
+        saveChecklistItems(updated);
+      });
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") input.blur();
+      });
+      const actions = document.createElement("div");
+      actions.className = "checklist-actions";
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "checklist-icon";
+      editBtn.innerHTML = '<i data-lucide="pencil"></i>';
+      editBtn.addEventListener("click", () => input.focus());
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "checklist-icon";
+      deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
+      deleteBtn.addEventListener("click", () => {
+        const updated = loadChecklistItems().filter((entry) => entry.id !== item.id);
+        saveChecklistItems(updated);
+        renderChecklistModal();
+      });
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+      row.appendChild(checkbox);
+      row.appendChild(input);
+      row.appendChild(actions);
+      checklistList.appendChild(row);
+      if (focusId && focusId === item.id) {
+        setTimeout(() => input.focus(), 0);
+      }
+    });
+    if (window.lucide) window.lucide.createIcons();
+  };
+
+  if (notesToggle && checklistModal) {
     notesToggle.addEventListener("click", () => {
-      notesContent.classList.toggle("is-collapsed");
+      renderChecklistModal();
+      checklistModal.classList.add("is-open");
+    });
+  }
+  if (checklistClose && checklistModal) {
+    checklistClose.addEventListener("click", () => checklistModal.classList.remove("is-open"));
+  }
+  if (checklistModal) {
+    checklistModal.addEventListener("click", (event) => {
+      if (event.target === checklistModal) checklistModal.classList.remove("is-open");
+    });
+  }
+  if (checklistAdd) {
+    checklistAdd.addEventListener("click", () => {
+      const items = loadChecklistItems();
+      const id = crypto.randomUUID();
+      const updated = [...items, { id, label: "Nova tarefa", done: false }];
+      saveChecklistItems(updated);
+      renderChecklistModal(id);
     });
   }
   const dayPrev = document.getElementById("day-prev");
@@ -3061,6 +3240,7 @@ const initApp = () => {
   const profileIdentity = document.getElementById("profile-identity");
   const profileBanner = document.getElementById("profile-banner");
   const widgetGrid = document.getElementById("widget-grid");
+  const profileLevel = document.getElementById("profile-level");
   const profileEdit = document.getElementById("profile-edit");
   const profileAvatarFile = document.getElementById("profile-avatar-file");
   const profileBannerFile = document.getElementById("profile-banner-file");
@@ -3068,6 +3248,9 @@ const initApp = () => {
   if (avatar && profileModal) {
     avatar.addEventListener("click", () => {
       const profile = loadProfile();
+      const dna = seedDNAIfMissing();
+      const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
+      if (profileLevel) profileLevel.textContent = `Nivel ${Math.round(total)}`;
       if (profileIdentity) {
         profileIdentity.value = profile.userId || profile.nickname || "";
       }
@@ -3105,6 +3288,7 @@ const initApp = () => {
             updated[i] = select.value;
             saveProfile({ ...loadProfile(), widgets: updated.filter(Boolean) });
             renderSocial();
+            renderProfileWidgetDisplay(loadProfile(), seedDNAIfMissing());
           });
           const wrapper = document.createElement("div");
           wrapper.className = "widget-item";
@@ -3112,11 +3296,17 @@ const initApp = () => {
           widgetGrid.appendChild(wrapper);
         }
       }
+      renderProfileWidgetDisplay(profile, seedDNAIfMissing());
       profileModal.classList.add("is-open");
     });
   }
   if (hudEdit && profileModal) {
     hudEdit.addEventListener("click", () => {
+      const profile = loadProfile();
+      const dna = seedDNAIfMissing();
+      const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
+      if (profileLevel) profileLevel.textContent = `Nivel ${Math.round(total)}`;
+      renderProfileWidgetDisplay(profile, dna);
       profileModal.classList.add("is-open");
       if (profileIdentity) profileIdentity.focus();
     });

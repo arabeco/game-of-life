@@ -37,6 +37,162 @@ const ICON_BY_ID = {
   kether: "crown",
 };
 const BRONZE_ICONS = ["dumbbell", "book", "code", "dollar-sign", "flame", "leaf", "coffee", "music"];
+const MASTERY_PHRASES = {
+  gratidao: [
+    "Ódio constante",
+    "Reclamação automática",
+    "Vitimismo",
+    "Indiferença",
+    "Agradecimento Social: Digo 'obrigado' por educação, mas não sinto a emoção real.",
+    "Otimismo básico",
+    "Antifrágil",
+    "Flow intermitente",
+    "Bênção constante",
+    "Unidade Absoluta",
+  ],
+  espiritualidade: [
+    "Desconexão total",
+    "Ceticismo agressivo",
+    "Curiosidade superficial",
+    "Ritualista vazio",
+    "Buscador",
+    "Intuitivo",
+    "Praticante constante",
+    "Místico",
+    "Iluminado",
+    "Avatar",
+  ],
+  mente: [
+    "Colapso",
+    "Reatividade",
+    "Ruído constante",
+    "Observador iniciante",
+    "Foco básico",
+    "Concentração",
+    "Shadow Worker",
+    "Arquiteto Mental",
+    "Serenidade",
+    "No-Mind",
+  ],
+  verdade: [
+    "Mentiroso compulsivo",
+    "Máscara social",
+    "Confusão de identidade",
+    "Sincero parcial",
+    "Autoconsciente",
+    "Integridade",
+    "Transparência",
+    "Autenticidade Radical",
+    "Profeta",
+    "A Verdade",
+  ],
+  inspiracao: [
+    "Inércia",
+    "Sonhador passivo",
+    "Iniciador",
+    "Executor básico",
+    "Criativo",
+    "Realizador",
+    "Mentor",
+    "Visionário",
+    "Mestre",
+    "Demiurgo",
+  ],
+  amor: [
+    "Ódio social",
+    "Egoísmo",
+    "Dependência",
+    "Cordialidade",
+    "Empático",
+    "Companheiro",
+    "Doador",
+    "Magnetismo",
+    "Amor Incondicional",
+    "Amor Ágape",
+  ],
+  financas: [
+    "Miséria",
+    "Sobrevivência",
+    "Insegurança",
+    "Estabilidade",
+    "Poupador Iniciante",
+    "Investidor",
+    "Confortável",
+    "Riqueza",
+    "Filantropo",
+    "Soberano",
+  ],
+  trabalho: [
+    "Inutilidade",
+    "Procrastinador",
+    "Operacional",
+    "Esforçado",
+    "Profissional",
+    "Especialista",
+    "Gestor",
+    "Autoridade",
+    "Ícone",
+    "A Lenda",
+  ],
+  autenticidade: [
+    "Anedonia",
+    "Copiador",
+    "Amador",
+    "Entusiasta",
+    "Expressivo",
+    "Talentoso",
+    "Virtuoso",
+    "Original",
+    "Inspirador",
+    "Criança Divina",
+  ],
+  fisico: [
+    "Colapso",
+    "Frágil",
+    "Iniciante",
+    "Ativo",
+    "Saudável",
+    "Acrobata",
+    "Atleta Amador",
+    "Guerreiro",
+    "Espécime",
+    "Imortal",
+  ],
+};
+const ASSET_TO_PHRASE = {
+  kether: "gratidao",
+  chokmah: "espiritualidade",
+  binah: "mente",
+  geburah: "verdade",
+  chesed: "inspiracao",
+  tiphareth: "amor",
+  netzach: "financas",
+  hod: "trabalho",
+  yesod: "autenticidade",
+  malkuth: "fisico",
+};
+const WEEKDAYS = [
+  { label: "SEG", key: "S" },
+  { label: "TER", key: "T" },
+  { label: "QUA", key: "Q" },
+  { label: "QUI", key: "Q2" },
+  { label: "SEX", key: "S2" },
+  { label: "SAB", key: "S3" },
+  { label: "DOM", key: "D" },
+];
+
+const parseDurationToMinutes = (raw) => {
+  if (!raw) return 30;
+  const value = raw.toLowerCase().replace(/\s/g, "");
+  const hourMatch = value.match(/(\d+)\s*h/);
+  const minMatch = value.match(/(\d+)\s*m/);
+  const hours = hourMatch ? Number(hourMatch[1]) : 0;
+  const minutes = minMatch ? Number(minMatch[1]) : 0;
+  if (hours || minutes) return hours * 60 + minutes;
+  const asNumber = Number(value);
+  if (!Number.isNaN(asNumber)) return asNumber;
+  return 30;
+};
 
 const nowClock = () =>
   new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -146,6 +302,79 @@ const buildBronzeElement = (action) => {
   return bronze;
 };
 
+const renderWeekView = () => {
+  const weekGrid = document.getElementById("week-grid");
+  if (!weekGrid) return;
+  const planner = loadPlanner();
+  weekGrid.innerHTML = "";
+  WEEKDAYS.forEach((day) => {
+    const column = document.createElement("div");
+    column.className = "week-column";
+    const label = document.createElement("div");
+    label.className = "week-day";
+    label.textContent = day.label;
+    column.appendChild(label);
+    planner.bronzeActions
+      .filter((action) => (action.weekdays || []).includes(day.key))
+      .forEach((action) => {
+        const item = document.createElement("div");
+        item.className = "week-item";
+        const icon = document.createElement("i");
+        icon.setAttribute("data-lucide", action.icon || "circle");
+        const title = document.createElement("span");
+        const duration = action.durationMinutes ? `${action.durationMinutes}m` : "";
+        title.textContent = `${action.title || "Acao"} ${duration}`.trim();
+        item.appendChild(icon);
+        item.appendChild(title);
+        column.appendChild(item);
+      });
+    weekGrid.appendChild(column);
+  });
+  if (window.lucide) window.lucide.createIcons();
+};
+
+const buildBronzeBlock = (action) => {
+  const block = document.createElement("div");
+  block.className = "bronze-block";
+  block.dataset.id = action.id;
+  if (action.status === "done") block.classList.add("done");
+  if (!action.locked && action.status === "scheduled") {
+    block.draggable = true;
+    block.addEventListener("dragstart", (event) => {
+      event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
+    });
+  }
+  const icon = document.createElement("i");
+  icon.className = "bronze-icon";
+  icon.setAttribute("data-lucide", action.icon || "circle");
+  const title = document.createElement("div");
+  title.className = "bronze-title";
+  title.textContent = action.title || "Acao";
+  const check = document.createElement("button");
+  check.type = "button";
+  check.className = "bronze-check";
+  check.innerHTML = '<i data-lucide="check"></i>';
+  check.addEventListener("click", () => {
+    const planner = loadPlanner();
+    const updated = planner.bronzeActions.map((item) => {
+      if (item.id !== action.id) return item;
+      const nextStatus = item.status === "done" ? "scheduled" : "done";
+      return { ...item, status: nextStatus };
+    });
+    const nextAction = updated.find((item) => item.id === action.id);
+    if (nextAction?.arenaId) {
+      updateArenaCountsForBronze(nextAction.arenaId, nextAction.status === "done" ? 1 : -1);
+    }
+    savePlanner({ ...planner, bronzeActions: updated });
+    renderPlanner();
+    renderArenas();
+  });
+  block.appendChild(icon);
+  block.appendChild(title);
+  block.appendChild(check);
+  return block;
+};
+
 const createPlannerActionFromArena = (arena) => {
   const planner = loadPlanner();
   const action = {
@@ -209,6 +438,42 @@ const updateGlobalArenaProgress = (arenaId, pills) => {
   }
 };
 
+const updateArenaCountsForBronze = (arenaId, delta) => {
+  const arenas = loadArenas();
+  const updated = arenas.map((arena) => {
+    if (arena.id !== arenaId) return arena;
+    if (!arena.targetCount) return arena;
+    const current = Number(arena.completedCount || 0);
+    const next = Math.max(0, Math.min(arena.targetCount, current + delta));
+    const completion = arena.targetCount
+      ? Math.round((next / arena.targetCount) * 100)
+      : arena.completion;
+    return { ...arena, completedCount: next, completion };
+  });
+  saveArenas(updated);
+
+  try {
+    const dnaRaw = localStorage.getItem(STORAGE_KEY);
+    if (!dnaRaw) return;
+    const dna = JSON.parse(dnaRaw);
+    const existing = Array.isArray(dna.arenas) ? dna.arenas : [];
+    const merged = existing.map((arena) => {
+      if (arena.id !== arenaId) return arena;
+      if (!arena.targetCount) return arena;
+      const current = Number(arena.completedCount || 0);
+      const next = Math.max(0, Math.min(arena.targetCount, current + delta));
+      const completion = arena.targetCount
+        ? Math.round((next / arena.targetCount) * 100)
+        : arena.completion;
+      return { ...arena, completedCount: next, completion };
+    });
+    dna.arenas = merged;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dna));
+  } catch {
+    return;
+  }
+};
+
 const renderArenas = () => {
   const arenaList = document.getElementById("arena-list");
   if (!arenaList) return;
@@ -229,7 +494,11 @@ const renderArenas = () => {
     title.textContent = arena.title || "Arena";
     const progress = document.createElement("div");
     progress.className = "arena-progress";
-    progress.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+    if (arena.targetCount) {
+      progress.textContent = `${Number(arena.completedCount || 0)}/${arena.targetCount}`;
+    } else {
+      progress.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+    }
     const assetLabel = document.createElement("div");
     assetLabel.className = "arena-progress";
     assetLabel.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
@@ -238,6 +507,10 @@ const renderArenas = () => {
     addBronze.type = "button";
     addBronze.textContent = "Adicionar Bronze";
     addBronze.addEventListener("click", () => openBronzeModal(arena.id));
+    card.addEventListener("click", (event) => {
+      if (event.target === addBronze) return;
+      openArenaDossier(arena.id);
+    });
     card.appendChild(title);
     card.appendChild(progress);
     card.appendChild(assetLabel);
@@ -348,6 +621,10 @@ const renderPlanner = () => {
     arenas.find((arena) => arena.id === arenaId)?.title ?? "Arena";
 
   timeline.innerHTML = "";
+  const bronzeLayer = document.createElement("div");
+  bronzeLayer.style.position = "absolute";
+  bronzeLayer.style.inset = "0";
+  bronzeLayer.style.pointerEvents = "none";
   for (let hour = 6; hour <= 22; hour += 1) {
     const slot = document.createElement("div");
     slot.className = "time-slot";
@@ -361,15 +638,9 @@ const renderPlanner = () => {
     const pillsForHour = planner.pills.filter(
       (pill) => pill.status === "scheduled" && pill.scheduledHour === hour
     );
-    const bronzeForHour = planner.bronzeActions.filter(
-      (action) => action.status === "scheduled" && action.scheduledHour === hour
-    );
 
     pillsForHour.forEach((pill) => {
       slot.appendChild(buildPillElement(pill, getArenaTitle(pill.arenaId)));
-    });
-    bronzeForHour.forEach((action) => {
-      slot.appendChild(buildBronzeElement(action));
     });
 
     slot.addEventListener("dragover", (event) => {
@@ -385,7 +656,14 @@ const renderPlanner = () => {
         const updated = planner.bronzeActions.map((action) => {
           if (action.id !== actionId) return action;
           const locked = action.serious ? true : action.locked;
-          return { ...action, status: "scheduled", scheduledHour: hour, locked };
+          if (action.locked && action.status === "scheduled") return action;
+          return {
+            ...action,
+            status: "scheduled",
+            scheduledHour: hour,
+            scheduledMinute: 0,
+            locked,
+          };
         });
         savePlanner({ ...planner, bronzeActions: updated });
         renderPlanner();
@@ -402,6 +680,22 @@ const renderPlanner = () => {
 
     timeline.appendChild(slot);
   }
+
+  const timelineTopPadding = 16;
+  planner.bronzeActions
+    .filter((action) => action.status === "scheduled" || action.status === "done")
+    .forEach((action) => {
+      const startHour = Number(action.scheduledHour || 6);
+      const startMinute = Number(action.scheduledMinute || 0);
+      const duration = Number(action.durationMinutes || 30);
+      const block = buildBronzeBlock(action);
+      const top = timelineTopPadding + (startHour - 6) * 60 + startMinute;
+      block.style.top = `${top}px`;
+      block.style.height = `${Math.max(30, duration)}px`;
+      block.style.pointerEvents = "auto";
+      bronzeLayer.appendChild(block);
+    });
+  timeline.appendChild(bronzeLayer);
 
   backlogList.innerHTML = "";
   const backlogPills = planner.pills.filter((pill) => pill.status === "backlog");
@@ -430,6 +724,7 @@ const renderPlanner = () => {
   }
 
   if (window.lucide) window.lucide.createIcons();
+  renderWeekView();
 };
 
 const buildPillElement = (pill, arenaTitle) => {
@@ -672,12 +967,19 @@ const openTreeEditor = (assetId) => {
         const name = document.createElement("span");
         name.textContent = arena.title || "Arena";
         const pct = document.createElement("span");
-        pct.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+        if (arena.targetCount) {
+          pct.textContent = `${Number(arena.completedCount || 0)}/${arena.targetCount}`;
+        } else {
+          pct.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+        }
         const actionButton = document.createElement("button");
         actionButton.type = "button";
         actionButton.textContent = "Gerar Acao";
         actionButton.addEventListener("click", () => {
           createPlannerActionFromArena(arena);
+        });
+        row.addEventListener("click", () => {
+          openArenaDossier(arena.id);
         });
         row.appendChild(name);
         row.appendChild(pct);
@@ -700,7 +1002,8 @@ const openArenaModal = () => {
   const modal = document.getElementById("arena-modal");
   const select = document.getElementById("arena-asset");
   const title = document.getElementById("arena-title");
-  if (!modal || !select || !title) return;
+  const target = document.getElementById("arena-target");
+  if (!modal || !select || !title || !target) return;
   select.innerHTML = "";
   SEPHIROT.forEach((asset) => {
     const option = document.createElement("option");
@@ -709,6 +1012,7 @@ const openArenaModal = () => {
     select.appendChild(option);
   });
   title.value = "";
+  target.value = "";
   modal.classList.add("is-open");
 };
 
@@ -718,15 +1022,63 @@ const closeArenaModal = () => {
   modal.classList.remove("is-open");
 };
 
+const openArenaDossier = (arenaId) => {
+  const modal = document.getElementById("arena-dossier");
+  const title = document.getElementById("arena-dossier-title");
+  const progress = document.getElementById("arena-dossier-progress");
+  const macro = document.getElementById("arena-dossier-macro");
+  const bronzeList = document.getElementById("arena-dossier-bronze");
+  if (!modal || !title || !progress || !macro || !bronzeList) return;
+  const arenas = loadArenas();
+  const arena = arenas.find((item) => item.id === arenaId);
+  if (!arena) return;
+  title.textContent = arena.title || "Arena";
+  if (arena.targetCount) {
+    progress.textContent = `${Number(arena.completedCount || 0)}/${arena.targetCount}`;
+  } else {
+    progress.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+  }
+  macro.textContent = arena.targetCount
+    ? `Meta: ${arena.targetCount} acoes`
+    : "Meta: livre";
+  bronzeList.innerHTML = "";
+  const planner = loadPlanner();
+  const actions = planner.bronzeActions.filter((action) => action.arenaId === arenaId);
+  if (actions.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "arena-empty";
+    empty.textContent = "Sem acoes de bronze.";
+    bronzeList.appendChild(empty);
+  } else {
+    actions.forEach((action) => {
+      const row = document.createElement("div");
+      row.className = "linked-arena";
+      const name = document.createElement("span");
+      name.textContent = action.title || "Acao";
+      const meta = document.createElement("span");
+      meta.textContent = action.duration || "";
+      row.appendChild(name);
+      row.appendChild(meta);
+      bronzeList.appendChild(row);
+    });
+  }
+  if (window.lucide) window.lucide.createIcons();
+  modal.classList.add("is-open");
+};
+
 const openBronzeModal = (arenaId) => {
   const modal = document.getElementById("bronze-modal");
   const iconGrid = document.getElementById("bronze-icon-grid");
   const durationInput = document.getElementById("bronze-duration");
+  const durationValue = document.getElementById("bronze-duration-value");
   const seriousToggle = document.getElementById("bronze-serious");
-  if (!modal || !iconGrid || !durationInput || !seriousToggle) return;
+  const titleInput = document.getElementById("bronze-title");
+  if (!modal || !iconGrid || !durationInput || !seriousToggle || !titleInput) return;
   modal.dataset.arenaId = arenaId;
   modal.dataset.icon = BRONZE_ICONS[0];
-  durationInput.value = "";
+  titleInput.value = "";
+  durationInput.value = "60";
+  if (durationValue) durationValue.textContent = "60 min";
   seriousToggle.checked = false;
   modal.querySelectorAll(".weekday-grid input[type='checkbox']").forEach((input) => {
     input.checked = false;
@@ -899,45 +1251,83 @@ const renderSlotEditor = (dna, assetId) => {
 
 const initConfig = () => {
   const dna = seedDNAIfMissing();
-  buildOracleForm(dna);
-  buildSovereignControls(dna);
-  const select = document.getElementById("sovereign-asset-select");
-  if (select) {
-    renderSlotEditor(dna, select.value || dna.assets[0]?.id);
-    select.addEventListener("change", () => {
-      renderSlotEditor(dna, select.value);
-    });
-  }
+  const renderMastery = (mode) => {
+    const container = document.getElementById("mastery-list");
+    if (!container) return;
+    container.innerHTML = "";
+    dna.assets.forEach((asset) => {
+      const phraseKey = ASSET_TO_PHRASE[asset.id];
+      const phrases = phraseKey ? MASTERY_PHRASES[phraseKey] : [];
+      const row = document.createElement("div");
+      row.className = "mastery-row";
+      const header = document.createElement("div");
+      header.className = "mastery-header";
+      const label = document.createElement("span");
+      label.textContent = LABEL_BY_ID.get(asset.id) ?? asset.label;
+      const value = document.createElement("span");
+      value.textContent = String(Math.round(Number(asset.level || 1)));
+      header.appendChild(label);
+      header.appendChild(value);
 
-  const slotAddBtn = document.getElementById("slot-add-btn");
-  const slotName = document.getElementById("slot-name");
-  if (slotAddBtn && slotName && select) {
-    slotAddBtn.addEventListener("click", () => {
-      const name = slotName.value.trim();
-      if (!name) return;
-      const asset = dna.assets.find((item) => item.id === select.value);
-      if (!asset) return;
-      asset.slots = asset.slots || [];
-      asset.slots.push({ id: crypto.randomUUID(), label: name, metrics: [] });
-      slotName.value = "";
-      dna.lastUpdatedAt = new Date().toISOString();
-      saveDNA(dna);
-      renderSlotEditor(dna, select.value);
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = "1";
+      slider.max = "10";
+      slider.step = "1";
+      slider.value = String(Math.max(1, Math.round(Number(asset.level || 1))));
+      slider.className = "mastery-slider";
+
+      const phrase = document.createElement("div");
+      phrase.className = "mastery-phrase";
+      const idx = Math.max(0, Math.min(9, Number(slider.value) - 1));
+      phrase.textContent = phrases[idx] || "";
+
+      const textarea = document.createElement("textarea");
+      textarea.className = "mastery-textarea";
+      textarea.placeholder = "Escreva seu texto soberano...";
+      textarea.value = asset.customText || "";
+
+      const updateView = () => {
+        value.textContent = String(Math.round(Number(slider.value)));
+        if (mode === "oracle") {
+          const index = Math.max(0, Math.min(9, Number(slider.value) - 1));
+          phrase.textContent = phrases[index] || "";
+          if (!row.contains(phrase)) row.appendChild(phrase);
+          if (row.contains(textarea)) row.removeChild(textarea);
+        } else {
+          if (!row.contains(textarea)) row.appendChild(textarea);
+          if (row.contains(phrase)) row.removeChild(phrase);
+        }
+      };
+
+      slider.addEventListener("input", () => {
+        asset.level = Number(slider.value);
+        dna.lastUpdatedAt = new Date().toISOString();
+        saveDNA(dna);
+        renderTree();
+        updateView();
+      });
+
+      textarea.addEventListener("change", () => {
+        asset.customText = textarea.value;
+        dna.lastUpdatedAt = new Date().toISOString();
+        saveDNA(dna);
+      });
+
+      row.appendChild(header);
+      row.appendChild(slider);
+      row.appendChild(mode === "oracle" ? phrase : textarea);
+      container.appendChild(row);
     });
-  }
+  };
 
   const modeInputs = document.querySelectorAll("input[name='mastery-mode']");
-  const oraclePanel = document.getElementById("oracle-panel");
-  const sovereignPanel = document.getElementById("sovereign-panel");
   const setMode = (mode) => {
     localStorage.setItem(MODE_KEY, mode);
-    if (oraclePanel && sovereignPanel) {
-      oraclePanel.classList.toggle("is-hidden", mode !== "oracle");
-      sovereignPanel.classList.toggle("is-hidden", mode !== "sovereign");
-    }
     modeInputs.forEach((input) => {
       input.checked = input.value === mode;
     });
+    renderMastery(mode);
   };
 
   const storedMode = localStorage.getItem(MODE_KEY) || "sovereign";
@@ -946,21 +1336,6 @@ const initConfig = () => {
   modeInputs.forEach((input) => {
     input.addEventListener("change", () => setMode(input.value));
   });
-
-  const oracleApply = document.getElementById("oracle-apply");
-  if (oracleApply) {
-    oracleApply.addEventListener("click", () => {
-      const inputs = document.querySelectorAll("#oracle-form input");
-      inputs.forEach((input) => {
-        const id = input.dataset.assetId;
-        const asset = dna.assets.find((item) => item.id === id);
-        if (asset) asset.level = Math.max(0, Math.min(10, Number(input.value || 0) / 10));
-      });
-      dna.lastUpdatedAt = new Date().toISOString();
-      saveDNA(dna);
-      renderTree();
-    });
-  }
 };
 
 const initPlanner = () => {
@@ -972,6 +1347,27 @@ const initPlanner = () => {
       notesContent.classList.toggle("is-collapsed");
     });
   }
+  const viewDay = document.getElementById("view-day");
+  const viewWeek = document.getElementById("view-week");
+  const timeline = document.getElementById("timeline");
+  const backlog = document.querySelector(".backlog-drawer");
+  const bronzeBacklog = document.querySelector(".bronze-backlog");
+  const weekGrid = document.getElementById("week-grid");
+  const plannerLayout = document.querySelector(".planner-layout");
+  const setView = (mode) => {
+    if (viewDay && viewWeek) {
+      viewDay.classList.toggle("is-active", mode === "day");
+      viewWeek.classList.toggle("is-active", mode === "week");
+    }
+    if (plannerLayout) plannerLayout.classList.toggle("week-view", mode === "week");
+    if (timeline) timeline.classList.toggle("is-hidden", mode !== "day");
+    if (backlog) backlog.classList.toggle("is-hidden", mode !== "day");
+    if (bronzeBacklog) bronzeBacklog.classList.toggle("is-hidden", mode !== "day");
+    if (weekGrid) weekGrid.classList.toggle("is-hidden", mode !== "week");
+  };
+  if (viewDay) viewDay.addEventListener("click", () => setView("day"));
+  if (viewWeek) viewWeek.addEventListener("click", () => setView("week"));
+  setView("day");
 };
 
 const initClock = () => {
@@ -1017,15 +1413,19 @@ const init = () => {
     arenaSave.addEventListener("click", () => {
       const titleInput = document.getElementById("arena-title");
       const assetSelect = document.getElementById("arena-asset");
-      if (!titleInput || !assetSelect) return;
+      const targetInput = document.getElementById("arena-target");
+      if (!titleInput || !assetSelect || !targetInput) return;
       const title = titleInput.value.trim();
       if (!title) return;
+      const targetCount = Number(targetInput.value || 0) || null;
       const arenas = loadArenas();
       arenas.push({
         id: crypto.randomUUID(),
         title,
         completion: 0,
         assetId: assetSelect.value,
+        targetCount,
+        completedCount: 0,
       });
       saveArenas(arenas);
       renderArenas();
@@ -1041,12 +1441,15 @@ const init = () => {
   if (bronzeSave) {
     bronzeSave.addEventListener("click", () => {
       const modal = document.getElementById("bronze-modal");
+      const titleInput = document.getElementById("bronze-title");
       const durationInput = document.getElementById("bronze-duration");
       const seriousToggle = document.getElementById("bronze-serious");
-      if (!modal || !durationInput || !seriousToggle) return;
+      if (!modal || !durationInput || !seriousToggle || !titleInput) return;
       const arenaId = modal.dataset.arenaId;
       if (!arenaId) return;
-      const duration = durationInput.value.trim();
+      const title = titleInput.value.trim() || "Acao";
+      const durationMinutes = Number(durationInput.value || 60);
+      const duration = `${durationMinutes}min`;
       const selectedIcon = modal.dataset.icon || BRONZE_ICONS[0];
       const weekdays = Array.from(
         modal.querySelectorAll(".weekday-grid input[type='checkbox']")
@@ -1057,8 +1460,10 @@ const init = () => {
       planner.bronzeActions.push({
         id: crypto.randomUUID(),
         arenaId,
+        title,
         icon: selectedIcon,
         duration,
+        durationMinutes,
         weekdays,
         serious: !!seriousToggle.checked,
         status: "backlog",
@@ -1068,6 +1473,22 @@ const init = () => {
       savePlanner(planner);
       renderPlanner();
       closeBronzeModal();
+    });
+  }
+
+  const bronzeDuration = document.getElementById("bronze-duration");
+  const bronzeDurationValue = document.getElementById("bronze-duration-value");
+  if (bronzeDuration && bronzeDurationValue) {
+    bronzeDuration.addEventListener("input", () => {
+      bronzeDurationValue.textContent = `${bronzeDuration.value} min`;
+    });
+  }
+
+  const arenaDossierClose = document.getElementById("arena-dossier-close");
+  const arenaDossier = document.getElementById("arena-dossier");
+  if (arenaDossierClose && arenaDossier) {
+    arenaDossierClose.addEventListener("click", () => {
+      arenaDossier.classList.remove("is-open");
     });
   }
   const treeSave = document.getElementById("tree-edit-save");
@@ -1127,3 +1548,14 @@ const init = () => {
 };
 
 document.addEventListener("DOMContentLoaded", init);
+
+window.addEventListener("load", () => {
+  const loading = document.getElementById("loading-screen");
+  if (!loading) return;
+  loading.classList.add("fade-out");
+  const handle = () => {
+    loading.removeEventListener("transitionend", handle);
+    loading.remove();
+  };
+  loading.addEventListener("transitionend", handle);
+});

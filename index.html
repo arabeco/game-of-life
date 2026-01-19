@@ -16,6 +16,13 @@
     </script>
   </head>
   <body>
+    <div id="loading-screen">
+      <div class="loading-logo">
+        <div class="loading-diamond">
+          <div class="loading-core"></div>
+        </div>
+      </div>
+    </div>
     <div class="app">
       <header class="hud">
         <div class="hud-clock" id="hud-clock">00:00</div>
@@ -41,6 +48,10 @@
 
         <section class="screen screen-planner" data-screen="planner">
           <div class="screen-title">Planner</div>
+          <div class="planner-toggle">
+            <button class="toggle-button is-active" id="view-day">Dia</button>
+            <button class="toggle-button" id="view-week">Semana</button>
+          </div>
           <div class="planner-layout">
             <aside class="backlog-drawer">
               <div class="drawer-title">Backlog</div>
@@ -50,6 +61,7 @@
             </aside>
 
             <div class="timeline" id="timeline"></div>
+            <div class="week-grid is-hidden" id="week-grid"></div>
 
             <aside class="bronze-backlog">
               <div class="drawer-title">Acoes de Bronze</div>
@@ -92,30 +104,7 @@
                 Soberano 0-10
               </label>
             </div>
-            <div class="mode-panel" id="oracle-panel">
-              <div class="panel-title">Validacao</div>
-              <div class="oracle-form" id="oracle-form"></div>
-              <button class="primary-button" id="oracle-apply" aria-label="Aplicar">
-                <i data-lucide="check"></i>
-              </button>
-            </div>
-            <div class="mode-panel" id="sovereign-panel">
-              <div class="panel-title">Controle Manual</div>
-              <div class="sovereign-select">
-                <select id="sovereign-asset-select"></select>
-              </div>
-              <div class="sovereign-sliders" id="sovereign-sliders"></div>
-              <div class="slot-editor">
-                <div class="slot-header">Slots</div>
-                <div class="slot-add">
-                  <input type="text" id="slot-name" placeholder="Nome do slot" />
-                  <button class="primary-button" id="slot-add-btn" aria-label="Adicionar Slot">
-                    <i data-lucide="plus"></i>
-                  </button>
-                </div>
-                <div class="slot-list" id="slot-list"></div>
-              </div>
-            </div>
+            <div class="mastery-list" id="mastery-list"></div>
           </div>
         </section>
       </main>
@@ -228,6 +217,8 @@
           <input type="text" id="arena-title" />
           <label class="field-label" for="arena-asset">Ativo</label>
           <select id="arena-asset"></select>
+          <label class="field-label" for="arena-target">Meta (Quantidade)</label>
+          <input type="number" id="arena-target" min="1" step="1" />
         </div>
         <button class="primary-button" id="arena-save" aria-label="Salvar">
           <i data-lucide="check"></i>
@@ -244,10 +235,23 @@
           </button>
         </div>
         <div class="modal-body dossier-body">
+          <label class="field-label" for="bronze-title">Titulo</label>
+          <input type="text" id="bronze-title" placeholder="Nome da acao" />
           <label class="field-label" for="bronze-icon">Icone</label>
           <div class="icon-grid" id="bronze-icon-grid"></div>
           <label class="field-label" for="bronze-duration">Duracao</label>
-          <input type="text" id="bronze-duration" placeholder="30min, 1h, 2h" />
+          <div class="time-picker">
+            <input
+              type="range"
+              id="bronze-duration"
+              class="time-slider"
+              min="15"
+              max="240"
+              step="15"
+              value="60"
+            />
+            <div class="time-label" id="bronze-duration-value">60 min</div>
+          </div>
           <div class="field-label">Frequencia Semanal</div>
           <div class="weekday-grid">
             <label><input type="checkbox" value="D" /> D</label>
@@ -264,8 +268,28 @@
           </label>
         </div>
         <button class="primary-button" id="bronze-save" aria-label="Salvar">
-          <i data-lucide="check"></i>
+          OK
         </button>
+      </div>
+    </div>
+
+    <div class="modal" id="arena-dossier">
+      <div class="modal-card dossier-card silver-card">
+        <div class="dossier-header">
+          <div class="dossier-title">
+            <div class="drawer-title" id="arena-dossier-title">Arena</div>
+            <div class="dossier-level" id="arena-dossier-progress">0/0</div>
+          </div>
+          <button class="close-button" id="arena-dossier-close" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body dossier-body">
+          <div class="field-label">Objetivo Macro</div>
+          <div class="arena-macro" id="arena-dossier-macro">Sem objetivo</div>
+          <div class="slot-header">Acoes de Bronze</div>
+          <div class="linked-arenas-list" id="arena-dossier-bronze"></div>
+        </div>
       </div>
     </div>
   </body>

@@ -412,6 +412,82 @@ const setAuthLocked = (locked) => {
   if (locked) showMissionsLoading(false);
 };
 
+const getIdentityFromEmail = (email) => {
+  if (!email) return "";
+  return email.split("@")[0].trim();
+};
+
+const ensureLocalIdentity = (email) => {
+  const identity = getIdentityFromEmail(email);
+  if (!identity) return;
+  const profile = loadProfile();
+  if (profile.nickname || profile.userId) return;
+  const updated = { ...profile, nickname: identity, userId: identity };
+  saveProfile(updated);
+  renderSocial();
+};
+
+const fetchSupabaseProfileRow = async (userId) => {
+  if (!isSupabaseEnabled() || !userId) return null;
+  try {
+    let { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    if (error && /column .*id/i.test(error.message || "")) {
+      const fallback = await supabase.from("profiles").select("*").eq("user_id", userId).single();
+      data = fallback.data;
+      error = fallback.error;
+    }
+    if (error) {
+      logSupabaseError("profiles.select", error);
+      return null;
+    }
+    return data || null;
+  } catch (error) {
+    logSupabaseError("fetchSupabaseProfileRow", error);
+    return null;
+  }
+};
+
+const applySupabaseProfileToLocal = (row) => {
+  if (!row) return;
+  const profile = loadProfile();
+  const identity = row.nickname || profile.nickname || profile.userId || "";
+  const updated = {
+    ...profile,
+    nickname: identity,
+    userId: identity,
+    banner: row.banner ?? profile.banner,
+    avatar: row.avatar_url ?? profile.avatar,
+    status: row.status ?? profile.status,
+    total_level: typeof row.total_level === "number" ? row.total_level : profile.total_level,
+  };
+  saveProfile(updated);
+  renderSocial();
+};
+
+const upsertProfileRow = async (payload) => {
+  if (!isSupabaseEnabled()) return false;
+  try {
+    const preferUserId = !("id" in payload);
+    let { error } = await supabase
+      .from("profiles")
+      .upsert(payload, { onConflict: preferUserId ? "user_id" : "id" });
+    if (error && /column .*id/i.test(error.message || "")) {
+      const retryPayload = { ...payload };
+      delete retryPayload.id;
+      const retry = await supabase.from("profiles").upsert(retryPayload, { onConflict: "user_id" });
+      error = retry.error;
+    }
+    if (error) {
+      logSupabaseError("profiles.upsert", error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logSupabaseError("upsertProfileRow", error);
+    return false;
+  }
+};
+
 const ensureUserMissionsRow = async (userId) => {
   if (!isSupabaseEnabled() || !userId) return;
   try {
@@ -435,9 +511,22 @@ const ensureUserMissionsRow = async (userId) => {
 
 const ensureProfilesRow = async (user) => {
   if (!isSupabaseEnabled() || !user?.id) return;
+  let useUserIdOnly = false;
   try {
-    const { data, error } = await supabase.from("profiles").select("id").eq("id", user.id).single();
-    if (error) logSupabaseError("profiles.select", error);
+    let { data, error } = await supabase.from("profiles").select("id").eq("id", user.id).single();
+    if (error) {
+      if (/column .*id/i.test(error.message || "")) {
+        useUserIdOnly = true;
+        const fallback = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .single();
+        data = fallback.data;
+        error = fallback.error;
+      }
+      if (error) logSupabaseError("profiles.select", error);
+    }
     if (!data) {
       const profile = loadProfile();
       const fallbackName =
@@ -445,7 +534,7 @@ const ensureProfilesRow = async (user) => {
         profile.userId ||
         (user.email ? user.email.split("@")[0] : "") ||
         "";
-      const { error: upsertError } = await supabase.from("profiles").upsert({
+      const payload = {
         id: user.id,
         user_id: user.id,
         nickname: fallbackName,
@@ -453,8 +542,9 @@ const ensureProfilesRow = async (user) => {
         avatar_url: profile.avatar || "",
         status: profile.status || "sovereign",
         total_level: Number(profile.total_level || 0),
-      });
-      if (upsertError) logSupabaseError("profiles.upsert (init)", upsertError);
+      };
+      if (useUserIdOnly) delete payload.id;
+      await upsertProfileRow(payload);
     }
   } catch (error) {
     logSupabaseError("ensureProfilesRow", error);
@@ -559,6 +649,7 @@ const initAuth = () => {
         }
         const user = data?.user;
         if (user) {
+          ensureLocalIdentity(email);
           await ensureProfilesRow(user);
           await ensureUserMissionsRow(user.id);
           setAuthLocked(false);
@@ -589,11 +680,13 @@ const initAuth = () => {
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session?.user) {
       console.info("[supabase] session user", session.user.id);
+      ensureLocalIdentity(session.user.email);
       setAuthLocked(false);
       initApp();
       ensureProfilesRow(session.user);
       ensureSupabaseProfile(loadProfile());
       ensureUserMissionsRow(session.user.id);
+      fetchSupabaseProfileRow(session.user.id).then((row) => applySupabaseProfileToLocal(row));
     } else {
       if (!offlineFallback && !guestMode) setAuthLocked(true);
     }
@@ -603,11 +696,15 @@ const initAuth = () => {
     .then((session) => {
       if (session?.data?.session?.user) {
         console.info("[supabase] session user", session.data.session.user.id);
+        ensureLocalIdentity(session.data.session.user.email);
         setAuthLocked(false);
         initApp();
         ensureProfilesRow(session.data.session.user);
         ensureSupabaseProfile(loadProfile());
         ensureUserMissionsRow(session.data.session.user.id);
+        fetchSupabaseProfileRow(session.data.session.user.id).then((row) =>
+          applySupabaseProfileToLocal(row),
+        );
       } else {
         setAuthLocked(true);
       }
@@ -684,14 +781,14 @@ const ensureSupabaseProfile = async (profile) => {
       user = auth.data?.user;
     }
     if (!user) return;
-    const { error } = await supabase.from("profiles").upsert({
+    const payload = {
       id: user.id,
       user_id: user.id,
       nickname: nickname || profile.userId || "",
       banner: profile.banner || "",
       avatar_url: profile.avatar || "",
-    });
-    if (error) logSupabaseError("profiles.upsert", error);
+    };
+    await upsertProfileRow(payload);
   } catch (error) {
     logSupabaseError("ensureSupabaseProfile", error);
   }
@@ -762,7 +859,7 @@ const syncProfileTotals = async (nextProfile = {}) => {
     const user = await getSupabaseUser();
     if (!user) return false;
     const profile = { ...loadProfile(), ...nextProfile };
-    const { error } = await supabase.from("profiles").upsert({
+    const payload = {
       id: user.id,
       user_id: user.id,
       nickname: profile.nickname || "",
@@ -770,12 +867,8 @@ const syncProfileTotals = async (nextProfile = {}) => {
       avatar_url: profile.avatar || "",
       status: profile.status || "sovereign",
       total_level: Number(profile.total_level || 0),
-    });
-    if (error) {
-      logSupabaseError("profiles.upsert (totals)", error);
-      return false;
-    }
-    return true;
+    };
+    return await upsertProfileRow(payload);
   } catch (error) {
     logSupabaseError("syncProfileTotals", error);
     return false;
@@ -3130,6 +3223,7 @@ const initApp = () => {
 
   const configIdentity = document.getElementById("config-identity");
   const configSaveProfile = document.getElementById("config-save-profile");
+  const configLogout = document.getElementById("config-logout");
   const configProfile = loadProfile();
   if (configIdentity) {
     configIdentity.value = configProfile.userId || configProfile.nickname || "";
@@ -3151,12 +3245,27 @@ const initApp = () => {
     configSaveProfile.addEventListener("click", async () => {
       configSaveProfile.classList.remove("is-saved");
       const profile = loadProfile();
-      ensureSupabaseProfile(profile);
+      await ensureSupabaseProfile(profile);
       const ok = await syncProfileTotals(profile);
       if (ok) {
         configSaveProfile.classList.add("is-saved");
         setTimeout(() => configSaveProfile.classList.remove("is-saved"), 1200);
       }
+    });
+  }
+  if (configLogout) {
+    configLogout.addEventListener("click", async () => {
+      guestMode = false;
+      localStorage.removeItem("game_of_life.guest");
+      if (isSupabaseEnabled()) {
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) logSupabaseError("auth.signOut", error);
+        } catch (error) {
+          logSupabaseError("auth.signOut", error);
+        }
+      }
+      setAuthLocked(true);
     });
   }
 

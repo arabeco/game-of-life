@@ -161,11 +161,21 @@
       </div>
     </div>
     <div class="modal" id="tree-edit-modal">
-      <div class="modal-card">
-        <div class="drawer-title" id="tree-edit-title">Editar</div>
-        <div class="modal-body">
-          <label class="field-label" for="tree-edit-level">Nivel</label>
+      <div class="modal-card dossier-card">
+        <div class="dossier-header">
+          <div class="dossier-title">
+            <div class="drawer-title" id="tree-edit-title">Ativo</div>
+            <div class="dossier-level" id="tree-edit-level-text">Nivel 0</div>
+          </div>
+          <button class="close-button" id="tree-edit-cancel" aria-label="Fechar">✕</button>
+        </div>
+        <div class="modal-body dossier-body">
+          <label class="field-label" for="tree-edit-level">Nivel (0-10)</label>
           <input type="number" id="tree-edit-level" min="0" max="10" step="1" />
+          <div class="status-section">
+            <div class="slot-header">Status Tecnicos</div>
+            <div class="status-list" id="tree-status-list"></div>
+          </div>
           <div class="slot-editor">
             <div class="slot-header">Slots</div>
             <div class="slot-add">
@@ -174,9 +184,28 @@
             </div>
             <div class="slot-list" id="tree-slot-list"></div>
           </div>
+          <div class="linked-arenas">
+            <div class="slot-header">Arenas Vinculadas</div>
+            <div class="linked-arenas-list" id="linked-arenas-list"></div>
+          </div>
         </div>
         <button class="primary-button" id="tree-edit-save">Salvar</button>
-        <button class="ghost-button" id="tree-edit-cancel">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="modal" id="arena-modal">
+      <div class="modal-card dossier-card">
+        <div class="dossier-header">
+          <div class="drawer-title">Nova Arena</div>
+          <button class="close-button" id="arena-cancel" aria-label="Fechar">✕</button>
+        </div>
+        <div class="modal-body dossier-body">
+          <label class="field-label" for="arena-title">Nome</label>
+          <input type="text" id="arena-title" />
+          <label class="field-label" for="arena-asset">Ativo</label>
+          <select id="arena-asset"></select>
+        </div>
+        <button class="primary-button" id="arena-save">Salvar</button>
       </div>
     </div>
   </body>

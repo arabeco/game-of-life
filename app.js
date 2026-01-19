@@ -20,6 +20,10 @@ const SEPHIROT = [
 ];
 
 const LABEL_BY_ID = new Map(SEPHIROT.map((asset) => [asset.id, asset.label]));
+const STATUS_FIELDS = {
+  malkuth: ["Peso", "Altura", "%G"],
+  hod: ["Slot 1 (PEC)", "Slot 2 (UNIP)", "Slot 3 (Personal)"],
+};
 
 const nowClock = () => new Date().toLocaleTimeString("pt-BR", { hour12: false });
 
@@ -67,7 +71,11 @@ const renderTree = () => {
 
     const level = document.createElement("div");
     level.className = "sephirot-level";
-    level.textContent = String(Math.round(asset.level));
+    const roundedLevel = Math.round(asset.level);
+    level.textContent = String(roundedLevel);
+    const intensity = Math.min(1, Math.max(0.2, roundedLevel / 10));
+    sphere.style.background = `rgba(255, 255, 255, ${0.05 + intensity * 0.2})`;
+    sphere.style.borderColor = `rgba(255, 255, 255, ${0.12 + intensity * 0.3})`;
 
     sphere.appendChild(label);
     sphere.appendChild(level);
@@ -162,8 +170,12 @@ const renderArenas = () => {
     const progress = document.createElement("div");
     progress.className = "arena-progress";
     progress.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+    const assetLabel = document.createElement("div");
+    assetLabel.className = "arena-progress";
+    assetLabel.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
     card.appendChild(title);
     card.appendChild(progress);
+    card.appendChild(assetLabel);
     arenaList.appendChild(card);
   });
 };
@@ -451,6 +463,58 @@ const seedDNAIfMissing = () => {
 
 const getAssetFromDNA = (dna, assetId) => dna.assets.find((asset) => asset.id === assetId);
 
+const ensureStatusFields = (dna, assetId) => {
+  const asset = getAssetFromDNA(dna, assetId);
+  if (!asset) return [];
+  const defaults = STATUS_FIELDS[assetId] || [];
+  if (!asset.statusFields) {
+    asset.statusFields = defaults.map((label) => ({
+      id: crypto.randomUUID(),
+      label,
+      value: "",
+    }));
+    return asset.statusFields;
+  }
+  const existingLabels = new Set(asset.statusFields.map((field) => field.label));
+  defaults.forEach((label) => {
+    if (!existingLabels.has(label)) {
+      asset.statusFields.push({ id: crypto.randomUUID(), label, value: "" });
+    }
+  });
+  return asset.statusFields;
+};
+
+const renderStatusFields = (dna, assetId) => {
+  const list = document.getElementById("tree-status-list");
+  if (!list) return;
+  list.innerHTML = "";
+  const fields = ensureStatusFields(dna, assetId);
+  if (fields.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "arena-empty";
+    empty.textContent = "Sem status tecnico.";
+    list.appendChild(empty);
+    return;
+  }
+  fields.forEach((field) => {
+    const row = document.createElement("div");
+    row.className = "status-row";
+    const label = document.createElement("label");
+    label.textContent = field.label;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = field.value ?? "";
+    input.addEventListener("change", () => {
+      field.value = input.value;
+      dna.lastUpdatedAt = new Date().toISOString();
+      saveDNA(dna);
+    });
+    row.appendChild(label);
+    row.appendChild(input);
+    list.appendChild(row);
+  });
+};
+
 const renderTreeEditorSlots = (dna, assetId) => {
   const list = document.getElementById("tree-slot-list");
   if (!list) return;
@@ -480,11 +544,37 @@ const openTreeEditor = (assetId) => {
   const modal = document.getElementById("tree-edit-modal");
   const title = document.getElementById("tree-edit-title");
   const levelInput = document.getElementById("tree-edit-level");
+  const levelText = document.getElementById("tree-edit-level-text");
+  const linkedArenasList = document.getElementById("linked-arenas-list");
   if (!modal || !title || !levelInput) return;
   title.textContent = `Editar ${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
   levelInput.value = String(Math.round(Number(asset.level || 0)));
+  if (levelText) levelText.textContent = `Nivel ${Math.round(Number(asset.level || 0))}`;
   modal.dataset.assetId = asset.id;
   renderTreeEditorSlots(dna, asset.id);
+  renderStatusFields(dna, asset.id);
+  if (linkedArenasList) {
+    const arenas = loadArenas().filter((arena) => arena.assetId === asset.id);
+    linkedArenasList.innerHTML = "";
+    if (arenas.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "arena-empty";
+      empty.textContent = "Sem arenas vinculadas.";
+      linkedArenasList.appendChild(empty);
+    } else {
+      arenas.forEach((arena) => {
+        const row = document.createElement("div");
+        row.className = "linked-arena";
+        const name = document.createElement("span");
+        name.textContent = arena.title || "Arena";
+        const pct = document.createElement("span");
+        pct.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+        row.appendChild(name);
+        row.appendChild(pct);
+        linkedArenasList.appendChild(row);
+      });
+    }
+  }
   modal.classList.add("is-open");
 };
 
@@ -493,6 +583,28 @@ const closeTreeEditor = () => {
   if (!modal) return;
   modal.classList.remove("is-open");
   modal.dataset.assetId = "";
+};
+
+const openArenaModal = () => {
+  const modal = document.getElementById("arena-modal");
+  const select = document.getElementById("arena-asset");
+  const title = document.getElementById("arena-title");
+  if (!modal || !select || !title) return;
+  select.innerHTML = "";
+  SEPHIROT.forEach((asset) => {
+    const option = document.createElement("option");
+    option.value = asset.id;
+    option.textContent = asset.label;
+    select.appendChild(option);
+  });
+  title.value = "";
+  modal.classList.add("is-open");
+};
+
+const closeArenaModal = () => {
+  const modal = document.getElementById("arena-modal");
+  if (!modal) return;
+  modal.classList.remove("is-open");
 };
 
 const buildOracleForm = (dna) => {
@@ -728,16 +840,31 @@ const init = () => {
   const arenaAdd = document.getElementById("arena-add");
   if (arenaAdd) {
     arenaAdd.addEventListener("click", () => {
-      const title = prompt("Nome da Arena");
+      openArenaModal();
+    });
+  }
+  const arenaSave = document.getElementById("arena-save");
+  const arenaCancel = document.getElementById("arena-cancel");
+  if (arenaCancel) {
+    arenaCancel.addEventListener("click", closeArenaModal);
+  }
+  if (arenaSave) {
+    arenaSave.addEventListener("click", () => {
+      const titleInput = document.getElementById("arena-title");
+      const assetSelect = document.getElementById("arena-asset");
+      if (!titleInput || !assetSelect) return;
+      const title = titleInput.value.trim();
       if (!title) return;
       const arenas = loadArenas();
       arenas.push({
         id: crypto.randomUUID(),
-        title: title.trim(),
+        title,
         completion: 0,
+        assetId: assetSelect.value,
       });
       saveArenas(arenas);
       renderArenas();
+      closeArenaModal();
     });
   }
   const treeSave = document.getElementById("tree-edit-save");
@@ -748,6 +875,7 @@ const init = () => {
     treeSave.addEventListener("click", () => {
       const modal = document.getElementById("tree-edit-modal");
       const levelInput = document.getElementById("tree-edit-level");
+      const levelText = document.getElementById("tree-edit-level-text");
       if (!modal || !levelInput) return;
       const assetId = modal.dataset.assetId;
       if (!assetId) return;
@@ -756,6 +884,7 @@ const init = () => {
       if (!asset) return;
       const raw = Number(levelInput.value || 0);
       asset.level = Math.max(0, Math.min(10, Math.round(raw)));
+      if (levelText) levelText.textContent = `Nivel ${asset.level}`;
       dna.lastUpdatedAt = new Date().toISOString();
       saveDNA(dna);
       renderTree();

@@ -3,12 +3,14 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const supabaseUrl =
   import.meta?.env?.NEXT_PUBLIC_SUPABASE_URL ||
   (typeof process !== "undefined" ? process.env.NEXT_PUBLIC_SUPABASE_URL : undefined) ||
-  window.NEXT_PUBLIC_SUPABASE_URL;
+  window.NEXT_PUBLIC_SUPABASE_URL ||
+  (typeof localStorage !== "undefined" ? localStorage.getItem("game_of_life.supabase_url") : undefined);
 
 const supabaseAnonKey =
   import.meta?.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   (typeof process !== "undefined" ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY : undefined) ||
-  window.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  window.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  (typeof localStorage !== "undefined" ? localStorage.getItem("game_of_life.supabase_anon") : undefined);
 
 export const supabaseConfig = {
   url: supabaseUrl,

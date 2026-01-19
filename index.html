@@ -29,13 +29,16 @@
         <div class="hud-avatar-wrap">
           <div class="hud-avatar energy-ring" id="hud-avatar" aria-label="Avatar"></div>
           <div class="hud-badge" id="hud-level">Nivel 0</div>
+          <button class="hud-edit" id="hud-edit" aria-label="Editar Perfil">
+            <i data-lucide="pencil"></i>
+          </button>
         </div>
         <div class="hud-date" id="hud-date">SEG, 19 JAN</div>
       </header>
 
       <main class="content">
         <section class="screen screen-tree is-active" data-screen="tree">
-          <div class="screen-title">Arvore</div>
+          <div class="screen-title">Ativos</div>
           <div class="tree-grid" id="tree-grid"></div>
         </section>
 
@@ -51,6 +54,36 @@
 
         <section class="screen screen-planner" data-screen="planner">
           <div class="screen-title">Planner</div>
+          <div class="health-panel">
+            <button class="notes-toggle" id="notes-toggle" aria-label="Saude">
+              <i data-lucide="folder"></i>
+              Checklist de Saude
+            </button>
+            <div class="notes-content" id="notes-content">
+              <ul class="logistics-list">
+                <li class="logistics-item">
+                  <input type="checkbox" /> Agua
+                  <button class="inline-btn">Editar</button>
+                  <button class="inline-btn">Excluir</button>
+                </li>
+                <li class="logistics-item">
+                  <input type="checkbox" /> Alimentacao
+                  <button class="inline-btn">Editar</button>
+                  <button class="inline-btn">Excluir</button>
+                </li>
+                <li class="logistics-item">
+                  <input type="checkbox" /> Sono
+                  <button class="inline-btn">Editar</button>
+                  <button class="inline-btn">Excluir</button>
+                </li>
+                <li class="logistics-item">
+                  <input type="checkbox" /> Limpeza
+                  <button class="inline-btn">Editar</button>
+                  <button class="inline-btn">Excluir</button>
+                </li>
+              </ul>
+            </div>
+          </div>
           <div class="planner-toggle">
             <button class="toggle-button is-active" id="view-day">Dia</button>
             <button class="toggle-button" id="view-week">Semana</button>
@@ -62,20 +95,6 @@
           <div class="planner-layout">
             <div class="timeline" id="timeline"></div>
             <div class="week-grid is-hidden" id="week-grid"></div>
-
-            <div class="notes-panel">
-              <button class="notes-toggle" id="notes-toggle" aria-label="Notas">
-                Notas e Logistica
-              </button>
-              <div class="notes-content" id="notes-content">
-                <ul class="logistics-list">
-                  <li class="logistics-item"><input type="checkbox" /> Agua</li>
-                  <li class="logistics-item"><input type="checkbox" /> Alimentacao</li>
-                  <li class="logistics-item"><input type="checkbox" /> Sono</li>
-                  <li class="logistics-item"><input type="checkbox" /> Limpeza</li>
-                </ul>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -88,6 +107,30 @@
             <button class="config-item">Suporte</button>
           </div>
           <div class="config-detail">
+            <div class="drawer-title">Identidade</div>
+            <div class="oracle-form">
+              <div class="oracle-row">
+                <label for="config-nickname">Nickname</label>
+                <input type="text" id="config-nickname" />
+              </div>
+              <div class="oracle-row">
+                <label for="config-id">@ID</label>
+                <input type="text" id="config-id" />
+              </div>
+            </div>
+            <div class="drawer-title">Skin</div>
+            <div class="theme-buttons">
+              <button class="silver-button theme-btn" data-theme="gold">Gold</button>
+              <button class="silver-button theme-btn" data-theme="cyber">Cyber</button>
+              <button class="silver-button theme-btn" data-theme="frost">Frost</button>
+            </div>
+            <div class="drawer-title">Avatar e Banner</div>
+            <div class="theme-buttons">
+              <button class="silver-button" id="config-avatar-upload">Avatar</button>
+              <button class="silver-button" id="config-banner-upload">Banner</button>
+              <input type="file" id="config-avatar-file" class="hidden-file" accept="image/*" />
+              <input type="file" id="config-banner-file" class="hidden-file" accept="image/*" />
+            </div>
             <div class="drawer-title">Maestria</div>
             <div class="mode-toggle">
               <label>
@@ -104,25 +147,37 @@
         </section>
 
         <section class="screen screen-social" data-screen="social">
-          <div class="screen-title">Rede Social</div>
-          <div class="social-profile">
+          <div class="screen-title">Social</div>
+          <div class="social-profile card-metal-gold">
             <div class="social-avatar">
               <div class="loading-diamond">
                 <div class="loading-core"></div>
               </div>
             </div>
-            <div class="social-level">
-              Nivel Geral: <span id="social-level">0</span>
+            <div class="social-meta">
+              <div class="social-nick" id="social-nick">-</div>
+              <div class="social-id" id="social-id">-</div>
+              <div class="social-level">Nivel Geral: <span id="social-level">0</span></div>
             </div>
-          </div>
-          <div class="social-pins">
-            <div class="slot-header">Vitrine Custom</div>
-            <div class="pin-grid" id="pin-grid"></div>
           </div>
           <div class="social-alliance">
             <div class="slot-header">Alianca</div>
-            <input type="text" class="profile-input" id="alliance-search" placeholder="Buscar @id" />
-            <div class="alliance-list" id="alliance-list"></div>
+            <div class="ally-card card-metal-silver">
+              <div class="ally-banner banner-mountain"></div>
+              <div class="ally-info">
+                <div class="ally-nick">Vanguard_01</div>
+                <div class="ally-level">Nível 84</div>
+                <div class="ally-last">Treino de Força (15 min atrás)</div>
+              </div>
+            </div>
+            <div class="ally-card card-metal-silver">
+              <div class="ally-banner banner-code"></div>
+              <div class="ally-info">
+                <div class="ally-nick">Shadow_Hacker</div>
+                <div class="ally-level">Nível 62</div>
+                <div class="ally-last">Meditação (2h atrás)</div>
+              </div>
+            </div>
           </div>
         </section>
       </main>
@@ -137,7 +192,7 @@
               <path d="M12 10v4M9 14h6" />
             </svg>
           </span>
-          <span class="nav-label">Arvore</span>
+          <span class="nav-label">Ativos</span>
         </button>
         <button class="nav-item" data-target="arenas">
           <span class="nav-icon" aria-hidden="true">
@@ -157,6 +212,15 @@
           </span>
           <span class="nav-label">Planner</span>
         </button>
+        <button class="nav-item" data-target="social">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M16 11a4 4 0 1 0-8 0" />
+              <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" />
+            </svg>
+          </span>
+          <span class="nav-label">Social</span>
+        </button>
         <button class="nav-item" data-target="config">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
@@ -166,19 +230,10 @@
           </span>
           <span class="nav-label">Config</span>
         </button>
-        <button class="nav-item" data-target="social">
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M16 11a4 4 0 1 0-8 0" />
-              <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" />
-            </svg>
-          </span>
-          <span class="nav-label">Rede</span>
-        </button>
       </nav>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 
     <div class="modal" id="hiato-modal">
       <div class="modal-card">
@@ -328,6 +383,7 @@
             <div class="loading-diamond">
               <div class="loading-core"></div>
             </div>
+            <input type="file" id="profile-avatar-file" class="hidden-file" accept="image/*" />
           </div>
           <div class="profile-name">
             <input type="text" id="profile-nickname" class="profile-input" placeholder="Nickname" />
@@ -335,6 +391,7 @@
           </div>
           <div class="profile-banner">
             <input type="text" id="profile-banner" class="profile-input" placeholder="Banner de Titulo" />
+            <input type="file" id="profile-banner-file" class="hidden-file" accept="image/*" />
           </div>
         </div>
         <div class="profile-widgets">

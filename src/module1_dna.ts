@@ -37,29 +37,29 @@ interface DNAState {
 const STORAGE_KEY = "game_of_life.module1_dna";
 
 const SEPHIROT_IDS = [
-  "kether",
-  "chokmah",
-  "binah",
-  "chesed",
-  "geburah",
-  "tiphareth",
-  "netzach",
-  "hod",
-  "yesod",
-  "malkuth",
+  "conexao",
+  "espiritualidade",
+  "mente",
+  "verdade",
+  "inspiracao",
+  "amor",
+  "abundancia",
+  "trabalho",
+  "autenticidade",
+  "fisico",
 ];
 
 const SEPHIROT_LABELS: Record<string, string> = {
-  kether: "Kether",
-  chokmah: "Chokmah",
-  binah: "Binah",
-  chesed: "Chesed",
-  geburah: "Geburah",
-  tiphareth: "Tiphareth",
-  netzach: "Netzach",
-  hod: "Hod",
-  yesod: "Yesod",
-  malkuth: "Malkuth",
+  conexao: "Conexao",
+  espiritualidade: "Espiritualidade",
+  mente: "Espaco Mental",
+  verdade: "Verdade",
+  inspiracao: "Inspiracao",
+  amor: "Amor",
+  abundancia: "Abundancia",
+  trabalho: "Trabalho",
+  autenticidade: "Autenticidade",
+  fisico: "Forca Fisica",
 };
 
 const createEmptyAssets = (): SephirotAsset[] =>

@@ -1,3 +1,5 @@
+import { supabase } from "./src/lib/supabaseClient.js";
+
 const STORAGE_KEY = "game_of_life.module1_dna";
 const PLANNER_KEY = "game_of_life.planner";
 const ARENAS_KEY = "game_of_life.arenas";
@@ -9,47 +11,43 @@ const V2_RESET_KEY = "game_of_life.v2_reset";
 const PROFILE_KEY = "game_of_life.profile";
 
 const SEPHIROT = [
-  { id: "kether", label: "Gratidao", row: 1, col: 2 },
-  { id: "binah", label: "Mente", row: 2, col: 1 },
-  { id: "chokmah", label: "Espiritualidade", row: 2, col: 3 },
-  { id: "geburah", label: "Proposito", row: 3, col: 1 },
-  { id: "chesed", label: "Projetos", row: 3, col: 3 },
-  { id: "tiphareth", label: "Conexoes", row: 4, col: 2 },
-  { id: "hod", label: "Trabalho/Estudos", row: 5, col: 1 },
-  { id: "netzach", label: "Financas", row: 5, col: 3 },
-  { id: "yesod", label: "Hobbies", row: 6, col: 2 },
-  { id: "malkuth", label: "Fisico", row: 7, col: 2 },
+  { id: "conexao", label: "Conexao", row: 1, col: 2 },
+  { id: "mente", label: "Espaco Mental", row: 2, col: 1 },
+  { id: "espiritualidade", label: "Espiritualidade", row: 2, col: 3 },
+  { id: "verdade", label: "Verdade", row: 3, col: 1 },
+  { id: "inspiracao", label: "Inspiracao", row: 3, col: 3 },
+  { id: "amor", label: "Amor", row: 4, col: 2 },
+  { id: "trabalho", label: "Trabalho", row: 5, col: 1 },
+  { id: "abundancia", label: "Abundancia", row: 5, col: 3 },
+  { id: "autenticidade", label: "Autenticidade", row: 6, col: 2 },
+  { id: "fisico", label: "Forca Fisica", row: 7, col: 2 },
 ];
 
 const LABEL_BY_ID = new Map(SEPHIROT.map((asset) => [asset.id, asset.label]));
-const STATUS_FIELDS = {
-  malkuth: ["Peso", "Altura", "%G"],
-  hod: ["Slot 1 (PEC)", "Slot 2 (UNIP)", "Slot 3 (Personal)"],
-};
 const ICON_BY_ID = {
-  malkuth: "dumbbell",
-  binah: "brain",
-  chokmah: "sparkles",
-  geburah: "target",
-  chesed: "briefcase",
-  tiphareth: "users",
-  netzach: "wallet",
-  hod: "book-open",
-  yesod: "gamepad-2",
-  kether: "crown",
+  fisico: "dumbbell",
+  mente: "brain",
+  espiritualidade: "sparkles",
+  verdade: "target",
+  inspiracao: "briefcase",
+  amor: "users",
+  abundancia: "wallet",
+  trabalho: "book-open",
+  autenticidade: "gamepad-2",
+  conexao: "crown",
 };
 const BRONZE_ICONS = ["dumbbell", "book", "code", "dollar-sign", "flame", "leaf", "coffee", "music"];
 const ALLIANCE_MOCK = ["@vitali", "@nyx", "@atlas", "@onyx"];
 const SLOT_ICON_BY_ID = {
-  "abund.ativo1": "car",
-  "abund.ativo2": "building-2",
-  "abund.ativo3": "briefcase",
-  "trab.pec": "badge-check",
-  "trab.unip": "graduation-cap",
-  "trab.personal": "dumbbell",
+  "abundancia.ativo1": "car",
+  "abundancia.ativo2": "building-2",
+  "abundancia.ativo3": "briefcase",
+  "trabalho.pec": "badge-check",
+  "trabalho.unip": "graduation-cap",
+  "trabalho.personal": "dumbbell",
 };
 const MASTERY_PHRASES = {
-  gratidao: [
+  conexao: [
     "Ódio constante",
     "Reclamação automática",
     "Vitimismo",
@@ -121,7 +119,7 @@ const MASTERY_PHRASES = {
     "Amor Incondicional",
     "Amor Ágape",
   ],
-  financas: [
+  abundancia: [
     "Miséria",
     "Sobrevivência",
     "Insegurança",
@@ -171,81 +169,78 @@ const MASTERY_PHRASES = {
   ],
 };
 const ASSET_TO_PHRASE = {
-  kether: "gratidao",
-  chokmah: "espiritualidade",
-  binah: "mente",
-  geburah: "verdade",
-  chesed: "inspiracao",
-  tiphareth: "amor",
-  netzach: "financas",
-  hod: "trabalho",
-  yesod: "autenticidade",
-  malkuth: "fisico",
+  conexao: "conexao",
+  espiritualidade: "espiritualidade",
+  mente: "mente",
+  verdade: "verdade",
+  inspiracao: "inspiracao",
+  amor: "amor",
+  abundancia: "abundancia",
+  trabalho: "trabalho",
+  autenticidade: "autenticidade",
+  fisico: "fisico",
 };
 const PROTOCOL_SLOTS = {
-  kether: [
-    { id: "gratidao.crenca1", label: "Crença 1", type: "rect" },
-    { id: "gratidao.crenca2", label: "Crença 2", type: "rect" },
-    { id: "gratidao.crenca3", label: "Crença 3", type: "rect" },
-    { id: "gratidao.lema", label: "Lema de Vida", type: "rect-wide" },
+  conexao: [
+    { id: "conexao.crenca1", label: "Crenca 1", type: "rect" },
+    { id: "conexao.crenca2", label: "Crenca 2", type: "rect" },
+    { id: "conexao.crenca3", label: "Crenca 3", type: "rect" },
+    { id: "conexao.lema", label: "Lema de Vida", type: "rect-wide" },
   ],
-  chokmah: [
-    { id: "esp.sistema", label: "Sistema de Crença", type: "rect" },
-    { id: "esp.lider", label: "Entidade Líder", type: "square" },
-    { id: "esp.protetora", label: "Entidade Protetora", type: "square" },
+  espiritualidade: [
+    { id: "espiritualidade.sistema", label: "Sistema", type: "rect" },
+    { id: "espiritualidade.entidade1", label: "Entidade Lider", type: "square" },
+    { id: "espiritualidade.entidade2", label: "Entidade Protetora", type: "square" },
   ],
-  binah: [
-    { id: "mente.filosofia", label: "Filosofia Operacional", type: "rect" },
+  mente: [
+    { id: "mente.filosofia", label: "Filosofia", type: "rect" },
     { id: "mente.flow", label: "Freq. Flow", type: "square" },
-    { id: "mente.meditacao", label: "Meditação", type: "square" },
+    { id: "mente.meditacao", label: "Meditacao", type: "square" },
   ],
-  geburah: [
-    { id: "verdade.mtp", label: "MTP - Missão", type: "rect" },
+  verdade: [
+    { id: "verdade.mtp", label: "MTP", type: "rect" },
     { id: "verdade.mbti", label: "MBTI", type: "square" },
     { id: "verdade.signo", label: "Signo", type: "square" },
     { id: "verdade.trait1", label: "Trait 1", type: "rect-small" },
     { id: "verdade.trait2", label: "Trait 2", type: "rect-small" },
     { id: "verdade.trait3", label: "Trait 3", type: "rect-small" },
-    { id: "verdade.foto1", label: "Foto Inspiração 1", type: "square" },
-    { id: "verdade.foto2", label: "Foto Inspiração 2", type: "square" },
-    { id: "verdade.foto3", label: "Foto Inspiração 3", type: "square" },
+    { id: "verdade.foto1", label: "Foto 1", type: "square" },
+    { id: "verdade.foto2", label: "Foto 2", type: "square" },
+    { id: "verdade.foto3", label: "Foto 3", type: "square" },
   ],
-  chesed: [
+  inspiracao: [
     {
-      id: "insp.proj1",
+      id: "inspiracao.proj1",
       label: "Projeto 1",
       type: "square",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "logo", label: "Logo" },
         { key: "progresso", label: "%" },
       ],
     },
     {
-      id: "insp.proj2",
+      id: "inspiracao.proj2",
       label: "Projeto 2",
       type: "square",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "logo", label: "Logo" },
         { key: "progresso", label: "%" },
       ],
     },
     {
-      id: "insp.proj3",
+      id: "inspiracao.proj3",
       label: "Projeto 3",
       type: "square",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "logo", label: "Logo" },
         { key: "progresso", label: "%" },
       ],
     },
   ],
-  tiphareth: [
+  amor: [
     {
       id: "amor.intimo",
-      label: "Círculo Íntimo",
+      label: "Circulo Intimo",
       type: "square",
       fields: [
         { key: "nome", label: "Nome" },
@@ -254,7 +249,7 @@ const PROTOCOL_SLOTS = {
     },
     {
       id: "amor.guerra",
-      label: "Irmãos de Guerra",
+      label: "Irmaos de Guerra",
       type: "square",
       fields: [
         { key: "nome", label: "Nome" },
@@ -262,22 +257,22 @@ const PROTOCOL_SLOTS = {
       ],
     },
   ],
-  netzach: [
-    { id: "abund.renda", label: "Renda", type: "rect" },
-    { id: "abund.gasto", label: "Gasto", type: "rect" },
-    { id: "abund.liquidez", label: "Liquidez", type: "rect" },
-    { id: "abund.ativo1", label: "Ativo 1", type: "square" },
-    { id: "abund.ativo2", label: "Ativo 2", type: "square" },
-    { id: "abund.ativo3", label: "Ativo 3", type: "square" },
+  abundancia: [
+    { id: "abundancia.renda", label: "Renda", type: "rect" },
+    { id: "abundancia.gasto", label: "Gasto", type: "rect" },
+    { id: "abundancia.liquidez", label: "Liquidez", type: "rect" },
+    { id: "abundancia.ativo1", label: "Ativo 1", type: "square" },
+    { id: "abundancia.ativo2", label: "Ativo 2", type: "square" },
+    { id: "abundancia.ativo3", label: "Ativo 3", type: "square" },
   ],
-  hod: [
-    { id: "trab.pec", label: "Classe 1: PEC", type: "rect" },
-    { id: "trab.unip", label: "Classe 2: UNIP", type: "rect" },
-    { id: "trab.personal", label: "Classe 3: Personal", type: "rect" },
+  trabalho: [
+    { id: "trabalho.pec", label: "PEC", type: "rect" },
+    { id: "trabalho.unip", label: "UNIP", type: "rect" },
+    { id: "trabalho.personal", label: "Personal", type: "rect" },
   ],
-  yesod: [
+  autenticidade: [
     {
-      id: "aut.hobby1",
+      id: "autenticidade.hobby1",
       label: "Hobby 1",
       type: "square",
       fields: [
@@ -286,7 +281,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "aut.hobby2",
+      id: "autenticidade.hobby2",
       label: "Hobby 2",
       type: "square",
       fields: [
@@ -295,7 +290,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "aut.hobby3",
+      id: "autenticidade.hobby3",
       label: "Hobby 3",
       type: "square",
       fields: [
@@ -304,13 +299,13 @@ const PROTOCOL_SLOTS = {
       ],
     },
   ],
-  malkuth: [
-    { id: "fis.peso", label: "Peso", type: "rect" },
-    { id: "fis.altura", label: "Altura", type: "rect" },
-    { id: "fis.gordura", label: "%G", type: "rect" },
-    { id: "fis.flexao", label: "Flexão", type: "square" },
-    { id: "fis.barra", label: "Barra", type: "square" },
-    { id: "fis.corrida", label: "Corrida", type: "square" },
+  fisico: [
+    { id: "fisico.peso", label: "Peso", type: "rect" },
+    { id: "fisico.altura", label: "Altura", type: "rect" },
+    { id: "fisico.gordura", label: "%G", type: "rect" },
+    { id: "fisico.flexao", label: "Flexao", type: "square" },
+    { id: "fisico.barra", label: "Barra", type: "square" },
+    { id: "fisico.corrida", label: "Corrida", type: "square" },
   ],
 };
 
@@ -367,6 +362,69 @@ const loadProfile = () => {
 
 const saveProfile = (profile) => {
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+};
+
+const applyTheme = (theme) => {
+  document.documentElement.dataset.theme = theme || "gold";
+  const profile = loadProfile();
+  saveProfile({ ...profile, theme: theme || "gold" });
+};
+
+const uploadToSupabase = async (file, path) => {
+  if (!supabase || !file) return null;
+  const { error } = await supabase.storage.from("avatars").upload(path, file, {
+    upsert: true,
+  });
+  if (error) return null;
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  return data?.publicUrl || null;
+};
+
+const playMetalClick = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.16);
+  } catch {
+    return;
+  }
+};
+
+const ensureSupabaseProfile = async (profile) => {
+  if (!supabase) return;
+  const userId = profile.userId?.replace("@", "").trim();
+  const nickname = profile.nickname?.trim();
+  if (!userId || !nickname) return;
+  const email = `${userId}@gameoflife.local`;
+  const passwordKey = "game_of_life.supabase_pass";
+  let password = localStorage.getItem(passwordKey);
+  if (!password) {
+    password = crypto.randomUUID();
+    localStorage.setItem(passwordKey, password);
+  }
+  let auth = await supabase.auth.signInWithPassword({ email, password });
+  if (auth.error) {
+    auth = await supabase.auth.signUp({ email, password });
+  }
+  const user = auth.data?.user;
+  if (!user) return;
+  await supabase.from("profiles").upsert({
+    id: user.id,
+    nickname,
+    user_id: profile.userId,
+    banner: profile.banner || "",
+    avatar_url: profile.avatar || "",
+  });
 };
 
 const nowClock = () =>
@@ -1102,6 +1160,44 @@ const renderTreeEditorSlots = (dna, assetId) => {
       slotEl.appendChild(icon);
     }
 
+    const isPhotoSlot =
+      slot.type === "square" &&
+      (slot.label.toLowerCase().includes("foto") ||
+        (slot.fields || []).some((field) => field.key === "foto"));
+    if (isPhotoSlot) {
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = "image/*";
+      fileInput.className = "hidden-file";
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          asset.profileSlots[slot.id] = {
+            ...(asset.profileSlots[slot.id] || {}),
+            image: reader.result,
+          };
+          slotEl.style.backgroundImage = `url(${reader.result})`;
+          slotEl.style.backgroundSize = "cover";
+          slotEl.style.backgroundPosition = "center";
+          dna.lastUpdatedAt = new Date().toISOString();
+          saveDNA(dna);
+        };
+        reader.readAsDataURL(file);
+      });
+      slotEl.appendChild(fileInput);
+      const existingImage = asset.profileSlots[slot.id]?.image;
+      if (existingImage) {
+        slotEl.style.backgroundImage = `url(${existingImage})`;
+        slotEl.style.backgroundSize = "cover";
+        slotEl.style.backgroundPosition = "center";
+      }
+      slotEl.addEventListener("click", () => {
+        fileInput.click();
+      });
+    }
+
     const fields = slot.fields || [{ key: "value", label: slot.label }];
     fields.forEach((field) => {
       const input = document.createElement("input");
@@ -1122,7 +1218,12 @@ const renderTreeEditorSlots = (dna, assetId) => {
 
 
     slotEl.addEventListener("click", () => {
-      const focusable = slotEl.querySelector("input");
+      if (isPhotoSlot) {
+        const file = slotEl.querySelector("input[type='file']");
+        if (file) file.click();
+        return;
+      }
+      const focusable = slotEl.querySelector("input.profile-input");
       if (focusable) focusable.focus();
     });
 
@@ -1277,48 +1378,26 @@ const openArenaDossier = (arenaId) => {
 
 const renderSocial = () => {
   const levelEl = document.getElementById("social-level");
-  const pinGrid = document.getElementById("pin-grid");
-  const allianceList = document.getElementById("alliance-list");
-  if (!levelEl || !pinGrid || !allianceList) return;
+  const nickEl = document.getElementById("social-nick");
+  const idEl = document.getElementById("social-id");
+  const socialAvatar = document.querySelector(".social-avatar");
+  if (!levelEl) return;
   const dna = seedDNAIfMissing();
   const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
   levelEl.textContent = String(Math.round(total));
 
   const profile = loadProfile();
+  if (nickEl) nickEl.textContent = profile.nickname || "-";
+  if (idEl) idEl.textContent = profile.userId || "-";
+  if (profile.theme) applyTheme(profile.theme);
   if (profile.borderColor) {
     document.documentElement.style.setProperty("--accent-energy", profile.borderColor);
   }
-  const widgets = Array.isArray(profile.widgets) ? profile.widgets : [];
-  pinGrid.innerHTML = "";
-  const options = getSlotOptions();
-  if (widgets.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "pin-item";
-    empty.textContent = "Sem widgets ainda.";
-    pinGrid.appendChild(empty);
-  } else {
-    widgets.forEach((widgetId) => {
-      const option = options.find((opt) => opt.id === widgetId);
-      if (!option) return;
-      const [assetId, slotId] = widgetId.split(".");
-      const asset = dna.assets.find((item) => item.id === assetId);
-      const data = asset?.profileSlots?.[slotId] || {};
-      const value = Object.values(data).filter(Boolean).join(" | ") || "-";
-      const item = document.createElement("div");
-      item.className = "pin-item";
-      item.textContent = `${option.label}: ${value}`;
-      pinGrid.appendChild(item);
-    });
+  if (socialAvatar && profile.avatar) {
+    socialAvatar.style.backgroundImage = `url(${profile.avatar})`;
+    socialAvatar.style.backgroundSize = "cover";
+    socialAvatar.style.backgroundPosition = "center";
   }
-
-  allianceList.innerHTML = "";
-  const search = document.getElementById("alliance-search")?.value?.toLowerCase() || "";
-  ALLIANCE_MOCK.filter((name) => name.toLowerCase().includes(search)).forEach((name) => {
-    const row = document.createElement("div");
-    row.className = "alliance-item";
-    row.textContent = name;
-    allianceList.appendChild(row);
-  });
 };
 
 const openBronzeModal = (arenaId) => {
@@ -1664,6 +1743,8 @@ const initClock = () => {
 
 const init = () => {
   ensureV2Reset();
+  const initialProfile = loadProfile();
+  applyTheme(initialProfile.theme || "gold");
   applyHiatoIfNeeded();
   initClock();
   initNav();
@@ -1783,6 +1864,7 @@ const init = () => {
   const arenaDossier = document.getElementById("arena-dossier");
   if (arenaDossierClose && arenaDossier) {
     arenaDossierClose.addEventListener("click", () => {
+      playMetalClick();
       arenaDossier.classList.remove("is-open");
     });
   }
@@ -1802,12 +1884,23 @@ const init = () => {
   const profileBanner = document.getElementById("profile-banner");
   const widgetGrid = document.getElementById("widget-grid");
   const profileEdit = document.getElementById("profile-edit");
+  const profileAvatarFile = document.getElementById("profile-avatar-file");
+  const profileBannerFile = document.getElementById("profile-banner-file");
+  const hudEdit = document.getElementById("hud-edit");
   if (avatar && profileModal) {
     avatar.addEventListener("click", () => {
       const profile = loadProfile();
       if (profileNickname) profileNickname.value = profile.nickname || "";
       if (profileId) profileId.value = profile.userId || "";
       if (profileBanner) profileBanner.value = profile.banner || "";
+      if (profile.avatar) {
+        const profileAvatar = profileModal.querySelector(".profile-avatar");
+        if (profileAvatar) profileAvatar.style.backgroundImage = `url(${profile.avatar})`;
+      }
+      if (profile.banner) {
+        const bannerWrap = profileModal.querySelector(".profile-banner");
+        if (bannerWrap) bannerWrap.style.backgroundImage = `url(${profile.banner})`;
+      }
       if (widgetGrid) {
         widgetGrid.innerHTML = "";
         const options = getSlotOptions();
@@ -1843,6 +1936,12 @@ const init = () => {
       profileModal.classList.add("is-open");
     });
   }
+  if (hudEdit && profileModal) {
+    hudEdit.addEventListener("click", () => {
+      profileModal.classList.add("is-open");
+      if (profileNickname) profileNickname.focus();
+    });
+  }
   if (profileClose && profileModal) {
     profileClose.addEventListener("click", () => {
       profileModal.classList.remove("is-open");
@@ -1850,14 +1949,74 @@ const init = () => {
   }
   if (profileEdit) {
     profileEdit.addEventListener("click", () => {
-      const profile = loadProfile();
-      const updated = {
-        ...profile,
-        nickname: profileNickname?.value || "",
-        userId: profileId?.value || "",
-        banner: profileBanner?.value || "",
+      if (profileBannerFile) profileBannerFile.click();
+    });
+  }
+
+  if (profileAvatarFile) {
+    const avatarBox = profileModal?.querySelector(".profile-avatar");
+    if (avatarBox) {
+      avatarBox.addEventListener("click", () => profileAvatarFile.click());
+    }
+    profileAvatarFile.addEventListener("change", () => {
+      const file = profileAvatarFile.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const profile = loadProfile();
+        const updated = { ...profile, avatar: reader.result };
+        saveProfile(updated);
+        const profileAvatar = profileModal?.querySelector(".profile-avatar");
+        if (profileAvatar) profileAvatar.style.backgroundImage = `url(${reader.result})`;
+        renderSocial();
       };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (profileBannerFile) {
+    profileBannerFile.addEventListener("change", () => {
+      const file = profileBannerFile.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const profile = loadProfile();
+        const updated = { ...profile, banner: reader.result };
+        saveProfile(updated);
+        const bannerWrap = profileModal?.querySelector(".profile-banner");
+        if (bannerWrap) bannerWrap.style.backgroundImage = `url(${reader.result})`;
+        renderSocial();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (profileNickname) {
+    profileNickname.addEventListener("change", () => {
+      const profile = loadProfile();
+      const updated = { ...profile, nickname: profileNickname.value.trim() };
       saveProfile(updated);
+      ensureSupabaseProfile(updated);
+      renderSocial();
+    });
+  }
+
+  if (profileId) {
+    profileId.addEventListener("change", () => {
+      const profile = loadProfile();
+      const updated = { ...profile, userId: profileId.value.trim() };
+      saveProfile(updated);
+      ensureSupabaseProfile(updated);
+      renderSocial();
+    });
+  }
+
+  if (profileBanner) {
+    profileBanner.addEventListener("change", () => {
+      const profile = loadProfile();
+      const updated = { ...profile, banner: profileBanner.value.trim() };
+      saveProfile(updated);
+      ensureSupabaseProfile(updated);
       renderSocial();
     });
   }
@@ -1867,9 +2026,98 @@ const init = () => {
       renderSocial();
     });
   }
+
+  const configNickname = document.getElementById("config-nickname");
+  const configId = document.getElementById("config-id");
+  const initialProfile = loadProfile();
+  if (configNickname) configNickname.value = initialProfile.nickname || "";
+  if (configId) configId.value = initialProfile.userId || "";
+  if (configNickname) {
+    configNickname.addEventListener("change", () => {
+      const profile = loadProfile();
+      const updated = { ...profile, nickname: configNickname.value.trim() };
+      saveProfile(updated);
+      ensureSupabaseProfile(updated);
+      renderSocial();
+    });
+  }
+  if (configId) {
+    configId.addEventListener("change", () => {
+      const profile = loadProfile();
+      const updated = { ...profile, userId: configId.value.trim() };
+      saveProfile(updated);
+      ensureSupabaseProfile(updated);
+      renderSocial();
+    });
+  }
+
+  const themeButtons = document.querySelectorAll(".theme-btn");
+  themeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const theme = button.dataset.theme || "gold";
+      applyTheme(theme);
+      renderSocial();
+    });
+  });
+
+  const configAvatarUpload = document.getElementById("config-avatar-upload");
+  const configBannerUpload = document.getElementById("config-banner-upload");
+  const configAvatarFile = document.getElementById("config-avatar-file");
+  const configBannerFile = document.getElementById("config-banner-file");
+  if (configAvatarUpload && configAvatarFile) {
+    configAvatarUpload.addEventListener("click", () => configAvatarFile.click());
+  }
+  if (configBannerUpload && configBannerFile) {
+    configBannerUpload.addEventListener("click", () => configBannerFile.click());
+  }
+
+  if (configAvatarFile) {
+    configAvatarFile.addEventListener("change", async () => {
+      const file = configAvatarFile.files?.[0];
+      if (!file) return;
+      let url = await uploadToSupabase(file, `avatars/${crypto.randomUUID()}`);
+      if (!url) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const profile = loadProfile();
+          const updated = { ...profile, avatar: reader.result };
+          saveProfile(updated);
+          renderSocial();
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+      const profile = loadProfile();
+      saveProfile({ ...profile, avatar: url });
+      renderSocial();
+    });
+  }
+
+  if (configBannerFile) {
+    configBannerFile.addEventListener("change", async () => {
+      const file = configBannerFile.files?.[0];
+      if (!file) return;
+      let url = await uploadToSupabase(file, `banners/${crypto.randomUUID()}`);
+      if (!url) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const profile = loadProfile();
+          const updated = { ...profile, banner: reader.result };
+          saveProfile(updated);
+          renderSocial();
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+      const profile = loadProfile();
+      saveProfile({ ...profile, banner: url });
+      renderSocial();
+    });
+  }
   const treeCancel = document.getElementById("tree-edit-back");
   if (treeCancel) {
     treeCancel.addEventListener("click", () => {
+      playMetalClick();
       closeTreeEditor();
     });
   }

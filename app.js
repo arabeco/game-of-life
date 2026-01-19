@@ -2816,17 +2816,21 @@ const init = () => {
   });
 };
 
-document.addEventListener("DOMContentLoaded", init);
-
-window.addEventListener("load", () => {
+const startAppWithSplash = () => {
   const loading = document.getElementById("loading-screen");
-  if (!loading) return;
+  if (!loading) {
+    init();
+    return;
+  }
   setTimeout(() => {
     loading.classList.add("fade-out");
     const handle = () => {
       loading.removeEventListener("transitionend", handle);
       loading.remove();
+      init();
     };
     loading.addEventListener("transitionend", handle);
-  }, 2500);
-});
+  }, 3000);
+};
+
+document.addEventListener("DOMContentLoaded", startAppWithSplash);

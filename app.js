@@ -3247,4 +3247,8 @@ const startAppWithSplash = () => {
   }, 3600);
 };
 
-document.addEventListener("DOMContentLoaded", startAppWithSplash);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startAppWithSplash);
+} else {
+  startAppWithSplash();
+}

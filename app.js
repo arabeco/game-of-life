@@ -509,7 +509,7 @@ const initAuth = () => {
       ensureSupabaseProfile(loadProfile());
       ensureUserMissionsRow(session.user.id);
     } else {
-      setAuthLocked(true);
+      if (!offlineFallback) setAuthLocked(true);
     }
   });
 
@@ -527,7 +527,9 @@ const initAuth = () => {
     })
     .catch((error) => {
       logSupabaseError("auth.getSession.timeout", error);
-      setAuthLocked(true);
+      offlineFallback = true;
+      setAuthLocked(false);
+      initApp();
     });
 };
 
@@ -2609,6 +2611,7 @@ const initClock = () => {
 };
 
 let appInitialized = false;
+let offlineFallback = false;
 
 const initApp = () => {
   if (appInitialized) return;

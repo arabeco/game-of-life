@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Game of Life</title>
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/manifest.json?v=2" />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <script>
@@ -45,12 +45,14 @@
         <button class="silver-button auth-button" id="login-guest-btn">Entrar como Convidado</button>
         <div class="auth-error" id="login-error"></div>
         <div class="auth-warning" id="login-warning"></div>
-        <div class="auth-divider">supabase</div>
-        <label class="field-label" for="supabase-url">URL</label>
-        <input type="text" id="supabase-url" class="auth-input" placeholder="https://xxxx.supabase.co" />
-        <label class="field-label" for="supabase-anon">Anon Key</label>
-        <input type="password" id="supabase-anon" class="auth-input" />
-        <button class="silver-button auth-button" id="supabase-save">Salvar Supabase</button>
+        <div id="supabase-config" class="is-hidden">
+          <div class="auth-divider">supabase</div>
+          <label class="field-label" for="supabase-url">URL</label>
+          <input type="text" id="supabase-url" class="auth-input" placeholder="https://xxxx.supabase.co" />
+          <label class="field-label" for="supabase-anon">Anon Key</label>
+          <input type="password" id="supabase-anon" class="auth-input" />
+          <button class="silver-button auth-button" id="supabase-save">Salvar Supabase</button>
+        </div>
       </div>
     </div>
     <div class="app">
@@ -281,7 +283,7 @@
       </nav>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="bootstrap.js"></script>
 
     <div id="missions-loading" class="modal is-hidden">
       <div class="modal-card dossier-card">

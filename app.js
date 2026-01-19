@@ -471,6 +471,7 @@ const initAuth = () => {
   const supabaseUrlInput = document.getElementById("supabase-url");
   const supabaseAnonInput = document.getElementById("supabase-anon");
   const supabaseSave = document.getElementById("supabase-save");
+  const supabaseConfig = document.getElementById("supabase-config");
   setAuthLocked(true);
 
   if (guestMode) {
@@ -479,6 +480,23 @@ const initAuth = () => {
     if (warnEl) warnEl.textContent = "Dados salvos apenas localmente.";
     return;
   }
+
+  const showSupabaseConfig = (show) => {
+    if (!supabaseConfig) return;
+    supabaseConfig.classList.toggle("is-hidden", !show);
+    if (show) localStorage.setItem("game_of_life.supabase_config_visible", "true");
+  };
+
+  const shouldShowSupabaseConfig =
+    location.hash === "#supabase" ||
+    localStorage.getItem("game_of_life.supabase_config_visible") === "true";
+  showSupabaseConfig(shouldShowSupabaseConfig);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.ctrlKey && event.altKey && event.key.toLowerCase() === "s") {
+      showSupabaseConfig(true);
+    }
+  });
 
   if (supabaseUrlInput) {
     supabaseUrlInput.value = localStorage.getItem("game_of_life.supabase_url") || "";

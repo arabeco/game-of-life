@@ -477,12 +477,20 @@ const initAuth = () => {
     return;
   }
 
-  if (!isSupabaseEnabled()) {
-    if (warnEl) warnEl.textContent = "Supabase indisponivel. Use Convidado.";
-  }
+  const requireSupabase = () => {
+    if (isSupabaseEnabled()) return true;
+    if (warnEl) {
+      warnEl.textContent = "Supabase indisponivel. Use Convidado.";
+    }
+    if (errorEl) {
+      errorEl.textContent = "Supabase nao configurado.";
+    }
+    return false;
+  };
 
-  if (googleBtn && isSupabaseEnabled()) {
+  if (googleBtn) {
     googleBtn.addEventListener("click", async () => {
+      if (!requireSupabase()) return;
       if (errorEl) errorEl.textContent = "";
       try {
         const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
@@ -493,8 +501,9 @@ const initAuth = () => {
     });
   }
 
-  if (emailBtn && isSupabaseEnabled()) {
+  if (emailBtn) {
     emailBtn.addEventListener("click", async () => {
+      if (!requireSupabase()) return;
       if (errorEl) errorEl.textContent = "";
       const email = emailInput?.value?.trim();
       const password = passInput?.value || "";
@@ -515,8 +524,9 @@ const initAuth = () => {
     });
   }
 
-  if (signupBtn && isSupabaseEnabled()) {
+  if (signupBtn) {
     signupBtn.addEventListener("click", async () => {
+      if (!requireSupabase()) return;
       if (errorEl) errorEl.textContent = "";
       const email = emailInput?.value?.trim();
       const password = passInput?.value || "";
@@ -556,6 +566,7 @@ const initAuth = () => {
   }
 
   if (!isSupabaseEnabled()) {
+    if (warnEl) warnEl.textContent = "Supabase indisponivel. Use Convidado.";
     return;
   }
 

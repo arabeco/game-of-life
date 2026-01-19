@@ -1,0 +1,16 @@
+{
+  "name": "Game of Life - Zee",
+  "short_name": "Zee",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/neon/512/experimental-sphere-neon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -138,14 +138,11 @@
               <div class="drawer-title">Identidade</div>
               <div class="oracle-form">
                 <div class="oracle-row">
-                  <label for="config-nickname">Nickname</label>
-                  <input type="text" id="config-nickname" />
-                </div>
-                <div class="oracle-row">
-                  <label for="config-id">@ID</label>
-                  <input type="text" id="config-id" />
+                <label for="config-identity">Identidade</label>
+                <input type="text" id="config-identity" placeholder="Nickname / @ID" />
                 </div>
               </div>
+            <button class="gold-button" id="config-save-profile">Salvar Perfil</button>
               <div class="drawer-title">Skin</div>
               <div class="theme-buttons">
                 <button class="silver-button theme-btn" data-theme="gold">Gold</button>
@@ -354,8 +351,11 @@
           <input type="text" id="arena-description" />
           <label class="field-label" for="arena-asset">Ativo</label>
           <select id="arena-asset"></select>
-          <label class="field-label" for="arena-target">Meta (Quantidade)</label>
-          <input type="number" id="arena-target" min="1" step="1" />
+          <label class="field-label">Bronze Inicial</label>
+          <label class="toggle-row">
+            <input type="checkbox" id="arena-add-bronze" />
+            Adicionar Bronze ao salvar
+          </label>
         </div>
         <button class="primary-button" id="arena-save" aria-label="Salvar">
           <i data-lucide="check"></i>
@@ -453,8 +453,7 @@
             <input type="file" id="profile-avatar-file" class="hidden-file" accept="image/*" />
           </div>
           <div class="profile-name">
-            <input type="text" id="profile-nickname" class="profile-input" placeholder="Nickname" />
-            <input type="text" id="profile-id" class="profile-input" placeholder="@id" />
+            <input type="text" id="profile-identity" class="profile-input" placeholder="Nickname / @ID" />
           </div>
           <div class="profile-banner">
             <input type="text" id="profile-banner" class="profile-input" placeholder="Banner de Titulo" />

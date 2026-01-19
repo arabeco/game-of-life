@@ -1766,8 +1766,8 @@ const openArenaModal = () => {
   const select = document.getElementById("arena-asset");
   const title = document.getElementById("arena-title");
   const description = document.getElementById("arena-description");
-  const target = document.getElementById("arena-target");
-  if (!modal || !select || !title || !target || !description) return;
+  const addBronze = document.getElementById("arena-add-bronze");
+  if (!modal || !select || !title || !description) return;
   select.innerHTML = "";
   SEPHIROT.forEach((asset) => {
     const option = document.createElement("option");
@@ -1777,7 +1777,7 @@ const openArenaModal = () => {
   });
   title.value = "";
   description.value = "";
-  target.value = "";
+  if (addBronze) addBronze.checked = false;
   modal.classList.add("is-open");
 };
 
@@ -2355,26 +2355,19 @@ const initConfig = () => {
       slider.value = String(Math.max(1, Math.round(Number(asset.level || 1))));
       slider.className = "mastery-slider";
 
-      const phrase = document.createElement("div");
-      phrase.className = "mastery-phrase";
-      const idx = Math.max(0, Math.min(9, Number(slider.value) - 1));
-      phrase.textContent = phrases[idx] || "";
-
-      const textarea = document.createElement("textarea");
-      textarea.className = "mastery-textarea";
-      textarea.placeholder = "Escreva seu texto soberano...";
-      textarea.value = asset.customText || "";
+      const phraseInput = document.createElement("textarea");
+      phraseInput.className = "mastery-textarea";
+      phraseInput.placeholder = "Escreva sua frase soberana...";
+      phraseInput.value = asset.customText || "";
 
       const updateView = () => {
         value.textContent = String(Math.round(Number(slider.value)));
         if (mode === "oracle") {
           const index = Math.max(0, Math.min(9, Number(slider.value) - 1));
-          phrase.textContent = phrases[index] || "";
-          if (!row.contains(phrase)) row.appendChild(phrase);
-          if (row.contains(textarea)) row.removeChild(textarea);
+          phraseInput.value = phrases[index] || "";
+          phraseInput.readOnly = true;
         } else {
-          if (!row.contains(textarea)) row.appendChild(textarea);
-          if (row.contains(phrase)) row.removeChild(phrase);
+          phraseInput.readOnly = false;
         }
       };
 
@@ -2413,15 +2406,17 @@ const initConfig = () => {
         scheduleSupabaseSync(slider.value);
       });
 
-      textarea.addEventListener("change", () => {
-        asset.customText = textarea.value;
+      phraseInput.addEventListener("change", () => {
+        if (mode === "oracle") return;
+        asset.customText = phraseInput.value;
         dna.lastUpdatedAt = new Date().toISOString();
         saveDNA(dna);
       });
 
+      updateView();
       row.appendChild(header);
       row.appendChild(slider);
-      row.appendChild(mode === "oracle" ? phrase : textarea);
+      row.appendChild(phraseInput);
       container.appendChild(row);
     });
   };
@@ -2615,27 +2610,30 @@ const initApp = () => {
     arenaSave.addEventListener("click", () => {
       const titleInput = document.getElementById("arena-title");
       const assetSelect = document.getElementById("arena-asset");
-      const targetInput = document.getElementById("arena-target");
+      const addBronze = document.getElementById("arena-add-bronze");
       const descriptionInput = document.getElementById("arena-description");
-      if (!titleInput || !assetSelect || !targetInput || !descriptionInput) return;
+      if (!titleInput || !assetSelect || !descriptionInput) return;
       const title = titleInput.value.trim();
       if (!title) return;
-      const targetCount = Number(targetInput.value || 0) || null;
       const description = descriptionInput.value.trim();
       const arenas = loadArenas();
-      arenas.push({
+      const newArena = {
         id: crypto.randomUUID(),
         title,
         completion: 0,
         assetId: assetSelect.value,
-        targetCount,
+        targetCount: null,
         completedCount: 0,
         description,
-      });
+      };
+      arenas.push(newArena);
       saveArenas(arenas);
       renderArenas();
       closeArenaModal();
       checkMissionProgress();
+      if (addBronze?.checked) {
+        openBronzeModal(newArena.id);
+      }
     });
   }
 
@@ -2720,8 +2718,7 @@ const initApp = () => {
   const avatar = document.getElementById("hud-avatar");
   const profileModal = document.getElementById("profile-modal");
   const profileClose = document.getElementById("profile-close");
-  const profileNickname = document.getElementById("profile-nickname");
-  const profileId = document.getElementById("profile-id");
+  const profileIdentity = document.getElementById("profile-identity");
   const profileBanner = document.getElementById("profile-banner");
   const widgetGrid = document.getElementById("widget-grid");
   const profileEdit = document.getElementById("profile-edit");
@@ -2731,8 +2728,9 @@ const initApp = () => {
   if (avatar && profileModal) {
     avatar.addEventListener("click", () => {
       const profile = loadProfile();
-      if (profileNickname) profileNickname.value = profile.nickname || "";
-      if (profileId) profileId.value = profile.userId || "";
+      if (profileIdentity) {
+        profileIdentity.value = profile.userId || profile.nickname || "";
+      }
       if (profileBanner) profileBanner.value = profile.banner || "";
       if (profile.avatar) {
         const profileAvatar = profileModal.querySelector(".profile-avatar");
@@ -2780,7 +2778,7 @@ const initApp = () => {
   if (hudEdit && profileModal) {
     hudEdit.addEventListener("click", () => {
       profileModal.classList.add("is-open");
-      if (profileNickname) profileNickname.focus();
+      if (profileIdentity) profileIdentity.focus();
     });
   }
   if (profileClose && profileModal) {
@@ -2832,20 +2830,11 @@ const initApp = () => {
     });
   }
 
-  if (profileNickname) {
-    profileNickname.addEventListener("change", () => {
+  if (profileIdentity) {
+    profileIdentity.addEventListener("change", () => {
+      const value = profileIdentity.value.trim();
       const profile = loadProfile();
-      const updated = { ...profile, nickname: profileNickname.value.trim() };
-      saveProfile(updated);
-      ensureSupabaseProfile(updated);
-      renderSocial();
-    });
-  }
-
-  if (profileId) {
-    profileId.addEventListener("change", () => {
-      const profile = loadProfile();
-      const updated = { ...profile, userId: profileId.value.trim() };
+      const updated = { ...profile, nickname: value, userId: value };
       saveProfile(updated);
       ensureSupabaseProfile(updated);
       renderSocial();
@@ -2868,35 +2857,30 @@ const initApp = () => {
     });
   }
 
-  const configNickname = document.getElementById("config-nickname");
-  const configId = document.getElementById("config-id");
+  const configIdentity = document.getElementById("config-identity");
+  const configSaveProfile = document.getElementById("config-save-profile");
   const configProfile = loadProfile();
-  if (configNickname) configNickname.value = configProfile.nickname || "";
-  if (configId) configId.value = configProfile.userId || "";
-  if (configNickname) {
-    configNickname.addEventListener("input", () => {
+  if (configIdentity) {
+    configIdentity.value = configProfile.userId || configProfile.nickname || "";
+    configIdentity.addEventListener("input", () => {
+      const value = configIdentity.value.trim();
       const profile = loadProfile();
-      saveProfile({ ...profile, nickname: configNickname.value.trim() });
+      saveProfile({ ...profile, nickname: value, userId: value });
     });
-    configNickname.addEventListener("change", () => {
+    configIdentity.addEventListener("change", () => {
+      const value = configIdentity.value.trim();
       const profile = loadProfile();
-      const updated = { ...profile, nickname: configNickname.value.trim() };
+      const updated = { ...profile, nickname: value, userId: value };
       saveProfile(updated);
       ensureSupabaseProfile(updated);
       renderSocial();
     });
   }
-  if (configId) {
-    configId.addEventListener("input", () => {
+  if (configSaveProfile) {
+    configSaveProfile.addEventListener("click", () => {
       const profile = loadProfile();
-      saveProfile({ ...profile, userId: configId.value.trim() });
-    });
-    configId.addEventListener("change", () => {
-      const profile = loadProfile();
-      const updated = { ...profile, userId: configId.value.trim() };
-      saveProfile(updated);
-      ensureSupabaseProfile(updated);
-      renderSocial();
+      ensureSupabaseProfile(profile);
+      syncProfileTotals(profile);
     });
   }
 

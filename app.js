@@ -7,17 +7,19 @@ const GLITCH_KEY = "game_of_life.glitch_until";
 const MODE_KEY = "game_of_life.mastery_mode";
 
 const SEPHIROT = [
-  { id: "kether", label: "Kether" },
-  { id: "chokmah", label: "Chokmah" },
-  { id: "binah", label: "Binah" },
-  { id: "chesed", label: "Chesed" },
-  { id: "geburah", label: "Geburah" },
-  { id: "tiphareth", label: "Tiphareth" },
-  { id: "netzach", label: "Netzach" },
-  { id: "hod", label: "Hod" },
-  { id: "yesod", label: "Yesod" },
-  { id: "malkuth", label: "Malkuth" },
+  { id: "kether", label: "Gratidao", row: 1, col: 2 },
+  { id: "binah", label: "Mente", row: 2, col: 1 },
+  { id: "chokmah", label: "Espiritualidade", row: 2, col: 3 },
+  { id: "geburah", label: "Proposito", row: 3, col: 1 },
+  { id: "chesed", label: "Projetos", row: 3, col: 3 },
+  { id: "tiphareth", label: "Conexoes", row: 4, col: 2 },
+  { id: "hod", label: "Trabalho/Estudos", row: 5, col: 1 },
+  { id: "netzach", label: "Financas", row: 5, col: 3 },
+  { id: "yesod", label: "Hobbies", row: 6, col: 2 },
+  { id: "malkuth", label: "Fisico", row: 7, col: 2 },
 ];
+
+const LABEL_BY_ID = new Map(SEPHIROT.map((asset) => [asset.id, asset.label]));
 
 const nowClock = () => new Date().toLocaleTimeString("pt-BR", { hour12: false });
 
@@ -34,14 +36,11 @@ const loadDNA = () => {
 };
 
 const getAssets = () => {
-  const stored = loadDNA();
-  if (!stored) {
-    return SEPHIROT.map((asset) => ({ ...asset, level: 0.0 }));
-  }
+  const stored = seedDNAIfMissing();
   const byId = new Map(stored.assets.map((asset) => [asset.id, asset]));
   return SEPHIROT.map((asset) => ({
     ...asset,
-    level: typeof byId.get(asset.id)?.level === "number" ? byId.get(asset.id).level : 0.0,
+    level: typeof byId.get(asset.id)?.level === "number" ? byId.get(asset.id).level : 0,
   }));
 };
 
@@ -53,9 +52,13 @@ const renderTree = () => {
   const assets = getAssets();
 
   assets.forEach((asset) => {
-    const sphere = document.createElement("div");
+    const sphere = document.createElement("button");
     sphere.className = "sephirot";
-    if (asset.level === 0.0) sphere.classList.add("is-empty");
+    sphere.type = "button";
+    sphere.style.gridRow = String(asset.row);
+    sphere.style.gridColumn = String(asset.col);
+    sphere.dataset.assetId = asset.id;
+    if (asset.level === 0) sphere.classList.add("is-empty");
     if (isStandby) sphere.classList.add("is-empty");
 
     const label = document.createElement("div");
@@ -64,10 +67,11 @@ const renderTree = () => {
 
     const level = document.createElement("div");
     level.className = "sephirot-level";
-    level.textContent = asset.level.toFixed(1);
+    level.textContent = String(Math.round(asset.level));
 
     sphere.appendChild(label);
     sphere.appendChild(level);
+    sphere.addEventListener("click", () => openTreeEditor(asset.id));
     treeGrid.appendChild(sphere);
   });
 };
@@ -135,6 +139,33 @@ const updateGlobalArenaProgress = (arenaId, pills) => {
   } catch {
     return;
   }
+};
+
+const renderArenas = () => {
+  const arenaList = document.getElementById("arena-list");
+  if (!arenaList) return;
+  const arenas = loadArenas();
+  arenaList.innerHTML = "";
+  if (arenas.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "arena-empty";
+    empty.textContent = "Sem metas ainda.";
+    arenaList.appendChild(empty);
+    return;
+  }
+  arenas.forEach((arena) => {
+    const card = document.createElement("div");
+    card.className = "arena-card";
+    const title = document.createElement("div");
+    title.className = "arena-title";
+    title.textContent = arena.title || "Arena";
+    const progress = document.createElement("div");
+    progress.className = "arena-progress";
+    progress.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+    card.appendChild(title);
+    card.appendChild(progress);
+    arenaList.appendChild(card);
+  });
 };
 
 const dateOnly = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -281,7 +312,7 @@ const renderPlanner = () => {
   if (backlogPills.length === 0) {
     const empty = document.createElement("div");
     empty.className = "backlog-empty";
-    empty.textContent = "Nenhuma pílula pendente.";
+    empty.textContent = "Nenhuma acao pendente.";
     backlogList.appendChild(empty);
   } else {
     backlogPills.forEach((pill) => {
@@ -302,7 +333,7 @@ const buildPillElement = (pill, arenaTitle) => {
 
   const title = document.createElement("div");
   title.className = "pill-title";
-  title.textContent = pill.title ?? "Pill";
+  title.textContent = pill.title ?? "Acao";
 
   const meta = document.createElement("div");
   meta.className = "pill-meta";
@@ -408,7 +439,7 @@ const seedDNAIfMissing = () => {
     assets: SEPHIROT.map((asset) => ({
       id: asset.id,
       label: asset.label,
-      level: 0.0,
+      level: 0,
       slots: [],
     })),
     hobbies: [],
@@ -416,6 +447,52 @@ const seedDNAIfMissing = () => {
   };
   saveDNA(seeded);
   return seeded;
+};
+
+const getAssetFromDNA = (dna, assetId) => dna.assets.find((asset) => asset.id === assetId);
+
+const renderTreeEditorSlots = (dna, assetId) => {
+  const list = document.getElementById("tree-slot-list");
+  if (!list) return;
+  const asset = getAssetFromDNA(dna, assetId);
+  list.innerHTML = "";
+  if (!asset) return;
+  asset.slots = asset.slots || [];
+  asset.slots.forEach((slot) => {
+    const slotEl = document.createElement("div");
+    slotEl.className = "slot-item";
+    const slotInput = document.createElement("input");
+    slotInput.value = slot.label || "";
+    slotInput.addEventListener("change", () => {
+      slot.label = slotInput.value;
+      dna.lastUpdatedAt = new Date().toISOString();
+      saveDNA(dna);
+    });
+    slotEl.appendChild(slotInput);
+    list.appendChild(slotEl);
+  });
+};
+
+const openTreeEditor = (assetId) => {
+  const dna = seedDNAIfMissing();
+  const asset = getAssetFromDNA(dna, assetId);
+  if (!asset) return;
+  const modal = document.getElementById("tree-edit-modal");
+  const title = document.getElementById("tree-edit-title");
+  const levelInput = document.getElementById("tree-edit-level");
+  if (!modal || !title || !levelInput) return;
+  title.textContent = `Editar ${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
+  levelInput.value = String(Math.round(Number(asset.level || 0)));
+  modal.dataset.assetId = asset.id;
+  renderTreeEditorSlots(dna, asset.id);
+  modal.classList.add("is-open");
+};
+
+const closeTreeEditor = () => {
+  const modal = document.getElementById("tree-edit-modal");
+  if (!modal) return;
+  modal.classList.remove("is-open");
+  modal.dataset.assetId = "";
 };
 
 const buildOracleForm = (dna) => {
@@ -426,13 +503,13 @@ const buildOracleForm = (dna) => {
     const row = document.createElement("div");
     row.className = "oracle-row";
     const label = document.createElement("label");
-    label.textContent = `${asset.label}`;
+    label.textContent = LABEL_BY_ID.get(asset.id) ?? asset.label;
     const input = document.createElement("input");
     input.type = "number";
     input.min = "0";
-    input.max = "10";
-    input.step = "0.1";
-    input.value = Number(asset.level || 0).toFixed(1);
+    input.max = "100";
+    input.step = "1";
+    input.value = String(Math.round(Number(asset.level || 0) * 10));
     input.dataset.assetId = asset.id;
     row.appendChild(label);
     row.appendChild(input);
@@ -448,7 +525,7 @@ const buildSovereignControls = (dna) => {
   dna.assets.forEach((asset) => {
     const option = document.createElement("option");
     option.value = asset.id;
-    option.textContent = asset.label;
+    option.textContent = LABEL_BY_ID.get(asset.id) ?? asset.label;
     select.appendChild(option);
   });
 
@@ -458,13 +535,13 @@ const buildSovereignControls = (dna) => {
       const row = document.createElement("div");
       row.className = "sovereign-row";
       const label = document.createElement("label");
-      label.textContent = asset.label;
+      label.textContent = LABEL_BY_ID.get(asset.id) ?? asset.label;
       const input = document.createElement("input");
       input.type = "range";
       input.min = "0";
       input.max = "10";
-      input.step = "0.1";
-      input.value = Number(asset.level || 0);
+      input.step = "1";
+      input.value = String(Math.round(Number(asset.level || 0)));
       input.addEventListener("input", () => {
         asset.level = Number(input.value);
         dna.lastUpdatedAt = new Date().toISOString();
@@ -603,7 +680,7 @@ const initConfig = () => {
       inputs.forEach((input) => {
         const id = input.dataset.assetId;
         const asset = dna.assets.find((item) => item.id === id);
-        if (asset) asset.level = Number(input.value || 0);
+        if (asset) asset.level = Math.max(0, Math.min(10, Number(input.value || 0) / 10));
       });
       dna.lastUpdatedAt = new Date().toISOString();
       saveDNA(dna);
@@ -614,11 +691,11 @@ const initConfig = () => {
 
 const initPlanner = () => {
   renderPlanner();
-  const logisticsToggle = document.getElementById("logistics-toggle");
-  const logisticsDrawer = document.getElementById("logistics-drawer");
-  if (logisticsToggle && logisticsDrawer) {
-    logisticsToggle.addEventListener("click", () => {
-      logisticsDrawer.classList.toggle("is-open");
+  const notesToggle = document.getElementById("notes-toggle");
+  const notesContent = document.getElementById("notes-content");
+  if (notesToggle && notesContent) {
+    notesToggle.addEventListener("click", () => {
+      notesContent.classList.toggle("is-collapsed");
     });
   }
 };
@@ -640,6 +717,7 @@ const init = () => {
   renderTree();
   initPlanner();
   initConfig();
+  renderArenas();
   applyGlitch();
   const hiatoAck = document.getElementById("hiato-ack");
   if (hiatoAck) {
@@ -647,9 +725,71 @@ const init = () => {
       clearHiato();
     });
   }
+  const arenaAdd = document.getElementById("arena-add");
+  if (arenaAdd) {
+    arenaAdd.addEventListener("click", () => {
+      const title = prompt("Nome da Arena");
+      if (!title) return;
+      const arenas = loadArenas();
+      arenas.push({
+        id: crypto.randomUUID(),
+        title: title.trim(),
+        completion: 0,
+      });
+      saveArenas(arenas);
+      renderArenas();
+    });
+  }
+  const treeSave = document.getElementById("tree-edit-save");
+  const treeCancel = document.getElementById("tree-edit-cancel");
+  const treeSlotAdd = document.getElementById("tree-slot-add");
+  const treeSlotName = document.getElementById("tree-slot-name");
+  if (treeSave) {
+    treeSave.addEventListener("click", () => {
+      const modal = document.getElementById("tree-edit-modal");
+      const levelInput = document.getElementById("tree-edit-level");
+      if (!modal || !levelInput) return;
+      const assetId = modal.dataset.assetId;
+      if (!assetId) return;
+      const dna = seedDNAIfMissing();
+      const asset = getAssetFromDNA(dna, assetId);
+      if (!asset) return;
+      const raw = Number(levelInput.value || 0);
+      asset.level = Math.max(0, Math.min(10, Math.round(raw)));
+      dna.lastUpdatedAt = new Date().toISOString();
+      saveDNA(dna);
+      renderTree();
+      closeTreeEditor();
+    });
+  }
+  if (treeCancel) {
+    treeCancel.addEventListener("click", () => {
+      closeTreeEditor();
+    });
+  }
+  if (treeSlotAdd && treeSlotName) {
+    treeSlotAdd.addEventListener("click", () => {
+      const name = treeSlotName.value.trim();
+      if (!name) return;
+      const modal = document.getElementById("tree-edit-modal");
+      if (!modal) return;
+      const assetId = modal.dataset.assetId;
+      if (!assetId) return;
+      const dna = seedDNAIfMissing();
+      const asset = getAssetFromDNA(dna, assetId);
+      if (!asset) return;
+      asset.slots = asset.slots || [];
+      asset.slots.push({ id: crypto.randomUUID(), label: name, metrics: [] });
+      treeSlotName.value = "";
+      dna.lastUpdatedAt = new Date().toISOString();
+      saveDNA(dna);
+      renderTreeEditorSlots(dna, assetId);
+    });
+  }
   window.addEventListener("storage", () => {
     renderTree();
     renderPlanner();
+    renderArenas();
     applyGlitch();
   });
 };

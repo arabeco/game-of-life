@@ -32,6 +32,7 @@
           <div class="arena-list" id="arena-list">
             <div class="arena-empty">Sem metas ainda.</div>
           </div>
+          <button class="fab" id="arena-add" aria-label="Adicionar Arena">+</button>
         </section>
 
         <section class="screen screen-planner" data-screen="planner">
@@ -40,77 +41,66 @@
             <aside class="backlog-drawer">
               <div class="drawer-title">Backlog</div>
               <div class="backlog-list" id="backlog-list">
-                <div class="backlog-empty">Nenhuma pílula pendente.</div>
+                <div class="backlog-empty">Nenhuma acao pendente.</div>
               </div>
             </aside>
 
             <div class="timeline" id="timeline"></div>
 
-            <button class="logistics-toggle" id="logistics-toggle" aria-label="Logistica">
-              Logistica
-            </button>
-
-            <aside class="logistics-drawer" id="logistics-drawer">
-              <div class="drawer-title">Logistica</div>
-              <ul class="logistics-list">
-                <li class="logistics-item"><input type="checkbox" /> Agua</li>
-                <li class="logistics-item"><input type="checkbox" /> Alimentacao</li>
-                <li class="logistics-item"><input type="checkbox" /> Sono</li>
-                <li class="logistics-item"><input type="checkbox" /> Limpeza</li>
-              </ul>
-            </aside>
+            <div class="notes-panel">
+              <button class="notes-toggle" id="notes-toggle" aria-label="Notas">
+                Notas e Logistica
+              </button>
+              <div class="notes-content" id="notes-content">
+                <ul class="logistics-list">
+                  <li class="logistics-item"><input type="checkbox" /> Agua</li>
+                  <li class="logistics-item"><input type="checkbox" /> Alimentacao</li>
+                  <li class="logistics-item"><input type="checkbox" /> Sono</li>
+                  <li class="logistics-item"><input type="checkbox" /> Limpeza</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </section>
 
         <section class="screen screen-config" data-screen="config">
           <div class="screen-title">Config</div>
-          <div class="config-grid">
-            <div class="config-panel">
-              <div class="drawer-title">Maestria</div>
-              <div class="mode-toggle">
-                <label>
-                  <input type="radio" name="mastery-mode" value="oracle" />
-                  Modo Oraculo
-                </label>
-                <label>
-                  <input type="radio" name="mastery-mode" value="sovereign" />
-                  Modo Soberano
-                </label>
-              </div>
-
-              <div class="mode-panel" id="oracle-panel">
-                <div class="panel-title">Validacao Humano Nivel 100</div>
-                <div class="oracle-form" id="oracle-form"></div>
-                <button class="primary-button" id="oracle-apply">Aplicar Validacao</button>
-              </div>
-
-              <div class="mode-panel" id="sovereign-panel">
-                <div class="panel-title">Controle Manual</div>
-                <div class="sovereign-select">
-                  <select id="sovereign-asset-select"></select>
-                </div>
-                <div class="sovereign-sliders" id="sovereign-sliders"></div>
-                <div class="slot-editor">
-                  <div class="slot-header">Slots</div>
-                  <div class="slot-add">
-                    <input type="text" id="slot-name" placeholder="Nome do slot" />
-                    <button class="primary-button" id="slot-add-btn">Adicionar</button>
-                  </div>
-                  <div class="slot-list" id="slot-list"></div>
-                </div>
-              </div>
+          <div class="config-menu">
+            <button class="config-item">Perfil</button>
+            <button class="config-item">Maestria</button>
+            <button class="config-item">Notificacoes</button>
+            <button class="config-item">Suporte</button>
+          </div>
+          <div class="config-detail">
+            <div class="drawer-title">Maestria</div>
+            <div class="mode-toggle">
+              <label>
+                <input type="radio" name="mastery-mode" value="oracle" />
+                Oraculo 0-100
+              </label>
+              <label>
+                <input type="radio" name="mastery-mode" value="sovereign" />
+                Soberano 0-10
+              </label>
             </div>
-
-            <div class="config-panel">
-              <div class="drawer-title">Radar de Orbita (Ativo 6)</div>
-              <div class="orbit-radar">
-                <div class="orbit orbit-outer"></div>
-                <div class="orbit orbit-mid"></div>
-                <div class="orbit orbit-inner"></div>
-                <div class="orbit-center">EU</div>
-                <div class="orbit-node orbit-node-1">Contato A</div>
-                <div class="orbit-node orbit-node-2">Contato B</div>
-                <div class="orbit-node orbit-node-3">Contato C</div>
+            <div class="mode-panel" id="oracle-panel">
+              <div class="panel-title">Validacao</div>
+              <div class="oracle-form" id="oracle-form"></div>
+              <button class="primary-button" id="oracle-apply">Aplicar</button>
+            </div>
+            <div class="mode-panel" id="sovereign-panel">
+              <div class="panel-title">Controle Manual</div>
+              <div class="sovereign-select">
+                <select id="sovereign-asset-select"></select>
+              </div>
+              <div class="sovereign-sliders" id="sovereign-sliders"></div>
+              <div class="slot-editor">
+                <div class="slot-header">Slots</div>
+                <div class="slot-add">
+                  <input type="text" id="slot-name" placeholder="Nome do slot" />
+                  <button class="primary-button" id="slot-add-btn">Adicionar</button>
+                </div>
+                <div class="slot-list" id="slot-list"></div>
               </div>
             </div>
           </div>
@@ -168,6 +158,25 @@
           Mais de 3 dias sem login. Revalide os niveis dos Ativos.
         </div>
         <button class="primary-button" id="hiato-ack">Revalidar</button>
+      </div>
+    </div>
+    <div class="modal" id="tree-edit-modal">
+      <div class="modal-card">
+        <div class="drawer-title" id="tree-edit-title">Editar</div>
+        <div class="modal-body">
+          <label class="field-label" for="tree-edit-level">Nivel</label>
+          <input type="number" id="tree-edit-level" min="0" max="10" step="1" />
+          <div class="slot-editor">
+            <div class="slot-header">Slots</div>
+            <div class="slot-add">
+              <input type="text" id="tree-slot-name" placeholder="Nome do slot" />
+              <button class="primary-button" id="tree-slot-add">Adicionar</button>
+            </div>
+            <div class="slot-list" id="tree-slot-list"></div>
+          </div>
+        </div>
+        <button class="primary-button" id="tree-edit-save">Salvar</button>
+        <button class="ghost-button" id="tree-edit-cancel">Cancelar</button>
       </div>
     </div>
   </body>

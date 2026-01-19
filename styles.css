@@ -7,8 +7,8 @@
 html,
 body {
   height: 100%;
-  background: #000000;
-  color: #e6e6e6;
+  background: #141414;
+  color: #e5e5e5;
   font-family: "Inter", "Segoe UI", sans-serif;
 }
 
@@ -25,21 +25,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(0, 0, 0, 0.85);
+  background: #141414;
   border-bottom: none;
 }
 
 .hud-clock {
-  font-size: 20px;
-  letter-spacing: 2px;
-  color: #00ffff;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: #f1f1f1;
 }
 
 .hud-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border: none;
   box-shadow: none;
 }
@@ -66,35 +66,42 @@ body {
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #ffffff;
+  color: #f2f2f2;
 }
 
 .tree-grid {
-  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+  gap: 8px 12px;
   height: calc(100% - 36px);
   max-height: 560px;
   margin: 0 auto;
-  width: min(480px, 90vw);
+  width: min(520px, 92vw);
+  align-items: center;
+  justify-items: center;
 }
 
 .sephirot {
-  position: absolute;
-  width: 80px;
-  height: 80px;
+  position: relative;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: none;
-  box-shadow: 0 0 18px rgba(0, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(10px);
+  cursor: pointer;
+  outline: none;
 }
 
 .sephirot.is-empty {
   background: rgba(90, 90, 90, 0.2);
-  border: none;
+  border: 1px solid rgba(120, 120, 120, 0.35);
   box-shadow: none;
   color: #9b9b9b;
 }
@@ -102,12 +109,13 @@ body {
 .sephirot-label {
   font-size: 11px;
   letter-spacing: 1px;
+  font-weight: 500;
 }
 
 .sephirot-level {
   font-size: 16px;
   margin-top: 4px;
-  color: #00ffff;
+  color: #f1f1f1;
 }
 
 .sephirot.is-empty .sephirot-level {
@@ -120,12 +128,31 @@ body {
   gap: 12px;
 }
 
+.arena-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.arena-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.arena-progress {
+  font-size: 12px;
+  color: #bdbdbd;
+}
+
 .arena-empty,
 .planner-placeholder,
 .config-placeholder {
   padding: 16px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   border: none;
   box-shadow: none;
   color: #bdbdbd;
@@ -135,6 +162,30 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+.config-menu {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.config-item {
+  padding: 8px 14px;
+  border-radius: 24px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: #dcdcdc;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.config-detail {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 24px;
+  padding: 16px;
 }
 
 .config-panel {
@@ -150,7 +201,7 @@ body {
   display: flex;
   gap: 16px;
   margin: 12px 0 16px;
-  color: #bdf8ff;
+  color: #cfcfcf;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -168,7 +219,7 @@ body {
   font-size: 12px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #ffffff;
+  color: #f1f1f1;
   margin-bottom: 12px;
 }
 
@@ -191,7 +242,7 @@ body {
 .oracle-row label,
 .sovereign-row label {
   font-size: 12px;
-  color: #c5f7ff;
+  color: #d0d0d0;
 }
 
 .oracle-row input,
@@ -210,13 +261,25 @@ body {
   padding: 10px 14px;
   border-radius: 24px;
   border: none;
-  background: rgba(0, 0, 0, 0.8);
-  color: #00ffff;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eaeaea;
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 1px;
   cursor: pointer;
   box-shadow: none;
+}
+
+.ghost-button {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 24px;
+  border: none;
+  background: transparent;
+  color: #bdbdbd;
+  font-size: 11px;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .slot-editor {
@@ -308,7 +371,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e6feff;
+  color: #f1f1f1;
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 1px;
@@ -359,15 +422,32 @@ body {
   width: min(360px, 90vw);
   padding: 20px;
   border-radius: 24px;
-  background: rgba(0, 0, 0, 0.9);
+  background: #1a1a1a;
   border: none;
-  box-shadow: 0 0 18px rgba(0, 255, 255, 0.3);
+  box-shadow: none;
 }
 
 .modal-body {
   margin: 12px 0 16px;
-  color: #bdf8ff;
+  color: #d0d0d0;
   font-size: 13px;
+}
+
+.modal input[type="number"] {
+  width: 100%;
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f1f1;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: #cfcfcf;
 }
 
 .standby .sephirot {
@@ -418,7 +498,7 @@ body {
   font-size: 12px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #00ffff;
+  color: #f1f1f1;
   margin-bottom: 12px;
 }
 
@@ -441,7 +521,7 @@ body {
   border: none;
   border-radius: 24px;
   padding: 16px 16px 16px 64px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(10px);
   box-shadow: none;
 }
@@ -450,11 +530,11 @@ body {
   position: relative;
   min-height: 64px;
   padding: 8px 12px;
-  border-left: 2px solid rgba(0, 255, 255, 0.2);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .time-slot + .time-slot {
-  border-top: 1px solid rgba(0, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .time-label {
@@ -462,16 +542,16 @@ body {
   left: -56px;
   top: 12px;
   font-size: 12px;
-  color: #6dd9ff;
+  color: #bdbdbd;
 }
 
 .pill {
   position: relative;
   padding: 14px 16px;
   border-radius: 24px;
-  background: rgba(0, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
   border: none;
-  color: #e6feff;
+  color: #f1f1f1;
   letter-spacing: 0.5px;
   overflow: hidden;
   cursor: grab;
@@ -489,8 +569,8 @@ body {
   top: 0;
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, rgba(0, 255, 255, 0.2), rgba(0, 255, 255, 0.6));
-  box-shadow: inset 0 0 12px rgba(0, 255, 255, 0.6);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.4));
+  box-shadow: none;
   z-index: 0;
 }
 
@@ -508,12 +588,12 @@ body {
   position: relative;
   z-index: 1;
   font-size: 11px;
-  color: #a6f6ff;
+  color: #c0c0c0;
   margin-top: 4px;
 }
 
 .pill.is-complete {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(0, 255, 255, 0.2));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.1));
   border: none;
   box-shadow: none;
   cursor: default;
@@ -524,41 +604,32 @@ body {
   animation: none;
 }
 
-.logistics-toggle {
-  position: absolute;
-  right: 0;
-  top: 0;
-  transform: translate(120%, 0);
-  padding: 10px 14px;
+.notes-panel {
+  grid-column: 2;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 24px;
+  padding: 12px;
+}
+
+.notes-toggle {
+  width: 100%;
+  padding: 10px 12px;
   border-radius: 24px;
   border: none;
-  background: rgba(0, 0, 0, 0.8);
-  color: #00ffff;
+  background: rgba(255, 255, 255, 0.06);
+  color: #dcdcdc;
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 1px;
   cursor: pointer;
-  box-shadow: none;
 }
 
-.logistics-drawer {
-  position: absolute;
-  right: 0;
-  top: 0;
-  height: 100%;
-  width: 220px;
-  padding: 12px;
-  background: rgba(5, 5, 5, 0.95);
-  border: none;
-  border-radius: 24px 0 0 24px;
-  transform: translateX(110%);
-  transition: transform 0.25s ease;
-  backdrop-filter: blur(10px);
-  box-shadow: none;
+.notes-content {
+  margin-top: 12px;
 }
 
-.logistics-drawer.is-open {
-  transform: translateX(0%);
+.notes-content.is-collapsed {
+  display: none;
 }
 
 .logistics-list {
@@ -571,7 +642,7 @@ body {
 
 .logistics-item {
   font-size: 12px;
-  color: #c4c4c4;
+  color: #bdbdbd;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -595,7 +666,7 @@ body {
   padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: rgba(0, 0, 0, 0.9);
+  background: #141414;
   border-top: none;
   border-radius: 24px 24px 0 0;
   padding-left: calc(16px + env(safe-area-inset-left));
@@ -619,7 +690,7 @@ body {
 }
 
 .nav-item.is-active {
-  color: #00ffff;
+  color: #f1f1f1;
 }
 
 .nav-item:focus {
@@ -648,16 +719,20 @@ body {
   font-weight: 600;
 }
 
-.tree-grid .sephirot:nth-child(1) { left: 50%; top: 0%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(2) { left: 25%; top: 14%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(3) { left: 75%; top: 14%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(4) { left: 25%; top: 34%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(5) { left: 75%; top: 34%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(6) { left: 50%; top: 50%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(7) { left: 25%; top: 66%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(8) { left: 75%; top: 66%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(9) { left: 50%; top: 82%; transform: translate(-50%, 0); }
-.tree-grid .sephirot:nth-child(10) { left: 50%; top: 100%; transform: translate(-50%, -100%); }
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f1f1;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
 
 @media (max-width: 520px) {
   .config-grid {
@@ -667,16 +742,6 @@ body {
   .planner-layout {
     display: flex;
     flex-direction: column;
-  }
-
-  .logistics-toggle {
-    transform: translate(0, 0);
-    right: 12px;
-    top: 12px;
-  }
-
-  .logistics-drawer {
-    width: 200px;
   }
 
   .backlog-drawer {
@@ -696,12 +761,16 @@ body {
     min-height: 72px;
   }
 
+  .notes-panel {
+    grid-column: 1;
+  }
+
   .tree-grid {
     width: 100%;
   }
 
   .sephirot {
-    width: 68px;
-    height: 68px;
+    width: 70px;
+    height: 70px;
   }
 }

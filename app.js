@@ -431,6 +431,29 @@ const ensureUserMissionsRow = async (userId) => {
   }
 };
 
+const ensureProfilesRow = async (user) => {
+  if (!isSupabaseEnabled() || !user?.id) return;
+  try {
+    const { data, error } = await supabase.from("profiles").select("id").eq("id", user.id).single();
+    if (error) logSupabaseError("profiles.select", error);
+    if (!data) {
+      const profile = loadProfile();
+      const { error: upsertError } = await supabase.from("profiles").upsert({
+        id: user.id,
+        user_id: user.id,
+        nickname: profile.nickname || profile.userId || "",
+        banner: profile.banner || "",
+        avatar_url: profile.avatar || "",
+        status: profile.status || "sovereign",
+        total_level: Number(profile.total_level || 0),
+      });
+      if (upsertError) logSupabaseError("profiles.upsert (init)", upsertError);
+    }
+  } catch (error) {
+    logSupabaseError("ensureProfilesRow", error);
+  }
+};
+
 const initAuth = () => {
   const googleBtn = document.getElementById("login-google");
   const emailInput = document.getElementById("login-email");
@@ -482,6 +505,8 @@ const initAuth = () => {
     if (session?.user) {
       setAuthLocked(false);
       initApp();
+      ensureProfilesRow(session.user);
+      ensureSupabaseProfile(loadProfile());
       ensureUserMissionsRow(session.user.id);
     } else {
       setAuthLocked(true);
@@ -493,6 +518,8 @@ const initAuth = () => {
       if (session?.data?.session?.user) {
         setAuthLocked(false);
         initApp();
+        ensureProfilesRow(session.data.session.user);
+        ensureSupabaseProfile(loadProfile());
         ensureUserMissionsRow(session.data.session.user.id);
       } else {
         setAuthLocked(true);
@@ -545,28 +572,33 @@ const playMetalClick = () => {
 const ensureSupabaseProfile = async (profile) => {
   if (!isSupabaseEnabled()) return;
   try {
-    const userId = profile.userId?.replace("@", "").trim();
     const nickname = profile.nickname?.trim();
-    if (!userId || !nickname) return;
-    const email = `${userId}@gameoflife.local`;
-    const passwordKey = "game_of_life.supabase_pass";
-    let password = localStorage.getItem(passwordKey);
-    if (!password) {
-      password = crypto.randomUUID();
-      localStorage.setItem(passwordKey, password);
+    const session = await supabase.auth.getSession();
+    let user = session.data?.session?.user;
+    if (session.error) logSupabaseError("auth.getSession", session.error);
+    if (!user) {
+      const localId = profile.userId?.replace("@", "").trim();
+      if (!localId || !nickname) return;
+      const email = `${localId}@gameoflife.local`;
+      const passwordKey = "game_of_life.supabase_pass";
+      let password = localStorage.getItem(passwordKey);
+      if (!password) {
+        password = crypto.randomUUID();
+        localStorage.setItem(passwordKey, password);
+      }
+      let auth = await supabase.auth.signInWithPassword({ email, password });
+      if (auth.error) {
+        logSupabaseError("auth.signInWithPassword", auth.error);
+        auth = await supabase.auth.signUp({ email, password });
+        if (auth.error) logSupabaseError("auth.signUp", auth.error);
+      }
+      user = auth.data?.user;
     }
-    let auth = await supabase.auth.signInWithPassword({ email, password });
-    if (auth.error) {
-      logSupabaseError("auth.signInWithPassword", auth.error);
-      auth = await supabase.auth.signUp({ email, password });
-      if (auth.error) logSupabaseError("auth.signUp", auth.error);
-    }
-    const user = auth.data?.user;
     if (!user) return;
     const { error } = await supabase.from("profiles").upsert({
       id: user.id,
-      nickname,
-      user_id: profile.userId,
+      user_id: user.id,
+      nickname: nickname || profile.userId || "",
       banner: profile.banner || "",
       avatar_url: profile.avatar || "",
     });
@@ -643,8 +675,8 @@ const syncProfileTotals = async (nextProfile = {}) => {
     const profile = { ...loadProfile(), ...nextProfile };
     const { error } = await supabase.from("profiles").upsert({
       id: user.id,
+      user_id: user.id,
       nickname: profile.nickname || "",
-      user_id: profile.userId || "",
       banner: profile.banner || "",
       avatar_url: profile.avatar || "",
       status: profile.status || "sovereign",
@@ -967,7 +999,6 @@ const buildBronzeElement = (action) => {
   bronze.dataset.id = action.id;
   bronze.draggable = action.status === "backlog";
   if (action.serious) bronze.classList.add("serious");
-  if (action.locked) bronze.classList.add("locked");
   const icon = document.createElement("i");
   icon.setAttribute("data-lucide", action.icon || "circle");
   bronze.appendChild(icon);
@@ -1016,7 +1047,7 @@ const buildBronzeBlock = (action) => {
   block.className = "bronze-block";
   block.dataset.id = action.id;
   if (action.status === "done") block.classList.add("done");
-  if (!action.locked && action.status === "scheduled") {
+  if (action.status === "scheduled") {
     block.draggable = true;
     block.addEventListener("dragstart", (event) => {
       event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
@@ -1342,15 +1373,12 @@ const renderPlanner = () => {
         const actionId = payload.replace("bronze:", "");
         const updated = planner.bronzeActions.map((action) => {
           if (action.id !== actionId) return action;
-          const locked = action.serious ? true : action.locked;
-          if (action.locked && action.status === "scheduled") return action;
-        return {
+          return {
             ...action,
             status: "scheduled",
             scheduledHour: hour,
             scheduledMinute: 0,
-          scheduledDayOffset: plannerDayOffset,
-            locked,
+            scheduledDayOffset: plannerDayOffset,
           };
         });
         savePlanner({ ...planner, bronzeActions: updated });
@@ -1821,14 +1849,60 @@ const openArenaDossier = (arenaId) => {
   } else {
     actions.forEach((action) => {
       const item = document.createElement("div");
-      item.className = "bronze-item";
+      item.className = "bronze-item bronze-item-edit";
       if (action.serious) item.classList.add("serious");
       const icon = document.createElement("i");
       icon.setAttribute("data-lucide", action.icon || "circle");
+      const input = document.createElement("input");
+      input.className = "bronze-edit-input";
+      input.value = action.title || "Acao";
+      input.addEventListener("change", () => {
+        const plannerState = loadPlanner();
+        const updated = plannerState.bronzeActions.map((itemAction) =>
+          itemAction.id === action.id ? { ...itemAction, title: input.value.trim() } : itemAction,
+        );
+        savePlanner({ ...plannerState, bronzeActions: updated });
+        renderPlanner();
+      });
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "bronze-delete";
+      deleteBtn.type = "button";
+      deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
+      deleteBtn.addEventListener("click", () => {
+        const plannerState = loadPlanner();
+        const updated = plannerState.bronzeActions.filter((itemAction) => itemAction.id !== action.id);
+        savePlanner({ ...plannerState, bronzeActions: updated });
+        openArenaDossier(arenaId);
+        renderPlanner();
+      });
+      let touchStartX = 0;
+      item.addEventListener("touchstart", (event) => {
+        const touch = event.touches[0];
+        if (!touch) return;
+        touchStartX = touch.clientX;
+      });
+      item.addEventListener("touchend", (event) => {
+        const touch = event.changedTouches[0];
+        if (!touch) return;
+        const deltaX = touch.clientX - touchStartX;
+        if (deltaX < -60) {
+          deleteBtn.click();
+        }
+      });
       item.appendChild(icon);
+      item.appendChild(input);
+      item.appendChild(deleteBtn);
       bronzeList.appendChild(item);
     });
   }
+  const quickAdd = document.createElement("button");
+  quickAdd.type = "button";
+  quickAdd.className = "bronze-add-inline";
+  quickAdd.innerHTML = '<i data-lucide="plus"></i>';
+  quickAdd.addEventListener("click", () => {
+    openBronzeModal(arenaId);
+  });
+  bronzeList.appendChild(quickAdd);
   if (window.lucide) window.lucide.createIcons();
   modal.dataset.arenaId = arenaId;
   modal.classList.add("is-open");
@@ -2601,6 +2675,31 @@ const initApp = () => {
       openArenaModal();
     });
   }
+  const arenaList = document.getElementById("arena-list");
+  if (arenaList) {
+    arenaList.addEventListener("dragover", (event) => {
+      event.preventDefault();
+    });
+    arenaList.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const payload = event.dataTransfer?.getData("text/plain");
+      if (!payload || !payload.startsWith("bronze:")) return;
+      const actionId = payload.replace("bronze:", "");
+      const planner = loadPlanner();
+      const updated = planner.bronzeActions.map((action) => {
+        if (action.id !== actionId) return action;
+        return {
+          ...action,
+          status: "backlog",
+          scheduledHour: undefined,
+          scheduledMinute: undefined,
+          scheduledDayOffset: undefined,
+        };
+      });
+      savePlanner({ ...planner, bronzeActions: updated });
+      renderPlanner();
+    });
+  }
   const arenaSave = document.getElementById("arena-save");
   const arenaCancel = document.getElementById("arena-cancel");
   if (arenaCancel) {
@@ -2800,16 +2899,28 @@ const initApp = () => {
     profileAvatarFile.addEventListener("change", () => {
       const file = profileAvatarFile.files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const profile = loadProfile();
-        const updated = { ...profile, avatar: reader.result };
-        saveProfile(updated);
-        const profileAvatar = profileModal?.querySelector(".profile-avatar");
-        if (profileAvatar) profileAvatar.style.backgroundImage = `url(${reader.result})`;
-        renderSocial();
-      };
-      reader.readAsDataURL(file);
+      uploadToSupabase(file, `avatars/${crypto.randomUUID()}`).then((url) => {
+        if (url) {
+          const profile = loadProfile();
+          const updated = { ...profile, avatar: url };
+          saveProfile(updated);
+          const profileAvatar = profileModal?.querySelector(".profile-avatar");
+          if (profileAvatar) profileAvatar.style.backgroundImage = `url(${url})`;
+          renderSocial();
+          syncProfileTotals(updated);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const profile = loadProfile();
+          const updated = { ...profile, avatar: reader.result };
+          saveProfile(updated);
+          const profileAvatar = profileModal?.querySelector(".profile-avatar");
+          if (profileAvatar) profileAvatar.style.backgroundImage = `url(${reader.result})`;
+          renderSocial();
+        };
+        reader.readAsDataURL(file);
+      });
     });
   }
 
@@ -2817,16 +2928,28 @@ const initApp = () => {
     profileBannerFile.addEventListener("change", () => {
       const file = profileBannerFile.files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const profile = loadProfile();
-        const updated = { ...profile, banner: reader.result };
-        saveProfile(updated);
-        const bannerWrap = profileModal?.querySelector(".profile-banner");
-        if (bannerWrap) bannerWrap.style.backgroundImage = `url(${reader.result})`;
-        renderSocial();
-      };
-      reader.readAsDataURL(file);
+      uploadToSupabase(file, `banners/${crypto.randomUUID()}`).then((url) => {
+        if (url) {
+          const profile = loadProfile();
+          const updated = { ...profile, banner: url };
+          saveProfile(updated);
+          const bannerWrap = profileModal?.querySelector(".profile-banner");
+          if (bannerWrap) bannerWrap.style.backgroundImage = `url(${url})`;
+          renderSocial();
+          syncProfileTotals(updated);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const profile = loadProfile();
+          const updated = { ...profile, banner: reader.result };
+          saveProfile(updated);
+          const bannerWrap = profileModal?.querySelector(".profile-banner");
+          if (bannerWrap) bannerWrap.style.backgroundImage = `url(${reader.result})`;
+          renderSocial();
+        };
+        reader.readAsDataURL(file);
+      });
     });
   }
 

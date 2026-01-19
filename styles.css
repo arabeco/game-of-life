@@ -1663,6 +1663,11 @@ html[data-status="oracle"] .sephirot {
 .bronze-block .bronze-title {
   font-size: 12px;
   color: #e5c7a3;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bronze-block.done {
@@ -1919,6 +1924,40 @@ html[data-status="oracle"] .sephirot {
 .bronze-item i {
   width: 20px;
   height: 20px;
+}
+
+.bronze-item-edit {
+  width: 100%;
+  height: auto;
+  padding: 8px 10px;
+  gap: 8px;
+  justify-content: flex-start;
+  cursor: default;
+}
+
+.bronze-edit-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: #e5c7a3;
+  font-size: 12px;
+}
+
+.bronze-delete {
+  background: transparent;
+  border: none;
+  color: rgba(229, 199, 163, 0.7);
+  cursor: pointer;
+}
+
+.bronze-add-inline {
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(182, 128, 74, 0.6);
+  background: rgba(24, 18, 14, 0.8);
+  color: #e5c7a3;
 }
 
 .oracle-phrase {

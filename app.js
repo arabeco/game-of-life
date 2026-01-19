@@ -459,11 +459,22 @@ const initAuth = () => {
   const emailInput = document.getElementById("login-email");
   const passInput = document.getElementById("login-password");
   const emailBtn = document.getElementById("login-email-btn");
+  const signupBtn = document.getElementById("login-signup-btn");
+  const guestBtn = document.getElementById("login-guest-btn");
   const errorEl = document.getElementById("login-error");
+  const warnEl = document.getElementById("login-warning");
+  setAuthLocked(true);
 
-  if (!isSupabaseEnabled()) {
+  if (guestMode) {
     setAuthLocked(false);
     initApp();
+    if (warnEl) warnEl.textContent = "Dados salvos apenas localmente.";
+    return;
+  }
+
+  if (!isSupabaseEnabled()) {
+    setAuthLocked(true);
+    if (warnEl) warnEl.textContent = "Supabase indisponivel. Use Convidado.";
     return;
   }
 
@@ -501,6 +512,46 @@ const initAuth = () => {
     });
   }
 
+  if (signupBtn) {
+    signupBtn.addEventListener("click", async () => {
+      if (errorEl) errorEl.textContent = "";
+      const email = emailInput?.value?.trim();
+      const password = passInput?.value || "";
+      if (!email || !password) {
+        if (errorEl) errorEl.textContent = "Preencha e-mail e senha.";
+        return;
+      }
+      try {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+          logSupabaseError("auth.signUp", error);
+          if (errorEl) errorEl.textContent = "Falha no cadastro.";
+          return;
+        }
+        const user = data?.user;
+        if (user) {
+          await ensureProfilesRow(user);
+          await ensureUserMissionsRow(user.id);
+          setAuthLocked(false);
+          initApp();
+        }
+      } catch (error) {
+        logSupabaseError("auth.signUp", error);
+        if (errorEl) errorEl.textContent = "Falha no cadastro.";
+      }
+    });
+  }
+
+  if (guestBtn) {
+    guestBtn.addEventListener("click", () => {
+      guestMode = true;
+      localStorage.setItem("game_of_life.guest", "true");
+      setAuthLocked(false);
+      initApp();
+      if (warnEl) warnEl.textContent = "Dados salvos apenas localmente.";
+    });
+  }
+
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session?.user) {
       setAuthLocked(false);
@@ -509,7 +560,7 @@ const initAuth = () => {
       ensureSupabaseProfile(loadProfile());
       ensureUserMissionsRow(session.user.id);
     } else {
-      if (!offlineFallback) setAuthLocked(true);
+      if (!offlineFallback && !guestMode) setAuthLocked(true);
     }
   });
 
@@ -527,9 +578,9 @@ const initAuth = () => {
     })
     .catch((error) => {
       logSupabaseError("auth.getSession.timeout", error);
-      offlineFallback = true;
-      setAuthLocked(false);
-      initApp();
+      offlineFallback = false;
+      setAuthLocked(true);
+      if (warnEl) warnEl.textContent = "Sessao nao encontrada. Use Convidado.";
     });
 };
 
@@ -670,10 +721,10 @@ const syncMissionState = async (state) => {
 };
 
 const syncProfileTotals = async (nextProfile = {}) => {
-  if (!isSupabaseEnabled()) return;
+  if (!isSupabaseEnabled()) return false;
   try {
     const user = await getSupabaseUser();
-    if (!user) return;
+    if (!user) return false;
     const profile = { ...loadProfile(), ...nextProfile };
     const { error } = await supabase.from("profiles").upsert({
       id: user.id,
@@ -684,9 +735,14 @@ const syncProfileTotals = async (nextProfile = {}) => {
       status: profile.status || "sovereign",
       total_level: Number(profile.total_level || 0),
     });
-    if (error) logSupabaseError("profiles.upsert (totals)", error);
+    if (error) {
+      logSupabaseError("profiles.upsert (totals)", error);
+      return false;
+    }
+    return true;
   } catch (error) {
     logSupabaseError("syncProfileTotals", error);
+    return false;
   }
 };
 
@@ -2612,6 +2668,7 @@ const initClock = () => {
 
 let appInitialized = false;
 let offlineFallback = false;
+let guestMode = localStorage.getItem("game_of_life.guest") === "true";
 
 const initApp = () => {
   if (appInitialized) return;
@@ -3003,10 +3060,15 @@ const initApp = () => {
     });
   }
   if (configSaveProfile) {
-    configSaveProfile.addEventListener("click", () => {
+    configSaveProfile.addEventListener("click", async () => {
+      configSaveProfile.classList.remove("is-saved");
       const profile = loadProfile();
       ensureSupabaseProfile(profile);
-      syncProfileTotals(profile);
+      const ok = await syncProfileTotals(profile);
+      if (ok) {
+        configSaveProfile.classList.add("is-saved");
+        setTimeout(() => configSaveProfile.classList.remove("is-saved"), 1200);
+      }
     });
   }
 

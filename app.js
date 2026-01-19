@@ -2818,19 +2818,26 @@ const init = () => {
 
 const startAppWithSplash = () => {
   const loading = document.getElementById("loading-screen");
-  if (!loading) {
+  let started = false;
+  const start = () => {
+    if (started) return;
+    started = true;
+    if (loading) loading.remove();
     init();
+  };
+  if (!loading) {
+    start();
     return;
   }
   setTimeout(() => {
     loading.classList.add("fade-out");
-    const handle = () => {
-      loading.removeEventListener("transitionend", handle);
-      loading.remove();
-      init();
-    };
-    loading.addEventListener("transitionend", handle);
   }, 3000);
+  loading.addEventListener("transitionend", () => {
+    start();
+  });
+  setTimeout(() => {
+    start();
+  }, 3600);
 };
 
 document.addEventListener("DOMContentLoaded", startAppWithSplash);

@@ -991,10 +991,21 @@ html[data-theme="frost"] {
 
 #missions-loading {
   z-index: 10001;
+  pointer-events: none;
+  background: transparent;
 }
 
 #missions-loading.is-hidden {
   display: none;
+}
+
+.config-section.is-hidden {
+  display: none;
+}
+
+.config-item.is-active {
+  color: #f1f1f1;
+  border-bottom: 2px solid rgba(212, 175, 55, 0.8);
 }
 
 #init-overlay {

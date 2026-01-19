@@ -128,48 +128,60 @@
         <section class="screen screen-config" data-screen="config">
           <div class="screen-title">Config</div>
           <div class="config-menu">
-            <button class="config-item">Perfil</button>
-            <button class="config-item">Maestria</button>
-            <button class="config-item">Notificacoes</button>
-            <button class="config-item">Suporte</button>
+            <button class="config-item is-active" data-section="perfil">Perfil</button>
+            <button class="config-item" data-section="maestria">Maestria</button>
+            <button class="config-item" data-section="notificacoes">Notificacoes</button>
+            <button class="config-item" data-section="suporte">Suporte</button>
           </div>
           <div class="config-detail">
-            <div class="drawer-title">Identidade</div>
-            <div class="oracle-form">
-              <div class="oracle-row">
-                <label for="config-nickname">Nickname</label>
-                <input type="text" id="config-nickname" />
+            <div class="config-section" data-section="perfil">
+              <div class="drawer-title">Identidade</div>
+              <div class="oracle-form">
+                <div class="oracle-row">
+                  <label for="config-nickname">Nickname</label>
+                  <input type="text" id="config-nickname" />
+                </div>
+                <div class="oracle-row">
+                  <label for="config-id">@ID</label>
+                  <input type="text" id="config-id" />
+                </div>
               </div>
-              <div class="oracle-row">
-                <label for="config-id">@ID</label>
-                <input type="text" id="config-id" />
+              <div class="drawer-title">Skin</div>
+              <div class="theme-buttons">
+                <button class="silver-button theme-btn" data-theme="gold">Gold</button>
+                <button class="silver-button theme-btn" data-theme="cyber">Cyber</button>
+                <button class="silver-button theme-btn" data-theme="frost">Frost</button>
+              </div>
+              <div class="drawer-title">Avatar e Banner</div>
+              <div class="theme-buttons">
+                <button class="silver-button" id="config-avatar-upload">Avatar</button>
+                <button class="silver-button" id="config-banner-upload">Banner</button>
+                <input type="file" id="config-avatar-file" class="hidden-file" accept="image/*" />
+                <input type="file" id="config-banner-file" class="hidden-file" accept="image/*" />
               </div>
             </div>
-            <div class="drawer-title">Skin</div>
-            <div class="theme-buttons">
-              <button class="silver-button theme-btn" data-theme="gold">Gold</button>
-              <button class="silver-button theme-btn" data-theme="cyber">Cyber</button>
-              <button class="silver-button theme-btn" data-theme="frost">Frost</button>
+            <div class="config-section is-hidden" data-section="maestria">
+              <div class="drawer-title">Maestria</div>
+              <div class="mode-toggle">
+                <label>
+                  <input type="radio" name="mastery-mode" value="oracle" />
+                  Oraculo 0-100
+                </label>
+                <label>
+                  <input type="radio" name="mastery-mode" value="sovereign" />
+                  Soberano 0-10
+                </label>
+              </div>
+              <div class="mastery-list" id="mastery-list"></div>
             </div>
-            <div class="drawer-title">Avatar e Banner</div>
-            <div class="theme-buttons">
-              <button class="silver-button" id="config-avatar-upload">Avatar</button>
-              <button class="silver-button" id="config-banner-upload">Banner</button>
-              <input type="file" id="config-avatar-file" class="hidden-file" accept="image/*" />
-              <input type="file" id="config-banner-file" class="hidden-file" accept="image/*" />
+            <div class="config-section is-hidden" data-section="notificacoes">
+              <div class="drawer-title">Notificacoes</div>
+              <div class="arena-empty">Em breve.</div>
             </div>
-            <div class="drawer-title">Maestria</div>
-            <div class="mode-toggle">
-              <label>
-                <input type="radio" name="mastery-mode" value="oracle" />
-                Oraculo 0-100
-              </label>
-              <label>
-                <input type="radio" name="mastery-mode" value="sovereign" />
-                Soberano 0-10
-              </label>
+            <div class="config-section is-hidden" data-section="suporte">
+              <div class="drawer-title">Suporte</div>
+              <div class="arena-empty">Em breve.</div>
             </div>
-            <div class="mastery-list" id="mastery-list"></div>
           </div>
         </section>
 

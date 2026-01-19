@@ -2308,6 +2308,27 @@ const startOracleFlow = () => {
 
 const initConfig = () => {
   const dna = seedDNAIfMissing();
+  const configTabs = Array.from(document.querySelectorAll(".config-item"));
+  const configSections = Array.from(document.querySelectorAll(".config-section"));
+  const activateConfig = (section) => {
+    configTabs.forEach((tab) => {
+      tab.classList.toggle("is-active", tab.dataset.section === section);
+    });
+    configSections.forEach((panel) => {
+      panel.classList.toggle("is-hidden", panel.dataset.section !== section);
+    });
+  };
+  if (configTabs.length > 0) {
+    configTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        if (!tab.dataset.section) return;
+        activateConfig(tab.dataset.section);
+      });
+    });
+    const defaultSection = configTabs.find((tab) => tab.classList.contains("is-active"))?.dataset
+      .section;
+    activateConfig(defaultSection || "perfil");
+  }
   const renderMastery = (mode) => {
     const container = document.getElementById("mastery-list");
     if (!container) return;
@@ -2357,12 +2378,39 @@ const initConfig = () => {
         }
       };
 
+      const scheduleSupabaseSync = (() => {
+        let timer = null;
+        return (value) => {
+          const nextLevel = Number(value);
+          const profile = loadProfile();
+          const assetLevels = { ...(profile.assetLevels || {}) };
+          assetLevels[asset.id] = nextLevel;
+          saveProfile({ ...profile, assetLevels });
+          if (!isSupabaseEnabled()) return;
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(async () => {
+            try {
+              const user = await getSupabaseUser();
+              if (!user) return;
+              const { error } = await supabase.from("profiles").upsert({
+                id: user.id,
+                asset_levels: assetLevels,
+              });
+              if (error) logSupabaseError("profiles.upsert (asset_levels)", error);
+            } catch (error) {
+              logSupabaseError("profiles.upsert (asset_levels)", error);
+            }
+          }, 400);
+        };
+      })();
+
       slider.addEventListener("input", () => {
         asset.level = Number(slider.value);
         dna.lastUpdatedAt = new Date().toISOString();
         saveDNA(dna);
         renderTree();
         updateView();
+        scheduleSupabaseSync(slider.value);
       });
 
       textarea.addEventListener("change", () => {

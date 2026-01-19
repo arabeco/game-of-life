@@ -57,13 +57,6 @@
             <div class="bronze-list" id="bronze-list"></div>
           </div>
           <div class="planner-layout">
-            <aside class="backlog-drawer">
-              <div class="drawer-title">Backlog</div>
-              <div class="backlog-list" id="backlog-list">
-                <div class="backlog-empty">Nenhuma acao pendente.</div>
-              </div>
-            </aside>
-
             <div class="timeline" id="timeline"></div>
             <div class="week-grid is-hidden" id="week-grid"></div>
 
@@ -162,8 +155,11 @@
       </div>
     </div>
     <div class="modal" id="tree-edit-modal">
-      <div class="modal-card dossier-card">
+      <div class="modal-card dossier-card gold-overlay">
         <div class="dossier-header">
+          <button class="silver-button" id="tree-edit-back" aria-label="Voltar">
+            VOLTAR
+          </button>
           <div class="dossier-title">
             <div class="dossier-title-row">
               <i class="dossier-icon" id="tree-edit-icon" data-lucide="circle"></i>
@@ -171,24 +167,11 @@
             </div>
             <div class="dossier-level" id="tree-edit-level-text">Nivel 0</div>
           </div>
-          <button class="close-button" id="tree-edit-cancel" aria-label="Fechar">
-            <i data-lucide="x"></i>
-          </button>
         </div>
         <div class="modal-body dossier-body">
           <div class="oracle-phrase" id="tree-edit-phrase"></div>
-          <div class="status-section">
-            <div class="slot-header">Status Tecnicos</div>
-            <div class="status-list" id="tree-status-list"></div>
-          </div>
           <div class="slot-editor">
             <div class="slot-header">Slots</div>
-            <div class="slot-add">
-              <input type="text" id="tree-slot-name" placeholder="Nome do slot" />
-              <button class="primary-button" id="tree-slot-add" aria-label="Adicionar Slot">
-                <i data-lucide="plus"></i>
-              </button>
-            </div>
             <div class="slot-list" id="tree-slot-list"></div>
           </div>
           <div class="linked-arenas">
@@ -210,6 +193,8 @@
         <div class="modal-body dossier-body">
           <label class="field-label" for="arena-title">Nome</label>
           <input type="text" id="arena-title" />
+          <label class="field-label" for="arena-description">Descricao</label>
+          <input type="text" id="arena-description" />
           <label class="field-label" for="arena-asset">Ativo</label>
           <select id="arena-asset"></select>
           <label class="field-label" for="arena-target">Meta (Quantidade)</label>
@@ -271,19 +256,26 @@
     <div class="modal" id="arena-dossier">
       <div class="modal-card dossier-card silver-card">
         <div class="dossier-header">
+          <button class="close-button" id="arena-dossier-back" aria-label="Voltar">
+            <i data-lucide="arrow-left"></i>
+          </button>
           <div class="dossier-title">
             <div class="drawer-title" id="arena-dossier-title">Arena</div>
             <div class="dossier-level" id="arena-dossier-progress">0/0</div>
           </div>
-          <button class="close-button" id="arena-dossier-close" aria-label="Fechar">
-            <i data-lucide="x"></i>
-          </button>
         </div>
         <div class="modal-body dossier-body">
           <div class="field-label">Objetivo Macro</div>
           <div class="arena-macro" id="arena-dossier-macro">Sem objetivo</div>
           <div class="slot-header">Acoes de Bronze</div>
-          <div class="linked-arenas-list" id="arena-dossier-bronze"></div>
+          <div class="bronze-list" id="arena-dossier-bronze"></div>
+          <button class="silver-button" id="arena-dossier-add" aria-label="Adicionar Bronze">
+            <i data-lucide="plus"></i>
+          </button>
+        </div>
+        <div class="arena-dossier-footer">
+          <i data-lucide="star"></i>
+          <span id="arena-dossier-target">Meta Atual</span>
         </div>
       </div>
     </div>

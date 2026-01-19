@@ -171,6 +171,137 @@ const ASSET_TO_PHRASE = {
   yesod: "autenticidade",
   malkuth: "fisico",
 };
+const PROTOCOL_SLOTS = {
+  kether: [
+    { id: "gratidao.crenca1", label: "Crença 1", type: "rect" },
+    { id: "gratidao.crenca2", label: "Crença 2", type: "rect" },
+    { id: "gratidao.crenca3", label: "Crença 3", type: "rect" },
+    { id: "gratidao.lema", label: "Lema de Vida", type: "rect-wide" },
+  ],
+  chokmah: [
+    { id: "esp.sistema", label: "Sistema de Crença", type: "rect" },
+    { id: "esp.lider", label: "Entidade Líder", type: "square" },
+    { id: "esp.protetora", label: "Entidade Protetora", type: "square" },
+  ],
+  binah: [
+    { id: "mente.filosofia", label: "Filosofia Operacional", type: "rect" },
+    { id: "mente.flow", label: "Freq. Flow", type: "square" },
+    { id: "mente.meditacao", label: "Meditação", type: "square" },
+  ],
+  geburah: [
+    { id: "verdade.mtp", label: "MTP - Missão", type: "rect" },
+    { id: "verdade.mbti", label: "MBTI", type: "square" },
+    { id: "verdade.signo", label: "Signo", type: "square" },
+    { id: "verdade.trait1", label: "Trait 1", type: "rect-small" },
+    { id: "verdade.trait2", label: "Trait 2", type: "rect-small" },
+    { id: "verdade.trait3", label: "Trait 3", type: "rect-small" },
+    { id: "verdade.foto1", label: "Foto Inspiração 1", type: "square" },
+    { id: "verdade.foto2", label: "Foto Inspiração 2", type: "square" },
+    { id: "verdade.foto3", label: "Foto Inspiração 3", type: "square" },
+  ],
+  chesed: [
+    {
+      id: "insp.proj1",
+      label: "Projeto 1",
+      type: "square",
+      fields: [
+        { key: "nome", label: "Nome" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "%" },
+      ],
+    },
+    {
+      id: "insp.proj2",
+      label: "Projeto 2",
+      type: "square",
+      fields: [
+        { key: "nome", label: "Nome" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "%" },
+      ],
+    },
+    {
+      id: "insp.proj3",
+      label: "Projeto 3",
+      type: "square",
+      fields: [
+        { key: "nome", label: "Nome" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "%" },
+      ],
+    },
+  ],
+  tiphareth: [
+    {
+      id: "amor.intimo",
+      label: "Círculo Íntimo",
+      type: "square",
+      fields: [
+        { key: "nome", label: "Nome" },
+        { key: "foto", label: "Foto" },
+      ],
+    },
+    {
+      id: "amor.guerra",
+      label: "Irmãos de Guerra",
+      type: "square",
+      fields: [
+        { key: "nome", label: "Nome" },
+        { key: "foto", label: "Foto" },
+      ],
+    },
+  ],
+  netzach: [
+    { id: "abund.renda", label: "Renda", type: "rect" },
+    { id: "abund.gasto", label: "Gasto", type: "rect" },
+    { id: "abund.liquidez", label: "Liquidez", type: "rect" },
+    { id: "abund.ativo1", label: "Ativo 1", type: "square" },
+    { id: "abund.ativo2", label: "Ativo 2", type: "square" },
+    { id: "abund.ativo3", label: "Ativo 3", type: "square" },
+  ],
+  hod: [
+    { id: "trab.pec", label: "Classe 1: PEC", type: "rect" },
+    { id: "trab.unip", label: "Classe 2: UNIP", type: "rect" },
+    { id: "trab.personal", label: "Classe 3: Personal", type: "rect" },
+  ],
+  yesod: [
+    {
+      id: "aut.hobby1",
+      label: "Hobby 1",
+      type: "square",
+      fields: [
+        { key: "hobby", label: "Hobby" },
+        { key: "rank", label: "Rank" },
+      ],
+    },
+    {
+      id: "aut.hobby2",
+      label: "Hobby 2",
+      type: "square",
+      fields: [
+        { key: "hobby", label: "Hobby" },
+        { key: "rank", label: "Rank" },
+      ],
+    },
+    {
+      id: "aut.hobby3",
+      label: "Hobby 3",
+      type: "square",
+      fields: [
+        { key: "hobby", label: "Hobby" },
+        { key: "rank", label: "Rank" },
+      ],
+    },
+  ],
+  malkuth: [
+    { id: "fis.peso", label: "Peso", type: "rect" },
+    { id: "fis.altura", label: "Altura", type: "rect" },
+    { id: "fis.gordura", label: "%G", type: "rect" },
+    { id: "fis.flexao", label: "Flexão", type: "square" },
+    { id: "fis.barra", label: "Barra", type: "square" },
+    { id: "fis.corrida", label: "Corrida", type: "square" },
+  ],
+};
 const WEEKDAYS = [
   { label: "SEG", key: "S" },
   { label: "TER", key: "T" },
@@ -350,28 +481,43 @@ const buildBronzeBlock = (action) => {
   const title = document.createElement("div");
   title.className = "bronze-title";
   title.textContent = action.title || "Acao";
-  const check = document.createElement("button");
-  check.type = "button";
-  check.className = "bronze-check";
-  check.innerHTML = '<i data-lucide="check"></i>';
-  check.addEventListener("click", () => {
-    const planner = loadPlanner();
-    const updated = planner.bronzeActions.map((item) => {
-      if (item.id !== action.id) return item;
-      const nextStatus = item.status === "done" ? "scheduled" : "done";
-      return { ...item, status: nextStatus };
-    });
-    const nextAction = updated.find((item) => item.id === action.id);
-    if (nextAction?.arenaId) {
-      updateArenaCountsForBronze(nextAction.arenaId, nextAction.status === "done" ? 1 : -1);
-    }
-    savePlanner({ ...planner, bronzeActions: updated });
-    renderPlanner();
-    renderArenas();
-  });
+  const checkmark = document.createElement("span");
+  checkmark.className = "bronze-checkmark";
+  checkmark.innerHTML = '<i data-lucide="check"></i>';
+
+  const startPress = () => {
+    if (action.status === "done") return;
+    block.classList.add("is-pressing");
+    const timer = setTimeout(() => {
+      const planner = loadPlanner();
+      const updated = planner.bronzeActions.map((item) => {
+        if (item.id !== action.id) return item;
+        return { ...item, status: "done" };
+      });
+      savePlanner({ ...planner, bronzeActions: updated });
+      updateArenaCountsForBronze(action.arenaId, 1);
+      renderPlanner();
+      renderArenas();
+    }, 3000);
+    block.dataset.timer = String(timer);
+  };
+
+  const endPress = () => {
+    const timer = block.dataset.timer;
+    if (timer) clearTimeout(Number(timer));
+    block.classList.remove("is-pressing");
+    block.dataset.timer = "";
+  };
+
+  block.addEventListener("mousedown", startPress);
+  block.addEventListener("touchstart", startPress);
+  block.addEventListener("mouseup", endPress);
+  block.addEventListener("mouseleave", endPress);
+  block.addEventListener("touchend", endPress);
+  block.addEventListener("touchcancel", endPress);
   block.appendChild(icon);
   block.appendChild(title);
-  block.appendChild(check);
+  block.appendChild(checkmark);
   return block;
 };
 
@@ -506,7 +652,10 @@ const renderArenas = () => {
     addBronze.className = "silver-button";
     addBronze.type = "button";
     addBronze.textContent = "Adicionar Bronze";
-    addBronze.addEventListener("click", () => openBronzeModal(arena.id));
+    addBronze.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openBronzeModal(arena.id);
+    });
     card.addEventListener("click", (event) => {
       if (event.target === addBronze) return;
       openArenaDossier(arena.id);
@@ -611,14 +760,10 @@ const applyGlitch = () => {
 
 const renderPlanner = () => {
   const timeline = document.getElementById("timeline");
-  const backlogList = document.getElementById("backlog-list");
   const bronzeList = document.getElementById("bronze-list");
-  if (!timeline || !backlogList || !bronzeList) return;
+  if (!timeline || !bronzeList) return;
 
   const planner = loadPlanner();
-  const arenas = loadArenas();
-  const getArenaTitle = (arenaId) =>
-    arenas.find((arena) => arena.id === arenaId)?.title ?? "Arena";
 
   timeline.innerHTML = "";
   const bronzeLayer = document.createElement("div");
@@ -634,14 +779,6 @@ const renderPlanner = () => {
     label.className = "time-label";
     label.textContent = `${String(hour).padStart(2, "0")}:00`;
     slot.appendChild(label);
-
-    const pillsForHour = planner.pills.filter(
-      (pill) => pill.status === "scheduled" && pill.scheduledHour === hour
-    );
-
-    pillsForHour.forEach((pill) => {
-      slot.appendChild(buildPillElement(pill, getArenaTitle(pill.arenaId)));
-    });
 
     slot.addEventListener("dragover", (event) => {
       event.preventDefault();
@@ -669,13 +806,7 @@ const renderPlanner = () => {
         renderPlanner();
         return;
       }
-      const pillId = payload;
-      const updated = planner.pills.map((pill) => {
-        if (pill.id !== pillId) return pill;
-        return { ...pill, status: "scheduled", scheduledHour: hour };
-      });
-      savePlanner({ ...planner, pills: updated });
-      renderPlanner();
+      return;
     });
 
     timeline.appendChild(slot);
@@ -696,19 +827,6 @@ const renderPlanner = () => {
       bronzeLayer.appendChild(block);
     });
   timeline.appendChild(bronzeLayer);
-
-  backlogList.innerHTML = "";
-  const backlogPills = planner.pills.filter((pill) => pill.status === "backlog");
-  if (backlogPills.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "backlog-empty";
-    empty.textContent = "Nenhuma acao pendente.";
-    backlogList.appendChild(empty);
-  } else {
-    backlogPills.forEach((pill) => {
-      backlogList.appendChild(buildPillElement(pill, getArenaTitle(pill.arenaId)));
-    });
-  }
 
   bronzeList.innerHTML = "";
   const bronzeBacklog = planner.bronzeActions.filter((action) => action.status === "backlog");
@@ -915,18 +1033,39 @@ const renderTreeEditorSlots = (dna, assetId) => {
   const asset = getAssetFromDNA(dna, assetId);
   list.innerHTML = "";
   if (!asset) return;
-  asset.slots = asset.slots || [];
-  asset.slots.forEach((slot) => {
+  const slots = PROTOCOL_SLOTS[assetId] || [];
+  asset.profileSlots = asset.profileSlots || {};
+  slots.forEach((slot) => {
     const slotEl = document.createElement("div");
-    slotEl.className = "slot-item";
-    const slotInput = document.createElement("input");
-    slotInput.value = slot.label || "";
-    slotInput.addEventListener("change", () => {
-      slot.label = slotInput.value;
-      dna.lastUpdatedAt = new Date().toISOString();
-      saveDNA(dna);
+    slotEl.className = `profile-slot profile-slot--${slot.type}`;
+    slotEl.dataset.slotId = slot.id;
+    const label = document.createElement("div");
+    label.className = `slot-label${slot.type.startsWith("square") ? " bottom" : ""}`;
+    label.textContent = slot.label;
+    slotEl.appendChild(label);
+
+    const fields = slot.fields || [{ key: "value", label: slot.label }];
+    fields.forEach((field) => {
+      const input = document.createElement("input");
+      input.className = "profile-input";
+      input.placeholder = field.label;
+      input.value = asset.profileSlots[slot.id]?.[field.key] || "";
+      input.addEventListener("change", () => {
+        asset.profileSlots[slot.id] = {
+          ...(asset.profileSlots[slot.id] || {}),
+          [field.key]: input.value,
+        };
+        dna.lastUpdatedAt = new Date().toISOString();
+        saveDNA(dna);
+      });
+      slotEl.appendChild(input);
     });
-    slotEl.appendChild(slotInput);
+
+    slotEl.addEventListener("click", () => {
+      const focusable = slotEl.querySelector("input");
+      if (focusable) focusable.focus();
+    });
+
     list.appendChild(slotEl);
   });
 };
@@ -956,7 +1095,6 @@ const openTreeEditor = (assetId) => {
   }
   modal.dataset.assetId = asset.id;
   renderTreeEditorSlots(dna, asset.id);
-  renderStatusFields(dna, asset.id);
   if (linkedArenasList) {
     const arenas = loadArenas().filter((arena) => arena.assetId === asset.id);
     linkedArenasList.innerHTML = "";
@@ -980,7 +1118,8 @@ const openTreeEditor = (assetId) => {
         const actionButton = document.createElement("button");
         actionButton.type = "button";
         actionButton.textContent = "Gerar Acao";
-        actionButton.addEventListener("click", () => {
+        actionButton.addEventListener("click", (event) => {
+          event.stopPropagation();
           createPlannerActionFromArena(arena);
         });
         row.addEventListener("click", () => {
@@ -1007,8 +1146,9 @@ const openArenaModal = () => {
   const modal = document.getElementById("arena-modal");
   const select = document.getElementById("arena-asset");
   const title = document.getElementById("arena-title");
+  const description = document.getElementById("arena-description");
   const target = document.getElementById("arena-target");
-  if (!modal || !select || !title || !target) return;
+  if (!modal || !select || !title || !target || !description) return;
   select.innerHTML = "";
   SEPHIROT.forEach((asset) => {
     const option = document.createElement("option");
@@ -1017,6 +1157,7 @@ const openArenaModal = () => {
     select.appendChild(option);
   });
   title.value = "";
+  description.value = "";
   target.value = "";
   modal.classList.add("is-open");
 };
@@ -1033,6 +1174,7 @@ const openArenaDossier = (arenaId) => {
   const progress = document.getElementById("arena-dossier-progress");
   const macro = document.getElementById("arena-dossier-macro");
   const bronzeList = document.getElementById("arena-dossier-bronze");
+  const targetLabel = document.getElementById("arena-dossier-target");
   if (!modal || !title || !progress || !macro || !bronzeList) return;
   const arenas = loadArenas();
   const arena = arenas.find((item) => item.id === arenaId);
@@ -1043,9 +1185,12 @@ const openArenaDossier = (arenaId) => {
   } else {
     progress.textContent = `${Math.round(Number(arena.completion || 0))}%`;
   }
-  macro.textContent = arena.targetCount
-    ? `Meta: ${arena.targetCount} acoes`
-    : "Meta: livre";
+  macro.textContent = arena.description || "Sem descricao.";
+  if (targetLabel) {
+    targetLabel.textContent = arena.targetCount
+      ? `Meta Atual: ${Number(arena.completedCount || 0)}/${arena.targetCount}`
+      : "Meta Atual: livre";
+  }
   bronzeList.innerHTML = "";
   const planner = loadPlanner();
   const actions = planner.bronzeActions.filter((action) => action.arenaId === arenaId);
@@ -1056,18 +1201,17 @@ const openArenaDossier = (arenaId) => {
     bronzeList.appendChild(empty);
   } else {
     actions.forEach((action) => {
-      const row = document.createElement("div");
-      row.className = "linked-arena";
-      const name = document.createElement("span");
-      name.textContent = action.title || "Acao";
-      const meta = document.createElement("span");
-      meta.textContent = action.duration || "";
-      row.appendChild(name);
-      row.appendChild(meta);
-      bronzeList.appendChild(row);
+      const item = document.createElement("div");
+      item.className = "bronze-item";
+      if (action.serious) item.classList.add("serious");
+      const icon = document.createElement("i");
+      icon.setAttribute("data-lucide", action.icon || "circle");
+      item.appendChild(icon);
+      bronzeList.appendChild(item);
     });
   }
   if (window.lucide) window.lucide.createIcons();
+  modal.dataset.arenaId = arenaId;
   modal.classList.add("is-open");
 };
 
@@ -1355,7 +1499,6 @@ const initPlanner = () => {
   const viewDay = document.getElementById("view-day");
   const viewWeek = document.getElementById("view-week");
   const timeline = document.getElementById("timeline");
-  const backlog = document.querySelector(".backlog-drawer");
   const bronzeBacklog = document.querySelector(".bronze-backlog");
   const weekGrid = document.getElementById("week-grid");
   const plannerLayout = document.querySelector(".planner-layout");
@@ -1366,13 +1509,37 @@ const initPlanner = () => {
     }
     if (plannerLayout) plannerLayout.classList.toggle("week-view", mode === "week");
     if (timeline) timeline.classList.toggle("is-hidden", mode !== "day");
-    if (backlog) backlog.classList.toggle("is-hidden", mode !== "day");
     if (bronzeBacklog) bronzeBacklog.classList.toggle("is-hidden", mode !== "day");
     if (weekGrid) weekGrid.classList.toggle("is-hidden", mode !== "week");
   };
   if (viewDay) viewDay.addEventListener("click", () => setView("day"));
   if (viewWeek) viewWeek.addEventListener("click", () => setView("week"));
   setView("day");
+
+  if (bronzeBacklog) {
+    bronzeBacklog.addEventListener("dragover", (event) => {
+      event.preventDefault();
+    });
+    bronzeBacklog.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const payload = event.dataTransfer?.getData("text/plain");
+      if (!payload || !payload.startsWith("bronze:")) return;
+      const actionId = payload.replace("bronze:", "");
+      const planner = loadPlanner();
+      const updated = planner.bronzeActions.map((action) => {
+        if (action.id !== actionId) return action;
+        return {
+          ...action,
+          status: "backlog",
+          scheduledHour: undefined,
+          scheduledMinute: undefined,
+          locked: false,
+        };
+      });
+      savePlanner({ ...planner, bronzeActions: updated });
+      renderPlanner();
+    });
+  }
 };
 
 const initClock = () => {
@@ -1419,10 +1586,12 @@ const init = () => {
       const titleInput = document.getElementById("arena-title");
       const assetSelect = document.getElementById("arena-asset");
       const targetInput = document.getElementById("arena-target");
-      if (!titleInput || !assetSelect || !targetInput) return;
+      const descriptionInput = document.getElementById("arena-description");
+      if (!titleInput || !assetSelect || !targetInput || !descriptionInput) return;
       const title = titleInput.value.trim();
       if (!title) return;
       const targetCount = Number(targetInput.value || 0) || null;
+      const description = descriptionInput.value.trim();
       const arenas = loadArenas();
       arenas.push({
         id: crypto.randomUUID(),
@@ -1431,6 +1600,7 @@ const init = () => {
         assetId: assetSelect.value,
         targetCount,
         completedCount: 0,
+        description,
       });
       saveArenas(arenas);
       renderArenas();
@@ -1452,7 +1622,8 @@ const init = () => {
       if (!modal || !durationInput || !seriousToggle || !titleInput) return;
       const arenaId = modal.dataset.arenaId;
       if (!arenaId) return;
-      const title = titleInput.value.trim() || "Acao";
+      const title = titleInput.value.trim();
+      if (!title) return;
       const durationMinutes = Number(durationInput.value || 60);
       const duration = `${durationMinutes}min`;
       const selectedIcon = modal.dataset.icon || BRONZE_ICONS[0];
@@ -1489,11 +1660,19 @@ const init = () => {
     });
   }
 
-  const arenaDossierClose = document.getElementById("arena-dossier-close");
+  const arenaDossierClose = document.getElementById("arena-dossier-back");
   const arenaDossier = document.getElementById("arena-dossier");
   if (arenaDossierClose && arenaDossier) {
     arenaDossierClose.addEventListener("click", () => {
       arenaDossier.classList.remove("is-open");
+    });
+  }
+  const arenaDossierAdd = document.getElementById("arena-dossier-add");
+  if (arenaDossierAdd && arenaDossier) {
+    arenaDossierAdd.addEventListener("click", () => {
+      const id = arenaDossier.dataset.arenaId;
+      if (!id) return;
+      openBronzeModal(id);
     });
   }
   const avatar = document.getElementById("hud-avatar");
@@ -1514,31 +1693,10 @@ const init = () => {
       profileModal.classList.remove("is-open");
     });
   }
-  const treeCancel = document.getElementById("tree-edit-cancel");
-  const treeSlotAdd = document.getElementById("tree-slot-add");
-  const treeSlotName = document.getElementById("tree-slot-name");
+  const treeCancel = document.getElementById("tree-edit-back");
   if (treeCancel) {
     treeCancel.addEventListener("click", () => {
       closeTreeEditor();
-    });
-  }
-  if (treeSlotAdd && treeSlotName) {
-    treeSlotAdd.addEventListener("click", () => {
-      const name = treeSlotName.value.trim();
-      if (!name) return;
-      const modal = document.getElementById("tree-edit-modal");
-      if (!modal) return;
-      const assetId = modal.dataset.assetId;
-      if (!assetId) return;
-      const dna = seedDNAIfMissing();
-      const asset = getAssetFromDNA(dna, assetId);
-      if (!asset) return;
-      asset.slots = asset.slots || [];
-      asset.slots.push({ id: crypto.randomUUID(), label: name, metrics: [] });
-      treeSlotName.value = "";
-      dna.lastUpdatedAt = new Date().toISOString();
-      saveDNA(dna);
-      renderTreeEditorSlots(dna, assetId);
     });
   }
   window.addEventListener("storage", () => {

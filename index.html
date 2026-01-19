@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Game of Life</title>
+    <link rel="manifest" href="src/manifest.json" />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("src/service-worker.js");
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="hud">
+        <div class="hud-clock" id="hud-clock">00:00:00</div>
+        <div class="hud-avatar" id="hud-avatar" aria-label="Avatar"></div>
+      </header>
+
+      <main class="content">
+        <section class="screen screen-tree is-active" data-screen="tree">
+          <div class="screen-title">Arvore</div>
+          <div class="tree-grid" id="tree-grid"></div>
+        </section>
+
+        <section class="screen screen-arenas" data-screen="arenas">
+          <div class="screen-title">Arenas</div>
+          <div class="arena-list" id="arena-list">
+            <div class="arena-empty">Sem metas ainda.</div>
+          </div>
+        </section>
+
+        <section class="screen screen-planner" data-screen="planner">
+          <div class="screen-title">Planner</div>
+          <div class="planner-layout">
+            <aside class="backlog-drawer">
+              <div class="drawer-title">Backlog</div>
+              <div class="backlog-list" id="backlog-list">
+                <div class="backlog-empty">Nenhuma pílula pendente.</div>
+              </div>
+            </aside>
+
+            <div class="timeline" id="timeline"></div>
+
+            <button class="logistics-toggle" id="logistics-toggle" aria-label="Logistica">
+              Logistica
+            </button>
+
+            <aside class="logistics-drawer" id="logistics-drawer">
+              <div class="drawer-title">Logistica</div>
+              <ul class="logistics-list">
+                <li class="logistics-item"><input type="checkbox" /> Agua</li>
+                <li class="logistics-item"><input type="checkbox" /> Alimentacao</li>
+                <li class="logistics-item"><input type="checkbox" /> Sono</li>
+                <li class="logistics-item"><input type="checkbox" /> Limpeza</li>
+              </ul>
+            </aside>
+          </div>
+        </section>
+
+        <section class="screen screen-config" data-screen="config">
+          <div class="screen-title">Config</div>
+          <div class="config-grid">
+            <div class="config-panel">
+              <div class="drawer-title">Maestria</div>
+              <div class="mode-toggle">
+                <label>
+                  <input type="radio" name="mastery-mode" value="oracle" />
+                  Modo Oraculo
+                </label>
+                <label>
+                  <input type="radio" name="mastery-mode" value="sovereign" />
+                  Modo Soberano
+                </label>
+              </div>
+
+              <div class="mode-panel" id="oracle-panel">
+                <div class="panel-title">Validacao Humano Nivel 100</div>
+                <div class="oracle-form" id="oracle-form"></div>
+                <button class="primary-button" id="oracle-apply">Aplicar Validacao</button>
+              </div>
+
+              <div class="mode-panel" id="sovereign-panel">
+                <div class="panel-title">Controle Manual</div>
+                <div class="sovereign-select">
+                  <select id="sovereign-asset-select"></select>
+                </div>
+                <div class="sovereign-sliders" id="sovereign-sliders"></div>
+                <div class="slot-editor">
+                  <div class="slot-header">Slots</div>
+                  <div class="slot-add">
+                    <input type="text" id="slot-name" placeholder="Nome do slot" />
+                    <button class="primary-button" id="slot-add-btn">Adicionar</button>
+                  </div>
+                  <div class="slot-list" id="slot-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="config-panel">
+              <div class="drawer-title">Radar de Orbita (Ativo 6)</div>
+              <div class="orbit-radar">
+                <div class="orbit orbit-outer"></div>
+                <div class="orbit orbit-mid"></div>
+                <div class="orbit orbit-inner"></div>
+                <div class="orbit-center">EU</div>
+                <div class="orbit-node orbit-node-1">Contato A</div>
+                <div class="orbit-node orbit-node-2">Contato B</div>
+                <div class="orbit-node orbit-node-3">Contato C</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav">
+        <button class="nav-item is-active" data-target="tree">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="7" r="3" />
+              <circle cx="6" cy="17" r="3" />
+              <circle cx="18" cy="17" r="3" />
+              <path d="M12 10v4M9 14h6" />
+            </svg>
+          </span>
+          <span class="nav-label">Arvore</span>
+        </button>
+        <button class="nav-item" data-target="arenas">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 18h16M6 18V8l6-3 6 3v10" />
+              <path d="M9 18v-4h6v4" />
+            </svg>
+          </span>
+          <span class="nav-label">Arenas</span>
+        </button>
+        <button class="nav-item" data-target="planner">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="4" y="5" width="16" height="14" rx="3" />
+              <path d="M8 3v4M16 3v4M7 11h10M7 15h6" />
+            </svg>
+          </span>
+          <span class="nav-label">Planner</span>
+        </button>
+        <button class="nav-item" data-target="config">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M4 12h3M17 12h3M12 4v3M12 17v3M6.5 6.5l2 2M15.5 15.5l2 2M6.5 17.5l2-2M15.5 8.5l2-2" />
+            </svg>
+          </span>
+          <span class="nav-label">Config</span>
+        </button>
+      </nav>
+    </div>
+
+    <script src="app.js"></script>
+
+    <div class="modal" id="hiato-modal">
+      <div class="modal-card">
+        <div class="drawer-title">Restauracao de Sistema</div>
+        <div class="modal-body">
+          Mais de 3 dias sem login. Revalide os niveis dos Ativos.
+        </div>
+        <button class="primary-button" id="hiato-ack">Revalidar</button>
+      </div>
+    </div>
+  </body>
+</html>

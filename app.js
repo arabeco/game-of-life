@@ -468,6 +468,9 @@ const initAuth = () => {
   const guestBtn = document.getElementById("login-guest-btn");
   const errorEl = document.getElementById("login-error");
   const warnEl = document.getElementById("login-warning");
+  const supabaseUrlInput = document.getElementById("supabase-url");
+  const supabaseAnonInput = document.getElementById("supabase-anon");
+  const supabaseSave = document.getElementById("supabase-save");
   setAuthLocked(true);
 
   if (guestMode) {
@@ -475,6 +478,26 @@ const initAuth = () => {
     initApp();
     if (warnEl) warnEl.textContent = "Dados salvos apenas localmente.";
     return;
+  }
+
+  if (supabaseUrlInput) {
+    supabaseUrlInput.value = localStorage.getItem("game_of_life.supabase_url") || "";
+  }
+  if (supabaseAnonInput) {
+    supabaseAnonInput.value = localStorage.getItem("game_of_life.supabase_anon") || "";
+  }
+  if (supabaseSave) {
+    supabaseSave.addEventListener("click", () => {
+      const url = supabaseUrlInput?.value?.trim();
+      const anon = supabaseAnonInput?.value?.trim();
+      if (!url || !anon) {
+        if (warnEl) warnEl.textContent = "Preencha URL e Anon Key.";
+        return;
+      }
+      localStorage.setItem("game_of_life.supabase_url", url);
+      localStorage.setItem("game_of_life.supabase_anon", anon);
+      location.reload();
+    });
   }
 
   const requireSupabase = () => {

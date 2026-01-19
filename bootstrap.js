@@ -57,11 +57,13 @@ try {
 }
 setLoadingStatus("finalizando", 100);
 
-setTimeout(() => {
-  if (window.__APP_LOADED__) return;
-  const loading = document.getElementById("loading-screen");
-  if (loading) loading.remove();
+const loading = document.getElementById("loading-screen");
+if (loading) {
+  loading.classList.add("fade-out");
+  setTimeout(() => loading.remove(), 300);
+}
+if (!window.__AUTH_READY__) {
   document.body.classList.add("auth-locked");
   const screen = document.getElementById("auth-screen");
   if (screen) screen.classList.add("is-open");
-}, 3600);
+}

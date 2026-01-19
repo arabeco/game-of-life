@@ -462,6 +462,7 @@ const ensureProfilesRow = async (user) => {
 };
 
 const initAuth = () => {
+  window.__AUTH_READY__ = true;
   const googleBtn = document.getElementById("login-google");
   const emailInput = document.getElementById("login-email");
   const passInput = document.getElementById("login-password");

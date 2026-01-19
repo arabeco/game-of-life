@@ -22,6 +22,8 @@ body {
   z-index: 9999;
   opacity: 1;
   transition: opacity 0.5s ease;
+  flex-direction: column;
+  gap: 16px;
 }
 
 #loading-screen.fade-out {
@@ -112,6 +114,28 @@ body.auth-locked .app {
   align-items: center;
   justify-content: center;
   animation: logo-breathe 2.4s ease-in-out infinite;
+}
+
+.loading-status {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(229, 229, 229, 0.7);
+}
+
+.loading-progress {
+  width: min(240px, 70vw);
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.loading-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.8));
+  transition: width 0.4s ease;
 }
 
 .loading-diamond {

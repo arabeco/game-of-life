@@ -20,28 +20,69 @@ body {
 }
 
 .hud {
-  height: 64px;
-  padding: calc(env(safe-area-inset-top)) 24px 0;
-  display: flex;
+  min-height: 72px;
+  padding: calc(12px + env(safe-area-inset-top)) 20px 10px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   background: #141414;
   border-bottom: none;
 }
 
+.hud-date {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #bdbdbd;
+  text-transform: uppercase;
+}
+
+.hud-clock-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-line {
+  width: 48px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.hud-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+
 .hud-clock {
   font-size: 18px;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   color: #f1f1f1;
+  font-weight: 600;
 }
 
 .hud-avatar {
-  width: 40px;
-  height: 40px;
+  justify-self: end;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
   border: none;
   box-shadow: none;
+}
+
+.energy-ring {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.energy-ring::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .content {
@@ -91,9 +132,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.18);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(10px);
   cursor: pointer;
   outline: none;
@@ -101,7 +142,7 @@ body {
 
 .sephirot.is-empty {
   background: rgba(90, 90, 90, 0.2);
-  border: 1px solid rgba(120, 120, 120, 0.35);
+  border: 1px solid rgba(120, 120, 120, 0.25);
   box-shadow: none;
   color: #9b9b9b;
 }
@@ -175,7 +216,7 @@ body {
 .config-item {
   padding: 8px 14px;
   border-radius: 24px;
-  border: none;
+  border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.06);
   color: #dcdcdc;
   font-size: 12px;
@@ -252,23 +293,41 @@ body {
 .slot-add input {
   width: 100%;
   padding: 8px 10px;
-  border-radius: 16px;
+  border-radius: 8px;
   border: none;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.04);
   color: #e6feff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.oracle-row input:focus,
+.sovereign-row input:focus,
+.sovereign-select select:focus,
+.slot-add input:focus {
+  outline: none;
+  border-bottom-color: rgba(255, 255, 255, 0.4);
 }
 
 .primary-button {
   padding: 10px 14px;
   border-radius: 24px;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   color: #eaeaea;
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 1px;
   cursor: pointer;
   box-shadow: none;
+}
+
+.primary-button:hover,
+.close-button:hover,
+.fab:hover,
+.config-item:hover,
+.notes-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.12);
 }
 
 .ghost-button {
@@ -424,7 +483,7 @@ body {
   padding: 20px;
   border-radius: 12px;
   background: #101010;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: none;
 }
 
@@ -437,6 +496,20 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dossier-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dossier-icon {
+  width: 16px;
+  height: 16px;
+  stroke: #bdbdbd;
 }
 
 .dossier-title {
@@ -451,8 +524,10 @@ body {
 }
 
 .close-button {
-  border: none;
-  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 6px;
   color: #bdbdbd;
   font-size: 16px;
   cursor: pointer;
@@ -491,10 +566,16 @@ body {
 
 .status-row input {
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: none;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   color: #f1f1f1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-row input:focus {
+  outline: none;
+  border-bottom-color: rgba(255, 255, 255, 0.4);
 }
 
 .linked-arenas {
@@ -527,10 +608,30 @@ body {
   width: 100%;
   margin: 8px 0 12px;
   padding: 8px 10px;
-  border-radius: 16px;
+  border-radius: 8px;
   border: none;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   color: #f1f1f1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal input[type="text"],
+.modal select {
+  width: 100%;
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f1f1f1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal input[type="number"]:focus,
+.modal input[type="text"]:focus,
+.modal select:focus {
+  outline: none;
+  border-bottom-color: rgba(255, 255, 255, 0.4);
 }
 
 .field-label {
@@ -705,7 +806,7 @@ body {
   width: 100%;
   padding: 10px 12px;
   border-radius: 24px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: #dcdcdc;
   text-transform: uppercase;
@@ -816,12 +917,23 @@ body {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   color: #f1f1f1;
   font-size: 28px;
   line-height: 1;
   cursor: pointer;
+}
+
+button:active,
+.sephirot:active {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+button i {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
 }
 
 @media (max-width: 520px) {

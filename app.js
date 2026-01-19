@@ -24,8 +24,30 @@ const STATUS_FIELDS = {
   malkuth: ["Peso", "Altura", "%G"],
   hod: ["Slot 1 (PEC)", "Slot 2 (UNIP)", "Slot 3 (Personal)"],
 };
+const ICON_BY_ID = {
+  malkuth: "dumbbell",
+  binah: "brain",
+  chokmah: "sparkles",
+  geburah: "target",
+  chesed: "briefcase",
+  tiphareth: "users",
+  netzach: "wallet",
+  hod: "book-open",
+  yesod: "gamepad-2",
+  kether: "crown",
+};
 
-const nowClock = () => new Date().toLocaleTimeString("pt-BR", { hour12: false });
+const nowClock = () =>
+  new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+const formatHudDate = () => {
+  const date = new Date();
+  const weekdays = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
+  const months = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+  return `${weekdays[date.getDay()]}, ${String(date.getDate()).padStart(2, "0")} ${
+    months[date.getMonth()]
+  }`;
+};
 
 const loadDNA = () => {
   try {
@@ -545,11 +567,16 @@ const openTreeEditor = (assetId) => {
   const title = document.getElementById("tree-edit-title");
   const levelInput = document.getElementById("tree-edit-level");
   const levelText = document.getElementById("tree-edit-level-text");
+  const icon = document.getElementById("tree-edit-icon");
   const linkedArenasList = document.getElementById("linked-arenas-list");
   if (!modal || !title || !levelInput) return;
   title.textContent = `Editar ${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
   levelInput.value = String(Math.round(Number(asset.level || 0)));
   if (levelText) levelText.textContent = `Nivel ${Math.round(Number(asset.level || 0))}`;
+  if (icon) {
+    icon.setAttribute("data-lucide", ICON_BY_ID[asset.id] ?? "circle");
+    if (window.lucide) window.lucide.createIcons();
+  }
   modal.dataset.assetId = asset.id;
   renderTreeEditorSlots(dna, asset.id);
   renderStatusFields(dna, asset.id);
@@ -706,7 +733,10 @@ const renderSlotEditor = (dna, assetId) => {
       });
       const addMetricBtn = document.createElement("button");
       addMetricBtn.className = "primary-button";
-      addMetricBtn.textContent = "+";
+      addMetricBtn.setAttribute("aria-label", "Adicionar Metrica");
+      const addMetricIcon = document.createElement("i");
+      addMetricIcon.setAttribute("data-lucide", "plus");
+      addMetricBtn.appendChild(addMetricIcon);
       addMetricBtn.addEventListener("click", () => {
         slot.metrics = slot.metrics || [];
         slot.metrics.push({ id: crypto.randomUUID(), label: "Metrica", value: "" });
@@ -722,7 +752,10 @@ const renderSlotEditor = (dna, assetId) => {
 
     const addMetricRow = document.createElement("button");
     addMetricRow.className = "primary-button";
-    addMetricRow.textContent = "Add Metrica";
+    addMetricRow.setAttribute("aria-label", "Adicionar Metrica");
+    const addMetricRowIcon = document.createElement("i");
+    addMetricRowIcon.setAttribute("data-lucide", "plus");
+    addMetricRow.appendChild(addMetricRowIcon);
     addMetricRow.addEventListener("click", () => {
       slot.metrics = slot.metrics || [];
       slot.metrics.push({ id: crypto.randomUUID(), label: "Metrica", value: "" });
@@ -733,6 +766,7 @@ const renderSlotEditor = (dna, assetId) => {
     slotEl.appendChild(addMetricRow);
     list.appendChild(slotEl);
   });
+  if (window.lucide) window.lucide.createIcons();
 };
 
 const initConfig = () => {
@@ -814,9 +848,11 @@ const initPlanner = () => {
 
 const initClock = () => {
   const clock = document.getElementById("hud-clock");
+  const dateLabel = document.getElementById("hud-date");
   if (!clock) return;
   const tick = () => {
     clock.textContent = nowClock();
+    if (dateLabel) dateLabel.textContent = formatHudDate();
   };
   tick();
   setInterval(tick, 1000);
@@ -831,6 +867,7 @@ const init = () => {
   initConfig();
   renderArenas();
   applyGlitch();
+  if (window.lucide) window.lucide.createIcons();
   const hiatoAck = document.getElementById("hiato-ack");
   if (hiatoAck) {
     hiatoAck.addEventListener("click", () => {

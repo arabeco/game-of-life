@@ -6,6 +6,7 @@
     <title>Game of Life</title>
     <link rel="manifest" href="src/manifest.json" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
@@ -17,8 +18,15 @@
   <body>
     <div class="app">
       <header class="hud">
-        <div class="hud-clock" id="hud-clock">00:00:00</div>
-        <div class="hud-avatar" id="hud-avatar" aria-label="Avatar"></div>
+        <div class="hud-date" id="hud-date">SEG, 19 JAN</div>
+        <div class="hud-clock-wrapper">
+          <span class="hud-line"></span>
+          <span class="hud-dot"></span>
+          <div class="hud-clock" id="hud-clock">00:00</div>
+          <span class="hud-dot"></span>
+          <span class="hud-line"></span>
+        </div>
+        <div class="hud-avatar energy-ring" id="hud-avatar" aria-label="Avatar"></div>
       </header>
 
       <main class="content">
@@ -32,7 +40,9 @@
           <div class="arena-list" id="arena-list">
             <div class="arena-empty">Sem metas ainda.</div>
           </div>
-          <button class="fab" id="arena-add" aria-label="Adicionar Arena">+</button>
+          <button class="fab" id="arena-add" aria-label="Adicionar Arena">
+            <i data-lucide="plus"></i>
+          </button>
         </section>
 
         <section class="screen screen-planner" data-screen="planner">
@@ -86,7 +96,9 @@
             <div class="mode-panel" id="oracle-panel">
               <div class="panel-title">Validacao</div>
               <div class="oracle-form" id="oracle-form"></div>
-              <button class="primary-button" id="oracle-apply">Aplicar</button>
+              <button class="primary-button" id="oracle-apply" aria-label="Aplicar">
+                <i data-lucide="check"></i>
+              </button>
             </div>
             <div class="mode-panel" id="sovereign-panel">
               <div class="panel-title">Controle Manual</div>
@@ -98,7 +110,9 @@
                 <div class="slot-header">Slots</div>
                 <div class="slot-add">
                   <input type="text" id="slot-name" placeholder="Nome do slot" />
-                  <button class="primary-button" id="slot-add-btn">Adicionar</button>
+                  <button class="primary-button" id="slot-add-btn" aria-label="Adicionar Slot">
+                    <i data-lucide="plus"></i>
+                  </button>
                 </div>
                 <div class="slot-list" id="slot-list"></div>
               </div>
@@ -164,10 +178,15 @@
       <div class="modal-card dossier-card">
         <div class="dossier-header">
           <div class="dossier-title">
-            <div class="drawer-title" id="tree-edit-title">Ativo</div>
+            <div class="dossier-title-row">
+              <i class="dossier-icon" id="tree-edit-icon" data-lucide="circle"></i>
+              <div class="drawer-title" id="tree-edit-title">Ativo</div>
+            </div>
             <div class="dossier-level" id="tree-edit-level-text">Nivel 0</div>
           </div>
-          <button class="close-button" id="tree-edit-cancel" aria-label="Fechar">✕</button>
+          <button class="close-button" id="tree-edit-cancel" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
         </div>
         <div class="modal-body dossier-body">
           <label class="field-label" for="tree-edit-level">Nivel (0-10)</label>
@@ -180,7 +199,9 @@
             <div class="slot-header">Slots</div>
             <div class="slot-add">
               <input type="text" id="tree-slot-name" placeholder="Nome do slot" />
-              <button class="primary-button" id="tree-slot-add">Adicionar</button>
+              <button class="primary-button" id="tree-slot-add" aria-label="Adicionar Slot">
+                <i data-lucide="plus"></i>
+              </button>
             </div>
             <div class="slot-list" id="tree-slot-list"></div>
           </div>
@@ -189,7 +210,9 @@
             <div class="linked-arenas-list" id="linked-arenas-list"></div>
           </div>
         </div>
-        <button class="primary-button" id="tree-edit-save">Salvar</button>
+        <button class="primary-button" id="tree-edit-save" aria-label="Salvar">
+          <i data-lucide="check"></i>
+        </button>
       </div>
     </div>
 
@@ -197,7 +220,9 @@
       <div class="modal-card dossier-card">
         <div class="dossier-header">
           <div class="drawer-title">Nova Arena</div>
-          <button class="close-button" id="arena-cancel" aria-label="Fechar">✕</button>
+          <button class="close-button" id="arena-cancel" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
         </div>
         <div class="modal-body dossier-body">
           <label class="field-label" for="arena-title">Nome</label>
@@ -205,7 +230,9 @@
           <label class="field-label" for="arena-asset">Ativo</label>
           <select id="arena-asset"></select>
         </div>
-        <button class="primary-button" id="arena-save">Salvar</button>
+        <button class="primary-button" id="arena-save" aria-label="Salvar">
+          <i data-lucide="check"></i>
+        </button>
       </div>
     </div>
   </body>

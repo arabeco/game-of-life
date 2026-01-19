@@ -685,6 +685,7 @@ const savePlanner = (planner) => {
 
 let plannerDayOffset = 0;
 let missionState = defaultMissionState();
+let bypassInitiation = false;
 let vitalityLogs = [];
 
 const showMissionsLoading = (isLoading) => {
@@ -2019,7 +2020,7 @@ const renderInitiationOverlay = () => {
   const title = document.getElementById("init-title");
   if (!overlay || !body || !title) return;
 
-  if (missionState.initiation_finished) {
+  if (bypassInitiation || missionState.initiation_finished) {
     overlay.classList.add("is-hidden");
     return;
   }
@@ -2414,7 +2415,7 @@ const init = () => {
     checkMissionProgress();
   } else {
     showMissionsLoading(true);
-    withTimeout(fetchMissionState(), 5000, "user_missions")
+    withTimeout(fetchMissionState(), 3000, "user_missions")
       .then((state) => {
         missionState = { ...defaultMissionState(), ...(state || {}) };
         saveMissionStateLocal(missionState);
@@ -2423,13 +2424,14 @@ const init = () => {
       })
       .catch((error) => {
         logSupabaseError("fetchMissionState.timeout", error);
+        bypassInitiation = true;
         missionState = loadMissionStateLocal();
         renderInitiationOverlay();
       })
       .finally(() => {
         showMissionsLoading(false);
       });
-    withTimeout(fetchVitalityLogs(), 5000, "action_logs")
+    withTimeout(fetchVitalityLogs(), 3000, "action_logs")
       .then((logs) => {
         vitalityLogs = logs;
         renderTree();
@@ -2719,6 +2721,10 @@ const init = () => {
   if (configNickname) configNickname.value = configProfile.nickname || "";
   if (configId) configId.value = configProfile.userId || "";
   if (configNickname) {
+    configNickname.addEventListener("input", () => {
+      const profile = loadProfile();
+      saveProfile({ ...profile, nickname: configNickname.value.trim() });
+    });
     configNickname.addEventListener("change", () => {
       const profile = loadProfile();
       const updated = { ...profile, nickname: configNickname.value.trim() };
@@ -2728,6 +2734,10 @@ const init = () => {
     });
   }
   if (configId) {
+    configId.addEventListener("input", () => {
+      const profile = loadProfile();
+      saveProfile({ ...profile, userId: configId.value.trim() });
+    });
     configId.addEventListener("change", () => {
       const profile = loadProfile();
       const updated = { ...profile, userId: configId.value.trim() };

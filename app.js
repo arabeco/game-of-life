@@ -2457,6 +2457,7 @@ const initPlanner = () => {
   const dayNext = document.getElementById("day-next");
   if (dayPrev) dayPrev.addEventListener("click", () => setPlannerDayOffset(plannerDayOffset - 1));
   if (dayNext) dayNext.addEventListener("click", () => setPlannerDayOffset(plannerDayOffset + 1));
+  const plannerLayout = document.querySelector(".planner-layout");
   let touchStartX = 0;
   let touchStartY = 0;
   if (plannerLayout) {
@@ -2484,7 +2485,6 @@ const initPlanner = () => {
   const timeline = document.getElementById("timeline");
   const bronzeBacklog = document.querySelector(".bronze-backlog");
   const weekGrid = document.getElementById("week-grid");
-  const plannerLayout = document.querySelector(".planner-layout");
   const setView = (mode) => {
     if (viewDay && viewWeek) {
       viewDay.classList.toggle("is-active", mode === "day");

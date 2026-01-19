@@ -474,10 +474,7 @@ const initAuth = () => {
   setAuthLocked(true);
 
   if (guestMode) {
-    setAuthLocked(false);
-    initApp();
-    if (warnEl) warnEl.textContent = "Dados salvos apenas localmente.";
-    return;
+    if (warnEl) warnEl.textContent = "Dados salvos apenas localmente. Clique em Convidado para continuar.";
   }
 
   const requireSupabase = () => {

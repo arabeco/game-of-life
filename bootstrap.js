@@ -62,8 +62,6 @@ if (loading) {
   loading.classList.add("fade-out");
   setTimeout(() => loading.remove(), 300);
 }
-if (!window.__AUTH_READY__) {
-  document.body.classList.add("auth-locked");
-  const screen = document.getElementById("auth-screen");
-  if (screen) screen.classList.add("is-open");
-}
+document.body.classList.add("auth-locked");
+const screen = document.getElementById("auth-screen");
+if (screen) screen.classList.add("is-open");

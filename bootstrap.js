@@ -21,5 +21,19 @@ const loadEnv = async () => {
   }
 };
 
-await loadEnv();
+const withTimeout = (promise, ms) =>
+  new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), ms);
+    promise
+      .then(() => {
+        clearTimeout(timer);
+        resolve(true);
+      })
+      .catch(() => {
+        clearTimeout(timer);
+        resolve(false);
+      });
+  });
+
+await withTimeout(loadEnv(), 2000);
 await import("./app.js");

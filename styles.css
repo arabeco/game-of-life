@@ -367,7 +367,7 @@ html[data-theme="void"] {
   position: absolute;
   right: calc(100% + 12px);
   top: 50%;
-  width: clamp(140px, 30vw, 320px);
+  width: clamp(220px, 48vw, 520px);
   height: 2px;
   transform: translateY(-50%);
   border-radius: 999px;
@@ -666,7 +666,10 @@ html[data-theme="void"] {
   padding: 16px;
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(26, 28, 34, 0.92), rgba(12, 14, 18, 0.95));
-  border: 1px solid rgba(210, 218, 230, 0.4);
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, rgba(26, 28, 34, 0.92), rgba(12, 14, 18, 0.95))
+      padding-box,
+    linear-gradient(135deg, #c0c0c0 0%, #f1f1f1 50%, #c0c0c0 100%) border-box;
   gap: 10px;
   position: relative;
   min-height: 180px;
@@ -2151,7 +2154,7 @@ html[data-status="oracle"] .sephirot {
 .dossier-card {
   width: min(1100px, 94vw);
   border-radius: 18px;
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   background: linear-gradient(#101010, #101010) padding-box,
     linear-gradient(135deg, rgba(217, 182, 92, 0.9), rgba(124, 97, 38, 0.8))
       border-box;
@@ -2168,8 +2171,10 @@ html[data-status="oracle"] .sephirot {
   height: 100%;
   border-radius: 18px;
   background: linear-gradient(160deg, rgba(16, 16, 16, 0.95), rgba(26, 22, 12, 0.92));
-  border: 2px solid;
-  border-image: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 1;
+  border: 2px solid transparent;
+  background: linear-gradient(160deg, rgba(16, 16, 16, 0.95), rgba(26, 22, 12, 0.92))
+      padding-box,
+    linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) border-box;
   position: relative;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55), inset 0 0 22px rgba(0, 0, 0, 0.7);
@@ -2422,6 +2427,12 @@ html[data-status="oracle"] .sephirot {
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 6px;
+  scrollbar-width: none;
+}
+
+.linked-arenas-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .linked-arena {

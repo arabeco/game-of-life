@@ -2614,6 +2614,9 @@ html[data-status="oracle"] .sephirot {
   min-height: 24px;
   max-height: 34px;
   padding: 4px 6px;
+  border: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot:first-child {
@@ -2644,15 +2647,28 @@ html[data-status="oracle"] .sephirot {
   padding: 0;
 }
 
+#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot .slot-value {
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 10px;
+  padding: 4px 6px;
+  background: rgba(16, 16, 16, 0.6);
+}
+
+#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot .slot-label {
+  margin-bottom: 2px;
+}
+
 #tree-edit-modal[data-asset-id="conexao"] .linked-arenas-list {
   min-height: 180px;
   height: auto;
+  align-items: stretch;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .linked-arena {
-  min-height: 84px;
-  min-width: 80px;
-  padding: 5px 6px;
+  min-height: 120px;
+  min-width: 100px;
+  padding: 8px 10px;
+  justify-content: space-between;
 }
 
 #tree-edit-modal .slot-list {

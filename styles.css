@@ -2633,12 +2633,7 @@ html[data-status="oracle"] .sephirot {
   margin-bottom: 0px;
 }
 
-/* Forçar a divisória subir (override final) */
-#tree-edit-modal .dossier-header {
-  padding-bottom: 0 !important;
-  margin-bottom: 0 !important;
-  height: 26px !important; /* sobe +15px a divisória */
-}
+/* (removido) overrides antigos de "subir divisória" — agora é grid estável */
 
 #tree-edit-modal #tree-edit-back {
   display: none;
@@ -2655,11 +2650,35 @@ html[data-status="oracle"] .sephirot {
   justify-content: center;
 }
 
-#tree-edit-modal .dossier-icon {
-  position: absolute;
-  left: 0;
-  top: calc(50% - 13px) !important; /* sobe +8px */
-  transform: translateY(-50%);
+/* Tree edit header: usar grid (ícone | título | ações) para alinhar de verdade */
+#tree-edit-modal .dossier-header {
+  display: grid !important;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center !important;
+  column-gap: 10px;
+  padding: 8px 12px 6px !important;
+  margin-bottom: 10px !important;
+  height: auto !important;
+}
+
+/* remove overrides antigos de "subir divisória" */
+#tree-edit-modal .dossier-header {
+  padding-bottom: 6px !important;
+  margin-bottom: 10px !important;
+}
+
+/* achatar wrappers internos para posicionar ícone/título pelo grid do header */
+#tree-edit-modal .dossier-title,
+#tree-edit-modal .dossier-title-row {
+  display: contents;
+}
+
+#tree-edit-modal #tree-edit-icon.dossier-icon {
+  grid-column: 1;
+  justify-self: start;
+  align-self: center;
+  position: static !important;
+  transform: none !important;
   width: 28px;
   height: 28px;
 }
@@ -2670,10 +2689,13 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal #tree-edit-title {
-  position: absolute;
-  left: 50%;
-  top: calc(50% - 45px) !important; /* sobe +15px */
-  transform: translate(-50%, -50%) translateY(-100px) !important; /* sobe +15px */
+  grid-column: 2;
+  justify-self: center;
+  align-self: center;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
   margin: 0;
   max-width: calc(100% - 150px);
   white-space: nowrap;
@@ -2686,17 +2708,22 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .dossier-actions {
-  position: absolute;
-  right: 4px !important;
-  top: 4px !important;
+  grid-column: 3;
+  justify-self: end;
+  align-self: center;
+  position: static !important;
+  right: auto !important;
+  top: auto !important;
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 #tree-edit-modal #tree-edit-ok {
-  position: absolute;
-  right: -11px !important; /* 15px mais à direita (4 - 15) */
-  top: calc(50% - 45px) !important; /* sobe +15px */
-  transform: translateY(-50%) translateY(-100px) !important; /* sobe +15px */
+  position: static !important;
+  right: auto !important;
+  top: auto !important;
+  transform: none !important;
   padding: 8px 14px;
   border-radius: 14px;
   min-width: 48px;

@@ -3420,7 +3420,7 @@ const startOracleFlow = () => {
     phrases.forEach((phrase, levelIndex) => {
       const button = document.createElement("button");
       button.className = "level-btn";
-      button.textContent = `${levelIndex + 1} - ${phrase}`;
+      button.textContent = phrase;
       button.addEventListener("click", () => {
         const dna = seedDNAIfMissing();
         const asset = getAssetFromDNA(dna, assetId);

@@ -1106,7 +1106,7 @@ html[data-theme="void"] {
 
 .mastery-phrase {
   margin-top: 8px;
-  font-size: clamp(22px, 5vw, 34px);
+  font-size: clamp(18px, 4.4vw, 26px);
   color: #f7f1d8;
   line-height: 1.5;
   font-weight: 700;
@@ -2609,6 +2609,8 @@ html[data-status="oracle"] .sephirot {
   left: 0;
   top: 8px;
   transform: none;
+  width: 28px;
+  height: 28px;
 }
 
 #tree-edit-modal #tree-edit-level-text {
@@ -2619,13 +2621,13 @@ html[data-status="oracle"] .sephirot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1px solid rgba(212, 175, 55, 0.7);
   background: rgba(10, 10, 10, 0.7);
   color: #f1d279;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -2633,13 +2635,20 @@ html[data-status="oracle"] .sephirot {
   position: absolute;
   right: 16px;
   top: 10px;
+  gap: 8px;
 }
 
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
   right: 16px;
-  bottom: 16px;
+  top: 10px;
   z-index: 4;
+}
+
+#tree-edit-modal #tree-edit-edit {
+  position: absolute;
+  right: 66px;
+  top: 10px;
 }
 
 #tree-edit-modal .dossier-body {
@@ -2647,10 +2656,10 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .oracle-phrase {
-  min-height: 48px;
-  padding: 10px 12px;
+  min-height: 60px;
+  padding: 12px 14px;
   line-height: 1.4;
-  font-size: clamp(14px, 4.4vw, 18px);
+  font-size: clamp(15px, 4.6vw, 20px);
 }
 
 #tree-edit-modal .dossier-title {
@@ -2659,7 +2668,8 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .drawer-title#tree-edit-title {
   text-align: center;
-  margin-top: 18px;
+  margin-top: 20px;
+  font-size: 18px;
 }
 
 #tree-edit-modal .modal-card {

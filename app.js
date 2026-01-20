@@ -1668,7 +1668,7 @@ const renderPlanner = () => {
   bronzeLayer.style.position = "absolute";
   bronzeLayer.style.inset = "0";
   bronzeLayer.style.pointerEvents = "none";
-  for (let hour = 6; hour <= 22; hour += 1) {
+  for (let hour = 0; hour <= 23; hour += 1) {
     const slot = document.createElement("div");
     slot.className = "time-slot";
     slot.dataset.hour = String(hour);
@@ -1721,7 +1721,7 @@ const renderPlanner = () => {
       const startMinute = Number(action.scheduledMinute || 0);
       const duration = Number(action.durationMinutes || 30);
       const block = buildBronzeBlock(action);
-      const top = timelineTopPadding + (startHour - 6) * 60 + startMinute;
+      const top = timelineTopPadding + startHour * 60 + startMinute;
       block.style.top = `${top}px`;
       block.style.height = `${Math.max(30, duration)}px`;
       block.style.pointerEvents = "auto";
@@ -2249,21 +2249,26 @@ const openArenaDossier = (arenaId) => {
   const macro = document.getElementById("arena-dossier-macro");
   const bronzeList = document.getElementById("arena-dossier-bronze");
   const targetLabel = document.getElementById("arena-dossier-target");
+  const progressFill = document.getElementById("arena-dossier-fill");
   if (!modal || !title || !progress || !macro || !bronzeList) return;
   const arenas = loadArenas();
   const arena = arenas.find((item) => item.id === arenaId);
   if (!arena) return;
   title.textContent = arena.title || "Arena";
+  const completionValue = Number(arena.completion || 0);
   if (arena.targetCount) {
     progress.textContent = `${Number(arena.completedCount || 0)}/${arena.targetCount}`;
   } else {
-    progress.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+    progress.textContent = `${Math.round(completionValue)}%`;
   }
   macro.textContent = arena.description || "Sem descricao.";
   if (targetLabel) {
     targetLabel.textContent = arena.targetCount
       ? `Meta Atual: ${Number(arena.completedCount || 0)}/${arena.targetCount}`
       : "Meta Atual: livre";
+  }
+  if (progressFill) {
+    progressFill.style.width = `${Math.min(100, Math.max(0, completionValue))}%`;
   }
   bronzeList.innerHTML = "";
   const planner = loadPlanner();
@@ -2283,6 +2288,7 @@ const openArenaDossier = (arenaId) => {
       const input = document.createElement("input");
       input.className = "bronze-edit-input";
       input.value = action.title || "Acao";
+      input.addEventListener("click", (event) => event.stopPropagation());
       input.addEventListener("change", () => {
         const plannerState = loadPlanner();
         const updated = plannerState.bronzeActions.map((itemAction) =>
@@ -2316,6 +2322,7 @@ const openArenaDossier = (arenaId) => {
           deleteBtn.click();
         }
       });
+      item.addEventListener("click", () => openBronzeModal(arenaId));
       item.appendChild(icon);
       item.appendChild(input);
       item.appendChild(deleteBtn);

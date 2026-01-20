@@ -2651,8 +2651,8 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal .dossier-icon {
   position: absolute;
   left: 0;
-  top: -8px !important; /* -10px */
-  transform: none;
+  top: 50% !important;
+  transform: translateY(-50%);
   width: 28px;
   height: 28px;
 }
@@ -2665,7 +2665,7 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal #tree-edit-title {
   position: absolute;
   left: 50%;
-  top: -8px !important; /* -24px */
+  top: 50% !important;
   transform: translate(-50%, -50%);
   margin: 0;
   max-width: calc(100% - 150px);
@@ -2688,7 +2688,7 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
   right: -11px !important; /* 15px mais à direita (4 - 15) */
-  top: -8px !important;    /* -24px */
+  top: 50% !important;
   transform: translateY(-50%);
   padding: 8px 14px;
   border-radius: 14px;

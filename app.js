@@ -258,7 +258,8 @@ const PROTOCOL_SLOTS = {
       type: "square",
       fields: [
         { key: "foto", label: "Foto" },
-        { key: "nome", label: "Nome" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
       ],
     },
     {
@@ -267,7 +268,8 @@ const PROTOCOL_SLOTS = {
       type: "square",
       fields: [
         { key: "foto", label: "Foto" },
-        { key: "nome", label: "Nome" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
       ],
     },
     {
@@ -276,7 +278,38 @@ const PROTOCOL_SLOTS = {
       type: "square",
       fields: [
         { key: "foto", label: "Foto" },
-        { key: "nome", label: "Nome" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+    {
+      id: "amor.conexao4",
+      label: "Conexao 4",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+    {
+      id: "amor.conexao5",
+      label: "Conexao 5",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+    {
+      id: "amor.conexao6",
+      label: "Conexao 6",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
       ],
     },
   ],
@@ -2441,15 +2474,38 @@ const renderTreeEditorSlots = (dna, assetId) => {
     valueEl.textContent = getSlotDisplayText(slot) || "—";
     slotEl.appendChild(valueEl);
     const fields = slot.fields || [{ key: "value", label: slot.label }];
-    const secondaryField = fields.find(
-      (field, index) => index > 0 && !["foto", "logo"].includes(field.key),
-    );
-    if (secondaryField) {
-      const secondaryValue = asset.profileSlots?.[slot.id]?.[secondaryField.key];
-      const subtitleEl = document.createElement("div");
-      subtitleEl.className = "slot-subtitle";
-      subtitleEl.textContent = secondaryValue ? String(secondaryValue) : "";
-      slotEl.appendChild(subtitleEl);
+    const isPhotoSlot =
+      slot.type.startsWith("square") &&
+      (slot.label.toLowerCase().includes("foto") ||
+        slot.label.toLowerCase().includes("logo") ||
+        (slot.fields || []).some((field) => ["foto", "logo"].includes(field.key)));
+
+    if (isPhotoSlot) {
+      const textFields = fields.filter((f) => !["foto", "logo"].includes(f.key));
+      const topKey = textFields[0]?.key;
+      const bottomKey = textFields[1]?.key;
+      if (topKey) {
+        const topValue = asset.profileSlots?.[slot.id]?.[topKey];
+        label.textContent = topValue ? String(topValue) : slot.label;
+      }
+      if (bottomKey) {
+        const bottomValue = asset.profileSlots?.[slot.id]?.[bottomKey];
+        const subtitleEl = document.createElement("div");
+        subtitleEl.className = "slot-subtitle";
+        subtitleEl.textContent = bottomValue ? String(bottomValue) : "";
+        slotEl.appendChild(subtitleEl);
+      }
+    } else {
+      const secondaryField = fields.find(
+        (field, index) => index > 0 && !["foto", "logo"].includes(field.key),
+      );
+      if (secondaryField) {
+        const secondaryValue = asset.profileSlots?.[slot.id]?.[secondaryField.key];
+        const subtitleEl = document.createElement("div");
+        subtitleEl.className = "slot-subtitle";
+        subtitleEl.textContent = secondaryValue ? String(secondaryValue) : "";
+        slotEl.appendChild(subtitleEl);
+      }
     }
 
     const iconName = SLOT_ICON_BY_ID[slot.id];
@@ -2460,11 +2516,6 @@ const renderTreeEditorSlots = (dna, assetId) => {
       slotEl.appendChild(icon);
     }
 
-    const isPhotoSlot =
-      slot.type.startsWith("square") &&
-      (slot.label.toLowerCase().includes("foto") ||
-        slot.label.toLowerCase().includes("logo") ||
-        (slot.fields || []).some((field) => ["foto", "logo"].includes(field.key)));
     if (isPhotoSlot) {
       const fileInput = document.createElement("input");
       fileInput.type = "file";
@@ -2587,6 +2638,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
     });
 
     fields.forEach((field) => {
+      if (["foto", "logo"].includes(field.key)) return;
       const slotOptions = optionsBySlot[slot.id];
       if (slotOptions && field.key === "value") {
         const select = document.createElement("select");
@@ -4278,7 +4330,7 @@ const initApp = () => {
       let profile = loadProfile();
       const dna = seedDNAIfMissing();
       const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
-      if (profileLevel) profileLevel.textContent = `Nivel ${Math.round(total)}`;
+      if (profileLevel) profileLevel.textContent = String(Math.round(total));
       if (profileIdentity) {
         profileIdentity.value = profile.userId || profile.nickname || "";
       }
@@ -4381,7 +4433,7 @@ const initApp = () => {
       const profile = loadProfile();
       const dna = seedDNAIfMissing();
       const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
-      if (profileLevel) profileLevel.textContent = `Nivel ${Math.round(total)}`;
+      if (profileLevel) profileLevel.textContent = String(Math.round(total));
       renderProfileWidgetDisplay(profile, dna);
       if (profileCard) profileCard.classList.remove("is-editing");
       profileModal.classList.add("is-open");
@@ -4581,9 +4633,11 @@ const initApp = () => {
         const bannerWrap = profileModal?.querySelector(".profile-banner");
         const profileStrip = document.getElementById("profile-strip");
         const bannerDisplay = document.getElementById("profile-banner-display");
-        if (bannerDisplay) bannerDisplay.textContent = updated.banner || "Sem banner";
-        if (bannerWrap) bannerWrap.style.backgroundImage = updated.banner ? `url(${updated.banner})` : "";
-        if (profileStrip) profileStrip.style.backgroundImage = updated.banner ? `url(${updated.banner})` : "";
+        const bannerText = updated.banner || "";
+        const isImageBanner = bannerText.startsWith("http") || bannerText.startsWith("data:");
+        if (bannerDisplay) bannerDisplay.textContent = isImageBanner ? "Banner Ativo" : bannerText || "Sem banner";
+        if (bannerWrap) bannerWrap.style.backgroundImage = isImageBanner ? `url(${bannerText})` : "";
+        if (profileStrip) profileStrip.style.backgroundImage = isImageBanner ? `url(${bannerText})` : "";
         if (bannerModal) bannerModal.classList.remove("is-open");
       });
       card.appendChild(title);

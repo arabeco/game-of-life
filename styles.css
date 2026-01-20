@@ -388,8 +388,8 @@ html[data-theme="void"] {
   height: 54px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
-  border: none;
-  box-shadow: none;
+  border: 2px solid rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
   order: 1;
 }
 
@@ -2040,7 +2040,7 @@ html[data-theme="void"] {
 .profile-header {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   justify-items: center;
   margin-bottom: 12px;
@@ -2048,17 +2048,66 @@ html[data-theme="void"] {
   z-index: 1;
 }
 
+.profile-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding-top: 4px;
+}
+
 .profile-avatar {
-  width: 78px;
-  height: 78px;
+  width: 84px;
+  height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
   background-size: cover;
   background-position: center;
   border-radius: 50%;
-  border: 2px solid rgba(212, 175, 55, 0.4);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6), 0 12px 24px rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(212, 175, 55, 0.75);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.55), 0 10px 18px rgba(0, 0, 0, 0.35);
+}
+
+.profile-name-display {
+  margin-top: -10px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-gold);
+  background: var(--metal-gold);
+  color: rgba(8, 8, 8, 0.95);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  max-width: min(320px, 86vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-level-badge {
+  margin-top: -8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.85);
+  background: var(--metal-gold);
+  color: rgba(8, 8, 8, 0.95);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.profile-card.is-editing .profile-name-display {
+  display: none;
+}
+
+.profile-card.is-editing .profile-level-badge {
+  opacity: 0.7;
 }
 
 .profile-banner-open {
@@ -2718,7 +2767,7 @@ html[data-status="oracle"] .sephirot {
   height: 24px;
   stroke: var(--accent-gold);
   justify-self: start;
-  transform: translateY(-20px);
+  transform: none;
 }
 
 #tree-edit-modal .tree-edit-title {
@@ -2735,7 +2784,7 @@ html[data-status="oracle"] .sephirot {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transform: translateY(-20px);
+  transform: none;
 }
 
 #tree-edit-modal .tree-edit-ok {
@@ -2749,16 +2798,21 @@ html[data-status="oracle"] .sephirot {
   min-height: 32px;
   border-radius: 14px;
   line-height: 1;
-  transform: translateY(-20px);
+  transform: none;
 }
 
 /* Tree edit: editar leve e discreto (mantém tua posição atual) */
 #tree-edit-modal #tree-edit-edit.tree-edit-edit {
-  position: fixed;
-  left: 10px !important;
-  top: -24px !important;
-  transform: scale(0.82);
-  opacity: 0.6;
+  position: absolute;
+  left: 8px !important;
+  top: 8px !important;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 12px;
+  transform: none;
+  opacity: 0.75;
+  z-index: 6;
 }
 
 #tree-edit-modal #tree-edit-level-text {
@@ -2867,8 +2921,8 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot:first-child {
   grid-column: 1 / -1;
-  min-height: 44px;
-  max-height: 58px;
+  min-height: 46px;
+  max-height: 46px; /* uniformizar retângulos */
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot:first-child .slot-label,
@@ -2903,27 +2957,41 @@ html[data-status="oracle"] .sephirot {
   background: rgba(16, 16, 16, 0.6);
 }
 
+/* Conexão: retângulos sempre uniformes */
+#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot {
+  min-height: 46px;
+  max-height: 46px;
+}
+
+#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot .slot-value {
+  min-height: 28px;
+  max-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot .slot-label {
   margin-bottom: 2px;
   min-height: 16px;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .linked-arenas-list {
-  min-height: 140px;
+  min-height: 96px;
   height: auto;
   align-items: stretch;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .linked-arena {
-  min-height: 88px;
+  min-height: 64px;
   min-width: 0;
-  padding: 5px 6px;
-  font-size: 9px;
+  padding: 4px 5px;
+  font-size: 8px;
   justify-content: space-between;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1.1;
 }
 
 #tree-edit-modal .slot-list {
@@ -3082,6 +3150,7 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal[data-asset-id="amor"] .slot-list {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  grid-auto-rows: auto;
 }
 
 #tree-edit-modal[data-asset-id="amor"] .profile-slot {
@@ -3093,13 +3162,21 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal[data-asset-id="amor"] .slot-subtitle {
   font-size: 10px;
   text-align: center;
+  width: 100%;
+  padding: 3px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: rgba(12, 12, 12, 0.55);
+  line-height: 1.1;
 }
 
 #tree-edit-modal[data-asset-id="amor"] .slot-value {
   width: 100%;
-  max-width: 90px;
+  max-width: 104px;
   aspect-ratio: 1 / 1;
   padding: 0;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 #tree-edit-modal[data-asset-id="amor"] .slot-value.has-image {

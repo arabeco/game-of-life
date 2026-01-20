@@ -6,7 +6,7 @@
     <title>Game of Life</title>
     <!-- Manifest disabled due to 401 on hosted path -->
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=2026-01-20s" />
+    <link rel="stylesheet" href="styles.css?v=2026-01-20u" />
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Service worker disabled: src/service-worker.js não existe neste build -->
   </head>
@@ -526,15 +526,17 @@
         </button>
         <div class="profile-strip" id="profile-strip"></div>
         <div class="profile-header">
-          <div class="profile-avatar">
-            <div class="loading-diamond">
-              <div class="loading-core"></div>
+          <div class="profile-hero">
+            <div class="profile-avatar">
+              <div class="loading-diamond">
+                <div class="loading-core"></div>
+              </div>
+              <input type="file" id="profile-avatar-file" class="hidden-file" accept="image/*" />
             </div>
-            <input type="file" id="profile-avatar-file" class="hidden-file" accept="image/*" />
-          </div>
-          <div class="profile-level" id="profile-level">Nivel 0</div>
-          <div class="profile-name">
             <div class="profile-name-display" id="profile-name-display">-</div>
+            <div class="profile-level-badge" id="profile-level">0</div>
+          </div>
+          <div class="profile-name">
             <input type="text" id="profile-identity" class="profile-input" placeholder="Nickname / @ID" />
           </div>
           <div class="profile-banner">

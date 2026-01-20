@@ -1110,10 +1110,28 @@ html[data-theme="frost"] {
   margin-top: 12px;
   display: flex;
   justify-content: center;
+  gap: 10px;
+  align-items: center;
 }
 
 .profile-actions .gold-button {
   min-width: 120px;
+}
+
+.profile-sync {
+  min-height: 20px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(229, 229, 229, 0.75);
+}
+
+.profile-sync.is-ok {
+  color: #64f3a5;
+}
+
+.profile-sync.is-error {
+  color: #ff6b6b;
 }
 
 .profile-input:focus {

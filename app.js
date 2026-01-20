@@ -798,10 +798,12 @@ const ensureSupabaseProfile = async (profile) => {
       lema: profile.banner || "",
       avatar_url: profile.avatar || "",
     };
-    await upsertProfileRow(payload);
+    const ok = await upsertProfileRow(payload);
+    return ok;
   } catch (error) {
     logSupabaseError("ensureSupabaseProfile", error);
   }
+  return false;
 };
 
 const getSupabaseUser = async () => {
@@ -3255,6 +3257,7 @@ const initApp = () => {
   const profileLevel = document.getElementById("profile-level");
   const profileEdit = document.getElementById("profile-edit");
   const profileSave = document.getElementById("profile-save");
+  const profileSync = document.getElementById("profile-sync");
   const profileAvatarFile = document.getElementById("profile-avatar-file");
   const profileBannerFile = document.getElementById("profile-banner-file");
   const hudEdit = document.getElementById("hud-edit");
@@ -3343,8 +3346,21 @@ const initApp = () => {
       const updated = { ...current, nickname: identity, userId: identity, banner };
       saveProfile(updated);
       renderSocial();
-      await ensureSupabaseProfile(updated);
-      await syncProfileTotals(updated);
+      if (profileSync) {
+        profileSync.classList.remove("is-ok", "is-error");
+        profileSync.textContent = "Sincronizando...";
+      }
+      const okProfile = await ensureSupabaseProfile(updated);
+      const okTotals = await syncProfileTotals(updated);
+      if (profileSync) {
+        if (okProfile && okTotals) {
+          profileSync.classList.add("is-ok");
+          profileSync.textContent = "Salvo no Supabase";
+        } else {
+          profileSync.classList.add("is-error");
+          profileSync.textContent = "Falha no Supabase";
+        }
+      }
       if (profileModal) profileModal.classList.remove("is-open");
     });
   }

@@ -2616,39 +2616,39 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal #tree-edit-level-text {
   position: absolute;
   left: 50%;
-  top: 0;
+  top: -2px;
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1px solid rgba(212, 175, 55, 0.7);
   background: rgba(10, 10, 10, 0.7);
   color: #f1d279;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 #tree-edit-modal .dossier-actions {
   position: absolute;
   right: 16px;
-  top: 10px;
+  top: 6px;
   gap: 8px;
 }
 
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
   right: 16px;
-  top: 10px;
+  top: 6px;
   z-index: 4;
 }
 
 #tree-edit-modal #tree-edit-edit {
   position: absolute;
-  right: 66px;
-  top: 10px;
+  right: 60px;
+  top: 6px;
 }
 
 #tree-edit-modal .dossier-body {
@@ -2668,8 +2668,8 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .drawer-title#tree-edit-title {
   text-align: center;
-  margin-top: 20px;
-  font-size: 18px;
+  margin-top: 16px;
+  font-size: 16px;
 }
 
 #tree-edit-modal .modal-card {
@@ -2827,26 +2827,26 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .linked-arenas-list {
-  min-height: 170px;
+  min-height: 150px;
   height: auto;
   align-items: stretch;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 #tree-edit-modal .linked-arena {
-  min-height: 110px;
+  min-height: 96px;
   min-width: 0;
-  padding: 8px;
-  font-size: 10px;
+  padding: 6px;
+  font-size: 9px;
   justify-content: space-between;
   aspect-ratio: 3 / 4;
 }
 
 #tree-edit-modal .linked-arena button {
-  padding: 4px 8px;
-  font-size: 9px;
+  padding: 3px 6px;
+  font-size: 8px;
 }
 
 .dossier-title-row {

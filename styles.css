@@ -2633,6 +2633,12 @@ html[data-status="oracle"] .sephirot {
   margin-bottom: 0px;
 }
 
+/* Forçar a divisória subir (override final) */
+#tree-edit-modal .dossier-header {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 #tree-edit-modal #tree-edit-back {
   display: none;
 }
@@ -2666,7 +2672,7 @@ html[data-status="oracle"] .sephirot {
   position: absolute;
   left: 50%;
   top: calc(50% - 45px) !important; /* sobe +15px */
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translateY(-15px) !important;
   margin: 0;
   max-width: calc(100% - 150px);
   white-space: nowrap;
@@ -2689,7 +2695,7 @@ html[data-status="oracle"] .sephirot {
   position: absolute;
   right: -11px !important; /* 15px mais à direita (4 - 15) */
   top: calc(50% - 45px) !important; /* sobe +15px */
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateY(-15px) !important;
   padding: 8px 14px;
   border-radius: 14px;
   min-width: 48px;

@@ -1367,7 +1367,14 @@ const buildBronzeBlock = (action) => {
         if (item.status === "done") {
           return { ...item, status: "scheduled", completedAt: undefined };
         }
-        return { ...item, status: "done", completedAt: new Date().toISOString() };
+        const completedAt = new Date().toISOString();
+        const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
+        return {
+          ...item,
+          status: "done",
+          completedAt,
+          completedHistory: [...history, completedAt],
+        };
       });
       savePlanner({ ...planner, bronzeActions: updated });
       if (action.status === "done") {
@@ -1440,11 +1447,19 @@ const updateGlobalArenaProgress = (arenaId, pills) => {
     if (typeof action.weeklyTarget === "number" && action.weeklyTarget > 0) return action.weeklyTarget;
     return Array.isArray(action.weekdays) && action.weekdays.length > 0 ? action.weekdays.length : 1;
   };
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const doneFor = (action) => {
+    if (action.atemporal) return action.status === "done" ? 1 : 0;
+    const history = Array.isArray(action.completedHistory) ? action.completedHistory : [];
+    const recent = history.filter((stamp) => {
+      const time = new Date(stamp).getTime();
+      return Number.isFinite(time) && time >= weekAgo;
+    }).length;
+    if (recent > 0) return Math.min(recent, weightFor(action));
+    return action.status === "done" ? 1 : 0;
+  };
   const total = allActions.reduce((sum, action) => sum + weightFor(action), 0);
-  const done = allActions.reduce(
-    (sum, action) => sum + (action.status === "done" ? weightFor(action) : 0),
-    0,
-  );
+  const done = allActions.reduce((sum, action) => sum + doneFor(action), 0);
   const completion = total === 0 ? 0 : Math.round((done / total) * 100);
 
   const arenas = loadArenas();

@@ -1429,9 +1429,10 @@ const saveArenas = (arenas) => {
 
 const updateGlobalArenaProgress = (arenaId, pills) => {
   if (!arenaId) return;
-  const arenaPills = pills.filter((pill) => pill.arenaId === arenaId);
-  const total = arenaPills.length;
-  const done = arenaPills.filter((pill) => pill.status === "done").length;
+  const planner = loadPlanner();
+  const allActions = planner.bronzeActions.filter((action) => action.arenaId === arenaId);
+  const total = allActions.length;
+  const done = allActions.filter((action) => action.status === "done").length;
   const completion = total === 0 ? 0 : Math.round((done / total) * 100);
 
   const arenas = loadArenas();
@@ -1821,7 +1822,7 @@ const attachLongPress = (pillEl, pill) => {
       if (released) return;
       pillEl.classList.remove("is-pressing");
       markPillComplete(pill.id);
-    }, 3000);
+    }, 5000);
   };
 
   const endPress = () => {
@@ -2505,6 +2506,7 @@ const openBronzeModal = (arenaId) => {
   const durationInput = document.getElementById("bronze-duration");
   const durationValue = document.getElementById("bronze-duration-value");
   const seriousToggle = document.getElementById("bronze-serious");
+  const atemporalToggle = document.getElementById("bronze-atemporal");
   const titleInput = document.getElementById("bronze-title");
   if (!modal || !iconGrid || !durationInput || !seriousToggle || !titleInput) return;
   modal.dataset.arenaId = arenaId;
@@ -2513,6 +2515,7 @@ const openBronzeModal = (arenaId) => {
   durationInput.value = "60";
   if (durationValue) durationValue.textContent = "60 min";
   seriousToggle.checked = false;
+  if (atemporalToggle) atemporalToggle.checked = false;
   const card = modal.querySelector(".bronze-card-elite");
   if (card) card.classList.remove("serious-on");
   modal.querySelectorAll(".weekday-grid input[type='checkbox']").forEach((input) => {
@@ -3438,6 +3441,7 @@ const initApp = () => {
       const titleInput = document.getElementById("bronze-title");
       const durationInput = document.getElementById("bronze-duration");
       const seriousToggle = document.getElementById("bronze-serious");
+      const atemporalToggle = document.getElementById("bronze-atemporal");
       if (!modal || !durationInput || !seriousToggle || !titleInput) return;
       const arenaId = modal.dataset.arenaId;
       if (!arenaId) return;
@@ -3451,6 +3455,8 @@ const initApp = () => {
       )
         .filter((input) => input.checked)
         .map((input) => input.value);
+      const atemporal = !!atemporalToggle?.checked;
+      const weeklyTarget = atemporal ? null : weekdays.length;
       const planner = loadPlanner();
       planner.bronzeActions.push({
         id: crypto.randomUUID(),
@@ -3460,6 +3466,8 @@ const initApp = () => {
         duration,
         durationMinutes,
         weekdays,
+        atemporal,
+        weeklyTarget,
         serious: !!seriousToggle.checked,
         status: "backlog",
         locked: false,

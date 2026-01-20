@@ -2698,6 +2698,14 @@ const openBronzeModal = (arenaId, actionId) => {
   const atemporalToggle = document.getElementById("bronze-atemporal");
   const titleInput = document.getElementById("bronze-title");
   if (!modal || !iconGrid || !durationInput || !seriousToggle || !titleInput) return;
+  const formatDuration = (minutes) => {
+    const total = Math.max(0, Math.round(Number(minutes) || 0));
+    const hours = Math.floor(total / 60);
+    const mins = total % 60;
+    if (hours && mins) return `${hours}h ${mins}m`;
+    if (hours) return `${hours}h`;
+    return `${mins}m`;
+  };
   const planner = loadPlanner();
   const existing = actionId
     ? planner.bronzeActions.find((action) => action.id === actionId)
@@ -2707,8 +2715,11 @@ const openBronzeModal = (arenaId, actionId) => {
   modal.dataset.icon = existing?.icon || BRONZE_ICONS[0];
   titleInput.value = existing?.title || "";
   const durationMinutes = existing?.durationMinutes || 60;
+  durationInput.min = "0";
+  durationInput.max = "360";
+  durationInput.step = "15";
   durationInput.value = String(durationMinutes);
-  if (durationValue) durationValue.textContent = `${durationMinutes} min`;
+  if (durationValue) durationValue.textContent = formatDuration(durationMinutes);
   seriousToggle.checked = !!existing?.serious;
   if (atemporalToggle) atemporalToggle.checked = !!existing?.atemporal;
   const card = modal.querySelector(".bronze-card-elite");
@@ -3470,48 +3481,144 @@ const initMoodBar = () => {
   if (!bar || !modal || !range || !label) return;
   const moods = [
     {
-      label: "Calmo",
+      label: "Vergonha",
       min: 0,
+      max: 5,
+      color: "linear-gradient(90deg, #2b2b2b, #3b3b3b)",
+      trackStart: "#2b2b2b",
+      trackEnd: "#3b3b3b",
+    },
+    {
+      label: "Culpa",
+      min: 5,
+      max: 10,
+      color: "linear-gradient(90deg, #3b2a2a, #4b2f2f)",
+      trackStart: "#3b2a2a",
+      trackEnd: "#4b2f2f",
+    },
+    {
+      label: "Apatia",
+      min: 10,
+      max: 15,
+      color: "linear-gradient(90deg, #3a3a3a, #4a4a4a)",
+      trackStart: "#3a3a3a",
+      trackEnd: "#4a4a4a",
+    },
+    {
+      label: "Tristeza",
+      min: 15,
       max: 20,
-      color: "linear-gradient(90deg, #5aa9e6, #3f83c9)",
-      trackStart: "#5aa9e6",
-      trackEnd: "#3f83c9",
+      color: "linear-gradient(90deg, #2f3440, #3a4151)",
+      trackStart: "#2f3440",
+      trackEnd: "#3a4151",
     },
     {
-      label: "Neutro",
-      min: 21,
+      label: "Medo",
+      min: 20,
+      max: 25,
+      color: "linear-gradient(90deg, #252d3a, #2f3a4b)",
+      trackStart: "#252d3a",
+      trackEnd: "#2f3a4b",
+    },
+    {
+      label: "Desejo",
+      min: 25,
+      max: 30,
+      color: "linear-gradient(90deg, #3a2f2a, #4a3a2f)",
+      trackStart: "#3a2f2a",
+      trackEnd: "#4a3a2f",
+    },
+    {
+      label: "Raiva",
+      min: 30,
+      max: 35,
+      color: "linear-gradient(90deg, #4b2a2a, #5a2f2f)",
+      trackStart: "#4b2a2a",
+      trackEnd: "#5a2f2f",
+    },
+    {
+      label: "Orgulho",
+      min: 35,
       max: 45,
-      color: "linear-gradient(90deg, #b8c1c9, #7d8b99)",
-      trackStart: "#b8c1c9",
-      trackEnd: "#7d8b99",
+      color: "linear-gradient(90deg, #4d3a2a, #6a4a2f)",
+      trackStart: "#4d3a2a",
+      trackEnd: "#6a4a2f",
     },
     {
-      label: "Focado",
-      min: 46,
+      label: "Coragem",
+      min: 45,
+      max: 55,
+      color: "linear-gradient(90deg, #2f4b3a, #3a6a4b)",
+      trackStart: "#2f4b3a",
+      trackEnd: "#3a6a4b",
+    },
+    {
+      label: "Neutralidade",
+      min: 55,
+      max: 60,
+      color: "linear-gradient(90deg, #3a4a5a, #4a5a6a)",
+      trackStart: "#3a4a5a",
+      trackEnd: "#4a5a6a",
+    },
+    {
+      label: "Disposicao",
+      min: 60,
+      max: 65,
+      color: "linear-gradient(90deg, #2f5a5a, #3a7a7a)",
+      trackStart: "#2f5a5a",
+      trackEnd: "#3a7a7a",
+    },
+    {
+      label: "Aceitacao",
+      min: 65,
       max: 70,
-      color: "linear-gradient(90deg, #7ddf64, #2cbf6b)",
-      trackStart: "#7ddf64",
-      trackEnd: "#2cbf6b",
+      color: "linear-gradient(90deg, #2f5a6a, #3a7a9a)",
+      trackStart: "#2f5a6a",
+      trackEnd: "#3a7a9a",
     },
     {
-      label: "Inspirado",
-      min: 71,
+      label: "Razao",
+      min: 70,
+      max: 75,
+      color: "linear-gradient(90deg, #2f6a8a, #3a8ab0)",
+      trackStart: "#2f6a8a",
+      trackEnd: "#3a8ab0",
+    },
+    {
+      label: "Amor",
+      min: 75,
       max: 85,
+      color: "linear-gradient(90deg, #4aa06a, #6ad18a)",
+      trackStart: "#4aa06a",
+      trackEnd: "#6ad18a",
+    },
+    {
+      label: "Alegria",
+      min: 85,
+      max: 90,
+      color: "linear-gradient(90deg, #9ccf64, #cce98a)",
+      trackStart: "#9ccf64",
+      trackEnd: "#cce98a",
+    },
+    {
+      label: "Paz",
+      min: 90,
+      max: 95,
       color: "linear-gradient(90deg, #d4af37, #f1d279)",
       trackStart: "#d4af37",
       trackEnd: "#f1d279",
     },
     {
-      label: "Euforico",
-      min: 86,
-      max: 100,
-      color: "linear-gradient(90deg, #b14cff, #7f5cff)",
-      trackStart: "#b14cff",
-      trackEnd: "#7f5cff",
+      label: "Iluminacao",
+      min: 95,
+      max: 101,
+      color: "linear-gradient(90deg, #f1e6c9, #ffffff)",
+      trackStart: "#f1e6c9",
+      trackEnd: "#ffffff",
     },
   ];
   const resolveMood = (value) =>
-    moods.find((mood) => value >= mood.min && value <= mood.max) || moods[1];
+    moods.find((mood) => value >= mood.min && value < mood.max) || moods[moods.length - 1];
   const updateMoodTrack = (value, mood) => {
     const clamped = Math.max(0, Math.min(100, value));
     range.style.background = `linear-gradient(90deg, ${mood.trackStart} 0%, ${mood.trackEnd} ${clamped}%, rgba(255, 255, 255, 0.12) ${clamped}%, rgba(255, 255, 255, 0.12) 100%)`;
@@ -3738,8 +3845,16 @@ const initApp = () => {
   const bronzeDuration = document.getElementById("bronze-duration");
   const bronzeDurationValue = document.getElementById("bronze-duration-value");
   if (bronzeDuration && bronzeDurationValue) {
+    const formatDuration = (minutes) => {
+      const total = Math.max(0, Math.round(Number(minutes) || 0));
+      const hours = Math.floor(total / 60);
+      const mins = total % 60;
+      if (hours && mins) return `${hours}h ${mins}m`;
+      if (hours) return `${hours}h`;
+      return `${mins}m`;
+    };
     bronzeDuration.addEventListener("input", () => {
-      bronzeDurationValue.textContent = `${bronzeDuration.value} min`;
+      bronzeDurationValue.textContent = formatDuration(bronzeDuration.value);
     });
   }
   const bronzeSerious = document.getElementById("bronze-serious");

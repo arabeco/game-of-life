@@ -323,7 +323,14 @@ html[data-theme="void"] {
 
 .hud::after {
   content: "";
-  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  display: block;
+  background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
 }
 
 .hud-date {
@@ -482,6 +489,11 @@ html[data-theme="void"] {
   display: block;
 }
 
+.screen-tree {
+  position: relative;
+  z-index: 1;
+}
+
 .is-hidden {
   display: none !important;
 }
@@ -545,6 +557,8 @@ html[data-theme="void"] {
   width: min(520px, 92vw);
   align-items: center;
   justify-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .sephirot {
@@ -564,6 +578,8 @@ html[data-theme="void"] {
   outline: none;
   opacity: var(--vitality-opacity, 1);
   transition: box-shadow 0.4s ease, background 0.4s ease, opacity 0.4s ease;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 .sephirot::before {
@@ -2331,7 +2347,8 @@ html[data-status="oracle"] #social-level {
   padding: 8px;
   display: grid;
   place-items: center;
-  color: #e8d9a8;
+  color: #f7e7b3;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
 }
 
 .bronze-icon-grid .bronze-icon.is-active {
@@ -2963,12 +2980,14 @@ html[data-status="oracle"] .sephirot {
 
 .bronze-block.is-pressing::after {
   opacity: 1;
-  animation: bronze-fill 5s linear forwards;
+  animation: bronze-fill 4s linear forwards;
 }
 
 .bronze-block .bronze-icon {
   width: 18px;
   height: 18px;
+  color: #f6deb0;
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.35));
 }
 
 .bronze-block .bronze-title {
@@ -3333,6 +3352,12 @@ html[data-status="oracle"] .sephirot {
   display: grid;
   place-items: center;
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.55);
+}
+
+.notes-toggle.is-complete {
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+  color: #f1d279;
 }
 
 .notes-toggle i {

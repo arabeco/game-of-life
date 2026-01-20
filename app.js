@@ -381,6 +381,27 @@ const formatDateKey = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getWeekStartDate = (date) => {
+  const base = new Date(date);
+  const day = base.getDay();
+  const diff = (day + 6) % 7;
+  base.setDate(base.getDate() - diff);
+  base.setHours(0, 0, 0, 0);
+  return base;
+};
+
+const getWeekDateKeyByIndex = (weekStart, index) => {
+  const target = new Date(weekStart);
+  target.setDate(weekStart.getDate() + index);
+  return formatDateKey(target);
+};
+
+const getPlannedCountForWeek = (action, weekStart) => {
+  const planned = Array.isArray(action.plannedHistory) ? action.plannedHistory : [];
+  const keys = new Set(WEEKDAYS.map((_, idx) => getWeekDateKeyByIndex(weekStart, idx)));
+  return planned.filter((key) => keys.has(key)).length;
+};
+
 const getActionWeeklyTarget = (action) => {
   if (action.atemporal) return 1;
   if (typeof action.weeklyTarget === "number" && action.weeklyTarget > 0) return action.weeklyTarget;
@@ -1339,7 +1360,9 @@ const buildBronzeElement = (action) => {
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const weeklyTarget = getActionWeeklyTarget(action);
   const completedCount = getActionRecentCompletions(action, weekAgo);
-  const remaining = Math.max(0, weeklyTarget - completedCount);
+  const weekStart = getWeekStartDate(new Date());
+  const plannedCount = getPlannedCountForWeek(action, weekStart);
+  const remaining = Math.max(0, weeklyTarget - completedCount - plannedCount);
   bronze.addEventListener("click", () => {
     openBronzeModal(action.arenaId, action.id);
   });
@@ -1360,28 +1383,69 @@ const renderWeekView = () => {
   const weekGrid = document.getElementById("week-grid");
   if (!weekGrid) return;
   const planner = loadPlanner();
+  const weekStart = getWeekStartDate(new Date());
   weekGrid.innerHTML = "";
-  WEEKDAYS.forEach((day) => {
+  WEEKDAYS.forEach((day, index) => {
     const column = document.createElement("div");
     column.className = "week-column";
     const label = document.createElement("div");
     label.className = "week-day";
     label.textContent = day.label;
     column.appendChild(label);
-    planner.bronzeActions
-      .filter((action) => (action.weekdays || []).includes(day.key))
-      .forEach((action) => {
-        const item = document.createElement("div");
-        item.className = "week-item";
-        const icon = document.createElement("i");
-        icon.setAttribute("data-lucide", action.icon || "circle");
-        const title = document.createElement("span");
-        const duration = action.durationMinutes ? `${action.durationMinutes}m` : "";
-        title.textContent = `${action.title || "Acao"} ${duration}`.trim();
-        item.appendChild(icon);
-        item.appendChild(title);
-        column.appendChild(item);
+    const dayKey = day.key;
+    const dateKey = getWeekDateKeyByIndex(weekStart, index);
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(dayDate.getDate() + index);
+    const items = [];
+    const seen = new Set();
+    planner.bronzeActions.forEach((action) => {
+      const planned = Array.isArray(action.plannedHistory)
+        ? action.plannedHistory.includes(dateKey)
+        : false;
+      const recurring = Array.isArray(action.weekdays) && action.weekdays.includes(dayKey);
+      if (planned || recurring) {
+        if (seen.has(action.id)) return;
+        seen.add(action.id);
+        items.push({ action, planned });
+      }
+    });
+    items.forEach(({ action, planned }) => {
+      const item = document.createElement("div");
+      item.className = "week-item";
+      if (planned) item.classList.add("is-planned");
+      if (action.serious) item.classList.add("is-serious");
+      if (isActionDoneOnDate(action, dayDate)) item.classList.add("is-done");
+      const icon = document.createElement("i");
+      icon.setAttribute("data-lucide", action.icon || "circle");
+      const title = document.createElement("span");
+      const duration = action.durationMinutes ? `${action.durationMinutes}m` : "";
+      title.textContent = `${action.title || "Acao"} ${duration}`.trim();
+      item.appendChild(icon);
+      item.appendChild(title);
+      column.appendChild(item);
+    });
+    column.addEventListener("dragover", (event) => {
+      event.preventDefault();
+    });
+    column.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const payload = event.dataTransfer?.getData("text/plain");
+      if (!payload || !payload.startsWith("bronze:")) return;
+      const actionId = payload.replace("bronze:", "");
+      const updated = planner.bronzeActions.map((action) => {
+        if (action.id !== actionId) return action;
+        const plannedHistory = Array.isArray(action.plannedHistory)
+          ? action.plannedHistory
+          : [];
+        if (plannedHistory.includes(dateKey)) return action;
+        return {
+          ...action,
+          plannedHistory: [...plannedHistory, dateKey],
+        };
       });
+      savePlanner({ ...planner, bronzeActions: updated });
+      renderPlanner();
+    });
     weekGrid.appendChild(column);
   });
   if (window.lucide) window.lucide.createIcons();
@@ -1795,16 +1859,32 @@ const renderPlanner = () => {
   const planner = loadPlanner();
   const dayDate = getPlannerDateFromOffset(plannerDayOffset);
   const dayKey = getWeekdayKeyForDate(dayDate);
+  const dayStartHour = 6;
+  const dayEndHour = 24;
+  const isNarrow = window.innerWidth <= 520;
+  const pixelsPerMinute = isNarrow ? 0.6 : 1;
 
   timeline.innerHTML = "";
   const bronzeLayer = document.createElement("div");
   bronzeLayer.style.position = "absolute";
   bronzeLayer.style.inset = "0";
   bronzeLayer.style.pointerEvents = "none";
-  for (let hour = 0; hour <= 23; hour += 1) {
+  const hourCount = dayEndHour - dayStartHour + 1;
+  const slotHeight = Math.round(60 * pixelsPerMinute);
+  const timelineTopPadding = 16;
+  if (isNarrow) {
+    timeline.style.height = `${timelineTopPadding * 2 + hourCount * slotHeight}px`;
+    timeline.style.overflowY = "hidden";
+  } else {
+    timeline.style.height = "";
+    timeline.style.overflowY = "auto";
+  }
+  for (let hour = dayStartHour; hour <= dayEndHour; hour += 1) {
     const slot = document.createElement("div");
     slot.className = "time-slot";
     slot.dataset.hour = String(hour);
+    slot.style.height = `${slotHeight}px`;
+    slot.style.minHeight = `${slotHeight}px`;
 
     const label = document.createElement("div");
     label.className = "time-label";
@@ -1833,7 +1913,7 @@ const renderPlanner = () => {
         });
         savePlanner({ ...planner, bronzeActions: updated });
         renderPlanner();
-      checkMissionProgress();
+        checkMissionProgress();
         return;
       }
       return;
@@ -1842,7 +1922,6 @@ const renderPlanner = () => {
     timeline.appendChild(slot);
   }
 
-  const timelineTopPadding = 16;
   const scheduledActions = planner.bronzeActions.filter(
     (action) =>
       (action.status === "scheduled" || action.status === "done") &&
@@ -1856,16 +1935,20 @@ const renderPlanner = () => {
       action.weekdays.includes(dayKey),
   );
   [...scheduledActions, ...recurringActions].forEach((action) => {
-    const startHour = Number(action.scheduledHour || 6);
+    const startHour = Math.min(
+      dayEndHour,
+      Math.max(dayStartHour, Number(action.scheduledHour || dayStartHour)),
+    );
     const startMinute = Number(action.scheduledMinute || 0);
     const duration = Number(action.durationMinutes || 30);
     const block = buildBronzeBlock(action, {
       dayDate,
       isRecurring: recurringActions.includes(action),
     });
-    const top = timelineTopPadding + startHour * 60 + startMinute;
+    const top =
+      timelineTopPadding + (startHour - dayStartHour) * 60 * pixelsPerMinute + startMinute * pixelsPerMinute;
     block.style.top = `${top}px`;
-    block.style.height = `${Math.max(30, duration)}px`;
+    block.style.height = `${Math.max(20, duration * pixelsPerMinute)}px`;
     block.style.pointerEvents = "auto";
     bronzeLayer.appendChild(block);
   });

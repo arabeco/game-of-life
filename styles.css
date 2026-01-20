@@ -2614,34 +2614,20 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal #tree-edit-level-text {
-  position: absolute;
-  left: 50%;
-  top: -2px;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid rgba(212, 175, 55, 0.7);
-  background: rgba(10, 10, 10, 0.7);
-  color: #f1d279;
-  font-size: 13px;
-  font-weight: 700;
+  display: none;
 }
 
 #tree-edit-modal .dossier-actions {
   position: absolute;
-  right: 16px;
-  top: 6px;
+  right: 12px;
+  top: 12px;
   gap: 8px;
 }
 
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
-  right: 16px;
-  top: 6px;
+  right: 12px;
+  top: 12px;
   padding: 8px 14px;
   border-radius: 14px;
   z-index: 4;
@@ -2661,10 +2647,30 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .oracle-phrase {
   min-height: 56px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 54px;
   line-height: 1.35;
   font-size: clamp(14px, 4.4vw, 18px);
   margin-top: 6px;
+  position: relative;
+}
+
+#tree-edit-modal .oracle-level-badge {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.75);
+  background: radial-gradient(circle, rgba(16, 16, 16, 0.9), rgba(6, 6, 6, 0.7));
+  color: #f1d279;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
 }
 
 #tree-edit-modal .dossier-title {
@@ -2674,7 +2680,7 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal .drawer-title#tree-edit-title {
   text-align: center;
   margin-top: 16px;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 #tree-edit-modal .modal-card {
@@ -2841,9 +2847,9 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .linked-arena {
-  min-height: 96px;
+  min-height: 88px;
   min-width: 0;
-  padding: 6px;
+  padding: 5px;
   font-size: 9px;
   justify-content: space-between;
   aspect-ratio: 3 / 4;

@@ -1106,6 +1106,16 @@ html[data-theme="frost"] {
   z-index: 1;
 }
 
+.profile-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-actions .gold-button {
+  min-width: 120px;
+}
+
 .profile-input:focus {
   outline: none;
   border-bottom: 1px solid rgba(212, 175, 55, 0.8);

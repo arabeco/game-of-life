@@ -325,9 +325,10 @@ const getSlotOptions = () => {
   const options = [];
   Object.entries(PROTOCOL_SLOTS).forEach(([assetId, slots]) => {
     getDossierSlots(assetId).forEach((slot) => {
+      const slotId = slot.id.startsWith(`${assetId}.`) ? slot.id : `${assetId}.${slot.id}`;
       options.push({
-        id: `${assetId}.${slot.id}`,
-        label: `${LABEL_BY_ID.get(assetId) ?? assetId} - ${slot.label}`,
+        id: slotId,
+        label: `${LABEL_BY_ID.get(assetId) ?? assetId} · ${slot.label}`,
       });
     });
   });
@@ -427,6 +428,11 @@ const ensureLocalIdentity = (email) => {
   renderSocial();
 };
 
+const formatHandle = (value) => {
+  if (!value) return "";
+  return value.startsWith("@") ? value : `@${value}`;
+};
+
 const fetchSupabaseProfileRow = async (userId) => {
   if (!isSupabaseEnabled() || !userId) return null;
   try {
@@ -450,12 +456,12 @@ const fetchSupabaseProfileRow = async (userId) => {
 const applySupabaseProfileToLocal = (row) => {
   if (!row) return;
   const profile = loadProfile();
-  const identity = row.nickname || profile.nickname || profile.userId || "";
+  const identity = row.nickname || row.handle?.replace("@", "") || profile.nickname || profile.userId || "";
   const updated = {
     ...profile,
     nickname: identity,
     userId: identity,
-    banner: row.banner ?? profile.banner,
+    banner: row.banner ?? row.lema ?? profile.banner,
     avatar: row.avatar_url ?? profile.avatar,
     status: row.status ?? profile.status,
     total_level: typeof row.total_level === "number" ? row.total_level : profile.total_level,
@@ -538,7 +544,9 @@ const ensureProfilesRow = async (user) => {
         id: user.id,
         user_id: user.id,
         nickname: fallbackName,
+        handle: formatHandle(fallbackName),
         banner: profile.banner || "",
+        lema: profile.banner || "",
         avatar_url: profile.avatar || "",
         status: profile.status || "sovereign",
         total_level: Number(profile.total_level || 0),
@@ -785,7 +793,9 @@ const ensureSupabaseProfile = async (profile) => {
       id: user.id,
       user_id: user.id,
       nickname: nickname || profile.userId || "",
+      handle: formatHandle(profile.userId || nickname || ""),
       banner: profile.banner || "",
+      lema: profile.banner || "",
       avatar_url: profile.avatar || "",
     };
     await upsertProfileRow(payload);
@@ -863,7 +873,9 @@ const syncProfileTotals = async (nextProfile = {}) => {
       id: user.id,
       user_id: user.id,
       nickname: profile.nickname || "",
+      handle: formatHandle(profile.userId || profile.nickname || ""),
       banner: profile.banner || "",
+      lema: profile.banner || "",
       avatar_url: profile.avatar || "",
       status: profile.status || "sovereign",
       total_level: Number(profile.total_level || 0),
@@ -3242,6 +3254,7 @@ const initApp = () => {
   const widgetGrid = document.getElementById("widget-grid");
   const profileLevel = document.getElementById("profile-level");
   const profileEdit = document.getElementById("profile-edit");
+  const profileSave = document.getElementById("profile-save");
   const profileAvatarFile = document.getElementById("profile-avatar-file");
   const profileBannerFile = document.getElementById("profile-banner-file");
   const hudEdit = document.getElementById("hud-edit");
@@ -3319,6 +3332,20 @@ const initApp = () => {
   if (profileEdit) {
     profileEdit.addEventListener("click", () => {
       if (profileBannerFile) profileBannerFile.click();
+    });
+  }
+
+  if (profileSave) {
+    profileSave.addEventListener("click", async () => {
+      const current = loadProfile();
+      const identity = profileIdentity?.value?.trim() || current.nickname || current.userId || "";
+      const banner = profileBanner?.value?.trim() || current.banner || "";
+      const updated = { ...current, nickname: identity, userId: identity, banner };
+      saveProfile(updated);
+      renderSocial();
+      await ensureSupabaseProfile(updated);
+      await syncProfileTotals(updated);
+      if (profileModal) profileModal.classList.remove("is-open");
     });
   }
 

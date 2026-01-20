@@ -64,7 +64,12 @@
     </div>
     <div class="app">
       <header class="hud">
-        <div class="hud-clock" id="hud-clock">00:00</div>
+        <div class="hud-info">
+          <div class="hud-nick" id="hud-nick">-</div>
+          <div class="hud-level-text" id="hud-level-text">Nivel 0</div>
+          <div class="hud-clock" id="hud-clock">00:00</div>
+        </div>
+        <div class="hud-connector" aria-hidden="true"></div>
         <div class="hud-avatar-wrap">
           <div class="hud-avatar energy-ring" id="hud-avatar" aria-label="Avatar"></div>
           <div class="hud-badge" id="hud-level">Nivel 0</div>
@@ -99,7 +104,6 @@
           <div class="health-panel">
             <button class="notes-toggle" id="notes-toggle" aria-label="Checklist">
               <i data-lucide="folder"></i>
-              Checklist
             </button>
           </div>
           <div class="planner-toggle">
@@ -211,7 +215,8 @@
               <div class="ally-info">
                 <div class="ally-nick">Vanguard_01</div>
                 <div class="ally-level">Nível 84</div>
-                <div class="ally-last">Treino de Força (15 min atrás)</div>
+                <div class="ally-mood">Humor: Focado</div>
+                <div class="ally-last">Última ação: Treino de Força (15 min)</div>
               </div>
             </div>
             <div class="ally-card card-metal-silver">
@@ -219,7 +224,8 @@
               <div class="ally-info">
                 <div class="ally-nick">Shadow_Hacker</div>
                 <div class="ally-level">Nível 62</div>
-                <div class="ally-last">Meditação (2h atrás)</div>
+                <div class="ally-mood">Humor: Calmo</div>
+                <div class="ally-last">Última ação: Meditação (2h)</div>
               </div>
             </div>
           </div>
@@ -527,6 +533,7 @@
         <button class="silver-button profile-edit" id="profile-edit" aria-label="Editar">
           <i data-lucide="pencil"></i>
         </button>
+        <div class="profile-strip" id="profile-strip"></div>
         <div class="profile-header">
           <div class="profile-avatar">
             <div class="loading-diamond">
@@ -536,9 +543,11 @@
           </div>
           <div class="profile-level" id="profile-level">Nivel 0</div>
           <div class="profile-name">
+            <div class="profile-name-display" id="profile-name-display">-</div>
             <input type="text" id="profile-identity" class="profile-input" placeholder="Nickname / @ID" />
           </div>
           <div class="profile-banner">
+            <div class="profile-banner-display" id="profile-banner-display">Sem banner</div>
             <input type="text" id="profile-banner" class="profile-input" placeholder="Banner de Titulo" />
             <input type="file" id="profile-banner-file" class="hidden-file" accept="image/*" />
           </div>

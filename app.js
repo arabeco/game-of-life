@@ -970,10 +970,15 @@ const renderTree = () => {
   const assets = getAssets();
   const vitalityStats = buildVitalityStats();
   const hudLevel = document.getElementById("hud-level");
+  const hudNick = document.getElementById("hud-nick");
+  const hudLevelText = document.getElementById("hud-level-text");
   if (hudLevel) {
     const total = assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
     hudLevel.textContent = `Nivel ${Math.round(total)}`;
+    if (hudLevelText) hudLevelText.textContent = `Nivel ${Math.round(total)}`;
   }
+  const profile = loadProfile();
+  if (hudNick) hudNick.textContent = profile.nickname || profile.userId || "-";
 
   assets.forEach((asset) => {
     const sphere = document.createElement("button");
@@ -2348,6 +2353,8 @@ const renderSocial = () => {
   const idEl = document.getElementById("social-id");
   const socialAvatar = document.querySelector(".social-avatar");
   const hudAvatar = document.getElementById("hud-avatar");
+  const hudNick = document.getElementById("hud-nick");
+  const hudLevelText = document.getElementById("hud-level-text");
   if (!levelEl) return;
   const dna = seedDNAIfMissing();
   const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
@@ -2356,6 +2363,8 @@ const renderSocial = () => {
   const profile = loadProfile();
   if (nickEl) nickEl.textContent = profile.nickname || "-";
   if (idEl) idEl.textContent = profile.userId || "-";
+  if (hudNick) hudNick.textContent = profile.nickname || profile.userId || "-";
+  if (hudLevelText) hudLevelText.textContent = `Nivel ${Math.round(total)}`;
   if (profile.theme) applyTheme(profile.theme);
   if (profile.borderColor) {
     document.documentElement.style.setProperty("--accent-energy", profile.borderColor);
@@ -3455,6 +3464,9 @@ const initApp = () => {
   const profileClose = document.getElementById("profile-close");
   const profileIdentity = document.getElementById("profile-identity");
   const profileBanner = document.getElementById("profile-banner");
+  const profileNameDisplay = document.getElementById("profile-name-display");
+  const profileBannerDisplay = document.getElementById("profile-banner-display");
+  const profileStrip = document.getElementById("profile-strip");
   const widgetGrid = document.getElementById("widget-grid");
   const profileLevel = document.getElementById("profile-level");
   const profileEdit = document.getElementById("profile-edit");
@@ -3473,6 +3485,14 @@ const initApp = () => {
         profileIdentity.value = profile.userId || profile.nickname || "";
       }
       if (profileBanner) profileBanner.value = profile.banner || "";
+      if (profileNameDisplay) {
+        profileNameDisplay.textContent = profile.nickname || profile.userId || "-";
+      }
+      if (profileBannerDisplay) {
+        const bannerText = profile.banner || "";
+        const isImageBanner = bannerText.startsWith("http") || bannerText.startsWith("data:");
+        profileBannerDisplay.textContent = isImageBanner ? "Banner Ativo" : bannerText || "Sem banner";
+      }
       if (profile.avatar) {
         const profileAvatar = profileModal.querySelector(".profile-avatar");
         if (profileAvatar) profileAvatar.style.backgroundImage = `url(${profile.avatar})`;
@@ -3480,7 +3500,12 @@ const initApp = () => {
       if (profile.banner) {
         const bannerWrap = profileModal.querySelector(".profile-banner");
         if (bannerWrap) bannerWrap.style.backgroundImage = `url(${profile.banner})`;
+        if (profileStrip) profileStrip.style.backgroundImage = `url(${profile.banner})`;
       }
+      if (profileStrip && !profile.banner) {
+        profileStrip.style.backgroundImage = "";
+      }
+      profileModal.classList.remove("is-editing");
       if (widgetGrid) {
         widgetGrid.innerHTML = "";
         const options = getSlotOptions();
@@ -3558,7 +3583,11 @@ const initApp = () => {
   }
   if (profileEdit) {
     profileEdit.addEventListener("click", () => {
-      if (profileBannerFile) profileBannerFile.click();
+      if (!profileModal) return;
+      profileModal.classList.toggle("is-editing");
+      if (profileModal.classList.contains("is-editing") && profileIdentity) {
+        profileIdentity.focus();
+      }
     });
   }
 
@@ -3570,6 +3599,11 @@ const initApp = () => {
       const updated = { ...current, nickname: identity, userId: identity, banner };
       saveProfile(updated);
       renderSocial();
+      if (profileNameDisplay) profileNameDisplay.textContent = updated.nickname || updated.userId || "-";
+      if (profileBannerDisplay) {
+        const isImageBanner = updated.banner?.startsWith("http") || updated.banner?.startsWith("data:");
+        profileBannerDisplay.textContent = isImageBanner ? "Banner Ativo" : updated.banner || "Sem banner";
+      }
       if (profileSync) {
         profileSync.classList.remove("is-ok", "is-error");
         profileSync.textContent = isSupabaseEnabled() ? "Sincronizando..." : "Supabase nao configurado";
@@ -3623,6 +3657,14 @@ const initApp = () => {
     });
   }
 
+  if (profileBanner && profileBannerFile && profileModal) {
+    profileBanner.addEventListener("click", () => {
+      if (profileModal.classList.contains("is-editing")) {
+        profileBannerFile.click();
+      }
+    });
+  }
+
   if (profileBannerFile) {
     profileBannerFile.addEventListener("change", () => {
       const file = profileBannerFile.files?.[0];
@@ -3634,6 +3676,7 @@ const initApp = () => {
           saveProfile(updated);
           const bannerWrap = profileModal?.querySelector(".profile-banner");
           if (bannerWrap) bannerWrap.style.backgroundImage = `url(${url})`;
+          if (profileStrip) profileStrip.style.backgroundImage = `url(${url})`;
           renderSocial();
           syncProfileTotals(updated);
           return;
@@ -3645,6 +3688,7 @@ const initApp = () => {
           saveProfile(updated);
           const bannerWrap = profileModal?.querySelector(".profile-banner");
           if (bannerWrap) bannerWrap.style.backgroundImage = `url(${reader.result})`;
+          if (profileStrip) profileStrip.style.backgroundImage = `url(${reader.result})`;
           renderSocial();
         };
         reader.readAsDataURL(file);

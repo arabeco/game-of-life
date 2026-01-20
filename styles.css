@@ -2619,15 +2619,15 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .dossier-actions {
   position: absolute;
-  right: 16px;
-  top: 10px;
+  right: 12px;
+  top: 8px;
   gap: 8px;
 }
 
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
-  right: 16px;
-  top: 10px;
+  right: 12px;
+  top: 8px;
   padding: 8px 14px;
   border-radius: 14px;
   min-width: 48px;
@@ -2639,10 +2639,10 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal #tree-edit-edit {
   position: absolute;
-  right: 68px;
-  top: 12px;
-  opacity: 0.6;
-  transform: scale(0.9);
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%) scale(0.8);
+  opacity: 0.5;
 }
 
 #tree-edit-modal .dossier-body {
@@ -2651,23 +2651,24 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .oracle-phrase {
   min-height: 56px;
-  padding: 10px 12px 10px 50px;
+  padding: 10px 12px 10px 46px;
   line-height: 1.35;
   font-size: clamp(14px, 4.4vw, 18px);
   margin-top: 8px;
   position: relative;
+  text-align: left;
 }
 
 #tree-edit-modal .oracle-level-badge {
   position: absolute;
-  left: -8px;
+  left: -2px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1px solid rgba(212, 175, 55, 0.75);
   background: radial-gradient(circle, rgba(16, 16, 16, 0.9), rgba(6, 6, 6, 0.7));
@@ -2857,6 +2858,7 @@ html[data-status="oracle"] .sephirot {
   font-size: 9px;
   justify-content: space-between;
   aspect-ratio: 3 / 4;
+  border-radius: 12px;
 }
 
 #tree-edit-modal .linked-arena button {

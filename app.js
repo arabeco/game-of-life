@@ -383,8 +383,10 @@ const applyTheme = (theme) => {
   saveProfile({ ...profile, theme: theme || "gold" });
 };
 
+let lastSupabaseError = null;
 const logSupabaseError = (context, error) => {
   if (!error) return;
+  lastSupabaseError = { context, message: error.message || String(error) };
   console.error(`[supabase] ${context}`, error);
 };
 
@@ -3348,7 +3350,7 @@ const initApp = () => {
       renderSocial();
       if (profileSync) {
         profileSync.classList.remove("is-ok", "is-error");
-        profileSync.textContent = "Sincronizando...";
+        profileSync.textContent = isSupabaseEnabled() ? "Sincronizando..." : "Supabase nao configurado";
       }
       const okProfile = await ensureSupabaseProfile(updated);
       const okTotals = await syncProfileTotals(updated);
@@ -3358,7 +3360,8 @@ const initApp = () => {
           profileSync.textContent = "Salvo no Supabase";
         } else {
           profileSync.classList.add("is-error");
-          profileSync.textContent = "Falha no Supabase";
+          const detail = lastSupabaseError?.message || "Falha no Supabase";
+          profileSync.textContent = detail.length > 48 ? `${detail.slice(0, 48)}...` : detail;
         }
       }
       if (profileModal) profileModal.classList.remove("is-open");

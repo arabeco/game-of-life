@@ -22,7 +22,10 @@ const applyEnv = (text) => {
 const loadEnv = async () => {
   try {
     setLoadingStatus("checando rede", 25);
-    const res = await fetch("/R.env", { cache: "no-store" });
+    let res = await fetch("/R.env", { cache: "no-store" });
+    if (!res.ok) {
+      res = await fetch("/src/R.env.txt", { cache: "no-store" });
+    }
     if (!res.ok) return;
     setLoadingStatus("carregando configuracao", 55);
     const text = await res.text();

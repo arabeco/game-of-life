@@ -3059,10 +3059,29 @@ html[data-status="oracle"] .sephirot {
   border: 1px solid rgba(182, 128, 74, 0.6);
   background: rgba(24, 18, 14, 0.9);
   color: #e5c7a3;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: grab;
+}
+
+.bronze-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.85), rgba(255, 255, 255, 0.6));
+  color: #1b140c;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.5);
 }
 
 .bronze-item,

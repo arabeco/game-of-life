@@ -12,7 +12,7 @@ const MODE_KEY = "game_of_life.mastery_mode";
 const V2_RESET_KEY = "game_of_life.v2_reset";
 const PROFILE_KEY = "game_of_life.profile";
 const MISSIONS_KEY = "game_of_life.missions";
-const HOLD_DURATION_MS = 4000;
+const HOLD_DURATION_MS = 2500;
 
 const SEPHIROT = [
   { id: "conexao", label: "CONSCIÊNCIA", row: 1, col: 2 },
@@ -364,6 +364,42 @@ const WEEKDAYS = [
   { label: "SAB", key: "S3" },
   { label: "DOM", key: "D" },
 ];
+const WEEKDAY_KEY_BY_INDEX = ["D", "S", "T", "Q", "Q2", "S2", "S3"];
+
+const getPlannerDateFromOffset = (offset) => {
+  const date = new Date();
+  date.setDate(date.getDate() + Number(offset || 0));
+  return date;
+};
+
+const getWeekdayKeyForDate = (date) => WEEKDAY_KEY_BY_INDEX[date.getDay()];
+
+const formatDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getActionWeeklyTarget = (action) => {
+  if (action.atemporal) return 1;
+  if (typeof action.weeklyTarget === "number" && action.weeklyTarget > 0) return action.weeklyTarget;
+  return Array.isArray(action.weekdays) && action.weekdays.length > 0 ? action.weekdays.length : 1;
+};
+
+const getActionRecentCompletions = (action, sinceMs) => {
+  const history = Array.isArray(action.completedHistory) ? action.completedHistory : [];
+  return history.filter((stamp) => {
+    const time = new Date(stamp).getTime();
+    return Number.isFinite(time) && time >= sinceMs;
+  }).length;
+};
+
+const isActionDoneOnDate = (action, date) => {
+  const dayKey = formatDateKey(date);
+  const history = Array.isArray(action.completedHistory) ? action.completedHistory : [];
+  return history.some((stamp) => formatDateKey(new Date(stamp)) === dayKey);
+};
 
 const parseDurationToMinutes = (raw) => {
   if (!raw) return 30;
@@ -1137,12 +1173,15 @@ const updateIntegrityBar = () => {
   }
   const planner = loadPlanner();
   const now = Date.now();
+  const todayKey = getWeekdayKeyForDate(new Date());
   const doneRecent = planner.bronzeActions.filter((action) => {
     if (action.status !== "done" || !action.completedAt) return false;
     return now - new Date(action.completedAt).getTime() < 24 * 60 * 60 * 1000;
   }).length;
   const scheduledToday = planner.bronzeActions.filter(
-    (action) => Number(action.scheduledDayOffset || 0) === 0,
+    (action) =>
+      Number(action.scheduledDayOffset || 0) === 0 ||
+      (Array.isArray(action.weekdays) && action.weekdays.includes(todayKey)),
   ).length;
   const total = Math.max(1, scheduledToday);
   const ratio = Math.min(1, doneRecent / total);
@@ -1184,6 +1223,7 @@ const buildVitalityStats = () => {
   const arenas = loadArenas();
   const profile = loadProfile();
   const now = Date.now();
+  const todayKey = getWeekdayKeyForDate(new Date());
   const stats = new Map(
     SEPHIROT.map((asset) => [
       asset.id,
@@ -1198,7 +1238,9 @@ const buildVitalityStats = () => {
     const assetId = arena.assetId;
     const stat = stats.get(assetId);
     if (!stat) return;
-    const scheduledToday = Number(action.scheduledDayOffset || 0) === 0;
+    const scheduledToday =
+      Number(action.scheduledDayOffset || 0) === 0 ||
+      (Array.isArray(action.weekdays) && action.weekdays.includes(todayKey));
     if (scheduledToday && action.status !== "done") stat.hasPendingToday = true;
     const completedAt = action.completedAt ? new Date(action.completedAt).getTime() : 0;
     if (completedAt && now - completedAt < 24 * 60 * 60 * 1000) {
@@ -1294,6 +1336,10 @@ const buildBronzeElement = (action) => {
   const icon = document.createElement("i");
   icon.setAttribute("data-lucide", action.icon || "circle");
   bronze.appendChild(icon);
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weeklyTarget = getActionWeeklyTarget(action);
+  const completedCount = getActionRecentCompletions(action, weekAgo);
+  const remaining = Math.max(0, weeklyTarget - completedCount);
   bronze.addEventListener("click", () => {
     openBronzeModal(action.arenaId, action.id);
   });
@@ -1301,6 +1347,12 @@ const buildBronzeElement = (action) => {
     if (!bronze.draggable) return;
     event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
   });
+  if (!action.atemporal && weeklyTarget > 1) {
+    const badge = document.createElement("div");
+    badge.className = "bronze-count";
+    badge.textContent = `x${remaining}`;
+    bronze.appendChild(badge);
+  }
   return bronze;
 };
 
@@ -1337,11 +1389,14 @@ const renderWeekView = () => {
   renderTree();
 };
 
-const buildBronzeBlock = (action) => {
+const buildBronzeBlock = (action, options = {}) => {
   const block = document.createElement("div");
   block.className = "bronze-block";
   block.dataset.id = action.id;
-  if (action.status === "done") block.classList.add("done");
+  const dayDate = options.dayDate;
+  const isRecurring = Boolean(options.isRecurring && dayDate);
+  const isDoneForDay = isRecurring ? isActionDoneOnDate(action, dayDate) : action.status === "done";
+  if (isDoneForDay) block.classList.add("done");
   if (action.status === "scheduled" || action.status === "done") {
     block.draggable = true;
     block.addEventListener("dragstart", (event) => {
@@ -1364,11 +1419,26 @@ const buildBronzeBlock = (action) => {
       const planner = loadPlanner();
       const updated = planner.bronzeActions.map((item) => {
         if (item.id !== action.id) return item;
+        const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
+        if (isRecurring && dayDate) {
+          const dayKey = formatDateKey(dayDate);
+          const hasDay = history.some((stamp) => formatDateKey(new Date(stamp)) === dayKey);
+          const nextHistory = hasDay
+            ? history.filter((stamp) => formatDateKey(new Date(stamp)) !== dayKey)
+            : [...history, new Date().toISOString()];
+          const nextCompletedAt = nextHistory.length
+            ? nextHistory[nextHistory.length - 1]
+            : undefined;
+          return {
+            ...item,
+            completedAt: nextCompletedAt,
+            completedHistory: nextHistory,
+          };
+        }
         if (item.status === "done") {
           return { ...item, status: "scheduled", completedAt: undefined };
         }
         const completedAt = new Date().toISOString();
-        const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
         return {
           ...item,
           status: "done",
@@ -1377,10 +1447,12 @@ const buildBronzeBlock = (action) => {
         };
       });
       savePlanner({ ...planner, bronzeActions: updated });
-      if (action.status === "done") {
-        updateArenaCountsForBronze(action.arenaId, -1);
-      } else {
-        updateArenaCountsForBronze(action.arenaId, 1);
+      if (!isRecurring) {
+        if (action.status === "done") {
+          updateArenaCountsForBronze(action.arenaId, -1);
+        } else {
+          updateArenaCountsForBronze(action.arenaId, 1);
+        }
       }
       updateGlobalArenaProgress(action.arenaId, updated);
       renderPlanner();
@@ -1721,6 +1793,8 @@ const renderPlanner = () => {
   if (!timeline || !bronzeList) return;
 
   const planner = loadPlanner();
+  const dayDate = getPlannerDateFromOffset(plannerDayOffset);
+  const dayKey = getWeekdayKeyForDate(dayDate);
 
   timeline.innerHTML = "";
   const bronzeLayer = document.createElement("div");
@@ -1769,23 +1843,32 @@ const renderPlanner = () => {
   }
 
   const timelineTopPadding = 16;
-  planner.bronzeActions
-    .filter(
-      (action) =>
-        (action.status === "scheduled" || action.status === "done") &&
-        Number(action.scheduledDayOffset || 0) === plannerDayOffset,
-    )
-    .forEach((action) => {
-      const startHour = Number(action.scheduledHour || 6);
-      const startMinute = Number(action.scheduledMinute || 0);
-      const duration = Number(action.durationMinutes || 30);
-      const block = buildBronzeBlock(action);
-      const top = timelineTopPadding + startHour * 60 + startMinute;
-      block.style.top = `${top}px`;
-      block.style.height = `${Math.max(30, duration)}px`;
-      block.style.pointerEvents = "auto";
-      bronzeLayer.appendChild(block);
+  const scheduledActions = planner.bronzeActions.filter(
+    (action) =>
+      (action.status === "scheduled" || action.status === "done") &&
+      Number(action.scheduledDayOffset || 0) === plannerDayOffset,
+  );
+  const scheduledIds = new Set(scheduledActions.map((action) => action.id));
+  const recurringActions = planner.bronzeActions.filter(
+    (action) =>
+      !scheduledIds.has(action.id) &&
+      Array.isArray(action.weekdays) &&
+      action.weekdays.includes(dayKey),
+  );
+  [...scheduledActions, ...recurringActions].forEach((action) => {
+    const startHour = Number(action.scheduledHour || 6);
+    const startMinute = Number(action.scheduledMinute || 0);
+    const duration = Number(action.durationMinutes || 30);
+    const block = buildBronzeBlock(action, {
+      dayDate,
+      isRecurring: recurringActions.includes(action),
     });
+    const top = timelineTopPadding + startHour * 60 + startMinute;
+    block.style.top = `${top}px`;
+    block.style.height = `${Math.max(30, duration)}px`;
+    block.style.pointerEvents = "auto";
+    bronzeLayer.appendChild(block);
+  });
   timeline.appendChild(bronzeLayer);
 
   bronzeList.innerHTML = "";
@@ -1853,7 +1936,7 @@ const attachLongPress = (pillEl, pill) => {
       if (released) return;
       pillEl.classList.remove("is-pressing");
       markPillComplete(pill.id);
-    }, 5000);
+    }, HOLD_DURATION_MS);
   };
 
   const endPress = () => {
@@ -1997,6 +2080,14 @@ const renderTreeEditorSlots = (dna, assetId) => {
   const asset = getAssetFromDNA(dna, assetId);
   list.innerHTML = "";
   if (!asset) return;
+  const ensureTreeEditMode = () => {
+    const modal = document.getElementById("tree-edit-modal");
+    if (!modal) return false;
+    if (!modal.classList.contains("is-editing")) {
+      modal.classList.add("is-editing");
+    }
+    return true;
+  };
   const slots = getDossierSlots(assetId);
   asset.profileSlots = asset.profileSlots || {};
   const getSlotDisplayText = (slot) => {
@@ -2110,7 +2201,9 @@ const renderTreeEditorSlots = (dna, assetId) => {
         valueEl.style.backgroundPosition = "center";
       }
       slotEl.addEventListener("click", () => {
-        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
+        if (!slotEl.closest("#tree-edit-modal.is-editing")) {
+          if (!ensureTreeEditMode()) return;
+        }
         fileInput.click();
       });
     }
@@ -2205,7 +2298,9 @@ const renderTreeEditorSlots = (dna, assetId) => {
       if (field.slider) {
         input.readOnly = true;
         input.addEventListener("click", () => {
-          if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
+          if (!slotEl.closest("#tree-edit-modal.is-editing")) {
+            if (!ensureTreeEditMode()) return;
+          }
           if (!sliderInput) return;
           sliderInput.dataset.unit = field.slider.unit || "";
           openSlider({
@@ -2246,10 +2341,15 @@ const renderTreeEditorSlots = (dna, assetId) => {
 
     slotEl.addEventListener("click", () => {
       if (isPhotoSlot) {
-        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
+        if (!slotEl.closest("#tree-edit-modal.is-editing")) {
+          if (!ensureTreeEditMode()) return;
+        }
         const file = slotEl.querySelector("input[type='file']");
         if (file) file.click();
         return;
+      }
+      if (!slotEl.closest("#tree-edit-modal.is-editing")) {
+        ensureTreeEditMode();
       }
       const focusable = slotEl.querySelector("input.profile-input");
       if (focusable) focusable.focus();
@@ -3627,7 +3727,7 @@ const initApp = () => {
   const profileCard = profileModal?.querySelector(".profile-card");
   if (avatar && profileModal) {
     avatar.addEventListener("click", () => {
-      const profile = loadProfile();
+      let profile = loadProfile();
       const dna = seedDNAIfMissing();
       const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
       if (profileLevel) profileLevel.textContent = `Nivel ${Math.round(total)}`;
@@ -3662,6 +3762,11 @@ const initApp = () => {
       if (widgetGrid) {
         widgetGrid.innerHTML = "";
         const options = getSlotOptions();
+        if (!Array.isArray(profile.widgets) || profile.widgets.length === 0) {
+          const defaults = options.slice(0, 5).map((opt) => opt.id);
+          profile = { ...profile, widgets: defaults, widgetsVisible: defaults.map(() => true) };
+          saveProfile(profile);
+        }
         const selected = Array.isArray(profile.widgets) ? profile.widgets : [];
         const visible = Array.isArray(profile.widgetsVisible) ? profile.widgetsVisible : [];
         for (let i = 0; i < 5; i += 1) {

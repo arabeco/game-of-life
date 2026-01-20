@@ -1036,7 +1036,7 @@ html[data-theme="void"] {
 
 .mastery-phrase {
   margin-top: 8px;
-  font-size: 22px;
+  font-size: clamp(24px, 5vw, 32px);
   color: #f7e7b3;
   line-height: 1.6;
   font-weight: 700;
@@ -1587,6 +1587,11 @@ html[data-theme="void"] {
 
 #tree-edit-modal.is-editing .slot-value {
   display: none !important;
+  pointer-events: none;
+}
+
+#tree-edit-modal.is-editing .profile-slot {
+  pointer-events: auto;
 }
 
 #tree-edit-modal.is-editing .profile-slot {

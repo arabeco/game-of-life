@@ -1803,6 +1803,10 @@ const renderPlanner = () => {
 
   if (window.lucide) window.lucide.createIcons();
   renderWeekView();
+  const arenaIds = Array.from(
+    new Set(planner.bronzeActions.map((action) => action.arenaId).filter(Boolean)),
+  );
+  arenaIds.forEach((arenaId) => updateGlobalArenaProgress(arenaId, planner.bronzeActions));
 };
 
 const buildPillElement = (pill, arenaTitle) => {

@@ -861,8 +861,8 @@ html[data-theme="frost"] {
 .slot-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  max-width: 880px;
+  gap: 8px;
+  max-width: 760px;
   margin: 0 auto;
 }
 
@@ -900,7 +900,7 @@ html[data-theme="frost"] {
   border: 1px solid rgba(212, 175, 55, 0.6);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
-  padding: 10px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -925,33 +925,33 @@ html[data-theme="frost"] {
 
 .profile-slot--rect {
   grid-column: span 2;
-  min-height: 72px;
+  min-height: 64px;
 }
 
 .profile-slot--rect-small {
   grid-column: span 1;
-  min-height: 60px;
+  min-height: 56px;
 }
 
 .profile-slot--rect-wide {
   grid-column: span 4;
-  min-height: 78px;
+  min-height: 70px;
 }
 
 .profile-slot--square {
   aspect-ratio: 1 / 1;
-  min-height: 68px;
+  min-height: 64px;
 }
 
 .profile-slot--square-large {
   grid-column: span 3;
   aspect-ratio: 1 / 1;
-  min-height: 120px;
+  min-height: 112px;
 }
 
 .slot-label {
   font-size: 11px;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   color: rgba(212, 175, 55, 0.8);
 }
@@ -969,10 +969,11 @@ html[data-theme="frost"] {
 }
 
 .slot-value {
-  font-size: 15px;
+  font-size: 16px;
   text-align: center;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.4px;
   color: #f1f1f1;
+  font-weight: 600;
 }
 
 .slot-caption.top {
@@ -1112,7 +1113,7 @@ html[data-theme="frost"] {
   border: none;
   color: #f1f1f1;
   text-align: center;
-  font-size: 14px;
+  font-size: 15px;
   font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
   display: none;
 }
@@ -1454,6 +1455,52 @@ html[data-theme="frost"] {
 .arena-card {
   position: relative;
   overflow: hidden;
+}
+
+.scan-card::after {
+  content: "";
+  position: absolute;
+  inset: -60% 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  opacity: 0.7;
+  animation: scan-line 2.8s ease-in-out infinite;
+}
+
+.scan-gold::after {
+  background: linear-gradient(
+    180deg,
+    rgba(212, 175, 55, 0) 0%,
+    rgba(212, 175, 55, 0.28) 50%,
+    rgba(212, 175, 55, 0) 100%
+  );
+}
+
+.scan-silver::after {
+  background: linear-gradient(
+    180deg,
+    rgba(192, 192, 192, 0) 0%,
+    rgba(192, 192, 192, 0.25) 50%,
+    rgba(192, 192, 192, 0) 100%
+  );
+}
+
+.scan-bronze::after {
+  background: linear-gradient(
+    180deg,
+    rgba(182, 128, 74, 0) 0%,
+    rgba(182, 128, 74, 0.26) 50%,
+    rgba(182, 128, 74, 0) 100%
+  );
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-120%);
+  }
+  100% {
+    transform: translateY(120%);
+  }
 }
 
 .scan-card::after,

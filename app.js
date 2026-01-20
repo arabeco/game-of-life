@@ -1948,11 +1948,6 @@ const renderTreeEditorSlots = (dna, assetId) => {
     label.textContent = slot.label;
     slotEl.appendChild(label);
 
-    const caption = document.createElement("div");
-    caption.className = `slot-caption ${slot.type.startsWith("square") ? "bottom" : "top"}`;
-    caption.textContent = slot.label;
-    slotEl.appendChild(caption);
-
     const valueEl = document.createElement("div");
     valueEl.className = "slot-value";
     valueEl.textContent = getSlotDisplayText(slot) || "—";
@@ -2005,7 +2000,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
         slotEl.style.backgroundPosition = "center";
       }
       slotEl.addEventListener("click", () => {
-        if (!slotEl.closest(".is-editing")) return;
+        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
         fileInput.click();
       });
     }
@@ -2019,6 +2014,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
       if (field.slider) {
         input.readOnly = true;
         input.addEventListener("click", () => {
+          if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
           if (!sliderInput) return;
           sliderInput.dataset.unit = field.slider.unit || "";
           openSlider({
@@ -2165,6 +2161,7 @@ const closeTreeEditor = () => {
   const modal = document.getElementById("tree-edit-modal");
   if (!modal) return;
   modal.classList.remove("is-open");
+  modal.classList.remove("is-editing");
   modal.dataset.assetId = "";
 };
 
@@ -3709,6 +3706,22 @@ const initApp = () => {
   if (treeEditOk) {
     treeEditOk.addEventListener("click", () => {
       playMetalClick();
+      const modal = document.getElementById("tree-edit-modal");
+      if (modal) modal.classList.remove("is-editing");
+      const assetId = modal?.dataset.assetId;
+      if (assetId) {
+        const dna = seedDNAIfMissing();
+        const asset = getAssetFromDNA(dna, assetId);
+        const lemaSlot = `${assetId}.lema`;
+        const lemaValue = asset?.profileSlots?.[lemaSlot]?.value;
+        if (lemaValue && assetId === "conexao") {
+          const profile = loadProfile();
+          const updated = { ...profile, banner: lemaValue };
+          saveProfile(updated);
+          ensureSupabaseProfile(updated);
+          syncProfileTotals(updated);
+        }
+      }
       closeTreeEditor();
     });
   }

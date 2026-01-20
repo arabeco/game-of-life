@@ -1473,7 +1473,8 @@ const renderArenas = () => {
   }
   arenas.forEach((arena) => {
     const card = document.createElement("div");
-    card.className = "arena-card scan-card";
+    const completionValue = Number(arena.completion || 0);
+    card.className = `arena-card scan-card${completionValue >= 100 ? " is-complete" : ""}`;
     const title = document.createElement("div");
     title.className = "arena-title";
     title.textContent = arena.title || "Arena";
@@ -1482,8 +1483,14 @@ const renderArenas = () => {
     if (arena.targetCount) {
       progress.textContent = `${Number(arena.completedCount || 0)}/${arena.targetCount}`;
     } else {
-      progress.textContent = `${Math.round(Number(arena.completion || 0))}%`;
+      progress.textContent = `${Math.round(completionValue)}%`;
     }
+    const progressBar = document.createElement("div");
+    progressBar.className = "arena-progress-bar";
+    const progressFill = document.createElement("div");
+    progressFill.className = "arena-progress-fill";
+    progressFill.style.width = `${Math.min(100, Math.max(0, completionValue))}%`;
+    progressBar.appendChild(progressFill);
     const assetLabel = document.createElement("div");
     assetLabel.className = "arena-progress";
     assetLabel.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
@@ -1525,6 +1532,7 @@ const renderArenas = () => {
     card.appendChild(progress);
     card.appendChild(assetLabel);
     card.appendChild(addBronze);
+    card.appendChild(progressBar);
     arenaList.appendChild(card);
   });
 };
@@ -2319,6 +2327,7 @@ const renderProfileWidgetDisplay = (profile, dna) => {
   if (!container) return;
   container.innerHTML = "";
   const widgets = Array.isArray(profile.widgets) ? profile.widgets : [];
+  const visible = Array.isArray(profile.widgetsVisible) ? profile.widgetsVisible : [];
   if (!widgets.length) return;
 
   const resolveSlotRef = (widgetId) => {
@@ -2357,7 +2366,8 @@ const renderProfileWidgetDisplay = (profile, dna) => {
     return data[key] || "";
   };
 
-  widgets.forEach((widgetId) => {
+  widgets.forEach((widgetId, index) => {
+    if (visible[index] === false) return;
     const ref = resolveSlotRef(widgetId);
     if (!ref) return;
     const asset = getAssetFromDNA(dna, ref.assetId);
@@ -3411,6 +3421,7 @@ const initApp = () => {
         widgetGrid.innerHTML = "";
         const options = getSlotOptions();
         const selected = Array.isArray(profile.widgets) ? profile.widgets : [];
+        const visible = Array.isArray(profile.widgetsVisible) ? profile.widgetsVisible : [];
         for (let i = 0; i < 5; i += 1) {
           const select = document.createElement("select");
           select.className = "profile-input";
@@ -3430,13 +3441,34 @@ const initApp = () => {
               ? [...loadProfile().widgets]
               : [];
             updated[i] = select.value;
-            saveProfile({ ...loadProfile(), widgets: updated.filter(Boolean) });
+            const nextProfile = loadProfile();
+            const nextVisible = Array.isArray(nextProfile.widgetsVisible)
+              ? [...nextProfile.widgetsVisible]
+              : [];
+            if (typeof nextVisible[i] !== "boolean") nextVisible[i] = true;
+            saveProfile({ ...nextProfile, widgets: updated.filter(Boolean), widgetsVisible: nextVisible });
             renderSocial();
             renderProfileWidgetDisplay(loadProfile(), seedDNAIfMissing());
           });
           const wrapper = document.createElement("div");
           wrapper.className = "widget-item";
           wrapper.appendChild(select);
+          const toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.className = "widget-toggle";
+          const isOn = visible[i] !== false;
+          toggle.textContent = isOn ? "Mostrar" : "Oculto";
+          toggle.addEventListener("click", () => {
+            const nextProfile = loadProfile();
+            const nextVisible = Array.isArray(nextProfile.widgetsVisible)
+              ? [...nextProfile.widgetsVisible]
+              : [];
+            nextVisible[i] = !isOn;
+            saveProfile({ ...nextProfile, widgetsVisible: nextVisible });
+            renderProfileWidgetDisplay(loadProfile(), seedDNAIfMissing());
+            toggle.textContent = nextVisible[i] ? "Mostrar" : "Oculto";
+          });
+          wrapper.appendChild(toggle);
           widgetGrid.appendChild(wrapper);
         }
       }

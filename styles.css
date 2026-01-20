@@ -2695,7 +2695,7 @@ html[data-status="oracle"] .sephirot {
   position: static !important;
   left: auto !important;
   top: auto !important;
-  transform: none !important;
+  transform: translateY(-14px) !important; /* sobe 14px */
   margin: 0;
   max-width: calc(100% - 150px);
   white-space: nowrap;
@@ -2723,7 +2723,7 @@ html[data-status="oracle"] .sephirot {
   position: static !important;
   right: auto !important;
   top: auto !important;
-  transform: none !important;
+  transform: translateY(-14px) !important; /* sobe 14px */
   padding: 8px 14px;
   border-radius: 14px;
   min-width: 48px;

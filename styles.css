@@ -2658,15 +2658,15 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .dossier-actions {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: 0 !important;
+  top: 0 !important;
   gap: 8px;
 }
 
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: 12px !important;
+  top: 8px !important;
   padding: 8px 14px;
   border-radius: 14px;
   min-width: 48px;
@@ -2678,8 +2678,8 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal #tree-edit-edit {
   position: absolute;
-  left: 4px;
-  top: 4px;
+  left: 8px !important;
+  top: 8px !important;
   transform: scale(0.82);
   opacity: 0.6;
 }

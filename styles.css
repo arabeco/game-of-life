@@ -2326,7 +2326,29 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .dossier-body {
   max-height: 70vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#tree-edit-modal .slot-editor {
+  flex: 1 1 auto;
   overflow: auto;
+}
+
+#tree-edit-modal .slot-list {
+  max-height: 44vh;
+  overflow: auto;
+}
+
+#tree-edit-modal .linked-arenas {
+  flex: 0 0 auto;
+}
+
+#tree-edit-modal .linked-arenas-list {
+  min-height: 190px;
+  align-items: stretch;
 }
 
 .dossier-title-row {

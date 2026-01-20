@@ -2191,6 +2191,9 @@ const openTreeEditor = (assetId) => {
   const phraseText = document.getElementById("tree-edit-phrase");
   const icon = document.getElementById("tree-edit-icon");
   const linkedArenasList = document.getElementById("linked-arenas-list");
+  const backBtn = document.getElementById("tree-edit-back");
+  const okBtn = document.getElementById("tree-edit-ok");
+  const editBtn = document.getElementById("tree-edit-edit");
   if (!modal || !title || !levelText) return;
   modal.dataset.assetId = asset.id;
   title.textContent = `${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
@@ -2221,6 +2224,38 @@ const openTreeEditor = (assetId) => {
         linkedArenasList.appendChild(card);
       });
     }
+  }
+  if (backBtn) {
+    backBtn.onclick = () => {
+      playMetalClick();
+      closeTreeEditor();
+    };
+  }
+  if (okBtn) {
+    okBtn.onclick = () => {
+      playMetalClick();
+      modal.classList.remove("is-editing");
+      const lemaSlot = `${asset.id}.lema`;
+      const lemaValue = asset?.profileSlots?.[lemaSlot]?.value;
+      if (lemaValue && asset.id === "conexao") {
+        const profile = loadProfile();
+        const updated = { ...profile, banner: lemaValue };
+        saveProfile(updated);
+        ensureSupabaseProfile(updated);
+        syncProfileTotals(updated);
+      }
+      closeTreeEditor();
+    };
+  }
+  if (editBtn) {
+    editBtn.onclick = () => {
+      modal.classList.toggle("is-editing");
+      if (modal.classList.contains("is-editing")) {
+        const list = document.getElementById("tree-slot-list");
+        const first = list?.querySelector("input.profile-input");
+        if (first) first.focus();
+      }
+    };
   }
   modal.classList.add("is-open");
 };

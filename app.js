@@ -2687,6 +2687,7 @@ const openTreeEditor = (assetId) => {
   const phraseText = document.getElementById("tree-edit-phrase");
   const icon = document.getElementById("tree-edit-icon");
   const linkedArenasList = document.getElementById("linked-arenas-list");
+  const addArenaBtn = document.getElementById("tree-edit-add-arena");
   const backBtn = document.getElementById("tree-edit-back");
   const okBtn = document.getElementById("tree-edit-ok");
   const editBtn = document.getElementById("tree-edit-edit");
@@ -2727,6 +2728,12 @@ const openTreeEditor = (assetId) => {
         linkedArenasList.appendChild(card);
       });
     }
+  }
+  if (addArenaBtn) {
+    addArenaBtn.onclick = () => {
+      playMetalClick();
+      openArenaModalForAsset(asset.id);
+    };
   }
   if (backBtn) {
     backBtn.onclick = () => {
@@ -2780,6 +2787,14 @@ const openArenaModal = () => {
   description.value = "";
   if (addBronze) addBronze.checked = false;
   modal.classList.add("is-open");
+};
+
+const openArenaModalForAsset = (assetId) => {
+  openArenaModal();
+  const select = document.getElementById("arena-asset");
+  if (select && assetId) {
+    select.value = String(assetId);
+  }
 };
 
 const closeArenaModal = () => {

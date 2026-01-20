@@ -2621,13 +2621,13 @@ html[data-status="oracle"] .sephirot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: 1px solid rgba(212, 175, 55, 0.7);
   background: rgba(10, 10, 10, 0.7);
   color: #f1d279;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -2642,13 +2642,17 @@ html[data-status="oracle"] .sephirot {
   position: absolute;
   right: 16px;
   top: 6px;
+  padding: 8px 14px;
+  border-radius: 14px;
   z-index: 4;
 }
 
 #tree-edit-modal #tree-edit-edit {
   position: absolute;
-  right: 60px;
-  top: 6px;
+  left: 16px;
+  bottom: 16px;
+  opacity: 0.65;
+  transform: scale(0.92);
 }
 
 #tree-edit-modal .dossier-body {
@@ -2656,10 +2660,11 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .oracle-phrase {
-  min-height: 60px;
-  padding: 12px 14px;
-  line-height: 1.4;
-  font-size: clamp(15px, 4.6vw, 20px);
+  min-height: 56px;
+  padding: 10px 12px;
+  line-height: 1.35;
+  font-size: clamp(14px, 4.4vw, 18px);
+  margin-top: 6px;
 }
 
 #tree-edit-modal .dossier-title {

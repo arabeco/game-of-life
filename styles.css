@@ -1377,6 +1377,14 @@ html[data-theme="void"] {
   color: #f7f7f7;
   font-weight: 600;
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  overflow: hidden;
+}
+
+.slot-value.has-image {
+  color: transparent;
+  text-shadow: none;
+  background-repeat: no-repeat;
 }
 
 .slot-subtitle {

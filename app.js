@@ -2061,9 +2061,10 @@ const renderTreeEditorSlots = (dna, assetId) => {
             ...(asset.profileSlots[slot.id] || {}),
             image: reader.result,
           };
-          slotEl.style.backgroundImage = `url(${reader.result})`;
-          slotEl.style.backgroundSize = "cover";
-          slotEl.style.backgroundPosition = "center";
+          valueEl.classList.add("has-image");
+          valueEl.style.backgroundImage = `url(${reader.result})`;
+          valueEl.style.backgroundSize = "cover";
+          valueEl.style.backgroundPosition = "center";
           valueEl.textContent = "";
           dna.lastUpdatedAt = new Date().toISOString();
           saveDNA(dna);
@@ -2073,9 +2074,10 @@ const renderTreeEditorSlots = (dna, assetId) => {
       slotEl.appendChild(fileInput);
       const existingImage = asset.profileSlots[slot.id]?.image;
       if (existingImage) {
-        slotEl.style.backgroundImage = `url(${existingImage})`;
-        slotEl.style.backgroundSize = "cover";
-        slotEl.style.backgroundPosition = "center";
+        valueEl.classList.add("has-image");
+        valueEl.style.backgroundImage = `url(${existingImage})`;
+        valueEl.style.backgroundSize = "cover";
+        valueEl.style.backgroundPosition = "center";
       }
       slotEl.addEventListener("click", () => {
         if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
@@ -2171,6 +2173,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
 
     slotEl.addEventListener("click", () => {
       if (isPhotoSlot) {
+        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
         const file = slotEl.querySelector("input[type='file']");
         if (file) file.click();
         return;

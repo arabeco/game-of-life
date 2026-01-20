@@ -1338,6 +1338,10 @@ html[data-theme="void"] {
   margin-bottom: 8px;
 }
 
+#tree-edit-modal .linked-arenas .slot-header {
+  display: none;
+}
+
 .slot-add {
   display: grid;
   grid-template-columns: 1fr 120px;
@@ -2661,7 +2665,7 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
-  right: 12px;
+  right: 8px;
   top: 8px;
   padding: 8px 14px;
   border-radius: 14px;
@@ -2674,10 +2678,10 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal #tree-edit-edit {
   position: absolute;
-  left: 50%;
+  left: 8px;
   top: 8px;
-  transform: translateX(-50%) scale(0.8);
-  opacity: 0.5;
+  transform: scale(0.85);
+  opacity: 0.6;
 }
 
 #tree-edit-modal .dossier-body {
@@ -2687,8 +2691,8 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal .oracle-phrase {
   min-height: 56px;
   padding: 10px 12px 10px 46px;
-  line-height: 1.35;
-  font-size: clamp(14px, 4.4vw, 18px);
+  line-height: 1.4;
+  font-size: clamp(14px, 4vw, 17px);
   margin-top: 8px;
   position: relative;
   text-align: left;
@@ -2820,17 +2824,21 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .linked-arenas-list {
-  min-height: 170px;
+  min-height: 140px;
   height: auto;
   align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .linked-arena {
-  min-height: 115px;
-  min-width: 100px;
-  padding: 6px 8px;
-  font-size: 11px;
+  min-height: 88px;
+  min-width: 0;
+  padding: 5px 6px;
+  font-size: 9px;
   justify-content: space-between;
+  aspect-ratio: 3 / 4;
 }
 
 #tree-edit-modal .slot-list {
@@ -2878,19 +2886,19 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .linked-arenas-list {
-  min-height: 140px;
+  min-height: 110px;
   height: auto;
   align-items: stretch;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 5px;
 }
 
 #tree-edit-modal .linked-arena {
-  min-height: 90px;
+  min-height: 72px;
   min-width: 0;
-  padding: 6px;
-  font-size: 9px;
+  padding: 5px;
+  font-size: 8px;
   justify-content: space-between;
   aspect-ratio: 3 / 4;
   border-radius: 12px;

@@ -2173,6 +2173,16 @@ const renderTreeEditorSlots = (dna, assetId) => {
       fileInput.type = "file";
       fileInput.accept = "image/*";
       fileInput.className = "hidden-file";
+      const ensureImageEl = () => {
+        let img = valueEl.querySelector("img");
+        if (!img) {
+          img = document.createElement("img");
+          img.className = "slot-image";
+          img.alt = slot.label || "Imagem do slot";
+          valueEl.appendChild(img);
+        }
+        return img;
+      };
       fileInput.addEventListener("change", () => {
         const file = fileInput.files?.[0];
         if (!file) return;
@@ -2183,9 +2193,8 @@ const renderTreeEditorSlots = (dna, assetId) => {
             image: reader.result,
           };
           valueEl.classList.add("has-image");
-          valueEl.style.backgroundImage = `url(${reader.result})`;
-          valueEl.style.backgroundSize = "cover";
-          valueEl.style.backgroundPosition = "center";
+          const img = ensureImageEl();
+          img.src = String(reader.result || "");
           valueEl.textContent = "";
           dna.lastUpdatedAt = new Date().toISOString();
           saveDNA(dna);
@@ -2196,11 +2205,12 @@ const renderTreeEditorSlots = (dna, assetId) => {
       const existingImage = asset.profileSlots[slot.id]?.image;
       if (existingImage) {
         valueEl.classList.add("has-image");
-        valueEl.style.backgroundImage = `url(${existingImage})`;
-        valueEl.style.backgroundSize = "cover";
-        valueEl.style.backgroundPosition = "center";
+        const img = ensureImageEl();
+        img.src = String(existingImage || "");
+        valueEl.textContent = "";
       }
-      slotEl.addEventListener("click", () => {
+      slotEl.addEventListener("click", (event) => {
+        if (!event.target.closest(".slot-value")) return;
         if (!slotEl.closest("#tree-edit-modal.is-editing")) {
           if (!ensureTreeEditMode()) return;
         }
@@ -2275,6 +2285,12 @@ const renderTreeEditorSlots = (dna, assetId) => {
       event.stopPropagation();
     };
 
+    slotEl.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("input, textarea, select")) {
+        event.stopPropagation();
+      }
+    });
+
     fields.forEach((field) => {
       const slotOptions = optionsBySlot[slot.id];
       if (slotOptions && field.key === "value") {
@@ -2347,8 +2363,9 @@ const renderTreeEditorSlots = (dna, assetId) => {
     });
 
 
-    slotEl.addEventListener("click", () => {
+    slotEl.addEventListener("click", (event) => {
       if (isPhotoSlot) {
+        if (!event.target.closest(".slot-value")) return;
         if (!slotEl.closest("#tree-edit-modal.is-editing")) {
           if (!ensureTreeEditMode()) return;
         }

@@ -2588,6 +2588,15 @@ html[data-status="oracle"] .sephirot {
   gap: 16px;
 }
 
+#tree-edit-modal .oracle-phrase {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 #tree-edit-modal .slot-editor {
   flex: 1 1 auto;
   overflow: auto;
@@ -2680,13 +2689,50 @@ html[data-status="oracle"] .sephirot {
   grid-auto-rows: minmax(180px, auto);
 }
 
+#tree-edit-modal .profile-slot {
+  gap: 6px;
+}
+
+#tree-edit-modal .slot-label {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+#tree-edit-modal .slot-value {
+  min-height: 34px;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+#tree-edit-modal .slot-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+#tree-edit-modal .slot-value.has-image {
+  height: 120px;
+  flex: 0 0 120px;
+}
+
+#tree-edit-modal .slot-value img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 #tree-edit-modal .linked-arenas {
   flex: 0 0 auto;
 }
 
 #tree-edit-modal .linked-arenas-list {
-  min-height: 210px;
-  align-items: flex-start;
+  min-height: 180px;
+  align-items: stretch;
+}
+
+#tree-edit-modal .linked-arena {
+  min-height: 120px;
+  min-width: 100px;
+  padding: 8px 10px;
 }
 
 .dossier-title-row {

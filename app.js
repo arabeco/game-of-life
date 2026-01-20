@@ -3690,7 +3690,10 @@ const initApp = () => {
   if (profileAvatarFile) {
     const avatarBox = profileModal?.querySelector(".profile-avatar");
     if (avatarBox) {
-      avatarBox.addEventListener("click", () => profileAvatarFile.click());
+      avatarBox.addEventListener("click", () => {
+        if (!profileModal?.classList.contains("is-editing")) return;
+        profileAvatarFile.click();
+      });
     }
     profileAvatarFile.addEventListener("change", () => {
       const file = profileAvatarFile.files?.[0];

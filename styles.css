@@ -1561,10 +1561,21 @@ html[data-theme="void"] {
 
 #tree-edit-modal.is-editing .profile-input {
   display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  background: rgba(12, 12, 12, 0.6);
+  color: #f1f1f1;
+  text-align: left;
 }
 
 #tree-edit-modal.is-editing .slot-value {
   display: none;
+}
+
+#tree-edit-modal.is-editing .profile-slot {
+  gap: 8px;
 }
 
 .dossier-actions {
@@ -2685,6 +2696,13 @@ html[data-status="oracle"] .sephirot {
   text-transform: uppercase;
   color: #f1f1f1;
   margin-bottom: 12px;
+}
+
+.dossier-title .drawer-title {
+  font-size: 18px;
+  letter-spacing: 2.5px;
+  color: #d9dde6;
+  text-shadow: 0 0 10px rgba(192, 192, 192, 0.35);
 }
 
 .backlog-list {

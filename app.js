@@ -2325,16 +2325,6 @@ const openTreeEditor = (assetId) => {
       closeTreeEditor();
     };
   }
-  if (editBtn) {
-    editBtn.onclick = () => {
-      modal.classList.toggle("is-editing");
-      if (modal.classList.contains("is-editing")) {
-        const list = document.getElementById("tree-slot-list");
-        const first = list?.querySelector("input.profile-input");
-        if (first) first.focus();
-      }
-    };
-  }
   modal.classList.remove("is-editing");
   modal.classList.add("is-open");
 };

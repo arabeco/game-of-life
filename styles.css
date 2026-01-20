@@ -1007,40 +1007,40 @@ html[data-theme="void"] {
   appearance: none;
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(192, 192, 192, 0.35), rgba(192, 192, 192, 0.75));
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(90deg, rgba(220, 220, 220, 0.5), rgba(255, 255, 255, 0.9));
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6), 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
 .mastery-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #b08a24, #d4af37);
+  background: linear-gradient(135deg, #f7e7b3, #d4af37);
   transform: rotate(45deg);
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+  border: 1px solid rgba(70, 50, 10, 0.5);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.6);
   cursor: pointer;
 }
 
 .mastery-slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #b08a24, #d4af37);
+  background: linear-gradient(135deg, #f7e7b3, #d4af37);
   transform: rotate(45deg);
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+  border: 1px solid rgba(70, 50, 10, 0.5);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.6);
   cursor: pointer;
 }
 
 .mastery-phrase {
   margin-top: 8px;
-  font-size: 16px;
-  color: #f1d279;
-  line-height: 1.5;
-  font-weight: 600;
-  letter-spacing: 0.4px;
+  font-size: 18px;
+  color: #f7e7b3;
+  line-height: 1.6;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .mastery-textarea {
@@ -1716,7 +1716,7 @@ html[data-theme="void"] {
   left: 12px;
   right: 12px;
   top: 12px;
-  height: 86px;
+  height: 120px;
   border-radius: 14px;
   background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.5), rgba(212, 175, 55, 0.2));
   opacity: 0.9;
@@ -1812,7 +1812,7 @@ html[data-theme="void"] {
 }
 
 .profile-banner-display {
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(212, 175, 55, 0.9);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1820,6 +1820,10 @@ html[data-theme="void"] {
 
 .profile-card:not(.is-editing) .profile-input {
   display: none;
+}
+
+.profile-card.is-editing .profile-input {
+  display: block;
 }
 
 .profile-card.is-editing .profile-name-display,
@@ -2354,6 +2358,8 @@ html[data-status="oracle"] .sephirot {
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(217, 182, 92, 0.25);
+  position: relative;
+  z-index: 3;
 }
 
 #tree-edit-modal .modal-card {

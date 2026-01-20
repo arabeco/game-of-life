@@ -1432,8 +1432,16 @@ const updateGlobalArenaProgress = (arenaId, pills) => {
   if (!arenaId) return;
   const planner = loadPlanner();
   const allActions = planner.bronzeActions.filter((action) => action.arenaId === arenaId);
-  const total = allActions.length;
-  const done = allActions.filter((action) => action.status === "done").length;
+  const weightFor = (action) => {
+    if (action.atemporal) return 1;
+    if (typeof action.weeklyTarget === "number" && action.weeklyTarget > 0) return action.weeklyTarget;
+    return Array.isArray(action.weekdays) && action.weekdays.length > 0 ? action.weekdays.length : 1;
+  };
+  const total = allActions.reduce((sum, action) => sum + weightFor(action), 0);
+  const done = allActions.reduce(
+    (sum, action) => sum + (action.status === "done" ? weightFor(action) : 0),
+    0,
+  );
   const completion = total === 0 ? 0 : Math.round((done / total) * 100);
 
   const arenas = loadArenas();

@@ -2656,8 +2656,8 @@ html[data-status="oracle"] .sephirot {
   grid-template-columns: 34px 1fr auto;
   align-items: center !important;
   column-gap: 10px;
-  padding: 8px 12px 6px !important;
-  margin-bottom: 10px !important;
+  padding: 6px 12px 2px !important; /* sobe a divisória */
+  margin-bottom: 6px !important;     /* sobe a divisória */
   height: auto !important;
 }
 
@@ -2777,12 +2777,12 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .dossier-title {
-  padding-top: 6px;
+  padding-top: 0 !important; /* não empurrar o header pra baixo */
 }
 
 #tree-edit-modal .drawer-title#tree-edit-title {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 0 !important; /* não sobrescrever o “sobe 14px” */
   font-size: 18px;
 }
 

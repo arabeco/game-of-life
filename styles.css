@@ -2673,7 +2673,7 @@ html[data-status="oracle"] .sephirot {
   position: absolute;
   left: 50%;
   top: calc(50% - 45px) !important; /* sobe +15px */
-  transform: translate(-50%, -50%) translateY(-70px) !important; /* sobe +15px */
+  transform: translate(-50%, -50%) translateY(-85px) !important; /* sobe +15px */
   margin: 0;
   max-width: calc(100% - 150px);
   white-space: nowrap;
@@ -2696,7 +2696,7 @@ html[data-status="oracle"] .sephirot {
   position: absolute;
   right: -11px !important; /* 15px mais à direita (4 - 15) */
   top: calc(50% - 45px) !important; /* sobe +15px */
-  transform: translateY(-50%) translateY(-70px) !important; /* sobe +15px */
+  transform: translateY(-50%) translateY(-85px) !important; /* sobe +15px */
   padding: 8px 14px;
   border-radius: 14px;
   min-width: 48px;
@@ -2709,7 +2709,7 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal #tree-edit-edit {
   position: fixed; /* ancora no viewport (modal full-screen) */
   left: 10px !important; /* +1px pra direita */
-  top: 4px !important;   /* sobe 28px (32 - 28) */
+  top: -24px !important; /* sobe 28px */
   transform: scale(0.82);
   opacity: 0.6;
 }

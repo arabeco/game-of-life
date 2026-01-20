@@ -1055,6 +1055,14 @@ const loadChecklistItems = () => {
   return seeded;
 };
 
+const updateChecklistBadge = () => {
+  const notesToggle = document.getElementById("notes-toggle");
+  if (!notesToggle) return;
+  const items = loadChecklistItems();
+  const allDone = items.length > 0 && items.every((item) => item.done);
+  notesToggle.classList.toggle("is-complete", allDone);
+};
+
 const saveChecklistItems = (items) => {
   const planner = loadPlanner();
   planner.logistics = { ...(planner.logistics || {}), items };
@@ -3045,13 +3053,6 @@ const initPlanner = () => {
   const checklistAdd = document.getElementById("checklist-add");
   const checklistOk = document.getElementById("checklist-ok");
   const checklistList = document.getElementById("checklist-list");
-  const updateChecklistBadge = () => {
-    if (!notesToggle) return;
-    const items = loadChecklistItems();
-    const hasItems = items.length > 0;
-    const allDone = hasItems && items.every((item) => item.done);
-    notesToggle.classList.toggle("is-complete", allDone);
-  };
   const renderChecklistModal = (focusId) => {
     if (!checklistList) return;
     const items = loadChecklistItems();

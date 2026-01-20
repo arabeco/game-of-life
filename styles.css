@@ -1512,9 +1512,9 @@ html[data-theme="void"] {
 }
 
 #slider-input {
-  writing-mode: bt-lr;
+  writing-mode: vertical-lr;
+  direction: rtl;
   appearance: none;
-  -webkit-appearance: slider-vertical;
   width: 12px;
   height: 220px;
   accent-color: #d4af37;
@@ -2419,6 +2419,9 @@ html[data-status="oracle"] .sephirot {
   overflow-x: auto;
   padding-bottom: 6px;
   scrollbar-width: none;
+  height: auto;
+  min-height: 180px;
+  align-items: stretch;
 }
 
 .linked-arenas-list::-webkit-scrollbar {

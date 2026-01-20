@@ -589,16 +589,18 @@ html[data-theme="frost"] {
 .arena-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   padding: 16px;
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(26, 28, 34, 0.92), rgba(12, 14, 18, 0.95));
   border: 1px solid rgba(210, 218, 230, 0.4);
   gap: 10px;
   position: relative;
-  min-height: 240px;
+  min-height: 260px;
+  aspect-ratio: 3 / 4;
   box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.6), 0 12px 22px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(8px);
+  text-align: center;
 }
 
 .arena-title {
@@ -611,6 +613,7 @@ html[data-theme="frost"] {
 .arena-progress {
   font-size: 12px;
   color: rgba(195, 199, 207, 0.8);
+  text-align: center;
 }
 
 .arena-progress-bar {
@@ -620,11 +623,7 @@ html[data-theme="frost"] {
 .arena-description {
   font-size: 12px;
   color: rgba(229, 229, 229, 0.7);
-}
-
-.arena-description {
-  font-size: 12px;
-  color: rgba(229, 229, 229, 0.75);
+  text-align: center;
   line-height: 1.3;
   max-height: 34px;
   overflow: hidden;
@@ -635,6 +634,7 @@ html[data-theme="frost"] {
   font-size: 12px;
   color: rgba(212, 175, 55, 0.8);
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .arena-card .silver-button {
@@ -650,24 +650,22 @@ html[data-theme="frost"] {
 
 .linked-arena {
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 14px;
   background: linear-gradient(135deg, rgba(26, 28, 34, 0.92), rgba(12, 14, 18, 0.95));
   border: 1px solid rgba(210, 218, 230, 0.35);
   display: grid;
-  gap: 6px;
+  gap: 8px;
   font-size: 12px;
   color: #d0d6e0;
-  min-height: 120px;
+  min-height: 160px;
+  aspect-ratio: 3 / 4;
+  text-align: center;
+  align-content: center;
 }
 
-.linked-arena button {
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(195, 199, 207, 0.4);
-  background: rgba(18, 18, 18, 0.9);
-  color: #d5d9e1;
-  font-size: 10px;
+.linked-arena span {
   text-transform: uppercase;
+  letter-spacing: 0.6px;
 }
 
 @media (max-width: 900px) {
@@ -748,9 +746,10 @@ html[data-theme="frost"] {
 
 .config-menu {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .config-item {
@@ -770,6 +769,15 @@ html[data-theme="frost"] {
   padding: 18px;
   border: 1px solid rgba(212, 175, 55, 0.2);
   box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.6);
+  display: grid;
+  gap: 14px;
+}
+
+.theme-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
 }
 
 .banner-list {
@@ -802,6 +810,15 @@ html[data-theme="frost"] {
 .banner-requirement {
   font-size: 12px;
   color: rgba(229, 229, 229, 0.7);
+}
+
+.banner-card-modal {
+  width: min(520px, 92vw);
+}
+
+.banner-grid {
+  display: grid;
+  gap: 12px;
 }
 
 .config-panel {

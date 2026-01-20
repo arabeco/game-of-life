@@ -2189,19 +2189,11 @@ const openTreeEditor = (assetId) => {
         } else {
           pct.textContent = `${Math.round(Number(arena.completion || 0))}%`;
         }
-        const actionButton = document.createElement("button");
-        actionButton.type = "button";
-        actionButton.textContent = "Gerar Acao";
-        actionButton.addEventListener("click", (event) => {
-          event.stopPropagation();
-          createPlannerActionFromArena(arena);
-        });
         row.addEventListener("click", () => {
           openArenaDossier(arena.id);
         });
         row.appendChild(name);
         row.appendChild(pct);
-        row.appendChild(actionButton);
         linkedArenasList.appendChild(row);
       });
     }
@@ -3639,7 +3631,10 @@ const initApp = () => {
   const configSaveProfile = document.getElementById("config-save-profile");
   const configLogout = document.getElementById("config-logout");
   const configLawYears = document.getElementById("config-law-years");
-  const bannerList = document.getElementById("banner-list");
+  const bannerModal = document.getElementById("banner-modal");
+  const bannerClose = document.getElementById("banner-close");
+  const bannerGrid = document.getElementById("banner-grid");
+  const bannerOpen = document.getElementById("config-banners-open");
   const configProfile = loadProfile();
   if (configIdentity) {
     configIdentity.value = configProfile.userId || configProfile.nickname || "";
@@ -3666,7 +3661,7 @@ const initApp = () => {
     });
   }
   const renderBanners = () => {
-    if (!bannerList) return;
+    if (!bannerGrid) return;
     const profile = loadProfile();
     const rewards = [
       {
@@ -3675,8 +3670,14 @@ const initApp = () => {
         requirement: "Advogado por 5+ anos",
         unlocked: Number(profile.lawYears || 0) >= 5,
       },
+      {
+        id: "baseline",
+        title: "SEM BANNER",
+        requirement: "Disponivel",
+        unlocked: true,
+      },
     ];
-    bannerList.innerHTML = "";
+    bannerGrid.innerHTML = "";
     rewards.forEach((reward) => {
       const card = document.createElement("div");
       card.className = `banner-card${reward.unlocked ? " is-unlocked" : ""}`;
@@ -3687,23 +3688,34 @@ const initApp = () => {
       req.className = "banner-requirement";
       req.textContent = reward.requirement;
       const btn = document.createElement("button");
-      btn.className = "silver-button";
+      btn.className = "gold-button";
       btn.type = "button";
       btn.textContent = reward.unlocked ? "Aplicar" : "Bloqueado";
       btn.disabled = !reward.unlocked;
       btn.addEventListener("click", () => {
-        const updated = { ...loadProfile(), banner: reward.title };
+        const nextTitle = reward.id === "baseline" ? "" : reward.title;
+        const updated = { ...loadProfile(), banner: nextTitle };
         saveProfile(updated);
         ensureSupabaseProfile(updated);
         syncProfileTotals(updated);
+        if (bannerModal) bannerModal.classList.remove("is-open");
       });
       card.appendChild(title);
       card.appendChild(req);
       card.appendChild(btn);
-      bannerList.appendChild(card);
+      bannerGrid.appendChild(card);
     });
   };
   renderBanners();
+  if (bannerOpen && bannerModal) {
+    bannerOpen.addEventListener("click", () => {
+      renderBanners();
+      bannerModal.classList.add("is-open");
+    });
+  }
+  if (bannerClose && bannerModal) {
+    bannerClose.addEventListener("click", () => bannerModal.classList.remove("is-open"));
+  }
   if (configSaveProfile) {
     configSaveProfile.addEventListener("click", async () => {
       configSaveProfile.classList.remove("is-saved");

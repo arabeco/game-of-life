@@ -2658,7 +2658,7 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .dossier-actions {
   position: absolute;
-  right: 12px;
+  right: 8px;
   top: 8px;
   gap: 8px;
 }
@@ -2678,9 +2678,9 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal #tree-edit-edit {
   position: absolute;
-  left: 8px;
-  top: 8px;
-  transform: scale(0.85);
+  left: 4px;
+  top: 4px;
+  transform: scale(0.82);
   opacity: 0.6;
 }
 

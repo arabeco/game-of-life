@@ -3533,6 +3533,26 @@ const initConfig = () => {
       phraseInput.placeholder = "Escreva sua frase soberana...";
       phraseInput.value = asset.customText || "";
 
+      const editorWrap = document.createElement("div");
+      editorWrap.className = "mastery-editor";
+      const okBtn = document.createElement("button");
+      okBtn.type = "button";
+      okBtn.className = "icon-button mastery-save-ok";
+      okBtn.setAttribute("aria-label", "Salvar frase");
+      okBtn.innerHTML = '<i data-lucide="check"></i>';
+      okBtn.addEventListener("click", () => {
+        if (mode === "oracle") return;
+        asset.customText = phraseInput.value;
+        dna.lastUpdatedAt = new Date().toISOString();
+        saveDNA(dna);
+        editorWrap.classList.remove("is-dirty");
+        phraseInput.blur();
+      });
+      phraseInput.addEventListener("input", () => {
+        if (mode === "oracle") return;
+        editorWrap.classList.add("is-dirty");
+      });
+
       const updateView = () => {
         value.textContent = String(Math.round(Number(slider.value)));
         if (mode === "oracle") {
@@ -3543,10 +3563,13 @@ const initConfig = () => {
           phraseInput.style.display = "none";
           phraseInput.value = phrase;
           phraseInput.readOnly = true;
+          editorWrap.style.display = "none";
+          editorWrap.classList.remove("is-dirty");
         } else {
           phraseInput.readOnly = false;
           phraseEl.style.display = "none";
           phraseInput.style.display = "block";
+          editorWrap.style.display = "block";
         }
       };
 
@@ -3585,20 +3608,16 @@ const initConfig = () => {
         scheduleSupabaseSync(slider.value);
       });
 
-      phraseInput.addEventListener("change", () => {
-        if (mode === "oracle") return;
-        asset.customText = phraseInput.value;
-        dna.lastUpdatedAt = new Date().toISOString();
-        saveDNA(dna);
-      });
-
       updateView();
       row.appendChild(header);
       row.appendChild(slider);
       row.appendChild(phraseEl);
-      row.appendChild(phraseInput);
+      editorWrap.appendChild(phraseInput);
+      editorWrap.appendChild(okBtn);
+      row.appendChild(editorWrap);
       container.appendChild(row);
     });
+    if (window.lucide) window.lucide.createIcons();
   };
 
   const modeInputs = document.querySelectorAll("input[name='mastery-mode']");
@@ -4242,7 +4261,6 @@ const initApp = () => {
   const profileModal = document.getElementById("profile-modal");
   const profileClose = document.getElementById("profile-close");
   const profileIdentity = document.getElementById("profile-identity");
-  const profileBanner = document.getElementById("profile-banner");
   const profileThemeButtons = document.querySelectorAll(".profile-theme-btn");
   const profileNameDisplay = document.getElementById("profile-name-display");
   const profileBannerDisplay = document.getElementById("profile-banner-display");
@@ -4253,7 +4271,6 @@ const initApp = () => {
   const profileSave = document.getElementById("profile-save");
   const profileSync = document.getElementById("profile-sync");
   const profileAvatarFile = document.getElementById("profile-avatar-file");
-  const profileBannerFile = document.getElementById("profile-banner-file");
   const hudEdit = document.getElementById("hud-edit");
   const profileCard = profileModal?.querySelector(".profile-card");
   if (avatar && profileModal) {
@@ -4265,7 +4282,6 @@ const initApp = () => {
       if (profileIdentity) {
         profileIdentity.value = profile.userId || profile.nickname || "";
       }
-      if (profileBanner) profileBanner.value = profile.banner || "";
       if (profileNameDisplay) {
         profileNameDisplay.textContent = profile.nickname || profile.userId || "-";
       }
@@ -4391,7 +4407,7 @@ const initApp = () => {
     profileSave.addEventListener("click", async () => {
       const current = loadProfile();
       const identity = profileIdentity?.value?.trim() || current.nickname || current.userId || "";
-      const banner = profileBanner?.value?.trim() || current.banner || "";
+      const banner = current.banner || "";
       const cardTheme = profileModal?.dataset.card || current.profileCardTheme || "gold";
       const selectedGoldAssets = Array.isArray(current.widgets) ? current.widgets : [];
       const updated = {
@@ -4466,44 +4482,7 @@ const initApp = () => {
     });
   }
 
-  if (profileBanner && profileBannerFile && profileModal) {
-    profileBanner.addEventListener("click", () => {
-      if (profileModal.classList.contains("is-editing")) {
-        profileBannerFile.click();
-      }
-    });
-  }
-
-  if (profileBannerFile) {
-    profileBannerFile.addEventListener("change", () => {
-      const file = profileBannerFile.files?.[0];
-      if (!file) return;
-      uploadToSupabase(file, `banners/${crypto.randomUUID()}`).then((url) => {
-        if (url) {
-          const profile = loadProfile();
-          const updated = { ...profile, banner: url };
-          saveProfile(updated);
-          const bannerWrap = profileModal?.querySelector(".profile-banner");
-          if (bannerWrap) bannerWrap.style.backgroundImage = `url(${url})`;
-          if (profileStrip) profileStrip.style.backgroundImage = `url(${url})`;
-          renderSocial();
-          syncProfileTotals(updated);
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const profile = loadProfile();
-          const updated = { ...profile, banner: reader.result };
-          saveProfile(updated);
-          const bannerWrap = profileModal?.querySelector(".profile-banner");
-          if (bannerWrap) bannerWrap.style.backgroundImage = `url(${reader.result})`;
-          if (profileStrip) profileStrip.style.backgroundImage = `url(${reader.result})`;
-          renderSocial();
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-  }
+  // Banner agora é escolhido pela lista (banner-modal).
 
   if (profileThemeButtons.length && profileModal) {
     profileThemeButtons.forEach((btn) => {
@@ -4527,15 +4506,7 @@ const initApp = () => {
     });
   }
 
-  if (profileBanner) {
-    profileBanner.addEventListener("change", () => {
-      const profile = loadProfile();
-      const updated = { ...profile, banner: profileBanner.value.trim() };
-      saveProfile(updated);
-      ensureSupabaseProfile(updated);
-      renderSocial();
-    });
-  }
+  // Banner agora é escolhido pela lista (banner-modal).
   const allianceSearch = document.getElementById("alliance-search");
   if (allianceSearch) {
     allianceSearch.addEventListener("input", () => {
@@ -4546,7 +4517,6 @@ const initApp = () => {
   const configIdentity = document.getElementById("config-identity");
   const configSaveProfile = document.getElementById("config-save-profile");
   const configLogout = document.getElementById("config-logout");
-  const configLawYears = document.getElementById("config-law-years");
   const bannerModal = document.getElementById("banner-modal");
   const bannerClose = document.getElementById("banner-close");
   const bannerGrid = document.getElementById("banner-grid");
@@ -4568,14 +4538,6 @@ const initApp = () => {
       renderSocial();
     });
   }
-  if (configLawYears) {
-    configLawYears.value = String(configProfile.lawYears || 0);
-    configLawYears.addEventListener("input", () => {
-      const profile = loadProfile();
-      const next = { ...profile, lawYears: Number(configLawYears.value || 0) };
-      saveProfile(next);
-    });
-  }
   const renderBanners = () => {
     if (!bannerGrid) return;
     const profile = loadProfile();
@@ -4584,7 +4546,7 @@ const initApp = () => {
         id: "direito",
         title: "PROFICIENCIA EM DIREITO",
         requirement: "Advogado por 5+ anos",
-        unlocked: Number(profile.lawYears || 0) >= 5,
+        unlocked: true,
       },
       {
         id: "baseline",
@@ -4614,6 +4576,14 @@ const initApp = () => {
         saveProfile(updated);
         ensureSupabaseProfile(updated);
         syncProfileTotals(updated);
+        renderSocial();
+        const profileModal = document.getElementById("profile-modal");
+        const bannerWrap = profileModal?.querySelector(".profile-banner");
+        const profileStrip = document.getElementById("profile-strip");
+        const bannerDisplay = document.getElementById("profile-banner-display");
+        if (bannerDisplay) bannerDisplay.textContent = updated.banner || "Sem banner";
+        if (bannerWrap) bannerWrap.style.backgroundImage = updated.banner ? `url(${updated.banner})` : "";
+        if (profileStrip) profileStrip.style.backgroundImage = updated.banner ? `url(${updated.banner})` : "";
         if (bannerModal) bannerModal.classList.remove("is-open");
       });
       card.appendChild(title);

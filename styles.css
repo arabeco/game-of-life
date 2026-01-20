@@ -407,19 +407,19 @@ html[data-theme="void"] {
 .hud-nick-frame {
   position: absolute;
   left: 50%;
-  top: 56%;
+  top: 59%;
   transform: translate(-50%, -50%);
   padding: 1px 8px;
   border-radius: 999px;
   border: 1px solid var(--accent-gold);
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.82)), var(--metal-gold);
-  background-blend-mode: overlay;
-  color: #f1e1a5;
-  font-size: 8px;
+  background: var(--metal-gold);
+  color: rgba(8, 8, 8, 0.95);
+  font-size: 9px;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   margin-top: 0;
   order: 2;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 .hud-edit {
@@ -450,18 +450,19 @@ html[data-theme="void"] {
   justify-content: center;
   position: absolute;
   left: 50%;
-  top: calc(56% + 7px); /* sobe o nível para encostar no nick */
+  top: calc(59% + 11px); /* encostar na moldura do nick */
   transform: translateX(-50%);
-  width: 18px;
-  height: 18px;
-  font-size: 10px;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
   font-weight: 700;
-  color: #f1d279;
-  border: 1px solid rgba(212, 175, 55, 0.5);
+  color: rgba(8, 8, 8, 0.95);
+  border: 1px solid rgba(212, 175, 55, 0.8);
   border-radius: 50%;
   padding: 0;
-  background: rgba(10, 10, 10, 0.75);
+  background: var(--metal-gold);
   order: 3;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 .integrity-bar {
@@ -1121,7 +1122,7 @@ html[data-theme="void"] {
 
 .mastery-phrase {
   margin-top: 8px;
-  font-size: clamp(16px, 4.1vw, 22px);
+  font-size: clamp(12px, 2.7vw, 14px); /* ~40% menor */
   color: #f7f1d8;
   line-height: 1.5;
   font-weight: 700;
@@ -1147,13 +1148,33 @@ html[data-theme="void"] {
 .mastery-textarea {
   width: 100%;
   margin-top: 8px;
-  padding: 10px 12px;
+  padding: 10px 46px 10px 12px; /* espaço pro OK interno */
   border-radius: 8px;
   border: 1px solid rgba(217, 182, 92, 0.25);
   background: rgba(16, 16, 16, 0.8);
   color: #f1f1f1;
   font-size: 15px;
   min-height: 60px;
+}
+
+.mastery-editor {
+  position: relative;
+}
+
+.mastery-save-ok {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.mastery-editor.is-dirty .mastery-save-ok {
+  display: inline-flex;
 }
 
 .mastery-textarea:focus {
@@ -1997,9 +2018,9 @@ html[data-theme="void"] {
 }
 
 .profile-card {
-  padding: 14px;
+  padding: 12px;
   position: relative;
-  width: min(480px, 92vw);
+  width: min(420px, 92vw);
 }
 
 .profile-strip {
@@ -2007,7 +2028,7 @@ html[data-theme="void"] {
   left: 12px;
   right: 12px;
   top: 12px;
-  height: 120px;
+  height: 92px;
   border-radius: 14px;
   background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.5), rgba(212, 175, 55, 0.2));
   opacity: 0.9;
@@ -2028,8 +2049,8 @@ html[data-theme="void"] {
 }
 
 .profile-avatar {
-  width: 88px;
-  height: 88px;
+  width: 78px;
+  height: 78px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2038,6 +2059,10 @@ html[data-theme="void"] {
   border-radius: 50%;
   border: 2px solid rgba(212, 175, 55, 0.4);
   box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6), 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+
+.profile-banner-open {
+  width: 100%;
 }
 
 .profile-theme {
@@ -2693,6 +2718,7 @@ html[data-status="oracle"] .sephirot {
   height: 24px;
   stroke: var(--accent-gold);
   justify-self: start;
+  transform: translateY(-20px);
 }
 
 #tree-edit-modal .tree-edit-title {
@@ -2709,6 +2735,7 @@ html[data-status="oracle"] .sephirot {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transform: translateY(-20px);
 }
 
 #tree-edit-modal .tree-edit-ok {
@@ -2722,6 +2749,7 @@ html[data-status="oracle"] .sephirot {
   min-height: 32px;
   border-radius: 14px;
   line-height: 1;
+  transform: translateY(-20px);
 }
 
 /* Tree edit: editar leve e discreto (mantém tua posição atual) */
@@ -2943,12 +2971,12 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .linked-arenas-list {
-  min-height: 110px;
+  min-height: 88px;
   height: auto;
   align-items: stretch;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+  gap: 4px;
 }
 
 #tree-edit-modal .linked-arena {
@@ -2965,10 +2993,10 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal .linked-arenas-list .arena-card,
 #tree-edit-modal .linked-arenas-list .arena-card--mini {
   width: 100%;
-  min-height: 72px;
-  aspect-ratio: 3 / 4;
-  padding: 6px;
-  font-size: 10px;
+  min-height: 58px;
+  aspect-ratio: 1 / 1.1; /* mais baixo pra caber no card */
+  padding: 5px;
+  font-size: 9px;
   cursor: pointer;
   pointer-events: auto;
 }
@@ -2978,13 +3006,13 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .linked-arenas-list .arena-title {
-  font-size: 12px;
+  font-size: 11px;
 }
 
 #tree-edit-modal .linked-arenas-list .arena-description,
 #tree-edit-modal .linked-arenas-list .arena-progress,
 #tree-edit-modal .linked-arenas-list .arena-meta {
-  font-size: 10px;
+  font-size: 9px;
 }
 
 #tree-edit-modal .linked-arena button {

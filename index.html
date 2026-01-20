@@ -6,7 +6,7 @@
     <title>Game of Life</title>
     <!-- Manifest disabled due to 401 on hosted path -->
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=2026-01-20q" />
+    <link rel="stylesheet" href="styles.css?v=2026-01-20s" />
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Service worker disabled: src/service-worker.js não existe neste build -->
   </head>
@@ -539,8 +539,9 @@
           </div>
           <div class="profile-banner">
             <div class="profile-banner-display" id="profile-banner-display">Sem banner</div>
-            <input type="text" id="profile-banner" class="profile-input" placeholder="Banner de Titulo" />
-            <input type="file" id="profile-banner-file" class="hidden-file" accept="image/*" />
+            <button class="silver-button profile-banner-open" id="config-banners-open" type="button">
+              Escolher Banner
+            </button>
           </div>
         </div>
         <div class="profile-widgets">

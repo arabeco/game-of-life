@@ -2629,8 +2629,8 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .dossier-header {
-  padding-bottom: 3px;
-  margin-bottom: 6px;
+  padding-bottom: 0px;
+  margin-bottom: 0px;
 }
 
 #tree-edit-modal #tree-edit-back {
@@ -2659,13 +2659,13 @@ html[data-status="oracle"] .sephirot {
 
 /* Header do modal: alinhar ícone, título e OK na mesma linha (centro do ícone) */
 #tree-edit-modal .dossier-title-row {
-  min-height: 34px;
+  min-height: 19px; /* -15px para subir a divisória e liberar espaço */
 }
 
 #tree-edit-modal #tree-edit-title {
   position: absolute;
   left: 50%;
-  top: calc(50% - 30px) !important; /* sobe +20px (era -10px) */
+  top: calc(50% - 45px) !important; /* sobe +15px */
   transform: translate(-50%, -50%);
   margin: 0;
   max-width: calc(100% - 150px);
@@ -2688,7 +2688,7 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
   right: -11px !important; /* 15px mais à direita (4 - 15) */
-  top: calc(50% - 30px) !important; /* sobe +20px (era -10px) */
+  top: calc(50% - 45px) !important; /* sobe +15px */
   transform: translateY(-50%);
   padding: 8px 14px;
   border-radius: 14px;

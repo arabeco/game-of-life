@@ -334,12 +334,14 @@ html[data-theme="void"] {
 }
 
 .hud::before {
-  left: 14px;
-  right: 14px;
+  left: 40px;
+  right: calc(50% + 34px);
 }
 
 .hud::after {
-  display: none;
+  left: calc(50% + 34px);
+  right: 40px;
+  display: block;
 }
 
 .hud-date {
@@ -374,8 +376,8 @@ html[data-theme="void"] {
 
 .hud-avatar {
   justify-self: center;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
   border: none;
@@ -397,7 +399,7 @@ html[data-theme="void"] {
 .hud-nick-frame {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 56%;
   transform: translate(-50%, -50%);
   padding: 1px 8px;
   border-radius: 999px;
@@ -439,11 +441,11 @@ html[data-theme="void"] {
   justify-content: center;
   position: absolute;
   left: 50%;
-  top: calc(50% + 12px);
+  top: calc(56% + 12px);
   transform: translateX(-50%);
-  width: 16px;
-  height: 16px;
-  font-size: 9px;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
   font-weight: 700;
   color: #f1d279;
   border: 1px solid rgba(212, 175, 55, 0.5);
@@ -2656,6 +2658,7 @@ html[data-status="oracle"] .sephirot {
   font-size: 12px;
   line-height: 1.2;
   white-space: normal;
+  text-align: center;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .slot-value {
@@ -2678,15 +2681,15 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .linked-arenas-list {
-  min-height: 200px;
+  min-height: 170px;
   height: auto;
   align-items: stretch;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .linked-arena {
-  min-height: 130px;
-  min-width: 110px;
-  padding: 8px 10px;
+  min-height: 115px;
+  min-width: 100px;
+  padding: 6px 8px;
   font-size: 11px;
   justify-content: space-between;
 }
@@ -2774,6 +2777,63 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .dossier-level {
   display: none;
+}
+
+#tree-edit-modal[data-asset-id="amor"] .dossier-level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.7);
+  background: rgba(10, 10, 10, 0.7);
+  color: #f1d279;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+#tree-edit-modal[data-asset-id="amor"] .dossier-title {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+#tree-edit-modal[data-asset-id="amor"] .dossier-title-row {
+  align-items: flex-start;
+}
+
+#tree-edit-modal[data-asset-id="amor"] .oracle-phrase {
+  text-align: center;
+}
+
+#tree-edit-modal[data-asset-id="amor"] .slot-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#tree-edit-modal[data-asset-id="amor"] .profile-slot {
+  align-items: center;
+  gap: 6px;
+}
+
+#tree-edit-modal[data-asset-id="amor"] .slot-label,
+#tree-edit-modal[data-asset-id="amor"] .slot-subtitle {
+  font-size: 10px;
+  text-align: center;
+}
+
+#tree-edit-modal[data-asset-id="amor"] .slot-value {
+  width: 100%;
+  max-width: 90px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+}
+
+#tree-edit-modal[data-asset-id="amor"] .slot-value.has-image {
+  height: auto;
+  flex: 0 0 auto;
 }
 
 .close-button {

@@ -186,10 +186,10 @@ const ASSET_TO_PHRASE = {
 };
 const PROTOCOL_SLOTS = {
   conexao: [
-    { id: "conexao.lema", label: "Lema", type: "rect-wide" },
-    { id: "conexao.crenca1", label: "Crenca 1", type: "rect" },
-    { id: "conexao.crenca2", label: "Crenca 2", type: "rect" },
-    { id: "conexao.crenca3", label: "Crenca 3", type: "rect" },
+    { id: "conexao.lema", label: "Lema de Vida", type: "rect-wide" },
+    { id: "conexao.crenca1", label: "Crenca Principal 1", type: "rect-wide" },
+    { id: "conexao.crenca2", label: "Crenca Principal 2", type: "rect-wide" },
+    { id: "conexao.crenca3", label: "Crenca Principal 3", type: "rect-wide" },
   ],
   espiritualidade: [
     { id: "espiritualidade.sistema", label: "Sistema", type: "rect" },
@@ -334,12 +334,14 @@ const PROTOCOL_SLOTS = {
 const getDossierSlots = (assetId) => {
   const base = PROTOCOL_SLOTS[assetId] || [];
   const lemaId = `${assetId}.lema`;
+  const lemaSlot = base.find((slot) => slot.id === lemaId);
   const withoutLema = base.filter((slot) => slot.id !== lemaId);
   if (assetId !== "conexao") {
     return withoutLema;
   }
-  const lemaSlot = { id: lemaId, label: "Lema", type: "rect-wide" };
-  return [lemaSlot, ...withoutLema];
+  return lemaSlot
+    ? [lemaSlot, ...withoutLema]
+    : [{ id: lemaId, label: "Lema", type: "rect-wide" }, ...withoutLema];
 };
 
 const getSlotOptions = () => {

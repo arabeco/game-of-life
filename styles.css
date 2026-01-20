@@ -581,12 +581,9 @@ html[data-theme="frost"] {
 }
 
 .arena-list {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  flex-wrap: wrap;
 }
 
 .arena-card {
@@ -595,15 +592,13 @@ html[data-theme="frost"] {
   align-items: flex-start;
   padding: 16px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(24, 24, 24, 0.9), rgba(10, 10, 10, 0.95));
-  border: 2px solid;
-  border-image: linear-gradient(135deg, #c0c0c0 0%, #f1f1f1 50%, #c0c0c0 100%) 1;
+  background: linear-gradient(135deg, rgba(26, 28, 34, 0.92), rgba(12, 14, 18, 0.95));
+  border: 1px solid rgba(210, 218, 230, 0.4);
   gap: 10px;
   position: relative;
-  width: 30%;
-  min-width: 220px;
-  max-width: 260px;
-  min-height: 260px;
+  min-height: 240px;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.6), 0 12px 22px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
 }
 
 .arena-title {
@@ -645,6 +640,48 @@ html[data-theme="frost"] {
 .arena-card .silver-button {
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(30, 30, 30, 0.95), rgba(12, 12, 12, 0.95));
+}
+
+.linked-arenas-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.linked-arena {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(26, 28, 34, 0.92), rgba(12, 14, 18, 0.95));
+  border: 1px solid rgba(210, 218, 230, 0.35);
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #d0d6e0;
+  min-height: 120px;
+}
+
+.linked-arena button {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(195, 199, 207, 0.4);
+  background: rgba(18, 18, 18, 0.9);
+  color: #d5d9e1;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .arena-list,
+  .linked-arenas-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .arena-list,
+  .linked-arenas-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dossier-level {

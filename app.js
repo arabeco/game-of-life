@@ -2694,7 +2694,7 @@ const openTreeEditor = (assetId) => {
   modal.dataset.assetId = asset.id;
   title.textContent = `${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
   const levelValue = Math.round(Number(asset.level || 0));
-  levelText.textContent = `Nivel ${levelValue}`;
+  levelText.textContent = String(levelValue);
   if (phraseText) {
     const phraseKey = ASSET_TO_PHRASE[asset.id];
     const phrases = phraseKey ? MASTERY_PHRASES[phraseKey] : [];

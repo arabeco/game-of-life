@@ -2584,6 +2584,75 @@ html[data-status="oracle"] .sephirot {
   z-index: 3;
 }
 
+#tree-edit-modal .dossier-header {
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+#tree-edit-modal #tree-edit-back {
+  display: none;
+}
+
+#tree-edit-modal .dossier-title {
+  flex: 1;
+  align-items: center;
+}
+
+#tree-edit-modal .dossier-title-row {
+  position: relative;
+  width: 100%;
+  justify-content: center;
+}
+
+#tree-edit-modal .dossier-icon {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#tree-edit-modal #tree-edit-level-text {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.7);
+  background: rgba(10, 10, 10, 0.7);
+  color: #f1d279;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#tree-edit-modal .dossier-actions {
+  position: absolute;
+  right: 16px;
+  top: 10px;
+}
+
+#tree-edit-modal #tree-edit-ok {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
+}
+
+#tree-edit-modal .dossier-body {
+  padding-bottom: 56px;
+}
+
+#tree-edit-modal .oracle-phrase {
+  min-height: 48px;
+  padding: 10px 12px;
+  line-height: 1.4;
+  font-size: clamp(14px, 4.4vw, 18px);
+}
+
 #tree-edit-modal .modal-card {
   width: min(1100px, 94vw);
   max-height: 84vh;

@@ -109,9 +109,6 @@
             <button class="toggle-button is-active" id="view-day">Dia</button>
             <button class="toggle-button" id="view-week">Semana</button>
           </div>
-          <div class="unschedule-drop" id="unschedule-drop">
-            Remover do Dia
-          </div>
           <div class="bronze-backlog" id="bronze-backlog">
             <div class="drawer-title">Acoes de Bronze</div>
             <div class="bronze-list" id="bronze-list"></div>
@@ -154,6 +151,14 @@
                 <input type="file" id="config-avatar-file" class="hidden-file" accept="image/*" />
                 <input type="file" id="config-banner-file" class="hidden-file" accept="image/*" />
               </div>
+              <div class="drawer-title">Banners Conquistaveis</div>
+              <div class="oracle-form">
+                <div class="oracle-row">
+                  <label for="config-law-years">Anos em Direito</label>
+                  <input type="number" id="config-law-years" min="0" max="50" />
+                </div>
+              </div>
+              <div class="banner-list" id="banner-list"></div>
             </div>
             <div class="config-section is-hidden" data-section="maestria">
               <div class="drawer-title">Maestria</div>

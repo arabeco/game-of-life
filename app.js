@@ -193,16 +193,17 @@ const PROTOCOL_SLOTS = {
   ],
   espiritualidade: [
     { id: "espiritualidade.sistema", label: "Sistema", type: "rect" },
-    { id: "espiritualidade.entidade1", label: "Entidade Lider", type: "square" },
-    { id: "espiritualidade.entidade2", label: "Entidade Protetora", type: "square" },
+    { id: "espiritualidade.entidade1", label: "Entidade Lider", type: "square-2" },
+    { id: "espiritualidade.entidade2", label: "Entidade Protetora", type: "square-2" },
   ],
   mente: [
-    { id: "mente.filosofia", label: "Filosofia", type: "rect-wide" },
+    { id: "mente.filosofia", label: "Filosofia Operacional", type: "rect-wide" },
   ],
   verdade: [
-    { id: "verdade.mtp", label: "MTP", type: "rect" },
-    { id: "verdade.mbti", label: "MBTI", type: "square" },
-    { id: "verdade.signo", label: "Signo", type: "square" },
+    { id: "verdade.mtp", label: "Missao de Vida", type: "rect-wide-tall" },
+    { id: "verdade.trait1", label: "Trait 1", type: "rect-small" },
+    { id: "verdade.trait2", label: "Trait 2", type: "rect-small" },
+    { id: "verdade.trait3", label: "Trait 3", type: "rect-small" },
     {
       id: "verdade.nascimento",
       label: "Nascimento",
@@ -212,33 +213,41 @@ const PROTOCOL_SLOTS = {
         { key: "mes", label: "Mes", slider: { min: 1, max: 12, step: 1, unit: "" } },
       ],
     },
+    { id: "verdade.signo", label: "Signo", type: "rect-small" },
+    { id: "verdade.mbti", label: "MBTI", type: "rect-small" },
+    { id: "verdade.foto1", label: "Foto 1", type: "square-2" },
+    { id: "verdade.foto2", label: "Foto 2", type: "square-2" },
+    { id: "verdade.foto3", label: "Foto 3", type: "square-2" },
   ],
   inspiracao: [
     {
       id: "inspiracao.proj1",
       label: "Projeto 1",
-      type: "square",
+      type: "square-2",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "foto", label: "Logo" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "Progresso" },
       ],
     },
     {
       id: "inspiracao.proj2",
       label: "Projeto 2",
-      type: "square",
+      type: "square-2",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "foto", label: "Logo" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "Progresso" },
       ],
     },
     {
       id: "inspiracao.proj3",
       label: "Projeto 3",
-      type: "square",
+      type: "square-2",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "foto", label: "Logo" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "Progresso" },
       ],
     },
   ],
@@ -246,29 +255,31 @@ const PROTOCOL_SLOTS = {
     {
       id: "amor.intimo",
       label: "Circulo Intimo",
-      type: "square",
+      type: "square-2",
       fields: [
         { key: "nome", label: "Nome" },
+        { key: "titulo", label: "Titulo" },
         { key: "foto", label: "Foto" },
       ],
     },
     {
       id: "amor.guerra",
       label: "Irmaos de Guerra",
-      type: "square",
+      type: "square-2",
       fields: [
         { key: "nome", label: "Nome" },
+        { key: "titulo", label: "Titulo" },
         { key: "foto", label: "Foto" },
       ],
     },
   ],
   abundancia: [
-    { id: "abundancia.renda", label: "Renda", type: "rect", fields: [{ key: "valor", label: "Renda", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
-    { id: "abundancia.gasto", label: "Gasto", type: "rect", fields: [{ key: "valor", label: "Gasto", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
-    { id: "abundancia.liquidez", label: "Liquidez", type: "rect", fields: [{ key: "valor", label: "Liquidez", slider: { min: 0, max: 200000, step: 100, unit: "R$" } }] },
-    { id: "abundancia.ativo1", label: "Ativo 1", type: "square" },
-    { id: "abundancia.ativo2", label: "Ativo 2", type: "square" },
-    { id: "abundancia.ativo3", label: "Ativo 3", type: "square" },
+    { id: "abundancia.renda", label: "Renda Mensal", type: "rect-wide", fields: [{ key: "valor", label: "Renda", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
+    { id: "abundancia.gasto", label: "Gasto Mensal", type: "rect-wide", fields: [{ key: "valor", label: "Gasto", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
+    { id: "abundancia.liquidez", label: "Liquidez", type: "rect-wide", fields: [{ key: "valor", label: "Liquidez", slider: { min: 0, max: 200000, step: 100, unit: "R$" } }] },
+    { id: "abundancia.ativo1", label: "Ativo 1", type: "square-2" },
+    { id: "abundancia.ativo2", label: "Ativo 2", type: "square-2" },
+    { id: "abundancia.ativo3", label: "Ativo 3", type: "square-2" },
   ],
   trabalho: [
     { id: "trabalho.pec", label: "Classe 1", type: "rect" },
@@ -281,39 +292,42 @@ const PROTOCOL_SLOTS = {
     {
       id: "autenticidade.hobby1",
       label: "Hobby 1",
-      type: "square",
+      type: "square-2",
       fields: [
         { key: "hobby", label: "Hobby" },
+        { key: "logo", label: "Logo" },
         { key: "rank", label: "Rank" },
       ],
     },
     {
       id: "autenticidade.hobby2",
       label: "Hobby 2",
-      type: "square",
+      type: "square-2",
       fields: [
         { key: "hobby", label: "Hobby" },
+        { key: "logo", label: "Logo" },
         { key: "rank", label: "Rank" },
       ],
     },
     {
       id: "autenticidade.hobby3",
       label: "Hobby 3",
-      type: "square",
+      type: "square-2",
       fields: [
         { key: "hobby", label: "Hobby" },
+        { key: "logo", label: "Logo" },
         { key: "rank", label: "Rank" },
       ],
     },
   ],
   fisico: [
-    { id: "fisico.peso", label: "Peso", type: "rect", fields: [{ key: "kg", label: "Peso", slider: { min: 40, max: 200, step: 1, unit: "kg" } }] },
-    { id: "fisico.altura", label: "Altura", type: "rect", fields: [{ key: "cm", label: "Altura", slider: { min: 140, max: 220, step: 1, unit: "cm" } }] },
-    { id: "fisico.gordura", label: "%G", type: "rect", fields: [{ key: "percent", label: "%G", slider: { min: 5, max: 40, step: 1, unit: "%" } }] },
-    { id: "fisico.flexao", label: "Flexao", type: "square", fields: [{ key: "reps", label: "Reps", slider: { min: 0, max: 200, step: 1, unit: "x" } }] },
-    { id: "fisico.barra", label: "Barra", type: "square", fields: [{ key: "reps", label: "Reps", slider: { min: 0, max: 50, step: 1, unit: "x" } }] },
-    { id: "fisico.corrida1", label: "Corrida 1km", type: "square", fields: [{ key: "min", label: "Min", slider: { min: 3, max: 20, step: 1, unit: "min" } }] },
-    { id: "fisico.corrida5", label: "Corrida 5km", type: "square", fields: [{ key: "min", label: "Min", slider: { min: 12, max: 60, step: 1, unit: "min" } }] },
+    { id: "fisico.peso", label: "Peso", type: "rect-small", fields: [{ key: "kg", label: "Peso", slider: { min: 40, max: 200, step: 1, unit: "kg" } }] },
+    { id: "fisico.altura", label: "Altura", type: "rect-small", fields: [{ key: "cm", label: "Altura", slider: { min: 140, max: 220, step: 1, unit: "cm" } }] },
+    { id: "fisico.gordura", label: "%G", type: "rect-small", fields: [{ key: "percent", label: "%G", slider: { min: 5, max: 40, step: 1, unit: "%" } }] },
+    { id: "fisico.flexao", label: "Flexao", type: "rect-tall", fields: [{ key: "reps", label: "Reps", slider: { min: 0, max: 200, step: 1, unit: "x" } }] },
+    { id: "fisico.barra", label: "Barra", type: "rect-tall", fields: [{ key: "reps", label: "Reps", slider: { min: 0, max: 50, step: 1, unit: "x" } }] },
+    { id: "fisico.corrida1", label: "Corrida 1km", type: "rect-tall", fields: [{ key: "min", label: "Min", slider: { min: 3, max: 20, step: 1, unit: "min" } }] },
+    { id: "fisico.corrida5", label: "Corrida 5km", type: "rect-tall", fields: [{ key: "min", label: "Min", slider: { min: 12, max: 60, step: 1, unit: "min" } }] },
   ],
 };
 
@@ -1485,6 +1499,16 @@ const renderArenas = () => {
     } else {
       progress.textContent = `${Math.round(completionValue)}%`;
     }
+    const description = document.createElement("div");
+    description.className = "arena-description";
+    description.textContent = arena.description || "Sem descricao";
+    const meta = document.createElement("div");
+    meta.className = "arena-meta";
+    if (arena.targetCount) {
+      meta.textContent = `Meta: ${arena.targetCount}`;
+    } else {
+      meta.textContent = `Meta: ${Math.round(completionValue)}%`;
+    }
     const progressBar = document.createElement("div");
     progressBar.className = "arena-progress-bar";
     const progressFill = document.createElement("div");
@@ -1529,10 +1553,12 @@ const renderArenas = () => {
       renderPlanner();
     });
     card.appendChild(title);
-    card.appendChild(progress);
     card.appendChild(assetLabel);
-    card.appendChild(addBronze);
+    card.appendChild(description);
+    card.appendChild(meta);
+    card.appendChild(progress);
     card.appendChild(progressBar);
+    card.appendChild(addBronze);
     arenaList.appendChild(card);
   });
 };
@@ -1960,6 +1986,17 @@ const renderTreeEditorSlots = (dna, assetId) => {
     valueEl.className = "slot-value";
     valueEl.textContent = getSlotDisplayText(slot) || "—";
     slotEl.appendChild(valueEl);
+    const fields = slot.fields || [{ key: "value", label: slot.label }];
+    const secondaryField = fields.find(
+      (field, index) => index > 0 && !["foto", "logo"].includes(field.key),
+    );
+    if (secondaryField) {
+      const secondaryValue = asset.profileSlots?.[slot.id]?.[secondaryField.key];
+      const subtitleEl = document.createElement("div");
+      subtitleEl.className = "slot-subtitle";
+      subtitleEl.textContent = secondaryValue ? String(secondaryValue) : "";
+      slotEl.appendChild(subtitleEl);
+    }
 
     const iconName = SLOT_ICON_BY_ID[slot.id];
     if (iconName) {
@@ -1974,9 +2011,6 @@ const renderTreeEditorSlots = (dna, assetId) => {
       (slot.label.toLowerCase().includes("foto") ||
         slot.label.toLowerCase().includes("logo") ||
         (slot.fields || []).some((field) => ["foto", "logo"].includes(field.key)));
-    if (isPhotoSlot) {
-      slotEl.classList.add("profile-slot--square-large");
-    }
     if (isPhotoSlot) {
       const fileInput = document.createElement("input");
       fileInput.type = "file";
@@ -2013,7 +2047,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
       });
     }
 
-    const fields = slot.fields || [{ key: "value", label: slot.label }];
+    const subtitle = slotEl.querySelector(".slot-subtitle");
     fields.forEach((field) => {
       const input = document.createElement("input");
       input.className = "profile-input";
@@ -2054,6 +2088,13 @@ const renderTreeEditorSlots = (dna, assetId) => {
                 }
               }
               valueEl.textContent = getSlotDisplayText(slot) || "—";
+              const secondary = secondaryField?.key;
+              if (subtitle) {
+                subtitle.textContent =
+                  secondary && asset.profileSlots?.[slot.id]?.[secondary]
+                    ? String(asset.profileSlots[slot.id][secondary])
+                    : "";
+              }
               dna.lastUpdatedAt = new Date().toISOString();
               saveDNA(dna);
               renderSocial();
@@ -2068,6 +2109,13 @@ const renderTreeEditorSlots = (dna, assetId) => {
           [field.key]: input.value,
         };
         valueEl.textContent = getSlotDisplayText(slot) || "—";
+        const secondary = secondaryField?.key;
+        if (subtitle) {
+          subtitle.textContent =
+            secondary && asset.profileSlots?.[slot.id]?.[secondary]
+              ? String(asset.profileSlots[slot.id][secondary])
+              : "";
+        }
         dna.lastUpdatedAt = new Date().toISOString();
         saveDNA(dna);
         renderSocial();
@@ -2111,7 +2159,7 @@ const openTreeEditor = (assetId) => {
   const linkedArenasList = document.getElementById("linked-arenas-list");
   if (!modal || !title || !levelText) return;
   modal.dataset.assetId = asset.id;
-  title.textContent = `Editar ${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
+  title.textContent = `${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
   const levelValue = Math.round(Number(asset.level || 0));
   levelText.textContent = `Nivel ${levelValue}`;
   if (phraseText) {
@@ -3618,6 +3666,8 @@ const initApp = () => {
   const configIdentity = document.getElementById("config-identity");
   const configSaveProfile = document.getElementById("config-save-profile");
   const configLogout = document.getElementById("config-logout");
+  const configLawYears = document.getElementById("config-law-years");
+  const bannerList = document.getElementById("banner-list");
   const configProfile = loadProfile();
   if (configIdentity) {
     configIdentity.value = configProfile.userId || configProfile.nickname || "";
@@ -3635,6 +3685,53 @@ const initApp = () => {
       renderSocial();
     });
   }
+  if (configLawYears) {
+    configLawYears.value = String(configProfile.lawYears || 0);
+    configLawYears.addEventListener("input", () => {
+      const profile = loadProfile();
+      const next = { ...profile, lawYears: Number(configLawYears.value || 0) };
+      saveProfile(next);
+    });
+  }
+  const renderBanners = () => {
+    if (!bannerList) return;
+    const profile = loadProfile();
+    const rewards = [
+      {
+        id: "direito",
+        title: "PROFICIENCIA EM DIREITO",
+        requirement: "Advogado por 5+ anos",
+        unlocked: Number(profile.lawYears || 0) >= 5,
+      },
+    ];
+    bannerList.innerHTML = "";
+    rewards.forEach((reward) => {
+      const card = document.createElement("div");
+      card.className = `banner-card${reward.unlocked ? " is-unlocked" : ""}`;
+      const title = document.createElement("div");
+      title.className = "banner-title";
+      title.textContent = reward.title;
+      const req = document.createElement("div");
+      req.className = "banner-requirement";
+      req.textContent = reward.requirement;
+      const btn = document.createElement("button");
+      btn.className = "silver-button";
+      btn.type = "button";
+      btn.textContent = reward.unlocked ? "Aplicar" : "Bloqueado";
+      btn.disabled = !reward.unlocked;
+      btn.addEventListener("click", () => {
+        const updated = { ...loadProfile(), banner: reward.title };
+        saveProfile(updated);
+        ensureSupabaseProfile(updated);
+        syncProfileTotals(updated);
+      });
+      card.appendChild(title);
+      card.appendChild(req);
+      card.appendChild(btn);
+      bannerList.appendChild(card);
+    });
+  };
+  renderBanners();
   if (configSaveProfile) {
     configSaveProfile.addEventListener("click", async () => {
       configSaveProfile.classList.remove("is-saved");

@@ -586,6 +586,7 @@ html[data-theme="frost"] {
   gap: 16px;
   overflow-x: auto;
   padding-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .arena-card {
@@ -593,24 +594,37 @@ html[data-theme="frost"] {
   flex-direction: column;
   align-items: flex-start;
   padding: 16px;
-  border-radius: 18px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(24, 24, 24, 0.9), rgba(10, 10, 10, 0.95));
   border: 2px solid;
   border-image: linear-gradient(135deg, #c0c0c0 0%, #f1f1f1 50%, #c0c0c0 100%) 1;
   gap: 10px;
   position: relative;
-  min-width: 260px;
-  max-width: 280px;
+  width: 30%;
+  min-width: 220px;
+  max-width: 260px;
+  min-height: 260px;
 }
 
 .arena-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
 
 .arena-progress {
   font-size: 12px;
   color: rgba(195, 199, 207, 0.8);
+}
+
+.arena-progress-bar {
+  margin-top: auto;
+}
+
+.arena-description {
+  font-size: 12px;
+  color: rgba(229, 229, 229, 0.7);
 }
 
 .arena-description {
@@ -1181,7 +1195,7 @@ html[data-theme="frost"] {
   left: 12px;
   right: 12px;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(229, 229, 229, 0.7);
   letter-spacing: 0.6px;
   text-transform: uppercase;
@@ -1197,7 +1211,7 @@ html[data-theme="frost"] {
 }
 
 .checklist-card {
-  width: min(420px, 92vw);
+  width: min(360px, 90vw);
 }
 
 .checklist-list {
@@ -1270,6 +1284,14 @@ html[data-theme="frost"] {
 
 .checklist-add {
   width: 100%;
+  justify-content: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.checklist-ok {
+  width: 100%;
+  margin-top: 8px;
   justify-content: center;
   display: inline-flex;
   gap: 8px;
@@ -2334,8 +2356,8 @@ html[data-status="oracle"] .sephirot {
 
 .bronze-block {
   position: absolute;
-  left: 28px;
-  right: 12px;
+  left: 72px;
+  right: 8px;
   border-radius: 10px;
   border: 1px solid rgba(182, 128, 74, 0.6);
   background: rgba(24, 18, 14, 0.92);

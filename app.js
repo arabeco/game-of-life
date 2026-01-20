@@ -1319,7 +1319,7 @@ const buildBronzeBlock = (action) => {
   block.className = "bronze-block";
   block.dataset.id = action.id;
   if (action.status === "done") block.classList.add("done");
-  if (action.status === "scheduled") {
+  if (action.status === "scheduled" || action.status === "done") {
     block.draggable = true;
     block.addEventListener("dragstart", (event) => {
       event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
@@ -1336,16 +1336,22 @@ const buildBronzeBlock = (action) => {
   checkmark.innerHTML = '<i data-lucide="check"></i>';
 
   const startPress = () => {
-    if (action.status === "done") return;
     block.classList.add("is-pressing");
     const timer = setTimeout(() => {
       const planner = loadPlanner();
       const updated = planner.bronzeActions.map((item) => {
         if (item.id !== action.id) return item;
+        if (item.status === "done") {
+          return { ...item, status: "scheduled", completedAt: undefined };
+        }
         return { ...item, status: "done", completedAt: new Date().toISOString() };
       });
       savePlanner({ ...planner, bronzeActions: updated });
-      updateArenaCountsForBronze(action.arenaId, 1);
+      if (action.status === "done") {
+        updateArenaCountsForBronze(action.arenaId, -1);
+      } else {
+        updateArenaCountsForBronze(action.arenaId, 1);
+      }
       renderPlanner();
       renderArenas();
       checkMissionProgress();
@@ -1518,16 +1524,7 @@ const renderArenas = () => {
     const assetLabel = document.createElement("div");
     assetLabel.className = "arena-progress";
     assetLabel.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
-    const addBronze = document.createElement("button");
-    addBronze.className = "silver-button";
-    addBronze.type = "button";
-    addBronze.textContent = "Adicionar Bronze";
-    addBronze.addEventListener("click", (event) => {
-      event.stopPropagation();
-      openBronzeModal(arena.id);
-    });
     card.addEventListener("click", (event) => {
-      if (event.target === addBronze) return;
       openArenaDossier(arena.id);
     });
     card.addEventListener("dragover", (event) => {
@@ -1558,7 +1555,6 @@ const renderArenas = () => {
     card.appendChild(meta);
     card.appendChild(progress);
     card.appendChild(progressBar);
-    card.appendChild(addBronze);
     arenaList.appendChild(card);
   });
 };
@@ -3028,6 +3024,7 @@ const initPlanner = () => {
   const checklistModal = document.getElementById("checklist-modal");
   const checklistClose = document.getElementById("checklist-close");
   const checklistAdd = document.getElementById("checklist-add");
+  const checklistOk = document.getElementById("checklist-ok");
   const checklistList = document.getElementById("checklist-list");
   const renderChecklistModal = (focusId) => {
     if (!checklistList) return;
@@ -3110,6 +3107,9 @@ const initPlanner = () => {
       renderChecklistModal(id);
     });
   }
+  if (checklistOk && checklistModal) {
+    checklistOk.addEventListener("click", () => checklistModal.classList.remove("is-open"));
+  }
   const dayPrev = document.getElementById("day-prev");
   const dayNext = document.getElementById("day-next");
   if (dayPrev) dayPrev.addEventListener("click", () => setPlannerDayOffset(plannerDayOffset - 1));
@@ -3142,7 +3142,6 @@ const initPlanner = () => {
   const timeline = document.getElementById("timeline");
   const bronzeBacklog = document.querySelector(".bronze-backlog");
   const weekGrid = document.getElementById("week-grid");
-  const unscheduleDrop = document.getElementById("unschedule-drop");
   const setView = (mode) => {
     if (viewDay && viewWeek) {
       viewDay.classList.toggle("is-active", mode === "day");
@@ -3169,47 +3168,20 @@ const initPlanner = () => {
       const planner = loadPlanner();
       const updated = planner.bronzeActions.map((action) => {
         if (action.id !== actionId) return action;
+        if (action.status === "done") updateArenaCountsForBronze(action.arenaId, -1);
         return {
           ...action,
           status: "backlog",
           scheduledHour: undefined,
           scheduledMinute: undefined,
           scheduledDayOffset: undefined,
+          completedAt: undefined,
           locked: false,
         };
       });
       savePlanner({ ...planner, bronzeActions: updated });
       renderPlanner();
       checkMissionProgress();
-    });
-  }
-  if (unscheduleDrop) {
-    unscheduleDrop.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      unscheduleDrop.classList.add("is-over");
-    });
-    unscheduleDrop.addEventListener("dragleave", () => {
-      unscheduleDrop.classList.remove("is-over");
-    });
-    unscheduleDrop.addEventListener("drop", (event) => {
-      event.preventDefault();
-      unscheduleDrop.classList.remove("is-over");
-      const payload = event.dataTransfer?.getData("text/plain");
-      if (!payload || !payload.startsWith("bronze:")) return;
-      const actionId = payload.replace("bronze:", "");
-      const planner = loadPlanner();
-      const updated = planner.bronzeActions.map((action) => {
-        if (action.id !== actionId) return action;
-        return {
-          ...action,
-          status: "backlog",
-          scheduledHour: undefined,
-          scheduledMinute: undefined,
-          scheduledDayOffset: undefined,
-        };
-      });
-      savePlanner({ ...planner, bronzeActions: updated });
-      renderPlanner();
     });
   }
 };

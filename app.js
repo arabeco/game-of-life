@@ -2211,9 +2211,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
       }
       slotEl.addEventListener("click", (event) => {
         if (!event.target.closest(".slot-value")) return;
-        if (!slotEl.closest("#tree-edit-modal.is-editing")) {
-          if (!ensureTreeEditMode()) return;
-        }
+        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
         fileInput.click();
       });
     }
@@ -2366,9 +2364,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
     slotEl.addEventListener("click", (event) => {
       if (isPhotoSlot) {
         if (!event.target.closest(".slot-value")) return;
-        if (!slotEl.closest("#tree-edit-modal.is-editing")) {
-          if (!ensureTreeEditMode()) return;
-        }
+        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
         const file = slotEl.querySelector("input[type='file']");
         if (file) file.click();
         return;

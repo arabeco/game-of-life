@@ -1416,6 +1416,25 @@ html[data-theme="void"] {
   aspect-ratio: auto;
 }
 
+#tree-edit-modal .profile-slot {
+  max-height: 260px;
+  padding: 10px;
+}
+
+#tree-edit-modal .slot-value.has-image {
+  height: 120px;
+  flex: 0 0 120px;
+}
+
+#tree-edit-modal .oracle-phrase {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+#tree-edit-modal .dossier-level {
+  font-size: 16px;
+}
+
 .profile-slot--square .slot-value,
 .profile-slot--square-2 .slot-value,
 .profile-slot--square-large .slot-value {
@@ -2502,6 +2521,8 @@ html[data-status="oracle"] .sephirot {
   max-height: none;
   overflow: visible;
   width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
 }
 
 #tree-edit-modal .linked-arenas {

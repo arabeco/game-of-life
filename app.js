@@ -3217,36 +3217,33 @@ const initMoodBar = () => {
   const bar = document.querySelector(".integrity-bar");
   const modal = document.getElementById("mood-modal");
   const close = document.getElementById("mood-close");
-  const row = document.getElementById("mood-row");
-  if (!bar || !modal || !row) return;
+  const range = document.getElementById("mood-range");
+  const label = document.getElementById("mood-label");
+  if (!bar || !modal || !range || !label) return;
   const moods = [
-    { label: "Calmo", level: 20, color: "linear-gradient(90deg, #5aa9e6, #3f83c9)" },
-    { label: "Neutro", level: 50, color: "linear-gradient(90deg, #b8c1c9, #7d8b99)" },
-    { label: "Focado", level: 70, color: "linear-gradient(90deg, #7ddf64, #2cbf6b)" },
-    { label: "Irritado", level: 35, color: "linear-gradient(90deg, #ff9f1c, #ff6b6b)" },
-    { label: "Inspirado", level: 85, color: "linear-gradient(90deg, #d4af37, #f1d279)" },
-    { label: "Euforico", level: 95, color: "linear-gradient(90deg, #b14cff, #7f5cff)" },
+    { label: "Calmo", min: 0, max: 20, color: "linear-gradient(90deg, #5aa9e6, #3f83c9)" },
+    { label: "Neutro", min: 21, max: 45, color: "linear-gradient(90deg, #b8c1c9, #7d8b99)" },
+    { label: "Focado", min: 46, max: 70, color: "linear-gradient(90deg, #7ddf64, #2cbf6b)" },
+    { label: "Inspirado", min: 71, max: 85, color: "linear-gradient(90deg, #d4af37, #f1d279)" },
+    { label: "Euforico", min: 86, max: 100, color: "linear-gradient(90deg, #b14cff, #7f5cff)" },
   ];
-  const render = () => {
-    row.innerHTML = "";
-    moods.forEach((mood) => {
-      const btn = document.createElement("button");
-      btn.className = "mood-pill";
-      btn.type = "button";
-      btn.textContent = mood.label;
-      btn.addEventListener("click", () => {
-        const profile = loadProfile();
-        saveProfile({ ...profile, moodLevel: mood.level, moodColor: mood.color });
-        updateIntegrityBar();
-        modal.classList.remove("is-open");
-      });
-      row.appendChild(btn);
-    });
+  const resolveMood = (value) =>
+    moods.find((mood) => value >= mood.min && value <= mood.max) || moods[1];
+  const applyMood = (value) => {
+    const mood = resolveMood(value);
+    label.textContent = mood.label;
+    const profile = loadProfile();
+    saveProfile({ ...profile, moodLevel: value, moodColor: mood.color });
+    updateIntegrityBar();
   };
   bar.addEventListener("click", () => {
-    render();
+    const profile = loadProfile();
+    const current = Number(profile.moodLevel);
+    range.value = Number.isNaN(current) ? 50 : current;
+    applyMood(Number(range.value));
     modal.classList.add("is-open");
   });
+  range.addEventListener("input", () => applyMood(Number(range.value)));
   if (close) close.addEventListener("click", () => modal.classList.remove("is-open"));
 };
 

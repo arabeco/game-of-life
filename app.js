@@ -320,8 +320,11 @@ const PROTOCOL_SLOTS = {
 const getDossierSlots = (assetId) => {
   const base = PROTOCOL_SLOTS[assetId] || [];
   const lemaId = `${assetId}.lema`;
-  const lemaSlot = { id: lemaId, label: "Lema", type: "rect-wide" };
   const withoutLema = base.filter((slot) => slot.id !== lemaId);
+  if (assetId !== "conexao") {
+    return withoutLema;
+  }
+  const lemaSlot = { id: lemaId, label: "Lema", type: "rect-wide" };
   return [lemaSlot, ...withoutLema];
 };
 
@@ -469,7 +472,6 @@ const applySupabaseProfileToLocal = (row) => {
     userId: identity,
     banner: row.lema ?? profile.banner,
     avatar: row.avatar_url ?? profile.avatar,
-    status: row.status ?? profile.status,
     total_level: typeof row.total_level === "number" ? row.total_level : profile.total_level,
   };
   saveProfile(updated);
@@ -553,7 +555,6 @@ const ensureProfilesRow = async (user) => {
         handle: formatHandle(fallbackName),
         lema: profile.banner || "",
         avatar_url: profile.avatar || "",
-        status: profile.status || "sovereign",
         total_level: Number(profile.total_level || 0),
       };
       if (useUserIdOnly) delete payload.id;
@@ -882,7 +883,6 @@ const syncProfileTotals = async (nextProfile = {}) => {
       handle: formatHandle(profile.userId || profile.nickname || ""),
       lema: profile.banner || "",
       avatar_url: profile.avatar || "",
-      status: profile.status || "sovereign",
       total_level: Number(profile.total_level || 0),
     };
     return await upsertProfileRow(payload);
@@ -1962,9 +1962,13 @@ const renderTreeEditorSlots = (dna, assetId) => {
     }
 
     const isPhotoSlot =
-      slot.type === "square" &&
+      slot.type.startsWith("square") &&
       (slot.label.toLowerCase().includes("foto") ||
-        (slot.fields || []).some((field) => field.key === "foto"));
+        slot.label.toLowerCase().includes("logo") ||
+        (slot.fields || []).some((field) => ["foto", "logo"].includes(field.key)));
+    if (isPhotoSlot) {
+      slotEl.classList.add("profile-slot--square-large");
+    }
     if (isPhotoSlot) {
       const fileInput = document.createElement("input");
       fileInput.type = "file";
@@ -2333,6 +2337,12 @@ const renderProfileWidgetDisplay = (profile, dna) => {
     return slot?.label || slotId.split(".").slice(1).join(" ") || "Slot";
   };
 
+  const getSlotType = (assetId, slotId) => {
+    const slots = getDossierSlots(assetId);
+    const slot = slots.find((item) => item.id === slotId);
+    return slot?.type || "rect";
+  };
+
   const getSlotValue = (asset, slotId) => {
     const data = asset.profileSlots?.[slotId] || {};
     const slots = getDossierSlots(asset.id);
@@ -2349,9 +2359,12 @@ const renderProfileWidgetDisplay = (profile, dna) => {
     if (!asset) return;
     const value = getSlotValue(asset, ref.slotId);
     const label = getSlotLabel(ref.assetId, ref.slotId);
+    const type = getSlotType(ref.assetId, ref.slotId);
     const image = asset.profileSlots?.[ref.slotId]?.image;
     const card = document.createElement("div");
-    card.className = `widget-card${image ? " has-image" : ""}`;
+    card.className = `widget-card${image ? " has-image" : ""}${
+      type === "rect-wide" ? " is-wide" : ""
+    }`;
     if (image) card.style.backgroundImage = `url(${image})`;
     const labelEl = document.createElement("div");
     labelEl.className = "widget-label";

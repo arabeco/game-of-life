@@ -482,6 +482,16 @@ html[data-theme="frost"] {
   transition: box-shadow 0.4s ease, background 0.4s ease, opacity 0.4s ease;
 }
 
+.sephirot::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 70%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 .sephirot.is-empty {
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.2));
   border: 2px solid rgba(212, 175, 55, 0.4);
@@ -526,6 +536,20 @@ html[data-theme="frost"] {
   background: radial-gradient(circle, rgba(212, 175, 55, 0.25), transparent 60%);
   animation: vitality-flare 2.4s ease-in-out infinite;
   pointer-events: none;
+}
+
+.sephirot.state-dim {
+  filter: grayscale(0.4) brightness(0.75);
+  opacity: 0.6;
+}
+
+.sephirot.state-recent {
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.55), inset 0 0 12px rgba(0, 0, 0, 0.7);
+}
+
+.sephirot.state-goal {
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.8), inset 0 0 12px rgba(0, 0, 0, 0.7);
+  animation: vitality-pulse 1.6s ease-in-out infinite;
 }
 
 .sephirot.vitality-fossil {
@@ -1019,6 +1043,39 @@ html[data-theme="frost"] {
   justify-content: center;
   display: inline-flex;
   gap: 8px;
+}
+
+.slider-card {
+  width: min(360px, 90vw);
+}
+
+.slider-body {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+.slider-value {
+  font-size: 18px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #f1f1f1;
+}
+
+.slider-track {
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#slider-input {
+  writing-mode: bt-lr;
+  appearance: none;
+  -webkit-appearance: slider-vertical;
+  width: 12px;
+  height: 220px;
+  accent-color: #d4af37;
 }
 
 .slot-label.bottom {

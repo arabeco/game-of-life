@@ -197,20 +197,21 @@ const PROTOCOL_SLOTS = {
     { id: "espiritualidade.entidade2", label: "Entidade Protetora", type: "square" },
   ],
   mente: [
-    { id: "mente.filosofia", label: "Filosofia", type: "rect" },
-    { id: "mente.flow", label: "Freq. Flow", type: "square" },
-    { id: "mente.meditacao", label: "Meditacao", type: "square" },
+    { id: "mente.filosofia", label: "Filosofia", type: "rect-wide" },
   ],
   verdade: [
     { id: "verdade.mtp", label: "MTP", type: "rect" },
     { id: "verdade.mbti", label: "MBTI", type: "square" },
     { id: "verdade.signo", label: "Signo", type: "square" },
-    { id: "verdade.trait1", label: "Trait 1", type: "rect-small" },
-    { id: "verdade.trait2", label: "Trait 2", type: "rect-small" },
-    { id: "verdade.trait3", label: "Trait 3", type: "rect-small" },
-    { id: "verdade.foto1", label: "Foto 1", type: "square" },
-    { id: "verdade.foto2", label: "Foto 2", type: "square" },
-    { id: "verdade.foto3", label: "Foto 3", type: "square" },
+    {
+      id: "verdade.nascimento",
+      label: "Nascimento",
+      type: "rect-small",
+      fields: [
+        { key: "dia", label: "Dia", slider: { min: 1, max: 31, step: 1, unit: "" } },
+        { key: "mes", label: "Mes", slider: { min: 1, max: 12, step: 1, unit: "" } },
+      ],
+    },
   ],
   inspiracao: [
     {
@@ -219,7 +220,7 @@ const PROTOCOL_SLOTS = {
       type: "square",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "progresso", label: "%" },
+        { key: "foto", label: "Logo" },
       ],
     },
     {
@@ -228,7 +229,7 @@ const PROTOCOL_SLOTS = {
       type: "square",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "progresso", label: "%" },
+        { key: "foto", label: "Logo" },
       ],
     },
     {
@@ -237,7 +238,7 @@ const PROTOCOL_SLOTS = {
       type: "square",
       fields: [
         { key: "nome", label: "Nome" },
-        { key: "progresso", label: "%" },
+        { key: "foto", label: "Logo" },
       ],
     },
   ],
@@ -262,17 +263,19 @@ const PROTOCOL_SLOTS = {
     },
   ],
   abundancia: [
-    { id: "abundancia.renda", label: "Renda", type: "rect" },
-    { id: "abundancia.gasto", label: "Gasto", type: "rect" },
-    { id: "abundancia.liquidez", label: "Liquidez", type: "rect" },
+    { id: "abundancia.renda", label: "Renda", type: "rect", fields: [{ key: "valor", label: "Renda", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
+    { id: "abundancia.gasto", label: "Gasto", type: "rect", fields: [{ key: "valor", label: "Gasto", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
+    { id: "abundancia.liquidez", label: "Liquidez", type: "rect", fields: [{ key: "valor", label: "Liquidez", slider: { min: 0, max: 200000, step: 100, unit: "R$" } }] },
     { id: "abundancia.ativo1", label: "Ativo 1", type: "square" },
     { id: "abundancia.ativo2", label: "Ativo 2", type: "square" },
     { id: "abundancia.ativo3", label: "Ativo 3", type: "square" },
   ],
   trabalho: [
-    { id: "trabalho.pec", label: "PEC", type: "rect" },
-    { id: "trabalho.unip", label: "UNIP", type: "rect" },
-    { id: "trabalho.personal", label: "Personal", type: "rect" },
+    { id: "trabalho.pec", label: "Classe 1", type: "rect" },
+    { id: "trabalho.unip", label: "Classe 2", type: "rect" },
+    { id: "trabalho.personal", label: "Classe 3", type: "rect" },
+    { id: "trabalho.cursos", label: "Cursos", type: "rect-wide" },
+    { id: "trabalho.historico", label: "Historico", type: "rect-wide" },
   ],
   autenticidade: [
     {
@@ -304,12 +307,13 @@ const PROTOCOL_SLOTS = {
     },
   ],
   fisico: [
-    { id: "fisico.peso", label: "Peso", type: "rect" },
-    { id: "fisico.altura", label: "Altura", type: "rect" },
-    { id: "fisico.gordura", label: "%G", type: "rect" },
-    { id: "fisico.flexao", label: "Flexao", type: "square" },
-    { id: "fisico.barra", label: "Barra", type: "square" },
-    { id: "fisico.corrida", label: "Corrida", type: "square" },
+    { id: "fisico.peso", label: "Peso", type: "rect", fields: [{ key: "kg", label: "Peso", slider: { min: 40, max: 200, step: 1, unit: "kg" } }] },
+    { id: "fisico.altura", label: "Altura", type: "rect", fields: [{ key: "cm", label: "Altura", slider: { min: 140, max: 220, step: 1, unit: "cm" } }] },
+    { id: "fisico.gordura", label: "%G", type: "rect", fields: [{ key: "percent", label: "%G", slider: { min: 5, max: 40, step: 1, unit: "%" } }] },
+    { id: "fisico.flexao", label: "Flexao", type: "square", fields: [{ key: "reps", label: "Reps", slider: { min: 0, max: 200, step: 1, unit: "x" } }] },
+    { id: "fisico.barra", label: "Barra", type: "square", fields: [{ key: "reps", label: "Reps", slider: { min: 0, max: 50, step: 1, unit: "x" } }] },
+    { id: "fisico.corrida1", label: "Corrida 1km", type: "square", fields: [{ key: "min", label: "Min", slider: { min: 3, max: 20, step: 1, unit: "min" } }] },
+    { id: "fisico.corrida5", label: "Corrida 5km", type: "square", fields: [{ key: "min", label: "Min", slider: { min: 12, max: 60, step: 1, unit: "min" } }] },
   ],
 };
 
@@ -1039,6 +1043,38 @@ const saveChecklistItems = (items) => {
   const planner = loadPlanner();
   planner.logistics = { ...(planner.logistics || {}), items };
   savePlanner(planner);
+};
+
+const getZodiacSign = (day, month) => {
+  if (!day || !month) return "";
+  const signs = [
+    { name: "Capricornio", start: [12, 22], end: [1, 19] },
+    { name: "Aquario", start: [1, 20], end: [2, 18] },
+    { name: "Peixes", start: [2, 19], end: [3, 20] },
+    { name: "Aries", start: [3, 21], end: [4, 19] },
+    { name: "Touro", start: [4, 20], end: [5, 20] },
+    { name: "Gemeos", start: [5, 21], end: [6, 20] },
+    { name: "Cancer", start: [6, 21], end: [7, 22] },
+    { name: "Leao", start: [7, 23], end: [8, 22] },
+    { name: "Virgem", start: [8, 23], end: [9, 22] },
+    { name: "Libra", start: [9, 23], end: [10, 22] },
+    { name: "Escorpiao", start: [10, 23], end: [11, 21] },
+    { name: "Sagitario", start: [11, 22], end: [12, 21] },
+  ];
+  const isAfter = (m, d, refM, refD) => m > refM || (m === refM && d >= refD);
+  const isBefore = (m, d, refM, refD) => m < refM || (m === refM && d <= refD);
+  for (const sign of signs) {
+    const [sm, sd] = sign.start;
+    const [em, ed] = sign.end;
+    if (sm > em) {
+      if (isAfter(month, day, sm, sd) || isBefore(month, day, em, ed)) {
+        return sign.name;
+      }
+    } else if (isAfter(month, day, sm, sd) && isBefore(month, day, em, ed)) {
+      return sign.name;
+    }
+  }
+  return "";
 };
 
 let plannerDayOffset = 0;
@@ -1872,6 +1908,39 @@ const renderTreeEditorSlots = (dna, assetId) => {
     const key = fields[0]?.key || "value";
     return data[key] || "";
   };
+  const sliderModal = document.getElementById("slider-modal");
+  const sliderTitle = document.getElementById("slider-title");
+  const sliderValue = document.getElementById("slider-value");
+  const sliderInput = document.getElementById("slider-input");
+  const sliderSave = document.getElementById("slider-save");
+  const sliderClose = document.getElementById("slider-close");
+  let sliderOnSave = null;
+  const openSlider = (config) => {
+    if (!sliderModal || !sliderInput || !sliderValue) return;
+    sliderInput.min = String(config.min ?? 0);
+    sliderInput.max = String(config.max ?? 100);
+    sliderInput.step = String(config.step ?? 1);
+    sliderInput.value = String(config.value ?? 0);
+    sliderValue.textContent = `${config.value ?? 0}${config.unit || ""}`;
+    if (sliderTitle) sliderTitle.textContent = config.label || "Ajustar";
+    sliderOnSave = config.onSave;
+    sliderModal.classList.add("is-open");
+  };
+  if (sliderInput) {
+    sliderInput.addEventListener("input", () => {
+      const unit = sliderInput.dataset.unit || "";
+      sliderValue.textContent = `${sliderInput.value}${unit}`;
+    });
+  }
+  if (sliderSave) {
+    sliderSave.addEventListener("click", () => {
+      if (sliderOnSave) sliderOnSave(Number(sliderInput.value || 0));
+      if (sliderModal) sliderModal.classList.remove("is-open");
+    });
+  }
+  if (sliderClose && sliderModal) {
+    sliderClose.addEventListener("click", () => sliderModal.classList.remove("is-open"));
+  }
   slots.forEach((slot, index) => {
     const slotEl = document.createElement("div");
     slotEl.className = `profile-slot profile-slot--${slot.type} slot-animate`;
@@ -1939,6 +2008,48 @@ const renderTreeEditorSlots = (dna, assetId) => {
       input.className = "profile-input";
       input.placeholder = field.label;
       input.value = asset.profileSlots[slot.id]?.[field.key] || "";
+      if (field.slider) {
+        input.readOnly = true;
+        input.addEventListener("click", () => {
+          if (!sliderInput) return;
+          sliderInput.dataset.unit = field.slider.unit || "";
+          openSlider({
+            label: field.label,
+            min: field.slider.min,
+            max: field.slider.max,
+            step: field.slider.step,
+            unit: field.slider.unit || "",
+            value: Number(input.value || field.slider.min || 0),
+            onSave: (nextValue) => {
+              input.value = String(nextValue);
+              asset.profileSlots[slot.id] = {
+                ...(asset.profileSlots[slot.id] || {}),
+                [field.key]: String(nextValue),
+              };
+              if (slot.id === "verdade.nascimento") {
+                const dia = Number(
+                  asset.profileSlots?.["verdade.nascimento"]?.dia || 0,
+                );
+                const mes = Number(
+                  asset.profileSlots?.["verdade.nascimento"]?.mes || 0,
+                );
+                const signo = getZodiacSign(dia, mes);
+                if (signo) {
+                  asset.profileSlots["verdade.signo"] = {
+                    ...(asset.profileSlots["verdade.signo"] || {}),
+                    value: signo,
+                  };
+                }
+              }
+              caption.textContent = getSlotDisplayText(slot);
+              dna.lastUpdatedAt = new Date().toISOString();
+              saveDNA(dna);
+              renderSocial();
+              renderTreeEditorSlots(dna, assetId);
+            },
+          });
+        });
+      }
       input.addEventListener("change", () => {
         asset.profileSlots[slot.id] = {
           ...(asset.profileSlots[slot.id] || {}),

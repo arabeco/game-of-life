@@ -1948,6 +1948,14 @@ html[data-theme="void"] {
   display: flex;
 }
 
+#arena-dossier {
+  z-index: 55;
+}
+
+#bronze-modal {
+  z-index: 60;
+}
+
 #missions-loading {
   z-index: 10001;
   pointer-events: none;
@@ -2335,6 +2343,8 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal .slot-editor {
   flex: 1 1 auto;
   overflow: auto;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(195, 199, 207, 0.25);
 }
 
 #tree-edit-modal .slot-list {
@@ -2347,8 +2357,8 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .linked-arenas-list {
-  min-height: 190px;
-  align-items: stretch;
+  min-height: 210px;
+  align-items: flex-start;
 }
 
 .dossier-title-row {
@@ -2873,9 +2883,9 @@ html[data-status="oracle"] .sephirot {
 }
 
 #arena-dossier .modal-card {
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
+  width: min(520px, 94vw);
+  height: auto;
+  border-radius: 18px;
 }
 
 .arena-dossier-footer {

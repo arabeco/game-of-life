@@ -1278,17 +1278,23 @@ html[data-theme="void"] {
 
 .slot-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
   width: 100%;
   max-width: 100%;
   margin: 0;
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (max-width: 900px) {
   .slot-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .slot-list {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1323,17 +1329,18 @@ html[data-theme="void"] {
 
 .profile-slot {
   position: relative;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  border-radius: 12px;
+  background: rgba(16, 16, 16, 0.7);
+  padding: 12px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 10px;
   backdrop-filter: none;
-  box-shadow: none;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
   font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
+  max-height: 400px;
 }
 
 .profile-slot::before {
@@ -1391,6 +1398,24 @@ html[data-theme="void"] {
   aspect-ratio: 1 / 1;
 }
 
+#tree-edit-modal .profile-slot--rect,
+#tree-edit-modal .profile-slot--rect-wide,
+#tree-edit-modal .profile-slot--rect-wide-tall,
+#tree-edit-modal .profile-slot--rect-small,
+#tree-edit-modal .profile-slot--rect-tall,
+#tree-edit-modal .profile-slot--square,
+#tree-edit-modal .profile-slot--square-2,
+#tree-edit-modal .profile-slot--square-large {
+  grid-column: span 1;
+  aspect-ratio: auto;
+}
+
+#tree-edit-modal .profile-slot--square .slot-value,
+#tree-edit-modal .profile-slot--square-2 .slot-value,
+#tree-edit-modal .profile-slot--square-large .slot-value {
+  aspect-ratio: auto;
+}
+
 .profile-slot--square .slot-value,
 .profile-slot--square-2 .slot-value,
 .profile-slot--square-large .slot-value {
@@ -1441,8 +1466,10 @@ html[data-theme="void"] {
   background-size: cover;
   background-position: center;
   width: 100%;
-  height: 100%;
+  height: 200px;
+  flex: 0 0 200px;
   padding: 0;
+  overflow: hidden;
 }
 
 .slot-value img {
@@ -1452,6 +1479,17 @@ html[data-theme="void"] {
   max-height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.profile-slot .profile-input,
+.profile-slot input.profile-input,
+.profile-slot textarea.profile-input,
+.profile-slot select.profile-input {
+  min-height: 40px;
+  padding: 10px 12px;
+  font-size: 16px;
+  line-height: 1.2;
+  border-radius: 8px;
 }
 
 .slot-subtitle {
@@ -1638,6 +1676,8 @@ html[data-theme="void"] {
   position: relative;
   z-index: 2;
   pointer-events: auto;
+  font-size: 16px;
+  min-height: 40px;
 }
 
 #tree-edit-modal.is-editing .slot-value {

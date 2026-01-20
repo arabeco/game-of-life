@@ -1160,31 +1160,33 @@ html[data-theme="void"] {
 }
 
 .primary-button {
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(217, 182, 92, 0.4);
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(12, 12, 12, 0.95));
+  padding: 10px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(217, 182, 92, 0.45);
+  background: linear-gradient(135deg, rgba(36, 36, 36, 0.95), rgba(12, 12, 12, 0.98));
   color: #e8d9a8;
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 0.6px;
   cursor: pointer;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.3);
-  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6), 0 8px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .silver-button {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(195, 199, 207, 0.55);
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.95), rgba(12, 12, 12, 0.95));
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(195, 199, 207, 0.6);
+  background: linear-gradient(135deg, rgba(28, 28, 28, 0.95), rgba(12, 12, 12, 0.98));
   color: #d5d9e1;
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 0.6px;
   cursor: pointer;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.25);
-  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .silver-button:hover {
@@ -1213,15 +1215,16 @@ html[data-theme="void"] {
 }
 
 .gold-button {
-  padding: 10px 16px;
-  border-radius: 14px;
-  border: 1px solid rgba(212, 175, 55, 0.6);
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(90, 70, 24, 0.9));
+  padding: 10px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(212, 175, 55, 0.7);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(90, 70, 24, 0.95));
   color: #f7e7b3;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  box-shadow: 0 0 16px rgba(212, 175, 55, 0.18), inset 0 0 12px rgba(0, 0, 0, 0.65);
-  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.2), inset 0 0 14px rgba(0, 0, 0, 0.7);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .gold-button:hover {
@@ -1417,22 +1420,53 @@ html[data-theme="void"] {
 }
 
 #tree-edit-modal .profile-slot {
-  max-height: 260px;
+  max-height: 240px;
   padding: 10px;
 }
 
+#tree-edit-modal .profile-slot--rect,
+#tree-edit-modal .profile-slot--rect-wide,
+#tree-edit-modal .profile-slot--rect-wide-tall,
+#tree-edit-modal .profile-slot--rect-small,
+#tree-edit-modal .profile-slot--rect-tall {
+  height: 220px;
+}
+
+#tree-edit-modal .profile-slot--square {
+  height: 160px;
+}
+
+#tree-edit-modal .profile-slot--square-2,
+#tree-edit-modal .profile-slot--square-large {
+  height: 220px;
+}
+
+#tree-edit-modal .slot-label {
+  font-size: 13px;
+}
+
+#tree-edit-modal .slot-subtitle {
+  font-size: 12px;
+}
+
+#tree-edit-modal .slot-value {
+  border: none;
+  background: rgba(255, 255, 255, 0.03);
+  flex: 1 1 auto;
+}
+
 #tree-edit-modal .slot-value.has-image {
-  height: 120px;
-  flex: 0 0 120px;
+  height: 110px;
+  flex: 0 0 110px;
 }
 
 #tree-edit-modal .oracle-phrase {
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 #tree-edit-modal .dossier-level {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .profile-slot--square .slot-value,
@@ -2119,6 +2153,10 @@ html[data-theme="void"] {
   z-index: 55;
 }
 
+#slider-modal {
+  z-index: 80;
+}
+
 #bronze-modal {
   z-index: 60;
 }
@@ -2521,8 +2559,8 @@ html[data-status="oracle"] .sephirot {
   max-height: none;
   overflow: visible;
   width: 100%;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
 }
 
 #tree-edit-modal .linked-arenas {

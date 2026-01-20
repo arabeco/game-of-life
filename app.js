@@ -2152,7 +2152,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
           });
         });
       }
-      input.addEventListener("change", () => {
+      const applyFieldUpdate = () => {
         asset.profileSlots[slot.id] = {
           ...(asset.profileSlots[slot.id] || {}),
           [field.key]: input.value,
@@ -2177,7 +2177,9 @@ const renderTreeEditorSlots = (dna, assetId) => {
           });
         }
         checkMissionProgress();
-      });
+      };
+      input.addEventListener("input", applyFieldUpdate);
+      input.addEventListener("change", applyFieldUpdate);
       slotEl.appendChild(input);
     });
 
@@ -2391,7 +2393,7 @@ const openArenaDossier = (arenaId) => {
           deleteBtn.click();
         }
       });
-      item.addEventListener("click", () => openBronzeModal(arenaId));
+      item.addEventListener("click", () => openBronzeModal(arenaId, action.id));
       item.appendChild(icon);
       item.appendChild(input);
       item.appendChild(deleteBtn);

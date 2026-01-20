@@ -592,7 +592,7 @@ html[data-theme="frost"] {
   align-items: center;
   padding: 14px 16px;
   border-radius: 24px;
-  background: rgba(18, 18, 18, 0.85);
+  background: linear-gradient(135deg, rgba(24, 24, 24, 0.9), rgba(10, 10, 10, 0.95));
   border: 2px solid;
   border-image: linear-gradient(135deg, #c0c0c0 0%, #f1f1f1 50%, #c0c0c0 100%) 1;
   gap: 8px;
@@ -600,13 +600,18 @@ html[data-theme="frost"] {
 }
 
 .arena-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .arena-progress {
   font-size: 12px;
   color: rgba(195, 199, 207, 0.8);
+}
+
+.arena-card .silver-button {
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(30, 30, 30, 0.95), rgba(12, 12, 12, 0.95));
 }
 
 .arena-progress-bar {
@@ -965,16 +970,16 @@ html[data-theme="frost"] {
 
 .profile-slot {
   position: relative;
-  border: 1px solid rgba(212, 175, 55, 0.6);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 8px 10px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(22, 22, 22, 0.9), rgba(12, 12, 12, 0.85));
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 6px;
   backdrop-filter: blur(10px);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7);
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.75);
   font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
 }
 
@@ -982,16 +987,16 @@ html[data-theme="frost"] {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), transparent 60%);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), transparent 60%);
   pointer-events: none;
 }
 
 .profile-slot::after {
   content: "";
   position: absolute;
-  inset: 2px;
-  border-radius: 6px;
+  inset: 3px;
+  border-radius: 9px;
   border: 1px solid rgba(212, 175, 55, 0.18);
   pointer-events: none;
 }
@@ -1038,9 +1043,9 @@ html[data-theme="frost"] {
 .slot-label {
   position: absolute;
   top: 8px;
-  left: 10px;
-  font-size: 11px;
-  letter-spacing: 0.6px;
+  left: 12px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   color: rgba(212, 175, 55, 0.8);
 }
@@ -1058,11 +1063,11 @@ html[data-theme="frost"] {
 }
 
 .slot-value {
-  font-size: 16px;
+  font-size: 18px;
   text-align: center;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.6px;
   color: #f1f1f1;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .slot-caption.top {
@@ -1708,7 +1713,7 @@ html[data-status="oracle"] .sephirot {
 }
 
 .dossier-card {
-  width: min(420px, 92vw);
+  width: min(1100px, 94vw);
   border: 1px solid transparent;
   background: linear-gradient(#101010, #101010) padding-box,
     linear-gradient(135deg, rgba(217, 182, 92, 0.9), rgba(124, 97, 38, 0.8))
@@ -1716,14 +1721,16 @@ html[data-status="oracle"] .sephirot {
 }
 
 .gold-overlay {
-  width: 100%;
+  width: min(1100px, 94vw);
+  min-height: 560px;
   height: 100%;
-  border-radius: 0;
-  background: #0a0a0a;
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(16, 16, 16, 0.95), rgba(26, 22, 12, 0.92));
   border: 2px solid;
-  border-image: var(--metal-gold) 1;
+  border-image: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 1;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55), inset 0 0 22px rgba(0, 0, 0, 0.7);
 }
 
 .gold-overlay::after {
@@ -1733,6 +1740,15 @@ html[data-status="oracle"] .sephirot {
   background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
   background-size: 3px 3px;
   opacity: 0.2;
+  pointer-events: none;
+}
+
+.gold-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), transparent 60%),
+    radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.08), transparent 45%);
   pointer-events: none;
 }
 

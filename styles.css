@@ -2233,6 +2233,11 @@ html[data-theme="void"] {
   z-index: 50;
 }
 
+/* Tree edit: garantir referência de posicionamento dentro do modal */
+#tree-edit-modal {
+  position: fixed; /* mantém comportamento do .modal */
+}
+
 .modal.is-open {
   display: flex;
 }
@@ -2646,7 +2651,7 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal .dossier-icon {
   position: absolute;
   left: 0;
-  top: 8px;
+  top: 28px !important; /* +10px de novo (visível) */
   transform: none;
   width: 28px;
   height: 28px;
@@ -2677,9 +2682,9 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal #tree-edit-edit {
-  position: absolute;
-  left: -9px !important; /* 13px pra esquerda (4 - 13) */
-  top: -22px !important; /* 26px pra cima (4 - 26) */
+  position: fixed; /* ancora no viewport (modal full-screen) */
+  left: 6px !important;  /* canto superior esquerdo, encostado */
+  top: 6px !important;
   transform: scale(0.82);
   opacity: 0.6;
 }

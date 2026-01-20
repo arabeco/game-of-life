@@ -2699,10 +2699,13 @@ const openTreeEditor = (assetId) => {
     const phraseKey = ASSET_TO_PHRASE[asset.id];
     const phrases = phraseKey ? MASTERY_PHRASES[phraseKey] : [];
     phraseText.textContent = phrases[Math.max(0, Math.min(9, levelValue - 1))] || "";
-    if (levelText && levelText.parentElement !== phraseText) {
-      levelText.classList.add("oracle-level-badge");
-      phraseText.prepend(levelText);
+    let badge = phraseText.querySelector(".oracle-level-badge");
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "oracle-level-badge";
+      phraseText.prepend(badge);
     }
+    badge.textContent = String(levelValue);
   }
   if (icon) {
     icon.setAttribute("data-lucide", ICON_BY_ID[asset.id] ?? "circle");

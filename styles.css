@@ -2607,15 +2607,15 @@ html[data-status="oracle"] .sephirot {
 #tree-edit-modal .dossier-icon {
   position: absolute;
   left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 8px;
+  transform: none;
 }
 
 #tree-edit-modal #tree-edit-level-text {
   position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2651,6 +2651,15 @@ html[data-status="oracle"] .sephirot {
   padding: 10px 12px;
   line-height: 1.4;
   font-size: clamp(14px, 4.4vw, 18px);
+}
+
+#tree-edit-modal .dossier-title {
+  padding-top: 6px;
+}
+
+#tree-edit-modal .drawer-title#tree-edit-title {
+  text-align: center;
+  margin-top: 18px;
 }
 
 #tree-edit-modal .modal-card {
@@ -2808,14 +2817,26 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal .linked-arenas-list {
-  min-height: 180px;
+  min-height: 170px;
+  height: auto;
   align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 8px;
 }
 
 #tree-edit-modal .linked-arena {
-  min-height: 120px;
-  min-width: 100px;
-  padding: 8px 10px;
+  min-height: 110px;
+  min-width: 0;
+  padding: 8px;
+  font-size: 10px;
+  justify-content: space-between;
+  aspect-ratio: 3 / 4;
+}
+
+#tree-edit-modal .linked-arena button {
+  padding: 4px 8px;
+  font-size: 9px;
 }
 
 .dossier-title-row {

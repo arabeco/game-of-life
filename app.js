@@ -1491,54 +1491,44 @@ const updateArenaCountsForBronze = (arenaId, delta) => {
   }
 };
 
-const renderArenas = () => {
-  const arenaList = document.getElementById("arena-list");
-  if (!arenaList) return;
-  const arenas = loadArenas();
-  arenaList.innerHTML = "";
-  if (arenas.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "arena-empty";
-    empty.textContent = "Sem metas ainda.";
-    arenaList.appendChild(empty);
-    return;
+const buildArenaCard = (arena, { compact = false, showAdd = false } = {}) => {
+  const card = document.createElement("div");
+  const completionValue = Number(arena.completion || 0);
+  card.className = `arena-card scan-card${completionValue >= 100 ? " is-complete" : ""}`;
+  if (compact) card.classList.add("arena-card--mini");
+  const title = document.createElement("div");
+  title.className = "arena-title";
+  title.textContent = arena.title || "Arena";
+  const progress = document.createElement("div");
+  progress.className = "arena-progress";
+  if (arena.targetCount) {
+    progress.textContent = `${Number(arena.completedCount || 0)}/${arena.targetCount}`;
+  } else {
+    progress.textContent = `${Math.round(completionValue)}%`;
   }
-  arenas.forEach((arena) => {
-    const card = document.createElement("div");
-    const completionValue = Number(arena.completion || 0);
-    card.className = `arena-card scan-card${completionValue >= 100 ? " is-complete" : ""}`;
-    const title = document.createElement("div");
-    title.className = "arena-title";
-    title.textContent = arena.title || "Arena";
-    const progress = document.createElement("div");
-    progress.className = "arena-progress";
-    if (arena.targetCount) {
-      progress.textContent = `${Number(arena.completedCount || 0)}/${arena.targetCount}`;
-    } else {
-      progress.textContent = `${Math.round(completionValue)}%`;
-    }
-    const description = document.createElement("div");
-    description.className = "arena-description";
-    description.textContent = arena.description || "Sem descricao";
-    const meta = document.createElement("div");
-    meta.className = "arena-meta";
-    if (arena.targetCount) {
-      meta.textContent = `Meta: ${arena.targetCount}`;
-    } else {
-      meta.textContent = `Meta: ${Math.round(completionValue)}%`;
-    }
-    const progressBar = document.createElement("div");
-    progressBar.className = "arena-progress-bar";
-    const progressFill = document.createElement("div");
-    progressFill.className = "arena-progress-fill";
-    progressFill.style.width = `${Math.min(100, Math.max(0, completionValue))}%`;
-    progressBar.appendChild(progressFill);
-    const assetLabel = document.createElement("div");
-    assetLabel.className = "arena-progress";
-    assetLabel.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
-    card.addEventListener("click", (event) => {
-      openArenaDossier(arena.id);
-    });
+  const description = document.createElement("div");
+  description.className = "arena-description";
+  description.textContent = arena.description || "Sem descricao";
+  const meta = document.createElement("div");
+  meta.className = "arena-meta";
+  if (arena.targetCount) {
+    meta.textContent = `Meta: ${arena.targetCount}`;
+  } else {
+    meta.textContent = `Meta: ${Math.round(completionValue)}%`;
+  }
+  const progressBar = document.createElement("div");
+  progressBar.className = "arena-progress-bar";
+  const progressFill = document.createElement("div");
+  progressFill.className = "arena-progress-fill";
+  progressFill.style.width = `${Math.min(100, Math.max(0, completionValue))}%`;
+  progressBar.appendChild(progressFill);
+  const assetLabel = document.createElement("div");
+  assetLabel.className = "arena-progress";
+  assetLabel.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
+  card.addEventListener("click", () => {
+    openArenaDossier(arena.id);
+  });
+  if (!compact) {
     card.addEventListener("dragover", (event) => {
       event.preventDefault();
     });
@@ -1561,13 +1551,41 @@ const renderArenas = () => {
       savePlanner({ ...planner, bronzeActions: updated });
       renderPlanner();
     });
-    card.appendChild(title);
-    card.appendChild(assetLabel);
-    card.appendChild(description);
-    card.appendChild(meta);
-    card.appendChild(progress);
-    card.appendChild(progressBar);
-    arenaList.appendChild(card);
+  }
+  if (showAdd) {
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "arena-mini-add";
+    add.textContent = "+ Bronze";
+    add.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openBronzeModal(arena.id);
+    });
+    card.appendChild(add);
+  }
+  card.appendChild(title);
+  card.appendChild(assetLabel);
+  card.appendChild(description);
+  card.appendChild(meta);
+  card.appendChild(progress);
+  card.appendChild(progressBar);
+  return card;
+};
+
+const renderArenas = () => {
+  const arenaList = document.getElementById("arena-list");
+  if (!arenaList) return;
+  const arenas = loadArenas();
+  arenaList.innerHTML = "";
+  if (arenas.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "arena-empty";
+    empty.textContent = "Sem metas ainda.";
+    arenaList.appendChild(empty);
+    return;
+  }
+  arenas.forEach((arena) => {
+    arenaList.appendChild(buildArenaCard(arena));
   });
 };
 
@@ -2191,22 +2209,8 @@ const openTreeEditor = (assetId) => {
       linkedArenasList.appendChild(empty);
     } else {
       arenas.forEach((arena) => {
-        const row = document.createElement("div");
-        row.className = "linked-arena";
-        const name = document.createElement("span");
-        name.textContent = arena.title || "Arena";
-        const pct = document.createElement("span");
-        if (arena.targetCount) {
-          pct.textContent = `${Number(arena.completedCount || 0)}/${arena.targetCount}`;
-        } else {
-          pct.textContent = `${Math.round(Number(arena.completion || 0))}%`;
-        }
-        row.addEventListener("click", () => {
-          openArenaDossier(arena.id);
-        });
-        row.appendChild(name);
-        row.appendChild(pct);
-        linkedArenasList.appendChild(row);
+        const card = buildArenaCard(arena, { compact: true, showAdd: true });
+        linkedArenasList.appendChild(card);
       });
     }
   }
@@ -3041,6 +3045,13 @@ const initPlanner = () => {
   const checklistAdd = document.getElementById("checklist-add");
   const checklistOk = document.getElementById("checklist-ok");
   const checklistList = document.getElementById("checklist-list");
+  const updateChecklistBadge = () => {
+    if (!notesToggle) return;
+    const items = loadChecklistItems();
+    const hasItems = items.length > 0;
+    const allDone = hasItems && items.every((item) => item.done);
+    notesToggle.classList.toggle("is-complete", allDone);
+  };
   const renderChecklistModal = (focusId) => {
     if (!checklistList) return;
     const items = loadChecklistItems();
@@ -3057,6 +3068,7 @@ const initPlanner = () => {
         );
         saveChecklistItems(updated);
         renderChecklistModal(item.id);
+        updateChecklistBadge();
       });
       const input = document.createElement("input");
       input.className = "checklist-input";
@@ -3066,6 +3078,7 @@ const initPlanner = () => {
           entry.id === item.id ? { ...entry, label: input.value.trim() } : entry,
         );
         saveChecklistItems(updated);
+        updateChecklistBadge();
       });
       input.addEventListener("keydown", (event) => {
         if (event.key === "Enter") input.blur();
@@ -3461,6 +3474,7 @@ const initApp = () => {
   const profileClose = document.getElementById("profile-close");
   const profileIdentity = document.getElementById("profile-identity");
   const profileBanner = document.getElementById("profile-banner");
+  const profileThemeButtons = document.querySelectorAll(".profile-theme-btn");
   const profileNameDisplay = document.getElementById("profile-name-display");
   const profileBannerDisplay = document.getElementById("profile-banner-display");
   const profileStrip = document.getElementById("profile-strip");
@@ -3501,6 +3515,9 @@ const initApp = () => {
       }
       if (profileStrip && !profile.banner) {
         profileStrip.style.backgroundImage = "";
+      }
+      if (profileModal) {
+        profileModal.dataset.card = profile.profileCardTheme || "gold";
       }
       profileModal.classList.remove("is-editing");
       if (widgetGrid) {
@@ -3593,7 +3610,8 @@ const initApp = () => {
       const current = loadProfile();
       const identity = profileIdentity?.value?.trim() || current.nickname || current.userId || "";
       const banner = profileBanner?.value?.trim() || current.banner || "";
-      const updated = { ...current, nickname: identity, userId: identity, banner };
+      const cardTheme = profileModal?.dataset.card || current.profileCardTheme || "gold";
+      const updated = { ...current, nickname: identity, userId: identity, banner, profileCardTheme: cardTheme };
       saveProfile(updated);
       renderSocial();
       if (profileNameDisplay) profileNameDisplay.textContent = updated.nickname || updated.userId || "-";
@@ -3689,6 +3707,17 @@ const initApp = () => {
           renderSocial();
         };
         reader.readAsDataURL(file);
+      });
+    });
+  }
+
+  if (profileThemeButtons.length && profileModal) {
+    profileThemeButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const theme = btn.dataset.card || "gold";
+        profileModal.dataset.card = theme;
+        const profile = loadProfile();
+        saveProfile({ ...profile, profileCardTheme: theme });
       });
     });
   }
@@ -3798,6 +3827,7 @@ const initApp = () => {
       card.appendChild(btn);
       bannerGrid.appendChild(card);
     });
+    updateChecklistBadge();
   };
   renderBanners();
   if (bannerOpen && bannerModal) {

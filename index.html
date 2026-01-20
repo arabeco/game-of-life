@@ -151,18 +151,11 @@
               </div>
               <div class="drawer-title">Avatar e Banner</div>
               <div class="theme-buttons">
-                <button class="silver-button" id="config-avatar-upload">Avatar</button>
-                <button class="silver-button" id="config-banner-upload">Banner</button>
-                <input type="file" id="config-avatar-file" class="hidden-file" accept="image/*" />
-                <input type="file" id="config-banner-file" class="hidden-file" accept="image/*" />
-              </div>
-              <div class="drawer-title">Banners</div>
-              <div class="theme-buttons">
-                <button class="silver-button" id="config-banners-open">Ver Banners</button>
+                <div class="config-hint">Avatar e Banner agora estao no Perfil.</div>
               </div>
               <div class="oracle-form">
                 <div class="oracle-row">
-                  <label for="config-law-years">Anos em Direito</label>
+                  <label for="config-law-years">Anos de Direito</label>
                   <input type="number" id="config-law-years" min="0" max="50" />
                 </div>
               </div>
@@ -557,6 +550,15 @@
           <div class="slot-header">Widgets</div>
           <div class="widget-display" id="widget-display"></div>
           <div class="widget-grid" id="widget-grid"></div>
+        </div>
+        <div class="profile-theme">
+          <div class="slot-header">Fundo do Card</div>
+          <div class="theme-buttons">
+            <button class="silver-button profile-theme-btn" data-card="gold">Ouro</button>
+            <button class="silver-button profile-theme-btn" data-card="silver">Prata</button>
+            <button class="silver-button profile-theme-btn" data-card="frost">Gelo</button>
+            <button class="silver-button profile-theme-btn" data-card="white">Branco</button>
+          </div>
         </div>
         <div class="profile-actions">
           <button class="gold-button" id="profile-save">OK</button>

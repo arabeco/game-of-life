@@ -3542,6 +3542,7 @@ const initApp = () => {
   const profileAvatarFile = document.getElementById("profile-avatar-file");
   const profileBannerFile = document.getElementById("profile-banner-file");
   const hudEdit = document.getElementById("hud-edit");
+  const profileCard = profileModal?.querySelector(".profile-card");
   if (avatar && profileModal) {
     avatar.addEventListener("click", () => {
       const profile = loadProfile();
@@ -3575,7 +3576,7 @@ const initApp = () => {
       if (profileModal) {
         profileModal.dataset.card = profile.profileCardTheme || "gold";
       }
-      profileModal.classList.remove("is-editing");
+      if (profileCard) profileCard.classList.remove("is-editing");
       if (widgetGrid) {
         widgetGrid.innerHTML = "";
         const options = getSlotOptions();
@@ -3642,6 +3643,7 @@ const initApp = () => {
       const total = dna.assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
       if (profileLevel) profileLevel.textContent = `Nivel ${Math.round(total)}`;
       renderProfileWidgetDisplay(profile, dna);
+      if (profileCard) profileCard.classList.remove("is-editing");
       profileModal.classList.add("is-open");
       if (profileIdentity) profileIdentity.focus();
     });
@@ -3653,9 +3655,9 @@ const initApp = () => {
   }
   if (profileEdit) {
     profileEdit.addEventListener("click", () => {
-      if (!profileModal) return;
-      profileModal.classList.toggle("is-editing");
-      if (profileModal.classList.contains("is-editing") && profileIdentity) {
+      if (!profileCard) return;
+      profileCard.classList.toggle("is-editing");
+      if (profileCard.classList.contains("is-editing") && profileIdentity) {
         profileIdentity.focus();
       }
     });
@@ -3691,6 +3693,7 @@ const initApp = () => {
           profileSync.textContent = detail.length > 48 ? `${detail.slice(0, 48)}...` : detail;
         }
       }
+      if (profileCard) profileCard.classList.remove("is-editing");
       if (profileModal) profileModal.classList.remove("is-open");
     });
   }

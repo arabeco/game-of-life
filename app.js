@@ -1209,8 +1209,8 @@ const renderTree = () => {
   const hudLevelText = document.getElementById("hud-level-text");
   if (hudLevel) {
     const total = assets.reduce((sum, asset) => sum + Number(asset.level || 0), 0);
-    hudLevel.textContent = `Nivel ${Math.round(total)}`;
-    if (hudLevelText) hudLevelText.textContent = `Nivel ${Math.round(total)}`;
+    hudLevel.textContent = String(Math.round(total));
+    if (hudLevelText) hudLevelText.textContent = String(Math.round(total));
   }
   const profile = loadProfile();
   if (hudNick) hudNick.textContent = profile.nickname || profile.userId || "-";

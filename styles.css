@@ -307,8 +307,8 @@ html[data-theme="void"] {
 }
 
 .hud {
-  min-height: 32px;
-  padding: calc(4px + env(safe-area-inset-top)) 14px 4px;
+  min-height: 24px;
+  padding: calc(3px + env(safe-area-inset-top)) 12px 3px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -344,8 +344,8 @@ html[data-theme="void"] {
 
 .hud-date {
   justify-self: start;
-  font-size: 11px;
-  letter-spacing: 1.5px;
+  font-size: 10px;
+  letter-spacing: 1.2px;
   color: var(--accent-gold);
   text-transform: uppercase;
   font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
@@ -359,8 +359,8 @@ html[data-theme="void"] {
 
 .hud-clock {
   justify-self: end;
-  font-size: 12px;
-  letter-spacing: 1.2px;
+  font-size: 10px;
+  letter-spacing: 1px;
   color: var(--accent-gold);
   font-weight: 600;
   font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
@@ -374,8 +374,8 @@ html[data-theme="void"] {
 
 .hud-avatar {
   justify-self: center;
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
   border: none;
@@ -387,10 +387,10 @@ html[data-theme="void"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   position: relative;
   transform: none;
-  padding: 0 8px 4px;
+  padding: 0 8px 3px;
   background: transparent;
 }
 
@@ -401,10 +401,10 @@ html[data-theme="void"] {
   border: 1px solid var(--accent-gold);
   background: rgba(10, 10, 10, 0.7);
   color: #f1e1a5;
-  font-size: 10px;
-  letter-spacing: 0.8px;
+  font-size: 9px;
+  letter-spacing: 0.7px;
   text-transform: uppercase;
-  margin-top: 2px;
+  margin-top: 1px;
   order: 2;
 }
 
@@ -434,12 +434,12 @@ html[data-theme="void"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  font-size: 11px;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
   font-weight: 700;
   color: #f1d279;
-  border: 1px solid rgba(212, 175, 55, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.5);
   border-radius: 50%;
   padding: 0;
   background: rgba(10, 10, 10, 0.75);
@@ -2606,20 +2606,20 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list {
   grid-template-columns: 1fr;
-  grid-auto-rows: minmax(36px, auto);
-  gap: 6px;
+  grid-auto-rows: minmax(24px, auto);
+  gap: 4px;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot {
-  min-height: 36px;
-  max-height: 48px;
-  padding: 6px 8px;
+  min-height: 24px;
+  max-height: 34px;
+  padding: 4px 6px;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot:first-child {
   grid-column: 1 / -1;
-  min-height: 48px;
-  max-height: 60px;
+  min-height: 34px;
+  max-height: 42px;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot:first-child .slot-label,
@@ -2628,8 +2628,8 @@ html[data-status="oracle"] .sephirot {
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .slot-value {
-  min-height: 24px;
-  font-size: 13px;
+  min-height: 18px;
+  font-size: 12px;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .slot-list .slot-label,
@@ -2637,15 +2637,22 @@ html[data-status="oracle"] .sephirot {
   font-size: 11px;
 }
 
+#tree-edit-modal[data-asset-id="conexao"] .slot-list .slot-value {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
 #tree-edit-modal[data-asset-id="conexao"] .linked-arenas-list {
-  min-height: 160px;
+  min-height: 180px;
   height: auto;
 }
 
 #tree-edit-modal[data-asset-id="conexao"] .linked-arena {
-  min-height: 96px;
-  min-width: 88px;
-  padding: 6px 8px;
+  min-height: 84px;
+  min-width: 80px;
+  padding: 5px 6px;
 }
 
 #tree-edit-modal .slot-list {

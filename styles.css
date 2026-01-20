@@ -1036,9 +1036,11 @@ html[data-theme="void"] {
 
 .mastery-phrase {
   margin-top: 8px;
-  font-size: 14px;
-  color: rgba(245, 245, 245, 0.9);
-  line-height: 1.4;
+  font-size: 16px;
+  color: #f1d279;
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0.4px;
 }
 
 .mastery-textarea {
@@ -1240,6 +1242,12 @@ html[data-theme="void"] {
   width: 100%;
   max-width: 100%;
   margin: 0;
+}
+
+@media (max-width: 900px) {
+  .slot-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .slot-item {
@@ -1679,9 +1687,9 @@ html[data-theme="void"] {
 }
 
 .profile-card {
-  padding: 16px;
+  padding: 14px;
   position: relative;
-  width: min(520px, 92vw);
+  width: min(480px, 92vw);
 }
 
 .profile-strip {
@@ -1689,7 +1697,7 @@ html[data-theme="void"] {
   left: 12px;
   right: 12px;
   top: 12px;
-  height: 54px;
+  height: 86px;
   border-radius: 14px;
   background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.5), rgba(212, 175, 55, 0.2));
   opacity: 0.9;
@@ -1701,17 +1709,17 @@ html[data-theme="void"] {
 .profile-header {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   justify-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   position: relative;
   z-index: 1;
 }
 
 .profile-avatar {
-  width: 96px;
-  height: 96px;
+  width: 88px;
+  height: 88px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1780,7 +1788,7 @@ html[data-theme="void"] {
 .profile-name-display,
 .profile-banner-display {
   text-align: center;
-  font-size: 14px;
+  font-size: 15px;
   color: #f1f1f1;
 }
 

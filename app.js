@@ -2271,6 +2271,10 @@ const renderTreeEditorSlots = (dna, assetId) => {
       checkMissionProgress();
     };
 
+    const stopSlotPropagation = (event) => {
+      event.stopPropagation();
+    };
+
     fields.forEach((field) => {
       const slotOptions = optionsBySlot[slot.id];
       if (slotOptions && field.key === "value") {
@@ -2287,6 +2291,8 @@ const renderTreeEditorSlots = (dna, assetId) => {
           select.appendChild(option);
         });
         select.value = asset.profileSlots[slot.id]?.[field.key] || "";
+        select.addEventListener("click", stopSlotPropagation);
+        select.addEventListener("pointerdown", stopSlotPropagation);
         select.addEventListener("change", () => applyFieldUpdate(field, select.value));
         slotEl.appendChild(select);
         return;
@@ -2295,6 +2301,8 @@ const renderTreeEditorSlots = (dna, assetId) => {
       input.className = "profile-input";
       input.placeholder = field.label;
       input.value = asset.profileSlots[slot.id]?.[field.key] || "";
+      input.addEventListener("click", stopSlotPropagation);
+      input.addEventListener("pointerdown", stopSlotPropagation);
       if (field.slider) {
         input.readOnly = true;
         input.addEventListener("click", () => {
@@ -3448,19 +3456,59 @@ const initMoodBar = () => {
   const label = document.getElementById("mood-label");
   if (!bar || !modal || !range || !label) return;
   const moods = [
-    { label: "Calmo", min: 0, max: 20, color: "linear-gradient(90deg, #5aa9e6, #3f83c9)" },
-    { label: "Neutro", min: 21, max: 45, color: "linear-gradient(90deg, #b8c1c9, #7d8b99)" },
-    { label: "Focado", min: 46, max: 70, color: "linear-gradient(90deg, #7ddf64, #2cbf6b)" },
-    { label: "Inspirado", min: 71, max: 85, color: "linear-gradient(90deg, #d4af37, #f1d279)" },
-    { label: "Euforico", min: 86, max: 100, color: "linear-gradient(90deg, #b14cff, #7f5cff)" },
+    {
+      label: "Calmo",
+      min: 0,
+      max: 20,
+      color: "linear-gradient(90deg, #5aa9e6, #3f83c9)",
+      trackStart: "#5aa9e6",
+      trackEnd: "#3f83c9",
+    },
+    {
+      label: "Neutro",
+      min: 21,
+      max: 45,
+      color: "linear-gradient(90deg, #b8c1c9, #7d8b99)",
+      trackStart: "#b8c1c9",
+      trackEnd: "#7d8b99",
+    },
+    {
+      label: "Focado",
+      min: 46,
+      max: 70,
+      color: "linear-gradient(90deg, #7ddf64, #2cbf6b)",
+      trackStart: "#7ddf64",
+      trackEnd: "#2cbf6b",
+    },
+    {
+      label: "Inspirado",
+      min: 71,
+      max: 85,
+      color: "linear-gradient(90deg, #d4af37, #f1d279)",
+      trackStart: "#d4af37",
+      trackEnd: "#f1d279",
+    },
+    {
+      label: "Euforico",
+      min: 86,
+      max: 100,
+      color: "linear-gradient(90deg, #b14cff, #7f5cff)",
+      trackStart: "#b14cff",
+      trackEnd: "#7f5cff",
+    },
   ];
   const resolveMood = (value) =>
     moods.find((mood) => value >= mood.min && value <= mood.max) || moods[1];
+  const updateMoodTrack = (value, mood) => {
+    const clamped = Math.max(0, Math.min(100, value));
+    range.style.background = `linear-gradient(90deg, ${mood.trackStart} 0%, ${mood.trackEnd} ${clamped}%, rgba(255, 255, 255, 0.12) ${clamped}%, rgba(255, 255, 255, 0.12) 100%)`;
+  };
   const applyMood = (value) => {
     const mood = resolveMood(value);
     label.textContent = mood.label;
     const profile = loadProfile();
     saveProfile({ ...profile, moodLevel: value, moodColor: mood.color });
+    updateMoodTrack(value, mood);
     updateIntegrityBar();
   };
   bar.addEventListener("click", () => {

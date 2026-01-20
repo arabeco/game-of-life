@@ -1986,7 +1986,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
     slotEl.style.animationDelay = `${index * 40}ms`;
     slotEl.dataset.slotId = slot.id;
     const label = document.createElement("div");
-    label.className = `slot-label${slot.type.startsWith("square") ? " bottom" : ""}`;
+    label.className = "slot-label";
     label.textContent = slot.label;
     slotEl.appendChild(label);
 

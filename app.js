@@ -12,7 +12,7 @@ const MODE_KEY = "game_of_life.mastery_mode";
 const V2_RESET_KEY = "game_of_life.v2_reset";
 const PROFILE_KEY = "game_of_life.profile";
 const MISSIONS_KEY = "game_of_life.missions";
-const HOLD_DURATION_MS = 5000;
+const HOLD_DURATION_MS = 4000;
 
 const SEPHIROT = [
   { id: "conexao", label: "CONSCIÊNCIA", row: 1, col: 2 },
@@ -1372,6 +1372,7 @@ const buildBronzeBlock = (action) => {
       } else {
         updateArenaCountsForBronze(action.arenaId, 1);
       }
+      updateGlobalArenaProgress(action.arenaId, updated);
       renderPlanner();
       renderArenas();
       checkMissionProgress();

@@ -6,7 +6,7 @@
     <title>Game of Life</title>
     <!-- Manifest disabled due to 401 on hosted path -->
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=2026-01-20p" />
+    <link rel="stylesheet" href="styles.css?v=2026-01-20q" />
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Service worker disabled: src/service-worker.js não existe neste build -->
   </head>
@@ -146,10 +146,6 @@
                 <button class="silver-button theme-btn" data-theme="aurora">Aurora</button>
                 <button class="silver-button theme-btn" data-theme="void">Void</button>
               </div>
-              <div class="drawer-title">Avatar e Banner</div>
-              <div class="theme-buttons">
-                <div class="config-hint">Avatar e Banner agora estao no Perfil.</div>
-              </div>
             </div>
             <div class="config-section is-hidden" data-section="maestria">
               <div class="drawer-title">Maestria</div>
@@ -167,11 +163,9 @@
             </div>
             <div class="config-section is-hidden" data-section="notificacoes">
               <div class="drawer-title">Notificacoes</div>
-              <div class="arena-empty">Em breve.</div>
             </div>
             <div class="config-section is-hidden" data-section="suporte">
               <div class="drawer-title">Suporte</div>
-              <div class="arena-empty">Em breve.</div>
             </div>
           </div>
         </section>
@@ -511,13 +505,13 @@
           </div>
           <div class="slot-header">Acoes de Bronze</div>
           <div class="bronze-list" id="arena-dossier-bronze"></div>
-          <button class="silver-button arena-add-bronze" id="arena-dossier-add" aria-label="Adicionar Bronze">
-            <i data-lucide="plus"></i>
-          </button>
         </div>
         <div class="arena-dossier-footer">
           <i data-lucide="star"></i>
           <span id="arena-dossier-target">Meta Atual</span>
+          <button class="icon-button arena-meta-edit" id="arena-dossier-edit-meta" aria-label="Editar Meta">
+            <i data-lucide="pencil"></i>
+          </button>
         </div>
       </div>
     </div>

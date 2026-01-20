@@ -4204,12 +4204,38 @@ const initApp = () => {
       arenaDossier.classList.remove("is-open");
     });
   }
-  const arenaDossierAdd = document.getElementById("arena-dossier-add");
-  if (arenaDossierAdd && arenaDossier) {
-    arenaDossierAdd.addEventListener("click", () => {
-      const id = arenaDossier.dataset.arenaId;
-      if (!id) return;
-      openBronzeModal(id);
+  const arenaDossierEditMeta = document.getElementById("arena-dossier-edit-meta");
+  if (arenaDossierEditMeta && arenaDossier) {
+    arenaDossierEditMeta.addEventListener("click", () => {
+      const arenaId = arenaDossier.dataset.arenaId;
+      if (!arenaId) return;
+      const arenas = loadArenas();
+      const arena = arenas.find((item) => item.id === arenaId);
+      if (!arena) return;
+      const current = typeof arena.targetCount === "number" ? String(arena.targetCount) : "";
+      const nextRaw = window.prompt("Defina a Meta (numero). Deixe vazio para meta livre:", current);
+      if (nextRaw === null) return;
+      const trimmed = String(nextRaw).trim();
+      const updatedArenas = arenas.map((item) => {
+        if (item.id !== arenaId) return item;
+        if (!trimmed) {
+          const { targetCount, completedCount, ...rest } = item;
+          return { ...rest };
+        }
+        const nextTarget = Math.max(0, Math.round(Number(trimmed || 0)));
+        const currentCompleted = Number(item.completedCount || 0);
+        const safeCompleted = Math.max(0, Math.min(nextTarget, currentCompleted));
+        const completion = nextTarget ? Math.round((safeCompleted / nextTarget) * 100) : Number(item.completion || 0);
+        return {
+          ...item,
+          targetCount: nextTarget,
+          completedCount: safeCompleted,
+          completion,
+        };
+      });
+      saveArenas(updatedArenas);
+      renderArenas();
+      openArenaDossier(arenaId);
     });
   }
   const avatar = document.getElementById("hud-avatar");

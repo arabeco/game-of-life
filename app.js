@@ -1294,6 +1294,9 @@ const buildBronzeElement = (action) => {
   const icon = document.createElement("i");
   icon.setAttribute("data-lucide", action.icon || "circle");
   bronze.appendChild(icon);
+  bronze.addEventListener("click", () => {
+    openBronzeModal(action.arenaId, action.id);
+  });
   bronze.addEventListener("dragstart", (event) => {
     if (!bronze.draggable) return;
     event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
@@ -2270,6 +2273,7 @@ const openTreeEditor = (assetId) => {
       }
     };
   }
+  modal.classList.remove("is-editing");
   modal.classList.add("is-open");
 };
 
@@ -2512,7 +2516,7 @@ const renderProfileWidgetDisplay = (profile, dna) => {
   });
 };
 
-const openBronzeModal = (arenaId) => {
+const openBronzeModal = (arenaId, actionId) => {
   const modal = document.getElementById("bronze-modal");
   const iconGrid = document.getElementById("bronze-icon-grid");
   const durationInput = document.getElementById("bronze-duration");
@@ -2521,24 +2525,30 @@ const openBronzeModal = (arenaId) => {
   const atemporalToggle = document.getElementById("bronze-atemporal");
   const titleInput = document.getElementById("bronze-title");
   if (!modal || !iconGrid || !durationInput || !seriousToggle || !titleInput) return;
+  const planner = loadPlanner();
+  const existing = actionId
+    ? planner.bronzeActions.find((action) => action.id === actionId)
+    : null;
   modal.dataset.arenaId = arenaId;
-  modal.dataset.icon = BRONZE_ICONS[0];
-  titleInput.value = "";
-  durationInput.value = "60";
-  if (durationValue) durationValue.textContent = "60 min";
-  seriousToggle.checked = false;
-  if (atemporalToggle) atemporalToggle.checked = false;
+  modal.dataset.actionId = existing ? existing.id : "";
+  modal.dataset.icon = existing?.icon || BRONZE_ICONS[0];
+  titleInput.value = existing?.title || "";
+  const durationMinutes = existing?.durationMinutes || 60;
+  durationInput.value = String(durationMinutes);
+  if (durationValue) durationValue.textContent = `${durationMinutes} min`;
+  seriousToggle.checked = !!existing?.serious;
+  if (atemporalToggle) atemporalToggle.checked = !!existing?.atemporal;
   const card = modal.querySelector(".bronze-card-elite");
   if (card) card.classList.remove("serious-on");
   modal.querySelectorAll(".weekday-grid input[type='checkbox']").forEach((input) => {
-    input.checked = false;
+    input.checked = Array.isArray(existing?.weekdays) ? existing.weekdays.includes(input.value) : false;
   });
   iconGrid.innerHTML = "";
   BRONZE_ICONS.forEach((iconName) => {
     const option = document.createElement("button");
     option.type = "button";
     option.className = "icon-option";
-    if (iconName === BRONZE_ICONS[0]) option.classList.add("is-selected");
+    if (iconName === (existing?.icon || BRONZE_ICONS[0])) option.classList.add("is-selected");
     option.dataset.icon = iconName;
     const icon = document.createElement("i");
     icon.setAttribute("data-lucide", iconName);
@@ -2562,6 +2572,7 @@ const closeBronzeModal = () => {
   if (!modal) return;
   modal.classList.remove("is-open");
   modal.dataset.arenaId = "";
+  modal.dataset.actionId = "";
 };
 
 const buildOracleForm = (dna) => {
@@ -3470,21 +3481,40 @@ const initApp = () => {
       const atemporal = !!atemporalToggle?.checked;
       const weeklyTarget = atemporal ? null : weekdays.length;
       const planner = loadPlanner();
-      planner.bronzeActions.push({
-        id: crypto.randomUUID(),
-        arenaId,
-        title,
-        icon: selectedIcon,
-        duration,
-        durationMinutes,
-        weekdays,
-        atemporal,
-        weeklyTarget,
-        serious: !!seriousToggle.checked,
-        status: "backlog",
-        locked: false,
-        createdDate: new Date().toISOString(),
-      });
+      const editingId = modal.dataset.actionId;
+      if (editingId) {
+        planner.bronzeActions = planner.bronzeActions.map((action) =>
+          action.id === editingId
+            ? {
+                ...action,
+                title,
+                icon: selectedIcon,
+                duration,
+                durationMinutes,
+                weekdays,
+                atemporal,
+                weeklyTarget,
+                serious: !!seriousToggle.checked,
+              }
+            : action,
+        );
+      } else {
+        planner.bronzeActions.push({
+          id: crypto.randomUUID(),
+          arenaId,
+          title,
+          icon: selectedIcon,
+          duration,
+          durationMinutes,
+          weekdays,
+          atemporal,
+          weeklyTarget,
+          serious: !!seriousToggle.checked,
+          status: "backlog",
+          locked: false,
+          createdDate: new Date().toISOString(),
+        });
+      }
       savePlanner(planner);
       renderPlanner();
       closeBronzeModal();

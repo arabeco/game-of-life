@@ -861,8 +861,8 @@ html[data-theme="frost"] {
 .slot-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  max-width: 980px;
+  gap: 10px;
+  max-width: 880px;
   margin: 0 auto;
 }
 
@@ -900,7 +900,7 @@ html[data-theme="frost"] {
   border: 1px solid rgba(212, 175, 55, 0.6);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -925,33 +925,33 @@ html[data-theme="frost"] {
 
 .profile-slot--rect {
   grid-column: span 2;
-  min-height: 78px;
+  min-height: 72px;
 }
 
 .profile-slot--rect-small {
   grid-column: span 1;
-  min-height: 64px;
+  min-height: 60px;
 }
 
 .profile-slot--rect-wide {
   grid-column: span 4;
-  min-height: 84px;
+  min-height: 78px;
 }
 
 .profile-slot--square {
   aspect-ratio: 1 / 1;
-  min-height: 72px;
+  min-height: 68px;
 }
 
 .profile-slot--square-large {
   grid-column: span 3;
   aspect-ratio: 1 / 1;
-  min-height: 140px;
+  min-height: 120px;
 }
 
 .slot-label {
-  font-size: 12px;
-  letter-spacing: 1px;
+  font-size: 11px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   color: rgba(212, 175, 55, 0.8);
 }
@@ -960,12 +960,19 @@ html[data-theme="frost"] {
   position: absolute;
   left: 8px;
   right: 8px;
-  font-size: 13px;
+  font-size: 11px;
   letter-spacing: 0.6px;
   color: rgba(229, 229, 229, 0.85);
   text-align: center;
   text-transform: uppercase;
   pointer-events: none;
+}
+
+.slot-value {
+  font-size: 15px;
+  text-align: center;
+  letter-spacing: 0.6px;
+  color: #f1f1f1;
 }
 
 .slot-caption.top {
@@ -1107,6 +1114,15 @@ html[data-theme="frost"] {
   text-align: center;
   font-size: 14px;
   font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
+  display: none;
+}
+
+#tree-edit-modal.is-editing .profile-input {
+  display: block;
+}
+
+#tree-edit-modal.is-editing .slot-value {
+  display: none;
 }
 
 .dossier-actions {

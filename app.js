@@ -1950,8 +1950,13 @@ const renderTreeEditorSlots = (dna, assetId) => {
 
     const caption = document.createElement("div");
     caption.className = `slot-caption ${slot.type.startsWith("square") ? "bottom" : "top"}`;
-    caption.textContent = getSlotDisplayText(slot);
+    caption.textContent = slot.label;
     slotEl.appendChild(caption);
+
+    const valueEl = document.createElement("div");
+    valueEl.className = "slot-value";
+    valueEl.textContent = getSlotDisplayText(slot) || "—";
+    slotEl.appendChild(valueEl);
 
     const iconName = SLOT_ICON_BY_ID[slot.id];
     if (iconName) {
@@ -1986,6 +1991,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
           slotEl.style.backgroundImage = `url(${reader.result})`;
           slotEl.style.backgroundSize = "cover";
           slotEl.style.backgroundPosition = "center";
+          valueEl.textContent = "";
           dna.lastUpdatedAt = new Date().toISOString();
           saveDNA(dna);
         };
@@ -1999,6 +2005,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
         slotEl.style.backgroundPosition = "center";
       }
       slotEl.addEventListener("click", () => {
+        if (!slotEl.closest(".is-editing")) return;
         fileInput.click();
       });
     }
@@ -2042,7 +2049,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
                   };
                 }
               }
-              caption.textContent = getSlotDisplayText(slot);
+              valueEl.textContent = getSlotDisplayText(slot) || "—";
               dna.lastUpdatedAt = new Date().toISOString();
               saveDNA(dna);
               renderSocial();
@@ -2056,7 +2063,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
           ...(asset.profileSlots[slot.id] || {}),
           [field.key]: input.value,
         };
-        caption.textContent = getSlotDisplayText(slot);
+        valueEl.textContent = getSlotDisplayText(slot) || "—";
         dna.lastUpdatedAt = new Date().toISOString();
         saveDNA(dna);
         renderSocial();
@@ -3707,9 +3714,14 @@ const initApp = () => {
   }
   if (treeEditEdit) {
     treeEditEdit.addEventListener("click", () => {
-      const list = document.getElementById("tree-slot-list");
-      const first = list?.querySelector("input.profile-input");
-      if (first) first.focus();
+      const modal = document.getElementById("tree-edit-modal");
+      if (!modal) return;
+      modal.classList.toggle("is-editing");
+      if (modal.classList.contains("is-editing")) {
+        const list = document.getElementById("tree-slot-list");
+        const first = list?.querySelector("input.profile-input");
+        if (first) first.focus();
+      }
     });
   }
   window.addEventListener("storage", () => {

@@ -2665,8 +2665,8 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
-  right: 4px !important;
-  top: 4px !important;
+  right: -11px !important; /* 15px mais à direita (4 - 15) */
+  top: 9px !important;     /* 5px mais pra baixo (4 + 5) */
   padding: 8px 14px;
   border-radius: 14px;
   min-width: 48px;
@@ -2678,8 +2678,8 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal #tree-edit-edit {
   position: absolute;
-  left: 4px !important;
-  top: 4px !important;
+  left: -9px !important; /* 13px pra esquerda (4 - 13) */
+  top: -22px !important; /* 26px pra cima (4 - 26) */
   transform: scale(0.82);
   opacity: 0.6;
 }

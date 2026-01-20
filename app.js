@@ -442,17 +442,70 @@ const ensureV2Reset = () => {
   localStorage.setItem(V2_RESET_KEY, "true");
 };
 
+let cachedProfile = null;
+let currentUserId = null;
+
+const shouldPersistLocalProfile = () => !isSupabaseEnabled() || guestMode || !currentUserId;
+
 const loadProfile = () => {
+  if (cachedProfile) return cachedProfile;
   try {
     const raw = localStorage.getItem(PROFILE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const parsed = raw ? JSON.parse(raw) : {};
+    cachedProfile = parsed || {};
+    return cachedProfile;
   } catch {
-    return {};
+    cachedProfile = {};
+    return cachedProfile;
   }
 };
 
-const saveProfile = (profile) => {
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+const setProfileCache = (profile, persistLocal = shouldPersistLocalProfile()) => {
+  cachedProfile = profile || {};
+  if (persistLocal) {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(cachedProfile));
+  }
+};
+
+const queueProfileSync = (() => {
+  let timer = null;
+  return (profile) => {
+    if (!isSupabaseEnabled() || guestMode || !currentUserId) return;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try {
+        const user = await getSupabaseUser();
+        if (!user) return;
+        const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
+          ? profile.selectedGoldAssets
+          : Array.isArray(profile.widgets)
+            ? profile.widgets
+            : [];
+        const payload = {
+          id: user.id,
+          user_id: user.id,
+          nickname: profile.nickname || "",
+          handle: formatHandle(profile.userId || profile.nickname || ""),
+          lema: profile.banner || "",
+          avatar_url: profile.avatar || "",
+          total_level: Number(profile.total_level || 0),
+          level_geral: Number(profile.total_level || 0),
+          selected_gold_assets: selectedGoldAssets,
+          asset_levels: profile.assetLevels || {},
+        };
+        await upsertProfileRow(payload);
+      } catch (error) {
+        logSupabaseError("profiles.upsert (queue)", error);
+      }
+    }, 400);
+  };
+})();
+
+const saveProfile = (profile, options = {}) => {
+  const nextProfile = profile || {};
+  const persistLocal = options.persistLocal ?? shouldPersistLocalProfile();
+  setProfileCache(nextProfile, persistLocal);
+  queueProfileSync(nextProfile);
 };
 
 const applyTheme = (theme) => {
@@ -537,15 +590,41 @@ const applySupabaseProfileToLocal = (row) => {
   if (!row) return;
   const profile = loadProfile();
   const identity = row.nickname || row.handle?.replace("@", "") || profile.nickname || profile.userId || "";
+  const level =
+    typeof row.level_geral === "number"
+      ? row.level_geral
+      : typeof row.total_level === "number"
+        ? row.total_level
+        : profile.total_level;
+  const selectedGoldAssets = Array.isArray(row.selected_gold_assets)
+    ? row.selected_gold_assets
+    : profile.selectedGoldAssets;
   const updated = {
     ...profile,
     nickname: identity,
     userId: identity,
     banner: row.lema ?? profile.banner,
     avatar: row.avatar_url ?? profile.avatar,
-    total_level: typeof row.total_level === "number" ? row.total_level : profile.total_level,
+    total_level: level,
+    level_geral: level,
+    selectedGoldAssets,
+    widgets: Array.isArray(selectedGoldAssets) ? selectedGoldAssets : profile.widgets,
   };
-  saveProfile(updated);
+  if (Array.isArray(selectedGoldAssets)) {
+    updated.widgetsVisible = selectedGoldAssets.map(() => true);
+  }
+  if (row.asset_levels && typeof row.asset_levels === "object") {
+    const dna = seedDNAIfMissing();
+    dna.assets.forEach((asset) => {
+      if (row.asset_levels[asset.id] !== undefined) {
+        asset.level = Number(row.asset_levels[asset.id] || 0);
+      }
+    });
+    dna.lastUpdatedAt = new Date().toISOString();
+    saveDNA(dna);
+    renderTree();
+  }
+  setProfileCache(updated, shouldPersistLocalProfile());
   renderSocial();
 };
 
@@ -619,6 +698,11 @@ const ensureProfilesRow = async (user) => {
         profile.userId ||
         (user.email ? user.email.split("@")[0] : "") ||
         "";
+      const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
+        ? profile.selectedGoldAssets
+        : Array.isArray(profile.widgets)
+          ? profile.widgets
+          : [];
       const payload = {
         id: user.id,
         user_id: user.id,
@@ -627,6 +711,9 @@ const ensureProfilesRow = async (user) => {
         lema: profile.banner || "",
         avatar_url: profile.avatar || "",
         total_level: Number(profile.total_level || 0),
+        level_geral: Number(profile.total_level || 0),
+        selected_gold_assets: selectedGoldAssets,
+        asset_levels: profile.assetLevels || {},
       };
       if (useUserIdOnly) delete payload.id;
       await upsertProfileRow(payload);
@@ -765,6 +852,8 @@ const initAuth = () => {
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session?.user) {
       console.info("[supabase] session user", session.user.id);
+      currentUserId = session.user.id;
+      guestMode = false;
       ensureLocalIdentity(session.user.email);
       setAuthLocked(false);
       initApp();
@@ -773,6 +862,7 @@ const initAuth = () => {
       ensureUserMissionsRow(session.user.id);
       fetchSupabaseProfileRow(session.user.id).then((row) => applySupabaseProfileToLocal(row));
     } else {
+      currentUserId = null;
       if (!offlineFallback && !guestMode) setAuthLocked(true);
     }
   });
@@ -781,6 +871,8 @@ const initAuth = () => {
     .then((session) => {
       if (session?.data?.session?.user) {
         console.info("[supabase] session user", session.data.session.user.id);
+        currentUserId = session.data.session.user.id;
+        guestMode = false;
         ensureLocalIdentity(session.data.session.user.email);
         setAuthLocked(false);
         initApp();
@@ -791,6 +883,7 @@ const initAuth = () => {
           applySupabaseProfileToLocal(row),
         );
       } else {
+        currentUserId = null;
         setAuthLocked(true);
       }
     })
@@ -866,6 +959,11 @@ const ensureSupabaseProfile = async (profile) => {
       user = auth.data?.user;
     }
     if (!user) return;
+    const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
+      ? profile.selectedGoldAssets
+      : Array.isArray(profile.widgets)
+        ? profile.widgets
+        : [];
     const payload = {
       id: user.id,
       user_id: user.id,
@@ -873,6 +971,10 @@ const ensureSupabaseProfile = async (profile) => {
       handle: formatHandle(profile.userId || nickname || ""),
       lema: profile.banner || "",
       avatar_url: profile.avatar || "",
+      total_level: Number(profile.total_level || 0),
+      level_geral: Number(profile.total_level || 0),
+      selected_gold_assets: selectedGoldAssets,
+      asset_levels: profile.assetLevels || {},
     };
     const ok = await upsertProfileRow(payload);
     return ok;
@@ -947,6 +1049,11 @@ const syncProfileTotals = async (nextProfile = {}) => {
     const user = await getSupabaseUser();
     if (!user) return false;
     const profile = { ...loadProfile(), ...nextProfile };
+    const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
+      ? profile.selectedGoldAssets
+      : Array.isArray(profile.widgets)
+        ? profile.widgets
+        : [];
     const payload = {
       id: user.id,
       user_id: user.id,
@@ -955,6 +1062,9 @@ const syncProfileTotals = async (nextProfile = {}) => {
       lema: profile.banner || "",
       avatar_url: profile.avatar || "",
       total_level: Number(profile.total_level || 0),
+      level_geral: Number(profile.total_level || 0),
+      selected_gold_assets: selectedGoldAssets,
+      asset_levels: profile.assetLevels || {},
     };
     return await upsertProfileRow(payload);
   } catch (error) {
@@ -1024,6 +1134,12 @@ const renderTree = () => {
   if (!treeGrid) return;
   const isStandby = localStorage.getItem(HIATO_KEY) === "true";
   treeGrid.innerHTML = "";
+  treeGrid.onclick = (event) => {
+    const target = event.target.closest(".sephirot");
+    if (target?.dataset?.assetId) {
+      openTreeEditor(target.dataset.assetId);
+    }
+  };
   const assets = getAssets();
   const vitalityStats = buildVitalityStats();
   const hudLevel = document.getElementById("hud-level");
@@ -3289,6 +3405,9 @@ const initConfig = () => {
       slider.value = String(Math.max(1, Math.round(Number(asset.level || 1))));
       slider.className = "mastery-slider";
 
+      const phraseEl = document.createElement("div");
+      phraseEl.className = "mastery-phrase";
+
       const phraseInput = document.createElement("textarea");
       phraseInput.className = "mastery-textarea";
       phraseInput.placeholder = "Escreva sua frase soberana...";
@@ -3298,10 +3417,16 @@ const initConfig = () => {
         value.textContent = String(Math.round(Number(slider.value)));
         if (mode === "oracle") {
           const index = Math.max(0, Math.min(9, Number(slider.value) - 1));
-          phraseInput.value = phrases[index] || "";
+          const phrase = phrases[index] || "";
+          phraseEl.textContent = phrase;
+          phraseEl.style.display = "block";
+          phraseInput.style.display = "none";
+          phraseInput.value = phrase;
           phraseInput.readOnly = true;
         } else {
           phraseInput.readOnly = false;
+          phraseEl.style.display = "none";
+          phraseInput.style.display = "block";
         }
       };
 
@@ -3350,6 +3475,7 @@ const initConfig = () => {
       updateView();
       row.appendChild(header);
       row.appendChild(slider);
+      row.appendChild(phraseEl);
       row.appendChild(phraseInput);
       container.appendChild(row);
     });
@@ -4052,7 +4178,13 @@ const initApp = () => {
               ? [...nextProfile.widgetsVisible]
               : [];
             if (typeof nextVisible[i] !== "boolean") nextVisible[i] = true;
-            saveProfile({ ...nextProfile, widgets: updated.filter(Boolean), widgetsVisible: nextVisible });
+            const selectedGoldAssets = updated.filter(Boolean);
+            saveProfile({
+              ...nextProfile,
+              widgets: selectedGoldAssets,
+              widgetsVisible: nextVisible,
+              selectedGoldAssets,
+            });
             renderSocial();
             renderProfileWidgetDisplay(loadProfile(), seedDNAIfMissing());
           });
@@ -4115,7 +4247,15 @@ const initApp = () => {
       const identity = profileIdentity?.value?.trim() || current.nickname || current.userId || "";
       const banner = profileBanner?.value?.trim() || current.banner || "";
       const cardTheme = profileModal?.dataset.card || current.profileCardTheme || "gold";
-      const updated = { ...current, nickname: identity, userId: identity, banner, profileCardTheme: cardTheme };
+      const selectedGoldAssets = Array.isArray(current.widgets) ? current.widgets : [];
+      const updated = {
+        ...current,
+        nickname: identity,
+        userId: identity,
+        banner,
+        profileCardTheme: cardTheme,
+        selectedGoldAssets,
+      };
       saveProfile(updated);
       renderSocial();
       if (profileNameDisplay) profileNameDisplay.textContent = updated.nickname || updated.userId || "-";
@@ -4362,6 +4502,7 @@ const initApp = () => {
   if (configLogout) {
     configLogout.addEventListener("click", async () => {
       guestMode = false;
+      currentUserId = null;
       localStorage.removeItem("game_of_life.guest");
       if (isSupabaseEnabled()) {
         try {

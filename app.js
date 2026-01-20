@@ -1115,6 +1115,13 @@ const computeTotalLevel = () => {
 const updateIntegrityBar = () => {
   const fill = document.getElementById("integrity-fill");
   if (!fill) return;
+  const profile = loadProfile();
+  const moodLevel = Number(profile.moodLevel);
+  if (!Number.isNaN(moodLevel)) {
+    fill.style.width = `${Math.max(0, Math.min(100, moodLevel))}%`;
+    if (profile.moodColor) fill.style.background = profile.moodColor;
+    return;
+  }
   const planner = loadPlanner();
   const now = Date.now();
   const doneRecent = planner.bronzeActions.filter((action) => {
@@ -3190,6 +3197,43 @@ const initClock = () => {
   setInterval(tick, 1000);
 };
 
+const initMoodBar = () => {
+  const bar = document.querySelector(".integrity-bar");
+  const modal = document.getElementById("mood-modal");
+  const close = document.getElementById("mood-close");
+  const row = document.getElementById("mood-row");
+  if (!bar || !modal || !row) return;
+  const moods = [
+    { label: "Calmo", level: 20, color: "linear-gradient(90deg, #5aa9e6, #3f83c9)" },
+    { label: "Neutro", level: 50, color: "linear-gradient(90deg, #b8c1c9, #7d8b99)" },
+    { label: "Focado", level: 70, color: "linear-gradient(90deg, #7ddf64, #2cbf6b)" },
+    { label: "Irritado", level: 35, color: "linear-gradient(90deg, #ff9f1c, #ff6b6b)" },
+    { label: "Inspirado", level: 85, color: "linear-gradient(90deg, #d4af37, #f1d279)" },
+    { label: "Euforico", level: 95, color: "linear-gradient(90deg, #b14cff, #7f5cff)" },
+  ];
+  const render = () => {
+    row.innerHTML = "";
+    moods.forEach((mood) => {
+      const btn = document.createElement("button");
+      btn.className = "mood-pill";
+      btn.type = "button";
+      btn.textContent = mood.label;
+      btn.addEventListener("click", () => {
+        const profile = loadProfile();
+        saveProfile({ ...profile, moodLevel: mood.level, moodColor: mood.color });
+        updateIntegrityBar();
+        modal.classList.remove("is-open");
+      });
+      row.appendChild(btn);
+    });
+  };
+  bar.addEventListener("click", () => {
+    render();
+    modal.classList.add("is-open");
+  });
+  if (close) close.addEventListener("click", () => modal.classList.remove("is-open"));
+};
+
 let appInitialized = false;
 let offlineFallback = false;
 let guestMode = localStorage.getItem("game_of_life.guest") === "true";
@@ -3207,6 +3251,7 @@ const initApp = () => {
   }
   applyHiatoIfNeeded();
   initClock();
+  initMoodBar();
   initNav();
   renderTree();
   initPlanner();

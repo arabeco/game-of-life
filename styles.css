@@ -2658,15 +2658,15 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .dossier-actions {
   position: absolute;
-  right: 0 !important;
-  top: 0 !important;
+  right: 4px !important;
+  top: 4px !important;
   gap: 8px;
 }
 
 #tree-edit-modal #tree-edit-ok {
   position: absolute;
-  right: 12px !important;
-  top: 8px !important;
+  right: 4px !important;
+  top: 4px !important;
   padding: 8px 14px;
   border-radius: 14px;
   min-width: 48px;
@@ -2678,8 +2678,8 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal #tree-edit-edit {
   position: absolute;
-  left: 8px !important;
-  top: 8px !important;
+  left: 4px !important;
+  top: 4px !important;
   transform: scale(0.82);
   opacity: 0.6;
 }
@@ -2693,14 +2693,16 @@ html[data-status="oracle"] .sephirot {
   padding: 10px 12px 10px 46px;
   line-height: 1.4;
   font-size: clamp(14px, 4vw, 17px);
-  margin-top: 8px;
+  margin-top: 4px;
   position: relative;
   text-align: left;
+  display: flex;
+  align-items: center;
 }
 
 #tree-edit-modal .oracle-level-badge {
   position: absolute;
-  left: -2px;
+  left: -6px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
@@ -2902,6 +2904,32 @@ html[data-status="oracle"] .sephirot {
   justify-content: space-between;
   aspect-ratio: 3 / 4;
   border-radius: 12px;
+}
+
+/* No tree-edit, as arenas são "arena-card" (compact). Forçar miniatura 3-4 por linha. */
+#tree-edit-modal .linked-arenas-list .arena-card,
+#tree-edit-modal .linked-arenas-list .arena-card--mini {
+  width: 100%;
+  min-height: 72px;
+  aspect-ratio: 3 / 4;
+  padding: 6px;
+  font-size: 10px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+#tree-edit-modal .linked-arenas-list .arena-card--mini {
+  gap: 6px;
+}
+
+#tree-edit-modal .linked-arenas-list .arena-title {
+  font-size: 12px;
+}
+
+#tree-edit-modal .linked-arenas-list .arena-description,
+#tree-edit-modal .linked-arenas-list .arena-progress,
+#tree-edit-modal .linked-arenas-list .arena-meta {
+  font-size: 10px;
 }
 
 #tree-edit-modal .linked-arena button {

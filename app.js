@@ -2099,6 +2099,7 @@ const openTreeEditor = (assetId) => {
   const icon = document.getElementById("tree-edit-icon");
   const linkedArenasList = document.getElementById("linked-arenas-list");
   if (!modal || !title || !levelText) return;
+  modal.dataset.assetId = asset.id;
   title.textContent = `Editar ${LABEL_BY_ID.get(asset.id) ?? asset.label}`;
   const levelValue = Math.round(Number(asset.level || 0));
   levelText.textContent = `Nivel ${levelValue}`;
@@ -3690,10 +3691,25 @@ const initApp = () => {
     });
   }
   const treeCancel = document.getElementById("tree-edit-back");
+  const treeEditOk = document.getElementById("tree-edit-ok");
+  const treeEditEdit = document.getElementById("tree-edit-edit");
   if (treeCancel) {
     treeCancel.addEventListener("click", () => {
       playMetalClick();
       closeTreeEditor();
+    });
+  }
+  if (treeEditOk) {
+    treeEditOk.addEventListener("click", () => {
+      playMetalClick();
+      closeTreeEditor();
+    });
+  }
+  if (treeEditEdit) {
+    treeEditEdit.addEventListener("click", () => {
+      const list = document.getElementById("tree-slot-list");
+      const first = list?.querySelector("input.profile-input");
+      if (first) first.focus();
     });
   }
   window.addEventListener("storage", () => {

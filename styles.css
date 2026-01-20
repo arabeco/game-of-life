@@ -1572,7 +1572,7 @@ html[data-theme="void"] {
 }
 
 #tree-edit-modal.is-editing .profile-input {
-  display: block;
+  display: block !important;
   width: 100%;
   padding: 10px 12px;
   border-radius: 12px;
@@ -1583,7 +1583,7 @@ html[data-theme="void"] {
 }
 
 #tree-edit-modal.is-editing .slot-value {
-  display: none;
+  display: none !important;
 }
 
 #tree-edit-modal.is-editing .profile-slot {

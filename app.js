@@ -2097,7 +2097,88 @@ const renderTreeEditorSlots = (dna, assetId) => {
     }
 
     const subtitle = slotEl.querySelector(".slot-subtitle");
+    const optionsBySlot = {
+      "verdade.mbti": [
+        "INTJ",
+        "INTP",
+        "ENTJ",
+        "ENTP",
+        "INFJ",
+        "INFP",
+        "ENFJ",
+        "ENFP",
+        "ISTJ",
+        "ISFJ",
+        "ESTJ",
+        "ESFJ",
+        "ISTP",
+        "ISFP",
+        "ESTP",
+        "ESFP",
+      ],
+      "verdade.signo": [
+        "Aries",
+        "Touro",
+        "Gemeos",
+        "Cancer",
+        "Leao",
+        "Virgem",
+        "Libra",
+        "Escorpiao",
+        "Sagitario",
+        "Capricornio",
+        "Aquario",
+        "Peixes",
+      ],
+    };
+
+    const applyFieldUpdate = (field, value) => {
+      asset.profileSlots[slot.id] = {
+        ...(asset.profileSlots[slot.id] || {}),
+        [field.key]: value,
+      };
+      valueEl.textContent = getSlotDisplayText(slot) || "—";
+      const secondary = secondaryField?.key;
+      if (subtitle) {
+        subtitle.textContent =
+          secondary && asset.profileSlots?.[slot.id]?.[secondary]
+            ? String(asset.profileSlots[slot.id][secondary])
+            : "";
+      }
+      dna.lastUpdatedAt = new Date().toISOString();
+      saveDNA(dna);
+      renderSocial();
+      if (slot.id.endsWith(".lema")) {
+        const profile = loadProfile();
+        saveProfile({
+          ...profile,
+          lemaUpdatedAt: new Date().toISOString(),
+          lemaUpdatedAssetId: asset.id,
+        });
+      }
+      checkMissionProgress();
+    };
+
     fields.forEach((field) => {
+      const slotOptions = optionsBySlot[slot.id];
+      if (slotOptions && field.key === "value") {
+        const select = document.createElement("select");
+        select.className = "profile-input";
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = field.label || "Selecionar";
+        select.appendChild(empty);
+        slotOptions.forEach((opt) => {
+          const option = document.createElement("option");
+          option.value = opt;
+          option.textContent = opt;
+          select.appendChild(option);
+        });
+        select.value = asset.profileSlots[slot.id]?.[field.key] || "";
+        select.addEventListener("change", () => applyFieldUpdate(field, select.value));
+        slotEl.appendChild(select);
+        return;
+      }
       const input = document.createElement("input");
       input.className = "profile-input";
       input.placeholder = field.label;
@@ -2117,10 +2198,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
             value: Number(input.value || field.slider.min || 0),
             onSave: (nextValue) => {
               input.value = String(nextValue);
-              asset.profileSlots[slot.id] = {
-                ...(asset.profileSlots[slot.id] || {}),
-                [field.key]: String(nextValue),
-              };
+              applyFieldUpdate(field, String(nextValue));
               if (slot.id === "verdade.nascimento") {
                 const dia = Number(
                   asset.profileSlots?.["verdade.nascimento"]?.dia || 0,
@@ -2136,50 +2214,13 @@ const renderTreeEditorSlots = (dna, assetId) => {
                   };
                 }
               }
-              valueEl.textContent = getSlotDisplayText(slot) || "—";
-              const secondary = secondaryField?.key;
-              if (subtitle) {
-                subtitle.textContent =
-                  secondary && asset.profileSlots?.[slot.id]?.[secondary]
-                    ? String(asset.profileSlots[slot.id][secondary])
-                    : "";
-              }
-              dna.lastUpdatedAt = new Date().toISOString();
-              saveDNA(dna);
-              renderSocial();
               renderTreeEditorSlots(dna, assetId);
             },
           });
         });
       }
-      const applyFieldUpdate = () => {
-        asset.profileSlots[slot.id] = {
-          ...(asset.profileSlots[slot.id] || {}),
-          [field.key]: input.value,
-        };
-        valueEl.textContent = getSlotDisplayText(slot) || "—";
-        const secondary = secondaryField?.key;
-        if (subtitle) {
-          subtitle.textContent =
-            secondary && asset.profileSlots?.[slot.id]?.[secondary]
-              ? String(asset.profileSlots[slot.id][secondary])
-              : "";
-        }
-        dna.lastUpdatedAt = new Date().toISOString();
-        saveDNA(dna);
-        renderSocial();
-        if (slot.id.endsWith(".lema")) {
-          const profile = loadProfile();
-          saveProfile({
-            ...profile,
-            lemaUpdatedAt: new Date().toISOString(),
-            lemaUpdatedAssetId: asset.id,
-          });
-        }
-        checkMissionProgress();
-      };
-      input.addEventListener("input", applyFieldUpdate);
-      input.addEventListener("change", applyFieldUpdate);
+      input.addEventListener("input", () => applyFieldUpdate(field, input.value));
+      input.addEventListener("change", () => applyFieldUpdate(field, input.value));
       slotEl.appendChild(input);
     });
 

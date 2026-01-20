@@ -438,17 +438,34 @@ const parseDurationToMinutes = (raw) => {
 const ensureV2Reset = () => {
   const resetDone = localStorage.getItem(V2_RESET_KEY) === "true";
   if (resetDone) return;
-  localStorage.clear();
+  const keysToClear = [
+    STORAGE_KEY,
+    PLANNER_KEY,
+    PROFILE_KEY,
+    ARENAS_KEY,
+    HIATO_KEY,
+    LOGIN_KEY,
+    GLITCH_KEY,
+    MISSIONS_KEY,
+    MODE_KEY,
+  ];
+  keysToClear.forEach((key) => localStorage.removeItem(key));
   localStorage.setItem(V2_RESET_KEY, "true");
 };
 
 let cachedProfile = null;
 let currentUserId = null;
+let cachedDNA = null;
+let cachedPlanner = null;
 
-const shouldPersistLocalProfile = () => !isSupabaseEnabled() || guestMode || !currentUserId;
+const shouldPersistLocalData = () => !isSupabaseEnabled() || guestMode || !currentUserId;
 
 const loadProfile = () => {
   if (cachedProfile) return cachedProfile;
+  if (!shouldPersistLocalData()) {
+    cachedProfile = {};
+    return cachedProfile;
+  }
   try {
     const raw = localStorage.getItem(PROFILE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
@@ -460,22 +477,25 @@ const loadProfile = () => {
   }
 };
 
-const setProfileCache = (profile, persistLocal = shouldPersistLocalProfile()) => {
+const setProfileCache = (profile, persistLocal = shouldPersistLocalData()) => {
   cachedProfile = profile || {};
   if (persistLocal) {
     localStorage.setItem(PROFILE_KEY, JSON.stringify(cachedProfile));
   }
 };
 
-const queueProfileSync = (() => {
+const queueSupabaseProfileUpdate = (() => {
   let timer = null;
-  return (profile) => {
+  let pending = {};
+  return (partialPayload = {}) => {
     if (!isSupabaseEnabled() || guestMode || !currentUserId) return;
+    pending = { ...pending, ...partialPayload };
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
       try {
         const user = await getSupabaseUser();
         if (!user) return;
+        const profile = loadProfile();
         const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
           ? profile.selectedGoldAssets
           : Array.isArray(profile.widgets)
@@ -492,7 +512,9 @@ const queueProfileSync = (() => {
           level_geral: Number(profile.total_level || 0),
           selected_gold_assets: selectedGoldAssets,
           asset_levels: profile.assetLevels || {},
+          ...pending,
         };
+        pending = {};
         await upsertProfileRow(payload);
       } catch (error) {
         logSupabaseError("profiles.upsert (queue)", error);
@@ -503,9 +525,9 @@ const queueProfileSync = (() => {
 
 const saveProfile = (profile, options = {}) => {
   const nextProfile = profile || {};
-  const persistLocal = options.persistLocal ?? shouldPersistLocalProfile();
+  const persistLocal = options.persistLocal ?? shouldPersistLocalData();
   setProfileCache(nextProfile, persistLocal);
-  queueProfileSync(nextProfile);
+  queueSupabaseProfileUpdate();
 };
 
 const applyTheme = (theme) => {
@@ -613,18 +635,26 @@ const applySupabaseProfileToLocal = (row) => {
   if (Array.isArray(selectedGoldAssets)) {
     updated.widgetsVisible = selectedGoldAssets.map(() => true);
   }
-  if (row.asset_levels && typeof row.asset_levels === "object") {
-    const dna = seedDNAIfMissing();
+  const persistLocal = shouldPersistLocalData();
+  if (row.dna_state && Array.isArray(row.dna_state.assets)) {
+    setDNACache(row.dna_state, persistLocal);
+  } else if (row.asset_levels && typeof row.asset_levels === "object") {
+    const dna = buildDefaultDNA();
     dna.assets.forEach((asset) => {
       if (row.asset_levels[asset.id] !== undefined) {
         asset.level = Number(row.asset_levels[asset.id] || 0);
       }
     });
     dna.lastUpdatedAt = new Date().toISOString();
-    saveDNA(dna);
-    renderTree();
+    setDNACache(dna, persistLocal);
   }
-  setProfileCache(updated, shouldPersistLocalProfile());
+  if (row.planner_state && typeof row.planner_state === "object") {
+    setPlannerCache(row.planner_state, persistLocal);
+  } else {
+    setPlannerCache(buildDefaultPlanner(), persistLocal);
+  }
+  setProfileCache(updated, persistLocal);
+  renderTree();
   renderSocial();
 };
 
@@ -721,6 +751,32 @@ const ensureProfilesRow = async (user) => {
   } catch (error) {
     logSupabaseError("ensureProfilesRow", error);
   }
+};
+
+const hydrateSupabaseState = async (user) => {
+  if (!user?.id) return;
+  await ensureProfilesRow(user);
+  const row = await fetchSupabaseProfileRow(user.id);
+  if (row) {
+    applySupabaseProfileToLocal(row);
+    return;
+  }
+  const dna = buildDefaultDNA();
+  const planner = buildDefaultPlanner();
+  setDNACache(dna, shouldPersistLocalData());
+  setPlannerCache(planner, shouldPersistLocalData());
+  queueSupabaseProfileUpdate({ dna_state: dna, planner_state: planner });
+};
+
+const bootstrapSupabaseSession = async (user) => {
+  if (!user) return;
+  currentUserId = user.id;
+  guestMode = false;
+  ensureLocalIdentity(user.email);
+  await hydrateSupabaseState(user);
+  setAuthLocked(false);
+  initApp();
+  ensureUserMissionsRow(user.id);
 };
 
 const initAuth = () => {
@@ -837,6 +893,10 @@ const initAuth = () => {
   if (guestBtn) {
     guestBtn.addEventListener("click", () => {
       guestMode = true;
+      currentUserId = null;
+      cachedProfile = null;
+      cachedDNA = null;
+      cachedPlanner = null;
       localStorage.setItem("game_of_life.guest", "true");
       setAuthLocked(false);
       initApp();
@@ -852,15 +912,7 @@ const initAuth = () => {
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session?.user) {
       console.info("[supabase] session user", session.user.id);
-      currentUserId = session.user.id;
-      guestMode = false;
-      ensureLocalIdentity(session.user.email);
-      setAuthLocked(false);
-      initApp();
-      ensureProfilesRow(session.user);
-      ensureSupabaseProfile(loadProfile());
-      ensureUserMissionsRow(session.user.id);
-      fetchSupabaseProfileRow(session.user.id).then((row) => applySupabaseProfileToLocal(row));
+      bootstrapSupabaseSession(session.user);
     } else {
       currentUserId = null;
       if (!offlineFallback && !guestMode) setAuthLocked(true);
@@ -871,17 +923,7 @@ const initAuth = () => {
     .then((session) => {
       if (session?.data?.session?.user) {
         console.info("[supabase] session user", session.data.session.user.id);
-        currentUserId = session.data.session.user.id;
-        guestMode = false;
-        ensureLocalIdentity(session.data.session.user.email);
-        setAuthLocked(false);
-        initApp();
-        ensureProfilesRow(session.data.session.user);
-        ensureSupabaseProfile(loadProfile());
-        ensureUserMissionsRow(session.data.session.user.id);
-        fetchSupabaseProfileRow(session.data.session.user.id).then((row) =>
-          applySupabaseProfileToLocal(row),
-        );
+        bootstrapSupabaseSession(session.data.session.user);
       } else {
         currentUserId = null;
         setAuthLocked(true);
@@ -964,6 +1006,8 @@ const ensureSupabaseProfile = async (profile) => {
       : Array.isArray(profile.widgets)
         ? profile.widgets
         : [];
+    const dna = loadDNA();
+    const planner = loadPlanner();
     const payload = {
       id: user.id,
       user_id: user.id,
@@ -975,6 +1019,8 @@ const ensureSupabaseProfile = async (profile) => {
       level_geral: Number(profile.total_level || 0),
       selected_gold_assets: selectedGoldAssets,
       asset_levels: profile.assetLevels || {},
+      dna_state: dna || undefined,
+      planner_state: planner || undefined,
     };
     const ok = await upsertProfileRow(payload);
     return ok;
@@ -1108,12 +1154,26 @@ const formatHudDate = () => {
   }`;
 };
 
+const buildDefaultDNA = () => ({
+  assets: SEPHIROT.map((asset) => ({
+    id: asset.id,
+    label: asset.label,
+    level: 0,
+    slots: [],
+  })),
+  hobbies: [],
+  lastUpdatedAt: new Date(0).toISOString(),
+});
+
 const loadDNA = () => {
+  if (cachedDNA) return cachedDNA;
+  if (!shouldPersistLocalData()) return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.assets)) return null;
+    cachedDNA = parsed;
     return parsed;
   } catch {
     return null;
@@ -1190,26 +1250,42 @@ const renderTree = () => {
   });
 };
 
+const buildDefaultPlanner = () => ({ pills: [], logistics: {}, bronzeActions: [] });
+
 const loadPlanner = () => {
+  if (cachedPlanner) return cachedPlanner;
+  if (!shouldPersistLocalData()) return buildDefaultPlanner();
   try {
     const raw = localStorage.getItem(PLANNER_KEY);
-    if (!raw) return { pills: [], logistics: {}, bronzeActions: [] };
+    if (!raw) return buildDefaultPlanner();
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.pills)) {
-      return { pills: [], logistics: {}, bronzeActions: [] };
+      return buildDefaultPlanner();
     }
-    return {
+    cachedPlanner = {
       pills: parsed.pills,
       logistics: parsed.logistics ?? {},
       bronzeActions: Array.isArray(parsed.bronzeActions) ? parsed.bronzeActions : [],
     };
+    return cachedPlanner;
   } catch {
-    return { pills: [], logistics: {}, bronzeActions: [] };
+    return buildDefaultPlanner();
   }
 };
 
-const savePlanner = (planner) => {
-  localStorage.setItem(PLANNER_KEY, JSON.stringify(planner));
+const setPlannerCache = (planner, persistLocal = shouldPersistLocalData()) => {
+  cachedPlanner = planner || buildDefaultPlanner();
+  if (persistLocal) {
+    localStorage.setItem(PLANNER_KEY, JSON.stringify(cachedPlanner));
+  }
+};
+
+const savePlanner = (planner, options = {}) => {
+  const persistLocal = options.persistLocal ?? shouldPersistLocalData();
+  setPlannerCache(planner, persistLocal);
+  if (!options.skipSync) {
+    queueSupabaseProfileUpdate({ planner_state: planner });
+  }
 };
 
 const DEFAULT_CHECKLIST_ITEMS = ["Agua", "Alimentacao", "Sono", "Limpeza"];
@@ -2189,33 +2265,46 @@ const initNav = () => {
   });
 };
 
-const getDNA = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
+const getDNA = () => loadDNA();
+
+const setDNACache = (dna, persistLocal = shouldPersistLocalData()) => {
+  cachedDNA = dna || buildDefaultDNA();
+  if (persistLocal) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cachedDNA));
   }
 };
 
-const saveDNA = (dna) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(dna));
+const computeAssetLevelsFromDNA = (dna) =>
+  (dna?.assets || []).reduce((acc, asset) => {
+    acc[asset.id] = Number(asset.level || 0);
+    return acc;
+  }, {});
+
+const computeTotalLevelFromDNA = (dna) =>
+  (dna?.assets || []).reduce((sum, asset) => sum + Number(asset.level || 0), 0);
+
+const saveDNA = (dna, options = {}) => {
+  const persistLocal = options.persistLocal ?? shouldPersistLocalData();
+  setDNACache(dna, persistLocal);
+  if (options.skipSync) return;
+  const assetLevels = computeAssetLevelsFromDNA(dna);
+  const total = computeTotalLevelFromDNA(dna);
+  const profile = loadProfile();
+  const updatedProfile = { ...profile, assetLevels, total_level: total, level_geral: total };
+  setProfileCache(updatedProfile, persistLocal);
+  queueSupabaseProfileUpdate({
+    dna_state: dna,
+    asset_levels: assetLevels,
+    total_level: total,
+    level_geral: total,
+  });
 };
 
 const seedDNAIfMissing = () => {
   const existing = getDNA();
   if (existing && Array.isArray(existing.assets)) return existing;
-  const seeded = {
-    assets: SEPHIROT.map((asset) => ({
-      id: asset.id,
-      label: asset.label,
-      level: 0,
-      slots: [],
-    })),
-    hobbies: [],
-    lastUpdatedAt: new Date(0).toISOString(),
-  };
-  saveDNA(seeded);
+  const seeded = buildDefaultDNA();
+  saveDNA(seeded, { skipSync: true });
   return seeded;
 };
 
@@ -4503,6 +4592,9 @@ const initApp = () => {
     configLogout.addEventListener("click", async () => {
       guestMode = false;
       currentUserId = null;
+      cachedProfile = null;
+      cachedDNA = null;
+      cachedPlanner = null;
       localStorage.removeItem("game_of_life.guest");
       if (isSupabaseEnabled()) {
         try {

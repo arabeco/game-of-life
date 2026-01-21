@@ -4806,6 +4806,9 @@ const initApp = () => {
 
 const startAppWithSplash = () => {
   const loading = document.getElementById("loading-screen");
+  const buildMeta = document.querySelector('meta[name="gol-build"]')?.getAttribute("content") || "dev";
+  const buildStamp = document.getElementById("build-stamp");
+  if (buildStamp) buildStamp.textContent = `build ${buildMeta}`;
   let started = false;
   const start = () => {
     if (started) return;

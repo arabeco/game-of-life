@@ -1463,21 +1463,109 @@ html[data-theme="void"] {
   border-bottom: 1px solid rgba(212, 175, 55, 0.8);
 }
 
+/* New Slot System Styles */
+.section-title {
+  grid-column: span 6;
+  color: var(--secondary-color, #888);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.25rem;
+}
+
 .profile-slot {
   position: relative;
-  border: 1px solid rgba(212, 175, 55, 0.6);
-  border-radius: 12px;
-  background: rgba(16, 16, 16, 0.7);
-  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 10px;
-  backdrop-filter: none;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
-  font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
-  max-height: 400px;
-  min-height: 200px;
+  justify-content: center;
+  min-height: 60px;
+}
+
+.slot-type-1 {
+  /* Typography focused */
+}
+
+.slot-type-2 {
+  align-items: center;
+  text-align: center;
+}
+.slot-label-small {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-bottom: 0.25rem;
+}
+.slot-value-large {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.slot-type-3 {
+  aspect-ratio: 1;
+  background-size: cover;
+  background-position: center;
+  justify-content: flex-end;
+  padding: 0;
+  overflow: hidden;
+}
+.slot-caption {
+  width: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  color: #fff;
+  padding: 0.75rem;
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.proficiency-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+.proficiency-bar-fill {
+  height: 100%;
+  background: var(--accent-gold);
+  border-radius: 2px;
+}
+
+
+#tree-edit-modal:not(.is-editing) .profile-input,
+#tree-edit-modal:not(.is-editing) .hidden-file {
+  display: none;
+}
+
+#tree-edit-modal.is-editing .slot-value,
+#tree-edit-modal.is-editing .slot-value-large,
+#tree-edit-modal.is-editing .slot-caption {
+  display: none;
+}
+
+.profile-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  width: calc(100% - 1.5rem);
+}
+.hidden-file {
+  display: none;
 }
 
 .profile-slot::before {

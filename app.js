@@ -264,19 +264,215 @@ const LAYOUT_CONFIG = {
     { slot: "forma", type: 1, span: 6 },
   ],
 };
+const PROTOCOL_SLOTS = {
+  conexao: [
+    { id: "conexao.lema", label: "Lema de Vida", type: "rect-wide" },
+    { id: "conexao.crenca1", label: "Crenca Principal 1", type: "rect-wide" },
+    { id: "conexao.crenca2", label: "Crenca Principal 2", type: "rect-wide" },
+    { id: "conexao.crenca3", label: "Crenca Principal 3", type: "rect-wide" },
+  ],
+  espiritualidade: [
+    { id: "espiritualidade.sistema", label: "Sistema", type: "rect" },
+    { id: "espiritualidade.entidade1", label: "Entidade Lider", type: "square-2" },
+    { id: "espiritualidade.entidade2", label: "Entidade Protetora", type: "square-2" },
+  ],
+  mente: [
+    { id: "mente.filosofia", label: "Filosofia Operacional", type: "rect-wide" },
+  ],
+  verdade: [
+    { id: "verdade.mtp", label: "Missao de Vida", type: "rect-wide-tall" },
+    { id: "verdade.trait1", label: "Trait 1", type: "rect-small" },
+    { id: "verdade.trait2", label: "Trait 2", type: "rect-small" },
+    { id: "verdade.trait3", label: "Trait 3", type: "rect-small" },
+    {
+      id: "verdade.nascimento",
+      label: "Nascimento",
+      type: "rect-small",
+      fields: [
+        { key: "dia", label: "Dia", slider: { min: 1, max: 31, step: 1, unit: "" } },
+        { key: "mes", label: "Mes", slider: { min: 1, max: 12, step: 1, unit: "" } },
+      ],
+    },
+    { id: "verdade.signo", label: "Signo", type: "rect-small" },
+    { id: "verdade.mbti", label: "MBTI", type: "rect-small" },
+    { id: "verdade.foto1", label: "Foto 1", type: "square-2" },
+    { id: "verdade.foto2", label: "Foto 2", type: "square-2" },
+    { id: "verdade.foto3", label: "Foto 3", type: "square-2" },
+  ],
+  inspiracao: [
+    {
+      id: "inspiracao.proj1",
+      label: "Projeto 1",
+      type: "square-2",
+      fields: [
+        { key: "nome", label: "Nome" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "Progresso" },
+      ],
+    },
+    {
+      id: "inspiracao.proj2",
+      label: "Projeto 2",
+      type: "square-2",
+      fields: [
+        { key: "nome", label: "Nome" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "Progresso" },
+      ],
+    },
+    {
+      id: "inspiracao.proj3",
+      label: "Projeto 3",
+      type: "square-2",
+      fields: [
+        { key: "nome", label: "Nome" },
+        { key: "logo", label: "Logo" },
+        { key: "progresso", label: "Progresso" },
+      ],
+    },
+  ],
+  amor: [
+    {
+      id: "amor.conexao1",
+      label: "Conexao 1",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+    {
+      id: "amor.conexao2",
+      label: "Conexao 2",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+    {
+      id: "amor.conexao3",
+      label: "Conexao 3",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+    {
+      id: "amor.conexao4",
+      label: "Conexao 4",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+    {
+      id: "amor.conexao5",
+      label: "Conexao 5",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+    {
+      id: "amor.conexao6",
+      label: "Conexao 6",
+      type: "square",
+      fields: [
+        { key: "foto", label: "Foto" },
+        { key: "nome", label: "Nome (Topo)" },
+        { key: "nota", label: "Nota (Baixo)" },
+      ],
+    },
+  ],
+  abundancia: [
+    { id: "abundancia.renda", label: "Renda Mensal", type: "rect-wide", fields: [{ key: "valor", label: "Renda", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
+    { id: "abundancia.gasto", label: "Gasto Mensal", type: "rect-wide", fields: [{ key: "valor", label: "Gasto", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
+    { id: "abundancia.liquidez", label: "Liquidez", type: "rect-wide", fields: [{ key: "valor", label: "Liquidez", slider: { min: 0, max: 200000, step: 100, unit: "R$" } }] },
+    { id: "abundancia.ativo1", label: "Ativo 1", type: "square-2" },
+    { id: "abundancia.ativo2", label: "Ativo 2", type: "square-2" },
+    { id: "abundancia.ativo3", label: "Ativo 3", type: "square-2" },
+  ],
+  trabalho: [
+    { id: "trabalho.pec", label: "Classe 1", type: "rect" },
+    { id: "trabalho.unip", label: "Classe 2", type: "rect" },
+    { id: "trabalho.personal", label: "Classe 3", type: "rect" },
+    { id: "trabalho.cursos", label: "Cursos", type: "rect-wide" },
+    { id: "trabalho.historico", label: "Historico", type: "rect-wide" },
+  ],
+  autenticidade: [
+    {
+      id: "autenticidade.hobby1",
+      label: "Hobby 1",
+      type: "square-2",
+      fields: [
+        { key: "hobby", label: "Hobby" },
+        { key: "logo", label: "Logo" },
+        { key: "rank", label: "Rank" },
+      ],
+    },
+    {
+      id: "autenticidade.hobby2",
+      label: "Hobby 2",
+      type: "square-2",
+      fields: [
+        { key: "hobby", label: "Hobby" },
+        { key: "logo", label: "Logo" },
+        { key: "rank", label: "Rank" },
+      ],
+    },
+    {
+      id: "autenticidade.hobby3",
+      label: "Hobby 3",
+      type: "square-2",
+      fields: [
+        { key: "hobby", label: "Hobby" },
+        { key: "logo", label: "Logo" },
+        { key: "rank", label: "Rank" },
+      ],
+    },
+  ],
+  fisico: [
+    { id: "fisico.peso", label: "Peso", type: "rect-small", fields: [{ key: "kg", label: "Peso", slider: { min: 40, max: 200, step: 1, unit: "kg" } }] },
+    { id: "fisico.altura", label: "Altura", type: "rect-small", fields: [{ key: "cm", label: "Altura", slider: { min: 140, max: 220, step: 1, unit: "cm" } }] },
+    { id: "fisico.gordura", label: "%G", type: "rect-small", fields: [{ key: "percent", label: "%G", slider: { min: 5, max: 40, step: 1, unit: "%" } }] },
+    { id: "fisico.flexao", label: "Flexao", type: "rect-tall", fields: [{ key: "reps", label: "Reps", slider: { min: 0, max: 200, step: 1, unit: "x" } }] },
+    { id: "fisico.barra", label: "Barra", type: "rect-tall", fields: [{ key: "reps", label: "Reps", slider: { min: 0, max: 50, step: 1, unit: "x" } }] },
+    { id: "fisico.corrida1", label: "Corrida 1km", type: "rect-tall", fields: [{ key: "min", label: "Min", slider: { min: 3, max: 20, step: 1, unit: "min" } }] },
+    { id: "fisico.corrida5", label: "Corrida 5km", type: "rect-tall", fields: [{ key: "min", label: "Min", slider: { min: 12, max: 60, step: 1, unit: "min" } }] },
+  ],
+};
+
+const getDossierSlots = (assetId) => {
+  const base = PROTOCOL_SLOTS[assetId] || [];
+  const lemaId = `${assetId}.lema`;
+  const lemaSlot = base.find((slot) => slot.id === lemaId);
+  const withoutLema = base.filter((slot) => slot.id !== lemaId);
+  if (assetId !== "conexao") {
+    return withoutLema;
+  }
+  return lemaSlot
+    ? [lemaSlot, ...withoutLema]
+    : [{ id: lemaId, label: "Lema", type: "rect-wide" }, ...withoutLema];
+};
 
 const getSlotOptions = () => {
   const options = [];
-  Object.entries(LAYOUT_CONFIG).forEach(([assetId, slots]) => {
-    slots.forEach((slotConfig) => {
-      if (slotConfig.slot) {
-        const slotId = `${assetId}.${slotConfig.slot}`;
-        const label = slotConfig.label || slotConfig.slot;
-        options.push({
-          id: slotId,
-          label: `${LABEL_BY_ID.get(assetId) ?? assetId} · ${label}`,
-        });
-      }
+  Object.entries(PROTOCOL_SLOTS).forEach(([assetId, slots]) => {
+    getDossierSlots(assetId).forEach((slot) => {
+      const slotId = slot.id.startsWith(`${assetId}.`) ? slot.id : `${assetId}.${slot.id}`;
+      options.push({
+        id: slotId,
+        label: `${LABEL_BY_ID.get(assetId) ?? assetId} · ${slot.label}`,
+      });
     });
   });
   return options;
@@ -2296,7 +2492,6 @@ const renderTreeEditorSlots = (dna, assetId) => {
   list.innerHTML = "";
   if (!asset) return;
 
-  // Setup grid container
   list.style.display = "grid";
   list.style.gridTemplateColumns = "repeat(6, 1fr)";
   list.style.gap = "0.5rem";
@@ -2309,11 +2504,9 @@ const renderTreeEditorSlots = (dna, assetId) => {
     asset.profileSlots[slotId] = { ...currentData, [key]: value };
     dna.lastUpdatedAt = new Date().toISOString();
     saveDNA(dna);
-    // Re-render this specific slot or the whole view if needed
   };
 
   layout.forEach((config, index) => {
-    // SECTION TITLE
     if (config.title) {
       const titleEl = document.createElement("h3");
       titleEl.className = "section-title";
@@ -2336,7 +2529,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
     }
 
     switch (config.type) {
-      case 1: { // SLOT TYPE 1 - Frase/Texto
+      case 1: {
         slotEl.classList.add("slot-type-1");
         const label = document.createElement("div");
         label.className = "slot-label";
@@ -2371,7 +2564,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
         }
         break;
       }
-      case 2: { // SLOT TYPE 2 - Info/Tag
+      case 2: {
         slotEl.classList.add("slot-type-2");
         const label = document.createElement("div");
         label.className = "slot-label-small";
@@ -2396,7 +2589,7 @@ const renderTreeEditorSlots = (dna, assetId) => {
         slotEl.appendChild(input);
         break;
       }
-      case 3: { // SLOT TYPE 3 - Visual/Foto
+      case 3: {
         slotEl.classList.add("slot-type-3");
         if (slotData.image) {
           slotEl.style.backgroundImage = `url(${slotData.image})`;

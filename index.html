@@ -109,8 +109,8 @@
             <button class="toggle-button" id="day-prev" aria-label="Dia anterior">?</button>
             <div class="toggle-button is-active" id="day-label">Hoje</div>
             <button class="toggle-button" id="day-next" aria-label="Dia seguinte">?</button>
-            <button class="toggle-button is-active" id="view-day">Dia</button>
-            <button class="toggle-button" id="view-week">Semana</button>
+            <button class="toggle-button is-active" id="view-day">D</button>
+            <button class="toggle-button" id="view-week">S</button>
           </div>
           <div class="bronze-backlog" id="bronze-backlog">
             <div class="drawer-title">A??es de Bronze</div>
@@ -570,29 +570,35 @@
     </div>
 
     <div class="modal" id="arena-dossier">
-      <div class="modal-card dossier-card silver-card arena-card-full scan-card scan-silver">
-        <div class="dossier-header">
-          <button class="close-button" id="arena-dossier-back" aria-label="Voltar">
-            <i data-lucide="arrow-left"></i>
-          </button>
-          <div class="dossier-title">
-            <div class="drawer-title" id="arena-dossier-title">Arena</div>
-            <div class="dossier-level" id="arena-dossier-progress">0/0</div>
-          </div>
+      <div class="modal-card arena-dossier-card">
+        <button class="close-button arena-dossier-close" id="arena-dossier-back" aria-label="Voltar">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <div class="arena-dossier-logo" id="arena-dossier-logo">
+          <i data-lucide="circle"></i>
         </div>
-        <div class="modal-body dossier-body arena-card-body">
-          <div class="field-label">Objetivo Macro</div>
-          <div class="arena-macro" id="arena-dossier-macro">Sem objetivo</div>
-          <div class="arena-progress-bar arena-progress-gold">
-            <div class="arena-progress-fill" id="arena-dossier-fill"></div>
+        <div class="arena-dossier-title" id="arena-dossier-title">Arena</div>
+        <div class="arena-dossier-asset" id="arena-dossier-asset">Ativo</div>
+        <div class="arena-dossier-description" id="arena-dossier-macro">Sem descrição</div>
+        <div class="arena-dossier-bronze-section">
+          <div class="arena-dossier-bronze-header">
+            <span>Ações de Bronze</span>
+            <button class="bronze-add-btn" id="arena-dossier-add-bronze">
+              <i data-lucide="plus"></i>
+            </button>
           </div>
-          <div class="slot-header">Acoes de Bronze</div>
           <div class="bronze-list" id="arena-dossier-bronze"></div>
         </div>
+        <div class="arena-dossier-progress-section">
+          <div class="arena-dossier-progress-label">
+            <span id="arena-dossier-progress">0%</span>
+          </div>
+          <div class="arena-dossier-progress-bar">
+            <div class="arena-dossier-progress-fill" id="arena-dossier-fill"></div>
+          </div>
+        </div>
         <div class="arena-dossier-footer">
-          <i data-lucide="star"></i>
-          <span id="arena-dossier-target">Meta Atual</span>
-          <button class="icon-button arena-meta-edit" id="arena-dossier-edit-meta" aria-label="Editar Meta">
+          <button class="icon-button arena-meta-edit" id="arena-dossier-edit-meta" aria-label="Editar Arena">
             <i data-lucide="pencil"></i>
           </button>
         </div>

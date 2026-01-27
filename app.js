@@ -1656,8 +1656,8 @@ const renderWeekView = () => {
     const dayCol = document.createElement("div");
     dayCol.className = "week-day-col";
     dayCol.style.position = "absolute";
-    dayCol.style.left = `${(dayIndex * (100 / 7))}%`;
-    dayCol.style.width = `${100 / 7}%`;
+    dayCol.style.left = `calc(48px + ${dayIndex} * (100% - 48px) / 7)`;
+    dayCol.style.width = `calc((100% - 48px) / 7)`;
     dayCol.style.top = `${timelineTopPadding}px`;
     dayCol.style.height = `${hourCount * slotHeight}px`;
     dayCol.style.borderLeft = dayIndex > 0 ? "1px solid rgba(255, 255, 255, 0.08)" : "none";
@@ -3015,8 +3015,10 @@ const openArenaDossier = (arenaId) => {
   const progress = document.getElementById("arena-dossier-progress");
   const macro = document.getElementById("arena-dossier-macro");
   const bronzeList = document.getElementById("arena-dossier-bronze");
-  const targetLabel = document.getElementById("arena-dossier-target");
   const progressFill = document.getElementById("arena-dossier-fill");
+  const logo = document.getElementById("arena-dossier-logo");
+  const asset = document.getElementById("arena-dossier-asset");
+  const addBronzeBtn = document.getElementById("arena-dossier-add-bronze");
   if (!modal || !title || !progress || !macro || !bronzeList) return;
   const arenas = loadArenas();
   const arena = arenas.find((item) => item.id === arenaId);
@@ -3028,14 +3030,22 @@ const openArenaDossier = (arenaId) => {
   } else {
     progress.textContent = `${Math.round(completionValue)}%`;
   }
-  macro.textContent = arena.description || "Sem descricao.";
-  if (targetLabel) {
-    targetLabel.textContent = arena.targetCount
-      ? `Meta Atual: ${Number(arena.completedCount || 0)}/${arena.targetCount}`
-      : "Meta Atual: livre";
+  macro.textContent = arena.description || "Sem descrição.";
+  if (asset) {
+    asset.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
+  }
+  if (logo) {
+    const iconName = arena.icon || ICON_BY_ID[arena.assetId] || "circle";
+    logo.innerHTML = `<i data-lucide="${iconName}"></i>`;
   }
   if (progressFill) {
     progressFill.style.width = `${Math.min(100, Math.max(0, completionValue))}%`;
+  }
+  if (addBronzeBtn) {
+    addBronzeBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openBronzeModal(arenaId);
+    });
   }
   bronzeList.innerHTML = "";
   const planner = loadPlanner();
@@ -3096,14 +3106,6 @@ const openArenaDossier = (arenaId) => {
       bronzeList.appendChild(item);
     });
   }
-  const quickAdd = document.createElement("button");
-  quickAdd.type = "button";
-  quickAdd.className = "bronze-add-inline";
-  quickAdd.innerHTML = '<i data-lucide="plus"></i>';
-  quickAdd.addEventListener("click", () => {
-    openBronzeModal(arenaId);
-  });
-  bronzeList.appendChild(quickAdd);
   if (window.lucide) window.lucide.createIcons();
   modal.dataset.arenaId = arenaId;
   modal.classList.add("is-open");
@@ -3978,7 +3980,8 @@ const initPlanner = () => {
     }
     if (plannerLayout) plannerLayout.classList.toggle("week-view", mode === "week");
     if (timeline) timeline.classList.toggle("is-hidden", mode !== "day");
-    if (bronzeBacklog) bronzeBacklog.classList.toggle("is-hidden", mode !== "day");
+    // Bronze backlog sempre visível (dia e semana)
+    if (bronzeBacklog) bronzeBacklog.classList.remove("is-hidden");
     if (weekGrid) weekGrid.classList.toggle("is-hidden", mode !== "week");
   };
   if (viewDay) viewDay.addEventListener("click", () => setView("day"));
@@ -5664,8 +5667,8 @@ const startScanAnimation = async (startDate, endDate) => {
     scanAnimation.classList.remove("is-scanning"); // Garantir que não está em estado anterior
     
     // Forçar display do container
-    scanContainer.style.display = "flex";
     scanContainer.classList.remove("is-hidden");
+    scanContainer.style.display = "flex";
     console.log("[Scan] Container exibido");
     
     // Scroll para o topo

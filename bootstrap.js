@@ -50,21 +50,42 @@ const withTimeout = (promise, ms) =>
       });
   });
 
-setLoadingStatus("iniciando", 5);
-await withTimeout(loadEnv(), 2000);
-setLoadingStatus("carregando app", 85);
-try {
-  await import("./app.js");
-} catch (error) {
-  console.error("[bootstrap] falha ao carregar app.js", error);
-}
-setLoadingStatus("finalizando", 100);
+(async () => {
+  setLoadingStatus("iniciando", 5);
+  await withTimeout(loadEnv(), 2000);
 
-const loading = document.getElementById("loading-screen");
-if (loading) {
-  loading.classList.add("fade-out");
-  setTimeout(() => loading.remove(), 300);
-}
-document.body.classList.add("auth-locked");
-const screen = document.getElementById("auth-screen");
-if (screen) screen.classList.add("is-open");
+  // Aguardar Supabase carregar se necessário
+  if (typeof window.supabase === "undefined") {
+    setLoadingStatus("carregando dependencias", 70);
+    await new Promise((resolve) => {
+      let attempts = 0;
+      const checkSupabase = () => {
+        if (window.supabase || attempts > 20) {
+          resolve();
+          return;
+        }
+        attempts++;
+        setTimeout(checkSupabase, 100);
+      };
+      checkSupabase();
+    });
+  }
+
+  setLoadingStatus("carregando app", 85);
+  try {
+    await import("./app.js");
+  } catch (error) {
+    console.error("[bootstrap] falha ao carregar app.js", error);
+    // Continuar mesmo com erro para modo offline
+  }
+  setLoadingStatus("finalizando", 100);
+
+  const loading = document.getElementById("loading-screen");
+  if (loading) {
+    loading.classList.add("fade-out");
+    setTimeout(() => loading.remove(), 300);
+  }
+  document.body.classList.add("auth-locked");
+  const screen = document.getElementById("auth-screen");
+  if (screen) screen.classList.add("is-open");
+})();

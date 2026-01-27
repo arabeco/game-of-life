@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "total_slots": 31,
+    "type_counts": {
+      "type1": 9,
+      "type2": 2,
+      "type3": 15,
+      "type4": 3,
+      "type5": 2
+    }
+  },
+  "slots": [
+    { "type": "type1", "asset": "gratitude", "label": "Lema Principal (Mantra)" },
+    { "type": "type1", "asset": "gratitude", "label": "Crença Suporte 1" },
+    { "type": "type1", "asset": "gratitude", "label": "Crença Suporte 2" },
+    { "type": "type1", "asset": "spirit", "label": "Sistema de Crença (Religião/Filosofia)" },
+    { "type": "type1", "asset": "mental", "label": "Filosofia Operacional (Mindset)" },
+    { "type": "type1", "asset": "truth", "label": "Missão de Vida / MTP" },
+    { "type": "type1", "asset": "abundance", "label": "Burn Rate / Indicador Financeiro" },
+    { "type": "type1", "asset": "abundance", "label": "Baixo Risco Investido (Reserva)" },
+    { "type": "type1", "asset": "physical", "label": "Status Físico (Wheel Picker renderizado neste formato)" },
+
+    { "type": "type2", "asset": "work", "label": "Classe Primária (Cargo Atual + Tempo)" },
+    { "type": "type2", "asset": "work", "label": "Classe Secundária (Habilidade Histórica + Tempo)" },
+
+    { "type": "type3", "asset": "spirit", "label": "Entidade Líder" },
+    { "type": "type3", "asset": "spirit", "label": "Entidade Protetora" },
+    { "type": "type3", "asset": "truth", "label": "Inspiração 1 (Ídolo)" },
+    { "type": "type3", "asset": "truth", "label": "Inspiração 2" },
+    { "type": "type3", "asset": "truth", "label": "Inspiração 3" },
+    { "type": "type3", "asset": "inspiration", "label": "Projeto Principal 1" },
+    { "type": "type3", "asset": "inspiration", "label": "Projeto Principal 2" },
+    { "type": "type3", "asset": "inspiration", "label": "Projeto Principal 3" },
+    { "type": "type3", "asset": "abundance", "label": "Grande Ativo 1 (Bem Material)" },
+    { "type": "type3", "asset": "abundance", "label": "Grande Ativo 2" },
+    { "type": "type3", "asset": "abundance", "label": "Grande Ativo 3" },
+    { "type": "type3", "asset": "work", "label": "CV Items / Conquistas Históricas" },
+    { "type": "type3", "asset": "authenticity", "label": "Hobby / Paixão 1" },
+    { "type": "type3", "asset": "authenticity", "label": "Hobby / Paixão 2" },
+    { "type": "type3", "asset": "authenticity", "label": "Hobby / Paixão 3" },
+
+    { "type": "type4", "asset": "love", "label": "Círculo Íntimo (Família)" },
+    { "type": "type4", "asset": "love", "label": "Irmãos de Guerra (Amigos)" },
+    { "type": "type4", "asset": "physical", "label": "Shape / Foto do Corpo" },
+
+    { "type": "type5", "asset": "truth", "label": "Traços de Personalidade (MBTI / Signo / Human Design)" },
+    { "type": "type5", "asset": "physical", "label": "Atributos Fortes (Peso, Altura, % Gordura)" }
+  ]
+}

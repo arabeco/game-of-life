@@ -97,21 +97,31 @@
         </section>
 
         <section class="screen screen-planner" data-screen="planner">
-          <div class="health-panel">
-            <button class="notes-toggle" id="notes-toggle" aria-label="Checklist">
-              <i data-lucide="folder"></i>
-            </button>
-            <button class="planner-reports-btn" id="planner-reports-btn" aria-label="Relat?rios">
-              <i data-lucide="clock"></i>
-            </button>
-          </div>
-          <div class="planner-toggle">
-            <button class="toggle-button" id="day-prev" aria-label="Dia anterior">?</button>
-            <div class="toggle-button is-active" id="day-label">Hoje</div>
-            <button class="toggle-button" id="day-next" aria-label="Dia seguinte">?</button>
-            <button class="toggle-button is-active" id="view-day">D</button>
-            <button class="toggle-button" id="view-week">S</button>
-          </div>
+          <header class="planner-header">
+            <div class="planner-header-left">
+              <button class="notes-toggle" id="notes-toggle" aria-label="Checklist">
+                <i data-lucide="folder"></i>
+              </button>
+            </div>
+            <div class="planner-header-center">
+              <div class="planner-daypicker">
+                <button class="planner-nav-arrow" id="day-prev" aria-label="Dia anterior">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <span class="planner-day-label" id="day-label">Hoje</span>
+                <button class="planner-nav-arrow" id="day-next" aria-label="Dia seguinte">
+                  <i data-lucide="chevron-right"></i>
+                </button>
+              </div>
+            </div>
+            <div class="planner-header-right">
+              <button class="planner-reports-btn" id="planner-reports-btn" aria-label="Relatórios">
+                <i data-lucide="clock"></i>
+              </button>
+              <button class="toggle-button is-active" id="view-day">D</button>
+              <button class="toggle-button" id="view-week">S</button>
+            </div>
+          </header>
           <div class="bronze-backlog" id="bronze-backlog">
             <div class="drawer-title">A??es de Bronze</div>
             <div class="bronze-list" id="bronze-list"></div>
@@ -132,13 +142,6 @@
               <i data-lucide="scan-line"></i>
               <span>Novo Relatório</span>
             </button>
-          </div>
-          <div class="history-period-selector" id="history-period-selector">
-            <button class="period-btn is-active" data-period="week">Semana</button>
-            <button class="period-btn" data-period="month">Mês</button>
-            <button class="period-btn" data-period="quarter">Trimestre</button>
-            <button class="period-btn" data-period="semester">Semestre</button>
-            <button class="period-btn" data-period="year">Ano</button>
           </div>
           <div class="history-list" id="history-list"></div>
         </section>
@@ -197,38 +200,20 @@
         </section>
 
         <section class="screen screen-social" data-screen="social">
-          <div class="social-profile card-metal-gold">
-            <div class="social-avatar">
-              <div class="loading-diamond">
-                <div class="loading-core"></div>
-              </div>
-            </div>
-            <div class="social-meta">
-              <div class="social-nick" id="social-nick">-</div>
-              <div class="social-id" id="social-id">-</div>
-              <div class="social-level">Nivel Geral: <span id="social-level">0</span></div>
+          <div class="social-search-section">
+            <div class="social-search-box">
+              <input type="text" id="social-search-input" class="social-search-input" placeholder="Buscar perfil ou ID (ex: NJR_10)" />
+              <button class="social-search-btn gold-button" id="social-search-btn">OK</button>
             </div>
           </div>
-          <div class="social-alliance">
-            <div class="slot-header">Alianca</div>
-            <div class="ally-card card-metal-silver">
-              <div class="ally-banner banner-mountain"></div>
-              <div class="ally-info">
-                <div class="ally-nick">Vanguard_01</div>
-                <div class="ally-level">N??vel 84</div>
-                <div class="ally-mood">Humor: Focado</div>
-                <div class="ally-last">??ltima a????o: Treino de For??a (15 min)</div>
-              </div>
-            </div>
-            <div class="ally-card card-metal-silver">
-              <div class="ally-banner banner-code"></div>
-              <div class="ally-info">
-                <div class="ally-nick">Shadow_Hacker</div>
-                <div class="ally-level">N??vel 62</div>
-                <div class="ally-mood">Humor: Calmo</div>
-                <div class="ally-last">??ltima a????o: Medita????o (2h)</div>
-              </div>
-            </div>
+          <div class="social-results" id="social-results"></div>
+          <div class="social-friends-section">
+            <div class="slot-header">Amigos</div>
+            <div class="social-friends-list" id="social-friends-list"></div>
+          </div>
+          <div class="social-clan-section">
+            <div class="slot-header">Membros do Clã</div>
+            <div class="social-clan-list" id="social-clan-list"></div>
           </div>
         </section>
       </main>
@@ -657,13 +642,43 @@
     </div>
     <div class="build-stamp" id="build-stamp" aria-hidden="true"></div>
 
+    <!-- Modal de Perfil Expandido -->
+    <div class="modal" id="external-profile-modal">
+      <div class="modal-card external-profile-card">
+        <button class="close-button external-profile-close" id="external-profile-close" aria-label="Fechar">
+          <i data-lucide="x"></i>
+        </button>
+        <div class="external-profile-header">
+          <div class="external-profile-avatar-container">
+            <div class="external-profile-avatar" id="external-profile-avatar"></div>
+            <div class="external-profile-level-badge" id="external-profile-level">0</div>
+          </div>
+          <div class="external-profile-nick" id="external-profile-nick">-</div>
+          <div class="external-profile-banner" id="external-profile-banner"></div>
+        </div>
+        <div class="external-profile-widgets" id="external-profile-widgets"></div>
+        <div class="external-profile-actions">
+          <button class="silver-button" id="external-profile-edit" style="display: none;">Editar Perfil</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Scan Container (Fora das telas para funcionar sempre) -->
     <div class="scan-container is-hidden" id="scan-container">
       <button class="scan-close-btn" id="scan-close-btn" aria-label="Fechar">
         <i data-lucide="x"></i>
       </button>
       <div class="scan-animation" id="scan-animation"></div>
-      <div class="scan-cards" id="scan-cards"></div>
+      <div class="scan-slides-wrapper">
+        <button class="scan-nav-btn scan-nav-prev" id="scan-nav-prev" aria-label="Slide anterior">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <div class="scan-cards" id="scan-cards"></div>
+        <button class="scan-nav-btn scan-nav-next" id="scan-nav-next" aria-label="Próximo slide">
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+      <div class="scan-slide-indicator" id="scan-slide-indicator"></div>
     </div>
   </body>
 </html>

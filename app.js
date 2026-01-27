@@ -466,16 +466,32 @@ const isActionDoneOnDate = (action, date) => {
 
 const parseDurationToMinutes = (raw) => {
   if (!raw) return 30;
-  const value = raw.toLowerCase().replace(/\s/g, "");
-  const hourMatch = value.match(/(\d+)\s*h/);
-  const minMatch = value.match(/(\d+)\s*m/);
-  const hours = hourMatch ? Number(hourMatch[1]) : 0;
-  const minutes = minMatch ? Number(minMatch[1]) : 0;
-  if (hours || minutes) return hours * 60 + minutes;
-  const asNumber = Number(value);
+  
+  // Se já é um número, retornar diretamente
+  if (typeof raw === 'number') {
+    return Number.isNaN(raw) ? 30 : raw;
+  }
+  
+  // Se é string, fazer o parsing
+  if (typeof raw === 'string') {
+    const value = raw.toLowerCase().replace(/\s/g, "");
+    const hourMatch = value.match(/(\d+)\s*h/);
+    const minMatch = value.match(/(\d+)\s*m/);
+    const hours = hourMatch ? Number(hourMatch[1]) : 0;
+    const minutes = minMatch ? Number(minMatch[1]) : 0;
+    if (hours || minutes) return hours * 60 + minutes;
+    const asNumber = Number(value);
+    if (!Number.isNaN(asNumber)) return asNumber;
+  }
+  
+  // Fallback: tentar converter para número
+  const asNumber = Number(raw);
   if (!Number.isNaN(asNumber)) return asNumber;
+  
   return 30;
 };
+
+const REPORTS_KEY = "gameoflife_reports_v1";
 
 const ensureV2Reset = () => {
   const resetDone = localStorage.getItem(V2_RESET_KEY) === "true";
@@ -493,6 +509,58 @@ const ensureV2Reset = () => {
   ];
   keysToClear.forEach((key) => localStorage.removeItem(key));
   localStorage.setItem(V2_RESET_KEY, "true");
+};
+
+const saveReportToHistory = (report) => {
+  try {
+    console.log("[Reports] Salvando relatório:", report);
+    const reports = loadReports();
+    const reportId = `report_${Date.now()}`;
+    
+    // Garantir que as datas são objetos Date
+    const startDate = report.startDate instanceof Date ? report.startDate : new Date(report.startDate);
+    const endDate = report.endDate instanceof Date ? report.endDate : new Date(report.endDate);
+    
+    const reportData = {
+      id: reportId,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      score: report.score || 0,
+      totalPlanned: report.totalPlanned || 0,
+      totalDone: report.totalDone || 0,
+      totalHours: report.totalHours || 0,
+      stats: report.stats || [],
+      createdAt: new Date().toISOString(),
+    };
+    
+    reports.push(reportData);
+    // Manter apenas os últimos 50 relatórios
+    if (reports.length > 50) {
+      reports.shift();
+    }
+    
+    localStorage.setItem(REPORTS_KEY, JSON.stringify(reports));
+    console.log("[Reports] Relatório salvo com sucesso:", reportId);
+    console.log("[Reports] Total de relatórios salvos:", reports.length);
+    
+    // Verificar se foi salvo corretamente
+    const saved = loadReports();
+    console.log("[Reports] Verificação - relatórios no localStorage:", saved.length);
+  } catch (error) {
+    console.error("[Reports] Erro ao salvar relatório:", error);
+    console.error("[Reports] Stack trace:", error.stack);
+  }
+};
+
+const loadReports = () => {
+  try {
+    const raw = localStorage.getItem(REPORTS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("[Reports] Erro ao carregar relatórios:", error);
+    return [];
+  }
 };
 
 let cachedProfile = null;
@@ -3943,8 +4011,20 @@ const initPlanner = () => {
   }
   const dayPrev = document.getElementById("day-prev");
   const dayNext = document.getElementById("day-next");
-  if (dayPrev) dayPrev.addEventListener("click", () => setPlannerDayOffset(plannerDayOffset - 1));
-  if (dayNext) dayNext.addEventListener("click", () => setPlannerDayOffset(plannerDayOffset + 1));
+  if (dayPrev) {
+    dayPrev.addEventListener("click", () => {
+      playMetalClick();
+      setPlannerDayOffset(plannerDayOffset - 1);
+      if (window.lucide) window.lucide.createIcons();
+    });
+  }
+  if (dayNext) {
+    dayNext.addEventListener("click", () => {
+      playMetalClick();
+      setPlannerDayOffset(plannerDayOffset + 1);
+      if (window.lucide) window.lucide.createIcons();
+    });
+  }
   const plannerLayout = document.querySelector(".planner-layout");
   let touchStartX = 0;
   let touchStartY = 0;
@@ -4045,8 +4125,10 @@ const initPlanner = () => {
   // Inicializar tela de histórico
   const historyBackBtn = document.getElementById("history-back-btn");
   const historyNewReportBtn = document.getElementById("history-new-report-btn");
-  const periodSelector = document.getElementById("history-period-selector");
   const scanContainer = document.getElementById("scan-container");
+  
+  // Carregar histórico ao inicializar
+  renderHistoryList();
 
   if (historyBackBtn) {
     historyBackBtn.addEventListener("click", () => {
@@ -4106,42 +4188,36 @@ const initPlanner = () => {
       }
       
       // Pequeno delay para garantir que o modal fechou e DOM atualizou
-      setTimeout(() => {
+      setTimeout(async () => {
         try {
-          startScanAnimation(startDate, endDate).catch((error) => {
-            console.error("[Scan] Erro ao iniciar animação:", error);
-            alert("Erro ao gerar relatório: " + error.message);
-          });
+          console.log("[Scan] Chamando startScanAnimation com:", { startDate, endDate });
+          await startScanAnimation(startDate, endDate);
         } catch (error) {
-          console.error("[Scan] Erro ao chamar startScanAnimation:", error);
+          console.error("[Scan] Erro ao iniciar animação:", error);
+          console.error("[Scan] Stack trace:", error.stack);
           alert("Erro ao gerar relatório: " + error.message);
         }
       }, 200);
     });
   }
 
-  if (periodSelector) {
-    periodSelector.querySelectorAll(".period-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        playMetalClick();
-        periodSelector.querySelectorAll(".period-btn").forEach((b) => b.classList.remove("is-active"));
-        btn.classList.add("is-active");
-        const periodType = btn.dataset.period;
-        renderHistoryList(periodType);
-      });
-    });
-  }
+  // Removido seletor de período - sempre mostrar todos os relatórios salvos
 
   const scanCloseBtn = document.getElementById("scan-close-btn");
   if (scanCloseBtn) {
     scanCloseBtn.addEventListener("click", () => {
       playMetalClick();
+      const scanContainer = document.getElementById("scan-container");
       if (scanContainer) {
         scanContainer.classList.add("is-hidden");
         const scanCards = scanContainer.querySelector("#scan-cards");
         if (scanCards) scanCards.innerHTML = "";
+        const scanAnimation = scanContainer.querySelector("#scan-animation");
+        if (scanAnimation) {
+          scanAnimation.classList.remove("is-scanning");
+          scanAnimation.style.display = "none";
+        }
       }
-      if (window.lucide) window.lucide.createIcons();
     });
   }
 };
@@ -4350,6 +4426,18 @@ const initApp = () => {
   renderTree();
   initPlanner();
   initConfig();
+  initSocialSearch();
+  renderSocialFriends();
+  renderSocialClan();
+  
+  // Fechar modal de perfil externo
+  const externalProfileClose = document.getElementById("external-profile-close");
+  const externalProfileModal = document.getElementById("external-profile-modal");
+  if (externalProfileClose && externalProfileModal) {
+    externalProfileClose.addEventListener("click", () => {
+      externalProfileModal.classList.remove("is-open");
+    });
+  }
   renderArenas();
   renderSocial();
   applyGlitch();
@@ -5191,8 +5279,21 @@ const countPlannedInRange = (action, startDate, endDate) => {
 };
 
 const buildHistorySummaryForRange = (planner, arenas, startDate, endDate) => {
+  console.log("[buildHistorySummaryForRange] === INÍCIO ===");
+  console.log("[buildHistorySummaryForRange] Parâmetros:", {
+    hasPlanner: !!planner,
+    hasArenas: !!arenas,
+    startDate,
+    endDate,
+    plannerType: typeof planner,
+    arenasType: typeof arenas
+  });
+  
   const actions = Array.isArray(planner?.bronzeActions) ? planner.bronzeActions : [];
+  console.log("[buildHistorySummaryForRange] Ações encontradas:", actions.length);
+  
   const arenasById = new Map((arenas || []).map((arena) => [arena.id, arena]));
+  console.log("[buildHistorySummaryForRange] Arenas mapeadas:", arenasById.size);
   const stats = new Map();
   let totalPlanned = 0;
   let totalDone = 0;
@@ -5220,13 +5321,19 @@ const buildHistorySummaryForRange = (planner, arenas, startDate, endDate) => {
   });
 
   const score = totalPlanned > 0 ? Math.round((totalDone / totalPlanned) * 100) : 0;
-  return {
+  
+  const result = {
     stats: Array.from(stats.values()),
     totalPlanned,
     totalDone,
     totalHours: Math.round(totalHours * 10) / 10,
     score,
   };
+  
+  console.log("[buildHistorySummaryForRange] Resultado:", result);
+  console.log("[buildHistorySummaryForRange] === FIM ===");
+  
+  return result;
 };
 
 const buildHistoryPeriods = (periodType, planner, arenas) => {
@@ -5297,37 +5404,44 @@ const buildHistoryPeriods = (periodType, planner, arenas) => {
   return periods;
 };
 
-const renderHistoryList = (periodType) => {
+const renderHistoryList = () => {
   const listEl = document.getElementById("history-list");
   if (!listEl) return;
 
   listEl.innerHTML = '<div class="config-placeholder">Carregando histórico...</div>';
 
-  const planner = loadPlanner();
-  const arenas = loadArenas();
-  const periods = buildHistoryPeriods(periodType, planner, arenas);
+  // Carregar relatórios salvos
+  const savedReports = loadReports();
+  
+  // Ordenar por data de criação (mais recentes primeiro)
+  savedReports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  if (periods.length === 0) {
-    listEl.innerHTML = '<div class="config-placeholder">Sem histórico ainda.</div>';
+  if (savedReports.length === 0) {
+    listEl.innerHTML = '<div class="config-placeholder">Sem relatórios ainda. Crie um novo relatório!</div>';
     return;
   }
 
   listEl.innerHTML = "";
-  periods.forEach((period) => {
+  savedReports.forEach((report) => {
+    const startDate = new Date(report.startDate);
+    const endDate = new Date(report.endDate);
+    const periodLabel = `${formatShortDate(startDate)} a ${formatShortDate(endDate)}`;
+    
     const card = document.createElement("div");
     card.className = "history-summary-card";
-    card.dataset.periodKey = period.key;
+    card.dataset.reportId = report.id;
+    card.style.cursor = "pointer";
 
     const header = document.createElement("div");
     header.className = "history-summary-header";
 
     const label = document.createElement("div");
     label.className = "history-summary-label";
-    label.textContent = period.label;
+    label.textContent = periodLabel;
 
     const score = document.createElement("div");
     score.className = "history-summary-score";
-    score.textContent = `${period.score}%`;
+    score.textContent = `${report.score}%`;
 
     header.appendChild(label);
     header.appendChild(score);
@@ -5336,16 +5450,31 @@ const renderHistoryList = (periodType) => {
     progress.className = "history-summary-progress";
     const fill = document.createElement("div");
     fill.className = "history-summary-progress-fill";
-    fill.style.width = `${Math.max(0, Math.min(100, period.score))}%`;
+    fill.style.width = `${Math.max(0, Math.min(100, report.score))}%`;
     progress.appendChild(fill);
 
     const meta = document.createElement("div");
     meta.className = "history-summary-meta";
-    meta.textContent = `${period.totalDone}/${period.totalPlanned} ações • ${period.totalHours}h`;
+    meta.textContent = `${report.totalDone}/${report.totalPlanned} ações • ${report.totalHours}h`;
 
     card.appendChild(header);
     card.appendChild(progress);
     card.appendChild(meta);
+    
+    // Adicionar evento de clique para abrir o relatório
+    card.addEventListener("click", () => {
+      playMetalClick();
+      const reportData = {
+        startDate: startDate,
+        endDate: endDate,
+        score: report.score,
+        totalPlanned: report.totalPlanned,
+        totalDone: report.totalDone,
+        totalHours: report.totalHours,
+        stats: report.stats || [],
+      };
+      startScanAnimation(startDate, endDate, reportData);
+    });
 
     listEl.appendChild(card);
   });
@@ -5400,29 +5529,26 @@ const buildRadarSvg = (values, labels) => {
 };
 
 const renderScanCardRating = (report, container) => {
-  const card = document.createElement("div");
-  card.className = "scan-card scan-card-rating";
   const days = Math.ceil((report.endDate.getTime() - report.startDate.getTime()) / (1000 * 60 * 60 * 24));
-  const rating = report.score;
-  card.innerHTML = `
+  const rating = report.score || 0;
+  const startDateStr = formatShortDate(report.startDate);
+  const endDateStr = formatShortDate(report.endDate);
+  container.innerHTML = `
     <div class="scan-card-header">
       <i data-lucide="star"></i>
-      <span>Rating</span>
+      <span>Parabéns!</span>
     </div>
     <div class="scan-card-body">
       <div class="scan-rating-number">${rating}</div>
-      <div class="scan-rating-label">Performance</div>
-      <div class="scan-rating-meta">Período analisado: ${days} dias</div>
+      <div class="scan-rating-label">Rating de Performance</div>
+      <div class="scan-rating-meta">Tempo analisado: ${days} dias (${startDateStr} a ${endDateStr})</div>
     </div>
   `;
-  container.appendChild(card);
   if (window.lucide) window.lucide.createIcons();
 };
 
 const renderScanCardMetrics = (report, container) => {
-  const card = document.createElement("div");
-  card.className = "scan-card scan-card-metrics";
-  card.innerHTML = `
+  container.innerHTML = `
     <div class="scan-card-header">
       <i data-lucide="bar-chart-3"></i>
       <span>Métricas</span>
@@ -5442,7 +5568,6 @@ const renderScanCardMetrics = (report, container) => {
       </div>
     </div>
   `;
-  container.appendChild(card);
   if (window.lucide) window.lucide.createIcons();
 };
 
@@ -5480,9 +5605,7 @@ const renderScanCardHighlight = (report, container) => {
     }
   });
 
-  const card = document.createElement("div");
-  card.className = "scan-card scan-card-highlight";
-  card.innerHTML = `
+  container.innerHTML = `
     <div class="scan-card-header">
       <i data-lucide="award"></i>
       <span>Destaque</span>
@@ -5498,7 +5621,6 @@ const renderScanCardHighlight = (report, container) => {
       </div>
     </div>
   `;
-  container.appendChild(card);
   if (window.lucide) window.lucide.createIcons();
 };
 
@@ -5513,9 +5635,7 @@ const renderScanCardRadar = (report, container) => {
     return Math.round((stat.done / stat.planned) * 100) / 100;
   });
 
-  const card = document.createElement("div");
-  card.className = "scan-card scan-card-radar";
-  card.innerHTML = `
+  container.innerHTML = `
     <div class="scan-card-header">
       <i data-lucide="radar"></i>
       <span>Mapa de Teia</span>
@@ -5550,17 +5670,14 @@ const renderScanCardRadar = (report, container) => {
       </div>
     </div>
   `;
-  container.appendChild(card);
   if (window.lucide) window.lucide.createIcons();
 };
 
 const renderScanCardSummary = (report, container) => {
   const profile = loadProfile();
-  const card = document.createElement("div");
-  card.className = "scan-card scan-card-summary";
-  card.id = "scan-summary-card";
+  container.id = "scan-summary-card";
   const periodLabel = `${formatShortDate(report.startDate)} a ${formatShortDate(report.endDate)}`;
-  card.innerHTML = `
+  container.innerHTML = `
     <div class="scan-card-header">
       <i data-lucide="file-text"></i>
       <span>Resumo Final</span>
@@ -5585,15 +5702,53 @@ const renderScanCardSummary = (report, container) => {
         )}
       </div>
       <div class="scan-summary-period">${periodLabel}</div>
-      <button class="scan-summary-download gold-button" id="scan-summary-download">
+      <button class="scan-summary-share gold-button" id="scan-summary-share">
+        <i data-lucide="share-2"></i>
+        <span>Compartilhar Card</span>
+      </button>
+      <button class="scan-summary-download silver-button" id="scan-summary-download">
         <i data-lucide="download"></i>
         <span>Baixar Relatório</span>
       </button>
+      <button class="scan-summary-ok gold-button" id="scan-summary-ok">
+        <i data-lucide="check"></i>
+        <span>OK</span>
+      </button>
     </div>
   `;
-  container.appendChild(card);
   if (window.lucide) window.lucide.createIcons();
 
+  const shareBtn = document.getElementById("scan-summary-share");
+  if (shareBtn) {
+    shareBtn.addEventListener("click", async () => {
+      const target = document.getElementById("scan-summary-card");
+      if (!target) return;
+      if (navigator.share && window.html2canvas) {
+        try {
+          const canvas = await window.html2canvas(target, {
+            backgroundColor: "#0f1115",
+            scale: 2,
+          });
+          const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+          await navigator.share({
+            title: `Relatório de Progresso - ${periodLabel}`,
+            text: `Meu rating: ${report.score}`,
+            files: [new File([blob], `relatorio-${formatDateKey(report.startDate)}.png`, { type: "image/png" })],
+          });
+        } catch (error) {
+          console.error("Erro ao compartilhar:", error);
+          // Fallback para download
+          const downloadBtn = document.getElementById("scan-summary-download");
+          if (downloadBtn) downloadBtn.click();
+        }
+      } else {
+        // Fallback para download se share não disponível
+        const downloadBtn = document.getElementById("scan-summary-download");
+        if (downloadBtn) downloadBtn.click();
+      }
+    });
+  }
+  
   const downloadBtn = document.getElementById("scan-summary-download");
   if (downloadBtn && window.html2canvas) {
     downloadBtn.addEventListener("click", async () => {
@@ -5607,6 +5762,19 @@ const renderScanCardSummary = (report, container) => {
       link.href = canvas.toDataURL("image/png");
       link.download = `relatorio-${formatDateKey(report.startDate)}-${formatDateKey(report.endDate)}.png`;
       link.click();
+    });
+  }
+  
+  const okBtn = document.getElementById("scan-summary-ok");
+  if (okBtn) {
+    okBtn.addEventListener("click", () => {
+      playMetalClick();
+      const scanContainer = document.getElementById("scan-container");
+      if (scanContainer) {
+        scanContainer.classList.add("is-hidden");
+        const scanCards = scanContainer.querySelector("#scan-cards");
+        if (scanCards) scanCards.innerHTML = "";
+      }
     });
   }
 };
@@ -5638,7 +5806,10 @@ const openReportDateModal = () => {
   if (window.lucide) window.lucide.createIcons();
 };
 
-const startScanAnimation = async (startDate, endDate) => {
+const startScanAnimation = async (startDate, endDate, precomputedReport = null) => {
+  console.log("[Scan] === INÍCIO DA FUNÇÃO startScanAnimation ===");
+  console.log("[Scan] Parâmetros recebidos:", { startDate, endDate, precomputedReport });
+  
   try {
     console.log("[Scan] Iniciando animação de scan", { startDate, endDate });
     
@@ -5664,86 +5835,259 @@ const startScanAnimation = async (startDate, endDate) => {
 
     // Limpar cards anteriores e mostrar container
     scanCards.innerHTML = "";
-    scanAnimation.classList.remove("is-scanning"); // Garantir que não está em estado anterior
+    scanAnimation.style.display = "none";
+    scanAnimation.classList.remove("is-scanning");
     
-    // Forçar display do container
+    // Mostrar container
     scanContainer.classList.remove("is-hidden");
-    scanContainer.style.display = "flex";
     console.log("[Scan] Container exibido");
     
     // Scroll para o topo
     scanContainer.scrollTop = 0;
 
     // Pequeno delay para garantir que o DOM atualizou
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
-    // Gerar relatório
+    // Gerar ou usar relatório pré-computado
     let report;
     try {
-      const planner = loadPlanner();
-      const arenas = loadArenas();
-      report = {
-        startDate,
-        endDate,
-        ...buildHistorySummaryForRange(planner, arenas, startDate, endDate),
-      };
-      console.log("[Scan] Relatório gerado", report);
+      if (precomputedReport) {
+        report = precomputedReport;
+        console.log("[Scan] Usando relatório pré-computado", report);
+      } else {
+        console.log("[Scan] === INICIANDO GERAÇÃO DE RELATÓRIO ===");
+        console.log("[Scan] Datas:", { startDate, endDate });
+        
+        // Verificar perfil
+        const profile = loadProfile();
+        console.log("[Scan] Perfil carregado:", {
+          hasProfile: !!profile,
+          hasNickname: !!profile?.nickname,
+          hasUserId: !!profile?.userId,
+          profileKeys: profile ? Object.keys(profile) : []
+        });
+        
+        // Carregar planner e arenas
+        console.log("[Scan] Carregando planner...");
+        const planner = loadPlanner();
+        console.log("[Scan] Planner carregado:", {
+          hasPlanner: !!planner,
+          hasBronzeActions: !!planner?.bronzeActions,
+          bronzeActionsCount: planner?.bronzeActions?.length || 0,
+          plannerKeys: planner ? Object.keys(planner) : []
+        });
+        
+        console.log("[Scan] Carregando arenas...");
+        const arenas = loadArenas();
+        console.log("[Scan] Arenas carregadas:", {
+          hasArenas: !!arenas,
+          arenasCount: Array.isArray(arenas) ? arenas.length : 0,
+          arenas: Array.isArray(arenas) ? arenas.map(a => ({ id: a.id, title: a.title })) : []
+        });
+        
+        console.log("[Scan] Construindo resumo do histórico...");
+        const summary = buildHistorySummaryForRange(planner, arenas, startDate, endDate);
+        console.log("[Scan] Resumo construído:", {
+          score: summary.score,
+          totalPlanned: summary.totalPlanned,
+          totalDone: summary.totalDone,
+          totalHours: summary.totalHours,
+          statsCount: summary.stats?.length || 0,
+          stats: summary.stats
+        });
+        
+        report = {
+          startDate,
+          endDate,
+          stats: summary.stats || [],
+          totalPlanned: summary.totalPlanned || 0,
+          totalDone: summary.totalDone || 0,
+          totalHours: summary.totalHours || 0,
+          score: summary.score || 0,
+        };
+        console.log("[Scan] Relatório final gerado:", report);
+      }
+      
+      // Validar se o relatório tem dados básicos
+      if (!report) {
+        throw new Error("Relatório inválido: dados não gerados corretamente");
+      }
+      
+      // Garantir que todas as propriedades existem
+      if (typeof report.score === 'undefined') {
+        report.score = 0;
+      }
+      if (!report.stats) {
+        report.stats = [];
+      }
+      if (typeof report.totalPlanned === 'undefined') {
+        report.totalPlanned = 0;
+      }
+      if (typeof report.totalDone === 'undefined') {
+        report.totalDone = 0;
+      }
+      if (typeof report.totalHours === 'undefined') {
+        report.totalHours = 0;
+      }
+      
+      console.log("[Scan] Relatório validado:", {
+        score: report.score,
+        totalPlanned: report.totalPlanned,
+        totalDone: report.totalDone,
+        totalHours: report.totalHours,
+        statsCount: report.stats.length
+      });
     } catch (error) {
       console.error("[Scan] Erro ao gerar relatório:", error);
-      alert("Erro ao gerar relatório: " + error.message);
+      console.error("[Scan] Stack trace:", error.stack);
+      alert("Erro ao gerar relatório: " + error.message + "\n\nVerifique o console para mais detalhes.");
       scanContainer.classList.add("is-hidden");
       return;
     }
 
-    // Mostrar animação de scan
-    console.log("[Scan] Iniciando animação visual");
+    // Animação removida - mostrar cards diretamente
+    console.log("[Scan] Renderizando cards diretamente");
     
-    // Garantir que a animação está visível
-    scanAnimation.style.display = "flex";
-    scanAnimation.classList.add("is-scanning");
-    
-    // Forçar reflow para garantir que a animação inicia
-    void scanAnimation.offsetHeight;
-    
-    // Aguardar animação
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    
-    // Remover animação
+    // Garantir que animação está escondida
+    scanAnimation.style.display = "none";
     scanAnimation.classList.remove("is-scanning");
-    console.log("[Scan] Animação concluída, renderizando cards");
+    
+    // Garantir que container está visível - SIMPLES: apenas remover is-hidden
+    if (scanContainer) {
+      scanContainer.classList.remove("is-hidden");
+    }
 
-    // Renderizar cards sequencialmente (slides)
-    const cards = [
-      { render: () => renderScanCardRating(report, scanCards), delay: 800 },
-      { render: () => renderScanCardMetrics(report, scanCards), delay: 800 },
-      { render: () => renderScanCardHighlight(report, scanCards), delay: 800 },
-      { render: () => renderScanCardRadar(report, scanCards), delay: 1000 },
-      { render: () => renderScanCardSummary(report, scanCards), delay: 800 },
-    ];
-
-    for (let i = 0; i < cards.length; i++) {
+    // Renderizar todos os cards como slides
+    scanCards.innerHTML = "";
+    const slideCards = [];
+    
+    // Função auxiliar para renderizar card com tratamento de erro
+    const renderCardSafely = (cardIndex, cardName, renderFunction) => {
       try {
-        console.log(`[Scan] Renderizando card ${i + 1}/${cards.length}`);
-        cards[i].render();
-        if (window.lucide) window.lucide.createIcons();
-        
-        // Scroll suave para o novo card
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        const lastCard = scanCards.lastElementChild;
-        if (lastCard) {
-          lastCard.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        
-        await new Promise((resolve) => setTimeout(resolve, cards[i].delay));
+        console.log(`[Scan] Renderizando card ${cardIndex}: ${cardName}`);
+        const card = document.createElement("div");
+        card.className = `scan-card scan-card-${cardName} scan-slide`;
+        card.dataset.slideIndex = String(cardIndex);
+        renderFunction(report, card);
+        slideCards.push(card);
+        console.log(`[Scan] Card ${cardIndex} renderizado com sucesso`);
       } catch (error) {
-        console.error(`[Scan] Erro ao renderizar card ${i + 1}:`, error);
+        console.error(`[Scan] Erro ao renderizar card ${cardIndex} (${cardName}):`, error);
+        // Criar card de erro ao invés de quebrar tudo
+        const errorCard = document.createElement("div");
+        errorCard.className = `scan-card scan-slide`;
+        errorCard.dataset.slideIndex = String(cardIndex);
+        errorCard.innerHTML = `
+          <div class="scan-card-content">
+            <h3>Erro ao carregar ${cardName}</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
+        slideCards.push(errorCard);
+      }
+    };
+    
+    // Renderizar cada card com tratamento de erro individual
+    renderCardSafely(0, "rating", renderScanCardRating);
+    renderCardSafely(1, "metrics", renderScanCardMetrics);
+    renderCardSafely(2, "highlight", renderScanCardHighlight);
+    renderCardSafely(3, "radar", renderScanCardRadar);
+    renderCardSafely(4, "summary", renderScanCardSummary);
+    
+    // Adicionar todos os cards ao container (inicialmente ocultos, exceto o primeiro)
+    slideCards.forEach((card, index) => {
+      if (index !== 0) {
+        card.classList.add("is-hidden");
+      }
+      scanCards.appendChild(card);
+    });
+    
+    // Inicializar navegação de slides
+    let currentSlideIndex = 0;
+    const totalSlides = slideCards.length;
+    
+    const updateSlideDisplay = () => {
+      slideCards.forEach((card, index) => {
+        if (index === currentSlideIndex) {
+          // Card ativo: visível
+          card.classList.remove("is-hidden");
+          card.style.display = "block";
+          card.style.opacity = "1";
+          card.style.visibility = "visible";
+        } else {
+          // Cards inativos: ocultos
+          card.classList.add("is-hidden");
+          card.style.display = "none";
+          card.style.opacity = "0";
+          card.style.visibility = "hidden";
+        }
+      });
+      
+      // Atualizar indicador
+      const indicator = document.getElementById("scan-slide-indicator");
+      if (indicator) {
+        indicator.innerHTML = slideCards.map((_, i) => 
+          `<span class="scan-indicator-dot ${i === currentSlideIndex ? 'is-active' : ''}"></span>`
+        ).join("");
+      }
+      
+      // Atualizar botões de navegação
+      const prevBtn = document.getElementById("scan-nav-prev");
+      const nextBtn = document.getElementById("scan-nav-next");
+      if (prevBtn) prevBtn.classList.toggle("is-disabled", currentSlideIndex === 0);
+      if (nextBtn) nextBtn.classList.toggle("is-disabled", currentSlideIndex === totalSlides - 1);
+      
+      if (window.lucide) window.lucide.createIcons();
+    };
+    
+    // Event listeners para navegação
+    const prevBtn = document.getElementById("scan-nav-prev");
+    const nextBtn = document.getElementById("scan-nav-next");
+    
+    if (prevBtn) {
+      prevBtn.addEventListener("click", () => {
+        if (currentSlideIndex > 0) {
+          playMetalClick();
+          currentSlideIndex--;
+          updateSlideDisplay();
+        }
+      });
+    }
+    
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        if (currentSlideIndex < totalSlides - 1) {
+          playMetalClick();
+          currentSlideIndex++;
+          updateSlideDisplay();
+        }
+      });
+    }
+    
+    // Mostrar primeiro slide
+    updateSlideDisplay();
+    
+    // Garantir que container está visível após renderizar cards
+    if (scanContainer) {
+      scanContainer.classList.remove("is-hidden");
+    }
+    
+    // Salvar relatório para histórico (apenas se não foi pré-computado)
+    if (!precomputedReport) {
+      console.log("[Scan] Salvando relatório no histórico...");
+      saveReportToHistory(report);
+      // Atualizar lista de histórico se estiver na tela
+      const historyList = document.getElementById("history-list");
+      if (historyList && document.querySelector(".screen-history.is-active")) {
+        renderHistoryList();
       }
     }
     
-    console.log("[Scan] Todos os cards renderizados");
+    console.log("[Scan] Todos os cards renderizados como slides");
   } catch (error) {
     console.error("[Scan] Erro geral na animação:", error);
-    alert("Erro ao gerar relatório: " + error.message);
+    console.error("[Scan] Stack trace completo:", error.stack);
+    alert("Erro ao gerar relatório: " + error.message + "\n\nVerifique o console para mais detalhes.");
     const scanContainer = document.getElementById("scan-container");
     if (scanContainer) {
       scanContainer.classList.add("is-hidden");
@@ -5753,9 +6097,261 @@ const startScanAnimation = async (startDate, endDate) => {
 
 const openPlannerReports = () => {
   setActiveScreen("history");
-  const periodSelector = document.getElementById("history-period-selector");
-  const activePeriod = periodSelector?.querySelector(".period-btn.is-active")?.dataset.period || "week";
-  renderHistoryList(activePeriod);
+  renderHistoryList();
+};
+
+// Sistema Social - Busca e Cards
+const buildSocialCard = (profile, options = {}) => {
+  const card = document.createElement("div");
+  card.className = "social-card";
+  if (options.isNpc) card.classList.add("social-card--npc");
+  
+  const avatar = document.createElement("div");
+  avatar.className = "social-card-avatar";
+  if (profile.avatar_url) {
+    avatar.style.backgroundImage = `url(${profile.avatar_url})`;
+    avatar.style.backgroundSize = "cover";
+    avatar.style.backgroundPosition = "center";
+  }
+  
+  const border = document.createElement("div");
+  border.className = "social-card-border";
+  
+  const content = document.createElement("div");
+  content.className = "social-card-content";
+  
+  const nick = document.createElement("div");
+  nick.className = "social-card-nick";
+  nick.textContent = profile.nickname || profile.full_name || "-";
+  
+  const level = document.createElement("div");
+  level.className = "social-card-level";
+  level.textContent = `Nível ${profile.level_geral || profile.total_level || 0}`;
+  
+  const banner = document.createElement("div");
+  banner.className = "social-card-banner";
+  if (profile.cover_url) {
+    banner.style.backgroundImage = `url(${profile.cover_url})`;
+    banner.style.backgroundSize = "cover";
+    banner.style.backgroundPosition = "center";
+  }
+  
+  const clan = document.createElement("div");
+  clan.className = "social-card-clan";
+  const playerData = profile.player_data || {};
+  clan.textContent = playerData.clan || playerData.guild || "-";
+  
+  const status = document.createElement("div");
+  status.className = "social-card-status";
+  status.textContent = "Online"; // TODO: Implementar status real
+  
+  card.appendChild(avatar);
+  card.appendChild(border);
+  card.appendChild(content);
+  content.appendChild(nick);
+  content.appendChild(level);
+  card.appendChild(banner);
+  card.appendChild(clan);
+  card.appendChild(status);
+  
+  card.addEventListener("click", () => {
+    openSocialProfile(profile, options);
+  });
+  
+  return card;
+};
+
+const openSocialProfile = (profile, options = {}) => {
+  const modal = document.getElementById("external-profile-modal");
+  const avatar = document.getElementById("external-profile-avatar");
+  const level = document.getElementById("external-profile-level");
+  const nick = document.getElementById("external-profile-nick");
+  const banner = document.getElementById("external-profile-banner");
+  const widgets = document.getElementById("external-profile-widgets");
+  const editBtn = document.getElementById("external-profile-edit");
+  
+  if (!modal || !avatar || !level || !nick) return;
+  
+  // Verificar se é o próprio perfil
+  const currentProfile = loadProfile();
+  const isOwnProfile = !options.isNpc && (profile.id === currentProfile.userId || profile.nickname === currentProfile.nickname);
+  
+  // Avatar
+  if (profile.avatar_url) {
+    avatar.style.backgroundImage = `url(${profile.avatar_url})`;
+    avatar.style.backgroundSize = "cover";
+    avatar.style.backgroundPosition = "center";
+  } else {
+    avatar.style.backgroundImage = "";
+    avatar.innerHTML = '<div class="loading-diamond"><div class="loading-core"></div></div>';
+  }
+  
+  // Nível
+  const levelValue = profile.level_geral || profile.total_level || 0;
+  level.textContent = levelValue;
+  
+  // Nick
+  nick.textContent = profile.nickname || profile.full_name || "-";
+  
+  // Banner
+  if (profile.cover_url) {
+    banner.style.backgroundImage = `url(${profile.cover_url})`;
+    banner.style.backgroundSize = "cover";
+    banner.style.backgroundPosition = "center";
+  } else {
+    banner.style.backgroundImage = "";
+    banner.textContent = "";
+  }
+  
+  // Widgets
+  widgets.innerHTML = "";
+  const playerData = profile.player_data || {};
+  const widgetsData = playerData.widgets || [];
+  const widgetsVisible = playerData.widgetsVisible || [];
+  
+  if (widgetsData.length === 0) {
+    widgets.innerHTML = "<div class='external-profile-empty'>Nenhum widget configurado</div>";
+  } else {
+    // TODO: Renderizar widgets do perfil
+    widgets.innerHTML = "<div class='external-profile-empty'>Widgets em desenvolvimento</div>";
+  }
+  
+  // Botão editar (apenas para próprio perfil)
+  if (editBtn) {
+    if (isOwnProfile) {
+      editBtn.style.display = "block";
+      editBtn.addEventListener("click", () => {
+        modal.classList.remove("is-open");
+        const profileModal = document.getElementById("profile-modal");
+        if (profileModal) profileModal.classList.add("is-open");
+      });
+    } else {
+      editBtn.style.display = "none";
+    }
+  }
+  
+  modal.classList.add("is-open");
+  if (window.lucide) window.lucide.createIcons();
+};
+
+const initSocialSearch = () => {
+  const input = document.getElementById("social-search-input");
+  const button = document.getElementById("social-search-btn");
+  const results = document.getElementById("social-results");
+  if (!input || !button || !results) return;
+  
+  const doSearch = async () => {
+    const term = input.value.trim();
+    results.innerHTML = "";
+    if (!term) return;
+    
+    if (!isSupabaseEnabled()) {
+      results.innerHTML = "<div class='social-empty'>Supabase não habilitado</div>";
+      return;
+    }
+    
+    try {
+      // Buscar em profiles e npc_profiles
+      // Buscar por nickname ou ID específico (ex: NJR_10)
+      const searchQueries = [
+        supabase
+          .from("profiles")
+          .select("id,nickname,full_name,status_title,avatar_url,cover_url,player_data,level_geral,total_level")
+          .or(`nickname.ilike.%${term}%,id.eq.${term},user_id.ilike.%${term}%`)
+          .limit(10),
+      ];
+      
+      // Para NPCs, buscar tanto por ilike quanto por igualdade exata
+      const npcQueries = [
+        supabase
+          .from("npc_profiles")
+          .select("npc_id,nickname,full_name,status_title,avatar_url,cover_url,player_data,level_geral")
+          .ilike("nickname", `%${term}%`)
+          .limit(10),
+      ];
+      
+      // Se o termo parece ser um ID exato (ex: NJR_10), buscar também por igualdade
+      if (term.toUpperCase() === term && term.includes("_")) {
+        npcQueries.push(
+          supabase
+            .from("npc_profiles")
+            .select("npc_id,nickname,full_name,status_title,avatar_url,cover_url,player_data,level_geral")
+            .eq("nickname", term)
+            .limit(10)
+        );
+      }
+      
+      const [profilesRes, ...npcResArray] = await Promise.all([...searchQueries, ...npcQueries]);
+      
+      const profilesData = Array.isArray(profilesRes.data) ? profilesRes.data : [];
+      
+      // Combinar todos os resultados de NPCs e remover duplicatas
+      const allNpcData = [];
+      npcResArray.forEach((npcRes) => {
+        if (Array.isArray(npcRes.data)) {
+          npcRes.data.forEach((row) => {
+            if (!allNpcData.find((item) => item.npc_id === row.npc_id)) {
+              allNpcData.push({ ...row, is_npc: true });
+            }
+          });
+        }
+      });
+      
+      const allResults = [...profilesData, ...allNpcData];
+      
+      if (allResults.length === 0) {
+        results.innerHTML = "<div class='social-empty'>Nenhum perfil encontrado</div>";
+        return;
+      }
+      
+      allResults.forEach((profile) => {
+        const card = buildSocialCard(profile, { isNpc: profile.is_npc });
+        results.appendChild(card);
+      });
+    } catch (error) {
+      console.error("Erro na busca:", error);
+      results.innerHTML = "<div class='social-empty'>Erro ao buscar perfis</div>";
+    }
+  };
+  
+  button.addEventListener("click", doSearch);
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") doSearch();
+  });
+};
+
+const renderSocialFriends = async () => {
+  const container = document.getElementById("social-friends-list");
+  if (!container) return;
+  container.innerHTML = "";
+  
+  // TODO: Buscar amigos do perfil atual
+  const profile = loadProfile();
+  const friends = profile.friends || [];
+  
+  if (friends.length === 0) {
+    container.innerHTML = "<div class='social-empty'>Nenhum amigo ainda</div>";
+    return;
+  }
+  
+  // TODO: Buscar dados dos amigos no Supabase
+};
+
+const renderSocialClan = async () => {
+  const container = document.getElementById("social-clan-list");
+  if (!container) return;
+  container.innerHTML = "";
+  
+  // TODO: Buscar membros do clã
+  const profile = loadProfile();
+  const clan = profile.player_data?.clan;
+  
+  if (!clan) {
+    container.innerHTML = "<div class='social-empty'>Você não está em um clã</div>";
+    return;
+  }
+  
+  // TODO: Buscar membros do clã no Supabase
 };
 
 if (document.readyState === "loading") {

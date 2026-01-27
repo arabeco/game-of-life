@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Game of Life</title>
     <!-- Manifest disabled due to 401 on hosted path -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css?v=2026-01-20u" />
     <meta name="gol-build" content="2026-01-20u" />
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-    <!-- Service worker disabled: src/service-worker.js não existe neste build -->
+    <!-- Service worker disabled: src/service-worker.js n??o existe neste build -->
   </head>
   <body>
     <div id="loading-screen">
@@ -52,7 +55,7 @@
         </div>
         <div class="auth-actions is-hidden" data-auth-view="signup">
           <button class="silver-button auth-button" id="login-signup-btn">Criar Conta</button>
-          <div class="auth-helper">Já tem conta? Clique em Entrar.</div>
+          <div class="auth-helper">J?? tem conta? Clique em Entrar.</div>
         </div>
         <div class="auth-error" id="login-error"></div>
         <div class="auth-warning" id="login-warning"></div>
@@ -79,12 +82,10 @@
 
       <main class="content">
         <section class="screen screen-tree is-active" data-screen="tree">
-          <div class="screen-title">Ativos</div>
           <div class="tree-grid" id="tree-grid"></div>
         </section>
 
         <section class="screen screen-arenas" data-screen="arenas">
-          <div class="screen-title">Arenas</div>
           <div class="arena-list" id="arena-list">
             <div class="arena-empty">Sem metas ainda.</div>
           </div>
@@ -94,21 +95,23 @@
         </section>
 
         <section class="screen screen-planner" data-screen="planner">
-          <div class="screen-title">Planner</div>
           <div class="health-panel">
             <button class="notes-toggle" id="notes-toggle" aria-label="Checklist">
               <i data-lucide="folder"></i>
             </button>
+            <button class="planner-reports-btn" id="planner-reports-btn" aria-label="Relat?rios">
+              <i data-lucide="clock"></i>
+            </button>
           </div>
           <div class="planner-toggle">
-            <button class="toggle-button" id="day-prev" aria-label="Dia anterior">◀</button>
+            <button class="toggle-button" id="day-prev" aria-label="Dia anterior">?</button>
             <div class="toggle-button is-active" id="day-label">Hoje</div>
-            <button class="toggle-button" id="day-next" aria-label="Dia seguinte">▶</button>
+            <button class="toggle-button" id="day-next" aria-label="Dia seguinte">?</button>
             <button class="toggle-button is-active" id="view-day">Dia</button>
             <button class="toggle-button" id="view-week">Semana</button>
           </div>
           <div class="bronze-backlog" id="bronze-backlog">
-            <div class="drawer-title">Acoes de Bronze</div>
+            <div class="drawer-title">A??es de Bronze</div>
             <div class="bronze-list" id="bronze-list"></div>
           </div>
           <div class="planner-layout">
@@ -172,7 +175,6 @@
         </section>
 
         <section class="screen screen-social" data-screen="social">
-          <div class="screen-title">Social</div>
           <div class="social-profile card-metal-gold">
             <div class="social-avatar">
               <div class="loading-diamond">
@@ -191,18 +193,18 @@
               <div class="ally-banner banner-mountain"></div>
               <div class="ally-info">
                 <div class="ally-nick">Vanguard_01</div>
-                <div class="ally-level">Nível 84</div>
+                <div class="ally-level">N??vel 84</div>
                 <div class="ally-mood">Humor: Focado</div>
-                <div class="ally-last">Última ação: Treino de Força (15 min)</div>
+                <div class="ally-last">??ltima a????o: Treino de For??a (15 min)</div>
               </div>
             </div>
             <div class="ally-card card-metal-silver">
               <div class="ally-banner banner-code"></div>
               <div class="ally-info">
                 <div class="ally-nick">Shadow_Hacker</div>
-                <div class="ally-level">Nível 62</div>
+                <div class="ally-level">N??vel 62</div>
                 <div class="ally-mood">Humor: Calmo</div>
-                <div class="ally-last">Última ação: Meditação (2h)</div>
+                <div class="ally-last">??ltima a????o: Medita????o (2h)</div>
               </div>
             </div>
           </div>
@@ -264,7 +266,7 @@
 
     <div id="missions-loading" class="modal is-hidden">
       <div class="modal-card dossier-card">
-        <div class="drawer-title">Sincronizando Missões</div>
+        <div class="drawer-title">Sincronizando Miss??es</div>
         <div class="modal-body">Carregando progresso...</div>
       </div>
     </div>
@@ -293,7 +295,7 @@
     <div id="checklist-modal" class="modal">
       <div class="modal-card dossier-card checklist-card">
         <div class="dossier-header">
-          <div class="drawer-title">Checklist Diario</div>
+          <div class="drawer-title">Checklist Di?rio</div>
           <button class="close-button" id="checklist-close" aria-label="Fechar">
             <i data-lucide="x"></i>
           </button>
@@ -306,6 +308,34 @@
           </button>
           <button class="gold-button checklist-ok" id="checklist-ok">OK</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal de Hist?rico de Relat?rios -->
+    <div id="planner-history-modal" class="modal">
+      <div class="modal-card dossier-card gold-overlay">
+        <div class="dossier-header">
+          <div class="drawer-title">Hist?rico de Relat?rios</div>
+          <button class="close-button" id="planner-history-close" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="planner-history-list" id="planner-history-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Detalhe do Relat?rio -->
+    <div id="planner-history-detail-modal" class="modal">
+      <div class="modal-card dossier-card gold-overlay">
+        <div class="dossier-header">
+          <div class="drawer-title">Detalhes do Relat?rio</div>
+          <button class="close-button" id="planner-history-detail-close" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="planner-history-modal-detail"></div>
       </div>
     </div>
 
@@ -354,7 +384,7 @@
             <div class="mood-label" id="mood-label">Neutro</div>
             <input type="range" id="mood-range" min="0" max="100" value="50" />
             <div class="mood-legend" aria-hidden="true">
-              <span>Apático</span>
+              <span>Ap??tico</span>
               <span>Neutro</span>
               <span>Focado</span>
               <span>Motivado</span>

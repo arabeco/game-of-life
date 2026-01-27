@@ -55,7 +55,7 @@ const MASTERY_PHRASES = {
     "Nível 1: Sinto-me totalmente desconectado; a vida é um caos sem propósito.",
     "Nível 2: Raramente percebo beleza ou ordem; sinto-me isolado.",
     "Nível 3: Às vezes sinto uma breve gratidão, mas o ceticismo domina.",
-    "Nível 4: Começo a praticar gratidão, mas ainda me sinto vítima das circunstâncias.",
+    "Nível 4: Começo a praticar gratidão, mas ainda me sinto v├¡tima das circunst├óncias.",
     "Nível 5: Pratico a gratidão diariamente e percebo as primeiras sincronicidades.",
     "Nível 6: Sinto uma conexão frequente com a natureza e com o fluxo da vida.",
     "Nível 7: Confio no processo da vida; a gratidão é um estado quase constante.",
@@ -64,34 +64,34 @@ const MASTERY_PHRASES = {
     "Nível 10: Estado de presença absoluta; sinto a Unidade com o Todo em cada respiração.",
   ],
   espiritualidade: [
-    "Nível 1: Sem qualquer prática ou crença; vazio espiritual absoluto.",
+    "Nível 1: Sem qualquer pr├ítica ou crença; vazio espiritual absoluto.",
     "Nível 2: Curiosidade vaga, mas sem disciplina ou rituais.",
-    "Nível 3: Pratico rituais esporádicos quando estou em crise.",
+    "Nível 3: Pratico rituais espor├ídicos quando estou em crise.",
     "Nível 4: Tenho um altar ou espaço, mas raramente o utilizo com foco.",
     "Nível 5: Rituais semanais estabelecidos; sinto o despertar da intuição.",
-    "Nível 6: Prática diária constante; sinto proteção e orientação espiritual.",
-    "Nível 7: Meus rituais são minha âncora; diálogo fluido com o sagrado.",
-    "Nível 8: Intuição aguçada; recebo orientações claras através de rituais.",
+    "Nível 6: Pr├ítica di├íria constante; sinto proteção e orientação espiritual.",
+    "Nível 7: Meus rituais são minha ├óncora; di├ílogo fluido com o sagrado.",
+    "Nível 8: Intuição aguçada; recebo orientaçõeses claras através de rituais.",
     "Nível 9: Vida consagrada; cada ação é um ato de conexão espiritual.",
     "Nível 10: Mestria espiritual; canalização direta e comunhão ininterrupta.",
   ],
   mente: [
-    "Nível 1: Mente barulhenta, ansiosa e impossível de controlar.",
+    "Nível 1: Mente barulhenta, ansiosa e imposs├¡vel de controlar.",
     "Nível 2: Pensamentos negativos dominam; sono perturbado pelo estresse.",
     "Nível 3: Tento meditar, mas me distraio em segundos; foco muito baixo.",
-    "Nível 4: Consigo momentos breves de silêncio, mas a ansiedade retorna rápido.",
-    "Nível 5: Meditação diária de 10 min; começo a observar os pensamentos.",
-    "Nível 6: Capacidade de manter o foco por períodos longos; mente clara.",
-    "Nível 7: Domínio sobre as reações emocionais; paz mental resiliente.",
-    "Nível 8: Estado de Flow acessado à vontade; alta clareza cognitiva.",
-    "Nível 9: Silêncio interior profundo; a mente é uma ferramenta perfeitamente afiada.",
-    "Nível 10: Equanimidade absoluta; consciência pura acima de qualquer turbulência.",
+    "Nível 4: Consigo momentos breves de silèncio, mas a ansiedade retorna r├ípido.",
+    "Nível 5: Meditação di├íria de 10 min; começo a observar os pensamentos.",
+    "Nível 6: Capacidade de manter o foco por per├¡odos longos; mente clara.",
+    "Nível 7: Dom├¡nio sobre as reaçõeses emocionais; paz mental resiliente.",
+    "Nível 8: Estado de Flow acessado ├á vontade; alta clareza cognitiva.",
+    "Nível 9: Silèncio interior profundo; a mente é uma ferramenta perfeitamente afiada.",
+    "Nível 10: Equanimidade absoluta; consciència pura acima de qualquer turbulència.",
   ],
   verdade: [
     "Nível 1: Não sei quem sou; vivo baseado nas expectativas dos outros.",
-    "Nível 2: Evito olhar para minhas sombras; minto para mim mesmo com frequência.",
-    "Nível 3: Sinto que algo está errado, mas tenho medo de olhar para dentro.",
-    "Nível 4: Começo a identificar meus padrões, mas ainda me autossaboto.",
+    "Nível 2: Evito olhar para minhas sombras; minto para mim mesmo com frequència.",
+    "Nível 3: Sinto que algo est├í errado, mas tenho medo de olhar para dentro.",
+    "Nível 4: Começo a identificar meus padrõeses, mas ainda me autossaboto.",
     "Nível 5: Honestidade constante sobre minhas falhas; busca ativa por verdade.",
     "Nível 6: Clareza sobre meu MTP (Propósito Transformativo Massivo).",
     "Nível 7: Integridade total entre pensamento, palavra e ação.",
@@ -103,52 +103,52 @@ const MASTERY_PHRASES = {
     "Nível 1: Sem sonhos ou projetos; a vida é uma repetição monótona.",
     "Nível 2: Tenho ideias, mas nunca começo nada por medo do fracasso.",
     "Nível 3: Começo projetos, mas desisto na primeira dificuldade.",
-    "Nível 4: Trabalho em projetos, mas sem consistência ou visão clara.",
+    "Nível 4: Trabalho em projetos, mas sem consistència ou visão clara.",
     "Nível 5: Um projeto ativo e consistente; criatividade fluindo semanalmente.",
-    "Nível 6: Criatividade estratégica; executo ideias com eficiência.",
+    "Nível 6: Criatividade estratégica; executo ideias com eficiència.",
     "Nível 7: Projetos geram impacto real; sinto-me inspirado diariamente.",
     "Nível 8: Magnetismo criativo; ideias e recursos convergem para mim.",
-    "Nível 9: Legado em construção; meus projetos expressam minha essência.",
-    "Nível 10: Gênio criativo; canalização ininterrupta de inovação e beleza.",
+    "Nível 9: Legado em construção; meus projetos expressam minha essència.",
+    "Nível 10: Gènio criativo; canalização ininterrupta de inovação e beleza.",
   ],
   amor: [
     "Nível 1: Relacionamentos tóxicos ou isolamento total com rancor.",
     "Nível 2: Dificuldade em confiar; sinto-me carente ou defensivo.",
-    "Nível 3: Relações superficiais; medo de vulnerabilidade.",
-    "Nível 4: Tento me abrir, mas ainda carrego muitas mágoas do passado.",
-    "Nível 5: Relacionamentos saudáveis; prática ativa de perdão e escuta.",
-    "Nível 6: Círculo íntimo de alta confiança; sinto-me valorizado.",
+    "Nível 3: Relaçõeses superficiais; medo de vulnerabilidade.",
+    "Nível 4: Tento me abrir, mas ainda carrego muitas m├ígoas do passado.",
+    "Nível 5: Relacionamentos saud├íveis; pr├ítica ativa de perdão e escuta.",
+    "Nível 6: C├¡rculo ├¡ntimo de alta confiança; sinto-me valorizado.",
     "Nível 7: Capacidade de amar incondicionalmente sem perder os limites.",
-    "Nível 8: Mentor e apoio para outros; relações baseadas em crescimento.",
+    "Nível 8: Mentor e apoio para outros; relaçõeses baseadas em crescimento.",
     "Nível 9: Irradio compaixão; presença que cura e acolhe.",
-    "Nível 10: União profunda; mestre em criar e nutrir vínculos sagrados.",
+    "Nível 10: União profunda; mestre em criar e nutrir v├¡nculos sagrados.",
   ],
   abundancia: [
-    "Nível 1: Escassez total; dívidas fora de controle e medo do amanhã.",
+    "Nível 1: Escassez total; d├¡vidas fora de controle e medo do amanhão.",
     "Nível 2: Vivo para pagar contas; o dinheiro é fonte de estresse.",
     "Nível 3: Ganho o suficiente para sobreviver, mas não tenho reservas.",
     "Nível 4: Dificuldade em gerir o que ganho; mentalidade de escassez.",
     "Nível 5: Orçamento controlado; investimentos iniciados.",
     "Nível 6: Fluxo de caixa positivo; clareza total sobre ativos.",
-    "Nível 7: Independência financeira crescendo; o dinheiro trabalha para mim.",
-    "Nível 8: Abundância gerada por propósito; recursos sobram para sonhos.",
-    "Nível 9: Liberdade total; riqueza flui de múltiplas fontes estáveis.",
-    "Nível 10: Consciência de prosperidade infinita; mestre da manifestação.",
+    "Nível 7: Independència financeira crescendo; o dinheiro trabalha para mim.",
+    "Nível 8: Abund├óncia gerada por propósito; recursos sobram para sonhos.",
+    "Nível 9: Liberdade total; riqueza flui de múltiplas fontes est├íveis.",
+    "Nível 10: Consciència de prosperidade infinita; mestre da manifestação.",
   ],
   trabalho: [
     "Nível 1: Odeio minha rotina; sinto-me escravizado pelas tarefas.",
     "Nível 2: Trabalho apenas pelo dinheiro; produtividade baixa.",
     "Nível 3: Busco melhorar, mas sinto-me perdido profissionalmente.",
-    "Nível 4: Executo minhas tarefas, mas sem brilho ou excelência.",
+    "Nível 4: Executo minhas tarefas, mas sem brilho ou excelència.",
     "Nível 5: Profissional competente; estudo e evoluo constantemente.",
-    "Nível 6: Excelência reconhecida; entrego valor real ao mundo.",
+    "Nível 6: Excelència reconhecida; entrego valor real ao mundo.",
     "Nível 7: Trabalho alinhado ao propósito; satisfação no esforço.",
-    "Nível 8: Autoridade na minha área; mestre em gestão de tempo.",
+    "Nível 8: Autoridade na minha ├írea; mestre em gestão de tempo.",
     "Nível 9: Liderança inspiradora; meu trabalho é minha arte.",
     "Nível 10: Maestria profissional; impacto global através da vocação.",
   ],
   autenticidade: [
-    "Nível 1: Sem hobbies; tempo gasto em distrações vazias.",
+    "Nível 1: Sem hobbies; tempo gasto em distraçõeses vazias.",
     "Nível 2: Sinto tédio; esqueci o que me dava prazer.",
     "Nível 3: Tenho um hobby, mas sinto culpa ao dedicar tempo.",
     "Nível 4: Pratico hobbies raramente; falta de autenticidade.",
@@ -156,20 +156,20 @@ const MASTERY_PHRASES = {
     "Nível 6: Desenvolvo habilidades únicas por puro prazer.",
     "Nível 7: Minha personalidade brilha através dos meus interesses.",
     "Nível 8: Mestre em um hobby; criatividade e diversão integradas.",
-    "Nível 9: Estilo de vida autêntico; sou fiel a mim mesmo sempre.",
-    "Nível 10: Expressão pura do Ser; minha existência é uma arte única.",
+    "Nível 9: Estilo de vida autèntico; sou fiel a mim mesmo sempre.",
+    "Nível 10: Expressão pura do Ser; minha existència é uma arte única.",
   ],
   fisico: [
     "Nível 1: Sedentarismo total; corpo fraco ou sem energia.",
-    "Nível 2: Alimentação péssima; cansaço crônico e sono ruim.",
+    "Nível 2: Alimentação péssima; cansaço cr├┤nico e sono ruim.",
     "Nível 3: Tento treinar, mas desisto em duas semanas.",
-    "Nível 4: Treino esporádico; desconforto com a própria forma.",
-    "Nível 5: Treino 3x por semana; consciência alimentar iniciada.",
-    "Nível 6: Corpo atlético e funcional; energia estável.",
-    "Nível 7: Alta performance física; disciplina inabalável.",
+    "Nível 4: Treino espor├ídico; desconforto com a própria forma.",
+    "Nível 5: Treino 3x por semana; consciència alimentar iniciada.",
+    "Nível 6: Corpo atlético e funcional; energia est├ível.",
+    "Nível 7: Alta performance f├¡sica; disciplina inabal├ível.",
     "Nível 8: Conexão mente-músculo profunda; vitalidade radiante.",
-    "Nível 9: Templo físico otimizado; saúde máxima.",
-    "Nível 10: Expressão máxima da biologia; vitalidade inesgotável.",
+    "Nível 9: Templo f├¡sico otimizado; saúde m├íxima.",
+    "Nível 10: Expressão m├íxima da biologia; vitalidade inesgot├ível.",
   ],
 };
 const ASSET_TO_PHRASE = {
@@ -471,7 +471,7 @@ const getSlotOptions = () => {
       const slotId = slot.id.startsWith(`${assetId}.`) ? slot.id : `${assetId}.${slot.id}`;
       options.push({
         id: slotId,
-        label: `${LABEL_BY_ID.get(assetId) ?? assetId} · ${slot.label}`,
+        label: `${LABEL_BY_ID.get(assetId) ?? assetId} ┬À ${slot.label}`,
       });
     });
   });
@@ -1698,73 +1698,152 @@ const renderWeekView = () => {
   if (!weekGrid) return;
   const planner = loadPlanner();
   const weekStart = getWeekStartDate(new Date());
+  const dayStartHour = 6;
+  const dayEndHour = 24;
+  const isNarrow = window.innerWidth <= 520;
+  const pixelsPerMinute = isNarrow ? 0.6 : 1;
+  const slotHeight = Math.round(60 * pixelsPerMinute);
+  const timelineTopPadding = 16;
+  const hourCount = dayEndHour - dayStartHour + 1;
+  
   weekGrid.innerHTML = "";
+  weekGrid.className = "week-grid week-timeline";
+  
+  const header = document.createElement("div");
+  header.className = "week-timeline-header";
+  const timeSpacer = document.createElement("div");
+  timeSpacer.className = "week-time-spacer";
+  header.appendChild(timeSpacer);
   WEEKDAYS.forEach((day, index) => {
-    const column = document.createElement("div");
-    column.className = "week-column";
     const label = document.createElement("div");
-    label.className = "week-day";
+    label.className = "week-day-label";
     label.textContent = day.label;
-    column.appendChild(label);
-    const dayKey = day.key;
     const dateKey = getWeekDateKeyByIndex(weekStart, index);
+    const todayKey = formatDateKey(new Date());
+    if (dateKey === todayKey) label.classList.add("is-today");
+    header.appendChild(label);
+  });
+  weekGrid.appendChild(header);
+  
+  const body = document.createElement("div");
+  body.className = "week-timeline-body";
+  body.style.position = "relative";
+  body.style.height = `${timelineTopPadding * 2 + hourCount * slotHeight}px`;
+  
+  for (let hour = dayStartHour; hour <= dayEndHour; hour += 1) {
+    const row = document.createElement("div");
+    row.className = "week-timeline-row";
+    row.style.position = "absolute";
+    row.style.top = `${timelineTopPadding + (hour - dayStartHour) * slotHeight}px`;
+    row.style.left = "0";
+    row.style.right = "0";
+    row.style.height = "1px";
+    row.style.borderTop = "1px solid rgba(255, 255, 255, 0.06)";
+    row.style.pointerEvents = "none";
+    
+    const timeLabel = document.createElement("div");
+    timeLabel.className = "week-time-label";
+    timeLabel.style.position = "absolute";
+    timeLabel.style.left = "8px";
+    timeLabel.style.top = "-10px";
+    timeLabel.style.fontSize = "10px";
+    timeLabel.style.color = "#bdbdbd";
+    timeLabel.textContent = `${String(hour).padStart(2, "0")}:00`;
+    row.appendChild(timeLabel);
+    body.appendChild(row);
+  }
+  
+  WEEKDAYS.forEach((day, dayIndex) => {
+    const dayCol = document.createElement("div");
+    dayCol.className = "week-day-col";
+    dayCol.style.position = "absolute";
+    dayCol.style.left = `${(dayIndex * (100 / 7))}%`;
+    dayCol.style.width = `${100 / 7}%`;
+    dayCol.style.top = `${timelineTopPadding}px`;
+    dayCol.style.height = `${hourCount * slotHeight}px`;
+    dayCol.style.borderLeft = dayIndex > 0 ? "1px solid rgba(255, 255, 255, 0.08)" : "none";
+    
+    const dayKey = day.key;
+    const dateKey = getWeekDateKeyByIndex(weekStart, dayIndex);
     const dayDate = new Date(weekStart);
-    dayDate.setDate(dayDate.getDate() + index);
-    const items = [];
-    const seen = new Set();
-    planner.bronzeActions.forEach((action) => {
-      const planned = Array.isArray(action.plannedHistory)
-        ? action.plannedHistory.includes(dateKey)
-        : false;
-      const recurring = Array.isArray(action.weekdays) && action.weekdays.includes(dayKey);
-      if (planned || recurring) {
-        if (seen.has(action.id)) return;
-        seen.add(action.id);
-        items.push({ action, planned });
-      }
+    dayDate.setDate(dayDate.getDate() + dayIndex);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const targetDate = new Date(weekStart);
+    targetDate.setDate(targetDate.getDate() + dayIndex);
+    targetDate.setHours(0, 0, 0, 0);
+    const dayOffset = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const scheduledActions = planner.bronzeActions.filter(
+      (action) =>
+        (action.status === "scheduled" || action.status === "done") &&
+        Number(action.scheduledDayOffset || 0) === dayOffset,
+    );
+    const scheduledIds = new Set(scheduledActions.map((action) => action.id));
+    const recurringActions = planner.bronzeActions.filter(
+      (action) =>
+        !scheduledIds.has(action.id) &&
+        Array.isArray(action.weekdays) &&
+        action.weekdays.includes(dayKey),
+    );
+    
+    [...scheduledActions, ...recurringActions].forEach((action) => {
+      const startHour = Math.min(
+        dayEndHour,
+        Math.max(dayStartHour, Number(action.scheduledHour || dayStartHour)),
+      );
+      const startMinute = Number(action.scheduledMinute || 0);
+      const duration = Number(action.durationMinutes || 30);
+      const block = buildBronzeBlock(action, {
+        dayDate,
+        isRecurring: recurringActions.includes(action),
+      });
+      const top = (startHour - dayStartHour) * slotHeight + startMinute * pixelsPerMinute;
+      block.style.position = "absolute";
+      block.style.top = `${top}px`;
+      block.style.left = "4px";
+      block.style.right = "4px";
+      block.style.height = `${Math.max(20, duration * pixelsPerMinute)}px`;
+      block.style.pointerEvents = "auto";
+      dayCol.appendChild(block);
     });
-    items.forEach(({ action, planned }) => {
-      const item = document.createElement("div");
-      item.className = "week-item";
-      if (planned) item.classList.add("is-planned");
-      if (action.serious) item.classList.add("is-serious");
-      if (isActionDoneOnDate(action, dayDate)) item.classList.add("is-done");
-      const icon = document.createElement("i");
-      icon.setAttribute("data-lucide", action.icon || "circle");
-      const title = document.createElement("span");
-      const duration = action.durationMinutes ? `${action.durationMinutes}m` : "";
-      title.textContent = `${action.title || "Acao"} ${duration}`.trim();
-      item.appendChild(icon);
-      item.appendChild(title);
-      column.appendChild(item);
-    });
-    column.addEventListener("dragover", (event) => {
+    
+    dayCol.addEventListener("dragover", (event) => {
       event.preventDefault();
     });
-    column.addEventListener("drop", (event) => {
+    dayCol.addEventListener("drop", (event) => {
       event.preventDefault();
       const payload = event.dataTransfer?.getData("text/plain");
       if (!payload || !payload.startsWith("bronze:")) return;
       const actionId = payload.replace("bronze:", "");
+      const rect = dayCol.getBoundingClientRect();
+      const y = event.clientY - rect.top - timelineTopPadding;
+      const hour = Math.max(dayStartHour, Math.min(dayEndHour, Math.floor(y / slotHeight) + dayStartHour));
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const targetDate = new Date(weekStart);
+      targetDate.setDate(targetDate.getDate() + dayIndex);
+      targetDate.setHours(0, 0, 0, 0);
+      const dayOffset = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       const updated = planner.bronzeActions.map((action) => {
         if (action.id !== actionId) return action;
-        const plannedHistory = Array.isArray(action.plannedHistory)
-          ? action.plannedHistory
-          : [];
-        if (plannedHistory.includes(dateKey)) return action;
         return {
           ...action,
-          plannedHistory: [...plannedHistory, dateKey],
+          status: "scheduled",
+          scheduledHour: hour,
+          scheduledMinute: 0,
+          scheduledDayOffset: dayOffset,
         };
       });
       savePlanner({ ...planner, bronzeActions: updated });
       renderPlanner();
     });
-    weekGrid.appendChild(column);
+    
+    body.appendChild(dayCol);
   });
+  
+  weekGrid.appendChild(body);
   if (window.lucide) window.lucide.createIcons();
-  updateIntegrityBar();
-  renderTree();
 };
 
 const buildBronzeBlock = (action, options = {}) => {
@@ -1982,9 +2061,16 @@ const buildArenaCard = (arena, { compact = false, showAdd = false } = {}) => {
   const completionValue = Number(arena.completion || 0);
   card.className = `arena-card scan-card${completionValue >= 100 ? " is-complete" : ""}`;
   if (compact) card.classList.add("arena-card--mini");
+  
+  const iconSquare = document.createElement("div");
+  iconSquare.className = "arena-icon-square";
+  const iconName = arena.icon || ICON_BY_ID[arena.assetId] || "circle";
+  iconSquare.innerHTML = `<i data-lucide="${iconName}"></i>`;
+  
   const title = document.createElement("div");
   title.className = "arena-title";
   title.textContent = arena.title || "Arena";
+  
   const progress = document.createElement("div");
   progress.className = "arena-progress";
   if (arena.targetCount) {
@@ -1992,9 +2078,11 @@ const buildArenaCard = (arena, { compact = false, showAdd = false } = {}) => {
   } else {
     progress.textContent = `${Math.round(completionValue)}%`;
   }
+  
   const description = document.createElement("div");
   description.className = "arena-description";
   description.textContent = arena.description || "Sem descricao";
+  
   const meta = document.createElement("div");
   meta.className = "arena-meta";
   if (arena.targetCount) {
@@ -2002,15 +2090,42 @@ const buildArenaCard = (arena, { compact = false, showAdd = false } = {}) => {
   } else {
     meta.textContent = `Meta: ${Math.round(completionValue)}%`;
   }
+  
+  const actionsRow = document.createElement("div");
+  actionsRow.className = "arena-bronze-row arena-bronze-row--card";
+  const planner = loadPlanner();
+  const bronzeActions = planner.bronzeActions.filter((action) => action.arenaId === arena.id);
+  if (bronzeActions.length) {
+    const maxSlots = compact ? 4 : 6;
+    const visibleActions = bronzeActions.slice(0, maxSlots);
+    visibleActions.forEach((action) => {
+      const slot = document.createElement("div");
+      slot.className = "arena-bronze-slot";
+      if (action.status === "done") slot.classList.add("arena-bronze-slot--done");
+      const icon = document.createElement("i");
+      icon.setAttribute("data-lucide", action.icon || "circle");
+      slot.appendChild(icon);
+      actionsRow.appendChild(slot);
+    });
+    if (compact && bronzeActions.length > maxSlots) {
+      const extra = document.createElement("div");
+      extra.className = "arena-bronze-slot arena-bronze-slot--add";
+      extra.textContent = `+${bronzeActions.length - maxSlots}`;
+      actionsRow.appendChild(extra);
+    }
+  }
+  
   const progressBar = document.createElement("div");
   progressBar.className = "arena-progress-bar";
   const progressFill = document.createElement("div");
   progressFill.className = "arena-progress-fill";
   progressFill.style.width = `${Math.min(100, Math.max(0, completionValue))}%`;
   progressBar.appendChild(progressFill);
+  
   const assetLabel = document.createElement("div");
   assetLabel.className = "arena-progress";
   assetLabel.textContent = LABEL_BY_ID.get(arena.assetId) ?? "Ativo";
+  
   card.addEventListener("click", () => {
     openArenaDossier(arena.id);
   });
@@ -2049,12 +2164,20 @@ const buildArenaCard = (arena, { compact = false, showAdd = false } = {}) => {
     });
     card.appendChild(add);
   }
+  
+  card.appendChild(iconSquare);
   card.appendChild(title);
   card.appendChild(assetLabel);
   card.appendChild(description);
+  if (bronzeActions.length) card.appendChild(actionsRow);
   card.appendChild(meta);
-  card.appendChild(progress);
   card.appendChild(progressBar);
+  card.appendChild(progress);
+  
+  if (window.lucide) {
+    setTimeout(() => window.lucide.createIcons(), 0);
+  }
+  
   return card;
 };
 
@@ -2368,23 +2491,58 @@ const markPillComplete = (pillId) => {
   renderPlanner();
 };
 
+let navInitialized = false;
+
 const setActiveScreen = (target) => {
-  document.querySelectorAll(".screen").forEach((screen) => {
-    screen.classList.toggle("is-active", screen.dataset.screen === target);
-  });
-  document.querySelectorAll(".nav-item").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.target === target);
-  });
+  if (!target) return;
+  try {
+    document.querySelectorAll(".screen").forEach((screen) => {
+      const isActive = screen.dataset.screen === target;
+      screen.classList.toggle("is-active", isActive);
+    });
+    document.querySelectorAll(".nav-item").forEach((button) => {
+      const isActive = button.dataset.target === target;
+      button.classList.toggle("is-active", isActive);
+    });
+  } catch (error) {
+    console.error("[setActiveScreen] Erro:", error);
+  }
 };
 
 const initNav = () => {
-  document.querySelectorAll(".nav-item").forEach((button) => {
-    button.addEventListener("click", () => {
+  if (navInitialized) return;
+  navInitialized = true;
+  
+  const navButtons = document.querySelectorAll(".nav-item");
+  if (navButtons.length === 0) {
+    console.warn("[initNav] Nenhum botão de navegação encontrado");
+    return;
+  }
+  
+  navButtons.forEach((button) => {
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       const target = button.dataset.target;
-      if (!target) return;
-      setActiveScreen(target);
+      if (!target) {
+        console.warn("[initNav] Botão sem data-target:", button);
+        return;
+      }
+      if (button.classList.contains("is-active")) {
+        return;
+      }
+      try {
+        playMetalClick();
+        setActiveScreen(target);
+      } catch (error) {
+        console.error("[initNav] Erro ao trocar tela:", error);
+      }
     });
   });
+  
+  const initialButton = document.querySelector(".nav-item.is-active");
+  const initialScreen = initialButton?.dataset.target || "tree";
+  setActiveScreen(initialScreen);
 };
 
 const getDNA = () => loadDNA();
@@ -2506,13 +2664,43 @@ const renderTreeEditorSlots = (dna, assetId) => {
     saveDNA(dna);
   };
 
-  layout.forEach((config, index) => {
-    if (config.title) {
-      const titleEl = document.createElement("h3");
-      titleEl.className = "section-title";
-      titleEl.textContent = config.title;
-      list.appendChild(titleEl);
-      return;
+    const valueEl = document.createElement("div");
+    valueEl.className = "slot-value";
+    valueEl.textContent = getSlotDisplayText(slot) || "ÔÇö";
+    slotEl.appendChild(valueEl);
+    const fields = slot.fields || [{ key: "value", label: slot.label }];
+    const isPhotoSlot =
+      slot.type.startsWith("square") &&
+      (slot.label.toLowerCase().includes("foto") ||
+        slot.label.toLowerCase().includes("logo") ||
+        (slot.fields || []).some((field) => ["foto", "logo"].includes(field.key)));
+
+    if (isPhotoSlot) {
+      const textFields = fields.filter((f) => !["foto", "logo"].includes(f.key));
+      const topKey = textFields[0]?.key;
+      const bottomKey = textFields[1]?.key;
+      if (topKey) {
+        const topValue = asset.profileSlots?.[slot.id]?.[topKey];
+        label.textContent = topValue ? String(topValue) : slot.label;
+      }
+      if (bottomKey) {
+        const bottomValue = asset.profileSlots?.[slot.id]?.[bottomKey];
+        const subtitleEl = document.createElement("div");
+        subtitleEl.className = "slot-subtitle";
+        subtitleEl.textContent = bottomValue ? String(bottomValue) : "";
+        slotEl.appendChild(subtitleEl);
+      }
+    } else {
+      const secondaryField = fields.find(
+        (field, index) => index > 0 && !["foto", "logo"].includes(field.key),
+      );
+      if (secondaryField) {
+        const secondaryValue = asset.profileSlots?.[slot.id]?.[secondaryField.key];
+        const subtitleEl = document.createElement("div");
+        subtitleEl.className = "slot-subtitle";
+        subtitleEl.textContent = secondaryValue ? String(secondaryValue) : "";
+        slotEl.appendChild(subtitleEl);
+      }
     }
 
     const slotId = `${assetId}.${config.slot}`;
@@ -2549,20 +2737,18 @@ const renderTreeEditorSlots = (dna, assetId) => {
           valueDisplay.textContent = e.target.value || "—";
         });
 
-        slotEl.appendChild(label);
-        slotEl.appendChild(valueDisplay);
-        slotEl.appendChild(input);
-
-        if (config.proficiency) {
-          const progress = document.createElement("div");
-          progress.className = "proficiency-bar";
-          const fill = document.createElement("div");
-          fill.className = "proficiency-bar-fill";
-          fill.style.width = `${slotData.proficiency || 0}%`;
-          progress.appendChild(fill);
-          slotEl.appendChild(progress);
-        }
-        break;
+    const applyFieldUpdate = (field, value) => {
+      asset.profileSlots[slot.id] = {
+        ...(asset.profileSlots[slot.id] || {}),
+        [field.key]: value,
+      };
+      valueEl.textContent = getSlotDisplayText(slot) || "ÔÇö";
+      const secondary = secondaryField?.key;
+      if (subtitle) {
+        subtitle.textContent =
+          secondary && asset.profileSlots?.[slot.id]?.[secondary]
+            ? String(asset.profileSlots[slot.id][secondary])
+            : "";
       }
       case 2: {
         slotEl.classList.add("slot-type-2");
@@ -3604,6 +3790,7 @@ const initPlanner = () => {
   renderPlanner();
   updateDayLabel();
   const notesToggle = document.getElementById("notes-toggle");
+  const plannerReportsBtn = document.getElementById("planner-reports-btn");
   const checklistModal = document.getElementById("checklist-modal");
   const checklistClose = document.getElementById("checklist-close");
   const checklistAdd = document.getElementById("checklist-add");
@@ -3767,6 +3954,31 @@ const initPlanner = () => {
       savePlanner({ ...planner, bronzeActions: updated });
       renderPlanner();
       checkMissionProgress();
+    });
+  }
+
+  // Botão de Relatórios
+  if (plannerReportsBtn) {
+    plannerReportsBtn.addEventListener("click", () => {
+      playMetalClick();
+      openPlannerReports();
+    });
+  }
+
+  // Fechar modal de histórico
+  const historyClose = document.getElementById("planner-history-close");
+  const historyModal = document.getElementById("planner-history-modal");
+  if (historyClose && historyModal) {
+    historyClose.addEventListener("click", () => {
+      historyModal.classList.remove("is-open");
+    });
+  }
+
+  const historyDetailClose = document.getElementById("planner-history-detail-close");
+  const historyDetailModal = document.getElementById("planner-history-detail-modal");
+  if (historyDetailClose && historyDetailModal) {
+    historyDetailClose.addEventListener("click", () => {
+      historyDetailModal.classList.remove("is-open");
     });
   }
 };
@@ -4706,12 +4918,24 @@ const initApp = () => {
       }
     });
   }
+  let storageUpdateTimer = null;
+  let isHandlingStorage = false;
   window.addEventListener("storage", () => {
-    renderTree();
-    renderPlanner();
-    renderArenas();
-    renderSocial();
-    applyGlitch();
+    if (isHandlingStorage) return;
+    if (storageUpdateTimer) clearTimeout(storageUpdateTimer);
+    isHandlingStorage = true;
+    storageUpdateTimer = setTimeout(() => {
+      try {
+        renderTree();
+        renderPlanner();
+        renderArenas();
+        renderSocial();
+        applyGlitch();
+      } finally {
+        isHandlingStorage = false;
+        storageUpdateTimer = null;
+      }
+    }, 100);
   });
 };
 

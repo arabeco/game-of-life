@@ -538,11 +538,6 @@ const queueSupabaseProfileUpdate = (() => {
         const user = await getSupabaseUser();
         if (!user) return;
         const profile = loadProfile();
-        const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
-          ? profile.selectedGoldAssets
-          : Array.isArray(profile.widgets)
-            ? profile.widgets
-            : [];
         const payload = {
           id: user.id,
           user_id: user.id,
@@ -552,7 +547,6 @@ const queueSupabaseProfileUpdate = (() => {
           avatar_url: profile.avatar || "",
           total_level: Number(profile.total_level || 0),
           level_geral: Number(profile.total_level || 0),
-          selected_gold_assets: selectedGoldAssets,
           asset_levels: profile.assetLevels || {},
           ...pending,
         };
@@ -633,13 +627,14 @@ const formatHandle = (value) => {
 const fetchSupabaseProfileRow = async (userId) => {
   if (!isSupabaseEnabled() || !userId) return null;
   try {
-    let { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    let { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
     if (error && /column .*id/i.test(error.message || "")) {
-      const fallback = await supabase.from("profiles").select("*").eq("user_id", userId).single();
+      const fallback = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
       data = fallback.data;
       error = fallback.error;
     }
-    if (error) {
+    // maybeSingle retorna null quando não encontra, não é erro
+    if (error && error.code !== "PGRST116") {
       logSupabaseError("profiles.select", error);
       return null;
     }
@@ -660,9 +655,8 @@ const applySupabaseProfileToLocal = (row) => {
       : typeof row.total_level === "number"
         ? row.total_level
         : profile.total_level;
-  const selectedGoldAssets = Array.isArray(row.selected_gold_assets)
-    ? row.selected_gold_assets
-    : profile.selectedGoldAssets;
+  // selected_gold_assets não existe mais no schema, usar dados locais
+  const selectedGoldAssets = profile.selectedGoldAssets || profile.widgets || [];
   const updated = {
     ...profile,
     nickname: identity,
@@ -731,8 +725,9 @@ const ensureUserMissionsRow = async (userId) => {
       .from("user_missions")
       .select("user_id")
       .eq("user_id", userId)
-      .single();
-    if (error) {
+      .maybeSingle();
+    // maybeSingle retorna null quando não encontra, não é erro
+    if (error && error.code !== "PGRST116") {
       logSupabaseError("user_missions.select", error);
     }
     if (!data) {
@@ -749,7 +744,7 @@ const ensureProfilesRow = async (user) => {
   if (!isSupabaseEnabled() || !user?.id) return;
   let useUserIdOnly = false;
   try {
-    let { data, error } = await supabase.from("profiles").select("id").eq("id", user.id).single();
+    let { data, error } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
     if (error) {
       if (/column .*id/i.test(error.message || "")) {
         useUserIdOnly = true;
@@ -757,11 +752,12 @@ const ensureProfilesRow = async (user) => {
           .from("profiles")
           .select("user_id")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         data = fallback.data;
         error = fallback.error;
       }
-      if (error) logSupabaseError("profiles.select", error);
+      // maybeSingle retorna null quando não encontra, não é erro
+      if (error && error.code !== "PGRST116") logSupabaseError("profiles.select", error);
     }
     if (!data) {
       const profile = loadProfile();
@@ -770,11 +766,6 @@ const ensureProfilesRow = async (user) => {
         profile.userId ||
         (user.email ? user.email.split("@")[0] : "") ||
         "";
-      const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
-        ? profile.selectedGoldAssets
-        : Array.isArray(profile.widgets)
-          ? profile.widgets
-          : [];
       const payload = {
         id: user.id,
         user_id: user.id,
@@ -784,7 +775,6 @@ const ensureProfilesRow = async (user) => {
         avatar_url: profile.avatar || "",
         total_level: Number(profile.total_level || 0),
         level_geral: Number(profile.total_level || 0),
-        selected_gold_assets: selectedGoldAssets,
         asset_levels: profile.assetLevels || {},
       };
       if (useUserIdOnly) delete payload.id;
@@ -1043,11 +1033,6 @@ const ensureSupabaseProfile = async (profile) => {
       user = auth.data?.user;
     }
     if (!user) return;
-    const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
-      ? profile.selectedGoldAssets
-      : Array.isArray(profile.widgets)
-        ? profile.widgets
-        : [];
     const dna = loadDNA();
     const planner = loadPlanner();
     const payload = {
@@ -1059,7 +1044,6 @@ const ensureSupabaseProfile = async (profile) => {
       avatar_url: profile.avatar || "",
       total_level: Number(profile.total_level || 0),
       level_geral: Number(profile.total_level || 0),
-      selected_gold_assets: selectedGoldAssets,
       asset_levels: profile.assetLevels || {},
       dna_state: dna || undefined,
       planner_state: planner || undefined,
@@ -1137,11 +1121,6 @@ const syncProfileTotals = async (nextProfile = {}) => {
     const user = await getSupabaseUser();
     if (!user) return false;
     const profile = { ...loadProfile(), ...nextProfile };
-    const selectedGoldAssets = Array.isArray(profile.selectedGoldAssets)
-      ? profile.selectedGoldAssets
-      : Array.isArray(profile.widgets)
-        ? profile.widgets
-        : [];
     const payload = {
       id: user.id,
       user_id: user.id,
@@ -1151,7 +1130,6 @@ const syncProfileTotals = async (nextProfile = {}) => {
       avatar_url: profile.avatar || "",
       total_level: Number(profile.total_level || 0),
       level_geral: Number(profile.total_level || 0),
-      selected_gold_assets: selectedGoldAssets,
       asset_levels: profile.assetLevels || {},
     };
     return await upsertProfileRow(payload);
@@ -1170,8 +1148,9 @@ const fetchMissionState = async () => {
       .from("user_missions")
       .select("*")
       .eq("user_id", user.id)
-      .single();
-    if (error) {
+      .maybeSingle();
+    // maybeSingle retorna null quando não encontra, não é erro
+    if (error && error.code !== "PGRST116") {
       logSupabaseError("user_missions.select", error);
       return loadMissionStateLocal();
     }
@@ -4059,6 +4038,109 @@ const initPlanner = () => {
       historyDetailModal.classList.remove("is-open");
     });
   }
+
+  // Inicializar tela de histórico
+  const historyBackBtn = document.getElementById("history-back-btn");
+  const historyNewReportBtn = document.getElementById("history-new-report-btn");
+  const periodSelector = document.getElementById("history-period-selector");
+  const scanContainer = document.getElementById("scan-container");
+
+  if (historyBackBtn) {
+    historyBackBtn.addEventListener("click", () => {
+      playMetalClick();
+      setActiveScreen("planner");
+      if (scanContainer) {
+        scanContainer.classList.add("is-hidden");
+        scanContainer.querySelector("#scan-cards").innerHTML = "";
+      }
+    });
+  }
+
+  if (historyNewReportBtn) {
+    historyNewReportBtn.addEventListener("click", () => {
+      playMetalClick();
+      openReportDateModal();
+    });
+  }
+
+  // Modal de seleção de datas
+  const reportDateModal = document.getElementById("report-date-modal");
+  const reportDateClose = document.getElementById("report-date-close");
+  const reportDateConfirm = document.getElementById("report-date-confirm");
+  const reportDateStart = document.getElementById("report-date-start");
+  const reportDateEnd = document.getElementById("report-date-end");
+
+  if (reportDateClose) {
+    reportDateClose.addEventListener("click", () => {
+      playMetalClick();
+      if (reportDateModal) reportDateModal.classList.remove("is-open");
+    });
+  }
+
+  if (reportDateConfirm && reportDateStart && reportDateEnd) {
+    reportDateConfirm.addEventListener("click", () => {
+      const startValue = reportDateStart.value;
+      const endValue = reportDateEnd.value;
+      
+      if (!startValue || !endValue) {
+        alert("Por favor, selecione ambas as datas.");
+        return;
+      }
+
+      const startDate = new Date(startValue);
+      const endDate = new Date(endValue);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+
+      if (startDate > endDate) {
+        alert("A data de início deve ser anterior à data de fim.");
+        return;
+      }
+
+      playMetalClick();
+      if (reportDateModal) {
+        reportDateModal.classList.remove("is-open");
+      }
+      
+      // Pequeno delay para garantir que o modal fechou e DOM atualizou
+      setTimeout(() => {
+        try {
+          startScanAnimation(startDate, endDate).catch((error) => {
+            console.error("[Scan] Erro ao iniciar animação:", error);
+            alert("Erro ao gerar relatório: " + error.message);
+          });
+        } catch (error) {
+          console.error("[Scan] Erro ao chamar startScanAnimation:", error);
+          alert("Erro ao gerar relatório: " + error.message);
+        }
+      }, 200);
+    });
+  }
+
+  if (periodSelector) {
+    periodSelector.querySelectorAll(".period-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        playMetalClick();
+        periodSelector.querySelectorAll(".period-btn").forEach((b) => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
+        const periodType = btn.dataset.period;
+        renderHistoryList(periodType);
+      });
+    });
+  }
+
+  const scanCloseBtn = document.getElementById("scan-close-btn");
+  if (scanCloseBtn) {
+    scanCloseBtn.addEventListener("click", () => {
+      playMetalClick();
+      if (scanContainer) {
+        scanContainer.classList.add("is-hidden");
+        const scanCards = scanContainer.querySelector("#scan-cards");
+        if (scanCards) scanCards.innerHTML = "";
+      }
+      if (window.lucide) window.lucide.createIcons();
+    });
+  }
 };
 
 const initClock = () => {
@@ -5042,6 +5124,635 @@ const startAppWithSplash = () => {
   setTimeout(() => {
     start();
   }, 3600);
+};
+
+// ============================================
+// HISTÓRICO E RELATÓRIOS (SCAN)
+// ============================================
+
+const formatShortDate = (date) => {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}`;
+};
+
+const getWeekEndDate = (weekStart) => {
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+};
+
+const getHistoryWeekStart = (date) => {
+  const start = getWeekStartDate(date);
+  start.setHours(0, 1, 0, 0);
+  return start;
+};
+
+const countActionCompletionsInRange = (action, startDate, endDate) => {
+  const startMs = startDate.getTime();
+  const endMs = endDate.getTime();
+  const history = Array.isArray(action.completedHistory) ? action.completedHistory : [];
+  let count = history.filter((stamp) => {
+    const time = new Date(stamp).getTime();
+    return Number.isFinite(time) && time >= startMs && time <= endMs;
+  }).length;
+  if (action.completedAt) {
+    const completedMs = new Date(action.completedAt).getTime();
+    if (Number.isFinite(completedMs) && completedMs >= startMs && completedMs <= endMs) {
+      const alreadyCounted = history.some(
+        (stamp) => new Date(stamp).getTime() === completedMs,
+      );
+      if (!alreadyCounted) count += 1;
+    }
+  }
+  return count;
+};
+
+const countPlannedInRange = (action, startDate, endDate) => {
+  const startKey = formatDateKey(startDate);
+  const endKey = formatDateKey(endDate);
+  const keys = new Set();
+  const cursor = new Date(startDate);
+  cursor.setHours(0, 0, 0, 0);
+  while (formatDateKey(cursor) <= endKey) {
+    keys.add(formatDateKey(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  const plannedSlots = Array.isArray(action.plannedSlots) ? action.plannedSlots : [];
+  if (plannedSlots.length) {
+    return plannedSlots.filter((slot) => keys.has(slot.dateKey)).length;
+  }
+  const planned = Array.isArray(action.plannedHistory) ? action.plannedHistory : [];
+  return planned.filter((key) => keys.has(key)).length;
+};
+
+const buildHistorySummaryForRange = (planner, arenas, startDate, endDate) => {
+  const actions = Array.isArray(planner?.bronzeActions) ? planner.bronzeActions : [];
+  const arenasById = new Map((arenas || []).map((arena) => [arena.id, arena]));
+  const stats = new Map();
+  let totalPlanned = 0;
+  let totalDone = 0;
+  let totalHours = 0;
+
+  actions.forEach((action) => {
+    const plannedCount = countPlannedInRange(action, startDate, endDate);
+    const weeklyTarget = getActionWeeklyTarget(action);
+    const planned = plannedCount > 0 ? plannedCount : weeklyTarget;
+    const done = Math.min(planned, countActionCompletionsInRange(action, startDate, endDate));
+    if (planned <= 0 && done <= 0) return;
+
+    const duration = parseDurationToMinutes(action.durationMinutes || 30);
+    const hours = (done * duration) / 60;
+    totalHours += hours;
+
+    const arena = arenasById.get(action.arenaId);
+    const assetId = arena?.assetId || "geral";
+    const current = stats.get(assetId) || { assetId, planned: 0, done: 0 };
+    current.planned += planned;
+    current.done += done;
+    stats.set(assetId, current);
+    totalPlanned += planned;
+    totalDone += done;
+  });
+
+  const score = totalPlanned > 0 ? Math.round((totalDone / totalPlanned) * 100) : 0;
+  return {
+    stats: Array.from(stats.values()),
+    totalPlanned,
+    totalDone,
+    totalHours: Math.round(totalHours * 10) / 10,
+    score,
+  };
+};
+
+const buildHistoryPeriods = (periodType, planner, arenas) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const periods = [];
+  let startDate, endDate, label;
+
+  for (let i = 0; i < 12; i++) {
+    switch (periodType) {
+      case "week": {
+        const weekStart = getHistoryWeekStart(today);
+        weekStart.setDate(weekStart.getDate() - i * 7);
+        startDate = new Date(weekStart);
+        endDate = getWeekEndDate(weekStart);
+        const weekNum = Math.floor((today - weekStart) / (7 * 24 * 60 * 60 * 1000)) + 1;
+        label = `Semana ${String(weekNum).padStart(2, "0")} - ${formatShortDate(startDate)} a ${formatShortDate(endDate)}`;
+        break;
+      }
+      case "month": {
+        startDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() - i + 1, 0, 23, 59, 59, 999);
+        const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+        label = `${monthNames[startDate.getMonth()]}/${startDate.getFullYear()}`;
+        break;
+      }
+      case "quarter": {
+        const quarter = Math.floor(today.getMonth() / 3);
+        const targetQuarter = quarter - i;
+        const year = today.getFullYear() + Math.floor((targetQuarter) / 4);
+        const q = ((targetQuarter % 4) + 4) % 4;
+        startDate = new Date(year, q * 3, 1);
+        endDate = new Date(year, (q + 1) * 3, 0, 23, 59, 59, 999);
+        label = `T${q + 1} ${year}`;
+        break;
+      }
+      case "semester": {
+        const semester = Math.floor(today.getMonth() / 6);
+        const targetSemester = semester - i;
+        const year = today.getFullYear() + Math.floor((targetSemester) / 2);
+        const s = ((targetSemester % 2) + 2) % 2;
+        startDate = new Date(year, s * 6, 1);
+        endDate = new Date(year, (s + 1) * 6, 0, 23, 59, 59, 999);
+        label = `${s === 0 ? "1º" : "2º"} Semestre ${year}`;
+        break;
+      }
+      case "year": {
+        startDate = new Date(today.getFullYear() - i, 0, 1);
+        endDate = new Date(today.getFullYear() - i, 11, 31, 23, 59, 59, 999);
+        label = String(startDate.getFullYear());
+        break;
+      }
+      default:
+        return periods;
+    }
+
+    const summary = buildHistorySummaryForRange(planner, arenas, startDate, endDate);
+    periods.push({
+      key: `${periodType}-${i}`,
+      periodType,
+      startDate,
+      endDate,
+      label,
+      ...summary,
+    });
+  }
+
+  return periods;
+};
+
+const renderHistoryList = (periodType) => {
+  const listEl = document.getElementById("history-list");
+  if (!listEl) return;
+
+  listEl.innerHTML = '<div class="config-placeholder">Carregando histórico...</div>';
+
+  const planner = loadPlanner();
+  const arenas = loadArenas();
+  const periods = buildHistoryPeriods(periodType, planner, arenas);
+
+  if (periods.length === 0) {
+    listEl.innerHTML = '<div class="config-placeholder">Sem histórico ainda.</div>';
+    return;
+  }
+
+  listEl.innerHTML = "";
+  periods.forEach((period) => {
+    const card = document.createElement("div");
+    card.className = "history-summary-card";
+    card.dataset.periodKey = period.key;
+
+    const header = document.createElement("div");
+    header.className = "history-summary-header";
+
+    const label = document.createElement("div");
+    label.className = "history-summary-label";
+    label.textContent = period.label;
+
+    const score = document.createElement("div");
+    score.className = "history-summary-score";
+    score.textContent = `${period.score}%`;
+
+    header.appendChild(label);
+    header.appendChild(score);
+
+    const progress = document.createElement("div");
+    progress.className = "history-summary-progress";
+    const fill = document.createElement("div");
+    fill.className = "history-summary-progress-fill";
+    fill.style.width = `${Math.max(0, Math.min(100, period.score))}%`;
+    progress.appendChild(fill);
+
+    const meta = document.createElement("div");
+    meta.className = "history-summary-meta";
+    meta.textContent = `${period.totalDone}/${period.totalPlanned} ações • ${period.totalHours}h`;
+
+    card.appendChild(header);
+    card.appendChild(progress);
+    card.appendChild(meta);
+
+    listEl.appendChild(card);
+  });
+};
+
+const buildRadarSvg = (values, labels) => {
+  const size = 200;
+  const center = size / 2;
+  const radius = 80;
+  const step = (Math.PI * 2) / values.length;
+  const rings = [0.25, 0.5, 0.75, 1];
+
+  const pointFor = (value, index) => {
+    const angle = -Math.PI / 2 + step * index;
+    const r = radius * Math.max(0, Math.min(1, value));
+    return {
+      x: center + r * Math.cos(angle),
+      y: center + r * Math.sin(angle),
+    };
+  };
+
+  const ringPolygons = rings
+    .map((ring) => {
+      const points = values
+        .map((_, index) => pointFor(ring, index))
+        .map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+        .join(" ");
+      return `<polygon points="${points}" fill="none" stroke="rgba(250, 204, 21, 0.15)" stroke-width="1" />`;
+    })
+    .join("");
+
+  const axes = values
+    .map((_, index) => {
+      const end = pointFor(1, index);
+      return `<line x1="${center}" y1="${center}" x2="${end.x.toFixed(1)}" y2="${end.y.toFixed(1)}" stroke="rgba(250, 204, 21, 0.2)" stroke-width="1" />`;
+    })
+    .join("");
+
+  const dataPoints = values
+    .map((value, index) => pointFor(value, index))
+    .map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join(" ");
+
+  return `
+    <svg viewBox="0 0 ${size} ${size}" aria-label="Gráfico de teia">
+      ${ringPolygons}
+      ${axes}
+      <polygon points="${dataPoints}" fill="rgba(250, 204, 21, 0.25)" stroke="rgba(250, 204, 21, 0.85)" stroke-width="1.5" />
+      <circle cx="${center}" cy="${center}" r="2" fill="rgba(250, 204, 21, 0.9)" />
+    </svg>
+  `;
+};
+
+const renderScanCardRating = (report, container) => {
+  const card = document.createElement("div");
+  card.className = "scan-card scan-card-rating";
+  const days = Math.ceil((report.endDate.getTime() - report.startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const rating = report.score;
+  card.innerHTML = `
+    <div class="scan-card-header">
+      <i data-lucide="star"></i>
+      <span>Rating</span>
+    </div>
+    <div class="scan-card-body">
+      <div class="scan-rating-number">${rating}</div>
+      <div class="scan-rating-label">Performance</div>
+      <div class="scan-rating-meta">Período analisado: ${days} dias</div>
+    </div>
+  `;
+  container.appendChild(card);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+const renderScanCardMetrics = (report, container) => {
+  const card = document.createElement("div");
+  card.className = "scan-card scan-card-metrics";
+  card.innerHTML = `
+    <div class="scan-card-header">
+      <i data-lucide="bar-chart-3"></i>
+      <span>Métricas</span>
+    </div>
+    <div class="scan-card-body">
+      <div class="scan-metric">
+        <div class="scan-metric-label">Ações Cumpridas</div>
+        <div class="scan-metric-value">${report.totalDone}</div>
+      </div>
+      <div class="scan-metric">
+        <div class="scan-metric-label">Metas Batidas</div>
+        <div class="scan-metric-value">${report.totalPlanned}</div>
+      </div>
+      <div class="scan-metric">
+        <div class="scan-metric-label">Horas Totais</div>
+        <div class="scan-metric-value">${report.totalHours}h</div>
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+const renderScanCardHighlight = (report, container) => {
+  const arenas = loadArenas();
+  const arenasById = new Map(arenas.map((a) => [a.id, a]));
+  const actions = loadPlanner().bronzeActions || [];
+  const actionCounts = new Map();
+  const arenaCounts = new Map();
+
+  actions.forEach((action) => {
+    const done = countActionCompletionsInRange(action, report.startDate, report.endDate);
+    if (done > 0) {
+      actionCounts.set(action.id, (actionCounts.get(action.id) || 0) + done);
+      arenaCounts.set(action.arenaId, (arenaCounts.get(action.arenaId) || 0) + done);
+    }
+  });
+
+  let topAction = null;
+  let topArena = null;
+  let maxActionCount = 0;
+  let maxArenaCount = 0;
+
+  actionCounts.forEach((count, actionId) => {
+    if (count > maxActionCount) {
+      maxActionCount = count;
+      topAction = actions.find((a) => a.id === actionId);
+    }
+  });
+
+  arenaCounts.forEach((count, arenaId) => {
+    if (count > maxArenaCount) {
+      maxArenaCount = count;
+      topArena = arenasById.get(arenaId);
+    }
+  });
+
+  const card = document.createElement("div");
+  card.className = "scan-card scan-card-highlight";
+  card.innerHTML = `
+    <div class="scan-card-header">
+      <i data-lucide="award"></i>
+      <span>Destaque</span>
+    </div>
+    <div class="scan-card-body">
+      <div class="scan-highlight-item">
+        <div class="scan-highlight-label">Arena Mais Focada</div>
+        <div class="scan-highlight-value">${topArena?.title || "N/A"}</div>
+      </div>
+      <div class="scan-highlight-item">
+        <div class="scan-highlight-label">Ação Mais Repetida</div>
+        <div class="scan-highlight-value">${topAction?.title || "N/A"}</div>
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+const renderScanCardRadar = (report, container) => {
+  const dna = seedDNAIfMissing();
+  const assets = dna.assets;
+  const statsById = new Map(report.stats.map((stat) => [stat.assetId, stat]));
+
+  const values = assets.map((asset) => {
+    const stat = statsById.get(asset.id);
+    if (!stat || stat.planned <= 0) return 0;
+    return Math.round((stat.done / stat.planned) * 100) / 100;
+  });
+
+  const card = document.createElement("div");
+  card.className = "scan-card scan-card-radar";
+  card.innerHTML = `
+    <div class="scan-card-header">
+      <i data-lucide="radar"></i>
+      <span>Mapa de Teia</span>
+    </div>
+    <div class="scan-card-body">
+      <div class="scan-radar-container">
+        ${buildRadarSvg(values, [])}
+        <div class="scan-radar-icons">
+          ${assets.map((asset, index) => {
+            const stat = statsById.get(asset.id);
+            const percent = stat && stat.planned > 0 ? Math.round((stat.done / stat.planned) * 100) : 0;
+            const angle = -90 + (360 / assets.length) * index;
+            const rad = (angle * Math.PI) / 180;
+            const x = 50 + 48 * Math.cos(rad);
+            const y = 50 + 48 * Math.sin(rad);
+            const iconName = ICON_BY_ID[asset.id] || "circle";
+            return `
+              <div class="scan-radar-icon" style="left: ${x}%; top: ${y}%;">
+                <i data-lucide="${iconName}"></i>
+                <div class="scan-radar-value">${percent}%</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+      <div class="scan-radar-legend">
+        ${assets.map((asset) => {
+          const stat = statsById.get(asset.id);
+          const percent = stat && stat.planned > 0 ? Math.round((stat.done / stat.planned) * 100) : 0;
+          return `<div>${LABEL_BY_ID.get(asset.id) || asset.id}: ${percent}%</div>`;
+        }).join("")}
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+const renderScanCardSummary = (report, container) => {
+  const profile = loadProfile();
+  const card = document.createElement("div");
+  card.className = "scan-card scan-card-summary";
+  card.id = "scan-summary-card";
+  const periodLabel = `${formatShortDate(report.startDate)} a ${formatShortDate(report.endDate)}`;
+  card.innerHTML = `
+    <div class="scan-card-header">
+      <i data-lucide="file-text"></i>
+      <span>Resumo Final</span>
+    </div>
+    <div class="scan-card-body">
+      <div class="scan-summary-identity">
+        <div class="scan-summary-avatar" style="${profile?.avatar ? `background-image: url(${profile.avatar})` : ""}"></div>
+        <div class="scan-summary-name">${profile?.nickname || profile?.full_name || "Jogador"}</div>
+        <div class="scan-summary-level">Nível ${profile?.level || 0}</div>
+      </div>
+      <div class="scan-summary-rating">
+        <div class="scan-summary-rating-number">${report.score}</div>
+        <div class="scan-summary-rating-label">Rating</div>
+      </div>
+      <div class="scan-summary-radar-mini">
+        ${buildRadarSvg(
+          report.stats.map((stat) => {
+            const total = report.stats.reduce((sum, s) => sum + s.planned, 0);
+            return total > 0 ? stat.planned / total : 0;
+          }),
+          []
+        )}
+      </div>
+      <div class="scan-summary-period">${periodLabel}</div>
+      <button class="scan-summary-download gold-button" id="scan-summary-download">
+        <i data-lucide="download"></i>
+        <span>Baixar Relatório</span>
+      </button>
+    </div>
+  `;
+  container.appendChild(card);
+  if (window.lucide) window.lucide.createIcons();
+
+  const downloadBtn = document.getElementById("scan-summary-download");
+  if (downloadBtn && window.html2canvas) {
+    downloadBtn.addEventListener("click", async () => {
+      const target = document.getElementById("scan-summary-card");
+      if (!target) return;
+      const canvas = await window.html2canvas(target, {
+        backgroundColor: "#0f1115",
+        scale: 2,
+      });
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = `relatorio-${formatDateKey(report.startDate)}-${formatDateKey(report.endDate)}.png`;
+      link.click();
+    });
+  }
+};
+
+const openReportDateModal = () => {
+  const modal = document.getElementById("report-date-modal");
+  const startInput = document.getElementById("report-date-start");
+  const endInput = document.getElementById("report-date-end");
+  if (!modal || !startInput || !endInput) return;
+
+  // Definir datas padrão: última semana
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 7);
+  
+  const formatDateForInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  startInput.value = formatDateForInput(weekAgo);
+  endInput.value = formatDateForInput(today);
+  endInput.max = formatDateForInput(today); // Não permitir datas futuras
+  startInput.max = formatDateForInput(today);
+
+  modal.classList.add("is-open");
+  if (window.lucide) window.lucide.createIcons();
+};
+
+const startScanAnimation = async (startDate, endDate) => {
+  try {
+    console.log("[Scan] Iniciando animação de scan", { startDate, endDate });
+    
+    const scanContainer = document.getElementById("scan-container");
+    const scanAnimation = document.getElementById("scan-animation");
+    const scanCards = document.getElementById("scan-cards");
+    
+    if (!scanContainer) {
+      console.error("[Scan] scan-container não encontrado");
+      alert("Erro: Container de scan não encontrado");
+      return;
+    }
+    if (!scanAnimation) {
+      console.error("[Scan] scan-animation não encontrado");
+      alert("Erro: Elemento de animação não encontrado");
+      return;
+    }
+    if (!scanCards) {
+      console.error("[Scan] scan-cards não encontrado");
+      alert("Erro: Container de cards não encontrado");
+      return;
+    }
+
+    // Limpar cards anteriores e mostrar container
+    scanCards.innerHTML = "";
+    scanAnimation.classList.remove("is-scanning"); // Garantir que não está em estado anterior
+    
+    // Forçar display do container
+    scanContainer.style.display = "flex";
+    scanContainer.classList.remove("is-hidden");
+    console.log("[Scan] Container exibido");
+    
+    // Scroll para o topo
+    scanContainer.scrollTop = 0;
+
+    // Pequeno delay para garantir que o DOM atualizou
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Gerar relatório
+    let report;
+    try {
+      const planner = loadPlanner();
+      const arenas = loadArenas();
+      report = {
+        startDate,
+        endDate,
+        ...buildHistorySummaryForRange(planner, arenas, startDate, endDate),
+      };
+      console.log("[Scan] Relatório gerado", report);
+    } catch (error) {
+      console.error("[Scan] Erro ao gerar relatório:", error);
+      alert("Erro ao gerar relatório: " + error.message);
+      scanContainer.classList.add("is-hidden");
+      return;
+    }
+
+    // Mostrar animação de scan
+    console.log("[Scan] Iniciando animação visual");
+    
+    // Garantir que a animação está visível
+    scanAnimation.style.display = "flex";
+    scanAnimation.classList.add("is-scanning");
+    
+    // Forçar reflow para garantir que a animação inicia
+    void scanAnimation.offsetHeight;
+    
+    // Aguardar animação
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    // Remover animação
+    scanAnimation.classList.remove("is-scanning");
+    console.log("[Scan] Animação concluída, renderizando cards");
+
+    // Renderizar cards sequencialmente (slides)
+    const cards = [
+      { render: () => renderScanCardRating(report, scanCards), delay: 800 },
+      { render: () => renderScanCardMetrics(report, scanCards), delay: 800 },
+      { render: () => renderScanCardHighlight(report, scanCards), delay: 800 },
+      { render: () => renderScanCardRadar(report, scanCards), delay: 1000 },
+      { render: () => renderScanCardSummary(report, scanCards), delay: 800 },
+    ];
+
+    for (let i = 0; i < cards.length; i++) {
+      try {
+        console.log(`[Scan] Renderizando card ${i + 1}/${cards.length}`);
+        cards[i].render();
+        if (window.lucide) window.lucide.createIcons();
+        
+        // Scroll suave para o novo card
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        const lastCard = scanCards.lastElementChild;
+        if (lastCard) {
+          lastCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        
+        await new Promise((resolve) => setTimeout(resolve, cards[i].delay));
+      } catch (error) {
+        console.error(`[Scan] Erro ao renderizar card ${i + 1}:`, error);
+      }
+    }
+    
+    console.log("[Scan] Todos os cards renderizados");
+  } catch (error) {
+    console.error("[Scan] Erro geral na animação:", error);
+    alert("Erro ao gerar relatório: " + error.message);
+    const scanContainer = document.getElementById("scan-container");
+    if (scanContainer) {
+      scanContainer.classList.add("is-hidden");
+    }
+  }
+};
+
+const openPlannerReports = () => {
+  setActiveScreen("history");
+  const periodSelector = document.getElementById("history-period-selector");
+  const activePeriod = periodSelector?.querySelector(".period-btn.is-active")?.dataset.period || "week";
+  renderHistoryList(activePeriod);
 };
 
 if (document.readyState === "loading") {

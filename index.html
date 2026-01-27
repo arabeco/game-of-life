@@ -13,6 +13,7 @@
     <meta name="gol-build" content="2026-01-20u" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <!-- Service worker disabled: src/service-worker.js n??o existe neste build -->
   </head>
   <body>
@@ -119,6 +120,27 @@
             <div class="timeline" id="timeline"></div>
             <div class="week-grid is-hidden" id="week-grid"></div>
           </div>
+        </section>
+
+        <section class="screen screen-history" data-screen="history">
+          <div class="history-header">
+            <button class="history-back-btn" id="history-back-btn" aria-label="Voltar">
+              <i data-lucide="arrow-left"></i>
+            </button>
+            <div class="drawer-title">Histórico de Relatórios</div>
+            <button class="history-new-report-btn gold-button" id="history-new-report-btn">
+              <i data-lucide="scan-line"></i>
+              <span>Novo Relatório</span>
+            </button>
+          </div>
+          <div class="history-period-selector" id="history-period-selector">
+            <button class="period-btn is-active" data-period="week">Semana</button>
+            <button class="period-btn" data-period="month">Mês</button>
+            <button class="period-btn" data-period="quarter">Trimestre</button>
+            <button class="period-btn" data-period="semester">Semestre</button>
+            <button class="period-btn" data-period="year">Ano</button>
+          </div>
+          <div class="history-list" id="history-list"></div>
         </section>
 
         <section class="screen screen-config" data-screen="config">
@@ -336,6 +358,36 @@
           </button>
         </div>
         <div class="modal-body" id="planner-history-modal-detail"></div>
+      </div>
+    </div>
+
+    <!-- Modal de Seleção de Datas para Relatório -->
+    <div id="report-date-modal" class="modal">
+      <div class="modal-card dossier-card gold-overlay">
+        <div class="dossier-header">
+          <div class="drawer-title">Novo Relatório</div>
+          <button class="close-button" id="report-date-close" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="report-date-form">
+            <label class="field-label" for="report-date-start">
+              <i data-lucide="calendar"></i>
+              <span>Data Início</span>
+            </label>
+            <input type="date" id="report-date-start" class="date-input" />
+            <label class="field-label" for="report-date-end">
+              <i data-lucide="calendar"></i>
+              <span>Data Fim</span>
+            </label>
+            <input type="date" id="report-date-end" class="date-input" />
+            <button class="gold-button" id="report-date-confirm">
+              <i data-lucide="scan-line"></i>
+              <span>Gerar Relatório</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -598,5 +650,14 @@
       </div>
     </div>
     <div class="build-stamp" id="build-stamp" aria-hidden="true"></div>
+
+    <!-- Scan Container (Fora das telas para funcionar sempre) -->
+    <div class="scan-container is-hidden" id="scan-container">
+      <button class="scan-close-btn" id="scan-close-btn" aria-label="Fechar">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="scan-animation" id="scan-animation"></div>
+      <div class="scan-cards" id="scan-cards"></div>
+    </div>
   </body>
 </html>

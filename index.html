@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=2026-01-20u" />
-    <meta name="gol-build" content="2026-01-20u" />
+    <link rel="stylesheet" href="styles.css?v=2026-01-27" />
+    <meta name="gol-build" content="2026-01-27" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -123,7 +123,6 @@
             </div>
           </header>
           <div class="bronze-backlog" id="bronze-backlog">
-            <div class="drawer-title">A??es de Bronze</div>
             <div class="bronze-list" id="bronze-list"></div>
           </div>
           <div class="planner-layout">
@@ -477,36 +476,41 @@
     </div>
 
     <div class="modal" id="arena-modal">
-      <div class="modal-card dossier-card scan-card scan-silver">
-        <div class="dossier-header">
-          <div class="drawer-title">Nova Arena</div>
-          <button class="close-button" id="arena-cancel" aria-label="Fechar">
-            <i data-lucide="x"></i>
-          </button>
+      <div class="modal-card arena-dossier-card">
+        <button class="close-button arena-dossier-close" id="arena-cancel" aria-label="Fechar">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <div class="arena-dossier-logo arena-modal-logo-editable" id="arena-modal-logo">
+          <i data-lucide="circle"></i>
         </div>
-        <div class="modal-body dossier-body">
+        <div class="arena-icon-grid" id="arena-modal-icon-grid" style="display: none;"></div>
+        <div class="arena-dossier-title" id="arena-modal-title">Nova Arena</div>
+        <div class="arena-dossier-asset" id="arena-modal-asset">Selecione o Ativo</div>
+        <div class="modal-body dossier-body arena-modal-body">
           <label class="field-label" for="arena-title">Nome</label>
-          <input type="text" id="arena-title" />
-          <label class="field-label" for="arena-description">Descricao</label>
-          <input type="text" id="arena-description" />
+          <input type="text" id="arena-title" class="arena-input" />
+          <label class="field-label" for="arena-description">Descrição</label>
+          <input type="text" id="arena-description" class="arena-input" />
           <label class="field-label" for="arena-asset">Ativo</label>
-          <select id="arena-asset"></select>
+          <select id="arena-asset" class="arena-select"></select>
           <label class="field-label">Bronze Inicial</label>
           <label class="toggle-row">
             <input type="checkbox" id="arena-add-bronze" />
             Adicionar Bronze ao salvar
           </label>
         </div>
-        <button class="primary-button" id="arena-save" aria-label="Salvar">
-          <i data-lucide="check"></i>
-        </button>
+        <div class="arena-dossier-footer">
+          <button class="icon-button arena-meta-edit" id="arena-save" aria-label="Salvar">
+            <i data-lucide="check"></i>
+          </button>
+        </div>
       </div>
     </div>
 
     <div class="modal" id="bronze-modal">
       <div class="modal-card dossier-card bronze-card bronze-card-elite scan-card scan-bronze">
         <div class="dossier-header">
-          <div class="drawer-title">Nova Acao de Bronze</div>
+          <div class="drawer-title"></div>
           <button class="close-button" id="bronze-cancel" aria-label="Fechar">
             <i data-lucide="x"></i>
           </button>
@@ -559,15 +563,18 @@
         <button class="close-button arena-dossier-close" id="arena-dossier-back" aria-label="Voltar">
           <i data-lucide="arrow-left"></i>
         </button>
-        <div class="arena-dossier-logo" id="arena-dossier-logo">
+        <div class="arena-dossier-logo arena-dossier-logo-editable" id="arena-dossier-logo">
           <i data-lucide="circle"></i>
         </div>
+        <div class="arena-icon-grid" id="arena-dossier-icon-grid" style="display: none;"></div>
+        <input type="text" class="arena-dossier-title-input" id="arena-dossier-title-input" style="display: none;" />
         <div class="arena-dossier-title" id="arena-dossier-title">Arena</div>
+        <select class="arena-dossier-asset-select" id="arena-dossier-asset-select" style="display: none;"></select>
         <div class="arena-dossier-asset" id="arena-dossier-asset">Ativo</div>
+        <input type="text" class="arena-dossier-description-input" id="arena-dossier-description-input" style="display: none;" />
         <div class="arena-dossier-description" id="arena-dossier-macro">Sem descrição</div>
         <div class="arena-dossier-bronze-section">
           <div class="arena-dossier-bronze-header">
-            <span>Ações de Bronze</span>
             <button class="bronze-add-btn" id="arena-dossier-add-bronze">
               <i data-lucide="plus"></i>
             </button>
@@ -585,6 +592,9 @@
         <div class="arena-dossier-footer">
           <button class="icon-button arena-meta-edit" id="arena-dossier-edit-meta" aria-label="Editar Arena">
             <i data-lucide="pencil"></i>
+          </button>
+          <button class="icon-button arena-meta-ok" id="arena-dossier-ok" aria-label="Salvar" style="display: none;">
+            <i data-lucide="check"></i>
           </button>
         </div>
       </div>

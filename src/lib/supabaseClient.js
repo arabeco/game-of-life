@@ -1,5 +1,3 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
 const supabaseUrl =
   (typeof localStorage !== "undefined" ? localStorage.getItem("game_of_life.supabase_url") : undefined) ||
   import.meta?.env?.NEXT_PUBLIC_SUPABASE_URL ||
@@ -18,4 +16,12 @@ export const supabaseConfig = {
   enabled: Boolean(supabaseUrl && supabaseAnonKey),
 };
 
-export const supabase = supabaseConfig.enabled ? createClient(supabaseUrl, supabaseAnonKey) : null;
+// Usar window.supabase.createClient se disponível (carregado no bootstrap.js)
+// Caso contrário, o app funcionará sem Supabase (modo offline)
+const createClient =
+  typeof window !== "undefined" && window.supabase && typeof window.supabase.createClient === "function"
+    ? window.supabase.createClient
+    : null;
+
+export const supabase =
+  supabaseConfig.enabled && createClient ? createClient(supabaseUrl, supabaseAnonKey) : null;

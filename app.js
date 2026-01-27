@@ -12,7 +12,9 @@ const MODE_KEY = "game_of_life.mastery_mode";
 const V2_RESET_KEY = "game_of_life.v2_reset";
 const PROFILE_KEY = "game_of_life.profile";
 const MISSIONS_KEY = "game_of_life.missions";
-const HOLD_DURATION_MS = 2500;
+// Hold para completar: sempre 3 segundos (nunca 5s). Usado em bay, grid e pills.
+const HOLD_DURATION_MS = 3000;
+const HOLD_MS_CAPPED = Math.min(3000, HOLD_DURATION_MS);
 
 const SEPHIROT = [
   { id: "conexao", label: "CONSCIÊNCIA", row: 1, col: 2 },
@@ -1060,6 +1062,583 @@ const uploadToSupabase = async (file, path) => {
   }
 };
 
+// Função de debug para listar todos os buckets e arquivos
+const debugListAllStorage = async () => {
+  if (!isSupabaseEnabled()) {
+    console.log("[Debug] Supabase não habilitado");
+    return;
+  }
+  console.log("[Debug] === LISTANDO TODOS OS BUCKETS E ARQUIVOS ===");
+  
+  // Lista de buckets comuns para tentar
+  const commonBuckets = ["banners", "borders", "avatars", "app-assets", "assets", "images", "skins"];
+  
+  for (const bucketName of commonBuckets) {
+    try {
+      const { data, error } = await supabase.storage.from(bucketName).list("", {
+        limit: 100,
+      });
+      
+      if (error) {
+        if (error.message?.includes("not found") || error.message?.includes("Bucket")) {
+          console.log(`[Debug] Bucket "${bucketName}" não existe`);
+        } else {
+          console.log(`[Debug] Erro ao acessar bucket "${bucketName}":`, error.message);
+        }
+        continue;
+      }
+      
+      if (data && data.length > 0) {
+        console.log(`[Debug] ✅ Bucket "${bucketName}" encontrado com ${data.length} itens:`);
+        data.forEach((item, idx) => {
+          console.log(`  [${idx + 1}] ${item.name} (${item.id || 'sem id'}) - ${item.metadata?.size || 'tamanho desconhecido'} bytes`);
+        });
+        
+        // Tentar listar subpastas também
+        const folders = data.filter(item => !item.name.includes('.'));
+        if (folders.length > 0) {
+          console.log(`[Debug] Encontradas ${folders.length} possíveis pastas em "${bucketName}"`);
+          for (const folder of folders.slice(0, 5)) {
+            const subResult = await supabase.storage.from(bucketName).list(folder.name, { limit: 50 });
+            if (subResult.data && subResult.data.length > 0) {
+              console.log(`[Debug]   Pasta "${folder.name}" tem ${subResult.data.length} arquivos:`);
+              subResult.data.forEach(file => {
+                console.log(`    - ${file.name}`);
+              });
+            }
+          }
+        }
+      } else {
+        console.log(`[Debug] Bucket "${bucketName}" existe mas está vazio`);
+        // Tentar descobrir arquivos via URLs diretas
+        if (bucketName === "banners" || bucketName === "borders") {
+          console.log(`[Debug] Tentando descobrir arquivos em "${bucketName}" via URLs diretas...`);
+          const testNames = [];
+          for (let i = 1; i <= 5; i++) {
+            testNames.push(
+              `${bucketName === "banners" ? "banner" : "border"}${i}.png`,
+              `${bucketName === "banners" ? "banner" : "border"}${i}.jpg`,
+              `${bucketName === "banners" ? "banner" : "border"}-${i}.png`,
+              `${bucketName === "banners" ? "banner" : "border"}-${i}.jpg`,
+              `${i}.png`,
+              `${i}.jpg`
+            );
+          }
+          const found = [];
+          for (const fileName of testNames) {
+            const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+            const publicUrl = urlData?.publicUrl || "";
+            try {
+              const img = new Image();
+              await new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error("Not found"));
+                img.src = publicUrl;
+                setTimeout(() => reject(new Error("Timeout")), 1000);
+              });
+              found.push(fileName);
+              console.log(`[Debug] ✅ Arquivo encontrado via URL direta: ${fileName}`);
+            } catch (e) {
+              // Não encontrado
+            }
+          }
+          if (found.length > 0) {
+            console.log(`[Debug] ✅ Total de ${found.length} arquivos encontrados via URLs diretas em "${bucketName}"`);
+          } else {
+            console.log(`[Debug] ⚠️ Nenhum arquivo encontrado via URLs diretas em "${bucketName}"`);
+          }
+        }
+      }
+    } catch (err) {
+      console.log(`[Debug] Erro ao verificar bucket "${bucketName}":`, err.message);
+    }
+  }
+  console.log("[Debug] === FIM DA LISTAGEM ===");
+};
+
+// Buscar URLs de banners e bordas do Supabase storage
+const getBannersFromStorage = async () => {
+  if (!isSupabaseEnabled()) {
+    console.log("[Banners] Supabase não habilitado");
+    return [];
+  }
+  try {
+    console.log("[Banners] Buscando banners do storage...");
+    
+    const bucketName = "banners";
+    let allFiles = [];
+    
+    try {
+      // Tentar listar arquivos (pode falhar se não houver policies)
+      const { data, error } = await supabase.storage.from(bucketName).list("", {
+        limit: 100,
+        sortBy: { column: "name", order: "asc" },
+      });
+      
+      if (error) {
+        console.warn(`[Banners] Não foi possível listar arquivos:`, error.message);
+        console.log(`[Banners] Tentando URLs diretas com nomes comuns...`);
+        
+        // Se não conseguir listar, tentar URLs diretas com nomes comuns
+        // Tentar vários padrões de nomes possíveis
+        const commonNames = [];
+        
+        // Padrões numéricos
+        for (let i = 1; i <= 10; i++) {
+          commonNames.push(
+            `banner${i}.png`, `banner${i}.jpg`, `banner${i}.jpeg`, `banner${i}.webp`,
+            `banner-${i}.png`, `banner-${i}.jpg`, `banner-${i}.jpeg`, `banner-${i}.webp`,
+            `banner_${i}.png`, `banner_${i}.jpg`, `banner_${i}.jpeg`, `banner_${i}.webp`,
+            `${i}.png`, `${i}.jpg`, `${i}.jpeg`, `${i}.webp`,
+            `Banner${i}.png`, `Banner${i}.jpg`, `Banner-${i}.png`, `Banner-${i}.jpg`
+          );
+        }
+        
+        // Padrões com títulos (baseado no que você mencionou que tem título)
+        const titles = ["ouro", "prata", "bronze", "diamante", "platina", "gold", "silver"];
+        titles.forEach(title => {
+          commonNames.push(
+            `banner-${title}.png`, `banner-${title}.jpg`, `banner_${title}.png`, `banner_${title}.jpg`,
+            `${title}.png`, `${title}.jpg`, `${title}-banner.png`, `${title}-banner.jpg`
+          );
+        });
+        
+        console.log(`[Banners] Testando ${commonNames.length} possíveis nomes de arquivo...`);
+        
+        const results = [];
+        let tested = 0;
+        
+        // Testar em lotes para não travar
+        for (const fileName of commonNames) {
+          tested++;
+          if (tested % 10 === 0) {
+            console.log(`[Banners] Testados ${tested}/${commonNames.length}...`);
+          }
+          
+          const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+          const publicUrl = urlData?.publicUrl || "";
+          
+          // Tentar carregar a imagem para verificar se existe (com timeout curto)
+          try {
+            const img = new Image();
+            await new Promise((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = () => reject(new Error("Not found"));
+              img.src = publicUrl;
+              setTimeout(() => reject(new Error("Timeout")), 1500);
+            });
+            console.log(`[Banners] ✅ Arquivo encontrado: ${fileName}`);
+            const cleanName = fileName.replace(/\.(png|jpg|jpeg|webp)$/i, "").replace(/banner[-_]?/gi, "").trim();
+            const title = cleanName || fileName.replace(/\.[^/.]+$/, "");
+            results.push({
+              id: `banner-${fileName.replace(/\.[^/.]+$/, "")}`,
+              title: title.charAt(0).toUpperCase() + title.slice(1) || `Banner ${fileName}`,
+              imageUrl: publicUrl,
+              unlocked: true,
+            });
+          } catch (e) {
+            // Arquivo não existe, continuar
+          }
+        }
+        
+        if (results.length > 0) {
+          console.log(`[Banners] ✅ ${results.length} banners encontrados via URLs diretas`);
+          return results;
+        }
+        
+        console.warn(`[Banners] Nenhum banner encontrado.`);
+        console.warn(`[Banners] DICA: Crie uma policy SELECT pública para o bucket "banners" ou informe os nomes exatos dos arquivos.`);
+        return [];
+      }
+      
+      if (!data || data.length === 0) {
+        console.warn(`[Banners] Bucket "${bucketName}" está vazio, tentando URLs diretas...`);
+        // Continuar para tentar URLs diretas mesmo quando o bucket está vazio
+      } else {
+        // Se encontrou arquivos, processar normalmente
+        console.log(`[Banners] Encontrados ${data.length} itens no bucket "${bucketName}":`);
+        data.forEach((item, idx) => {
+          console.log(`  [${idx + 1}] ${item.name} (${item.id || 'sem id'})`);
+        });
+        
+        // Separar arquivos e pastas
+        const files = data.filter(item => item.name.includes('.'));
+        const folders = data.filter(item => !item.name.includes('.'));
+        
+        console.log(`[Banners] Arquivos: ${files.length}, Pastas: ${folders.length}`);
+        
+        // Processar arquivos na raiz
+        const imageFiles = files.filter((file) => {
+          const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
+          return isImage && !file.name.startsWith(".");
+        });
+        
+        allFiles.push(...imageFiles.map(f => ({ ...f, path: f.name })));
+        
+        // Processar arquivos nas pastas
+        for (const folder of folders.slice(0, 10)) {
+          const folderResult = await supabase.storage.from(bucketName).list(folder.name, { limit: 100 });
+          if (folderResult.data && folderResult.data.length > 0) {
+            const folderImages = folderResult.data.filter((file) => {
+              const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
+              return isImage && !file.name.startsWith(".");
+            });
+            allFiles.push(...folderImages.map(f => ({ ...f, path: `${folder.name}/${f.name}` })));
+          }
+        }
+        
+        console.log(`[Banners] ✅ Total de ${allFiles.length} imagens encontradas`);
+        
+        if (allFiles.length > 0) {
+          const result = allFiles.map((file) => {
+            const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(file.path);
+            const publicUrl = urlData?.publicUrl || "";
+            const fileName = file.name.replace(/\.[^/.]+$/, "");
+            const title = fileName.replace(/banner|Banner/gi, "").trim() || fileName;
+            
+            return {
+              id: `banner-${file.id || file.name.replace(/\.[^/.]+$/, "")}`,
+              title: title.charAt(0).toUpperCase() + title.slice(1) || `Banner ${file.name}`,
+              imageUrl: publicUrl,
+              unlocked: true,
+            };
+          });
+          
+          console.log(`[Banners] ✅ Retornando ${result.length} banners`);
+          return result;
+        }
+      }
+      
+      // Se chegou aqui e o bucket está vazio, tentar fallback de URLs diretas
+      console.log(`[Banners] Tentando URLs diretas com nomes comuns...`);
+      
+      // Tentar vários padrões de nomes possíveis
+      const commonNames = [];
+      
+      // Padrões numéricos
+      for (let i = 1; i <= 10; i++) {
+        commonNames.push(
+          `banner${i}.png`, `banner${i}.jpg`, `banner${i}.jpeg`, `banner${i}.webp`,
+          `banner-${i}.png`, `banner-${i}.jpg`, `banner-${i}.jpeg`, `banner-${i}.webp`,
+          `banner_${i}.png`, `banner_${i}.jpg`, `banner_${i}.jpeg`, `banner_${i}.webp`,
+          `${i}.png`, `${i}.jpg`, `${i}.jpeg`, `${i}.webp`,
+          `Banner${i}.png`, `Banner${i}.jpg`, `Banner-${i}.png`, `Banner-${i}.jpg`
+        );
+      }
+      
+      // Padrões com títulos
+      const titles = ["ouro", "prata", "bronze", "diamante", "platina", "gold", "silver"];
+      titles.forEach(title => {
+        commonNames.push(
+          `banner-${title}.png`, `banner-${title}.jpg`, `banner_${title}.png`, `banner_${title}.jpg`,
+          `${title}.png`, `${title}.jpg`, `${title}-banner.png`, `${title}-banner.jpg`
+        );
+      });
+      
+      console.log(`[Banners] Testando ${commonNames.length} possíveis nomes de arquivo...`);
+      
+      const results = [];
+      let tested = 0;
+      
+      // Testar em lotes para não travar
+      for (const fileName of commonNames) {
+        tested++;
+        if (tested % 10 === 0) {
+          console.log(`[Banners] Testados ${tested}/${commonNames.length}...`);
+        }
+        
+        const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+        const publicUrl = urlData?.publicUrl || "";
+        
+        // Tentar carregar a imagem para verificar se existe (com timeout curto)
+        try {
+          const img = new Image();
+          await new Promise((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error("Not found"));
+            img.src = publicUrl;
+            setTimeout(() => reject(new Error("Timeout")), 1500);
+          });
+          console.log(`[Banners] ✅ Arquivo encontrado: ${fileName}`);
+          const cleanName = fileName.replace(/\.(png|jpg|jpeg|webp)$/i, "").replace(/banner[-_]?/gi, "").trim();
+          const title = cleanName || fileName.replace(/\.[^/.]+$/, "");
+          results.push({
+            id: `banner-${fileName.replace(/\.[^/.]+$/, "")}`,
+            title: title.charAt(0).toUpperCase() + title.slice(1) || `Banner ${fileName}`,
+            imageUrl: publicUrl,
+            unlocked: true,
+          });
+        } catch (e) {
+          // Arquivo não existe, continuar
+        }
+      }
+      
+      if (results.length > 0) {
+        console.log(`[Banners] ✅ ${results.length} banners encontrados via URLs diretas`);
+        return results;
+      }
+      
+      console.warn(`[Banners] Nenhum banner encontrado.`);
+      console.warn(`[Banners] DICA: Verifique se os arquivos estão no bucket "banners" ou informe os nomes exatos dos arquivos.`);
+      return [];
+      
+    } catch (err) {
+      console.error(`[Banners] Erro ao buscar no bucket "${bucketName}":`, err);
+      console.error(`[Banners] Stack:`, err.stack);
+      return [];
+    }
+  } catch (error) {
+    console.error("[Banners] Erro geral:", error);
+    logSupabaseError("storage.list.banners", error);
+    return [];
+  }
+};
+
+const getBordersFromStorage = async () => {
+  if (!isSupabaseEnabled()) {
+    console.log("[Borders] Supabase não habilitado");
+    return [];
+  }
+  try {
+    console.log("[Borders] Buscando bordas do storage...");
+    
+    const bucketName = "borders";
+    let allFiles = [];
+    
+    try {
+      // Tentar listar arquivos (pode falhar se não houver policies)
+      const { data, error } = await supabase.storage.from(bucketName).list("", {
+        limit: 100,
+        sortBy: { column: "name", order: "asc" },
+      });
+      
+      if (error) {
+        console.warn(`[Borders] Não foi possível listar arquivos:`, error.message);
+      }
+      
+      if (error || !data || data.length === 0) {
+        if (!error && (!data || data.length === 0)) {
+          console.warn(`[Borders] Bucket "${bucketName}" está vazio`);
+        }
+        console.log(`[Borders] Tentando URLs diretas com nomes comuns...`);
+        
+        // Tentar URLs diretas com nomes comuns
+        const commonNames = [];
+        
+        // Padrões numéricos
+        for (let i = 1; i <= 10; i++) {
+          commonNames.push(
+            `border${i}.png`, `border${i}.jpg`, `border${i}.jpeg`, `border${i}.webp`,
+            `border-${i}.png`, `border-${i}.jpg`, `border-${i}.jpeg`, `border-${i}.webp`,
+            `border_${i}.png`, `border_${i}.jpg`, `border_${i}.jpeg`, `border_${i}.webp`,
+            `borda${i}.png`, `borda${i}.jpg`, `borda-${i}.png`, `borda-${i}.jpg`,
+            `slot${i}.png`, `slot${i}.jpg`, `slot-${i}.png`, `slot-${i}.jpg`,
+            `${i}.png`, `${i}.jpg`, `${i}.jpeg`, `${i}.webp`,
+            `Border${i}.png`, `Border${i}.jpg`, `Borda${i}.png`, `Borda${i}.jpg`
+          );
+        }
+        
+        // Padrões com títulos
+        const titles = ["ouro", "prata", "bronze", "diamante", "platina", "gold", "silver", "slot"];
+        titles.forEach(title => {
+          commonNames.push(
+            `border-${title}.png`, `border-${title}.jpg`, `border_${title}.png`, `border_${title}.jpg`,
+            `borda-${title}.png`, `borda-${title}.jpg`, `borda_${title}.png`, `borda_${title}.jpg`,
+            `${title}.png`, `${title}.jpg`, `${title}-border.png`, `${title}-border.jpg`,
+            `${title}-borda.png`, `${title}-borda.jpg`
+          );
+        });
+        
+        console.log(`[Borders] Testando ${commonNames.length} possíveis nomes de arquivo...`);
+        
+        const results = [];
+        let tested = 0;
+        
+        // Testar em lotes para não travar
+        for (const fileName of commonNames) {
+          tested++;
+          if (tested % 10 === 0) {
+            console.log(`[Borders] Testados ${tested}/${commonNames.length}...`);
+          }
+          
+          const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+          const publicUrl = urlData?.publicUrl || "";
+          
+          // Tentar carregar a imagem para verificar se existe (com timeout curto)
+          try {
+            const img = new Image();
+            await new Promise((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = () => reject(new Error("Not found"));
+              img.src = publicUrl;
+              setTimeout(() => reject(new Error("Timeout")), 1500);
+            });
+            console.log(`[Borders] ✅ Arquivo encontrado: ${fileName}`);
+            const cleanName = fileName.replace(/\.(png|jpg|jpeg|webp)$/i, "").replace(/border[-_]?|borda[-_]?|slot[-_]?/gi, "").trim();
+            const title = cleanName || fileName.replace(/\.[^/.]+$/, "");
+            results.push({
+              id: `border-${fileName.replace(/\.[^/.]+$/, "")}`,
+              title: title.charAt(0).toUpperCase() + title.slice(1) || `Borda ${fileName}`,
+              imageUrl: publicUrl,
+              unlocked: true,
+            });
+          } catch (e) {
+            // Arquivo não existe, continuar
+          }
+        }
+        
+        if (results.length > 0) {
+          console.log(`[Borders] ✅ ${results.length} bordas encontradas via URLs diretas`);
+          return results;
+        }
+        
+        console.warn(`[Borders] Nenhuma borda encontrada.`);
+        console.warn(`[Borders] DICA: Verifique se os arquivos estão no bucket "borders" ou informe os nomes exatos dos arquivos.`);
+        return [];
+      } else {
+        // Se encontrou arquivos, processar normalmente
+        console.log(`[Borders] Encontrados ${data.length} itens no bucket "${bucketName}":`);
+        data.forEach((item, idx) => {
+          console.log(`  [${idx + 1}] ${item.name} (${item.id || 'sem id'})`);
+        });
+        
+        // Separar arquivos e pastas
+        const files = data.filter(item => item.name.includes('.'));
+        const folders = data.filter(item => !item.name.includes('.'));
+        
+        console.log(`[Borders] Arquivos: ${files.length}, Pastas: ${folders.length}`);
+        
+        // Processar arquivos na raiz
+        const imageFiles = files.filter((file) => {
+          const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
+          return isImage && !file.name.startsWith(".");
+        });
+        
+        allFiles.push(...imageFiles.map(f => ({ ...f, path: f.name })));
+        
+        // Processar arquivos nas pastas
+        for (const folder of folders.slice(0, 10)) {
+          const folderResult = await supabase.storage.from(bucketName).list(folder.name, { limit: 100 });
+          if (folderResult.data && folderResult.data.length > 0) {
+            const folderImages = folderResult.data.filter((file) => {
+              const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
+              return isImage && !file.name.startsWith(".");
+            });
+            allFiles.push(...folderImages.map(f => ({ ...f, path: `${folder.name}/${f.name}` })));
+          }
+        }
+        
+        console.log(`[Borders] ✅ Total de ${allFiles.length} imagens encontradas`);
+        
+        if (allFiles.length > 0) {
+          const result = allFiles.map((file) => {
+            const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(file.path);
+            const publicUrl = urlData?.publicUrl || "";
+            const fileName = file.name.replace(/\.[^/.]+$/, "");
+            const title = fileName.replace(/border|Border|borda|Borda/gi, "").trim() || fileName;
+            
+            return {
+              id: `border-${file.id || file.name.replace(/\.[^/.]+$/, "")}`,
+              title: title.charAt(0).toUpperCase() + title.slice(1) || `Borda ${file.name}`,
+              imageUrl: publicUrl,
+              unlocked: true,
+            };
+          });
+          
+          console.log(`[Borders] ✅ Retornando ${result.length} bordas`);
+          return result;
+        }
+      }
+      
+      // Se chegou aqui e o bucket está vazio, tentar fallback de URLs diretas
+      console.log(`[Borders] Tentando URLs diretas com nomes comuns...`);
+      
+      // Tentar vários padrões de nomes possíveis
+      const commonNames = [];
+      
+      // Padrões numéricos
+      for (let i = 1; i <= 10; i++) {
+        commonNames.push(
+          `border${i}.png`, `border${i}.jpg`, `border${i}.jpeg`, `border${i}.webp`,
+          `border-${i}.png`, `border-${i}.jpg`, `border-${i}.jpeg`, `border-${i}.webp`,
+          `border_${i}.png`, `border_${i}.jpg`, `border_${i}.jpeg`, `border_${i}.webp`,
+          `borda${i}.png`, `borda${i}.jpg`, `borda-${i}.png`, `borda-${i}.jpg`,
+          `slot${i}.png`, `slot${i}.jpg`, `slot-${i}.png`, `slot-${i}.jpg`,
+          `${i}.png`, `${i}.jpg`, `${i}.jpeg`, `${i}.webp`,
+          `Border${i}.png`, `Border${i}.jpg`, `Borda${i}.png`, `Borda${i}.jpg`
+        );
+      }
+      
+      // Padrões com títulos
+      const titles = ["ouro", "prata", "bronze", "diamante", "platina", "gold", "silver", "slot"];
+      titles.forEach(title => {
+        commonNames.push(
+          `border-${title}.png`, `border-${title}.jpg`, `border_${title}.png`, `border_${title}.jpg`,
+          `borda-${title}.png`, `borda-${title}.jpg`, `borda_${title}.png`, `borda_${title}.jpg`,
+          `${title}.png`, `${title}.jpg`, `${title}-border.png`, `${title}-border.jpg`,
+          `${title}-borda.png`, `${title}-borda.jpg`
+        );
+      });
+      
+      console.log(`[Borders] Testando ${commonNames.length} possíveis nomes de arquivo...`);
+      
+      const results = [];
+      let tested = 0;
+      
+      // Testar em lotes para não travar
+      for (const fileName of commonNames) {
+        tested++;
+        if (tested % 10 === 0) {
+          console.log(`[Borders] Testados ${tested}/${commonNames.length}...`);
+        }
+        
+        const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+        const publicUrl = urlData?.publicUrl || "";
+        
+        // Tentar carregar a imagem para verificar se existe (com timeout curto)
+        try {
+          const img = new Image();
+          await new Promise((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error("Not found"));
+            img.src = publicUrl;
+            setTimeout(() => reject(new Error("Timeout")), 1500);
+          });
+          console.log(`[Borders] ✅ Arquivo encontrado: ${fileName}`);
+          const cleanName = fileName.replace(/\.(png|jpg|jpeg|webp)$/i, "").replace(/border[-_]?|borda[-_]?|slot[-_]?/gi, "").trim();
+          const title = cleanName || fileName.replace(/\.[^/.]+$/, "");
+          results.push({
+            id: `border-${fileName.replace(/\.[^/.]+$/, "")}`,
+            title: title.charAt(0).toUpperCase() + title.slice(1) || `Borda ${fileName}`,
+            imageUrl: publicUrl,
+            unlocked: true,
+          });
+        } catch (e) {
+          // Arquivo não existe, continuar
+        }
+      }
+      
+      if (results.length > 0) {
+        console.log(`[Borders] ✅ ${results.length} bordas encontradas via URLs diretas`);
+        return results;
+      }
+      
+      console.warn(`[Borders] Nenhuma borda encontrada.`);
+      console.warn(`[Borders] DICA: Verifique se os arquivos estão no bucket "borders" ou informe os nomes exatos dos arquivos.`);
+      return [];
+      
+    } catch (err) {
+      console.error(`[Borders] Erro ao buscar no bucket "${bucketName}":`, err);
+      console.error(`[Borders] Stack:`, err.stack);
+      return [];
+    }
+  } catch (error) {
+    console.error("[Borders] Erro geral:", error);
+    logSupabaseError("storage.list.borders", error);
+    return [];
+  }
+};
+
 const playMetalClick = () => {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -1412,6 +1991,51 @@ const saveChecklistItems = (items) => {
   savePlanner(planner);
 };
 
+// Resetar todas as ações bronze de "done" para "backlog" (voltar para o planner)
+const resetBronzeActions = () => {
+  const planner = loadPlanner();
+  let countReset = 0;
+  const updated = planner.bronzeActions.map((action) => {
+    // Resetar apenas ações que estão "done" ou têm completedAt/completedHistory
+    if (action.status === "done" || action.completedAt || (Array.isArray(action.completedHistory) && action.completedHistory.length > 0)) {
+      countReset++;
+      // Atualizar contadores antes de resetar
+      if (action.status === "done" && action.arenaId) {
+        updateArenaCountsForBronze(action.arenaId, -1);
+      }
+      return {
+        ...action,
+        status: "backlog",
+        scheduledHour: undefined,
+        scheduledMinute: undefined,
+        scheduledDayOffset: undefined,
+        completedAt: undefined,
+        completedHistory: [],
+      };
+    }
+    return action;
+  });
+  
+  if (countReset > 0) {
+    savePlanner({ ...planner, bronzeActions: updated });
+    // Atualizar progresso global de todas as arenas afetadas
+    const affectedArenas = new Set(updated.filter(a => a.status === "backlog" && a.arenaId).map(a => a.arenaId));
+    affectedArenas.forEach(arenaId => {
+      updateGlobalArenaProgress(arenaId, updated);
+    });
+    renderPlanner();
+    renderArenas();
+    checkMissionProgress();
+    console.log(`[Planner] Resetadas ${countReset} ações bronze para backlog`);
+  }
+  return countReset;
+};
+
+// Expor função globalmente para uso no console
+if (typeof window !== 'undefined') {
+  window.resetBronzeActions = resetBronzeActions;
+}
+
 const getZodiacSign = (day, month) => {
   if (!day || !month) return "";
   const signs = [
@@ -1661,7 +2285,8 @@ const buildBronzeElement = (action) => {
   const bronze = document.createElement("div");
   bronze.className = "bronze-item";
   bronze.dataset.id = action.id;
-  bronze.draggable = action.status === "backlog";
+  // Permitir drag para backlog, scheduled E done
+  bronze.draggable = action.status === "backlog" || action.status === "scheduled" || action.status === "done";
   if (action.serious) bronze.classList.add("serious");
   const icon = document.createElement("i");
   icon.setAttribute("data-lucide", action.icon || "circle");
@@ -1672,13 +2297,107 @@ const buildBronzeElement = (action) => {
   const weekStart = getWeekStartDate(new Date());
   const plannedCount = getPlannedCountForWeek(action, weekStart);
   const remaining = Math.max(0, weeklyTarget - completedCount - plannedCount);
-  bronze.addEventListener("click", () => {
+  // Variável para controlar se acabou de realizar ação (hold)
+  let justCompletedAction = false;
+  
+  bronze.addEventListener("click", (e) => {
+    // Não abrir modal se acabou de realizar ação (hold)
+    if (justCompletedAction) {
+      e.preventDefault();
+      e.stopPropagation();
+      justCompletedAction = false;
+      return;
+    }
     openBronzeModal(action.arenaId, action.id);
   });
   bronze.addEventListener("dragstart", (event) => {
     if (!bronze.draggable) return;
     event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
   });
+  
+  // Hold 3s (HOLD_MS_CAPPED) para realizar ação direto do bay
+  let _bayPressPointerId = null;
+  const startPress = (e) => {
+    if (e && e.pointerId !== undefined) {
+      if (_bayPressPointerId != null) return;
+      _bayPressPointerId = e.pointerId;
+    }
+    const existing = bronze.dataset.timer;
+    if (existing) {
+      clearTimeout(Number(existing));
+      bronze.dataset.timer = "";
+    }
+    bronze.classList.add("is-pressing");
+    const timer = setTimeout(() => {
+      const planner = loadPlanner();
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      const targetDayOffset = 0;
+      let dayPickerUpdated = false;
+      if (plannerDayOffset !== targetDayOffset) {
+        plannerDayOffset = targetDayOffset;
+        const dayPicker = document.querySelector(".daypicker");
+        if (dayPicker) {
+          dayPicker.value = targetDayOffset;
+          dayPickerUpdated = true;
+        }
+        updateDayLabel();
+      }
+      
+      const updated = planner.bronzeActions.map((item) => {
+        if (item.id !== action.id) return item;
+        const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
+        const completedAt = now.toISOString();
+        return {
+          ...item,
+          status: "done",
+          completedAt,
+          completedHistory: [...history, completedAt],
+          scheduledHour: currentHour,
+          scheduledMinute: currentMinute,
+          scheduledDayOffset: targetDayOffset,
+        };
+      });
+      const allActionsPreserved = updated.length === planner.bronzeActions.length;
+      if (!allActionsPreserved) {
+        console.warn('[Planner] Ações perdidas ao completar do bay', {
+          antes: planner.bronzeActions.length,
+          depois: updated.length
+        });
+      }
+      savePlanner({ ...planner, bronzeActions: updated });
+      updateArenaCountsForBronze(action.arenaId, 1);
+      updateGlobalArenaProgress(action.arenaId, updated);
+      if (dayPickerUpdated) {
+        requestAnimationFrame(() => renderPlanner());
+      } else {
+        renderPlanner();
+      }
+      renderArenas();
+      checkMissionProgress();
+      bronze.classList.remove("is-pressing");
+      justCompletedAction = true;
+      setTimeout(() => { justCompletedAction = false; }, 100);
+    }, HOLD_MS_CAPPED);
+    bronze.dataset.timer = String(timer);
+  };
+  
+  const endPress = (e) => {
+    if (e && e.pointerId !== undefined && _bayPressPointerId != null && e.pointerId !== _bayPressPointerId) return;
+    if (e && e.pointerId !== undefined) _bayPressPointerId = null;
+    const timer = bronze.dataset.timer;
+    if (timer) clearTimeout(Number(timer));
+    bronze.classList.remove("is-pressing");
+    bronze.dataset.timer = "";
+  };
+  
+  bronze.style.touchAction = "none";
+  bronze.addEventListener("pointerdown", startPress);
+  bronze.addEventListener("pointerup", endPress);
+  bronze.addEventListener("pointerleave", endPress);
+  bronze.addEventListener("pointercancel", endPress);
   if (!action.atemporal && weeklyTarget > 1) {
     const badge = document.createElement("div");
     badge.className = "bronze-count";
@@ -1705,6 +2424,23 @@ const renderWeekView = () => {
   const timelineTopPadding = 16;
   const hourCount = dayEndHour - dayStartHour + 1;
   
+  // Limpar todos os bronze blocks antes de limpar o HTML para garantir limpeza de timers
+  const existingBlocks = weekGrid.querySelectorAll(".bronze-block");
+  existingBlocks.forEach((block) => {
+    const completeTimer = block.dataset.completeTimer;
+    const dragTimer = block.dataset.dragTimer;
+    if (completeTimer) clearTimeout(Number(completeTimer));
+    if (dragTimer) clearTimeout(Number(dragTimer));
+    // Remover listeners se existirem
+    if (block._handleDragStart) block.removeEventListener("dragstart", block._handleDragStart);
+    if (block._onPointerDown) block.removeEventListener("pointerdown", block._onPointerDown);
+    if (block._endPress) {
+      block.removeEventListener("pointerup", block._endPress);
+      block.removeEventListener("pointerleave", block._endPress);
+      block.removeEventListener("pointercancel", block._endPress);
+    }
+  });
+  
   weekGrid.innerHTML = "";
   weekGrid.className = "week-grid week-timeline";
   
@@ -1727,7 +2463,14 @@ const renderWeekView = () => {
   const body = document.createElement("div");
   body.className = "week-timeline-body";
   body.style.position = "relative";
-  body.style.height = `${timelineTopPadding * 2 + hourCount * slotHeight}px`;
+  // Altura do conteúdo: todos os horários (4h–28h) para poder rolar até o fim
+  const calculatedHeight = timelineTopPadding * 2 + hourCount * slotHeight;
+  const viewportHeight = window.innerHeight;
+  const fixedElementsHeight = 200; // header + bronze list + bottom nav + safe-area
+  const availableHeight = Math.max(viewportHeight - fixedElementsHeight, 400);
+  const finalBodyHeight = Math.max(calculatedHeight, availableHeight);
+  body.style.height = `${finalBodyHeight}px`;
+  body.style.minHeight = `${calculatedHeight}px`;
   
   for (let hour = dayStartHour; hour <= dayEndHour; hour += 1) {
     const row = document.createElement("div");
@@ -1761,8 +2504,21 @@ const renderWeekView = () => {
     dayCol.style.left = `calc(48px + ${dayIndex} * (100% - 48px) / 7)`;
     dayCol.style.width = `calc((100% - 48px) / 7)`;
     dayCol.style.top = `${timelineTopPadding}px`;
-    dayCol.style.height = `${hourCount * slotHeight}px`;
     dayCol.style.borderLeft = dayIndex > 0 ? "1px solid rgba(255, 255, 255, 0.08)" : "none";
+    
+    // Usar requestAnimationFrame para garantir altura real após renderização
+    requestAnimationFrame(() => {
+      const actualBodyHeight = body.offsetHeight || body.clientHeight || finalBodyHeight;
+      const dayColHeight = actualBodyHeight - timelineTopPadding;
+      dayCol.style.height = `${dayColHeight}px`;
+      dayCol.style.minHeight = `${dayColHeight}px`;
+      dayCol.style.bottom = '0'; // Garantir que vai até o final
+    });
+    
+    // Altura inicial baseada no cálculo
+    const dayColHeight = finalBodyHeight - timelineTopPadding;
+    dayCol.style.height = `${dayColHeight}px`;
+    dayCol.style.minHeight = `${dayColHeight}px`;
     
     const dayKey = day.key;
     const dateKey = getWeekDateKeyByIndex(weekStart, dayIndex);
@@ -1788,6 +2544,9 @@ const renderWeekView = () => {
         action.weekdays.includes(dayKey),
     );
     
+    // Prevenir duplicação: garantir que ações não apareçam duas vezes
+    const actionsInDayCol = new Set([...scheduledActions, ...recurringActions].map(a => a.id));
+    
     [...scheduledActions, ...recurringActions].forEach((action) => {
       const startHour = Math.min(
         dayEndHour,
@@ -1811,6 +2570,7 @@ const renderWeekView = () => {
     
     dayCol.addEventListener("dragover", (event) => {
       event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
     });
     dayCol.addEventListener("drop", (event) => {
       event.preventDefault();
@@ -1853,15 +2613,24 @@ const buildBronzeBlock = (action, options = {}) => {
   block.className = "bronze-block";
   block.dataset.id = action.id;
   const dayDate = options.dayDate;
-  const isRecurring = Boolean(options.isRecurring && dayDate);
+  // Uma ação é recurring se tem weekdays definido (independente de ter dayDate)
+  const hasWeekdays = Array.isArray(action.weekdays) && action.weekdays.length > 0;
+  const isRecurring = Boolean(options.isRecurring && hasWeekdays);
+  // Determinar estado visual baseado no status real da ação
   const isDoneForDay = isRecurring ? isActionDoneOnDate(action, dayDate) : action.status === "done";
-  if (isDoneForDay) block.classList.add("done");
-  if (action.status === "scheduled" || action.status === "done") {
-    block.draggable = true;
-    block.addEventListener("dragstart", (event) => {
-      event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
-    });
+  if (isDoneForDay) {
+    block.classList.add("done");
+    block.classList.remove("is-scheduled");
+  } else if (action.status === "scheduled") {
+    block.classList.add("is-scheduled");
+    block.classList.remove("done");
+  } else {
+    block.classList.remove("done");
+    block.classList.remove("is-scheduled");
   }
+  
+  // Permitir drag para backlog, scheduled E done (usuário pode reorganizar ações completas)
+  block.draggable = action.status === "backlog" || action.status === "scheduled" || action.status === "done";
   const icon = document.createElement("i");
   icon.className = "bronze-icon";
   icon.setAttribute("data-lucide", action.icon || "circle");
@@ -1872,68 +2641,316 @@ const buildBronzeBlock = (action, options = {}) => {
   checkmark.className = "bronze-checkmark";
   checkmark.innerHTML = '<i data-lucide="check"></i>';
 
-  const startPress = () => {
+  // Hold exatamente 3s (HOLD_MS_CAPPED = min(3000, HOLD_DURATION_MS))
+  const holdMs = HOLD_MS_CAPPED;
+  
+  // Limpar qualquer timer existente quando elemento é criado (evitar múltiplos timers)
+  const existingCompleteTimer = block.dataset.completeTimer;
+  const existingDragTimer = block.dataset.dragTimer;
+  if (existingCompleteTimer) {
+    clearTimeout(Number(existingCompleteTimer));
+    block.dataset.completeTimer = "";
+  }
+  if (existingDragTimer) {
+    clearTimeout(Number(existingDragTimer));
+    block.dataset.dragTimer = "";
+  }
+  
+  let _pressPointerId = null;
+  const startPress = (e) => {
+    if (e && e.pointerId !== undefined) {
+      if (_pressPointerId != null) return;
+      _pressPointerId = e.pointerId;
+    }
+    // Limpar timers anteriores se existirem (evitar múltiplos timers)
+    const oldCompleteTimer = block.dataset.completeTimer;
+    const oldDragTimer = block.dataset.dragTimer;
+    if (oldCompleteTimer) {
+      clearTimeout(Number(oldCompleteTimer));
+      block.dataset.completeTimer = "";
+    }
+    if (oldDragTimer) {
+      clearTimeout(Number(oldDragTimer));
+      block.dataset.dragTimer = "";
+    }
+    
     block.classList.add("is-pressing");
-    const timer = setTimeout(() => {
+    
+    // Habilitar drag IMEDIATAMENTE para todas as ações (backlog, scheduled, done)
+    // Não esperar 500ms - usuário pode arrastar assim que tocar
+    const planner = loadPlanner();
+    const currentAction = planner.bronzeActions.find((a) => a.id === action.id);
+    if (currentAction && (currentAction.status === "backlog" || currentAction.status === "scheduled" || currentAction.status === "done")) {
+      block.dataset.dragEnabled = "true";
+      block.draggable = true;
+      block.style.cursor = "grab";
+    }
+    
+    // Exatamente 3s para completar/desfazer (timer é cancelado em handleDragStart ou endPress)
+    const completeTimer = setTimeout(() => {
       const planner = loadPlanner();
+      const currentAction = planner.bronzeActions.find((item) => item.id === action.id);
+      if (!currentAction) {
+        endPress();
+        return;
+      }
+      // Ações backlog não podem ser completadas diretamente do grid (apenas do bay)
+      if (currentAction.status === "backlog") {
+        endPress();
+        return;
+      }
+      
       const updated = planner.bronzeActions.map((item) => {
-        if (item.id !== action.id) return item;
-        const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
-        if (isRecurring && dayDate) {
-          const dayKey = formatDateKey(dayDate);
-          const hasDay = history.some((stamp) => formatDateKey(new Date(stamp)) === dayKey);
-          const nextHistory = hasDay
-            ? history.filter((stamp) => formatDateKey(new Date(stamp)) !== dayKey)
-            : [...history, new Date().toISOString()];
-          const nextCompletedAt = nextHistory.length
-            ? nextHistory[nextHistory.length - 1]
-            : undefined;
-          return {
-            ...item,
-            completedAt: nextCompletedAt,
-            completedHistory: nextHistory,
-          };
-        }
-        if (item.status === "done") {
-          return { ...item, status: "scheduled", completedAt: undefined };
-        }
-        const completedAt = new Date().toISOString();
-        return {
-          ...item,
-          status: "done",
-          completedAt,
-          completedHistory: [...history, completedAt],
-        };
-      });
+          if (item.id !== action.id) return item;
+          const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
+          
+          const currentStatus = item.status;
+          // Para ações recurring COM dayDate, verificar se está done para este dia específico
+          // Para ações não-recurring ou recurring sem dayDate, usar status direto
+          const isCurrentlyDone = (isRecurring && dayDate)
+            ? isActionDoneOnDate(item, dayDate)
+            : currentStatus === "done";
+          
+          // Para ações recurring COM dayDate, gerenciar histórico por dia
+          if (isRecurring && dayDate) {
+            const dayKey = formatDateKey(dayDate);
+            const hasDay = history.some((stamp) => formatDateKey(new Date(stamp)) === dayKey);
+            
+            if (hasDay) {
+              // Desfazer: remover do histórico deste dia específico
+              const nextHistory = history.filter((stamp) => formatDateKey(new Date(stamp)) !== dayKey);
+              const nextCompletedAt = nextHistory.length
+                ? nextHistory[nextHistory.length - 1]
+                : undefined;
+              
+              // Garantir que mantém horário agendado para aparecer pontilhada no grid
+              const scheduledHour = (item.scheduledHour !== undefined && item.scheduledHour !== null)
+                ? item.scheduledHour 
+                : (new Date().getHours());
+              const scheduledMinute = (item.scheduledMinute !== undefined && item.scheduledMinute !== null)
+                ? item.scheduledMinute 
+                : 0;
+              const scheduledDayOffset = (item.scheduledDayOffset !== undefined && item.scheduledDayOffset !== null)
+                ? item.scheduledDayOffset 
+                : plannerDayOffset;
+              
+              return {
+                ...item,
+                completedAt: nextCompletedAt,
+                completedHistory: nextHistory,
+                scheduledHour,
+                scheduledMinute,
+                scheduledDayOffset,
+              };
+            } else {
+              // Completar: adicionar ao histórico deste dia
+              const completedAt = new Date().toISOString();
+              const scheduledHour = (item.scheduledHour !== undefined && item.scheduledHour !== null)
+                ? item.scheduledHour 
+                : (new Date().getHours());
+              const scheduledMinute = (item.scheduledMinute !== undefined && item.scheduledMinute !== null)
+                ? item.scheduledMinute 
+                : 0;
+              const scheduledDayOffset = (item.scheduledDayOffset !== undefined && item.scheduledDayOffset !== null)
+                ? item.scheduledDayOffset 
+                : plannerDayOffset;
+              
+              return {
+                ...item,
+                completedAt,
+                completedHistory: [...history, completedAt],
+                scheduledHour,
+                scheduledMinute,
+                scheduledDayOffset,
+              };
+            }
+          }
+          
+          // Para ações não-recurring OU recurring sem dayDate: se está done, desfazer para scheduled
+          // Se está scheduled, completar para done
+          if (currentStatus === "done" || isCurrentlyDone) {
+            // Desfazer: voltar para estado de planejamento (scheduled) mantendo o horário
+            // Priorizar manter horário original, mas garantir que sempre tem valores válidos
+            const scheduledHour = (item.scheduledHour !== undefined && item.scheduledHour !== null && item.scheduledHour >= 0 && item.scheduledHour <= 28) 
+              ? item.scheduledHour 
+              : (new Date().getHours());
+            const scheduledMinute = (item.scheduledMinute !== undefined && item.scheduledMinute !== null && item.scheduledMinute >= 0 && item.scheduledMinute < 60)
+              ? item.scheduledMinute 
+              : 0;
+            // Usar plannerDayOffset atual para aparecer no dia que está sendo visualizado
+            const scheduledDayOffset = plannerDayOffset;
+            
+            return {
+              ...item,
+              status: "scheduled",
+              completedAt: undefined,
+              scheduledHour,
+              scheduledMinute,
+              scheduledDayOffset,
+            };
+          } else if (currentStatus === "scheduled") {
+            // Completar: marcar como done (apenas se estiver scheduled)
+            // Garantir que tem scheduledHour/scheduledMinute/scheduledDayOffset antes de completar
+            const scheduledHour = (item.scheduledHour !== undefined && item.scheduledHour !== null && item.scheduledHour >= 0 && item.scheduledHour <= 28)
+              ? item.scheduledHour 
+              : (new Date().getHours());
+            const scheduledMinute = (item.scheduledMinute !== undefined && item.scheduledMinute !== null && item.scheduledMinute >= 0 && item.scheduledMinute < 60)
+              ? item.scheduledMinute 
+              : 0;
+            const scheduledDayOffset = (item.scheduledDayOffset !== undefined && item.scheduledDayOffset !== null)
+              ? item.scheduledDayOffset 
+              : plannerDayOffset;
+            const completedAt = new Date().toISOString();
+            return {
+              ...item,
+              status: "done",
+              completedAt,
+              completedHistory: [...history, completedAt],
+              scheduledHour,
+              scheduledMinute,
+              scheduledDayOffset,
+            };
+          } else {
+            // Status não reconhecido (backlog, etc) - não fazer nada
+            return item;
+          }
+        });
+      // Garantir que todas ações são preservadas
+      const allActionsPreserved = updated.length === planner.bronzeActions.length;
+      if (!allActionsPreserved) {
+        console.warn('[Planner] Ações perdidas ao completar/desfazer', {
+          antes: planner.bronzeActions.length,
+          depois: updated.length
+        });
+      }
       savePlanner({ ...planner, bronzeActions: updated });
+      
+      // Atualizar contadores baseado no status ANTES e DEPOIS da mudança
+      const updatedAction = updated.find((a) => a.id === action.id);
       if (!isRecurring) {
-        if (action.status === "done") {
+        const wasDone = currentAction.status === "done";
+        const isNowDone = updatedAction?.status === "done";
+        
+        if (wasDone && !isNowDone) {
+          // Estava done, agora será scheduled (desfez) - ação volta para pontilhada
           updateArenaCountsForBronze(action.arenaId, -1);
-        } else {
+        } else if (!wasDone && isNowDone) {
+          // Estava scheduled, agora será done (completou)
+          updateArenaCountsForBronze(action.arenaId, 1);
+        }
+      } else {
+        // Para ações recurring, atualizar baseado no histórico do dia específico
+        const wasDoneForDay = isActionDoneOnDate(currentAction, dayDate);
+        const isNowDoneForDay = updatedAction ? isActionDoneOnDate(updatedAction, dayDate) : false;
+        
+        if (wasDoneForDay && !isNowDoneForDay) {
+          // Estava completada para este dia, agora não está (desfez)
+          updateArenaCountsForBronze(action.arenaId, -1);
+        } else if (!wasDoneForDay && isNowDoneForDay) {
+          // Não estava completada para este dia, agora está (completou)
           updateArenaCountsForBronze(action.arenaId, 1);
         }
       }
       updateGlobalArenaProgress(action.arenaId, updated);
+      
+      // Limpar estado de press antes de re-renderizar
+      endPress();
+      
+      // Forçar re-renderização imediata (sem delay)
       renderPlanner();
       renderArenas();
       checkMissionProgress();
-    }, HOLD_DURATION_MS);
-    block.dataset.timer = String(timer);
+    }, 3000);
+    
+    block.dataset.completeTimer = String(completeTimer);
   };
-
-  const endPress = () => {
-    const timer = block.dataset.timer;
-    if (timer) clearTimeout(Number(timer));
+  
+  const endPress = (e) => {
+    if (e && e.pointerId !== undefined && _pressPointerId != null && e.pointerId !== _pressPointerId) return;
+    if (e && e.pointerId !== undefined) _pressPointerId = null;
+    const completeTimer = block.dataset.completeTimer;
+    const dragTimer = block.dataset.dragTimer;
+    if (completeTimer) {
+      clearTimeout(Number(completeTimer));
+      block.dataset.completeTimer = "";
+    }
+    if (dragTimer) {
+      clearTimeout(Number(dragTimer));
+      block.dataset.dragTimer = "";
+    }
     block.classList.remove("is-pressing");
-    block.dataset.timer = "";
+    
+    // Se não completou nem arrastou, resetar estado
+    // Manter draggable para backlog, scheduled E done
+    if (block.dataset.dragEnabled !== "true") {
+      if (action.status === "backlog" || action.status === "scheduled" || action.status === "done") {
+        // Manter draggable para todas as ações
+        block.draggable = true;
+      } else {
+        block.draggable = false;
+        block.style.cursor = "";
+      }
+    }
+    block.dataset.dragEnabled = "false";
   };
-
-  block.addEventListener("mousedown", startPress);
-  block.addEventListener("touchstart", startPress);
-  block.addEventListener("mouseup", endPress);
-  block.addEventListener("mouseleave", endPress);
-  block.addEventListener("touchend", endPress);
-  block.addEventListener("touchcancel", endPress);
+  
+  // Adicionar dragstart handler - cancelar timer de completar quando drag inicia
+  const handleDragStart = (event) => {
+    // Permitir drag para backlog, scheduled E done
+    if (action.status === "backlog" || action.status === "scheduled" || action.status === "done") {
+      const dragEnabled = block.dataset.dragEnabled === "true" || block.draggable;
+      if (dragEnabled) {
+        // Cancelar timer de completar quando drag inicia
+        const completeTimer = block.dataset.completeTimer;
+        if (completeTimer) {
+          clearTimeout(Number(completeTimer));
+          block.dataset.completeTimer = "";
+        }
+        event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
+        endPress(); // Limpar timers ao iniciar drag
+        // Resetar cursor após drag
+        setTimeout(() => {
+          block.style.cursor = "";
+          block.dataset.dragEnabled = "false";
+        }, 100);
+      } else {
+        // Se drag não está habilitado, prevenir
+        event.preventDefault();
+      }
+    } else {
+      event.preventDefault();
+    }
+  };
+  
+  // Não usar preventDefault no pointerdown — bloqueia o início do drag no navegador.
+  // touchAction = "none" no bloco já evita scroll/pan durante o toque.
+  const onPointerDown = (e) => { startPress(e); };
+  block._handleDragStart = handleDragStart;
+  block._onPointerDown = onPointerDown;
+  block._endPress = endPress;
+  
+  block.addEventListener("dragstart", handleDragStart);
+  block.addEventListener("pointerdown", onPointerDown);
+  block.addEventListener("pointerup", endPress);
+  block.addEventListener("pointerleave", endPress);
+  block.addEventListener("pointercancel", endPress);
+  block.style.touchAction = "none";
+  
+  const cleanupObserver = new MutationObserver(() => {
+    if (!document.body.contains(block)) {
+      const completeTimer = block.dataset.completeTimer;
+      const dragTimer = block.dataset.dragTimer;
+      if (completeTimer) clearTimeout(Number(completeTimer));
+      if (dragTimer) clearTimeout(Number(dragTimer));
+      block.removeEventListener("dragstart", handleDragStart);
+      block.removeEventListener("pointerdown", onPointerDown);
+      block.removeEventListener("pointerup", endPress);
+      block.removeEventListener("pointerleave", endPress);
+      block.removeEventListener("pointercancel", endPress);
+      cleanupObserver.disconnect();
+    }
+  });
+  cleanupObserver.observe(document.body, { childList: true, subtree: true });
   block.appendChild(icon);
   block.appendChild(title);
   block.appendChild(checkmark);
@@ -2294,6 +3311,23 @@ const renderPlanner = () => {
   const isNarrow = window.innerWidth <= 520;
   const pixelsPerMinute = isNarrow ? 0.6 : 1;
 
+  // Limpar todos os bronze blocks antes de limpar o HTML para garantir limpeza de timers
+  const existingBlocks = timeline.querySelectorAll(".bronze-block");
+  existingBlocks.forEach((block) => {
+    const completeTimer = block.dataset.completeTimer;
+    const dragTimer = block.dataset.dragTimer;
+    if (completeTimer) clearTimeout(Number(completeTimer));
+    if (dragTimer) clearTimeout(Number(dragTimer));
+    // Remover listeners se existirem
+    if (block._handleDragStart) block.removeEventListener("dragstart", block._handleDragStart);
+    if (block._onPointerDown) block.removeEventListener("pointerdown", block._onPointerDown);
+    if (block._endPress) {
+      block.removeEventListener("pointerup", block._endPress);
+      block.removeEventListener("pointerleave", block._endPress);
+      block.removeEventListener("pointercancel", block._endPress);
+    }
+  });
+
   timeline.innerHTML = "";
   
   // Criar header igual ao da semana (mas com uma coluna só)
@@ -2336,10 +3370,27 @@ const renderPlanner = () => {
   const hourCount = dayEndHour - dayStartHour + 1;
   const slotHeight = Math.round(60 * pixelsPerMinute);
   const timelineTopPadding = 16;
-  timelineBody.style.height = `${timelineTopPadding * 2 + hourCount * slotHeight}px`;
   
   // Altura total: header (40px) + body com todos os horários
-  timeline.style.height = `${40 + timelineTopPadding * 2 + hourCount * slotHeight}px`;
+  // Garantir que o grid ocupe toda a altura disponível da tela
+  const plannerLayout = document.querySelector(".planner-layout");
+  const viewportHeight = window.innerHeight;
+  const fixedElementsHeight = 120; // header + margins
+  const availableHeight = viewportHeight - fixedElementsHeight;
+  const minHeight = Math.max(availableHeight, viewportHeight * 0.8); // Mínimo 80% da viewport
+  
+  const calculatedBodyHeight = timelineTopPadding * 2 + hourCount * slotHeight;
+  const calculatedHeight = 40 + calculatedBodyHeight;
+  const finalHeight = Math.max(calculatedHeight, minHeight);
+  const bodyMinHeight = finalHeight - 40;
+  const finalBodyHeight = Math.max(calculatedBodyHeight, bodyMinHeight);
+  
+  // Conteúdo com altura total para poder rolar até o último horário
+  timeline.style.height = `${finalHeight}px`;
+  timeline.style.maxHeight = `${availableHeight}px`;
+  timelineBody.style.minHeight = `${bodyMinHeight}px`;
+  timelineBody.style.height = `${finalBodyHeight}px`;
+  
   timeline.style.overflowY = "auto";
   timeline.style.overflowX = "hidden";
   
@@ -2377,8 +3428,21 @@ const renderPlanner = () => {
   dayCol.style.left = "48px";
   dayCol.style.right = "0";
   dayCol.style.top = `${timelineTopPadding}px`;
-  dayCol.style.height = `${hourCount * slotHeight}px`;
   dayCol.style.pointerEvents = "auto";
+  
+  // Usar requestAnimationFrame para garantir altura real após renderização
+  requestAnimationFrame(() => {
+    const actualBodyHeight = timelineBody.offsetHeight || timelineBody.clientHeight || finalBodyHeight;
+    const dayColHeight = actualBodyHeight - timelineTopPadding;
+    dayCol.style.height = `${dayColHeight}px`;
+    dayCol.style.minHeight = `${dayColHeight}px`;
+    dayCol.style.bottom = '0'; // Garantir que vai até o final
+  });
+  
+  // Altura inicial baseada no cálculo
+  const dayColHeight = finalBodyHeight - timelineTopPadding;
+  dayCol.style.height = `${dayColHeight}px`;
+  dayCol.style.minHeight = `${dayColHeight}px`;
   
   dayCol.addEventListener("dragover", (event) => {
     event.preventDefault();
@@ -2394,14 +3458,24 @@ const renderPlanner = () => {
     const hour = Math.max(dayStartHour, Math.min(dayEndHour, Math.floor(y / slotHeight) + dayStartHour));
     const updated = planner.bronzeActions.map((action) => {
       if (action.id !== actionId) return action;
+      // Manter status se já estiver scheduled ou done, caso contrário marcar como scheduled
+      const newStatus = action.status === "done" || action.status === "scheduled" ? action.status : "scheduled";
       return {
         ...action,
-        status: "scheduled",
+        status: newStatus,
         scheduledHour: hour,
         scheduledMinute: 0,
         scheduledDayOffset: plannerDayOffset,
       };
     });
+    // Garantir que todas ações são preservadas
+    const allActionsPreserved = updated.length === planner.bronzeActions.length;
+    if (!allActionsPreserved) {
+      console.warn('[Planner] Ações perdidas ao arrastar', {
+        antes: planner.bronzeActions.length,
+        depois: updated.length
+      });
+    }
     savePlanner({ ...planner, bronzeActions: updated });
     renderPlanner();
     checkMissionProgress();
@@ -2422,6 +3496,9 @@ const renderPlanner = () => {
       Array.isArray(action.weekdays) &&
       action.weekdays.includes(dayKey),
   );
+  
+  // Prevenir duplicação: garantir que ações não apareçam duas vezes
+  const actionsInGrid = new Set([...scheduledActions, ...recurringActions].map(a => a.id));
   [...scheduledActions, ...recurringActions].forEach((action) => {
     const startHour = Math.min(
       dayEndHour,
@@ -2446,7 +3523,14 @@ const renderPlanner = () => {
   timeline.appendChild(timelineBody);
 
   bronzeList.innerHTML = "";
-  const bronzeBacklog = planner.bronzeActions.filter((action) => action.status === "backlog");
+  // Mostrar TODAS ações que não estão no grid do dia atual
+  // Isso inclui ações backlog e ações de outras arenas que não estão scheduled/done para hoje
+  const bronzeBacklog = planner.bronzeActions.filter((action) => {
+    // Não mostrar ações que já estão no grid
+    if (actionsInGrid.has(action.id)) return false;
+    // Mostrar todas outras ações (backlog, scheduled para outros dias, etc.)
+    return true;
+  });
   if (bronzeBacklog.length === 0) {
     const empty = document.createElement("div");
     empty.className = "backlog-empty";
@@ -2460,7 +3544,7 @@ const renderPlanner = () => {
 
   if (window.lucide) window.lucide.createIcons();
   // Só renderizar semana se estiver em view de semana
-  const plannerLayout = document.querySelector(".planner-layout");
+  // Reutilizar plannerLayout já declarado acima
   const isWeekView = plannerLayout?.classList.contains("week-view");
   if (isWeekView) {
     renderWeekView();
@@ -2506,31 +3590,39 @@ const attachLongPress = (pillEl, pill) => {
   if (pill.status !== "scheduled") return;
   let timer = null;
   let released = false;
+  let _pillPressPointerId = null;
 
-  const startPress = () => {
+  const startPress = (e) => {
+    if (e && e.pointerId !== undefined) {
+      if (_pillPressPointerId != null) return;
+      _pillPressPointerId = e.pointerId;
+    }
     if (pill.status === "done") return;
     released = false;
+    if (timer) clearTimeout(timer);
     pillEl.classList.add("is-pressing");
     timer = setTimeout(() => {
       if (released) return;
       pillEl.classList.remove("is-pressing");
       markPillComplete(pill.id);
-    }, HOLD_DURATION_MS);
+      timer = null;
+    }, HOLD_MS_CAPPED);
   };
 
-  const endPress = () => {
+  const endPress = (e) => {
+    if (e && e.pointerId !== undefined && _pillPressPointerId != null && e.pointerId !== _pillPressPointerId) return;
+    if (e && e.pointerId !== undefined) _pillPressPointerId = null;
     released = true;
     pillEl.classList.remove("is-pressing");
     if (timer) clearTimeout(timer);
     timer = null;
   };
 
-  pillEl.addEventListener("mousedown", startPress);
-  pillEl.addEventListener("touchstart", startPress);
-  pillEl.addEventListener("mouseup", endPress);
-  pillEl.addEventListener("mouseleave", endPress);
-  pillEl.addEventListener("touchend", endPress);
-  pillEl.addEventListener("touchcancel", endPress);
+  pillEl.style.touchAction = "none";
+  pillEl.addEventListener("pointerdown", startPress);
+  pillEl.addEventListener("pointerup", endPress);
+  pillEl.addEventListener("pointerleave", endPress);
+  pillEl.addEventListener("pointercancel", endPress);
 };
 
 const markPillComplete = (pillId) => {
@@ -3490,10 +4582,129 @@ const renderSocial = () => {
     socialAvatar.style.backgroundSize = "cover";
     socialAvatar.style.backgroundPosition = "center";
   }
-  if (hudAvatar && profile.avatar) {
-    hudAvatar.style.backgroundImage = `url(${profile.avatar})`;
-    hudAvatar.style.backgroundSize = "cover";
-    hudAvatar.style.backgroundPosition = "center";
+  if (hudAvatar) {
+    // Remover wrapper anterior se existir
+    const hudAvatarWrap = hudAvatar.parentElement;
+    if (hudAvatarWrap && hudAvatarWrap.classList.contains("avatar-border-wrapper")) {
+      const avatarInside = hudAvatarWrap.querySelector(".hud-avatar") || hudAvatarWrap.firstElementChild;
+      if (avatarInside) {
+        avatarInside.style.border = "2px solid rgba(212, 175, 55, 0.6)";
+        avatarInside.style.width = "54px";
+        avatarInside.style.height = "54px";
+        avatarInside.style.backgroundImage = hudAvatar.style.backgroundImage || "";
+        avatarInside.style.backgroundSize = "cover";
+        avatarInside.style.backgroundPosition = "center";
+        hudAvatarWrap.replaceWith(avatarInside);
+        // Atualizar referência
+        const newHudAvatar = document.getElementById("hud-avatar");
+        if (newHudAvatar) {
+          if (profile.avatar) {
+            newHudAvatar.style.backgroundImage = `url(${profile.avatar})`;
+            newHudAvatar.style.backgroundSize = "cover";
+            newHudAvatar.style.backgroundPosition = "center";
+          }
+          
+          // Aplicar borda ao avatar do HUD usando wrapper
+          if (profile.profileBorderImage) {
+            const wrapper = document.createElement("div");
+            wrapper.className = "avatar-border-wrapper hud-avatar-border";
+            wrapper.style.position = "relative";
+            wrapper.style.width = "54px";
+            wrapper.style.height = "54px";
+            wrapper.style.borderRadius = "50%";
+            wrapper.style.padding = "4px";
+            wrapper.style.backgroundImage = `url(${profile.profileBorderImage})`;
+            wrapper.style.backgroundSize = "cover";
+            wrapper.style.backgroundPosition = "center";
+            
+            const avatarClone = newHudAvatar.cloneNode(true);
+            avatarClone.style.border = "none";
+            avatarClone.style.width = "46px";
+            avatarClone.style.height = "46px";
+            wrapper.appendChild(avatarClone);
+            newHudAvatar.replaceWith(wrapper);
+          } else {
+            newHudAvatar.style.border = "2px solid rgba(212, 175, 55, 0.6)";
+            newHudAvatar.style.width = "54px";
+            newHudAvatar.style.height = "54px";
+          }
+        }
+        return; // Sair cedo se já processamos
+      }
+    }
+    
+    // Se não havia wrapper, aplicar normalmente
+    if (profile.avatar) {
+      hudAvatar.style.backgroundImage = `url(${profile.avatar})`;
+      hudAvatar.style.backgroundSize = "cover";
+      hudAvatar.style.backgroundPosition = "center";
+    }
+    
+    // Aplicar borda ao avatar do HUD usando wrapper
+    if (profile.profileBorderImage) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "avatar-border-wrapper hud-avatar-border";
+      wrapper.style.position = "relative";
+      wrapper.style.width = "54px";
+      wrapper.style.height = "54px";
+      wrapper.style.borderRadius = "50%";
+      wrapper.style.padding = "4px";
+      wrapper.style.backgroundImage = `url(${profile.profileBorderImage})`;
+      wrapper.style.backgroundSize = "cover";
+      wrapper.style.backgroundPosition = "center";
+      
+      const avatarClone = hudAvatar.cloneNode(true);
+      avatarClone.style.border = "none";
+      avatarClone.style.width = "46px";
+      avatarClone.style.height = "46px";
+      wrapper.appendChild(avatarClone);
+      hudAvatar.replaceWith(wrapper);
+    } else {
+      hudAvatar.style.border = "2px solid rgba(212, 175, 55, 0.6)";
+      hudAvatar.style.width = "54px";
+      hudAvatar.style.height = "54px";
+    }
+  }
+  
+  if (socialAvatar) {
+    // Remover wrapper anterior se existir
+    const socialWrap = socialAvatar.parentElement;
+    if (socialWrap && socialWrap.classList.contains("avatar-border-wrapper")) {
+      const avatarInside = socialWrap.querySelector(".social-avatar") || socialWrap.firstElementChild;
+      if (avatarInside) {
+        avatarInside.style.border = "2px solid rgba(212, 175, 55, 0.6)";
+        socialWrap.replaceWith(avatarInside);
+      }
+    }
+    
+    if (profile.avatar) {
+      socialAvatar.style.backgroundImage = `url(${profile.avatar})`;
+      socialAvatar.style.backgroundSize = "cover";
+      socialAvatar.style.backgroundPosition = "center";
+    }
+    
+    // Aplicar borda ao avatar social também
+    if (profile.profileBorderImage) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "avatar-border-wrapper";
+      wrapper.style.position = "relative";
+      wrapper.style.width = socialAvatar.offsetWidth || "60px";
+      wrapper.style.height = socialAvatar.offsetHeight || "60px";
+      wrapper.style.borderRadius = "50%";
+      wrapper.style.padding = "4px";
+      wrapper.style.backgroundImage = `url(${profile.profileBorderImage})`;
+      wrapper.style.backgroundSize = "cover";
+      wrapper.style.backgroundPosition = "center";
+      
+      const avatarClone = socialAvatar.cloneNode(true);
+      avatarClone.style.border = "none";
+      avatarClone.style.width = `${(socialAvatar.offsetWidth || 60) - 8}px`;
+      avatarClone.style.height = `${(socialAvatar.offsetHeight || 60) - 8}px`;
+      wrapper.appendChild(avatarClone);
+      socialAvatar.replaceWith(wrapper);
+    } else {
+      socialAvatar.style.border = "2px solid rgba(212, 175, 55, 0.6)";
+    }
   }
 };
 
@@ -3931,7 +5142,7 @@ const renderInitiationOverlay = () => {
     body.innerHTML = `
       <div class="drawer-title">Arraste para o Planner</div>
       <div class="modal-body">
-        Arraste sua Acao para um horario futuro, depois segure 5s para concluir.
+        Arraste sua Acao para um horario futuro, depois segure 3s para concluir.
       </div>
       <div class="init-actions">
         <button class="gold-button" id="init-open-planner">Abrir Planner</button>
@@ -4200,6 +5411,55 @@ const initConfig = () => {
 const initPlanner = () => {
   renderPlanner();
   updateDayLabel();
+
+  // Bay area: aceitar drop de ações do grid para voltar ao backlog (desistir da ação)
+  const bronzeList = document.getElementById("bronze-list");
+  if (bronzeList) {
+    bronzeList.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    bronzeList.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const payload = e.dataTransfer?.getData("text/plain");
+      if (!payload || !payload.startsWith("bronze:")) return;
+      const actionId = payload.replace("bronze:", "");
+      const planner = loadPlanner();
+      const updated = planner.bronzeActions.map((a) => {
+        if (a.id !== actionId) return a;
+        // Voltar para backlog: scheduled/done -> backlog
+        // Permitir voltar para backlog se estiver scheduled OU done (desistir da ação)
+        const isDone = a.status === "done";
+        const hasHistory = Array.isArray(a.completedHistory) && a.completedHistory.length > 0;
+        const wasDone = isDone || hasHistory;
+        
+        // Decrementar contador se estava done
+        if (wasDone && a.arenaId) {
+          try { 
+            updateArenaCountsForBronze(a.arenaId, -1); 
+          } catch (_) {}
+        }
+        
+        return {
+          ...a,
+          status: "backlog",
+          scheduledHour: undefined,
+          scheduledMinute: undefined,
+          scheduledDayOffset: undefined,
+          completedAt: undefined,
+          completedHistory: [],
+        };
+      });
+      savePlanner({ ...planner, bronzeActions: updated });
+      updateGlobalArenaProgress(
+        planner.bronzeActions.find((x) => x.id === actionId)?.arenaId,
+        updated,
+      );
+      renderPlanner();
+      checkMissionProgress();
+    });
+  }
+
   const notesToggle = document.getElementById("notes-toggle");
   const plannerReportsBtn = document.getElementById("planner-reports-btn");
   const checklistModal = document.getElementById("checklist-modal");
@@ -5158,8 +6418,6 @@ const initApp = () => {
   const profileIdentity = document.getElementById("profile-identity");
   const profileThemeButtons = document.querySelectorAll(".profile-theme-btn");
   const profileNameDisplay = document.getElementById("profile-name-display");
-  const profileBannerDisplay = document.getElementById("profile-banner-display");
-  const profileStrip = document.getElementById("profile-strip");
   const widgetGrid = document.getElementById("widget-grid");
   const profileLevel = document.getElementById("profile-level");
   const profileEdit = document.getElementById("profile-edit");
@@ -5180,23 +6438,61 @@ const initApp = () => {
       if (profileNameDisplay) {
         profileNameDisplay.textContent = profile.nickname || profile.userId || "-";
       }
-      if (profileBannerDisplay) {
-        const bannerText = profile.banner || "";
-        const isImageBanner = bannerText.startsWith("http") || bannerText.startsWith("data:");
-        profileBannerDisplay.textContent = isImageBanner ? "Banner Ativo" : bannerText || "Sem banner";
+      // Círculo do avatar e borda atual (sem loading-diamond)
+      const profileAvatar = profileModal.querySelector(".profile-avatar");
+      const borderRing = document.getElementById("profile-avatar-border");
+      if (profileAvatar) {
+        if (profile.avatar) {
+          profileAvatar.style.backgroundImage = `url(${profile.avatar})`;
+          profileAvatar.classList.remove("is-default");
+        } else {
+          profileAvatar.style.backgroundImage = "";
+          profileAvatar.classList.add("is-default");
+        }
       }
-      if (profile.avatar) {
-        const profileAvatar = profileModal.querySelector(".profile-avatar");
-        if (profileAvatar) profileAvatar.style.backgroundImage = `url(${profile.avatar})`;
+      if (borderRing) {
+        if (profile.profileBorderImage) {
+          borderRing.style.backgroundImage = `url(${profile.profileBorderImage})`;
+          borderRing.style.border = "none";
+        } else {
+          borderRing.style.backgroundImage = "";
+          borderRing.style.border = "6px solid rgba(212, 175, 55, 0.75)";
+        }
       }
-      if (profile.banner) {
-        const bannerWrap = profileModal.querySelector(".profile-banner");
-        if (bannerWrap) bannerWrap.style.backgroundImage = `url(${profile.banner})`;
-        if (profileStrip) profileStrip.style.backgroundImage = `url(${profile.banner})`;
+      // Aplicar banner na área visual abaixo do nickname
+      const bannerVisual = document.getElementById("profile-banner-visual");
+      if (bannerVisual) {
+        // Remover imagem anterior se existir
+        const existingImg = bannerVisual.querySelector("img");
+        if (existingImg) {
+          existingImg.remove();
+        }
+        
+        if (profile.banner) {
+          const isImageBanner = profile.banner.startsWith("http") || profile.banner.startsWith("data:");
+          if (isImageBanner) {
+            // Criar tag img para mostrar a imagem completa sem cortar
+            const img = document.createElement("img");
+            img.src = profile.banner;
+            img.style.width = "100%";
+            img.style.maxWidth = "400px";
+            img.style.height = "auto";
+            img.style.display = "block";
+            img.style.borderRadius = "0";
+            img.style.objectFit = "contain";
+            bannerVisual.appendChild(img);
+            bannerVisual.style.backgroundImage = "";
+          } else {
+            bannerVisual.style.backgroundImage = "";
+          }
+        } else {
+          bannerVisual.style.backgroundImage = "";
+        }
+        // Sempre mostrar o banner visual (mesmo sem imagem)
+        bannerVisual.style.display = "flex";
       }
-      if (profileStrip && !profile.banner) {
-        profileStrip.style.backgroundImage = "";
-      }
+      
+      // Avatar e borda já aplicados acima no círculo e no anel
       if (profileModal) {
         profileModal.dataset.card = profile.profileCardTheme || "gold";
       }
@@ -5316,10 +6612,35 @@ const initApp = () => {
       saveProfile(updated);
       renderSocial();
       if (profileNameDisplay) profileNameDisplay.textContent = updated.nickname || updated.userId || "-";
-      if (profileBannerDisplay) {
+      
+      // Atualizar banner visual
+      const bannerVisual = document.getElementById("profile-banner-visual");
+      if (bannerVisual) {
+        // Remover imagem anterior se existir
+        const existingImg = bannerVisual.querySelector("img");
+        if (existingImg) {
+          existingImg.remove();
+        }
+        
         const isImageBanner = updated.banner?.startsWith("http") || updated.banner?.startsWith("data:");
-        profileBannerDisplay.textContent = isImageBanner ? "Banner Ativo" : updated.banner || "Sem banner";
+        if (isImageBanner && updated.banner) {
+          // Criar tag img para mostrar a imagem completa sem cortar
+          const img = document.createElement("img");
+          img.src = updated.banner;
+          img.style.width = "100%";
+          img.style.maxWidth = "400px";
+          img.style.height = "auto";
+          img.style.display = "block";
+          img.style.borderRadius = "0";
+          img.style.objectFit = "contain";
+          bannerVisual.appendChild(img);
+          bannerVisual.style.backgroundImage = "";
+        } else {
+          bannerVisual.style.backgroundImage = "";
+        }
+        bannerVisual.style.display = "flex";
       }
+      
       if (profileSync) {
         profileSync.classList.remove("is-ok", "is-error");
         profileSync.textContent = isSupabaseEnabled() ? "Sincronizando..." : "Supabase nao configurado";
@@ -5342,13 +6663,32 @@ const initApp = () => {
   }
 
   if (profileAvatarFile) {
-    const avatarBox = profileModal?.querySelector(".profile-avatar");
-    if (avatarBox) {
-      avatarBox.addEventListener("click", () => {
-        if (!profileModal?.classList.contains("is-editing")) return;
+    // Círculo = editar imagem de perfil; borda = escolher borda
+    let avatarClickHandler = (e) => {
+      if (!profileCard || !profileCard.classList.contains("is-editing")) return;
+      
+      const borderRing = e.target.closest("#profile-avatar-border, .profile-avatar-border-ring");
+      const clickedAvatar = e.target.closest(".profile-avatar");
+      
+      if (borderRing) {
+        e.stopPropagation();
+        e.preventDefault();
+        const borderModal = document.getElementById("border-modal");
+        if (borderModal) {
+          debugListAllStorage();
+          renderBorders();
+          borderModal.classList.add("is-open");
+        }
+        return;
+      }
+      if (clickedAvatar) {
+        e.stopPropagation();
+        e.preventDefault();
         profileAvatarFile.click();
-      });
-    }
+      }
+    };
+    
+    profileModal?.addEventListener("click", avatarClickHandler);
     profileAvatarFile.addEventListener("change", () => {
       const file = profileAvatarFile.files?.[0];
       if (!file) return;
@@ -5358,7 +6698,10 @@ const initApp = () => {
           const updated = { ...profile, avatar: url };
           saveProfile(updated);
           const profileAvatar = profileModal?.querySelector(".profile-avatar");
-          if (profileAvatar) profileAvatar.style.backgroundImage = `url(${url})`;
+          if (profileAvatar) {
+            profileAvatar.style.backgroundImage = `url(${url})`;
+            profileAvatar.classList.remove("is-default");
+          }
           renderSocial();
           syncProfileTotals(updated);
           return;
@@ -5369,7 +6712,10 @@ const initApp = () => {
           const updated = { ...profile, avatar: reader.result };
           saveProfile(updated);
           const profileAvatar = profileModal?.querySelector(".profile-avatar");
-          if (profileAvatar) profileAvatar.style.backgroundImage = `url(${reader.result})`;
+          if (profileAvatar) {
+            profileAvatar.style.backgroundImage = `url(${reader.result})`;
+            profileAvatar.classList.remove("is-default");
+          }
           renderSocial();
         };
         reader.readAsDataURL(file);
@@ -5415,7 +6761,6 @@ const initApp = () => {
   const bannerModal = document.getElementById("banner-modal");
   const bannerClose = document.getElementById("banner-close");
   const bannerGrid = document.getElementById("banner-grid");
-  const bannerOpen = document.getElementById("config-banners-open");
   const configProfile = loadProfile();
   if (configIdentity) {
     configIdentity.value = configProfile.userId || configProfile.nickname || "";
@@ -5433,72 +6778,281 @@ const initApp = () => {
       renderSocial();
     });
   }
-  const renderBanners = () => {
+  const renderBanners = async () => {
     if (!bannerGrid) return;
     const profile = loadProfile();
+    bannerGrid.innerHTML = '<div class="config-placeholder">Carregando banners...</div>';
+    
+    // Buscar banners do storage
+    const storageBanners = await getBannersFromStorage();
+    
     const rewards = [
-      {
-        id: "direito",
-        title: "PROFICIENCIA EM DIREITO",
-        requirement: "Advogado por 5+ anos",
-        unlocked: true,
-      },
       {
         id: "baseline",
         title: "SEM BANNER",
-        requirement: "Disponivel",
+        requirement: "Disponível",
         unlocked: true,
+        imageUrl: null,
       },
+      ...storageBanners,
     ];
+    
     bannerGrid.innerHTML = "";
     rewards.forEach((reward) => {
       const card = document.createElement("div");
       card.className = `banner-card${reward.unlocked ? " is-unlocked" : ""}`;
+      
+      // Preview da imagem do banner
+      if (reward.imageUrl) {
+        const preview = document.createElement("div");
+        preview.className = "banner-preview";
+        // Usar tag img para não ter box atrás
+        const img = document.createElement("img");
+        img.src = reward.imageUrl;
+        img.style.width = "100%";
+        img.style.height = "30px";
+        img.style.objectFit = "cover";
+        img.style.display = "block";
+        img.style.borderRadius = "0";
+        preview.appendChild(img);
+        preview.style.backgroundImage = "";
+        preview.style.width = "100%";
+        preview.style.height = "30px";
+        preview.style.borderRadius = "0";
+        preview.style.marginBottom = "8px";
+        preview.style.border = "none";
+        preview.style.background = "transparent";
+        preview.style.boxShadow = "none";
+        card.appendChild(preview);
+      }
+      
       const title = document.createElement("div");
       title.className = "banner-title";
       title.textContent = reward.title;
-      const req = document.createElement("div");
-      req.className = "banner-requirement";
-      req.textContent = reward.requirement;
       const btn = document.createElement("button");
       btn.className = "gold-button";
       btn.type = "button";
       btn.textContent = reward.unlocked ? "Aplicar" : "Bloqueado";
       btn.disabled = !reward.unlocked;
       btn.addEventListener("click", () => {
-        const nextTitle = reward.id === "baseline" ? "" : reward.title;
-        const updated = { ...loadProfile(), banner: nextTitle };
+        const bannerUrl = reward.id === "baseline" ? "" : (reward.imageUrl || reward.title);
+        const updated = { ...loadProfile(), banner: bannerUrl };
         saveProfile(updated);
         ensureSupabaseProfile(updated);
         syncProfileTotals(updated);
         renderSocial();
-        const profileModal = document.getElementById("profile-modal");
-        const bannerWrap = profileModal?.querySelector(".profile-banner");
-        const profileStrip = document.getElementById("profile-strip");
-        const bannerDisplay = document.getElementById("profile-banner-display");
+        const bannerVisual = document.getElementById("profile-banner-visual");
         const bannerText = updated.banner || "";
         const isImageBanner = bannerText.startsWith("http") || bannerText.startsWith("data:");
-        if (bannerDisplay) bannerDisplay.textContent = isImageBanner ? "Banner Ativo" : bannerText || "Sem banner";
-        if (bannerWrap) bannerWrap.style.backgroundImage = isImageBanner ? `url(${bannerText})` : "";
-        if (profileStrip) profileStrip.style.backgroundImage = isImageBanner ? `url(${bannerText})` : "";
+        // Aplicar banner na área visual abaixo do nickname
+        if (bannerVisual) {
+          // Remover imagem anterior se existir
+          const existingImg = bannerVisual.querySelector("img");
+          if (existingImg) {
+            existingImg.remove();
+          }
+          
+          if (isImageBanner) {
+            // Criar tag img para mostrar a imagem completa sem cortar
+            const img = document.createElement("img");
+            img.src = bannerText;
+            img.style.width = "100%";
+            img.style.maxWidth = "400px";
+            img.style.height = "auto";
+            img.style.display = "block";
+            img.style.borderRadius = "0";
+            img.style.objectFit = "contain";
+            bannerVisual.appendChild(img);
+            bannerVisual.style.backgroundImage = "";
+          } else {
+            bannerVisual.style.backgroundImage = "";
+          }
+          // Sempre mostrar o banner visual (mesmo sem imagem)
+          bannerVisual.style.display = "flex";
+        }
+        const bannerModal = document.getElementById("banner-modal");
         if (bannerModal) bannerModal.classList.remove("is-open");
       });
       card.appendChild(title);
-      card.appendChild(req);
       card.appendChild(btn);
       bannerGrid.appendChild(card);
     });
     updateChecklistBadge();
   };
   renderBanners();
-  if (bannerOpen && bannerModal) {
-    bannerOpen.addEventListener("click", () => {
-      renderBanners();
-      bannerModal.classList.add("is-open");
-    });
-  }
   if (bannerClose && bannerModal) {
     bannerClose.addEventListener("click", () => bannerModal.classList.remove("is-open"));
+  }
+
+  // Modal de bordas
+  const borderModal = document.getElementById("border-modal");
+  const borderClose = document.getElementById("border-close");
+  const borderGrid = document.getElementById("border-grid");
+  const borderOpen = document.getElementById("config-borders-open");
+
+  const renderBorders = async () => {
+    if (!borderGrid) return;
+    const profile = loadProfile();
+    borderGrid.innerHTML = '<div class="config-placeholder">Carregando bordas...</div>';
+    
+    // Buscar bordas do storage
+    const storageBorders = await getBordersFromStorage();
+    
+    const rewards = [
+      {
+        id: "baseline",
+        title: "SEM BORDA",
+        requirement: "Disponível",
+        unlocked: true,
+        imageUrl: null,
+      },
+      ...storageBorders,
+    ];
+    
+    borderGrid.innerHTML = "";
+    rewards.forEach((reward) => {
+      const card = document.createElement("div");
+      card.className = `border-card${reward.unlocked ? " is-unlocked" : ""}`;
+      
+      // Preview da imagem da borda ao redor de um avatar exemplo
+      const previewContainer = document.createElement("div");
+      previewContainer.className = "border-preview-container";
+      previewContainer.style.display = "flex";
+      previewContainer.style.alignItems = "center";
+      previewContainer.style.justifyContent = "center";
+      previewContainer.style.width = "100%";
+      previewContainer.style.height = "80px";
+      previewContainer.style.marginBottom = "8px";
+      previewContainer.style.position = "relative";
+      
+      const avatarExample = document.createElement("div");
+      avatarExample.className = "border-avatar-example";
+      avatarExample.style.width = "60px";
+      avatarExample.style.height = "60px";
+      avatarExample.style.borderRadius = "50%";
+      avatarExample.style.background = "linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(255, 255, 255, 0.1))";
+      avatarExample.style.border = reward.imageUrl ? `8px solid transparent` : "2px solid rgba(212, 175, 55, 0.5)";
+      avatarExample.style.backgroundImage = reward.imageUrl ? `url(${reward.imageUrl})` : "";
+      avatarExample.style.backgroundSize = "cover";
+      avatarExample.style.backgroundClip = reward.imageUrl ? "padding-box" : "border-box";
+      avatarExample.style.position = "relative";
+      
+      if (reward.imageUrl) {
+        // Criar borda usando a imagem
+        const borderImg = document.createElement("img");
+        borderImg.src = reward.imageUrl;
+        borderImg.style.position = "absolute";
+        borderImg.style.width = "76px";
+        borderImg.style.height = "76px";
+        borderImg.style.top = "-8px";
+        borderImg.style.left = "-8px";
+        borderImg.style.objectFit = "cover";
+        borderImg.style.borderRadius = "50%";
+        avatarExample.appendChild(borderImg);
+      }
+      
+      previewContainer.appendChild(avatarExample);
+      card.appendChild(previewContainer);
+      
+      const title = document.createElement("div");
+      title.className = "banner-title";
+      title.textContent = reward.title;
+      const btn = document.createElement("button");
+      btn.className = "gold-button";
+      btn.type = "button";
+      btn.textContent = reward.unlocked ? "Aplicar" : "Bloqueado";
+      btn.disabled = !reward.unlocked;
+      btn.addEventListener("click", () => {
+        const borderUrl = reward.id === "baseline" ? "" : (reward.imageUrl || "");
+        const updated = { ...loadProfile(), profileBorderImage: borderUrl };
+        saveProfile(updated);
+        ensureSupabaseProfile(updated);
+        syncProfileTotals(updated);
+        renderSocial();
+        const profileModal = document.getElementById("profile-modal");
+        const profileAvatar = profileModal?.querySelector(".profile-avatar");
+        const borderRingEl = document.getElementById("profile-avatar-border");
+        if (profileAvatar) {
+          const currentAvatarUrl = updated.avatar || loadProfile().avatar;
+          if (currentAvatarUrl) {
+            profileAvatar.style.backgroundImage = `url(${currentAvatarUrl})`;
+            profileAvatar.classList.remove("is-default");
+          } else {
+            profileAvatar.style.backgroundImage = "";
+            profileAvatar.classList.add("is-default");
+          }
+        }
+        if (borderRingEl) {
+          if (borderUrl) {
+            borderRingEl.style.backgroundImage = `url(${borderUrl})`;
+            borderRingEl.style.border = "none";
+          } else {
+            borderRingEl.style.backgroundImage = "";
+            borderRingEl.style.border = "6px solid rgba(212, 175, 55, 0.75)";
+          }
+        }
+        const borderModal = document.getElementById("border-modal");
+        if (borderModal) borderModal.classList.remove("is-open");
+      });
+      card.appendChild(title);
+      card.appendChild(btn);
+      borderGrid.appendChild(card);
+    });
+    updateChecklistBadge();
+  };
+  
+  renderBorders();
+  
+  // Adicionar cliques no banner visual e borda quando estiver editando
+  const bannerVisual = document.getElementById("profile-banner-visual");
+  
+  if (bannerVisual && bannerModal) {
+    bannerVisual.addEventListener("click", () => {
+      if (profileCard && profileCard.classList.contains("is-editing")) {
+        debugListAllStorage();
+        renderBanners();
+        bannerModal.classList.add("is-open");
+      }
+    });
+    // Adicionar cursor pointer quando estiver editando
+    const updateBannerCursor = () => {
+      if (profileCard && profileCard.classList.contains("is-editing")) {
+        bannerVisual.style.cursor = "pointer";
+        bannerVisual.style.opacity = "0.9";
+      } else {
+        bannerVisual.style.cursor = "default";
+        bannerVisual.style.opacity = "1";
+      }
+    };
+    // Observar mudanças no estado de edição
+    if (profileCard) {
+      const observer = new MutationObserver(updateBannerCursor);
+      observer.observe(profileCard, { attributes: true, attributeFilter: ["class"] });
+      updateBannerCursor();
+    }
+  }
+  
+  const updateAvatarCursor = () => {
+    const profileAvatar = profileModal?.querySelector(".profile-avatar");
+    const borderRing = document.getElementById("profile-avatar-border");
+    const editing = profileCard && profileCard.classList.contains("is-editing");
+    if (profileAvatar) {
+      profileAvatar.style.cursor = editing ? "pointer" : "default";
+      profileAvatar.style.opacity = editing ? "0.95" : "1";
+    }
+    if (borderRing) {
+      borderRing.style.cursor = editing ? "pointer" : "default";
+      borderRing.style.opacity = editing ? "0.95" : "1";
+    }
+  };
+  
+  if (profileCard) {
+    const observer = new MutationObserver(updateAvatarCursor);
+    observer.observe(profileCard, { attributes: true, attributeFilter: ["class"] });
+    updateAvatarCursor();
+  }
+  if (borderClose && borderModal) {
+    borderClose.addEventListener("click", () => borderModal.classList.remove("is-open"));
   }
   if (configSaveProfile) {
     configSaveProfile.addEventListener("click", async () => {

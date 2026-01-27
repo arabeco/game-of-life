@@ -184,6 +184,86 @@ const ASSET_TO_PHRASE = {
   autenticidade: "autenticidade",
   fisico: "fisico",
 };
+const LAYOUT_CONFIG = {
+  conexao: [
+    { slot: "lema", type: 1, span: 6 },
+    { title: "CRENÇAS" },
+    { slot: "crenca1", type: 1, span: 6 },
+    { slot: "crenca2", type: 1, span: 6 },
+    { slot: "crenca3", type: 1, span: 6 },
+  ],
+  espiritualidade: [
+    { slot: "sistema", type: 1, style: { gridColumn: "2 / span 4" } },
+    { title: "SANTUÁRIO" },
+    { slot: "entidade1", type: 3, span: 2, label: "Líder" },
+    { slot: "entidade2", type: 3, span: 2, label: "Protetor" },
+    { slot: "entidade3", type: 3, span: 2, label: "Guardião" },
+  ],
+  mente: [
+    { slot: "filosofia", type: 1, span: 6 },
+    { slot: "imagem", type: 3, style: { gridColumn: "3 / span 2" } },
+  ],
+  verdade: [
+    { slot: "mtp", type: 1, span: 6 },
+    { slot: "trait1", type: 2, span: 3 },
+    { slot: "trait2", type: 2, span: 3 },
+    { slot: "signo", type: 2, span: 3 },
+    { slot: "mbti", type: 2, span: 3 },
+  ],
+  inspiracao: [
+    { title: "PROJETOS" },
+    { slot: "proj1", type: 3, span: 2 },
+    { slot: "proj2", type: 3, span: 2 },
+    { slot: "proj3", type: 3, span: 2 },
+    { title: "INSPIRAÇÕES" },
+    { slot: "insp1", type: 3, span: 2 },
+    { slot: "insp2", type: 3, span: 2 },
+    { slot: "insp3", type: 3, span: 2 },
+  ],
+  amor: [
+    { title: "FAMÍLIA" },
+    { slot: "conexao1", type: 3, span: 2 },
+    { slot: "conexao2", type: 3, span: 2 },
+    { slot: "conexao3", type: 3, span: 2 },
+    { title: "AMIGOS" },
+    { slot: "conexao4", type: 3, span: 2 },
+    { slot: "conexao5", type: 3, span: 2 },
+    { slot: "conexao6", type: 3, span: 2 },
+  ],
+  financas: [
+    { slot: "renda", type: 2, span: 2 },
+    { slot: "gasto", type: 2, span: 2 },
+    { slot: "patrimonio", type: 2, span: 2 },
+    { title: "ATIVOS" },
+    { slot: "ativo1", type: 3, span: 2 },
+    { slot: "ativo2", type: 3, span: 2 },
+    { slot: "ativo3", type: 3, span: 2 },
+  ],
+  trabalho: [
+    { slot: "classe1", type: 1, span: 6, proficiency: true },
+    { slot: "classe2", type: 1, span: 6, proficiency: true },
+    { title: "EXPERIÊNCIAS" },
+    { slot: "exp1", type: 3, span: 2 },
+    { slot: "exp2", type: 3, span: 2 },
+    { slot: "exp3", type: 3, span: 2 },
+  ],
+  autenticidade: [
+    { title: "HIGHLIGHTS" },
+    { slot: "hobby1", type: 3, span: 2 },
+    { slot: "hobby2", type: 3, span: 2 },
+    { slot: "hobby3", type: 3, span: 2 },
+    { slot: "hobby4", type: 3, span: 2 },
+    { slot: "hobby5", type: 3, span: 2 },
+    { slot: "hobby6", type: 3, span: 2 },
+  ],
+  fisico: [
+    { slot: "idade", type: 2, span: 3 },
+    { slot: "genero", type: 2, span: 3 },
+    { slot: "peso", type: 2, span: 3 },
+    { slot: "altura", type: 2, span: 3 },
+    { slot: "forma", type: 1, span: 6 },
+  ],
+};
 const PROTOCOL_SLOTS = {
   conexao: [
     { id: "conexao.lema", label: "Lema de Vida", type: "rect-wide" },
@@ -2565,67 +2645,24 @@ const renderStatusFields = (dna, assetId) => {
 const renderTreeEditorSlots = (dna, assetId) => {
   const list = document.getElementById("tree-slot-list");
   if (!list) return;
+
   const asset = getAssetFromDNA(dna, assetId);
   list.innerHTML = "";
   if (!asset) return;
-  const ensureTreeEditMode = () => {
-    const modal = document.getElementById("tree-edit-modal");
-    if (!modal) return false;
-    if (!modal.classList.contains("is-editing")) {
-      modal.classList.add("is-editing");
-    }
-    return true;
-  };
-  const slots = getDossierSlots(assetId);
+
+  list.style.display = "grid";
+  list.style.gridTemplateColumns = "repeat(6, 1fr)";
+  list.style.gap = "0.5rem";
   asset.profileSlots = asset.profileSlots || {};
-  const getSlotDisplayText = (slot) => {
-    const data = asset.profileSlots?.[slot.id] || {};
-    const fields = slot.fields || [{ key: "value" }];
-    const key = fields[0]?.key || "value";
-    return data[key] || "";
+
+  const layout = LAYOUT_CONFIG[assetId] || [];
+
+  const handleFieldUpdate = (slotId, key, value) => {
+    const currentData = asset.profileSlots[slotId] || {};
+    asset.profileSlots[slotId] = { ...currentData, [key]: value };
+    dna.lastUpdatedAt = new Date().toISOString();
+    saveDNA(dna);
   };
-  const sliderModal = document.getElementById("slider-modal");
-  const sliderTitle = document.getElementById("slider-title");
-  const sliderValue = document.getElementById("slider-value");
-  const sliderInput = document.getElementById("slider-input");
-  const sliderSave = document.getElementById("slider-save");
-  const sliderClose = document.getElementById("slider-close");
-  let sliderOnSave = null;
-  const openSlider = (config) => {
-    if (!sliderModal || !sliderInput || !sliderValue) return;
-    sliderInput.min = String(config.min ?? 0);
-    sliderInput.max = String(config.max ?? 100);
-    sliderInput.step = String(config.step ?? 1);
-    sliderInput.value = String(config.value ?? 0);
-    sliderValue.textContent = `${config.value ?? 0}${config.unit || ""}`;
-    if (sliderTitle) sliderTitle.textContent = config.label || "Ajustar";
-    sliderOnSave = config.onSave;
-    sliderModal.classList.add("is-open");
-  };
-  if (sliderInput) {
-    sliderInput.addEventListener("input", () => {
-      const unit = sliderInput.dataset.unit || "";
-      sliderValue.textContent = `${sliderInput.value}${unit}`;
-    });
-  }
-  if (sliderSave) {
-    sliderSave.addEventListener("click", () => {
-      if (sliderOnSave) sliderOnSave(Number(sliderInput.value || 0));
-      if (sliderModal) sliderModal.classList.remove("is-open");
-    });
-  }
-  if (sliderClose && sliderModal) {
-    sliderClose.addEventListener("click", () => sliderModal.classList.remove("is-open"));
-  }
-  slots.forEach((slot, index) => {
-    const slotEl = document.createElement("div");
-    slotEl.className = `profile-slot profile-slot--${slot.type} slot-animate`;
-    slotEl.style.animationDelay = `${index * 40}ms`;
-    slotEl.dataset.slotId = slot.id;
-    const label = document.createElement("div");
-    label.className = "slot-label";
-    label.textContent = slot.label;
-    slotEl.appendChild(label);
 
     const valueEl = document.createElement("div");
     valueEl.className = "slot-value";
@@ -2666,97 +2703,39 @@ const renderTreeEditorSlots = (dna, assetId) => {
       }
     }
 
-    const iconName = SLOT_ICON_BY_ID[slot.id];
-    if (iconName) {
-      const icon = document.createElement("i");
-      icon.className = "slot-icon";
-      icon.setAttribute("data-lucide", iconName);
-      slotEl.appendChild(icon);
+    const slotId = `${assetId}.${config.slot}`;
+    const slotData = asset.profileSlots[slotId] || {};
+    const slotEl = document.createElement("div");
+    slotEl.className = `profile-slot slot-animate`;
+    slotEl.style.animationDelay = `${index * 40}ms`;
+
+    if (config.span) {
+      slotEl.style.gridColumn = `span ${config.span}`;
+    }
+    if (config.style) {
+      Object.assign(slotEl.style, config.style);
     }
 
-    if (isPhotoSlot) {
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = "image/*";
-      fileInput.className = "hidden-file";
-      const ensureImageEl = () => {
-        let img = valueEl.querySelector("img");
-        if (!img) {
-          img = document.createElement("img");
-          img.className = "slot-image";
-          img.alt = slot.label || "Imagem do slot";
-          valueEl.appendChild(img);
-        }
-        return img;
-      };
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          asset.profileSlots[slot.id] = {
-            ...(asset.profileSlots[slot.id] || {}),
-            image: reader.result,
-          };
-          valueEl.classList.add("has-image");
-          const img = ensureImageEl();
-          img.src = String(reader.result || "");
-          valueEl.textContent = "";
-          dna.lastUpdatedAt = new Date().toISOString();
-          saveDNA(dna);
-        };
-        reader.readAsDataURL(file);
-      });
-      slotEl.appendChild(fileInput);
-      const existingImage = asset.profileSlots[slot.id]?.image;
-      if (existingImage) {
-        valueEl.classList.add("has-image");
-        const img = ensureImageEl();
-        img.src = String(existingImage || "");
-        valueEl.textContent = "";
-      }
-      slotEl.addEventListener("click", (event) => {
-        if (!event.target.closest(".slot-value")) return;
-        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
-        fileInput.click();
-      });
-    }
+    switch (config.type) {
+      case 1: {
+        slotEl.classList.add("slot-type-1");
+        const label = document.createElement("div");
+        label.className = "slot-label";
+        label.textContent = config.label || config.slot;
 
-    const subtitle = slotEl.querySelector(".slot-subtitle");
-    const optionsBySlot = {
-      "verdade.mbti": [
-        "INTJ",
-        "INTP",
-        "ENTJ",
-        "ENTP",
-        "INFJ",
-        "INFP",
-        "ENFJ",
-        "ENFP",
-        "ISTJ",
-        "ISFJ",
-        "ESTJ",
-        "ESFJ",
-        "ISTP",
-        "ISFP",
-        "ESTP",
-        "ESFP",
-      ],
-      "verdade.signo": [
-        "Aries",
-        "Touro",
-        "Gemeos",
-        "Cancer",
-        "Leao",
-        "Virgem",
-        "Libra",
-        "Escorpiao",
-        "Sagitario",
-        "Capricornio",
-        "Aquario",
-        "Peixes",
-      ],
-    };
+        const valueDisplay = document.createElement("div");
+        valueDisplay.className = "slot-value";
+        valueDisplay.textContent = slotData.value || "—";
+
+        const input = document.createElement("input");
+        input.className = "profile-input";
+        input.type = "text";
+        input.placeholder = config.label || config.slot;
+        input.value = slotData.value || "";
+        input.addEventListener("change", (e) => {
+          handleFieldUpdate(slotId, "value", e.target.value);
+          valueDisplay.textContent = e.target.value || "—";
+        });
 
     const applyFieldUpdate = (field, value) => {
       asset.profileSlots[slot.id] = {
@@ -2771,113 +2750,73 @@ const renderTreeEditorSlots = (dna, assetId) => {
             ? String(asset.profileSlots[slot.id][secondary])
             : "";
       }
-      dna.lastUpdatedAt = new Date().toISOString();
-      saveDNA(dna);
-      renderSocial();
-      if (slot.id.endsWith(".lema")) {
-        const profile = loadProfile();
-        saveProfile({
-          ...profile,
-          lemaUpdatedAt: new Date().toISOString(),
-          lemaUpdatedAssetId: asset.id,
+      case 2: {
+        slotEl.classList.add("slot-type-2");
+        const label = document.createElement("div");
+        label.className = "slot-label-small";
+        label.textContent = config.label || config.slot;
+
+        const valueDisplay = document.createElement("div");
+        valueDisplay.className = "slot-value-large";
+        valueDisplay.textContent = slotData.value || "—";
+
+        const input = document.createElement("input");
+        input.className = "profile-input";
+        input.type = "text";
+        input.placeholder = config.label || config.slot;
+        input.value = slotData.value || "";
+        input.addEventListener("change", (e) => {
+          handleFieldUpdate(slotId, "value", e.target.value);
+          valueDisplay.textContent = e.target.value || "—";
         });
+
+        slotEl.appendChild(label);
+        slotEl.appendChild(valueDisplay);
+        slotEl.appendChild(input);
+        break;
       }
-      checkMissionProgress();
-    };
+      case 3: {
+        slotEl.classList.add("slot-type-3");
+        if (slotData.image) {
+          slotEl.style.backgroundImage = `url(${slotData.image})`;
+        }
 
-    const stopSlotPropagation = (event) => {
-      event.stopPropagation();
-    };
+        const caption = document.createElement("div");
+        caption.className = "slot-caption";
+        caption.textContent = slotData.caption || config.label || config.slot;
 
-    slotEl.addEventListener("pointerdown", (event) => {
-      if (event.target.closest("input, textarea, select")) {
-        event.stopPropagation();
-      }
-    });
-
-    fields.forEach((field) => {
-      if (["foto", "logo"].includes(field.key)) return;
-      const slotOptions = optionsBySlot[slot.id];
-      if (slotOptions && field.key === "value") {
-        const select = document.createElement("select");
-        select.className = "profile-input";
-        const empty = document.createElement("option");
-        empty.value = "";
-        empty.textContent = field.label || "Selecionar";
-        select.appendChild(empty);
-        slotOptions.forEach((opt) => {
-          const option = document.createElement("option");
-          option.value = opt;
-          option.textContent = opt;
-          select.appendChild(option);
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        fileInput.className = "hidden-file";
+        fileInput.addEventListener("change", () => {
+          const file = fileInput.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const imageUrl = reader.result;
+            handleFieldUpdate(slotId, "image", imageUrl);
+            slotEl.style.backgroundImage = `url(${imageUrl})`;
+          };
+          reader.readAsDataURL(file);
         });
-        select.value = asset.profileSlots[slot.id]?.[field.key] || "";
-        select.addEventListener("click", stopSlotPropagation);
-        select.addEventListener("pointerdown", stopSlotPropagation);
-        select.addEventListener("change", () => applyFieldUpdate(field, select.value));
-        slotEl.appendChild(select);
-        return;
-      }
-      const input = document.createElement("input");
-      input.className = "profile-input";
-      input.placeholder = field.label;
-      input.value = asset.profileSlots[slot.id]?.[field.key] || "";
-      input.addEventListener("click", stopSlotPropagation);
-      input.addEventListener("pointerdown", stopSlotPropagation);
-      if (field.slider) {
-        input.readOnly = true;
-        input.addEventListener("click", () => {
-          if (!slotEl.closest("#tree-edit-modal.is-editing")) {
-            if (!ensureTreeEditMode()) return;
-          }
-          if (!sliderInput) return;
-          sliderInput.dataset.unit = field.slider.unit || "";
-          openSlider({
-            label: field.label,
-            min: field.slider.min,
-            max: field.slider.max,
-            step: field.slider.step,
-            unit: field.slider.unit || "",
-            value: Number(input.value || field.slider.min || 0),
-            onSave: (nextValue) => {
-              input.value = String(nextValue);
-              applyFieldUpdate(field, String(nextValue));
-              if (slot.id === "verdade.nascimento") {
-                const dia = Number(
-                  asset.profileSlots?.["verdade.nascimento"]?.dia || 0,
-                );
-                const mes = Number(
-                  asset.profileSlots?.["verdade.nascimento"]?.mes || 0,
-                );
-                const signo = getZodiacSign(dia, mes);
-                if (signo) {
-                  asset.profileSlots["verdade.signo"] = {
-                    ...(asset.profileSlots["verdade.signo"] || {}),
-                    value: signo,
-                  };
-                }
-              }
-              renderTreeEditorSlots(dna, assetId);
-            },
-          });
+
+        slotEl.appendChild(caption);
+        slotEl.appendChild(fileInput);
+
+        slotEl.addEventListener("click", () => {
+            if (slotEl.closest("#tree-edit-modal.is-editing")) {
+                fileInput.click();
+            }
         });
+        break;
       }
-      input.addEventListener("input", () => applyFieldUpdate(field, input.value));
-      input.addEventListener("change", () => applyFieldUpdate(field, input.value));
-      slotEl.appendChild(input);
-    });
+    }
 
-
-    slotEl.addEventListener("click", (event) => {
-      if (isPhotoSlot) {
-        if (!event.target.closest(".slot-value")) return;
-        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
-        const file = slotEl.querySelector("input[type='file']");
-        if (file) file.click();
-        return;
-      }
-      if (!slotEl.closest("#tree-edit-modal.is-editing")) {
-        ensureTreeEditMode();
+    slotEl.addEventListener("click", () => {
+      const modal = document.getElementById("tree-edit-modal");
+      if (modal && !modal.classList.contains("is-editing")) {
+        modal.classList.add("is-editing");
       }
       const focusable = slotEl.querySelector("input.profile-input");
       if (focusable) focusable.focus();

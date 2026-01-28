@@ -16,6 +16,31 @@ const MISSIONS_KEY = "game_of_life.missions";
 const HOLD_DURATION_MS = 3000;
 const HOLD_MS_CAPPED = Math.min(3000, HOLD_DURATION_MS);
 
+// Pré-carregar todas as skins para mudança instantânea
+const preloadSkins = () => {
+  console.log("🔄 Iniciando pré-carregamento das skins...");
+  
+  const skinMapping = {
+    gold: "assets/huds/gold.jpg",
+    frost: "assets/huds/frost.jpg", 
+    neon: "assets/huds/neon.jpg",
+    ember: "assets/huds/ember.jpg",
+    aurora: "assets/huds/aurora.jpg",
+    cyber: "assets/huds/neon.jpg"
+  };
+  
+  Object.values(skinMapping).forEach(url => {
+    console.log(`📦 Pré-carregando: ${url}`);
+    const img = new Image();
+    img.onload = () => console.log(`✅ Carregado: ${url}`);
+    img.onerror = () => console.log(`❌ Erro ao carregar: ${url}`);
+    img.src = url;
+  });
+};
+
+// Pré-carregar imediatamente
+preloadSkins();
+
 const SEPHIROT = [
   { id: "conexao", label: "CONSCIÊNCIA", row: 1, col: 2 },
   { id: "mente", label: "ESPAÇO MENTAL", row: 2, col: 1 },
@@ -642,9 +667,13 @@ const saveProfile = (profile, options = {}) => {
 };
 
 const applyTheme = (theme) => {
+  console.log(`🎨 Mudando tema para: ${theme}`);
   document.documentElement.dataset.theme = theme || "gold";
   const profile = loadProfile();
   saveProfile({ ...profile, theme: theme || "gold" });
+  
+  // Re-renderizar sephirots para aplicar nova skin
+  renderTree();
 };
 
 let lastSupabaseError = null;
@@ -1886,6 +1915,18 @@ const renderTree = () => {
   const profile = loadProfile();
   if (hudNick) hudNick.textContent = profile.nickname || profile.userId || "-";
 
+  // Aplicar skin baseada no tema (arquivos locais)
+  const skinTheme = profile.theme || "gold";
+  const skinMapping = {
+    gold: "assets/huds/gold.jpg",
+    frost: "assets/huds/frost.jpg", 
+    neon: "assets/huds/neon.jpg",
+    ember: "assets/huds/ember.jpg",
+    aurora: "assets/huds/aurora.jpg",
+    cyber: "assets/huds/neon.jpg"
+  };
+  const skinUrl = skinMapping[skinTheme] || skinMapping.gold;
+
   assets.forEach((asset) => {
     const sphere = document.createElement("button");
     sphere.className = "sephirot";
@@ -1900,6 +1941,14 @@ const renderTree = () => {
       const className = getVitalityClass(vitality);
       if (className) sphere.classList.add(className);
     }
+
+    // Aplicar skin JPG local
+    console.log(`🎨 Aplicando skin: ${skinUrl}`);
+    sphere.style.setProperty("background-image", `url(${skinUrl})`, "important");
+    sphere.style.setProperty("background-size", "150% 150%", "important");
+    sphere.style.setProperty("background-position", "center", "important");
+    sphere.style.setProperty("background-repeat", "no-repeat", "important");
+    sphere.style.setProperty("background-color", "transparent", "important");
 
     const label = document.createElement("div");
     label.className = "sephirot-label";

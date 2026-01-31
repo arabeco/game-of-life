@@ -1,6 +1,6 @@
 {
-  "name": "Game of Life - Zee",
-  "short_name": "Zee",
+  "name": "Game of Life -",
+  "short_name": "GOL",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#000000",

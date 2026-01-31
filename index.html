@@ -67,7 +67,7 @@
       <header class="hud">
         <div class="hud-date" id="hud-date">SEG, 19 JAN</div>
         <div class="hud-avatar-wrap">
-          <div class="hud-avatar energy-ring" id="hud-avatar" aria-label="Avatar"></div>
+          <div class="hud-avatar" id="hud-avatar" aria-label="Avatar"></div>
           <div class="hud-badge" id="hud-level">Nivel 0</div>
           <div class="integrity-bar">
             <div class="integrity-fill" id="integrity-fill"></div>
@@ -574,8 +574,11 @@
 
     <div class="modal" id="arena-dossier">
       <div class="modal-card arena-dossier-card">
-        <button class="close-button arena-dossier-close" id="arena-dossier-back" aria-label="Voltar">
-          <i data-lucide="arrow-left"></i>
+        <button class="close-button arena-dossier-close" id="arena-dossier-back" aria-label="OK">
+          <i data-lucide="check"></i>
+        </button>
+        <button class="icon-button arena-meta-edit arena-dossier-edit-top" id="arena-dossier-edit-meta" aria-label="Editar Arena">
+          <i data-lucide="pencil"></i>
         </button>
         <div class="arena-dossier-logo arena-dossier-logo-editable" id="arena-dossier-logo">
           <i data-lucide="circle"></i>
@@ -588,11 +591,6 @@
         <input type="text" class="arena-dossier-description-input" id="arena-dossier-description-input" style="display: none;" />
         <div class="arena-dossier-description" id="arena-dossier-macro">Sem descrição</div>
         <div class="arena-dossier-bronze-section">
-          <div class="arena-dossier-bronze-header">
-            <button class="bronze-add-btn" id="arena-dossier-add-bronze">
-              <i data-lucide="plus"></i>
-            </button>
-          </div>
           <div class="bronze-list" id="arena-dossier-bronze"></div>
         </div>
         <div class="arena-dossier-progress-section">
@@ -602,14 +600,6 @@
           <div class="arena-dossier-progress-bar">
             <div class="arena-dossier-progress-fill" id="arena-dossier-fill"></div>
           </div>
-        </div>
-        <div class="arena-dossier-footer">
-          <button class="icon-button arena-meta-edit" id="arena-dossier-edit-meta" aria-label="Editar Arena">
-            <i data-lucide="pencil"></i>
-          </button>
-          <button class="icon-button arena-meta-ok" id="arena-dossier-ok" aria-label="Salvar" style="display: none;">
-            <i data-lucide="check"></i>
-          </button>
         </div>
       </div>
     </div>

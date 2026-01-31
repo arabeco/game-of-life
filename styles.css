@@ -418,6 +418,13 @@ html[data-theme="void"] {
   overflow: visible;
   background-size: cover;
   background-position: center;
+  z-index: 1;
+}
+
+/* Esconder borda padrão quando tiver avatar personalizado */
+.hud-avatar.has-avatar {
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .hud-avatar-wrap {
@@ -444,6 +451,8 @@ html[data-theme="void"] {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: visible;
+  z-index: 2;
 }
 
 .avatar-border-wrapper .profile-avatar,
@@ -511,7 +520,7 @@ html[data-theme="void"] {
   justify-content: center;
   position: absolute;
   left: 50%;
-  top: calc(59% + 11px); /* encostar na moldura do nick */
+  top: 65%;
   transform: translateX(-50%);
   width: 20px;
   height: 20px;
@@ -528,7 +537,7 @@ html[data-theme="void"] {
 
 .integrity-bar {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 80%;
   width: 92px;
   height: 5px;
   border-radius: 999px;
@@ -548,6 +557,7 @@ html[data-theme="void"] {
 .energy-ring {
   position: relative;
   border: 1px solid var(--accent-energy);
+  z-index: 1;
 }
 
 .energy-ring::after {
@@ -556,11 +566,13 @@ html[data-theme="void"] {
   inset: 4px;
   border-radius: 50%;
   border: 1px solid rgba(156, 199, 255, 0.5);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .content {
   flex: 1;
-  padding: 20px calc(20px + env(safe-area-inset-right)) 0
+  padding: 0px calc(20px + env(safe-area-inset-right)) 0
     calc(20px + env(safe-area-inset-left));
   overflow: hidden;
   overflow-x: hidden;
@@ -628,7 +640,8 @@ html[data-theme="void"] {
 .screen-planner {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 56px);
+  min-height: calc(100vh - 40px);
+  height: calc(100vh - 40px);
 }
 
 .screen-planner .planner-layout {
@@ -665,13 +678,15 @@ html[data-theme="void"] {
 .screen-tree {
   position: relative;
   z-index: 1;
-  height: 100%;
+  height: auto;
+  min-height: auto;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 0;
-  padding-bottom: 0;
+  padding-top: 20px;
+  padding-bottom: 40px;
+  width: 100%;
 }
 
 .is-hidden {
@@ -941,24 +956,24 @@ html[data-theme="void"] {
 .tree-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(7, auto);
-  gap: clamp(2px, 1vh, 6px) clamp(3px, 1.2vw, 7px);
-  height: auto;
-  max-height: 100%;
+  grid-template-rows: repeat(8, auto);
+  gap: 12px;
+  width: 100%;
+  max-width: 900px;
   margin: 0 auto;
-  width: min(480px, 90vw);
-  align-items: center;
-  justify-items: center;
-  position: relative;
-  z-index: 1;
-  padding: clamp(4px, 1.2vh, 10px) clamp(4px, 1.2vw, 10px) clamp(80px, calc(2vh + 80px), 90px) clamp(4px, 1.2vw, 10px);
+  padding: 20px;
+  height: auto;
+  min-height: auto;
+  padding: clamp(4px, 1.2vh, 10px) clamp(20px, 5vw, 40px) clamp(20px, 40px) clamp(20px, 5vw, 40px);
   box-sizing: border-box;
+  justify-items: center;
+  align-items: center;
 }
 
 .sephirot {
   position: relative !important;
-  width: clamp(50px, 10vw, 65px) !important;
-  height: clamp(50px, 10vw, 65px) !important;
+  width: clamp(60px, 12vw, 80px) !important;
+  height: clamp(60px, 12vw, 80px) !important;
   border-radius: 50% !important;
   display: flex !important;
   flex-direction: column !important;
@@ -975,6 +990,8 @@ html[data-theme="void"] {
   pointer-events: auto !important;
   z-index: 1 !important;
   font-size: 0.9em !important;
+  justify-self: center;
+  align-self: center;
 }
 
 .sephirot::before {
@@ -2092,11 +2109,7 @@ html[data-theme="void"] {
 }
 
 #tree-edit-modal .linked-arenas-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
+  display: none;
 }
 
 #tree-edit-modal .linked-arenas-title {
@@ -2121,30 +2134,31 @@ html[data-theme="void"] {
 
 .slot-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  align-items: stretch;
-  grid-auto-rows: minmax(200px, auto);
+  grid-template-columns: repeat(6, 1fr) !important;
+  grid-template-rows: repeat(4, 46px) !important;
+  gap: 6px !important;
+  padding: 0px !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  max-width: 420px !important;
+  margin: 0 auto !important;
 }
 
 @media (max-width: 900px) {
   .slot-list {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(6, 1fr) !important;
   }
 }
 
 @media (max-width: 640px) {
   .slot-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(6, 1fr) !important;
   }
 }
 
 @media (max-width: 520px) {
   .slot-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(6, 1fr) !important;
   }
 }
 
@@ -2156,270 +2170,38 @@ html[data-theme="void"] {
   min-height: 84px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7);
 }
 
-.slot-item input {
-  width: 100%;
-  margin-bottom: 0;
-  text-align: center;
-  background: transparent;
-  border: none;
-  color: #f1f1f1;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-}
-
-.slot-item input:focus {
-  outline: none;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.8);
-}
-
-.profile-slot {
-  position: relative;
-  border: 1px solid rgba(212, 175, 55, 0.6);
-  border-radius: 12px;
-  background: rgba(16, 16, 16, 0.7);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 10px;
-  backdrop-filter: none;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
-  font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
-  max-height: 400px;
-  min-height: 200px;
-}
-
-.profile-slot::before {
-  content: none;
-}
-
-.profile-slot::after {
-  content: none;
-}
-
-.slot-animate {
-  opacity: 0;
-  transform: translateY(8px);
-  animation: slot-fade 0.4s ease forwards;
-}
-
-@keyframes slot-fade {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.profile-slot--rect {
-  grid-column: span 2;
-}
-
-.profile-slot--rect-small {
-  grid-column: span 1;
-}
-
-.profile-slot--rect-tall {
-  grid-column: span 1;
-}
-
-.profile-slot--rect-wide {
-  grid-column: span 3;
-}
-
-.profile-slot--rect-wide-tall {
-  grid-column: span 3;
-}
-
-.profile-slot--square {
-  aspect-ratio: 1 / 1;
-}
-
-.profile-slot--square-2 {
-  grid-column: span 2;
-  aspect-ratio: 1 / 1;
-}
-
-.profile-slot--square-large {
-  grid-column: span 2;
-  aspect-ratio: 1 / 1;
-}
-
-#tree-edit-modal .profile-slot--rect,
-#tree-edit-modal .profile-slot--rect-wide,
-#tree-edit-modal .profile-slot--rect-wide-tall,
-#tree-edit-modal .profile-slot--rect-small,
-#tree-edit-modal .profile-slot--rect-tall,
-#tree-edit-modal .profile-slot--square,
-#tree-edit-modal .profile-slot--square-2,
-#tree-edit-modal .profile-slot--square-large {
-  grid-column: span 1;
-  aspect-ratio: auto;
-}
-
-#tree-edit-modal .profile-slot--square .slot-value,
-#tree-edit-modal .profile-slot--square-2 .slot-value,
-#tree-edit-modal .profile-slot--square-large .slot-value {
-  aspect-ratio: auto;
-}
-
+/* SLOTS VAZIOS - PADRÃO LIMPO */
 #tree-edit-modal .profile-slot {
-  max-height: 240px;
-  padding: 10px;
+  /* Removido position e bordas para não quebrar grid */
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 2px !important;
 }
 
-#tree-edit-modal .profile-slot--rect,
-#tree-edit-modal .profile-slot--rect-wide,
-#tree-edit-modal .profile-slot--rect-wide-tall,
-#tree-edit-modal .profile-slot--rect-small,
-#tree-edit-modal .profile-slot--rect-tall {
-  height: 220px;
-}
-
-#tree-edit-modal .profile-slot--square {
-  height: 160px;
-}
-
-#tree-edit-modal .profile-slot--square-2,
-#tree-edit-modal .profile-slot--square-large {
-  height: 220px;
-}
-
+/* TÍTULO BASE */
 #tree-edit-modal .slot-label {
-  font-size: 13px;
+  font-size: 10px !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  text-align: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 12px !important;
+  line-height: 1 !important;
 }
 
-#tree-edit-modal .slot-subtitle {
-  font-size: 12px;
-}
-
+/* VALOR BASE (ESCONDIDO) */
 #tree-edit-modal .slot-value {
-  border: none;
-  background: rgba(255, 255, 255, 0.03);
-  flex: 1 1 auto;
-}
-
-#tree-edit-modal .slot-value.has-image {
-  height: 110px;
-  flex: 0 0 110px;
-}
-
-#tree-edit-modal .oracle-phrase {
-  font-size: 16px;
-  line-height: 1.6;
-}
-
-#tree-edit-modal .dossier-level {
-  font-size: 18px;
-}
-
-.profile-slot--square .slot-value,
-.profile-slot--square-2 .slot-value,
-.profile-slot--square-large .slot-value {
-  aspect-ratio: 1 / 1;
-}
-
-.slot-label {
-  position: static;
-  font-size: clamp(11px, 2.6vw, 13px);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #ffffff;
-  font-weight: 700;
-  text-align: left;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.slot-value {
-  border-radius: 12px;
-  border: 1px solid rgba(212, 175, 55, 0.6);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 12px 10px;
-  min-height: clamp(54px, 12vw, 86px);
-  display: grid;
-  place-items: center;
-  font-size: clamp(14px, 3.2vw, 20px);
-  color: #f7f7f7;
-  font-weight: 600;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
-  text-align: center;
-  overflow: hidden;
-  width: 100%;
-  max-width: 100%;
-  position: relative;
-}
-
-.profile-slot--rect .slot-value,
-.profile-slot--rect-wide .slot-value,
-.profile-slot--rect-wide-tall .slot-value,
-.profile-slot--rect-small .slot-value,
-.profile-slot--rect-tall .slot-value {
-  min-height: clamp(64px, 12vw, 96px);
-}
-
-.slot-value.has-image {
-  color: transparent;
-  text-shadow: none;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
-  width: 100%;
-  height: 200px;
-  flex: 0 0 200px;
-  padding: 0;
-  overflow: hidden;
-}
-
-.slot-value img {
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.profile-slot .profile-input,
-.profile-slot input.profile-input,
-.profile-slot textarea.profile-input,
-.profile-slot select.profile-input {
-  min-height: 40px;
-  padding: 10px 12px;
-  font-size: 16px;
-  line-height: 1.2;
-  border-radius: 8px;
-}
-
-.slot-subtitle {
-  position: static;
-  text-align: left;
-  font-size: clamp(10px, 2.4vw, 12px);
-  color: rgba(229, 229, 229, 0.75);
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  margin-top: 2px;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.slot-caption {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  font-size: 11px;
-  letter-spacing: 0.6px;
-  color: rgba(229, 229, 229, 0.85);
-  text-align: center;
-  text-transform: uppercase;
   pointer-events: none;
 }
 
@@ -2782,13 +2564,13 @@ html[data-theme="void"] {
   flex-direction: column;
   align-items: center;
   position: relative;
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 .profile-avatar-area {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 223px;
+  height: 223px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -2798,8 +2580,8 @@ html[data-theme="void"] {
 .profile-avatar-border-ring {
   position: absolute;
   inset: 0;
-  width: 96px;
-  height: 96px;
+  width: 223px;
+  height: 223px;
   border-radius: 50%;
   border: 6px solid rgba(212, 175, 55, 0.75);
   background-size: cover;
@@ -2807,12 +2589,27 @@ html[data-theme="void"] {
   background-color: transparent;
   pointer-events: auto;
   cursor: pointer;
+  z-index: 3;
+}
+
+.hud-avatar {
+  justify-self: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid rgba(212, 175, 55, 0.6);
+  background-color: rgba(255, 255, 255, 0.08);
+  background-size: cover;
+  background-position: center;
+  position: relative;
   z-index: 1;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .profile-avatar {
-  width: 84px;
-  height: 84px;
+  width: 194px;
+  height: 194px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2823,18 +2620,51 @@ html[data-theme="void"] {
   border: 2px solid rgba(212, 175, 55, 0.75);
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.55), 0 10px 18px rgba(0, 0, 0, 0.35);
   position: relative;
-  z-index: 2;
+  z-index: 1;
   overflow: hidden;
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
+/* Garantir que is-default não bloqueie cliques */
 .profile-avatar.is-default {
   background-image: none;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Indicador visual para centro do avatar em modo edição */
+.profile-card.is-editing .profile-avatar::after {
+  content: "Editar Avatar";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #d4af37;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 15;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.profile-card.is-editing .profile-avatar:hover::after {
+  opacity: 1;
+}
+
+/* Esconder borda padrão quando tiver avatar personalizado */
+.profile-avatar.has-avatar {
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .profile-name-display {
-  margin-top: 8px;
+  margin-top: -140px;
   margin-bottom: 8px;
   padding: 4px 14px;
   border-radius: 999px;
@@ -2844,6 +2674,9 @@ html[data-theme="void"] {
   font-size: 12px;
   letter-spacing: 1px;
   text-transform: uppercase;
+  font-weight: 600;
+  z-index: 5;
+  position: relative;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   max-width: min(320px, 86vw);
   overflow: hidden;
@@ -2945,9 +2778,9 @@ html[data-theme="void"] {
 }
 
 .profile-level-badge {
-  margin-top: -8px;
-  width: 40px;
-  height: 40px;
+  margin-top: -50px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   border: 1px solid rgba(212, 175, 55, 0.85);
   background: var(--metal-gold);
@@ -3032,7 +2865,7 @@ html[data-theme="void"] {
 .profile-banner-display,
 .profile-border-display {
   text-align: center;
-  font-size: 15px;
+  font-size: 22px;
   color: #f1f1f1;
 }
 
@@ -3617,6 +3450,20 @@ html[data-status="oracle"] .sephirot {
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Esconder borda padrão quando tiver avatar personalizado */
+.social-avatar.has-avatar {
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .social-level {
@@ -3934,7 +3781,7 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .modal-card {
   width: min(460px, 86vw);
-  max-height: calc(100vh - 140px);
+  max-height: calc(100vh - 100px);
   margin: 20px;
   padding: 14px;
   overflow-y: auto;
@@ -3981,111 +3828,24 @@ html[data-status="oracle"] .sephirot {
   display: none;
 }
 
-#tree-edit-modal[data-asset-id="conexao"] .slot-editor {
-  overflow: visible;
-}
+/* CSS ESPECÍFICO DE ATIVOS REMOVIDO - USAR PADRÃO UNIFICADO */
 
-#tree-edit-modal[data-asset-id="conexao"] .slot-list {
-  grid-template-columns: 1fr;
-  grid-auto-rows: minmax(22px, auto);
-  gap: 2px;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot {
-  min-height: 28px;
-  max-height: 44px;
-  padding: 4px 6px 5px;
-  border: none;
-  box-shadow: none;
-  background: transparent;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot:first-child {
-  grid-column: 1 / -1;
-  min-height: 46px;
-  max-height: 46px; /* uniformizar ret??ngulos */
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot:first-child .slot-label,
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot:first-child .slot-value {
-  text-align: center;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .slot-value {
-  min-height: 20px;
-  font-size: 12px;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .slot-label,
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .slot-subtitle {
-  font-size: 12px;
-  line-height: 1.2;
-  white-space: normal;
-  text-align: center;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .slot-value {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot .slot-value {
-  border: 1px solid rgba(212, 175, 55, 0.5);
-  border-radius: 10px;
-  padding: 4px 6px;
-  background: rgba(16, 16, 16, 0.6);
-}
-
-/* Conex??o: ret??ngulos sempre uniformes */
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot {
-  min-height: 46px;
-  max-height: 46px;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot .slot-value {
-  min-height: 28px;
-  max-height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .slot-list .profile-slot .slot-label {
-  margin-bottom: 2px;
-  min-height: 16px;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .linked-arenas-list {
-  min-height: 96px;
-  height: auto;
-  align-items: stretch;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-#tree-edit-modal[data-asset-id="conexao"] .linked-arena {
-  min-height: 64px;
-  min-width: 0;
-  padding: 4px 5px;
-  font-size: 8px;
-  justify-content: space-between;
-  aspect-ratio: 1 / 1.1;
-}
-
+/* CSS PADRÃO UNIFICADO PARA SLOTS */
 #tree-edit-modal .slot-list {
-  max-height: none;
-  overflow: visible;
-  width: 100%;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  grid-auto-rows: minmax(180px, auto);
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  grid-template-rows: repeat(4, 46px) !important;
+  gap: 6px !important;
+  padding: 0px !important;
+  max-height: 184px !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  max-width: 420px !important;
+  margin: 0 auto !important;
 }
 
 #tree-edit-modal .profile-slot {
-  gap: 6px;
+  /* CSS limpo para não interferir com grid */
 }
 
 #tree-edit-modal .slot-label {
@@ -4117,20 +3877,23 @@ html[data-status="oracle"] .sephirot {
 
 #tree-edit-modal .linked-arenas {
   flex: 0 0 auto;
-  margin-top: 8px;
+  margin-top: 0;
+  margin-bottom: 0;
   gap: 6px;
 }
 
 #tree-edit-modal .linked-arenas-list {
-  min-height: 60px;
-  max-height: 140px;
-  height: auto;
-  align-items: stretch;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
-  gap: 3px;
-  overflow-y: auto;
-  padding-bottom: 3px;
+  min-height: 116px;
+  max-height: 116px;
+  height: 116px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 #tree-edit-modal .linked-arena {
@@ -4143,36 +3906,45 @@ html[data-status="oracle"] .sephirot {
   border-radius: 12px;
 }
 
-/* No tree-edit, as arenas s??o "arena-card" (compact). For??ar miniatura 3-4 por linha. */
-#tree-edit-modal .linked-arenas-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
+/* No tree-edit, as arenas são miniaturas em flexbox horizontal */
 
 #tree-edit-modal .linked-arenas-list .arena-card,
 #tree-edit-modal .linked-arenas-list .arena-card--mini {
-  width: 100%;
-  min-height: 60px;
+  width: 81px;
+  height: 100px;
+  min-width: 81px;
+  max-width: 81px;
+  min-height: 100px;
   max-height: 100px;
-  aspect-ratio: 1 / 1.1;
-  padding: 5px;
-  gap: 4px;
-  font-size: 9px;
+  aspect-ratio: 3 / 4;
+  padding: 1px;
+  gap: 1px;
+  font-size: 8px;
   cursor: pointer;
   pointer-events: auto;
   border: 2px solid transparent;
   background: linear-gradient(135deg, rgba(26, 28, 34, 0.92), rgba(12, 14, 18, 0.95)) padding-box,
     linear-gradient(135deg, rgba(212, 175, 55, 0.6), rgba(212, 175, 55, 0.4), rgba(212, 175, 55, 0.6)) border-box;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+#tree-edit-modal .linked-arenas-list .arena-card:hover,
+#tree-edit-modal .linked-arenas-list .arena-card--mini:hover {
+  transform: scale(1.05);
+  border-color: rgba(212, 175, 55, 0.8);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
 }
 
 @media (min-width: 641px) {
   #tree-edit-modal .linked-arenas-list .arena-card,
   #tree-edit-modal .linked-arenas-list .arena-card--mini {
-    min-height: 70px;
-    max-height: 110px;
-    padding: 6px;
-    gap: 5px;
-    font-size: 10px;
+    width: 95px;
+    height: 114px;
+    min-width: 95px;
+    min-height: 114px;
+    padding: 1px;
+    gap: 1px;
   }
 }
 
@@ -4225,71 +3997,7 @@ html[data-status="oracle"] .sephirot {
   display: none;
 }
 
-#tree-edit-modal[data-asset-id="amor"] .dossier-level {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid rgba(212, 175, 55, 0.7);
-  background: rgba(10, 10, 10, 0.7);
-  color: #f1d279;
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
-}
-
-#tree-edit-modal[data-asset-id="amor"] .dossier-title {
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-}
-
-#tree-edit-modal[data-asset-id="amor"] .dossier-title-row {
-  align-items: flex-start;
-}
-
-#tree-edit-modal[data-asset-id="amor"] .oracle-phrase {
-  text-align: center;
-}
-
-#tree-edit-modal[data-asset-id="amor"] .slot-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  grid-auto-rows: auto;
-}
-
-#tree-edit-modal[data-asset-id="amor"] .profile-slot {
-  align-items: center;
-  gap: 6px;
-}
-
-#tree-edit-modal[data-asset-id="amor"] .slot-label,
-#tree-edit-modal[data-asset-id="amor"] .slot-subtitle {
-  font-size: 10px;
-  text-align: center;
-  width: 100%;
-  padding: 3px 6px;
-  border-radius: 10px;
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  background: rgba(12, 12, 12, 0.55);
-  line-height: 1.1;
-}
-
-#tree-edit-modal[data-asset-id="amor"] .slot-value {
-  width: 100%;
-  max-width: 104px;
-  aspect-ratio: 1 / 1;
-  padding: 0;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-#tree-edit-modal[data-asset-id="amor"] .slot-value.has-image {
-  height: auto;
-  flex: 0 0 auto;
-}
+/* CSS ESPECÍFICO DE ATIVOS REMOVIDO - USAR PADRÃO UNIFICADO */
 
 .close-button {
   border: 1px solid rgba(217, 182, 92, 0.35);
@@ -4354,7 +4062,7 @@ html[data-status="oracle"] .sephirot {
 
 .linked-arenas {
   margin-top: 8px;
-  min-height: 150px;
+  min-height: auto;
 }
 
 .linked-arenas-list {
@@ -4409,7 +4117,6 @@ html[data-status="oracle"] .sephirot {
 }
 
 .modal-body {
-  margin: 12px 0 16px;
   color: #d0d0d0;
   font-size: 13px;
 }
@@ -4560,7 +4267,7 @@ html[data-status="oracle"] .sephirot {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  height: calc(100% - 36px);
+  height: calc(100% - 20px);
   width: 100%;
 }
 
@@ -5077,23 +4784,23 @@ html[data-status="oracle"] .sephirot {
 /* Arena Dossier Card - Redesenhado */
 #arena-dossier .modal-card.arena-dossier-card,
 #arena-modal .modal-card.arena-dossier-card {
-  width: min(460px, 88vw);
-  max-height: calc(100vh - 160px);
-  height: auto;
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(195, 199, 207, 0.4);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px 20px;
-  gap: 16px;
-  margin: 20px;
-  position: relative;
-  overflow-y: auto;
-  box-sizing: border-box;
+  width: min(460px, 88vw) !important;
+  max-height: calc(100vh - 180px) !important;
+  height: auto !important;
+  border-radius: 20px !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(195, 199, 207, 0.4) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 16px 12px 8px 12px !important;
+  gap: 8px !important;
+  margin: 8px !important;
+  position: relative !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
 }
 
 .arena-dossier-close {
@@ -5127,7 +4834,6 @@ html[data-status="oracle"] .sephirot {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 8px;
 }
 
 .arena-dossier-logo.arena-dossier-logo-editable {
@@ -5194,7 +4900,6 @@ html[data-status="oracle"] .sephirot {
   font-weight: 700;
   color: #f1f1f1;
   text-align: center;
-  margin-top: 8px;
 }
 
 #arena-dossier.is-editing .arena-dossier-title {
@@ -5211,7 +4916,6 @@ html[data-status="oracle"] .sephirot {
   font-size: 20px;
   font-weight: 700;
   text-align: center;
-  margin-top: 8px;
   box-sizing: border-box;
 }
 
@@ -5221,7 +4925,6 @@ html[data-status="oracle"] .sephirot {
   text-transform: uppercase;
   letter-spacing: 1.5px;
   text-align: center;
-  margin-top: -8px;
 }
 
 #arena-dossier.is-editing .arena-dossier-asset {
@@ -5273,18 +4976,11 @@ html[data-status="oracle"] .sephirot {
 .arena-dossier-bronze-section {
   width: 100%;
   margin-top: 8px;
-  padding: 12px;
+  padding: 0;
   border-radius: 16px;
-  background: linear-gradient(135deg, 
-    rgba(182, 128, 74, 0.15) 0%, 
-    rgba(182, 128, 74, 0.08) 50%,
-    rgba(182, 128, 74, 0.15) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(182, 128, 74, 0.3);
-  box-shadow: 
-    inset 0 1px 2px rgba(182, 128, 74, 0.2),
-    0 4px 12px rgba(0, 0, 0, 0.3);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .arena-dossier-bronze-header {
@@ -5490,12 +5186,52 @@ html[data-status="oracle"] .sephirot {
 }
 
 .bronze-list {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  min-height: 42px;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 4px !important;
+  scroll-behavior: smooth !important;
+  position: relative !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  grid: none !important;
+}
+
+.bronze-list::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Efeito magnético para redistribuição */
+.bronze-list.dragging-over {
+  background: rgba(182, 128, 74, 0.1);
+  border-radius: 8px;
+}
+
+.bronze-list .bronze-item {
+  transition: transform 0.2s ease, margin 0.2s ease;
+}
+
+.bronze-list .bronze-item:hover {
+  transform: translateY(-2px);
+  z-index: 10;
+}
+
+.bronze-list .bronze-item.dragging {
+  opacity: 0.5;
+  transform: scale(1.1);
+  z-index: 100;
 }
 
 /* Bronze list no arena-dossier - layout horizontal (grid lado a lado em quadrados) */
@@ -5522,6 +5258,9 @@ html[data-status="oracle"] .sephirot {
   pointer-events: auto !important;
   cursor: grab;
   user-select: none;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  z-index: 1 !important;
   -webkit-user-drag: element;
 }
 
@@ -6975,4 +6714,39 @@ button i {
   display: flex;
   justify-content: center;
   margin-top: 8px;
+}
+
+/* Botão editar no topo direito do arena dossier */
+.arena-dossier-edit-top {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  z-index: 10 !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(229, 229, 229, 0.9) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.arena-dossier-edit-top:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.05) !important;
+}
+
+.arena-dossier-edit-top i {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Modal arena dossier com posição relativa para botão */
+#arena-dossier .modal-card {
+  position: relative !important;
 }

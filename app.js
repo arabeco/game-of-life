@@ -13,34 +13,65 @@ const V2_RESET_KEY = "game_of_life.v2_reset";
 const PROFILE_KEY = "game_of_life.profile";
 const MISSIONS_KEY = "game_of_life.missions";
 // Hold para completar: sempre 3 segundos (nunca 5s). Usado em bay, grid e pills.
+// Pré-carregar skins do Supabase Storage
+const preloadSkins = () => {
+  console.log(" Iniciando pré-carregamento das skins do Supabase...");
+  
+  const supabaseUrl = supabaseConfig?.url;
+  
+  if (supabaseUrl) {
+    const skinMapping = {
+      gold: `${supabaseUrl}/storage/v1/object/public/huds/gold.jpg`,
+      frost: `${supabaseUrl}/storage/v1/object/public/huds/frost.jpg`, 
+      neon: `${supabaseUrl}/storage/v1/object/public/huds/neon.jpg`,
+      ember: `${supabaseUrl}/storage/v1/object/public/huds/ember.jpg`,
+      aurora: `${supabaseUrl}/storage/v1/object/public/huds/aurora.jpg`,
+      cyber: `${supabaseUrl}/storage/v1/object/public/huds/neon.jpg`
+    };
+    
+    Object.values(skinMapping).forEach(url => {
+      console.log(` Pré-carregando: ${url}`);
+      const img = new Image();
+      img.onload = () => console.log(` Carregado: ${url}`);
+      img.onerror = () => console.log(` Erro ao carregar: ${url}`);
+      img.src = url;
+    });
+  } else {
+    console.log(" Supabase não configurado, usando fallback gradients");
+  }
+};
+
+// Pré-carregar imediatamente
+preloadSkins();
+
 const HOLD_DURATION_MS = 3000;
 const HOLD_MS_CAPPED = Math.min(3000, HOLD_DURATION_MS);
 
 const SEPHIROT = [
-  { id: "conexao", label: "CONSCIÊNCIA", row: 1, col: 2 },
-  { id: "mente", label: "ESPAÇO MENTAL", row: 2, col: 1 },
+  { id: "consciencia", label: "CONSCIÊNCIA", row: 1, col: 2 },
+  { id: "espaco-mental", label: "ESPAÇO MENTAL", row: 2, col: 1 },
   { id: "espiritualidade", label: "ESPIRITUALIDADE", row: 2, col: 3 },
-  { id: "verdade", label: "PROPÓSITO", row: 3, col: 1 },
-  { id: "inspiracao", label: "PROJETOS", row: 3, col: 3 },
-  { id: "amor", label: "CONEXÕES", row: 4, col: 2 },
+  { id: "proposito", label: "PROPÓSITO", row: 3, col: 1 },
+  { id: "projetos", label: "PROJETOS", row: 3, col: 3 },
+  { id: "conexoes", label: "CONEXÕES", row: 4, col: 2 },
   { id: "trabalho", label: "TRABALHO/ESTUDOS", row: 5, col: 1 },
-  { id: "abundancia", label: "FINANÇAS", row: 5, col: 3 },
-  { id: "autenticidade", label: "HOBBIES", row: 6, col: 2 },
+  { id: "financas", label: "FINANÇAS", row: 5, col: 3 },
+  { id: "hobbies", label: "HOBBIES", row: 6, col: 2 },
   { id: "fisico", label: "FÍSICO", row: 7, col: 2 },
 ];
 
 const LABEL_BY_ID = new Map(SEPHIROT.map((asset) => [asset.id, asset.label]));
 const ICON_BY_ID = {
-  fisico: "dumbbell",
-  mente: "brain",
+  consciencia: "crown",
+  "espaco-mental": "brain",
   espiritualidade: "sparkles",
-  verdade: "target",
-  inspiracao: "briefcase",
-  amor: "users",
-  abundancia: "wallet",
+  proposito: "target",
+  projetos: "briefcase",
+  conexoes: "heart",
+  financas: "wallet",
   trabalho: "book-open",
-  autenticidade: "gamepad-2",
-  conexao: "crown",
+  hobbies: "gamepad-2",
+  fisico: "dumbbell",
 };
 const BRONZE_ICONS = ["dumbbell", "book", "code", "dollar-sign", "flame", "leaf", "coffee", "music"];
 const ARENA_ICONS = [
@@ -50,19 +81,19 @@ const ARENA_ICONS = [
 ];
 const ALLIANCE_MOCK = ["@vitali", "@nyx", "@atlas", "@onyx"];
 const SLOT_ICON_BY_ID = {
-  "abundancia.ativo1": "car",
-  "abundancia.ativo2": "building-2",
-  "abundancia.ativo3": "briefcase",
+  "financas.ativo1": "car",
+  "financas.ativo2": "building-2",
+  "financas.ativo3": "briefcase",
   "trabalho.pec": "badge-check",
   "trabalho.unip": "graduation-cap",
   "trabalho.personal": "dumbbell",
 };
 const MASTERY_PHRASES = {
-  conexao: [
+  consciencia: [
     "Nível 1: Sinto-me totalmente desconectado; a vida é um caos sem propósito.",
     "Nível 2: Raramente percebo beleza ou ordem; sinto-me isolado.",
     "Nível 3: Às vezes sinto uma breve gratidão, mas o ceticismo domina.",
-    "Nível 4: Começo a praticar gratidão, mas ainda me sinto v├¡tima das circunst├óncias.",
+    "Nível 4: Começo a praticar gratidão, mas ainda me sinto vítima das circunstâncias.",
     "Nível 5: Pratico a gratidão diariamente e percebo as primeiras sincronicidades.",
     "Nível 6: Sinto uma conexão frequente com a natureza e com o fluxo da vida.",
     "Nível 7: Confio no processo da vida; a gratidão é um estado quase constante.",
@@ -71,91 +102,91 @@ const MASTERY_PHRASES = {
     "Nível 10: Estado de presença absoluta; sinto a Unidade com o Todo em cada respiração.",
   ],
   espiritualidade: [
-    "Nível 1: Sem qualquer pr├ítica ou crença; vazio espiritual absoluto.",
+    "Nível 1: Sem qualquer prática ou crença; vazio espiritual absoluto.",
     "Nível 2: Curiosidade vaga, mas sem disciplina ou rituais.",
-    "Nível 3: Pratico rituais espor├ídicos quando estou em crise.",
+    "Nível 3: Pratico rituais esporádicos quando estou em crise.",
     "Nível 4: Tenho um altar ou espaço, mas raramente o utilizo com foco.",
     "Nível 5: Rituais semanais estabelecidos; sinto o despertar da intuição.",
-    "Nível 6: Pr├ítica di├íria constante; sinto proteção e orientação espiritual.",
-    "Nível 7: Meus rituais são minha ├óncora; di├ílogo fluido com o sagrado.",
-    "Nível 8: Intuição aguçada; recebo orientaçõeses claras através de rituais.",
+    "Nível 6: Prática diária constante; sinto proteção e orientação espiritual.",
+    "Nível 7: Meus rituais são minha âncora; diálogo fluido com o sagrado.",
+    "Nível 8: Intuição aguçada; recebo orientações claras através de rituais.",
     "Nível 9: Vida consagrada; cada ação é um ato de conexão espiritual.",
     "Nível 10: Mestria espiritual; canalização direta e comunhão ininterrupta.",
   ],
-  mente: [
-    "Nível 1: Mente barulhenta, ansiosa e imposs├¡vel de controlar.",
+  "espaco-mental": [
+    "Nível 1: Mente barulhenta, ansiosa e impossível de controlar.",
     "Nível 2: Pensamentos negativos dominam; sono perturbado pelo estresse.",
     "Nível 3: Tento meditar, mas me distraio em segundos; foco muito baixo.",
-    "Nível 4: Consigo momentos breves de silèncio, mas a ansiedade retorna r├ípido.",
-    "Nível 5: Meditação di├íria de 10 min; começo a observar os pensamentos.",
-    "Nível 6: Capacidade de manter o foco por per├¡odos longos; mente clara.",
-    "Nível 7: Dom├¡nio sobre as reaçõeses emocionais; paz mental resiliente.",
-    "Nível 8: Estado de Flow acessado ├á vontade; alta clareza cognitiva.",
-    "Nível 9: Silèncio interior profundo; a mente é uma ferramenta perfeitamente afiada.",
-    "Nível 10: Equanimidade absoluta; consciència pura acima de qualquer turbulència.",
+    "Nível 4: Consigo momentos breves de silêncio, mas a ansiedade retorna rápido.",
+    "Nível 5: Meditação diária de 10 min; começo a observar os pensamentos.",
+    "Nível 6: Capacidade de manter o foco por períodos longos; mente clara.",
+    "Nível 7: Domínio sobre as reações emocionais; paz mental resiliente.",
+    "Nível 8: Estado de Flow acessado à vontade; alta clareza cognitiva.",
+    "Nível 9: Silêncio interior profundo; a mente é uma ferramenta perfeitamente afiada.",
+    "Nível 10: Equanimidade absoluta; consciência pura acima de qualquer turbulência.",
   ],
-  verdade: [
-    "Nível 1: Não sei quem sou; vivo baseado nas expectativas dos outros.",
-    "Nível 2: Evito olhar para minhas sombras; minto para mim mesmo com frequència.",
-    "Nível 3: Sinto que algo est├í errado, mas tenho medo de olhar para dentro.",
-    "Nível 4: Começo a identificar meus padrõeses, mas ainda me autossaboto.",
-    "Nível 5: Honestidade constante sobre minhas falhas; busca ativa por verdade.",
-    "Nível 6: Clareza sobre meu MTP (Propósito Transformativo Massivo).",
-    "Nível 7: Integridade total entre pensamento, palavra e ação.",
-    "Nível 8: Conhecimento profundo da própria psique e arquétipos.",
-    "Nível 9: Sabedoria pessoal cristalizada; vivo minha verdade sem medo.",
+  proposito: [
+    "Nível 1: Sem direção ou propósito; sinto-me perdido na vida.",
+    "Nível 2: Busco sentido, mas não encontro clareza sobre meu caminho.",
+    "Nível 3: Tenho valores, mas minhas ações não os refletem.",
+    "Nível 4: Começo a alinhar minhas decisões com meus valores.",
+    "Nível 5: Tenho uma missão clara e tomo ações alinhadas.",
+    "Nível 6: Minha vida tem direção; sinto-me realizado e focado.",
+    "Nível 7: Sou um guia para outros; meu propósito inspira.",
+    "Nível 8: Vivo em total alinhamento com minha essência.",
+    "Nível 9: Sou um catalisador de transformação; meu propósito impacta.",
     "Nível 10: Alinhamento supremo; minha identidade é um reflexo do meu destino.",
   ],
-  inspiracao: [
+  projetos: [
     "Nível 1: Sem sonhos ou projetos; a vida é uma repetição monótona.",
     "Nível 2: Tenho ideias, mas nunca começo nada por medo do fracasso.",
     "Nível 3: Começo projetos, mas desisto na primeira dificuldade.",
-    "Nível 4: Trabalho em projetos, mas sem consistència ou visão clara.",
+    "Nível 4: Trabalho em projetos, mas sem consistência ou visão clara.",
     "Nível 5: Um projeto ativo e consistente; criatividade fluindo semanalmente.",
-    "Nível 6: Criatividade estratégica; executo ideias com eficiència.",
+    "Nível 6: Criatividade estratégica; executo ideias com eficiência.",
     "Nível 7: Projetos geram impacto real; sinto-me inspirado diariamente.",
     "Nível 8: Magnetismo criativo; ideias e recursos convergem para mim.",
-    "Nível 9: Legado em construção; meus projetos expressam minha essència.",
-    "Nível 10: Gènio criativo; canalização ininterrupta de inovação e beleza.",
+    "Nível 9: Legado em construção; meus projetos expressam minha essência.",
+    "Nível 10: Gênio criativo; canalização ininterrupta de inovação e beleza.",
   ],
-  amor: [
-    "Nível 1: Relacionamentos tóxicos ou isolamento total com rancor.",
-    "Nível 2: Dificuldade em confiar; sinto-me carente ou defensivo.",
-    "Nível 3: Relaçõeses superficiais; medo de vulnerabilidade.",
-    "Nível 4: Tento me abrir, mas ainda carrego muitas m├ígoas do passado.",
-    "Nível 5: Relacionamentos saud├íveis; pr├ítica ativa de perdão e escuta.",
-    "Nível 6: C├¡rculo ├¡ntimo de alta confiança; sinto-me valorizado.",
+  conexoes: [
+    "Nível 1: Isolamento total; sinto-me sozinho e incompreendido.",
+    "Nível 2: Relações superficiais; dificuldade em confiar nos outros.",
+    "Nível 3: Tenho amigos, mas raramente me abro verdadeiramente.",
+    "Nível 4: Tento me abrir, mas ainda carrego muitas mágoas do passado.",
+    "Nível 5: Relacionamentos saudáveis; prática ativa de perdão e escuta.",
+    "Nível 6: Círculo íntimo de alta confiança; sinto-me valorizado.",
     "Nível 7: Capacidade de amar incondicionalmente sem perder os limites.",
-    "Nível 8: Mentor e apoio para outros; relaçõeses baseadas em crescimento.",
+    "Nível 8: Mentor e apoio para outros; relações baseadas em crescimento.",
     "Nível 9: Irradio compaixão; presença que cura e acolhe.",
-    "Nível 10: União profunda; mestre em criar e nutrir v├¡nculos sagrados.",
+    "Nível 10: União profunda; mestre em criar e nutrir vínculos sagrados.",
   ],
   abundancia: [
-    "Nível 1: Escassez total; d├¡vidas fora de controle e medo do amanhão.",
+    "Nível 1: Escassez total; dívidas fora de controle e medo do amanhã.",
     "Nível 2: Vivo para pagar contas; o dinheiro é fonte de estresse.",
     "Nível 3: Ganho o suficiente para sobreviver, mas não tenho reservas.",
     "Nível 4: Dificuldade em gerir o que ganho; mentalidade de escassez.",
     "Nível 5: Orçamento controlado; investimentos iniciados.",
     "Nível 6: Fluxo de caixa positivo; clareza total sobre ativos.",
-    "Nível 7: Independència financeira crescendo; o dinheiro trabalha para mim.",
-    "Nível 8: Abund├óncia gerada por propósito; recursos sobram para sonhos.",
-    "Nível 9: Liberdade total; riqueza flui de múltiplas fontes est├íveis.",
-    "Nível 10: Consciència de prosperidade infinita; mestre da manifestação.",
+    "Nível 7: Independência financeira crescendo; o dinheiro trabalha para mim.",
+    "Nível 8: Abundância gerada por propósito; recursos sobram para sonhos.",
+    "Nível 9: Liberdade total; riqueza flui de múltiplas fontes estáveis.",
+    "Nível 10: Consciência de prosperidade infinita; mestre da manifestação.",
   ],
   trabalho: [
     "Nível 1: Odeio minha rotina; sinto-me escravizado pelas tarefas.",
     "Nível 2: Trabalho apenas pelo dinheiro; produtividade baixa.",
     "Nível 3: Busco melhorar, mas sinto-me perdido profissionalmente.",
-    "Nível 4: Executo minhas tarefas, mas sem brilho ou excelència.",
+    "Nível 4: Executo minhas tarefas, mas sem brilho ou excelência.",
     "Nível 5: Profissional competente; estudo e evoluo constantemente.",
-    "Nível 6: Excelència reconhecida; entrego valor real ao mundo.",
+    "Nível 6: Excelência reconhecida; entrego valor real ao mundo.",
     "Nível 7: Trabalho alinhado ao propósito; satisfação no esforço.",
-    "Nível 8: Autoridade na minha ├írea; mestre em gestão de tempo.",
+    "Nível 8: Autoridade na minha área; mestre em gestão de tempo.",
     "Nível 9: Liderança inspiradora; meu trabalho é minha arte.",
     "Nível 10: Maestria profissional; impacto global através da vocação.",
   ],
-  autenticidade: [
-    "Nível 1: Sem hobbies; tempo gasto em distraçõeses vazias.",
+  hobbies: [
+    "Nível 1: Sem hobbies; tempo gasto em distrações vazias.",
     "Nível 2: Sinto tédio; esqueci o que me dava prazer.",
     "Nível 3: Tenho um hobby, mas sinto culpa ao dedicar tempo.",
     "Nível 4: Pratico hobbies raramente; falta de autenticidade.",
@@ -163,13 +194,17 @@ const MASTERY_PHRASES = {
     "Nível 6: Desenvolvo habilidades únicas por puro prazer.",
     "Nível 7: Minha personalidade brilha através dos meus interesses.",
     "Nível 8: Mestre em um hobby; criatividade e diversão integradas.",
-    "Nível 9: Estilo de vida autèntico; sou fiel a mim mesmo sempre.",
-    "Nível 10: Expressão pura do Ser; minha existència é uma arte única.",
+    "Nível 9: Estilo de vida autêntico; sou fiel a mim mesmo sempre.",
+    "Nível 10: Expressão pura do Ser; minha existência é uma arte única.",
   ],
   fisico: [
     "Nível 1: Sedentarismo total; corpo fraco ou sem energia.",
-    "Nível 2: Alimentação péssima; cansaço cr├┤nico e sono ruim.",
+    "Nível 2: Alimentação péssima; cansaço crônico e sono ruim.",
     "Nível 3: Tento treinar, mas desisto em duas semanas.",
+    "Nível 4: Treino esporádico; desconforto com a própria forma.",
+    "Nível 5: Treino 3x por semana; consciência alimentar iniciada.",
+    "Nível 6: Corpo atlético e funcional; energia estável.",
+    "Nível 7: Alta performance física; disciplina inabalável.",
     "Nível 4: Treino espor├ídico; desconforto com a própria forma.",
     "Nível 5: Treino 3x por semana; consciència alimentar iniciada.",
     "Nível 6: Corpo atlético e funcional; energia est├ível.",
@@ -180,39 +215,39 @@ const MASTERY_PHRASES = {
   ],
 };
 const ASSET_TO_PHRASE = {
-  conexao: "conexao",
+  consciencia: "consciencia",
   espiritualidade: "espiritualidade",
-  mente: "mente",
-  verdade: "verdade",
-  inspiracao: "inspiracao",
-  amor: "amor",
-  abundancia: "abundancia",
+  "espaco-mental": "espaco-mental",
+  proposito: "proposito",
+  projetos: "projetos",
+  conexoes: "conexoes",
+  financas: "financas",
   trabalho: "trabalho",
-  autenticidade: "autenticidade",
+  hobbies: "hobbies",
   fisico: "fisico",
 };
 const PROTOCOL_SLOTS = {
-  conexao: [
-    { id: "conexao.lema", label: "Lema de Vida", type: "rect-wide" },
-    { id: "conexao.crenca1", label: "Crenca Principal 1", type: "rect-wide" },
-    { id: "conexao.crenca2", label: "Crenca Principal 2", type: "rect-wide" },
-    { id: "conexao.crenca3", label: "Crenca Principal 3", type: "rect-wide" },
+  consciencia: [
+    { id: "consciencia.lema", label: "Lema de Vida", type: "rect-wide" },
+    { id: "consciencia.crenca1", label: "Crenca Principal 1", type: "rect-wide" },
+    { id: "consciencia.crenca2", label: "Crenca Principal 2", type: "rect-wide" },
+    { id: "consciencia.crenca3", label: "Crenca Principal 3", type: "rect-wide" },
   ],
   espiritualidade: [
     { id: "espiritualidade.sistema", label: "Sistema", type: "rect" },
     { id: "espiritualidade.entidade1", label: "Entidade Lider", type: "square-2" },
     { id: "espiritualidade.entidade2", label: "Entidade Protetora", type: "square-2" },
   ],
-  mente: [
-    { id: "mente.filosofia", label: "Filosofia Operacional", type: "rect-wide" },
+  "espaco-mental": [
+    { id: "espaco-mental.filosofia", label: "Filosofia Operacional", type: "rect-wide" },
   ],
-  verdade: [
-    { id: "verdade.mtp", label: "Missao de Vida", type: "rect-wide-tall" },
-    { id: "verdade.trait1", label: "Trait 1", type: "rect-small" },
-    { id: "verdade.trait2", label: "Trait 2", type: "rect-small" },
-    { id: "verdade.trait3", label: "Trait 3", type: "rect-small" },
+  proposito: [
+    { id: "proposito.mtp", label: "Missao de Vida", type: "rect-wide-tall" },
+    { id: "proposito.trait1", label: "Trait 1", type: "rect-small" },
+    { id: "proposito.trait2", label: "Trait 2", type: "rect-small" },
+    { id: "proposito.trait3", label: "Trait 3", type: "rect-small" },
     {
-      id: "verdade.nascimento",
+      id: "proposito.nascimento",
       label: "Nascimento",
       type: "rect-small",
       fields: [
@@ -220,15 +255,15 @@ const PROTOCOL_SLOTS = {
         { key: "mes", label: "Mes", slider: { min: 1, max: 12, step: 1, unit: "" } },
       ],
     },
-    { id: "verdade.signo", label: "Signo", type: "rect-small" },
-    { id: "verdade.mbti", label: "MBTI", type: "rect-small" },
-    { id: "verdade.foto1", label: "Foto 1", type: "square-2" },
-    { id: "verdade.foto2", label: "Foto 2", type: "square-2" },
-    { id: "verdade.foto3", label: "Foto 3", type: "square-2" },
+    { id: "proposito.signo", label: "Signo", type: "rect-small" },
+    { id: "proposito.mbti", label: "MBTI", type: "rect-small" },
+    { id: "proposito.foto1", label: "Foto 1", type: "square-2" },
+    { id: "proposito.foto2", label: "Foto 2", type: "square-2" },
+    { id: "proposito.foto3", label: "Foto 3", type: "square-2" },
   ],
-  inspiracao: [
+  projetos: [
     {
-      id: "inspiracao.proj1",
+      id: "projetos.proj1",
       label: "Projeto 1",
       type: "square-2",
       fields: [
@@ -238,7 +273,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "inspiracao.proj2",
+      id: "projetos.proj2",
       label: "Projeto 2",
       type: "square-2",
       fields: [
@@ -248,7 +283,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "inspiracao.proj3",
+      id: "projetos.proj3",
       label: "Projeto 3",
       type: "square-2",
       fields: [
@@ -258,9 +293,9 @@ const PROTOCOL_SLOTS = {
       ],
     },
   ],
-  amor: [
+  conexoes: [
     {
-      id: "amor.conexao1",
+      id: "conexoes.conexao1",
       label: "Conexao 1",
       type: "square",
       fields: [
@@ -270,7 +305,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "amor.conexao2",
+      id: "conexoes.conexao2",
       label: "Conexao 2",
       type: "square",
       fields: [
@@ -280,7 +315,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "amor.conexao3",
+      id: "conexoes.conexao3",
       label: "Conexao 3",
       type: "square",
       fields: [
@@ -290,7 +325,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "amor.conexao4",
+      id: "conexoes.conexao4",
       label: "Conexao 4",
       type: "square",
       fields: [
@@ -300,7 +335,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "amor.conexao5",
+      id: "conexoes.conexao5",
       label: "Conexao 5",
       type: "square",
       fields: [
@@ -310,7 +345,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "amor.conexao6",
+      id: "conexoes.conexao6",
       label: "Conexao 6",
       type: "square",
       fields: [
@@ -320,13 +355,13 @@ const PROTOCOL_SLOTS = {
       ],
     },
   ],
-  abundancia: [
-    { id: "abundancia.renda", label: "Renda Mensal", type: "rect-wide", fields: [{ key: "valor", label: "Renda", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
-    { id: "abundancia.gasto", label: "Gasto Mensal", type: "rect-wide", fields: [{ key: "valor", label: "Gasto", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
-    { id: "abundancia.liquidez", label: "Liquidez", type: "rect-wide", fields: [{ key: "valor", label: "Liquidez", slider: { min: 0, max: 200000, step: 100, unit: "R$" } }] },
-    { id: "abundancia.ativo1", label: "Ativo 1", type: "square-2" },
-    { id: "abundancia.ativo2", label: "Ativo 2", type: "square-2" },
-    { id: "abundancia.ativo3", label: "Ativo 3", type: "square-2" },
+  financas: [
+    { id: "financas.renda", label: "Renda Mensal", type: "rect-wide", fields: [{ key: "valor", label: "Renda", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
+    { id: "financas.gasto", label: "Gasto Mensal", type: "rect-wide", fields: [{ key: "valor", label: "Gasto", slider: { min: 0, max: 50000, step: 100, unit: "R$" } }] },
+    { id: "financas.liquidez", label: "Liquidez", type: "rect-wide", fields: [{ key: "valor", label: "Liquidez", slider: { min: 0, max: 200000, step: 100, unit: "R$" } }] },
+    { id: "financas.ativo1", label: "Ativo 1", type: "square-2" },
+    { id: "financas.ativo2", label: "Ativo 2", type: "square-2" },
+    { id: "financas.ativo3", label: "Ativo 3", type: "square-2" },
   ],
   trabalho: [
     { id: "trabalho.pec", label: "Classe 1", type: "rect" },
@@ -335,9 +370,9 @@ const PROTOCOL_SLOTS = {
     { id: "trabalho.cursos", label: "Cursos", type: "rect-wide" },
     { id: "trabalho.historico", label: "Historico", type: "rect-wide" },
   ],
-  autenticidade: [
+  hobbies: [
     {
-      id: "autenticidade.hobby1",
+      id: "hobbies.hobby1",
       label: "Hobby 1",
       type: "square-2",
       fields: [
@@ -347,7 +382,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "autenticidade.hobby2",
+      id: "hobbies.hobby2",
       label: "Hobby 2",
       type: "square-2",
       fields: [
@@ -357,7 +392,7 @@ const PROTOCOL_SLOTS = {
       ],
     },
     {
-      id: "autenticidade.hobby3",
+      id: "hobbies.hobby3",
       label: "Hobby 3",
       type: "square-2",
       fields: [
@@ -383,7 +418,7 @@ const getDossierSlots = (assetId) => {
   const lemaId = `${assetId}.lema`;
   const lemaSlot = base.find((slot) => slot.id === lemaId);
   const withoutLema = base.filter((slot) => slot.id !== lemaId);
-  if (assetId !== "conexao") {
+  if (assetId !== "consciencia") {
     return withoutLema;
   }
   return lemaSlot
@@ -642,9 +677,13 @@ const saveProfile = (profile, options = {}) => {
 };
 
 const applyTheme = (theme) => {
+  console.log(`🎨 Mudando tema para: ${theme}`);
   document.documentElement.dataset.theme = theme || "gold";
   const profile = loadProfile();
   saveProfile({ ...profile, theme: theme || "gold" });
+  
+  // Re-renderizar sephirots para aplicar nova skin
+  renderTree();
 };
 
 let lastSupabaseError = null;
@@ -1901,6 +1940,48 @@ const renderTree = () => {
       if (className) sphere.classList.add(className);
     }
 
+    // Aplicar skin JPG do Supabase Storage
+    const skinTheme = profile.theme || "gold";
+    const supabaseUrl = supabaseConfig?.url;
+    
+    if (supabaseUrl) {
+      const skinMapping = {
+        gold: `${supabaseUrl}/storage/v1/object/public/huds/gold.jpg`,
+        frost: `${supabaseUrl}/storage/v1/object/public/huds/frost.jpg`, 
+        neon: `${supabaseUrl}/storage/v1/object/public/huds/neon.jpg`,
+        ember: `${supabaseUrl}/storage/v1/object/public/huds/ember.jpg`,
+        aurora: `${supabaseUrl}/storage/v1/object/public/huds/aurora.jpg`,
+        cyber: `${supabaseUrl}/storage/v1/object/public/huds/neon.jpg`
+      };
+      const skinUrl = skinMapping[skinTheme] || skinMapping.gold;
+      
+      // Aplicar skin JPG do Supabase
+      console.log(`🎨 Aplicando skin do Supabase: ${skinUrl}`);
+      sphere.style.setProperty("background-image", `url(${skinUrl})`, "important");
+      sphere.style.setProperty("background-size", "150% 150%", "important");
+      sphere.style.setProperty("background-position", "center", "important");
+      sphere.style.setProperty("background-repeat", "no-repeat", "important");
+      sphere.style.setProperty("background-color", "transparent", "important");
+    } else {
+      // Fallback para CSS gradients se não tiver Supabase
+      const skinGradients = {
+        gold: "linear-gradient(135deg, #FFD700, #FFA500, #FF8C00)",
+        frost: "linear-gradient(135deg, #00CED1, #4682B4, #1E90FF)", 
+        neon: "linear-gradient(135deg, #FF00FF, #00FFFF, #FF00AA)",
+        ember: "linear-gradient(135deg, #FF4500, #FF6347, #DC143C)",
+        aurora: "linear-gradient(135deg, #00FF7F, #00CED1, #9370DB)",
+        cyber: "linear-gradient(135deg, #FF00FF, #00FFFF, #FF00AA)"
+      };
+      const skinGradient = skinGradients[skinTheme] || skinGradients.gold;
+      
+      console.log(`🎨 Aplicando skin gradient (fallback): ${skinTheme}`);
+      sphere.style.setProperty("background-image", skinGradient, "important");
+      sphere.style.setProperty("background-size", "200% 200%", "important");
+      sphere.style.setProperty("background-position", "center", "important");
+      sphere.style.setProperty("background-repeat", "no-repeat", "important");
+      sphere.style.setProperty("background-color", "transparent", "important");
+    }
+
     const label = document.createElement("div");
     label.className = "sephirot-label";
     label.textContent = asset.label;
@@ -1923,7 +2004,7 @@ const renderTree = () => {
   });
 };
 
-const buildDefaultPlanner = () => ({ pills: [], logistics: {}, bronzeActions: [] });
+const buildDefaultPlanner = () => ({ bronzeActions: [] });
 
 const loadPlanner = () => {
   if (cachedPlanner) return cachedPlanner;
@@ -1932,13 +2013,11 @@ const loadPlanner = () => {
     const raw = localStorage.getItem(PLANNER_KEY);
     if (!raw) return buildDefaultPlanner();
     const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.pills)) {
+    if (!parsed || !Array.isArray(parsed.bronzeActions)) {
       return buildDefaultPlanner();
     }
     cachedPlanner = {
-      pills: parsed.pills,
-      logistics: parsed.logistics ?? {},
-      bronzeActions: Array.isArray(parsed.bronzeActions) ? parsed.bronzeActions : [],
+      bronzeActions: parsed.bronzeActions || [],
     };
     return cachedPlanner;
   } catch {
@@ -2282,129 +2361,9 @@ const setPlannerWeekOffset = (nextOffset) => {
 const renderWeekGrid = () => renderWeekView();
 
 const buildBronzeElement = (action) => {
-  const bronze = document.createElement("div");
-  bronze.className = "bronze-item";
-  bronze.dataset.id = action.id;
-  // Permitir drag para backlog, scheduled E done
-  bronze.draggable = action.status === "backlog" || action.status === "scheduled" || action.status === "done";
-  if (action.serious) bronze.classList.add("serious");
-  const icon = document.createElement("i");
-  icon.setAttribute("data-lucide", action.icon || "circle");
-  bronze.appendChild(icon);
-  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const weeklyTarget = getActionWeeklyTarget(action);
-  const completedCount = getActionRecentCompletions(action, weekAgo);
-  const weekStart = getWeekStartDate(new Date());
-  const plannedCount = getPlannedCountForWeek(action, weekStart);
-  const remaining = Math.max(0, weeklyTarget - completedCount - plannedCount);
-  // Variável para controlar se acabou de realizar ação (hold)
-  let justCompletedAction = false;
-  
-  bronze.addEventListener("click", (e) => {
-    // Não abrir modal se acabou de realizar ação (hold)
-    if (justCompletedAction) {
-      e.preventDefault();
-      e.stopPropagation();
-      justCompletedAction = false;
-      return;
-    }
-    openBronzeModal(action.arenaId, action.id);
-  });
-  bronze.addEventListener("dragstart", (event) => {
-    if (!bronze.draggable) return;
-    event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
-  });
-  
-  // Hold 3s (HOLD_MS_CAPPED) para realizar ação direto do bay
-  let _bayPressPointerId = null;
-  const startPress = (e) => {
-    if (e && e.pointerId !== undefined) {
-      if (_bayPressPointerId != null) return;
-      _bayPressPointerId = e.pointerId;
-    }
-    const existing = bronze.dataset.timer;
-    if (existing) {
-      clearTimeout(Number(existing));
-      bronze.dataset.timer = "";
-    }
-    bronze.classList.add("is-pressing");
-    const timer = setTimeout(() => {
-      const planner = loadPlanner();
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      
-      const targetDayOffset = 0;
-      let dayPickerUpdated = false;
-      if (plannerDayOffset !== targetDayOffset) {
-        plannerDayOffset = targetDayOffset;
-        const dayPicker = document.querySelector(".daypicker");
-        if (dayPicker) {
-          dayPicker.value = targetDayOffset;
-          dayPickerUpdated = true;
-        }
-        updateDayLabel();
-      }
-      
-      const updated = planner.bronzeActions.map((item) => {
-        if (item.id !== action.id) return item;
-        const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
-        const completedAt = now.toISOString();
-        return {
-          ...item,
-          status: "done",
-          completedAt,
-          completedHistory: [...history, completedAt],
-          scheduledHour: currentHour,
-          scheduledMinute: currentMinute,
-          scheduledDayOffset: targetDayOffset,
-        };
-      });
-      const allActionsPreserved = updated.length === planner.bronzeActions.length;
-      if (!allActionsPreserved) {
-        console.warn('[Planner] Ações perdidas ao completar do bay', {
-          antes: planner.bronzeActions.length,
-          depois: updated.length
-        });
-      }
-      savePlanner({ ...planner, bronzeActions: updated });
-      updateArenaCountsForBronze(action.arenaId, 1);
-      updateGlobalArenaProgress(action.arenaId, updated);
-      if (dayPickerUpdated) {
-        requestAnimationFrame(() => renderPlanner());
-      } else {
-        renderPlanner();
-      }
-      renderArenas();
-      checkMissionProgress();
-      bronze.classList.remove("is-pressing");
-      justCompletedAction = true;
-      setTimeout(() => { justCompletedAction = false; }, 100);
-    }, HOLD_MS_CAPPED);
-    bronze.dataset.timer = String(timer);
-  };
-  
-  const endPress = (e) => {
-    if (e && e.pointerId !== undefined && _bayPressPointerId != null && e.pointerId !== _bayPressPointerId) return;
-    if (e && e.pointerId !== undefined) _bayPressPointerId = null;
-    const timer = bronze.dataset.timer;
-    if (timer) clearTimeout(Number(timer));
-    bronze.classList.remove("is-pressing");
-    bronze.dataset.timer = "";
-  };
-  
-  bronze.style.touchAction = "none";
-  bronze.addEventListener("pointerdown", startPress);
-  bronze.addEventListener("pointerup", endPress);
-  bronze.addEventListener("pointerleave", endPress);
-  bronze.addEventListener("pointercancel", endPress);
-  if (!action.atemporal && weeklyTarget > 1) {
-    const badge = document.createElement("div");
-    badge.className = "bronze-count";
-    badge.textContent = `x${remaining}`;
-    bronze.appendChild(badge);
-  }
-  return bronze;
+  // Usar a buildBronzeBlock completa que tem drag e hold perfeitos
+  const block = buildBronzeBlock(action, {});
+  return block;
 };
 
 const renderWeekView = () => {
@@ -2629,8 +2588,12 @@ const buildBronzeBlock = (action, options = {}) => {
     block.classList.remove("is-scheduled");
   }
   
-  // Permitir drag para backlog, scheduled E done (usuário pode reorganizar ações completas)
-  block.draggable = action.status === "backlog" || action.status === "scheduled" || action.status === "done";
+  // Permitir drag para ações scheduled (grid) E backlog (bay area)
+  const isGridAction = action.status === "scheduled";
+  const isBayAction = action.status === "backlog";
+  
+  block.draggable = isGridAction || isBayAction;
+  block.style.cursor = (isGridAction || isBayAction) ? "grab" : "default";
   const icon = document.createElement("i");
   icon.className = "bronze-icon";
   icon.setAttribute("data-lucide", action.icon || "circle");
@@ -2676,11 +2639,11 @@ const buildBronzeBlock = (action, options = {}) => {
     
     block.classList.add("is-pressing");
     
-    // Habilitar drag IMEDIATAMENTE para todas as ações (backlog, scheduled, done)
-    // Não esperar 500ms - usuário pode arrastar assim que tocar
-    const planner = loadPlanner();
-    const currentAction = planner.bronzeActions.find((a) => a.id === action.id);
-    if (currentAction && (currentAction.status === "backlog" || currentAction.status === "scheduled" || currentAction.status === "done")) {
+    // Habilitar drag para ações scheduled (grid) E backlog (bay area)
+    const isGridAction = action.status === "scheduled";
+    const isBayAction = action.status === "backlog";
+    
+    if (isGridAction || isBayAction) {
       block.dataset.dragEnabled = "true";
       block.draggable = true;
       block.style.cursor = "grab";
@@ -2881,25 +2844,38 @@ const buildBronzeBlock = (action, options = {}) => {
     block.classList.remove("is-pressing");
     
     // Se não completou nem arrastou, resetar estado
-    // Manter draggable para backlog, scheduled E done
-    if (block.dataset.dragEnabled !== "true") {
-      if (action.status === "backlog" || action.status === "scheduled" || action.status === "done") {
-        // Manter draggable para todas as ações
-        block.draggable = true;
-      } else {
-        block.draggable = false;
-        block.style.cursor = "";
-      }
+    // Permitir drag para ações scheduled (grid) E backlog (bay area)
+    const isGridAction = action.status === "scheduled";
+    const isBayAction = action.status === "backlog";
+    
+    if (isGridAction || isBayAction) {
+      block.draggable = true;
+      block.style.cursor = "grab";
+    } else {
+      block.draggable = false;
+      block.style.cursor = "default";
     }
     block.dataset.dragEnabled = "false";
   };
   
   // Adicionar dragstart handler - cancelar timer de completar quando drag inicia
   const handleDragStart = (event) => {
-    // Permitir drag para backlog, scheduled E done
-    if (action.status === "backlog" || action.status === "scheduled" || action.status === "done") {
+    // Permitir drag APENAS para ações scheduled (grid) ou backlog (bay)
+    const isGridAction = action.status === "scheduled";
+    const isBayAction = action.status === "backlog";
+    
+    if (isGridAction || isBayAction) {
       const dragEnabled = block.dataset.dragEnabled === "true" || block.draggable;
       if (dragEnabled) {
+        // Adicionar classe de dragging para efeito visual
+        block.classList.add("dragging");
+        
+        // Adicionar classe ao bronze-list para efeito magnético
+        const bronzeList = block.closest('.bronze-list');
+        if (bronzeList) {
+          bronzeList.classList.add("dragging-over");
+        }
+        
         // Cancelar timer de completar quando drag inicia
         const completeTimer = block.dataset.completeTimer;
         if (completeTimer) {
@@ -2908,9 +2884,18 @@ const buildBronzeBlock = (action, options = {}) => {
         }
         event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
         endPress(); // Limpar timers ao iniciar drag
+        
+        // Remover classes quando drag terminar
+        setTimeout(() => {
+          block.classList.remove("dragging");
+          if (bronzeList) {
+            bronzeList.classList.remove("dragging-over");
+          }
+        }, 1000);
+        
         // Resetar cursor após drag
         setTimeout(() => {
-          block.style.cursor = "";
+          block.style.cursor = (action.status === "scheduled" || action.status === "backlog") ? "grab" : "default";
           block.dataset.dragEnabled = "false";
         }, 100);
       } else {
@@ -2918,6 +2903,7 @@ const buildBronzeBlock = (action, options = {}) => {
         event.preventDefault();
       }
     } else {
+      // Ações done não podem ser arrastadas
       event.preventDefault();
     }
   };
@@ -2959,6 +2945,7 @@ const buildBronzeBlock = (action, options = {}) => {
 
 const createPlannerActionFromArena = (arena) => {
   const planner = loadPlanner();
+  // Criar bronze action (sistema unificado)
   const action = {
     id: crypto.randomUUID(),
     title: arena.title || "Acao",
@@ -2966,7 +2953,7 @@ const createPlannerActionFromArena = (arena) => {
     arenaId: arena.id,
     createdDate: new Date().toISOString(),
   };
-  planner.pills.push(action);
+  planner.bronzeActions.push(action);
   savePlanner(planner);
   renderPlanner();
 };
@@ -2986,10 +2973,9 @@ const saveArenas = (arenas) => {
   localStorage.setItem(ARENAS_KEY, JSON.stringify(arenas));
 };
 
-const updateGlobalArenaProgress = (arenaId, pills) => {
+const updateGlobalArenaProgress = (arenaId, bronzeActions) => {
   if (!arenaId) return;
-  const planner = loadPlanner();
-  const allActions = planner.bronzeActions.filter((action) => action.arenaId === arenaId);
+  const allActions = bronzeActions.filter((action) => action.arenaId === arenaId);
   const weightFor = (action) => {
     if (action.atemporal) return 1;
     if (typeof action.weeklyTarget === "number" && action.weeklyTarget > 0) return action.weeklyTarget;
@@ -3195,6 +3181,7 @@ const renderArenas = () => {
   const arenaList = document.getElementById("arena-list");
   if (!arenaList) return;
   const arenas = loadArenas();
+  console.log('[DEBUG] Renderizando arenas:', arenas.length, arenas);
   arenaList.innerHTML = "";
   if (arenas.length === 0) {
     const empty = document.createElement("div");
@@ -3204,28 +3191,26 @@ const renderArenas = () => {
     return;
   }
   arenas.forEach((arena) => {
-    arenaList.appendChild(buildArenaCard(arena));
+    console.log('[DEBUG] Criando card para arena:', arena.title, arena);
+    const card = buildArenaCard(arena);
+    arenaList.appendChild(card);
   });
+  if (window.lucide) window.lucide.createIcons();
 };
 
 const dateOnly = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-const getPillDate = (pill) => {
-  if (pill.scheduledDate) return dateOnly(new Date(pill.scheduledDate));
-  if (pill.createdDate) return dateOnly(new Date(pill.createdDate));
-  return dateOnly(new Date());
-};
 
 const cleanupPlannerHistory = () => {
   const planner = loadPlanner();
   const today = dateOnly(new Date());
-  const filtered = planner.pills.filter((pill) => {
-    if (pill.status === "done") return true;
-    const pillDate = getPillDate(pill);
-    return pillDate >= today;
+  const filtered = planner.bronzeActions.filter((action) => {
+    if (action.status === "done") return true;
+    const actionDate = action.scheduledDate ? dateOnly(new Date(action.scheduledDate)) : dateOnly(new Date());
+    return actionDate >= today;
   });
-  if (filtered.length !== planner.pills.length) {
-    savePlanner({ ...planner, pills: filtered });
+  if (filtered.length !== planner.bronzeActions.length) {
+    savePlanner({ ...planner, bronzeActions: filtered });
   }
 };
 
@@ -3531,15 +3516,22 @@ const renderPlanner = () => {
     // Mostrar todas outras ações (backlog, scheduled para outros dias, etc.)
     return true;
   });
+  console.log('🔍 Total de ações no planner:', planner.bronzeActions.length);
+  console.log('🔍 Ações no grid:', actionsInGrid.size);
+  console.log('🔍 Backlog:', bronzeBacklog.length);
+  
   if (bronzeBacklog.length === 0) {
     const empty = document.createElement("div");
     empty.className = "backlog-empty";
     empty.textContent = "Sem acoes de bronze.";
     bronzeList.appendChild(empty);
   } else {
-    bronzeBacklog.forEach((action) => {
-      bronzeList.appendChild(buildBronzeElement(action));
-    });
+  bronzeBacklog.forEach((action) => {
+    console.log('🔍 Criando bronze para:', action.id, action.title);
+    const bronzeEl = buildBronzeElement(action);
+    console.log('🔍 Elemento criado:', bronzeEl);
+    bronzeList.appendChild(bronzeEl);
+  });
   }
 
   if (window.lucide) window.lucide.createIcons();
@@ -3555,92 +3547,19 @@ const renderPlanner = () => {
   arenaIds.forEach((arenaId) => updateGlobalArenaProgress(arenaId, planner.bronzeActions));
 };
 
-const buildPillElement = (pill, arenaTitle) => {
-  const pillEl = document.createElement("div");
-  pillEl.className = "pill";
-  pillEl.dataset.id = pill.id;
-  pillEl.draggable = pill.status === "backlog";
 
-  if (pill.status === "done") {
-    pillEl.classList.add("is-complete");
-  }
 
-  const title = document.createElement("div");
-  title.className = "pill-title";
-  title.textContent = pill.title ?? "Acao";
+// REMOVIDO - Agora usa buildBronzeBlock para tudo
+// const buildPillElement = (pill, arenaTitle) => {
+//   const block = buildBronzeBlock(pill, {});
+//   const meta = document.createElement("div");
+//   meta.className = "pill-meta";
+//   meta.textContent = pill.arenaId ? `Arena: ${arenaTitle}` : "Sem arena";
+//   block.appendChild(meta);
+//   return block;
+// };
 
-  const meta = document.createElement("div");
-  meta.className = "pill-meta";
-  meta.textContent = pill.arenaId ? `Arena: ${arenaTitle}` : "Sem arena";
-
-  pillEl.appendChild(title);
-  pillEl.appendChild(meta);
-
-  pillEl.addEventListener("dragstart", (event) => {
-    if (!pillEl.draggable) return;
-    event.dataTransfer?.setData("text/plain", pill.id);
-  });
-
-  attachLongPress(pillEl, pill);
-
-  return pillEl;
-};
-
-const attachLongPress = (pillEl, pill) => {
-  if (pill.status !== "scheduled") return;
-  let timer = null;
-  let released = false;
-  let _pillPressPointerId = null;
-
-  const startPress = (e) => {
-    if (e && e.pointerId !== undefined) {
-      if (_pillPressPointerId != null) return;
-      _pillPressPointerId = e.pointerId;
-    }
-    if (pill.status === "done") return;
-    released = false;
-    if (timer) clearTimeout(timer);
-    pillEl.classList.add("is-pressing");
-    timer = setTimeout(() => {
-      if (released) return;
-      pillEl.classList.remove("is-pressing");
-      markPillComplete(pill.id);
-      timer = null;
-    }, HOLD_MS_CAPPED);
-  };
-
-  const endPress = (e) => {
-    if (e && e.pointerId !== undefined && _pillPressPointerId != null && e.pointerId !== _pillPressPointerId) return;
-    if (e && e.pointerId !== undefined) _pillPressPointerId = null;
-    released = true;
-    pillEl.classList.remove("is-pressing");
-    if (timer) clearTimeout(timer);
-    timer = null;
-  };
-
-  pillEl.style.touchAction = "none";
-  pillEl.addEventListener("pointerdown", startPress);
-  pillEl.addEventListener("pointerup", endPress);
-  pillEl.addEventListener("pointerleave", endPress);
-  pillEl.addEventListener("pointercancel", endPress);
-};
-
-const markPillComplete = (pillId) => {
-  const planner = loadPlanner();
-  const updated = planner.pills.map((pill) => {
-    if (pill.id !== pillId) return pill;
-    return { ...pill, status: "done", completedAt: new Date().toISOString() };
-  });
-  const nextPlanner = { ...planner, pills: updated };
-  savePlanner(nextPlanner);
-
-  const completed = updated.find((pill) => pill.id === pillId);
-  if (completed?.arenaId) {
-    updateGlobalArenaProgress(completed.arenaId, updated);
-  }
-
-  renderPlanner();
-};
+// REMOVIDO - Sistema pills unificado em bronzeActions
 
 let navInitialized = false;
 
@@ -3763,9 +3682,66 @@ const saveDNA = (dna, options = {}) => {
   });
 };
 
+// Comando de emergência para reset de DNA (usar no console)
+window.resetDNAMigration = () => {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(V2_RESET_KEY);
+  cachedDNA = null;
+  console.log("[DNA] Reset completo! Recarregue a página.");
+  location.reload();
+};
+
+const migrateAssetIds = (dna) => {
+  const idMapping = {
+    "conexao": "consciencia",
+    "mente": "espaco-mental",
+    "verdade": "proposito",
+    "inspiracao": "projetos",
+    "amor": "conexoes",
+    "abundancia": "financas",
+    "autenticidade": "hobbies"
+  };
+  
+  let migrated = false;
+  dna.assets.forEach((asset) => {
+    if (idMapping[asset.id]) {
+      asset.id = idMapping[asset.id];
+      migrated = true;
+    }
+  });
+  
+  // Migrar profileSlots também
+  if (dna.profileSlots) {
+    const newProfileSlots = {};
+    Object.entries(dna.profileSlots).forEach(([oldSlotId, slotData]) => {
+      let newSlotId = oldSlotId;
+      Object.entries(idMapping).forEach(([oldId, newId]) => {
+        if (oldSlotId.startsWith(oldId + ".")) {
+          newSlotId = oldSlotId.replace(oldId + ".", newId + ".");
+          migrated = true;
+        }
+      });
+      newProfileSlots[newSlotId] = slotData;
+    });
+    if (migrated) {
+      dna.profileSlots = newProfileSlots;
+    }
+  }
+  
+  return migrated;
+};
+
 const seedDNAIfMissing = () => {
   const existing = getDNA();
-  if (existing && Array.isArray(existing.assets)) return existing;
+  if (existing && Array.isArray(existing.assets)) {
+    // Migrar IDs antigos para novos
+    const migrated = migrateAssetIds(existing);
+    if (migrated) {
+      saveDNA(existing, { skipSync: true });
+      console.log("[DNA] IDs migrados com sucesso!");
+    }
+    return existing;
+  }
   const seeded = buildDefaultDNA();
   saveDNA(seeded, { skipSync: true });
   return seeded;
@@ -3828,327 +3804,290 @@ const renderStatusFields = (dna, assetId) => {
 const renderTreeEditorSlots = (dna, assetId) => {
   const list = document.getElementById("tree-slot-list");
   if (!list) return;
-  const asset = getAssetFromDNA(dna, assetId);
+  
+  // Limpar lista
   list.innerHTML = "";
-  if (!asset) return;
-  const ensureTreeEditMode = () => {
-    const modal = document.getElementById("tree-edit-modal");
-    if (!modal) return false;
-    if (!modal.classList.contains("is-editing")) {
-      modal.classList.add("is-editing");
-    }
-    return true;
+  
+  // Usar o grid do CSS - não sobrescrever
+  const gridContainer = document.createElement("div");
+  gridContainer.className = "slot-list";
+  // Não aplicar style inline para não sobrescrever o CSS
+  
+  // Configuração simples
+  const slotConfigs = {
+    'consciencia': ['Lema', 'Crença 1', 'Crença 2', 'Crença 3'],
+    'mente': ['Filosofia', 'Lógica', 'Criatividade', 'Intuição'],
+    'espiritualidade': ['Sistema', 'Entidade 1', 'Entidade 2', 'Entidade 3'],
+    'proposito': ['Missão', 'MBTI', 'Signo', 'Trait 1', 'Trait 2', 'Trait 3'],
+    'projetos': ['Projeto 1', 'Projeto 2', 'Projeto 3', 'Inspiração 1', 'Inspiração 2', 'Inspiração 3'],
+    'conexoes': ['Conexão 1', 'Conexão 2', 'Conexão 3', 'Conexão 4', 'Conexão 5', 'Conexão 6'],
+    'trabalho': ['Classe 1', 'Classe 2', 'Proficiências', 'Experiências'],
+    'hobbies': ['Hobby 1', 'Hobby 2', 'Hobby 3', 'Hobby 4', 'Hobby 5', 'Hobby 6'],
+    'abundancia': ['Renda', 'Gasto', 'Patrimônio', 'Ativo 1', 'Ativo 2', 'Ativo 3'],
+    'fisico': ['Idade', 'Gênero', 'Peso', 'Altura', 'Forma Física']
   };
-  const slots = getDossierSlots(assetId);
-  asset.profileSlots = asset.profileSlots || {};
-  const getSlotDisplayText = (slot) => {
-    const data = asset.profileSlots?.[slot.id] || {};
-    const fields = slot.fields || [{ key: "value" }];
-    const key = fields[0]?.key || "value";
-    return data[key] || "";
-  };
-  const sliderModal = document.getElementById("slider-modal");
-  const sliderTitle = document.getElementById("slider-title");
-  const sliderValue = document.getElementById("slider-value");
-  const sliderInput = document.getElementById("slider-input");
-  const sliderSave = document.getElementById("slider-save");
-  const sliderClose = document.getElementById("slider-close");
-  let sliderOnSave = null;
-  const openSlider = (config) => {
-    if (!sliderModal || !sliderInput || !sliderValue) return;
-    sliderInput.min = String(config.min ?? 0);
-    sliderInput.max = String(config.max ?? 100);
-    sliderInput.step = String(config.step ?? 1);
-    sliderInput.value = String(config.value ?? 0);
-    sliderValue.textContent = `${config.value ?? 0}${config.unit || ""}`;
-    if (sliderTitle) sliderTitle.textContent = config.label || "Ajustar";
-    sliderOnSave = config.onSave;
-    sliderModal.classList.add("is-open");
-  };
-  if (sliderInput) {
-    sliderInput.addEventListener("input", () => {
-      const unit = sliderInput.dataset.unit || "";
-      sliderValue.textContent = `${sliderInput.value}${unit}`;
-    });
-  }
-  if (sliderSave) {
-    sliderSave.addEventListener("click", () => {
-      if (sliderOnSave) sliderOnSave(Number(sliderInput.value || 0));
-      if (sliderModal) sliderModal.classList.remove("is-open");
-    });
-  }
-  if (sliderClose && sliderModal) {
-    sliderClose.addEventListener("click", () => sliderModal.classList.remove("is-open"));
-  }
-  slots.forEach((slot, index) => {
-    const slotEl = document.createElement("div");
-    slotEl.className = `profile-slot profile-slot--${slot.type} slot-animate`;
-    slotEl.style.animationDelay = `${index * 40}ms`;
-    slotEl.dataset.slotId = slot.id;
-    const label = document.createElement("div");
-    label.className = "slot-label";
-    label.textContent = slot.label;
-    slotEl.appendChild(label);
-
-    const valueEl = document.createElement("div");
-    valueEl.className = "slot-value";
-    valueEl.textContent = getSlotDisplayText(slot) || "ÔÇö";
+  
+  const configs = slotConfigs[assetId] || [];
+  
+  // Criar slots usando o grid do CSS
+  configs.forEach((label, index) => {
+    const slotEl = document.createElement('div');
+    slotEl.className = 'profile-slot';
+    slotEl.style.cssText = 'border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 6px; background: rgba(16, 16, 16, 0.6); padding: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center;';
+    
+    const labelEl = document.createElement('div');
+    labelEl.style.cssText = 'font-size: 9px; color: #999; margin-bottom: 2px; text-transform: uppercase; text-align: center;';
+    labelEl.textContent = label;
+    
+    const valueEl = document.createElement('div');
+    valueEl.style.cssText = 'font-size: 11px; color: #f7f7f7; text-align: center;';
+    valueEl.textContent = 'Valor ' + (index + 1);
+    
+    slotEl.appendChild(labelEl);
     slotEl.appendChild(valueEl);
-    const fields = slot.fields || [{ key: "value", label: slot.label }];
-    const isPhotoSlot =
-      slot.type.startsWith("square") &&
-      (slot.label.toLowerCase().includes("foto") ||
-        slot.label.toLowerCase().includes("logo") ||
-        (slot.fields || []).some((field) => ["foto", "logo"].includes(field.key)));
-
-    if (isPhotoSlot) {
-      const textFields = fields.filter((f) => !["foto", "logo"].includes(f.key));
-      const topKey = textFields[0]?.key;
-      const bottomKey = textFields[1]?.key;
-      if (topKey) {
-        const topValue = asset.profileSlots?.[slot.id]?.[topKey];
-        label.textContent = topValue ? String(topValue) : slot.label;
-      }
-      if (bottomKey) {
-        const bottomValue = asset.profileSlots?.[slot.id]?.[bottomKey];
-        const subtitleEl = document.createElement("div");
-        subtitleEl.className = "slot-subtitle";
-        subtitleEl.textContent = bottomValue ? String(bottomValue) : "";
-        slotEl.appendChild(subtitleEl);
-      }
-    } else {
-      const secondaryField = fields.find(
-        (field, index) => index > 0 && !["foto", "logo"].includes(field.key),
-      );
-      if (secondaryField) {
-        const secondaryValue = asset.profileSlots?.[slot.id]?.[secondaryField.key];
-        const subtitleEl = document.createElement("div");
-        subtitleEl.className = "slot-subtitle";
-        subtitleEl.textContent = secondaryValue ? String(secondaryValue) : "";
-        slotEl.appendChild(subtitleEl);
-      }
-    }
-
-    const iconName = SLOT_ICON_BY_ID[slot.id];
-    if (iconName) {
-      const icon = document.createElement("i");
-      icon.className = "slot-icon";
-      icon.setAttribute("data-lucide", iconName);
-      slotEl.appendChild(icon);
-    }
-
-    if (isPhotoSlot) {
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = "image/*";
-      fileInput.className = "hidden-file";
-      const ensureImageEl = () => {
-        let img = valueEl.querySelector("img");
-        if (!img) {
-          img = document.createElement("img");
-          img.className = "slot-image";
-          img.alt = slot.label || "Imagem do slot";
-          valueEl.appendChild(img);
-        }
-        return img;
-      };
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          asset.profileSlots[slot.id] = {
-            ...(asset.profileSlots[slot.id] || {}),
-            image: reader.result,
-          };
-          valueEl.classList.add("has-image");
-          const img = ensureImageEl();
-          img.src = String(reader.result || "");
-          valueEl.textContent = "";
-          dna.lastUpdatedAt = new Date().toISOString();
-          saveDNA(dna);
-        };
-        reader.readAsDataURL(file);
-      });
-      slotEl.appendChild(fileInput);
-      const existingImage = asset.profileSlots[slot.id]?.image;
-      if (existingImage) {
-        valueEl.classList.add("has-image");
-        const img = ensureImageEl();
-        img.src = String(existingImage || "");
-        valueEl.textContent = "";
-      }
-      slotEl.addEventListener("click", (event) => {
-        if (!event.target.closest(".slot-value")) return;
-        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
-        fileInput.click();
-      });
-    }
-
-    const subtitle = slotEl.querySelector(".slot-subtitle");
-    const optionsBySlot = {
-      "verdade.mbti": [
-        "INTJ",
-        "INTP",
-        "ENTJ",
-        "ENTP",
-        "INFJ",
-        "INFP",
-        "ENFJ",
-        "ENFP",
-        "ISTJ",
-        "ISFJ",
-        "ESTJ",
-        "ESFJ",
-        "ISTP",
-        "ISFP",
-        "ESTP",
-        "ESFP",
-      ],
-      "verdade.signo": [
-        "Aries",
-        "Touro",
-        "Gemeos",
-        "Cancer",
-        "Leao",
-        "Virgem",
-        "Libra",
-        "Escorpiao",
-        "Sagitario",
-        "Capricornio",
-        "Aquario",
-        "Peixes",
-      ],
-    };
-
-    const applyFieldUpdate = (field, value) => {
-      asset.profileSlots[slot.id] = {
-        ...(asset.profileSlots[slot.id] || {}),
-        [field.key]: value,
-      };
-      valueEl.textContent = getSlotDisplayText(slot) || "ÔÇö";
-      const secondary = secondaryField?.key;
-      if (subtitle) {
-        subtitle.textContent =
-          secondary && asset.profileSlots?.[slot.id]?.[secondary]
-            ? String(asset.profileSlots[slot.id][secondary])
-            : "";
-      }
-      dna.lastUpdatedAt = new Date().toISOString();
-      saveDNA(dna);
-      renderSocial();
-      if (slot.id.endsWith(".lema")) {
-        const profile = loadProfile();
-        saveProfile({
-          ...profile,
-          lemaUpdatedAt: new Date().toISOString(),
-          lemaUpdatedAssetId: asset.id,
-        });
-      }
-      checkMissionProgress();
-    };
-
-    const stopSlotPropagation = (event) => {
-      event.stopPropagation();
-    };
-
-    slotEl.addEventListener("pointerdown", (event) => {
-      if (event.target.closest("input, textarea, select")) {
-        event.stopPropagation();
-      }
-    });
-
-    fields.forEach((field) => {
-      if (["foto", "logo"].includes(field.key)) return;
-      const slotOptions = optionsBySlot[slot.id];
-      if (slotOptions && field.key === "value") {
-        const select = document.createElement("select");
-        select.className = "profile-input";
-        const empty = document.createElement("option");
-        empty.value = "";
-        empty.textContent = field.label || "Selecionar";
-        select.appendChild(empty);
-        slotOptions.forEach((opt) => {
-          const option = document.createElement("option");
-          option.value = opt;
-          option.textContent = opt;
-          select.appendChild(option);
-        });
-        select.value = asset.profileSlots[slot.id]?.[field.key] || "";
-        select.addEventListener("click", stopSlotPropagation);
-        select.addEventListener("pointerdown", stopSlotPropagation);
-        select.addEventListener("change", () => applyFieldUpdate(field, select.value));
-        slotEl.appendChild(select);
-        return;
-      }
-      const input = document.createElement("input");
-      input.className = "profile-input";
-      input.placeholder = field.label;
-      input.value = asset.profileSlots[slot.id]?.[field.key] || "";
-      input.addEventListener("click", stopSlotPropagation);
-      input.addEventListener("pointerdown", stopSlotPropagation);
-      if (field.slider) {
-        input.readOnly = true;
-        input.addEventListener("click", () => {
-          if (!slotEl.closest("#tree-edit-modal.is-editing")) {
-            if (!ensureTreeEditMode()) return;
-          }
-          if (!sliderInput) return;
-          sliderInput.dataset.unit = field.slider.unit || "";
-          openSlider({
-            label: field.label,
-            min: field.slider.min,
-            max: field.slider.max,
-            step: field.slider.step,
-            unit: field.slider.unit || "",
-            value: Number(input.value || field.slider.min || 0),
-            onSave: (nextValue) => {
-              input.value = String(nextValue);
-              applyFieldUpdate(field, String(nextValue));
-              if (slot.id === "verdade.nascimento") {
-                const dia = Number(
-                  asset.profileSlots?.["verdade.nascimento"]?.dia || 0,
-                );
-                const mes = Number(
-                  asset.profileSlots?.["verdade.nascimento"]?.mes || 0,
-                );
-                const signo = getZodiacSign(dia, mes);
-                if (signo) {
-                  asset.profileSlots["verdade.signo"] = {
-                    ...(asset.profileSlots["verdade.signo"] || {}),
-                    value: signo,
-                  };
-                }
-              }
-              renderTreeEditorSlots(dna, assetId);
-            },
-          });
-        });
-      }
-      input.addEventListener("input", () => applyFieldUpdate(field, input.value));
-      input.addEventListener("change", () => applyFieldUpdate(field, input.value));
-      slotEl.appendChild(input);
-    });
-
-
-    slotEl.addEventListener("click", (event) => {
-      if (isPhotoSlot) {
-        if (!event.target.closest(".slot-value")) return;
-        if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
-        const file = slotEl.querySelector("input[type='file']");
-        if (file) file.click();
-        return;
-      }
-      if (!slotEl.closest("#tree-edit-modal.is-editing")) {
-        ensureTreeEditMode();
-      }
-      const focusable = slotEl.querySelector("input.profile-input");
-      if (focusable) focusable.focus();
-    });
-
-    list.appendChild(slotEl);
+    gridContainer.appendChild(slotEl);
   });
+  
+  list.appendChild(gridContainer);
 };
+
+// FUNÇÕES AUXILIARES DO SLIDER (TEMPORARIAMENTE COMENTADAS)
+/*
+const sliderModal = document.getElementById("slider-modal");
+const sliderTitle = document.getElementById("slider-title");
+const sliderValue = document.getElementById("slider-value");
+const sliderInput = document.getElementById("slider-input");
+const sliderSave = document.getElementById("slider-save");
+const sliderClose = document.getElementById("slider-close");
+let sliderOnSave = null;
+const openSlider = (config) => {
+  if (!sliderModal || !sliderInput || !sliderValue) return;
+  sliderInput.min = String(config.min ?? 0);
+  sliderInput.max = String(config.max ?? 100);
+  sliderInput.step = String(config.step ?? 1);
+  sliderInput.value = String(config.value ?? 0);
+  sliderValue.textContent = `${config.value ?? 0}${config.unit || ""}`;
+  if (sliderTitle) sliderTitle.textContent = config.label || "Ajustar";
+  sliderOnSave = config.onSave;
+  sliderModal.classList.add("is-open");
+};
+if (sliderInput) {
+  sliderInput.addEventListener("input", () => {
+    const unit = sliderInput.dataset.unit || "";
+    sliderValue.textContent = `${sliderInput.value}${unit}`;
+  });
+}
+if (sliderSave) {
+  sliderSave.addEventListener("click", () => {
+    if (sliderOnSave) sliderOnSave(Number(sliderInput.value || 0));
+    if (sliderModal) sliderModal.classList.remove("is-open");
+  });
+}
+if (sliderClose) {
+  sliderClose.addEventListener("click", () => {
+    if (sliderModal) sliderModal.classList.remove("is-open");
+  });
+}
+*/;
+
+// CÓDIGO ANTIGO COMENTADO - SERÁ REIMPLEMENTADO DEPOIS
+/*
+CÓDIGO DE RENDERIZAÇÃO DE SLOTS TEMPORARIAMENTE DESABILITADO
+SERÁ REIMPLEMENTADO COM PADRÕES CSS UNIFICADOS
+
+const getDossierSlots = (assetId) => {
+  const base = PROTOCOL_SLOTS[assetId] || [];
+  const lemaId = `${assetId}.lema`;
+  const lemaSlot = base.find((slot) => slot.id === lemaId);
+  const withoutLema = base.filter((slot) => slot.id !== lemaId);
+  if (assetId !== "consciencia") {
+    return withoutLema;
+  }
+  return lemaSlot
+    ? [lemaSlot, ...withoutLema]
+    : [{ id: lemaId, label: "Lema", type: "rect-wide" }, ...withoutLema];
+};
+
+const getSlotOptions = () => {
+  const options = [];
+  Object.entries(PROTOCOL_SLOTS).forEach(([assetId, slots]) => {
+    slots.forEach((slot) => {
+      options.push({
+        assetId,
+        slotId: slot.id,
+        label: slot.label,
+        type: slot.type,
+        fields: slot.fields,
+      });
+    });
+  });
+  return options;
+};
+*/
+
+// SEGUNDA OCORRÊNCIA DUPLICADA REMOVIDA
+// FUNÇÕES AUXILIARES DO SLIDER JÁ EXISTEM MAIS ACIMA
+
+// Resto do código antigo comentado...
+/*
+CÓDIGO DE RENDERIZAÇÃO COMPLETO DE SLOTS SERÁ REIMPLEMENTADO
+*/
+
+// CÓDIGO QUEBRADO REMOVIDO
+// select.value = asset.profileSlots[slot.id]?.[field.key] || "";
+// select.addEventListener("click", stopSlotPropagation);
+// select.addEventListener("pointerdown", stopSlotPropagation);
+// select.addEventListener("change", () => applyFieldUpdate(field, select.value));
+// slotEl.appendChild(select);
+// return;
+
+// MAIS CÓDIGO QUEBRADO REMOVIDO
+/*
+const input = document.createElement("input");
+input.className = "profile-input";
+input.placeholder = field.label;
+input.value = asset.profileSlots[slot.id]?.[field.key] || "";
+input.addEventListener("click", stopSlotPropagation);
+input.addEventListener("pointerdown", stopSlotPropagation);
+if (field.slider) {
+  input.readOnly = true;
+  input.addEventListener("click", () => {
+    if (!slotEl.closest("#tree-edit-modal.is-editing")) {
+      if (!ensureTreeEditMode()) return;
+    }
+    if (!sliderInput) return;
+    if (sliderOnSave) sliderOnSave(Number(sliderInput.value || 0));
+    if (sliderModal) sliderModal.classList.remove("is-open");
+  });
+}
+input.addEventListener("change", () => applyFieldUpdate(field, input.value));
+slotEl.appendChild(input);
+*/
+
+// MAIS CÓDIGO QUEBRADO REMOVIDO
+/*
+if (!slotEl.closest("#tree-edit-modal.is-editing")) {
+  if (!ensureTreeEditMode()) return;
+}
+if (!sliderInput) return;
+sliderInput.dataset.unit = field.slider.unit || "";
+openSlider({
+  label: field.label,
+  min: field.slider.min,
+  max: field.slider.max,
+  step: field.slider.step,
+  value: Number(asset.profileSlots[slot.id]?.[field.key] || 0),
+  unit: field.slider.unit,
+  onSave: (value) => applyFieldUpdate(field, value),
+});
+*/
+
+// MAIS CÓDIGO QUEBRADO REMOVIDO
+/*
+unit: field.slider.unit || "",
+value: Number(input.value || field.slider.min || 0),
+onSave: (nextValue) => {
+  input.value = String(nextValue);
+  applyFieldUpdate(field, String(nextValue));
+  if (slot.id === "verdade.nascimento") {
+    const dia = Number(
+      asset.profileSlots?.["verdade.nascimento"]?.dia || 0,
+    );
+    const mes = Number(
+      asset.profileSlots?.["verdade.nascimento"]?.mes || 0,
+    );
+    // Calcular signo baseado em dia/mês
+    const signos = [
+      { nome: "Áries", inicio: [3, 21], fim: [4, 19] },
+      { nome: "Touro", inicio: [4, 20], fim: [5, 20] },
+      { nome: "Gêmeos", inicio: [5, 21], fim: [6, 20] },
+      { nome: "Câncer", inicio: [6, 21], fim: [7, 22] },
+      { nome: "Leão", inicio: [7, 23], fim: [8, 22] },
+      { nome: "Virgem", inicio: [8, 23], fim: [9, 22] },
+      { nome: "Libra", inicio: [9, 23], fim: [10, 22] },
+      { nome: "Escorpião", inicio: [10, 23], fim: [11, 21] },
+      { nome: "Sagitário", inicio: [11, 22], fim: [12, 21] },
+      { nome: "Capricórnio", inicio: [12, 22], fim: [1, 19] },
+      { nome: "Aquário", inicio: [1, 20], fim: [2, 18] },
+      { nome: "Peixes", inicio: [2, 19], fim: [3, 20] },
+    ];
+    let signoEncontrado = "Peixes";
+    for (const signo of signos) {
+      const [inicioMes, inicioDia] = signo.inicio;
+      const [fimMes, fimDia] = signo.fim;
+      if (
+        (mes === inicioMes && dia >= inicioDia) ||
+        (mes === fimMes && dia <= fimDia) ||
+        (inicioMes > fimMes && (mes > inicioMes || mes < fimMes))
+      ) {
+        signoEncontrado = signo.nome;
+        break;
+      }
+    }
+    applyFieldUpdate(
+      { key: "signo", label: "Signo" },
+      signoEncontrado,
+    );
+  }
+},
+});
+*/
+
+// MAIS CÓDIGO QUEBRADO REMOVIDO
+/*
+asset.profileSlots?.["verdade.nascimento"]?.mes || 0,
+);
+const signo = getZodiacSign(dia, mes);
+if (signo) {
+  asset.profileSlots["verdade.signo"] = {
+    ...(asset.profileSlots["verdade.signo"] || {}),
+    value: signo,
+  };
+}
+}
+*/
+
+// MAIS CÓDIGO QUEBRADO REMOVIDO
+/*
+input.addEventListener("change", () => applyFieldUpdate(field, input.value));
+slotEl.appendChild(input);
+});
+*/
+
+// MAIS CÓDIGO QUEBRADO REMOVIDO
+/*
+slotEl.addEventListener("click", (event) => {
+  if (isPhotoSlot) {
+    if (!event.target.closest(".slot-value")) return;
+    if (!slotEl.closest("#tree-edit-modal.is-editing")) return;
+    const file = slotEl.querySelector("input[type='file']");
+    if (file) file.click();
+    return;
+  }
+  if (!slotEl.closest("#tree-edit-modal.is-editing")) {
+    ensureTreeEditMode();
+  }
+  const focusable = slotEl.querySelector("input.profile-input");
+  if (focusable) {
+    focusable.focus();
+    focusable.select();
+  }
+});
+*/
+
+// MAIS CÓDIGO QUEBRADO REMOVIDO
+/*
+if (!slotEl.closest("#tree-edit-modal.is-editing")) {
+  ensureTreeEditMode();
+}
+const focusable = slotEl.querySelector("input.profile-input");
+if (focusable) focusable.focus();
+});
+
+list.appendChild(slotEl);
+});
+};
+*/
 
 const openTreeEditor = (assetId) => {
   const dna = seedDNAIfMissing();
@@ -4189,6 +4128,7 @@ const openTreeEditor = (assetId) => {
   renderTreeEditorSlots(dna, asset.id);
   if (linkedArenasList) {
     const arenas = loadArenas().filter((arena) => arena.assetId === asset.id);
+    console.log('[DEBUG] Arenas do ativo', asset.id, ':', arenas);
     linkedArenasList.innerHTML = "";
     if (arenas.length === 0) {
       const empty = document.createElement("div");
@@ -4220,7 +4160,7 @@ const openTreeEditor = (assetId) => {
       modal.classList.remove("is-editing");
       const lemaSlot = `${asset.id}.lema`;
       const lemaValue = asset?.profileSlots?.[lemaSlot]?.value;
-      if (lemaValue && asset.id === "conexao") {
+      if (lemaValue && asset.id === "consciencia") {
         const profile = loadProfile();
         const updated = { ...profile, banner: lemaValue };
         saveProfile(updated);
@@ -4352,7 +4292,9 @@ const closeArenaModal = () => {
 };
 
 const openArenaDossier = (arenaId) => {
+  console.log('[DEBUG] Abrindo arena dossier para arena:', arenaId);
   const modal = document.getElementById("arena-dossier");
+  console.log('[DEBUG] Modal arena-dossier encontrado:', !!modal);
   const title = document.getElementById("arena-dossier-title");
   const progress = document.getElementById("arena-dossier-progress");
   const macro = document.getElementById("arena-dossier-macro");
@@ -4366,7 +4308,13 @@ const openArenaDossier = (arenaId) => {
   const assetSelect = document.getElementById("arena-dossier-asset-select");
   const iconGrid = document.getElementById("arena-dossier-icon-grid");
   
-  if (!modal || !title || !progress || !macro || !bronzeList) return;
+  if (!modal || !title || !progress || !macro || !bronzeList) {
+    console.log('[DEBUG] Elementos faltando no modal');
+    return;
+  }
+  
+  console.log('[DEBUG] Todos os elementos encontrados, abrindo modal...');
+  modal.classList.add("is-open");
   
   // Sair do modo de edição se estiver
   modal.classList.remove("is-editing", "is-icon-editing");
@@ -4379,8 +4327,14 @@ const openArenaDossier = (arenaId) => {
   if (iconGrid) iconGrid.style.display = "none";
   
   const arenas = loadArenas();
+  console.log('[DEBUG] Arenas carregadas:', arenas.length);
   const arena = arenas.find((item) => item.id === arenaId);
-  if (!arena) return;
+  console.log('[DEBUG] Arena encontrada:', !!arena, arena);
+  if (!arena) {
+    console.log('[DEBUG] Arena não encontrada, criando nova');
+    return;
+  }
+  
   title.textContent = arena.title || "Arena";
   const completionValue = Number(arena.completion || 0);
   if (arena.targetCount) {
@@ -4396,163 +4350,264 @@ const openArenaDossier = (arenaId) => {
     const iconName = arena.icon || ICON_BY_ID[arena.assetId] || "circle";
     logo.innerHTML = `<i data-lucide="${iconName}"></i>`;
     modal.dataset.icon = arena.icon || "";
+    
+    // Tornar logo clicável para selecionar ícone
+    logo.style.cursor = "pointer";
+    logo.addEventListener("click", (event) => {
+      event.stopPropagation();
+      
+      // Só mostrar grade se estiver em modo edição
+      if (!modal.classList.contains("is-editing")) return;
+      
+      console.log('[DEBUG] Logo clicado, mostrando grade de ícones');
+      
+      // Toggle da grade de ícones
+      if (iconGrid) {
+        const isVisible = iconGrid.style.display === "grid";
+        iconGrid.style.display = isVisible ? "none" : "grid";
+        
+        if (!isVisible && iconGrid.innerHTML === "") {
+          // Preencher grade se estiver vazia
+          const availableIcons = BRONZE_ICONS || ['circle', 'star', 'heart', 'shield', 'sword', 'crown'];
+          availableIcons.forEach(iconName => {
+            const option = document.createElement("button");
+            option.type = "button";
+            option.className = "icon-option";
+            if (iconName === (modal.dataset.icon || "circle")) option.classList.add("is-selected");
+            option.dataset.icon = iconName;
+            const icon = document.createElement("i");
+            icon.setAttribute("data-lucide", iconName);
+            option.appendChild(icon);
+            option.addEventListener("click", () => {
+              iconGrid.querySelectorAll(".icon-option").forEach(el => el.classList.remove("is-selected"));
+              option.classList.add("is-selected");
+              modal.dataset.icon = iconName;
+              // Atualizar logo
+              logo.innerHTML = `<i data-lucide="${iconName}"></i>`;
+              if (window.lucide) window.lucide.createIcons();
+            });
+            iconGrid.appendChild(option);
+          });
+          
+          if (window.lucide) window.lucide.createIcons();
+        }
+      }
+    });
+    
     if (window.lucide) window.lucide.createIcons();
   }
   
+  console.log('[DEBUG] Modal configurado, renderizando ações...');
   // Resetar botões de edição
   const editBtn = document.getElementById("arena-dossier-edit-meta");
-  const okBtn = document.getElementById("arena-dossier-ok");
+  
+  // Adicionar evento de clique no botão editar
+  if (editBtn) {
+    editBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      console.log('[DEBUG] Botão editar clicado, entrando em modo edição');
+      
+      // Adicionar classe de edição ao modal
+      modal.classList.add("is-editing");
+      
+      // Mostrar inputs e esconder displays
+      if (titleInput) {
+        titleInput.value = arena.title || "";
+        titleInput.style.display = "block";
+      }
+      if (title) title.style.display = "none";
+      
+      if (descriptionInput) {
+        descriptionInput.value = arena.description || "";
+        descriptionInput.style.display = "block";
+      }
+      if (macro) macro.style.display = "none";
+      
+      // Mostrar select de ativo e esconder display
+      if (assetSelect) {
+        assetSelect.style.display = "block";
+        // Preencher com opções de ativos
+        assetSelect.innerHTML = "";
+        SEPHIROT.forEach(asset => {
+          const option = document.createElement("option");
+          option.value = asset.id;
+          option.textContent = asset.label;
+          if (asset.id === arena.assetId) option.selected = true;
+          assetSelect.appendChild(option);
+        });
+      }
+      if (asset) asset.style.display = "none";
+      
+      // Mostrar grade de ícones
+      if (iconGrid) {
+        iconGrid.style.display = "none"; // Escondido por padrão
+        iconGrid.innerHTML = "";
+        // Usar BRONZE_ICONS em vez de ICONS
+        const availableIcons = BRONZE_ICONS || ['circle', 'star', 'heart', 'shield', 'sword', 'crown'];
+        availableIcons.forEach(iconName => {
+          const option = document.createElement("button");
+          option.type = "button";
+          option.className = "icon-option";
+          if (iconName === (modal.dataset.icon || "circle")) option.classList.add("is-selected");
+          option.dataset.icon = iconName;
+          const icon = document.createElement("i");
+          icon.setAttribute("data-lucide", iconName);
+          option.appendChild(icon);
+          option.addEventListener("click", () => {
+            iconGrid.querySelectorAll(".icon-option").forEach(el => el.classList.remove("is-selected"));
+            option.classList.add("is-selected");
+            modal.dataset.icon = iconName;
+            // Atualizar logo
+            logo.innerHTML = `<i data-lucide="${iconName}"></i>`;
+            if (window.lucide) window.lucide.createIcons();
+          });
+          iconGrid.appendChild(option);
+        });
+      }
+      
+      // Mudar botões
+      if (editBtn) editBtn.style.display = "none";
+      
+      if (window.lucide) window.lucide.createIcons();
+      console.log('[DEBUG] Modo edição ativado');
+    });
+  }
+  
   if (editBtn) editBtn.style.display = "flex";
-  if (okBtn) okBtn.style.display = "none";
   if (progressFill) {
     progressFill.style.width = `${Math.min(100, Math.max(0, completionValue))}%`;
-  }
-  if (addBronzeBtn) {
-    addBronzeBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      openBronzeModal(arenaId);
-    });
   }
   bronzeList.innerHTML = "";
   const planner = loadPlanner();
   const actions = planner.bronzeActions.filter((action) => action.arenaId === arenaId);
+  console.log('[DEBUG] Ações encontradas para arena:', actions.length);
   if (actions.length === 0) {
     const empty = document.createElement("div");
     empty.className = "arena-empty";
     empty.textContent = "Sem acoes de bronze.";
     bronzeList.appendChild(empty);
   } else {
+    // Criar layout horizontal para ações bronze
+    const actionsContainer = document.createElement("div");
+    actionsContainer.className = "arena-actions-container";
+    actionsContainer.style.cssText = `
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 4px !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      padding: 4px !important;
+      min-height: 60px !important;
+      max-height: 60px !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      width: 100% !important;
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+      grid-template-columns: none !important;
+      grid-template-rows: none !important;
+      grid: none !important;
+    `;
+    
+    // Esconder scrollbar no WebKit (Chrome, Safari, Edge)
+    const style = document.createElement('style');
+    style.textContent = `
+      .arena-actions-container::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
     actions.forEach((action) => {
-      const item = document.createElement("div");
-      item.className = "bronze-item bronze-item-edit";
-      item.dataset.actionId = action.id;
-      if (action.serious) item.classList.add("serious");
+      // Criar quadrado simples sem editar/deletar
+      const actionSquare = document.createElement("div");
+      actionSquare.className = "arena-action-square";
+      actionSquare.style.cssText = `
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        min-height: 50px;
+        border-radius: 8px;
+        background: rgba(24, 18, 14, 0.9);
+        border: 1px solid rgba(182, 128, 74, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        flex-shrink: 0;
+      `;
       
-      const iconContainer = document.createElement("div");
-      iconContainer.className = "bronze-icon-container";
-      iconContainer.style.cursor = "pointer";
+      // Adicionar ícone
       const icon = document.createElement("i");
       icon.setAttribute("data-lucide", action.icon || "circle");
-      iconContainer.appendChild(icon);
+      icon.style.cssText = `
+        width: 20px;
+        height: 20px;
+        color: #e5c7a3;
+      `;
+      actionSquare.appendChild(icon);
       
-      const iconGrid = document.createElement("div");
-      iconGrid.className = "bronze-icon-grid bronze-item-icon-grid";
-      iconGrid.style.display = "none";
-      
-      const titleDisplay = document.createElement("div");
-      titleDisplay.className = "bronze-title-display";
-      titleDisplay.textContent = action.title || "Acao";
-      
-      const input = document.createElement("input");
-      input.className = "bronze-edit-input";
-      input.value = action.title || "Acao";
-      input.style.display = "none";
-      input.addEventListener("click", (event) => event.stopPropagation());
-      input.addEventListener("blur", () => {
-        const plannerState = loadPlanner();
-        const updated = plannerState.bronzeActions.map((itemAction) =>
-          itemAction.id === action.id ? { ...itemAction, title: input.value.trim() } : itemAction,
-        );
-        savePlanner({ ...plannerState, bronzeActions: updated });
-        renderPlanner();
-        openArenaDossier(arenaId);
+      // Hover effect
+      actionSquare.addEventListener("mouseenter", () => {
+        actionSquare.style.background = "rgba(182, 128, 74, 0.3)";
+        actionSquare.style.borderColor = "rgba(182, 128, 74, 0.8)";
       });
       
-      const editBtn = document.createElement("button");
-      editBtn.className = "bronze-edit-btn";
-      editBtn.type = "button";
-      editBtn.innerHTML = '<i data-lucide="pencil"></i>';
-      editBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const isEditing = item.classList.contains("is-editing");
-        if (!isEditing) {
-          item.classList.add("is-editing");
-          titleDisplay.style.display = "none";
-          input.style.display = "block";
-          deleteBtn.style.display = "flex";
-          input.focus();
-        } else {
-          item.classList.remove("is-editing");
-          titleDisplay.style.display = "block";
-          input.style.display = "none";
-          deleteBtn.style.display = "none";
-          const plannerState = loadPlanner();
-          const updated = plannerState.bronzeActions.map((itemAction) =>
-            itemAction.id === action.id ? { ...itemAction, title: input.value.trim() } : itemAction,
-          );
-          savePlanner({ ...plannerState, bronzeActions: updated });
-          renderPlanner();
-          openArenaDossier(arenaId);
-        }
+      actionSquare.addEventListener("mouseleave", () => {
+        actionSquare.style.background = "rgba(24, 18, 14, 0.9)";
+        actionSquare.style.borderColor = "rgba(182, 128, 74, 0.6)";
       });
       
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "bronze-delete";
-      deleteBtn.type = "button";
-      deleteBtn.style.display = "none";
-      deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const plannerState = loadPlanner();
-        const updated = plannerState.bronzeActions.filter((itemAction) => itemAction.id !== action.id);
-        savePlanner({ ...plannerState, bronzeActions: updated });
-        openArenaDossier(arenaId);
-        renderPlanner();
+      // Click para abrir modal da ação
+      actionSquare.addEventListener("click", () => {
+        openBronzeModal(action.arenaId, action.id);
       });
       
-      iconContainer.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!item.classList.contains("is-editing")) return;
-        const isShowing = iconGrid.style.display === "grid";
-        iconGrid.style.display = isShowing ? "none" : "grid";
-        
-        if (!isShowing) {
-          iconGrid.innerHTML = "";
-          BRONZE_ICONS.forEach((iconName) => {
-            const option = document.createElement("button");
-            option.type = "button";
-            option.className = "icon-option";
-            if (iconName === action.icon) option.classList.add("is-selected");
-            option.dataset.icon = iconName;
-            option.innerHTML = `<i data-lucide="${iconName}"></i>`;
-            option.addEventListener("click", (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              const plannerState = loadPlanner();
-              const updated = plannerState.bronzeActions.map((itemAction) =>
-                itemAction.id === action.id ? { ...itemAction, icon: iconName } : itemAction,
-              );
-              savePlanner({ ...plannerState, bronzeActions: updated });
-              openArenaDossier(arenaId);
-              renderPlanner();
-            });
-            iconGrid.appendChild(option);
-          });
-          if (window.lucide) window.lucide.createIcons();
-        }
-      });
-      
-      // Atualizar título quando sair do modo de edição
-      input.addEventListener("blur", () => {
-        if (item.classList.contains("is-editing")) {
-          titleDisplay.textContent = input.value.trim() || action.title || "Acao";
-        }
-      });
-      
-      item.appendChild(iconContainer);
-      item.appendChild(iconGrid);
-      item.appendChild(titleDisplay);
-      item.appendChild(input);
-      item.appendChild(editBtn);
-      item.appendChild(deleteBtn);
-      bronzeList.appendChild(item);
-      
-      if (window.lucide) window.lucide.createIcons();
+      actionsContainer.appendChild(actionSquare);
     });
+    
+    // Adicionar botão + ao final
+    const addSquare = document.createElement("div");
+    addSquare.className = "arena-action-square arena-add-square";
+    addSquare.style.cssText = `
+      width: 50px;
+      height: 50px;
+      min-width: 50px;
+      min-height: 50px;
+      border-radius: 8px;
+      background: rgba(212, 175, 55, 0.2);
+      border: 2px dashed rgba(212, 175, 55, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    `;
+    
+    const plusIcon = document.createElement("i");
+    plusIcon.setAttribute("data-lucide", "plus");
+    plusIcon.style.cssText = `
+      width: 20px;
+      height: 20px;
+      color: #f7e7b3;
+    `;
+    addSquare.appendChild(plusIcon);
+    
+    addSquare.addEventListener("click", () => {
+      openBronzeModal(arenaId);
+    });
+    
+    actionsContainer.appendChild(addSquare);
+    bronzeList.appendChild(actionsContainer);
   }
+  
   if (window.lucide) window.lucide.createIcons();
-  modal.dataset.arenaId = arenaId;
-  modal.classList.add("is-open");
+  console.log('[DEBUG] Modal arena dossier aberto com sucesso');
 };
 
 const renderSocial = () => {
@@ -4577,134 +4632,65 @@ const renderSocial = () => {
   if (profile.borderColor) {
     document.documentElement.style.setProperty("--accent-energy", profile.borderColor);
   }
+
+  // Remover is-default de todos os avatares primeiro
+  if (socialAvatar) {
+    socialAvatar.classList.remove("is-default");
+    socialAvatar.style.pointerEvents = "auto";
+    socialAvatar.style.cursor = "pointer";
+  }
+
+  if (hudAvatar) {
+    hudAvatar.classList.remove("is-default");
+    hudAvatar.style.pointerEvents = "auto";
+    hudAvatar.style.cursor = "pointer";
+  }
+
+  // Avatar social
   if (socialAvatar && profile.avatar) {
     socialAvatar.style.backgroundImage = `url(${profile.avatar})`;
     socialAvatar.style.backgroundSize = "cover";
     socialAvatar.style.backgroundPosition = "center";
+    socialAvatar.classList.add("has-avatar");
+    socialAvatar.classList.remove("is-default");
+  } else if (socialAvatar) {
+    socialAvatar.classList.remove("has-avatar");
+    socialAvatar.classList.remove("is-default");
   }
-  if (hudAvatar) {
-    // Remover wrapper anterior se existir
-    const hudAvatarWrap = hudAvatar.parentElement;
-    if (hudAvatarWrap && hudAvatarWrap.classList.contains("avatar-border-wrapper")) {
-      const avatarInside = hudAvatarWrap.querySelector(".hud-avatar") || hudAvatarWrap.firstElementChild;
-      if (avatarInside) {
-        avatarInside.style.border = "2px solid rgba(212, 175, 55, 0.6)";
-        avatarInside.style.width = "54px";
-        avatarInside.style.height = "54px";
-        avatarInside.style.backgroundImage = hudAvatar.style.backgroundImage || "";
-        avatarInside.style.backgroundSize = "cover";
-        avatarInside.style.backgroundPosition = "center";
-        hudAvatarWrap.replaceWith(avatarInside);
-        // Atualizar referência
-        const newHudAvatar = document.getElementById("hud-avatar");
-        if (newHudAvatar) {
-          if (profile.avatar) {
-            newHudAvatar.style.backgroundImage = `url(${profile.avatar})`;
-            newHudAvatar.style.backgroundSize = "cover";
-            newHudAvatar.style.backgroundPosition = "center";
-          }
-          
-          // Aplicar borda ao avatar do HUD usando wrapper
-          if (profile.profileBorderImage) {
-            const wrapper = document.createElement("div");
-            wrapper.className = "avatar-border-wrapper hud-avatar-border";
-            wrapper.style.position = "relative";
-            wrapper.style.width = "54px";
-            wrapper.style.height = "54px";
-            wrapper.style.borderRadius = "50%";
-            wrapper.style.padding = "4px";
-            wrapper.style.backgroundImage = `url(${profile.profileBorderImage})`;
-            wrapper.style.backgroundSize = "cover";
-            wrapper.style.backgroundPosition = "center";
-            
-            const avatarClone = newHudAvatar.cloneNode(true);
-            avatarClone.style.border = "none";
-            avatarClone.style.width = "46px";
-            avatarClone.style.height = "46px";
-            wrapper.appendChild(avatarClone);
-            newHudAvatar.replaceWith(wrapper);
-          } else {
-            newHudAvatar.style.border = "2px solid rgba(212, 175, 55, 0.6)";
-            newHudAvatar.style.width = "54px";
-            newHudAvatar.style.height = "54px";
-          }
-        }
-        return; // Sair cedo se já processamos
-      }
-    }
-    
-    // Se não havia wrapper, aplicar normalmente
-    if (profile.avatar) {
-      hudAvatar.style.backgroundImage = `url(${profile.avatar})`;
-      hudAvatar.style.backgroundSize = "cover";
-      hudAvatar.style.backgroundPosition = "center";
-    }
-    
-    // Aplicar borda ao avatar do HUD usando wrapper
-    if (profile.profileBorderImage) {
-      const wrapper = document.createElement("div");
-      wrapper.className = "avatar-border-wrapper hud-avatar-border";
-      wrapper.style.position = "relative";
-      wrapper.style.width = "54px";
-      wrapper.style.height = "54px";
-      wrapper.style.borderRadius = "50%";
-      wrapper.style.padding = "4px";
-      wrapper.style.backgroundImage = `url(${profile.profileBorderImage})`;
-      wrapper.style.backgroundSize = "cover";
-      wrapper.style.backgroundPosition = "center";
-      
-      const avatarClone = hudAvatar.cloneNode(true);
-      avatarClone.style.border = "none";
-      avatarClone.style.width = "46px";
-      avatarClone.style.height = "46px";
-      wrapper.appendChild(avatarClone);
-      hudAvatar.replaceWith(wrapper);
-    } else {
-      hudAvatar.style.border = "2px solid rgba(212, 175, 55, 0.6)";
-      hudAvatar.style.width = "54px";
-      hudAvatar.style.height = "54px";
-    }
+
+  // Avatar do HUD
+  if (hudAvatar && profile.avatar) {
+    hudAvatar.style.backgroundImage = `url(${profile.avatar})`;
+    hudAvatar.style.backgroundSize = "cover";
+    hudAvatar.style.backgroundPosition = "center";
+    hudAvatar.style.backgroundColor = "transparent";
+    hudAvatar.classList.add("has-avatar");
+    hudAvatar.classList.remove("is-default");
+  } else if (hudAvatar) {
+    hudAvatar.classList.remove("has-avatar");
+    hudAvatar.classList.remove("is-default");
+    hudAvatar.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
   }
   
-  if (socialAvatar) {
-    // Remover wrapper anterior se existir
-    const socialWrap = socialAvatar.parentElement;
-    if (socialWrap && socialWrap.classList.contains("avatar-border-wrapper")) {
-      const avatarInside = socialWrap.querySelector(".social-avatar") || socialWrap.firstElementChild;
-      if (avatarInside) {
-        avatarInside.style.border = "2px solid rgba(212, 175, 55, 0.6)";
-        socialWrap.replaceWith(avatarInside);
-      }
-    }
+  // Aplicar borda ao avatar do HUD
+  if (hudAvatar && profile.profileBorderImage) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "avatar-border-wrapper";
+    wrapper.style.position = "relative";
+    wrapper.style.width = "54px";
+    wrapper.style.height = "54px";
+    wrapper.style.borderRadius = "50%";
+    wrapper.style.padding = "4px";
+    wrapper.style.backgroundImage = `url(${profile.profileBorderImage})`;
+    wrapper.style.backgroundSize = "cover";
+    wrapper.style.backgroundPosition = "center";
     
-    if (profile.avatar) {
-      socialAvatar.style.backgroundImage = `url(${profile.avatar})`;
-      socialAvatar.style.backgroundSize = "cover";
-      socialAvatar.style.backgroundPosition = "center";
-    }
-    
-    // Aplicar borda ao avatar social também
-    if (profile.profileBorderImage) {
-      const wrapper = document.createElement("div");
-      wrapper.className = "avatar-border-wrapper";
-      wrapper.style.position = "relative";
-      wrapper.style.width = socialAvatar.offsetWidth || "60px";
-      wrapper.style.height = socialAvatar.offsetHeight || "60px";
-      wrapper.style.borderRadius = "50%";
-      wrapper.style.padding = "4px";
-      wrapper.style.backgroundImage = `url(${profile.profileBorderImage})`;
-      wrapper.style.backgroundSize = "cover";
-      wrapper.style.backgroundPosition = "center";
-      
-      const avatarClone = socialAvatar.cloneNode(true);
-      avatarClone.style.border = "none";
-      avatarClone.style.width = `${(socialAvatar.offsetWidth || 60) - 8}px`;
-      avatarClone.style.height = `${(socialAvatar.offsetHeight || 60) - 8}px`;
-      wrapper.appendChild(avatarClone);
-      socialAvatar.replaceWith(wrapper);
-    } else {
-      socialAvatar.style.border = "2px solid rgba(212, 175, 55, 0.6)";
-    }
+    const avatarClone = hudAvatar.cloneNode(true);
+    avatarClone.style.border = "none";
+    avatarClone.style.width = "46px";
+    avatarClone.style.height = "46px";
+    wrapper.appendChild(avatarClone);
+    hudAvatar.replaceWith(wrapper);
   }
 };
 
@@ -5018,8 +5004,8 @@ const createBronzeFromInit = (title, icon) => {
 
 const getConexaoLema = () => {
   const dna = seedDNAIfMissing();
-  const asset = getAssetFromDNA(dna, "conexao");
-  const slot = asset?.profileSlots?.["conexao.lema"];
+  const asset = getAssetFromDNA(dna, "consciencia");
+  const slot = asset?.profileSlots?.["consciencia.lema"];
   return (slot?.value || "").trim();
 };
 
@@ -5172,12 +5158,12 @@ const renderInitiationOverlay = () => {
     `;
     const button = document.getElementById("init-open-conexao");
     button?.addEventListener("click", () => {
-      openTreeEditor("conexao");
+      openTreeEditor("consciencia");
     });
     const passThrough = document.getElementById("init-pass-through");
     passThrough?.addEventListener("click", () => {
       overlay.classList.add("is-pass-through");
-      openTreeEditor("conexao");
+      openTreeEditor("consciencia");
     });
     return;
   }
@@ -6424,6 +6410,78 @@ const initApp = () => {
   const profileSave = document.getElementById("profile-save");
   const profileSync = document.getElementById("profile-sync");
   const profileAvatarFile = document.getElementById("profile-avatar-file");
+  // Forçar remoção do is-default em todos os avatares no carregamento
+  const forceRemoveIsDefault = () => {
+    // Avatar do perfil
+    const profileAvatar = document.querySelector(".profile-avatar");
+    if (profileAvatar) {
+      profileAvatar.classList.remove("is-default");
+      profileAvatar.style.pointerEvents = "auto";
+      profileAvatar.style.cursor = "pointer";
+    }
+    
+    // Avatar do HUD
+    const hudAvatar = document.getElementById("hud-avatar");
+    if (hudAvatar) {
+      hudAvatar.classList.remove("is-default");
+      hudAvatar.style.pointerEvents = "auto";
+      hudAvatar.style.cursor = "pointer";
+    }
+    
+    // Avatar social
+    const socialAvatar = document.querySelector(".social-avatar");
+    if (socialAvatar) {
+      socialAvatar.classList.remove("is-default");
+      socialAvatar.style.pointerEvents = "auto";
+      socialAvatar.style.cursor = "pointer";
+    }
+  };
+  
+  // Executar imediatamente e também após um delay
+  forceRemoveIsDefault();
+  setTimeout(forceRemoveIsDefault, 100);
+  setTimeout(forceRemoveIsDefault, 1000);
+  
+  // Forçar atualização do cabeçalho após carregar
+  setTimeout(() => {
+    renderSocial();
+  }, 500);
+  
+  // Forçar atualização do cabeçalho novamente
+  setTimeout(() => {
+    renderSocial();
+  }, 1500);
+  
+  // Forçar atualização do cabeçalho mais uma vez
+  setTimeout(() => {
+    renderSocial();
+  }, 3000);
+  
+  // Forçar atualização do cabeçalho mais uma vez
+  setTimeout(() => {
+    renderSocial();
+  }, 5000);
+  
+  // Forçar atualização do cabeçalho mais uma vez
+  setTimeout(() => {
+    renderSocial();
+  }, 7000);
+  
+  // Forçar atualização do cabeçalho mais uma vez
+  setTimeout(() => {
+    renderSocial();
+  }, 10000);
+  
+  // Forçar atualização do cabeçalho mais uma vez
+  setTimeout(() => {
+    renderSocial();
+  }, 15000);
+  
+  // Forçar atualização do cabeçalho mais uma vez
+  setTimeout(() => {
+    renderSocial();
+  }, 20000);
+  
   const hudEdit = document.getElementById("hud-edit");
   const profileCard = profileModal?.querySelector(".profile-card");
   if (avatar && profileModal) {
@@ -6444,11 +6502,13 @@ const initApp = () => {
       if (profileAvatar) {
         if (profile.avatar) {
           profileAvatar.style.backgroundImage = `url(${profile.avatar})`;
-          profileAvatar.classList.remove("is-default");
+          profileAvatar.classList.add("has-avatar");
         } else {
           profileAvatar.style.backgroundImage = "";
-          profileAvatar.classList.add("is-default");
+          profileAvatar.classList.remove("has-avatar");
         }
+        // Remover is-default que bloqueia cliques
+        profileAvatar.classList.remove("is-default");
       }
       if (borderRing) {
         if (profile.profileBorderImage) {
@@ -6647,6 +6707,12 @@ const initApp = () => {
       }
       const okProfile = await ensureSupabaseProfile(updated);
       const okTotals = await syncProfileTotals(updated);
+      
+      // Forçar atualização completa do cabeçalho após salvar
+      setTimeout(() => {
+        renderSocial();
+      }, 100);
+      
       if (profileSync) {
         if (okProfile && okTotals) {
           profileSync.classList.add("is-ok");
@@ -6663,13 +6729,46 @@ const initApp = () => {
   }
 
   if (profileAvatarFile) {
-    // Círculo = editar imagem de perfil; borda = escolher borda
+    // Centro = editar avatar; bordas = editar borda
     let avatarClickHandler = (e) => {
       if (!profileCard || !profileCard.classList.contains("is-editing")) return;
       
-      const borderRing = e.target.closest("#profile-avatar-border, .profile-avatar-border-ring");
       const clickedAvatar = e.target.closest(".profile-avatar");
+      const borderRing = e.target.closest("#profile-avatar-border, .profile-avatar-border-ring");
       
+      // Calcular distância do centro
+      if (clickedAvatar) {
+        const rect = clickedAvatar.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const clickX = e.clientX;
+        const clickY = e.clientY;
+        const distance = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
+        const radius = rect.width / 2;
+        
+        // Se clicou no centro (70% do raio) → editar avatar
+        if (distance < radius * 0.7) {
+          e.stopPropagation();
+          e.preventDefault();
+          profileAvatarFile.click();
+          return;
+        }
+        
+        // Se clicou nos cantos (30% externa) → editar borda
+        if (distance >= radius * 0.7) {
+          e.stopPropagation();
+          e.preventDefault();
+          const borderModal = document.getElementById("border-modal");
+          if (borderModal) {
+            debugListAllStorage();
+            renderBorders();
+            borderModal.classList.add("is-open");
+          }
+          return;
+        }
+      }
+      
+      // Se clicou especificamente na borda → editar borda
       if (borderRing) {
         e.stopPropagation();
         e.preventDefault();
@@ -6680,11 +6779,6 @@ const initApp = () => {
           borderModal.classList.add("is-open");
         }
         return;
-      }
-      if (clickedAvatar) {
-        e.stopPropagation();
-        e.preventDefault();
-        profileAvatarFile.click();
       }
     };
     
@@ -6700,8 +6794,11 @@ const initApp = () => {
           const profileAvatar = profileModal?.querySelector(".profile-avatar");
           if (profileAvatar) {
             profileAvatar.style.backgroundImage = `url(${url})`;
+            profileAvatar.classList.add("has-avatar");
+            // Remover is-default que bloqueia cliques
             profileAvatar.classList.remove("is-default");
           }
+          // Atualizar avatar do cabeçalho imediatamente
           renderSocial();
           syncProfileTotals(updated);
           return;
@@ -6714,9 +6811,12 @@ const initApp = () => {
           const profileAvatar = profileModal?.querySelector(".profile-avatar");
           if (profileAvatar) {
             profileAvatar.style.backgroundImage = `url(${reader.result})`;
+            profileAvatar.classList.add("has-avatar");
+            // Remover is-default que bloqueia cliques
             profileAvatar.classList.remove("is-default");
           }
           renderSocial();
+          renderSocial(); // Adicionando atualização do cabeçalho também no fallback
         };
         reader.readAsDataURL(file);
       });
@@ -6914,44 +7014,37 @@ const initApp = () => {
       const card = document.createElement("div");
       card.className = `border-card${reward.unlocked ? " is-unlocked" : ""}`;
       
-      // Preview da imagem da borda ao redor de um avatar exemplo
+      // Preview da imagem da borda (apenas versão grande)
       const previewContainer = document.createElement("div");
       previewContainer.className = "border-preview-container";
       previewContainer.style.display = "flex";
       previewContainer.style.alignItems = "center";
       previewContainer.style.justifyContent = "center";
       previewContainer.style.width = "100%";
-      previewContainer.style.height = "80px";
+      previewContainer.style.height = "120px";
       previewContainer.style.marginBottom = "8px";
       previewContainer.style.position = "relative";
       
-      const avatarExample = document.createElement("div");
-      avatarExample.className = "border-avatar-example";
-      avatarExample.style.width = "60px";
-      avatarExample.style.height = "60px";
-      avatarExample.style.borderRadius = "50%";
-      avatarExample.style.background = "linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(255, 255, 255, 0.1))";
-      avatarExample.style.border = reward.imageUrl ? `8px solid transparent` : "2px solid rgba(212, 175, 55, 0.5)";
-      avatarExample.style.backgroundImage = reward.imageUrl ? `url(${reward.imageUrl})` : "";
-      avatarExample.style.backgroundSize = "cover";
-      avatarExample.style.backgroundClip = reward.imageUrl ? "padding-box" : "border-box";
-      avatarExample.style.position = "relative";
-      
       if (reward.imageUrl) {
-        // Criar borda usando a imagem
+        // Mostrar apenas a borda grande
         const borderImg = document.createElement("img");
         borderImg.src = reward.imageUrl;
-        borderImg.style.position = "absolute";
-        borderImg.style.width = "76px";
-        borderImg.style.height = "76px";
-        borderImg.style.top = "-8px";
-        borderImg.style.left = "-8px";
+        borderImg.style.width = "100px";
+        borderImg.style.height = "100px";
         borderImg.style.objectFit = "cover";
         borderImg.style.borderRadius = "50%";
-        avatarExample.appendChild(borderImg);
+        borderImg.style.border = "2px solid rgba(212, 175, 55, 0.3)";
+        previewContainer.appendChild(borderImg);
+      } else {
+        // Mostrar "SEM BORDA"
+        const noBorder = document.createElement("div");
+        noBorder.style.width = "80px";
+        noBorder.style.height = "80px";
+        noBorder.style.borderRadius = "50%";
+        noBorder.style.border = "2px solid rgba(212, 175, 55, 0.5)";
+        noBorder.style.background = "linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(255, 255, 255, 0.1))";
+        previewContainer.appendChild(noBorder);
       }
-      
-      previewContainer.appendChild(avatarExample);
       card.appendChild(previewContainer);
       
       const title = document.createElement("div");
@@ -6969,6 +7062,11 @@ const initApp = () => {
         ensureSupabaseProfile(updated);
         syncProfileTotals(updated);
         renderSocial();
+        
+        // Forçar atualização completa do cabeçalho após mudar borda
+        setTimeout(() => {
+          renderSocial();
+        }, 100);
         const profileModal = document.getElementById("profile-modal");
         const profileAvatar = profileModal?.querySelector(".profile-avatar");
         const borderRingEl = document.getElementById("profile-avatar-border");
@@ -6976,11 +7074,13 @@ const initApp = () => {
           const currentAvatarUrl = updated.avatar || loadProfile().avatar;
           if (currentAvatarUrl) {
             profileAvatar.style.backgroundImage = `url(${currentAvatarUrl})`;
-            profileAvatar.classList.remove("is-default");
+            profileAvatar.classList.add("has-avatar");
           } else {
             profileAvatar.style.backgroundImage = "";
-            profileAvatar.classList.add("is-default");
+            profileAvatar.classList.remove("has-avatar");
           }
+          // Remover is-default que bloqueia cliques
+          profileAvatar.classList.remove("is-default");
         }
         if (borderRingEl) {
           if (borderUrl) {
@@ -7169,7 +7269,7 @@ const initApp = () => {
         const asset = getAssetFromDNA(dna, assetId);
         const lemaSlot = `${assetId}.lema`;
         const lemaValue = asset?.profileSlots?.[lemaSlot]?.value;
-        if (lemaValue && assetId === "conexao") {
+        if (lemaValue && assetId === "consciencia") {
           const profile = loadProfile();
           const updated = { ...profile, banner: lemaValue };
           saveProfile(updated);

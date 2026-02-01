@@ -2200,10 +2200,10 @@ html[data-theme="void"] {
   line-height: 1 !important;
 }
 
-/* VALOR BASE (ESCONDIDO) */
-#tree-edit-modal .slot-value {
+/* VALOR BASE (ESCONDIDO) - REMOVIDO PARA NÃO BLOQUEAR DRAG */
+/* #tree-edit-modal .slot-value {
   pointer-events: none;
-}
+} */
 
 
 .slot-caption.top {
@@ -4331,6 +4331,8 @@ html[data-status="oracle"] .sephirot {
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Evitar que o timeline roube o drag dos bronze blocks */
+  touch-action: pan-y;
   min-height: 0;
   border: none;
   border-radius: 24px;
@@ -4432,6 +4434,15 @@ html[data-status="oracle"] .sephirot {
   cursor: grab;
   user-select: none;
   -webkit-user-drag: element;
+  /* Forçar drag no Firefox e outros browsers */
+  -moz-user-drag: element;
+  -khtml-user-drag: element;
+  /* Garantir que o bronze block tenha prioridade no drag */
+  z-index: 10;
+  /* Prevenir que outros elementos roubem o drag */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .bronze-block.is-scheduled {
@@ -5388,7 +5399,7 @@ html[data-status="oracle"] .sephirot {
 
 .bronze-item-edit:not(.is-editing) .bronze-icon-container {
   cursor: default;
-  pointer-events: none;
+  /* pointer-events: none; REMOVIDO PARA NÃO BLOQUEAR DRAG */
 }
 
 .bronze-item-edit.is-editing .bronze-icon-container:hover {

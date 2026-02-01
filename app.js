@@ -2362,7 +2362,35 @@ const renderWeekGrid = () => renderWeekView();
 
 const buildBronzeElement = (action) => {
   // Usar a buildBronzeBlock completa que tem drag e hold perfeitos
+  // Permitir drag para ações scheduled (grid) E backlog (bay area)
   const block = buildBronzeBlock(action, {});
+  
+  // Para ações backlog, permitir drag também
+  if (action.status === "backlog") {
+    block.draggable = true;
+    block.style.cursor = "grab";
+    // Adicionar dragstart se não tiver
+    if (!block.hasAttribute("data-drag-setup")) {
+      block.addEventListener("dragstart", (event) => {
+        event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
+      });
+      block.setAttribute("data-drag-setup", "true");
+    }
+  }
+  
+  // Para ações scheduled, garantir que tenham drag
+  if (action.status === "scheduled") {
+    block.draggable = true;
+    block.style.cursor = "grab";
+    // Adicionar dragstart se não tiver
+    if (!block.hasAttribute("data-drag-setup")) {
+      block.addEventListener("dragstart", (event) => {
+        event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
+      });
+      block.setAttribute("data-drag-setup", "true");
+    }
+  }
+  
   return block;
 };
 
@@ -2530,9 +2558,14 @@ const renderWeekView = () => {
     dayCol.addEventListener("dragover", (event) => {
       event.preventDefault();
       if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      // Não permitir que o dayCol roube o drag dos bronze blocks
+      event.stopPropagation();
     });
     dayCol.addEventListener("drop", (event) => {
       event.preventDefault();
+      // Não permitir que o dayCol roube o drag dos bronze blocks
+      event.stopPropagation();
+      console.log('🎯 Drop no dayCol (renderWeekView)');
       const payload = event.dataTransfer?.getData("text/plain");
       if (!payload || !payload.startsWith("bronze:")) return;
       const actionId = payload.replace("bronze:", "");
@@ -2577,23 +2610,58 @@ const buildBronzeBlock = (action, options = {}) => {
   const isRecurring = Boolean(options.isRecurring && hasWeekdays);
   // Determinar estado visual baseado no status real da ação
   const isDoneForDay = isRecurring ? isActionDoneOnDate(action, dayDate) : action.status === "done";
-  if (isDoneForDay) {
-    block.classList.add("done");
-    block.classList.remove("is-scheduled");
-  } else if (action.status === "scheduled") {
-    block.classList.add("is-scheduled");
-    block.classList.remove("done");
-  } else {
-    block.classList.remove("done");
-    block.classList.remove("is-scheduled");
-  }
+  if (isDoneForDay) block.classList.add("done");
   
-  // Permitir drag para ações scheduled (grid) E backlog (bay area)
-  const isGridAction = action.status === "scheduled";
-  const isBayAction = action.status === "backlog";
+  // SEMPRE permitir drag - não importa o status
+  block.draggable = true;
+  block.style.cursor = "grab";
   
-  block.draggable = isGridAction || isBayAction;
-  block.style.cursor = (isGridAction || isBayAction) ? "grab" : "default";
+  console.log('🔧 Bronze block criado:', action.id, action.title);
+  console.log('🔧 Block draggable:', block.draggable);
+  console.log('🔧 Block cursor:', block.style.cursor);
+  
+  // Adicionar dragstart diretamente sem condições
+  block.addEventListener("dragstart", (event) => {
+    console.log('🚀 Drag start no bronze block:', action.id);
+    console.log('🚀 Event target:', event.target);
+    console.log('🚀 Current target:', event.currentTarget);
+    console.log('🚀 Block draggable:', block.draggable);
+    console.log('🚀 Event dataTransfer:', !!event.dataTransfer);
+    
+    // Forçar draggable se necessário
+    if (!block.draggable) {
+      block.draggable = true;
+      console.log('🚀 Forçando draggable = true');
+    }
+    
+    isDragging = true;
+    // Cancelar hold timer se existir
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+      block.classList.remove("is-pressing");
+    }
+    
+    // Tentar setData mesmo se dataTransfer for null
+    try {
+      event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
+      console.log('🚀 DataTransfer setData funcionou');
+    } catch (error) {
+      console.log('🚀 Erro no setData:', error);
+    }
+    
+    // Forçar o drag para não ser roubado
+    event.stopPropagation();
+    // NÃO usar preventDefault() aqui - isso bloqueia o drag!
+  });
+  
+  // Adicionar dragend para garantir que o drag termine
+  block.addEventListener("dragend", (event) => {
+    console.log('🏁 Drag end no bronze block:', action.id);
+    isDragging = false;
+    event.stopPropagation();
+  });
+  
   const icon = document.createElement("i");
   icon.className = "bronze-icon";
   icon.setAttribute("data-lucide", action.icon || "circle");
@@ -2604,339 +2672,86 @@ const buildBronzeBlock = (action, options = {}) => {
   checkmark.className = "bronze-checkmark";
   checkmark.innerHTML = '<i data-lucide="check"></i>';
 
-  // Hold exatamente 3s (HOLD_MS_CAPPED = min(3000, HOLD_DURATION_MS))
-  const holdMs = HOLD_MS_CAPPED;
-  
-  // Limpar qualquer timer existente quando elemento é criado (evitar múltiplos timers)
-  const existingCompleteTimer = block.dataset.completeTimer;
-  const existingDragTimer = block.dataset.dragTimer;
-  if (existingCompleteTimer) {
-    clearTimeout(Number(existingCompleteTimer));
-    block.dataset.completeTimer = "";
-  }
-  if (existingDragTimer) {
-    clearTimeout(Number(existingDragTimer));
-    block.dataset.dragTimer = "";
-  }
-  
-  let _pressPointerId = null;
-  const startPress = (e) => {
-    if (e && e.pointerId !== undefined) {
-      if (_pressPointerId != null) return;
-      _pressPointerId = e.pointerId;
-    }
-    // Limpar timers anteriores se existirem (evitar múltiplos timers)
-    const oldCompleteTimer = block.dataset.completeTimer;
-    const oldDragTimer = block.dataset.dragTimer;
-    if (oldCompleteTimer) {
-      clearTimeout(Number(oldCompleteTimer));
-      block.dataset.completeTimer = "";
-    }
-    if (oldDragTimer) {
-      clearTimeout(Number(oldDragTimer));
-      block.dataset.dragTimer = "";
-    }
-    
+  let isDragging = false;
+  let dragStartTime = 0;
+  let holdTimer = null;
+
+  const startPress = () => {
+    console.log('👆 Hold start no bronze block:', action.id);
     block.classList.add("is-pressing");
-    
-    // Habilitar drag para ações scheduled (grid) E backlog (bay area)
-    const isGridAction = action.status === "scheduled";
-    const isBayAction = action.status === "backlog";
-    
-    if (isGridAction || isBayAction) {
-      block.dataset.dragEnabled = "true";
-      block.draggable = true;
-      block.style.cursor = "grab";
-    }
-    
-    // Exatamente 3s para completar/desfazer (timer é cancelado em handleDragStart ou endPress)
-    const completeTimer = setTimeout(() => {
+    holdTimer = setTimeout(() => {
+      console.log('⏰ Hold completado no bronze block:', action.id);
       const planner = loadPlanner();
-      const currentAction = planner.bronzeActions.find((item) => item.id === action.id);
-      if (!currentAction) {
-        endPress();
-        return;
-      }
-      // Ações backlog não podem ser completadas diretamente do grid (apenas do bay)
-      if (currentAction.status === "backlog") {
-        endPress();
-        return;
-      }
-      
       const updated = planner.bronzeActions.map((item) => {
-          if (item.id !== action.id) return item;
-          const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
-          
-          const currentStatus = item.status;
-          // Para ações recurring COM dayDate, verificar se está done para este dia específico
-          // Para ações não-recurring ou recurring sem dayDate, usar status direto
-          const isCurrentlyDone = (isRecurring && dayDate)
-            ? isActionDoneOnDate(item, dayDate)
-            : currentStatus === "done";
-          
-          // Para ações recurring COM dayDate, gerenciar histórico por dia
-          if (isRecurring && dayDate) {
-            const dayKey = formatDateKey(dayDate);
-            const hasDay = history.some((stamp) => formatDateKey(new Date(stamp)) === dayKey);
-            
-            if (hasDay) {
-              // Desfazer: remover do histórico deste dia específico
-              const nextHistory = history.filter((stamp) => formatDateKey(new Date(stamp)) !== dayKey);
-              const nextCompletedAt = nextHistory.length
-                ? nextHistory[nextHistory.length - 1]
-                : undefined;
-              
-              // Garantir que mantém horário agendado para aparecer pontilhada no grid
-              const scheduledHour = (item.scheduledHour !== undefined && item.scheduledHour !== null)
-                ? item.scheduledHour 
-                : (new Date().getHours());
-              const scheduledMinute = (item.scheduledMinute !== undefined && item.scheduledMinute !== null)
-                ? item.scheduledMinute 
-                : 0;
-              const scheduledDayOffset = (item.scheduledDayOffset !== undefined && item.scheduledDayOffset !== null)
-                ? item.scheduledDayOffset 
-                : plannerDayOffset;
-              
-              return {
-                ...item,
-                completedAt: nextCompletedAt,
-                completedHistory: nextHistory,
-                scheduledHour,
-                scheduledMinute,
-                scheduledDayOffset,
-              };
-            } else {
-              // Completar: adicionar ao histórico deste dia
-              const completedAt = new Date().toISOString();
-              const scheduledHour = (item.scheduledHour !== undefined && item.scheduledHour !== null)
-                ? item.scheduledHour 
-                : (new Date().getHours());
-              const scheduledMinute = (item.scheduledMinute !== undefined && item.scheduledMinute !== null)
-                ? item.scheduledMinute 
-                : 0;
-              const scheduledDayOffset = (item.scheduledDayOffset !== undefined && item.scheduledDayOffset !== null)
-                ? item.scheduledDayOffset 
-                : plannerDayOffset;
-              
-              return {
-                ...item,
-                completedAt,
-                completedHistory: [...history, completedAt],
-                scheduledHour,
-                scheduledMinute,
-                scheduledDayOffset,
-              };
-            }
-          }
-          
-          // Para ações não-recurring OU recurring sem dayDate: se está done, desfazer para scheduled
-          // Se está scheduled, completar para done
-          if (currentStatus === "done" || isCurrentlyDone) {
-            // Desfazer: voltar para estado de planejamento (scheduled) mantendo o horário
-            // Priorizar manter horário original, mas garantir que sempre tem valores válidos
-            const scheduledHour = (item.scheduledHour !== undefined && item.scheduledHour !== null && item.scheduledHour >= 0 && item.scheduledHour <= 28) 
-              ? item.scheduledHour 
-              : (new Date().getHours());
-            const scheduledMinute = (item.scheduledMinute !== undefined && item.scheduledMinute !== null && item.scheduledMinute >= 0 && item.scheduledMinute < 60)
-              ? item.scheduledMinute 
-              : 0;
-            // Usar plannerDayOffset atual para aparecer no dia que está sendo visualizado
-            const scheduledDayOffset = plannerDayOffset;
-            
-            return {
-              ...item,
-              status: "scheduled",
-              completedAt: undefined,
-              scheduledHour,
-              scheduledMinute,
-              scheduledDayOffset,
-            };
-          } else if (currentStatus === "scheduled") {
-            // Completar: marcar como done (apenas se estiver scheduled)
-            // Garantir que tem scheduledHour/scheduledMinute/scheduledDayOffset antes de completar
-            const scheduledHour = (item.scheduledHour !== undefined && item.scheduledHour !== null && item.scheduledHour >= 0 && item.scheduledHour <= 28)
-              ? item.scheduledHour 
-              : (new Date().getHours());
-            const scheduledMinute = (item.scheduledMinute !== undefined && item.scheduledMinute !== null && item.scheduledMinute >= 0 && item.scheduledMinute < 60)
-              ? item.scheduledMinute 
-              : 0;
-            const scheduledDayOffset = (item.scheduledDayOffset !== undefined && item.scheduledDayOffset !== null)
-              ? item.scheduledDayOffset 
-              : plannerDayOffset;
-            const completedAt = new Date().toISOString();
-            return {
-              ...item,
-              status: "done",
-              completedAt,
-              completedHistory: [...history, completedAt],
-              scheduledHour,
-              scheduledMinute,
-              scheduledDayOffset,
-            };
-          } else {
-            // Status não reconhecido (backlog, etc) - não fazer nada
-            return item;
-          }
-        });
-      // Garantir que todas ações são preservadas
-      const allActionsPreserved = updated.length === planner.bronzeActions.length;
-      if (!allActionsPreserved) {
-        console.warn('[Planner] Ações perdidas ao completar/desfazer', {
-          antes: planner.bronzeActions.length,
-          depois: updated.length
-        });
-      }
-      savePlanner({ ...planner, bronzeActions: updated });
-      
-      // Atualizar contadores baseado no status ANTES e DEPOIS da mudança
-      const updatedAction = updated.find((a) => a.id === action.id);
-      if (!isRecurring) {
-        const wasDone = currentAction.status === "done";
-        const isNowDone = updatedAction?.status === "done";
-        
-        if (wasDone && !isNowDone) {
-          // Estava done, agora será scheduled (desfez) - ação volta para pontilhada
-          updateArenaCountsForBronze(action.arenaId, -1);
-        } else if (!wasDone && isNowDone) {
-          // Estava scheduled, agora será done (completou)
-          updateArenaCountsForBronze(action.arenaId, 1);
+        if (item.id !== action.id) return item;
+        const history = Array.isArray(item.completedHistory) ? item.completedHistory : [];
+        if (isRecurring && dayDate) {
+          const dayKey = formatDateKey(dayDate);
+          const hasDay = history.some((stamp) => formatDateKey(new Date(stamp)) === dayKey);
+          const nextHistory = hasDay
+            ? history.filter((stamp) => formatDateKey(new Date(stamp)) !== dayKey)
+            : [...history, new Date().toISOString()];
+          const nextCompletedAt = nextHistory.length
+            ? nextHistory[nextHistory.length - 1]
+            : undefined;
+          return {
+            ...item,
+            completedAt: nextCompletedAt,
+            completedHistory: nextHistory,
+          };
         }
-      } else {
-        // Para ações recurring, atualizar baseado no histórico do dia específico
-        const wasDoneForDay = isActionDoneOnDate(currentAction, dayDate);
-        const isNowDoneForDay = updatedAction ? isActionDoneOnDate(updatedAction, dayDate) : false;
-        
-        if (wasDoneForDay && !isNowDoneForDay) {
-          // Estava completada para este dia, agora não está (desfez)
+        if (item.status === "done") {
+          return { ...item, status: "scheduled", completedAt: undefined };
+        }
+        const completedAt = new Date().toISOString();
+        return {
+          ...item,
+          status: "done",
+          completedAt,
+          completedHistory: [...history, completedAt],
+        };
+      });
+      savePlanner({ ...planner, bronzeActions: updated });
+      if (!isRecurring) {
+        if (action.status === "done") {
           updateArenaCountsForBronze(action.arenaId, -1);
-        } else if (!wasDoneForDay && isNowDoneForDay) {
-          // Não estava completada para este dia, agora está (completou)
+        } else {
           updateArenaCountsForBronze(action.arenaId, 1);
         }
       }
       updateGlobalArenaProgress(action.arenaId, updated);
-      
-      // Limpar estado de press antes de re-renderizar
-      endPress();
-      
-      // Forçar re-renderização imediata (sem delay)
       renderPlanner();
       renderArenas();
       checkMissionProgress();
-    }, 3000);
-    
-    block.dataset.completeTimer = String(completeTimer);
+    }, HOLD_DURATION_MS);
   };
-  
-  const endPress = (e) => {
-    if (e && e.pointerId !== undefined && _pressPointerId != null && e.pointerId !== _pressPointerId) return;
-    if (e && e.pointerId !== undefined) _pressPointerId = null;
-    const completeTimer = block.dataset.completeTimer;
-    const dragTimer = block.dataset.dragTimer;
-    if (completeTimer) {
-      clearTimeout(Number(completeTimer));
-      block.dataset.completeTimer = "";
-    }
-    if (dragTimer) {
-      clearTimeout(Number(dragTimer));
-      block.dataset.dragTimer = "";
+
+  const endPress = () => {
+    console.log('👆 Hold end no bronze block:', action.id);
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
     }
     block.classList.remove("is-pressing");
-    
-    // Se não completou nem arrastou, resetar estado
-    // Permitir drag para ações scheduled (grid) E backlog (bay area)
-    const isGridAction = action.status === "scheduled";
-    const isBayAction = action.status === "backlog";
-    
-    if (isGridAction || isBayAction) {
-      block.draggable = true;
-      block.style.cursor = "grab";
-    } else {
-      block.draggable = false;
-      block.style.cursor = "default";
-    }
-    block.dataset.dragEnabled = "false";
   };
-  
-  // Adicionar dragstart handler - cancelar timer de completar quando drag inicia
-  const handleDragStart = (event) => {
-    // Permitir drag APENAS para ações scheduled (grid) ou backlog (bay)
-    const isGridAction = action.status === "scheduled";
-    const isBayAction = action.status === "backlog";
-    
-    if (isGridAction || isBayAction) {
-      const dragEnabled = block.dataset.dragEnabled === "true" || block.draggable;
-      if (dragEnabled) {
-        // Adicionar classe de dragging para efeito visual
-        block.classList.add("dragging");
-        
-        // Adicionar classe ao bronze-list para efeito magnético
-        const bronzeList = block.closest('.bronze-list');
-        if (bronzeList) {
-          bronzeList.classList.add("dragging-over");
-        }
-        
-        // Cancelar timer de completar quando drag inicia
-        const completeTimer = block.dataset.completeTimer;
-        if (completeTimer) {
-          clearTimeout(Number(completeTimer));
-          block.dataset.completeTimer = "";
-        }
-        event.dataTransfer?.setData("text/plain", `bronze:${action.id}`);
-        endPress(); // Limpar timers ao iniciar drag
-        
-        // Remover classes quando drag terminar
-        setTimeout(() => {
-          block.classList.remove("dragging");
-          if (bronzeList) {
-            bronzeList.classList.remove("dragging-over");
-          }
-        }, 1000);
-        
-        // Resetar cursor após drag
-        setTimeout(() => {
-          block.style.cursor = (action.status === "scheduled" || action.status === "backlog") ? "grab" : "default";
-          block.dataset.dragEnabled = "false";
-        }, 100);
-      } else {
-        // Se drag não está habilitado, prevenir
-        event.preventDefault();
-      }
-    } else {
-      // Ações done não podem ser arrastadas
-      event.preventDefault();
-    }
-  };
-  
-  // Não usar preventDefault no pointerdown — bloqueia o início do drag no navegador.
-  // touchAction = "none" no bloco já evita scroll/pan durante o toque.
-  const onPointerDown = (e) => { startPress(e); };
-  block._handleDragStart = handleDragStart;
-  block._onPointerDown = onPointerDown;
-  block._endPress = endPress;
-  
-  block.addEventListener("dragstart", handleDragStart);
-  block.addEventListener("pointerdown", onPointerDown);
-  block.addEventListener("pointerup", endPress);
-  block.addEventListener("pointerleave", endPress);
-  block.addEventListener("pointercancel", endPress);
-  block.style.touchAction = "none";
-  
-  const cleanupObserver = new MutationObserver(() => {
-    if (!document.body.contains(block)) {
-      const completeTimer = block.dataset.completeTimer;
-      const dragTimer = block.dataset.dragTimer;
-      if (completeTimer) clearTimeout(Number(completeTimer));
-      if (dragTimer) clearTimeout(Number(dragTimer));
-      block.removeEventListener("dragstart", handleDragStart);
-      block.removeEventListener("pointerdown", onPointerDown);
-      block.removeEventListener("pointerup", endPress);
-      block.removeEventListener("pointerleave", endPress);
-      block.removeEventListener("pointercancel", endPress);
-      cleanupObserver.disconnect();
-    }
+
+  // Adicionar eventos de HOLD com verificação para não interferir com drag
+  block.addEventListener("mousedown", (event) => {
+    if (isDragging) return;
+    dragStartTime = Date.now();
+    startPress();
   });
-  cleanupObserver.observe(document.body, { childList: true, subtree: true });
+  
+  block.addEventListener("touchstart", (event) => {
+    if (isDragging) return;
+    dragStartTime = Date.now();
+    startPress();
+  });
+  
+  block.addEventListener("mouseup", endPress);
+  block.addEventListener("mouseleave", endPress);
+  block.addEventListener("touchend", endPress);
+  block.addEventListener("touchcancel", endPress);
   block.appendChild(icon);
   block.appendChild(title);
   block.appendChild(checkmark);
@@ -2944,7 +2759,9 @@ const buildBronzeBlock = (action, options = {}) => {
 };
 
 const createPlannerActionFromArena = (arena) => {
+  console.log('🆕 Criando ação para arena:', arena.id, arena.title);
   const planner = loadPlanner();
+  console.log('🆕 Planner antes:', planner.bronzeActions.length, 'ações');
   // Criar bronze action (sistema unificado)
   const action = {
     id: crypto.randomUUID(),
@@ -2953,8 +2770,11 @@ const createPlannerActionFromArena = (arena) => {
     arenaId: arena.id,
     createdDate: new Date().toISOString(),
   };
+  console.log('🆕 Nova ação criada:', action);
   planner.bronzeActions.push(action);
+  console.log('🆕 Planner depois:', planner.bronzeActions.length, 'ações');
   savePlanner(planner);
+  console.log('🆕 Planner salvo, chamando renderPlanner()');
   renderPlanner();
 };
 
@@ -3431,10 +3251,15 @@ const renderPlanner = () => {
   
   dayCol.addEventListener("dragover", (event) => {
     event.preventDefault();
+    // Não permitir que o dayCol roube o drag dos bronze blocks
+    event.stopPropagation();
   });
   
   dayCol.addEventListener("drop", (event) => {
     event.preventDefault();
+    // Não permitir que o dayCol roube o drag dos bronze blocks
+    event.stopPropagation();
+    console.log('🎯 Drop no dayCol (renderDayView)');
     const payload = event.dataTransfer?.getData("text/plain");
     if (!payload || !payload.startsWith("bronze:")) return;
     const actionId = payload.replace("bronze:", "");
@@ -3484,6 +3309,9 @@ const renderPlanner = () => {
   
   // Prevenir duplicação: garantir que ações não apareçam duas vezes
   const actionsInGrid = new Set([...scheduledActions, ...recurringActions].map(a => a.id));
+  console.log('🔍 Ações scheduled:', scheduledActions.map(a => ({ id: a.id, title: a.title, status: a.status })));
+  console.log('🔍 Ações recurring:', recurringActions.map(a => ({ id: a.id, title: a.title, weekdays: a.weekdays })));
+  console.log('🔍 Actions in grid (IDs):', Array.from(actionsInGrid));
   [...scheduledActions, ...recurringActions].forEach((action) => {
     const startHour = Math.min(
       dayEndHour,
@@ -3511,14 +3339,20 @@ const renderPlanner = () => {
   // Mostrar TODAS ações que não estão no grid do dia atual
   // Isso inclui ações backlog e ações de outras arenas que não estão scheduled/done para hoje
   const bronzeBacklog = planner.bronzeActions.filter((action) => {
+    console.log('🔍 Verificando ação:', action.id, action.title, 'status:', action.status);
     // Não mostrar ações que já estão no grid
-    if (actionsInGrid.has(action.id)) return false;
+    if (actionsInGrid.has(action.id)) {
+      console.log('🔍 Ação está no grid, não mostrar no backlog:', action.id);
+      return false;
+    }
     // Mostrar todas outras ações (backlog, scheduled para outros dias, etc.)
+    console.log('🔍 Ação NÃO está no grid, mostrar no backlog:', action.id);
     return true;
   });
   console.log('🔍 Total de ações no planner:', planner.bronzeActions.length);
+  console.log('🔍 Ações no backlog:', bronzeBacklog.length);
   console.log('🔍 Ações no grid:', actionsInGrid.size);
-  console.log('🔍 Backlog:', bronzeBacklog.length);
+  console.log('🔍 Status das ações no backlog:', bronzeBacklog.map(a => ({ id: a.id, title: a.title, status: a.status })));
   
   if (bronzeBacklog.length === 0) {
     const empty = document.createElement("div");
@@ -3526,16 +3360,15 @@ const renderPlanner = () => {
     empty.textContent = "Sem acoes de bronze.";
     bronzeList.appendChild(empty);
   } else {
-  bronzeBacklog.forEach((action) => {
-    console.log('🔍 Criando bronze para:', action.id, action.title);
-    const bronzeEl = buildBronzeElement(action);
-    console.log('🔍 Elemento criado:', bronzeEl);
-    bronzeList.appendChild(bronzeEl);
-  });
+    bronzeBacklog.forEach((action) => {
+      console.log('🔍 Criando bronze para:', action.id, action.title);
+      console.log('🔍 Status da ação:', action.status);
+      const bronzeEl = buildBronzeElement(action);
+      bronzeList.appendChild(bronzeEl);
+      console.log('🔍 Bronze adicionado ao DOM');
+    });
   }
-
-  if (window.lucide) window.lucide.createIcons();
-  // Só renderizar semana se estiver em view de semana
+  
   // Reutilizar plannerLayout já declarado acima
   const isWeekView = plannerLayout?.classList.contains("week-view");
   if (isWeekView) {
@@ -3745,6 +3578,77 @@ const seedDNAIfMissing = () => {
   const seeded = buildDefaultDNA();
   saveDNA(seeded, { skipSync: true });
   return seeded;
+};
+
+// Forçar migração completa de todos os dados antigos
+const forceCompleteMigration = () => {
+  console.log("[MIGRATION] Iniciando migração completa...");
+  
+  // Migrar DNA
+  const dna = getDNA();
+  if (dna && Array.isArray(dna.assets)) {
+    const migrated = migrateAssetIds(dna);
+    if (migrated) {
+      saveDNA(dna, { skipSync: true });
+      console.log("[MIGRATION] DNA migrado!");
+    }
+  }
+  
+  // Migrar Planner
+  const planner = loadPlanner();
+  if (planner && Array.isArray(planner.bronzeActions)) {
+    const idMapping = {
+      "conexao": "consciencia",
+      "mente": "espaco-mental",
+      "verdade": "proposito",
+      "inspiracao": "projetos",
+      "amor": "conexoes",
+      "abundancia": "financas",
+      "autenticidade": "hobbies"
+    };
+    
+    let plannerMigrated = false;
+    planner.bronzeActions.forEach((action) => {
+      if (action.arenaId && idMapping[action.arenaId]) {
+        action.arenaId = idMapping[action.arenaId];
+        plannerMigrated = true;
+      }
+    });
+    
+    if (plannerMigrated) {
+      savePlanner(planner);
+      console.log("[MIGRATION] Planner migrado!");
+    }
+  }
+  
+  // Migrar Arenas
+  const arenas = loadArenas();
+  if (arenas && Array.isArray(arenas)) {
+    const idMapping = {
+      "conexao": "consciencia",
+      "mente": "espaco-mental",
+      "verdade": "proposito",
+      "inspiracao": "projetos",
+      "amor": "conexoes",
+      "abundancia": "financas",
+      "autenticidade": "hobbies"
+    };
+    
+    let arenasMigrated = false;
+    arenas.forEach((arena) => {
+      if (arena.assetId && idMapping[arena.assetId]) {
+        arena.assetId = idMapping[arena.assetId];
+        arenasMigrated = true;
+      }
+    });
+    
+    if (arenasMigrated) {
+      saveArenas(arenas);
+      console.log("[MIGRATION] Arenas migradas!");
+    }
+  }
+  
+  console.log("[MIGRATION] Migração completa finalizada!");
 };
 
 const getAssetFromDNA = (dna, assetId) => dna.assets.find((asset) => asset.id === assetId);
@@ -5002,11 +4906,11 @@ const createBronzeFromInit = (title, icon) => {
   return action;
 };
 
-const getConexaoLema = () => {
+const getConscienciaLema = () => {
   const dna = seedDNAIfMissing();
   const asset = getAssetFromDNA(dna, "consciencia");
   const slot = asset?.profileSlots?.["consciencia.lema"];
-  return (slot?.value || "").trim();
+  return slot?.value;
 };
 
 const reconcileMissionState = (nextState) => {
@@ -5030,7 +4934,7 @@ const checkMissionProgress = () => {
     (action) =>
       action.status === "done" && Number(action.scheduledDayOffset || 0) !== 0,
   );
-  const m4 = Boolean(getConexaoLema());
+  const m4 = Boolean(getConscienciaLema());
   const m5 = missionState.m5;
   reconcileMissionState({
     m1,
@@ -5150,13 +5054,13 @@ const renderInitiationOverlay = () => {
   if (step === "m4") {
     title.textContent = "M4 - Lema";
     body.innerHTML = `
-      <div class="drawer-title">Defina seu Lema no Ativo Conexao</div>
+      <div class="drawer-title">Defina seu Lema no Ativo Consciência</div>
       <div class="init-actions">
-        <button class="gold-button" id="init-open-conexao">Abrir Conexao</button>
+        <button class="gold-button" id="init-open-consciencia">Abrir Consciência</button>
         <button class="silver-button" id="init-pass-through">Liberar interacao</button>
       </div>
     `;
-    const button = document.getElementById("init-open-conexao");
+    const button = document.getElementById("init-open-consciencia");
     button?.addEventListener("click", () => {
       openTreeEditor("consciencia");
     });
@@ -5407,6 +5311,7 @@ const initPlanner = () => {
     });
     bronzeList.addEventListener("drop", (e) => {
       e.preventDefault();
+      console.log('🎯 Drop no bronzeList (bay area)');
       const payload = e.dataTransfer?.getData("text/plain");
       if (!payload || !payload.startsWith("bronze:")) return;
       const actionId = payload.replace("bronze:", "");
@@ -5945,7 +5850,7 @@ const initMoodBar = () => {
       trackEnd: "#3a93e6",
     },
     {
-      label: "Amor",
+      label: "Conexões",
       min: 75,
       max: 85,
       color: "linear-gradient(90deg, #3c5bff, #5a79ff)",
@@ -6010,6 +5915,10 @@ const initApp = () => {
   if (appInitialized) return;
   appInitialized = true;
   ensureV2Reset();
+  
+  // Forçar migração completa de dados antigos
+  forceCompleteMigration();
+  
   const initialProfile = loadProfile();
   applyTheme(initialProfile.theme || "gold");
   if (initialProfile.status === "oracle") {
@@ -6155,16 +6064,27 @@ const initApp = () => {
   }
   if (bronzeSave) {
     bronzeSave.addEventListener("click", () => {
+      console.log('💾 Botão salvar bronze clicado');
       const modal = document.getElementById("bronze-modal");
       const titleInput = document.getElementById("bronze-title");
       const durationInput = document.getElementById("bronze-duration");
       const seriousToggle = document.getElementById("bronze-serious");
       const atemporalToggle = document.getElementById("bronze-atemporal");
-      if (!modal || !durationInput || !seriousToggle || !titleInput) return;
+      if (!modal || !durationInput || !seriousToggle || !titleInput) {
+        console.log('❌ Elementos não encontrados');
+        return;
+      }
       const arenaId = modal.dataset.arenaId;
-      if (!arenaId) return;
+      if (!arenaId) {
+        console.log('❌ Arena ID não encontrado');
+        return;
+      }
       const title = titleInput.value.trim();
-      if (!title) return;
+      if (!title) {
+        console.log('❌ Título vazio');
+        return;
+      }
+      console.log('💾 Dados da ação:', { title, arenaId });
       const durationMinutes = Number(durationInput.value || 60);
       const duration = `${durationMinutes}min`;
       const selectedIcon = modal.dataset.icon || BRONZE_ICONS[0];
@@ -6176,6 +6096,7 @@ const initApp = () => {
       const atemporal = !!atemporalToggle?.checked;
       const weeklyTarget = atemporal ? null : weekdays.length;
       const planner = loadPlanner();
+      console.log('💾 Planner antes:', planner.bronzeActions.length, 'ações');
       const editingId = modal.dataset.actionId;
       if (editingId) {
         planner.bronzeActions = planner.bronzeActions.map((action) =>
@@ -6209,9 +6130,14 @@ const initApp = () => {
           locked: false,
           createdDate: new Date().toISOString(),
         });
+        console.log('💾 Nova ação adicionada ao planner');
       }
+      console.log('💾 Planner depois:', planner.bronzeActions.length, 'ações');
+      console.log('💾 Salvando planner...');
       savePlanner(planner);
+      console.log('💾 Planner salvo, chamando renderPlanner()');
       renderPlanner();
+      console.log('💾 renderPlanner() concluído');
       closeBronzeModal();
       checkMissionProgress();
     });

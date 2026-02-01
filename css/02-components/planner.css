@@ -1,0 +1,325 @@
+/* PLANNER COMPONENT */
+
+/* Sistema dual: Day View + Week View */
+.planner-layout {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  background: var(--bg-primary);
+}
+
+/* DAY VIEW - renderPlanner() */
+.timeline {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  
+  /* Evitar que o timeline roube o drag dos bronze blocks */
+  touch-action: pan-y;
+  min-height: 0;
+  border: none;
+}
+
+.time-slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.time-label {
+  position: absolute;
+  left: 8px;
+  top: -10px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+/* WEEK VIEW - renderWeekView() */
+.week-view .week-grid {
+  display: grid;
+  grid-template-columns: 48px repeat(7, 1fr);
+  gap: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.week-day-col {
+  position: absolute;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  
+  /* Drop zone para ações */
+  &:hover {
+    background: rgba(212, 175, 55, 0.05);
+  }
+}
+
+.week-header {
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: var(--z-timeline);
+  display: grid;
+  grid-template-columns: 48px repeat(7, 1fr);
+  gap: 0;
+}
+
+.week-day-header {
+  padding: var(--space-sm);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* BRONZE BLOCKS - buildBronzeBlock() */
+.bronze-block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--gold-border);
+  padding: 8px;
+  cursor: grab;
+  z-index: var(--z-timeline);
+  
+  /* Forçar drag no Firefox e outros browsers */
+  -moz-user-drag: element;
+  -khtml-user-drag: element;
+  
+  /* Prevenir que outros elementos roubem o drag */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* Hold to complete - HOLD_MS_CAPPED = 3000ms */
+  &.is-pressing::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    background: var(--theme-primary);
+    animation: hold-progress 3s linear forwards;
+    z-index: -1;
+  }
+  
+  &.done {
+    opacity: 0.6;
+    background: rgba(46, 204, 113, 0.2);
+    border-color: var(--state-done);
+    cursor: not-allowed;
+  }
+  
+  /* Drag state */
+  &:active {
+    cursor: grabbing;
+  }
+  
+  &.is-scheduled {
+    border-style: dashed;
+    border-color: var(--gold-border);
+    opacity: 0.75;
+    background: var(--bg-secondary);
+  }
+  
+  &.is-scheduled:hover {
+    opacity: 0.85;
+    border-color: var(--gold-primary);
+  }
+}
+
+@keyframes hold-progress {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 0.3;
+    transform: scaleX(1);
+  }
+}
+
+.bronze-block > * {
+  position: relative;
+  z-index: 1;
+}
+
+.bronze-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--gold-light);
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.35));
+  flex-shrink: 0;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.bronze-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 4px;
+  line-height: 1.2;
+}
+
+.bronze-checkmark {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background: var(--state-done);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  i {
+    width: 10px;
+    height: 10px;
+    color: white;
+  }
+}
+
+/* BACKLOG BAY - bronze-list */
+.bronze-backlog {
+  padding: var(--space-md);
+  background: rgba(16, 16, 16, 0.8);
+  border-top: 1px solid var(--gold-border);
+  
+  /* Drop zone */
+  &:hover {
+    background: rgba(212, 175, 55, 0.05);
+  }
+}
+
+.bronze-list {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: var(--space-sm) !important;
+  min-height: 60px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  
+  /* Efeito magnético para redistribuição */
+  &.dragging-over {
+    background: rgba(212, 175, 55, 0.1);
+    border-radius: 8px;
+  }
+}
+
+.bronze-list::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.bronze-item {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 6px !important;
+  background: var(--bg-secondary);
+  border: 1px solid var(--gold-border);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: grab;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  
+  /* Forçar drag no Firefox */
+  -webkit-user-drag: element;
+  -moz-user-drag: element;
+  -khtml-user-drag: element;
+}
+
+.bronze-item::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 4px;
+  background: var(--theme-primary);
+  opacity: 0;
+  z-index: 1;
+}
+
+.bronze-item.is-pressing::after {
+  opacity: 1;
+  animation: bronze-item-fill 3s linear forwards;
+}
+
+@keyframes bronze-item-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.bronze-item i {
+  width: 20px;
+  height: 20px;
+  color: var(--gold-light);
+}
+
+.bronze-add {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 6px !important;
+  background: rgba(212, 175, 55, 0.2);
+  border: 2px dashed var(--gold-border);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  
+  &:hover {
+    background: rgba(212, 175, 55, 0.3);
+    border-color: var(--gold-primary);
+  }
+  
+  i {
+    width: 20px;
+    height: 20px;
+    color: var(--gold-light);
+  }
+}
+
+/* Responsivo */
+@media (max-width: 520px) {
+  .timeline {
+    --pixels-per-minute: 0.6;
+  }
+  
+  .bronze-block {
+    padding: 6px;
+  }
+  
+  .bronze-title {
+    font-size: 10px;
+  }
+  
+  .week-header {
+    font-size: 10px;
+  }
+}

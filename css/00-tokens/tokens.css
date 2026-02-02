@@ -1,0 +1,117 @@
+/* DESIGN TOKENS - Baseado em constantes do app.js */
+
+:root {
+  /* CORES DE TEMA */
+  --theme-gold-primary: #d4af37;
+  --theme-gold-gradient: linear-gradient(135deg, #FFD700, #FFA500);
+  
+  --theme-frost-primary: #4682B4;
+  --theme-frost-gradient: linear-gradient(135deg, #00CED1, #4682B4);
+  
+  --theme-neon-primary: #FF00FF;
+  --theme-neon-gradient: linear-gradient(135deg, #FF00FF, #00FFFF);
+  
+  --theme-ember-primary: #FF4500;
+  --theme-ember-gradient: linear-gradient(135deg, #FF4500, #DC143C);
+  
+  --theme-aurora-primary: #00FF7F;
+  --theme-aurora-gradient: linear-gradient(135deg, #00FF7F, #9370DB);
+  
+  --theme-cyber-primary: #00FFFF;
+  --theme-cyber-gradient: linear-gradient(135deg, #FF00FF, #00FFFF);
+
+  /* CORES DE ESTADO */
+  --state-done: #2ecc71;
+  --state-pending: #f39c12;
+  --state-locked: #7f8c8d;
+  --state-error: #e74c3c;
+
+  /* CORES DE VITALIDADE - buildVitalityStats() */
+  --vitality-flames: rgba(255, 107, 107, 0.5);
+  --vitality-energized: rgba(46, 204, 113, 0.5);
+  --vitality-vibrant: rgba(52, 152, 219, 0.5);
+  --vitality-fossil: rgba(127, 140, 141, 0.3);
+
+  /* DURAÇÕES - do app.js */
+  --hold-duration: 3000ms; /* HOLD_DURATION_MS */
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 600ms;
+
+  /* Z-INDEX - hierarquia de modais */
+  --z-base: 1;
+  --z-timeline: 10;
+  --z-nav: 100;
+  --z-overlay: 900;
+  --z-modal: 1000;
+  --z-auth: 2000;
+  --z-loading: 3000;
+
+  /* BREAKPOINTS - baseado em window.innerWidth checks */
+  --bp-narrow: 520px; /* isNarrow no planner */
+  --bp-mobile: 768px;
+  --bp-tablet: 1024px;
+  --bp-desktop: 1440px;
+
+  /* ESPAÇAMENTO */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* CORES BASE */
+  --bg-primary: rgba(16, 16, 16, 0.95);
+  --bg-secondary: rgba(24, 18, 14, 0.9);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+
+  /* CORES OURO (BRONZE ACTIONS) */
+  --gold-primary: #d4af37;
+  --gold-light: #f6deb0;
+  --gold-border: rgba(212, 175, 55, 0.6);
+  --gold-bg: rgba(212, 175, 55, 0.1);
+
+  /* PLANNER */
+  --pixels-per-minute: 1; /* 0.6 em narrow */
+  --day-start-hour: 4;
+  --day-end-hour: 28;
+  --slot-height: 60px;
+
+  /* TIPOGRAFIA */
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  --font-sans: system-ui, -apple-system, sans-serif;
+}
+
+/* Temas aplicados via [data-theme] */
+[data-theme="gold"] {
+  --theme-primary: var(--theme-gold-primary);
+  --theme-gradient: var(--theme-gold-gradient);
+}
+
+[data-theme="frost"] {
+  --theme-primary: var(--theme-frost-primary);
+  --theme-gradient: var(--theme-frost-gradient);
+}
+
+[data-theme="neon"] {
+  --theme-primary: var(--theme-neon-primary);
+  --theme-gradient: var(--theme-neon-gradient);
+}
+
+[data-theme="ember"] {
+  --theme-primary: var(--theme-ember-primary);
+  --theme-gradient: var(--theme-ember-gradient);
+}
+
+[data-theme="aurora"] {
+  --theme-primary: var(--theme-aurora-primary);
+  --theme-gradient: var(--theme-aurora-gradient);
+}
+
+[data-theme="cyber"] {
+  --theme-primary: var(--theme-cyber-primary);
+  --theme-gradient: var(--theme-cyber-gradient);
+}

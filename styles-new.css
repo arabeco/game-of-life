@@ -1,0 +1,32 @@
+/* GAME OF LIFE - CSS Refatorado */
+
+/* Importar tokens e reset */
+@import '00-tokens/tokens.css';
+@import '01-reset/reset.css';
+
+/* Importar componentes */
+@import '02-components/sephirot.css';
+@import '02-components/planner.css';
+@import '02-components/arena-card.css';
+@import '02-components/bronze-actions.css';
+@import '02-components/modals.css';
+@import '02-components/social.css';
+@import '02-components/navigation.css';
+@import '02-components/scan.css';
+
+/* Importar screens */
+@import '03-screens/tree.css';
+@import '03-screens/planner-screen.css';
+@import '03-screens/arenas.css';
+@import '03-screens/history.css';
+@import '03-screens/social-screen.css';
+@import '03-screens/config.css';
+
+/* Importar animações */
+@import '04-animations/animations.css';
+
+/* Importar utilities */
+@import '05-utilities/utilities.css';
+
+/* Fallback temporário - manter styles.css original como backup */
+@import 'legacy-styles.css';

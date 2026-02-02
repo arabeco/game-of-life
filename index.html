@@ -530,6 +530,20 @@
           </button>
         </div>
         <div class="modal-body dossier-body">
+          <!-- Botão Editar (só para ações existentes) -->
+          <div class="edit-button-container" id="bronze-edit-container" style="display: none;">
+            <button class="bronze-edit-button" id="bronze-edit-btn" aria-label="Editar ação">
+              <i data-lucide="edit-2"></i>
+            </button>
+          </div>
+          
+          <!-- Lixeira de deletação (só para ações existentes) -->
+          <div class="delete-trash-container" id="bronze-delete-container" style="display: none;">
+            <button class="delete-trash-button" id="bronze-delete-btn" aria-label="Segurar 5s para deletar">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+          
           <label class="field-label" for="bronze-title">Titulo</label>
           <input type="text" id="bronze-title" placeholder="Nome da acao" />
           <label class="field-label" for="bronze-icon">Icone</label>

@@ -956,14 +956,14 @@ html[data-theme="void"] {
 .tree-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(8, auto);
+  grid-template-rows: repeat(8, minmax(60px, auto));
   gap: 12px;
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
   padding: 20px;
   height: auto;
-  min-height: auto;
+  min-height: 500px;
   padding: clamp(4px, 1.2vh, 10px) clamp(20px, 5vw, 40px) clamp(20px, 40px) clamp(20px, 5vw, 40px);
   box-sizing: border-box;
   justify-items: center;
@@ -1231,12 +1231,33 @@ html[data-theme="void"] {
   display: flex;
   gap: 4px;
   align-items: center;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.3) transparent;
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 2px;
   margin-bottom: 2px;
   flex-shrink: 0;
   order: 100;
+}
+
+.arena-bronze-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.arena-bronze-row::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.arena-bronze-row::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.3);
+  border-radius: 2px;
+}
+
+.arena-bronze-row::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.5);
 }
 
 /* Reduzir espaços na lista de arenas */
@@ -2200,10 +2221,10 @@ html[data-theme="void"] {
   line-height: 1 !important;
 }
 
-/* VALOR BASE (ESCONDIDO) */
-#tree-edit-modal .slot-value {
+/* VALOR BASE (ESCONDIDO) - REMOVIDO PARA NÃO BLOQUEAR DRAG */
+/* #tree-edit-modal .slot-value {
   pointer-events: none;
-}
+} */
 
 
 .slot-caption.top {
@@ -3091,6 +3112,146 @@ html[data-theme="void"] {
 
 #bronze-modal {
   z-index: 60;
+}
+
+/* Botão Editar no Modal Bronze */
+.edit-button-container {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.bronze-edit-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: rgba(59, 130, 246, 0.8);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.bronze-edit-button i {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.bronze-edit-button:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #3b82f6;
+  transform: scale(1.08) translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.bronze-edit-button:hover i {
+  transform: scale(1.1);
+}
+
+/* Lixeira de deletação no modal bronze */
+.delete-trash-container {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+}
+
+.delete-trash-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(239, 68, 68, 0.08));
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #dc2626;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+}
+
+.delete-trash-button i {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.5;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 1px 2px rgba(220, 38, 38, 0.3));
+}
+
+.delete-trash-button:hover {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.25), rgba(239, 68, 68, 0.15));
+  border-color: rgba(220, 38, 38, 0.6);
+  color: #b91c1c;
+  transform: scale(1.08) translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.delete-trash-button:hover i {
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 2px 4px rgba(220, 38, 38, 0.4));
+}
+
+.delete-trash-button.is-pressing {
+  animation: trashShake 0.6s ease-in-out infinite;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.35), rgba(239, 68, 68, 0.2));
+  border-color: rgba(220, 38, 38, 0.8);
+  color: #991b1b;
+  box-shadow: 0 0 16px rgba(220, 38, 38, 0.4);
+}
+
+.delete-trash-button.is-pressing i {
+  animation: trashIconSpin 0.8s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.6));
+}
+
+.delete-trash-button.is-deleting {
+  animation: trashPulse 1s ease-in-out infinite;
+  background: linear-gradient(135deg, rgba(185, 28, 28, 0.45), rgba(220, 38, 38, 0.25));
+  border-color: #b91c1c;
+  color: #7f1d1d;
+  box-shadow: 0 0 20px rgba(185, 28, 28, 0.5);
+}
+
+.delete-trash-button.is-deleting i {
+  animation: trashIconPulse 0.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(185, 28, 28, 0.8));
+}
+
+@keyframes trashShake {
+  0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
+  15% { transform: translateX(-2px) rotate(-3deg) scale(1.05); }
+  30% { transform: translateX(2px) rotate(3deg) scale(1.05); }
+  45% { transform: translateX(-2px) rotate(-3deg) scale(1.05); }
+  60% { transform: translateX(2px) rotate(3deg) scale(1.05); }
+  75% { transform: translateX(-1px) rotate(-1deg) scale(1.02); }
+  90% { transform: translateX(1px) rotate(1deg) scale(1.02); }
+}
+
+@keyframes trashPulse {
+  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 20px rgba(185, 28, 28, 0.5); }
+  50% { transform: scale(1.15); opacity: 0.8; box-shadow: 0 0 28px rgba(185, 28, 28, 0.7); }
+}
+
+@keyframes trashIconSpin {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes trashIconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 #banner-modal,
@@ -4331,6 +4492,8 @@ html[data-status="oracle"] .sephirot {
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Evitar que o timeline roube o drag dos bronze blocks */
+  touch-action: pan-y;
   min-height: 0;
   border: none;
   border-radius: 24px;
@@ -4432,6 +4595,15 @@ html[data-status="oracle"] .sephirot {
   cursor: grab;
   user-select: none;
   -webkit-user-drag: element;
+  /* Forçar drag no Firefox e outros browsers */
+  -moz-user-drag: element;
+  -khtml-user-drag: element;
+  /* Garantir que o bronze block tenha prioridade no drag */
+  z-index: 10;
+  /* Prevenir que outros elementos roubem o drag */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .bronze-block.is-scheduled {
@@ -5388,7 +5560,7 @@ html[data-status="oracle"] .sephirot {
 
 .bronze-item-edit:not(.is-editing) .bronze-icon-container {
   cursor: default;
-  pointer-events: none;
+  /* pointer-events: none; REMOVIDO PARA NÃO BLOQUEAR DRAG */
 }
 
 .bronze-item-edit.is-editing .bronze-icon-container:hover {

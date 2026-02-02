@@ -2360,49 +2360,25 @@ const setPlannerWeekOffset = (nextOffset) => {
 // Alias para compatibilidade
 const renderWeekGrid = () => renderWeekView();
 
-const buildBronzeElement = (action) => {
-  // Usar a buildBronzeBlock completa que tem drag e hold perfeitos
-  const block = buildBronzeBlock(action, {});
-  return block;
-};
+// buildBronzeElement REMOVIDO - vamos criar do zero
 
+// renderWeekView - só grid básico sem bronze
 const renderWeekView = () => {
   const weekGrid = document.getElementById("week-grid");
   if (!weekGrid) return;
-  const planner = loadPlanner();
-  // Usar plannerWeekOffset para calcular a semana correta
-  const today = new Date();
-  const baseWeekStart = getWeekStartDate(today);
-  const weekStart = new Date(baseWeekStart);
-  weekStart.setDate(baseWeekStart.getDate() + (plannerWeekOffset || 0) * 7);
-  const dayStartHour = 4;
-  const dayEndHour = 28;
+  
+  const dayStartHour = 6;
+  const dayEndHour = 24;
   const isNarrow = window.innerWidth <= 520;
   const pixelsPerMinute = isNarrow ? 0.6 : 1;
   const slotHeight = Math.round(60 * pixelsPerMinute);
   const timelineTopPadding = 16;
   const hourCount = dayEndHour - dayStartHour + 1;
   
-  // Limpar todos os bronze blocks antes de limpar o HTML para garantir limpeza de timers
-  const existingBlocks = weekGrid.querySelectorAll(".bronze-block");
-  existingBlocks.forEach((block) => {
-    const completeTimer = block.dataset.completeTimer;
-    const dragTimer = block.dataset.dragTimer;
-    if (completeTimer) clearTimeout(Number(completeTimer));
-    if (dragTimer) clearTimeout(Number(dragTimer));
-    // Remover listeners se existirem
-    if (block._handleDragStart) block.removeEventListener("dragstart", block._handleDragStart);
-    if (block._onPointerDown) block.removeEventListener("pointerdown", block._onPointerDown);
-    if (block._endPress) {
-      block.removeEventListener("pointerup", block._endPress);
-      block.removeEventListener("pointerleave", block._endPress);
-      block.removeEventListener("pointercancel", block._endPress);
-    }
-  });
-  
   weekGrid.innerHTML = "";
   weekGrid.className = "week-grid week-timeline";
   
+  // Header
   const header = document.createElement("div");
   header.className = "week-timeline-header";
   const timeSpacer = document.createElement("div");
@@ -2412,25 +2388,17 @@ const renderWeekView = () => {
     const label = document.createElement("div");
     label.className = "week-day-label";
     label.textContent = day.label;
-    const dateKey = getWeekDateKeyByIndex(weekStart, index);
-    const todayKey = formatDateKey(new Date());
-    if (dateKey === todayKey) label.classList.add("is-today");
     header.appendChild(label);
   });
   weekGrid.appendChild(header);
   
+  // Body com grid
   const body = document.createElement("div");
   body.className = "week-timeline-body";
   body.style.position = "relative";
-  // Altura do conteúdo: todos os horários (4h–28h) para poder rolar até o fim
-  const calculatedHeight = timelineTopPadding * 2 + hourCount * slotHeight;
-  const viewportHeight = window.innerHeight;
-  const fixedElementsHeight = 200; // header + bronze list + bottom nav + safe-area
-  const availableHeight = Math.max(viewportHeight - fixedElementsHeight, 400);
-  const finalBodyHeight = Math.max(calculatedHeight, availableHeight);
-  body.style.height = `${finalBodyHeight}px`;
-  body.style.minHeight = `${calculatedHeight}px`;
+  body.style.height = `${timelineTopPadding * 2 + hourCount * slotHeight}px`;
   
+  // Linhas de horário
   for (let hour = dayStartHour; hour <= dayEndHour; hour += 1) {
     const row = document.createElement("div");
     row.className = "week-timeline-row";
@@ -2449,117 +2417,21 @@ const renderWeekView = () => {
     timeLabel.style.top = "-10px";
     timeLabel.style.fontSize = "10px";
     timeLabel.style.color = "#bdbdbd";
-    timeLabel.style.fontFamily = '"JetBrains Mono", "Consolas", "Courier New", monospace';
-    const displayHour = hour > 24 ? hour - 24 : hour;
-    timeLabel.textContent = `${String(displayHour).padStart(2, "0")}:00`;
+    timeLabel.textContent = `${String(hour).padStart(2, "0")}:00`;
     row.appendChild(timeLabel);
     body.appendChild(row);
   }
   
+  // Colunas dos dias
   WEEKDAYS.forEach((day, dayIndex) => {
     const dayCol = document.createElement("div");
     dayCol.className = "week-day-col";
     dayCol.style.position = "absolute";
-    dayCol.style.left = `calc(48px + ${dayIndex} * (100% - 48px) / 7)`;
-    dayCol.style.width = `calc((100% - 48px) / 7)`;
+    dayCol.style.left = `${(dayIndex * (100 / 7))}%`;
+    dayCol.style.width = `${100 / 7}%`;
     dayCol.style.top = `${timelineTopPadding}px`;
+    dayCol.style.height = `${hourCount * slotHeight}px`;
     dayCol.style.borderLeft = dayIndex > 0 ? "1px solid rgba(255, 255, 255, 0.08)" : "none";
-    
-    // Usar requestAnimationFrame para garantir altura real após renderização
-    requestAnimationFrame(() => {
-      const actualBodyHeight = body.offsetHeight || body.clientHeight || finalBodyHeight;
-      const dayColHeight = actualBodyHeight - timelineTopPadding;
-      dayCol.style.height = `${dayColHeight}px`;
-      dayCol.style.minHeight = `${dayColHeight}px`;
-      dayCol.style.bottom = '0'; // Garantir que vai até o final
-    });
-    
-    // Altura inicial baseada no cálculo
-    const dayColHeight = finalBodyHeight - timelineTopPadding;
-    dayCol.style.height = `${dayColHeight}px`;
-    dayCol.style.minHeight = `${dayColHeight}px`;
-    
-    const dayKey = day.key;
-    const dateKey = getWeekDateKeyByIndex(weekStart, dayIndex);
-    const dayDate = new Date(weekStart);
-    dayDate.setDate(dayDate.getDate() + dayIndex);
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const targetDate = new Date(weekStart);
-    targetDate.setDate(targetDate.getDate() + dayIndex);
-    targetDate.setHours(0, 0, 0, 0);
-    const dayOffset = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    const scheduledActions = planner.bronzeActions.filter(
-      (action) =>
-        (action.status === "scheduled" || action.status === "done") &&
-        Number(action.scheduledDayOffset || 0) === dayOffset,
-    );
-    const scheduledIds = new Set(scheduledActions.map((action) => action.id));
-    const recurringActions = planner.bronzeActions.filter(
-      (action) =>
-        !scheduledIds.has(action.id) &&
-        Array.isArray(action.weekdays) &&
-        action.weekdays.includes(dayKey),
-    );
-    
-    // Prevenir duplicação: garantir que ações não apareçam duas vezes
-    const actionsInDayCol = new Set([...scheduledActions, ...recurringActions].map(a => a.id));
-    
-    [...scheduledActions, ...recurringActions].forEach((action) => {
-      const startHour = Math.min(
-        dayEndHour,
-        Math.max(dayStartHour, Number(action.scheduledHour || dayStartHour)),
-      );
-      const startMinute = Number(action.scheduledMinute || 0);
-      const duration = Number(action.durationMinutes || 30);
-      const block = buildBronzeBlock(action, {
-        dayDate,
-        isRecurring: recurringActions.includes(action),
-      });
-      const top = (startHour - dayStartHour) * slotHeight + startMinute * pixelsPerMinute;
-      block.style.position = "absolute";
-      block.style.top = `${top}px`;
-      block.style.left = "4px";
-      block.style.right = "4px";
-      block.style.height = `${Math.max(20, duration * pixelsPerMinute)}px`;
-      block.style.pointerEvents = "auto";
-      dayCol.appendChild(block);
-    });
-    
-    dayCol.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-    });
-    dayCol.addEventListener("drop", (event) => {
-      event.preventDefault();
-      const payload = event.dataTransfer?.getData("text/plain");
-      if (!payload || !payload.startsWith("bronze:")) return;
-      const actionId = payload.replace("bronze:", "");
-      const rect = dayCol.getBoundingClientRect();
-      const y = event.clientY - rect.top - timelineTopPadding;
-      const hour = Math.max(dayStartHour, Math.min(dayEndHour, Math.floor(y / slotHeight) + dayStartHour));
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const targetDate = new Date(weekStart);
-      targetDate.setDate(targetDate.getDate() + dayIndex);
-      targetDate.setHours(0, 0, 0, 0);
-      const dayOffset = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      const updated = planner.bronzeActions.map((action) => {
-        if (action.id !== actionId) return action;
-        return {
-          ...action,
-          status: "scheduled",
-          scheduledHour: hour,
-          scheduledMinute: 0,
-          scheduledDayOffset: dayOffset,
-        };
-      });
-      savePlanner({ ...planner, bronzeActions: updated });
-      renderWeekView();
-      checkMissionProgress();
-    });
-    
     body.appendChild(dayCol);
   });
   
@@ -3584,39 +3456,26 @@ const applyGlitch = () => {
   }
 };
 
+// renderPlanner - só grid básico do dia sem bronze
 const renderPlanner = () => {
   const timeline = document.getElementById("timeline");
   const bronzeList = document.getElementById("bronze-list");
   if (!timeline || !bronzeList) return;
 
-  const planner = loadPlanner();
   const dayDate = getPlannerDateFromOffset(plannerDayOffset);
   const dayKey = getWeekdayKeyForDate(dayDate);
-  const dayStartHour = 4;
-  const dayEndHour = 28;
+  const dayStartHour = 6;
+  const dayEndHour = 24;
   const isNarrow = window.innerWidth <= 520;
   const pixelsPerMinute = isNarrow ? 0.6 : 1;
-
-  // Limpar todos os bronze blocks antes de limpar o HTML para garantir limpeza de timers
-  const existingBlocks = timeline.querySelectorAll(".bronze-block");
-  existingBlocks.forEach((block) => {
-    const completeTimer = block.dataset.completeTimer;
-    const dragTimer = block.dataset.dragTimer;
-    if (completeTimer) clearTimeout(Number(completeTimer));
-    if (dragTimer) clearTimeout(Number(dragTimer));
-    // Remover listeners se existirem
-    if (block._handleDragStart) block.removeEventListener("dragstart", block._handleDragStart);
-    if (block._onPointerDown) block.removeEventListener("pointerdown", block._onPointerDown);
-    if (block._endPress) {
-      block.removeEventListener("pointerup", block._endPress);
-      block.removeEventListener("pointerleave", block._endPress);
-      block.removeEventListener("pointercancel", block._endPress);
-    }
-  });
-
-  timeline.innerHTML = "";
+  const slotHeight = Math.round(60 * pixelsPerMinute);
+  const timelineTopPadding = 16;
+  const hourCount = dayEndHour - dayStartHour + 1;
   
-  // Criar header igual ao da semana (mas com uma coluna só)
+  timeline.innerHTML = "";
+  bronzeList.innerHTML = "";
+  
+  // Header do dia
   const header = document.createElement("div");
   header.className = "day-timeline-header";
   header.style.display = "grid";
@@ -3647,51 +3506,25 @@ const renderPlanner = () => {
   header.appendChild(dayLabel);
   timeline.appendChild(header);
   
-  // Criar container para linhas de timeline (similar à semana)
+  // Body com horários
   const timelineBody = document.createElement("div");
   timelineBody.className = "timeline-body";
   timelineBody.style.position = "relative";
   timelineBody.style.marginTop = "8px";
+  timelineBody.style.height = `${timelineTopPadding * 2 + hourCount * slotHeight}px`;
   
-  const hourCount = dayEndHour - dayStartHour + 1;
-  const slotHeight = Math.round(60 * pixelsPerMinute);
-  const timelineTopPadding = 16;
-  
-  // Altura total: header (40px) + body com todos os horários
-  // Garantir que o grid ocupe toda a altura disponível da tela
-  const plannerLayout = document.querySelector(".planner-layout");
-  const viewportHeight = window.innerHeight;
-  const fixedElementsHeight = 120; // header + margins
-  const availableHeight = viewportHeight - fixedElementsHeight;
-  const minHeight = Math.max(availableHeight, viewportHeight * 0.8); // Mínimo 80% da viewport
-  
-  const calculatedBodyHeight = timelineTopPadding * 2 + hourCount * slotHeight;
-  const calculatedHeight = 40 + calculatedBodyHeight;
-  const finalHeight = Math.max(calculatedHeight, minHeight);
-  const bodyMinHeight = finalHeight - 40;
-  const finalBodyHeight = Math.max(calculatedBodyHeight, bodyMinHeight);
-  
-  // Conteúdo com altura total para poder rolar até o último horário
-  timeline.style.height = `${finalHeight}px`;
-  timeline.style.maxHeight = `${availableHeight}px`;
-  timelineBody.style.minHeight = `${bodyMinHeight}px`;
-  timelineBody.style.height = `${finalBodyHeight}px`;
-  
-  timeline.style.overflowY = "auto";
-  timeline.style.overflowX = "hidden";
-  
-  // Criar linhas de timeline (igual à semana)
+  // Linhas de horário
   for (let hour = dayStartHour; hour <= dayEndHour; hour += 1) {
-    const row = document.createElement("div");
-    row.className = "time-slot";
-    row.dataset.hour = String(hour);
-    row.style.position = "absolute";
-    row.style.top = `${timelineTopPadding + (hour - dayStartHour) * slotHeight}px`;
-    row.style.left = "0";
-    row.style.right = "0";
-    row.style.height = "1px";
-    row.style.borderTop = "1px solid rgba(255, 255, 255, 0.06)";
-    row.style.pointerEvents = "none";
+    const slot = document.createElement("div");
+    slot.className = "time-slot";
+    slot.dataset.hour = String(hour);
+    slot.style.position = "absolute";
+    slot.style.top = `${timelineTopPadding + (hour - dayStartHour) * slotHeight}px`;
+    slot.style.left = "0";
+    slot.style.right = "0";
+    slot.style.height = "1px";
+    slot.style.borderTop = "1px solid rgba(255, 255, 255, 0.06)";
+    slot.style.pointerEvents = "none";
 
     const label = document.createElement("div");
     label.className = "time-label";
@@ -3700,167 +3533,77 @@ const renderPlanner = () => {
     label.style.top = "-10px";
     label.style.fontSize = "10px";
     label.style.color = "#bdbdbd";
-    label.style.fontFamily = '"JetBrains Mono", "Consolas", "Courier New", monospace';
-    const displayHour = hour > 24 ? hour - 24 : hour;
-    label.textContent = `${String(displayHour).padStart(2, "0")}:00`;
-    row.appendChild(label);
-    timelineBody.appendChild(row);
+    label.textContent = `${String(hour).padStart(2, "0")}:00`;
+    slot.appendChild(label);
+    timelineBody.appendChild(slot);
   }
   
-  // Criar área de drop para o dia (similar à coluna da semana, mas esticada)
-  const dayCol = document.createElement("div");
-  dayCol.className = "day-col";
-  dayCol.style.position = "absolute";
-  dayCol.style.left = "48px";
-  dayCol.style.right = "0";
-  dayCol.style.top = `${timelineTopPadding}px`;
-  dayCol.style.pointerEvents = "auto";
+  timeline.appendChild(timelineBody);
   
-  // Usar requestAnimationFrame para garantir altura real após renderização
-  requestAnimationFrame(() => {
-    const actualBodyHeight = timelineBody.offsetHeight || timelineBody.clientHeight || finalBodyHeight;
-    const dayColHeight = actualBodyHeight - timelineTopPadding;
-    dayCol.style.height = `${dayColHeight}px`;
-    dayCol.style.minHeight = `${dayColHeight}px`;
-    dayCol.style.bottom = '0'; // Garantir que vai até o final
-  });
+  // Bay area - mostrar ações que não estão no planner
+  const planner = loadPlanner();
+  const allActions = planner.bronzeActions || [];
   
-  // Altura inicial baseada no cálculo
-  const dayColHeight = finalBodyHeight - timelineTopPadding;
-  dayCol.style.height = `${dayColHeight}px`;
-  dayCol.style.minHeight = `${dayColHeight}px`;
-  
-  dayCol.addEventListener("dragover", (event) => {
-    event.preventDefault();
-  });
-  
-  dayCol.addEventListener("drop", (event) => {
-    event.preventDefault();
-    const payload = event.dataTransfer?.getData("text/plain");
-    if (!payload || !payload.startsWith("bronze:")) return;
-    const actionId = payload.replace("bronze:", "");
-    const rect = dayCol.getBoundingClientRect();
-    const y = event.clientY - rect.top - timelineTopPadding;
-    const hour = Math.max(dayStartHour, Math.min(dayEndHour, Math.floor(y / slotHeight) + dayStartHour));
-    const updated = planner.bronzeActions.map((action) => {
-      if (action.id !== actionId) return action;
-      // Manter status se já estiver scheduled ou done, caso contrário marcar como scheduled
-      const newStatus = action.status === "done" || action.status === "scheduled" ? action.status : "scheduled";
-      return {
-        ...action,
-        status: newStatus,
-        scheduledHour: hour,
-        scheduledMinute: 0,
-        scheduledDayOffset: plannerDayOffset,
-      };
-    });
-    // Garantir que todas ações são preservadas
-    const allActionsPreserved = updated.length === planner.bronzeActions.length;
-    if (!allActionsPreserved) {
-      console.warn('[Planner] Ações perdidas ao arrastar', {
-        antes: planner.bronzeActions.length,
-        depois: updated.length
-      });
+  // Ações que estão agendadas para hoje (no grid)
+  const scheduledToday = allActions.filter(action => {
+    if (action.status === "scheduled" || action.status === "done") {
+      return Number(action.scheduledDayOffset || 0) === plannerDayOffset;
     }
-    savePlanner({ ...planner, bronzeActions: updated });
-    renderPlanner();
-    checkMissionProgress();
+    // Ações recorrentes para hoje
+    if (Array.isArray(action.weekdays) && action.weekdays.includes(dayKey)) {
+      const scheduledIds = allActions
+        .filter(a => (a.status === "scheduled" || a.status === "done") && Number(a.scheduledDayOffset || 0) === plannerDayOffset)
+        .map(a => a.id);
+      return !scheduledIds.includes(action.id);
+    }
+    return false;
   });
   
-  timelineBody.appendChild(dayCol);
-  timeline.appendChild(timelineBody);
-
-  const scheduledActions = planner.bronzeActions.filter(
-    (action) =>
-      (action.status === "scheduled" || action.status === "done") &&
-      Number(action.scheduledDayOffset || 0) === plannerDayOffset,
-  );
-  const scheduledIds = new Set(scheduledActions.map((action) => action.id));
-  const recurringActions = planner.bronzeActions.filter(
-    (action) =>
-      !scheduledIds.has(action.id) &&
-      Array.isArray(action.weekdays) &&
-      action.weekdays.includes(dayKey),
-  );
-  
-  // Prevenir duplicação: garantir que ações não apareçam duas vezes
-  const actionsInGrid = new Set([...scheduledActions, ...recurringActions].map(a => a.id));
-  [...scheduledActions, ...recurringActions].forEach((action) => {
-    const startHour = Math.min(
-      dayEndHour,
-      Math.max(dayStartHour, Number(action.scheduledHour || dayStartHour)),
-    );
-    const startMinute = Number(action.scheduledMinute || 0);
-    const duration = Number(action.durationMinutes || 30);
-    const block = buildBronzeBlock(action, {
-      dayDate,
-      isRecurring: recurringActions.includes(action),
-    });
-    const top = (startHour - dayStartHour) * slotHeight + startMinute * pixelsPerMinute;
-    block.style.position = "absolute";
-    block.style.top = `${top}px`;
-    block.style.left = "4px";
-    block.style.right = "4px";
-    block.style.height = `${Math.max(20, duration * pixelsPerMinute)}px`;
-    block.style.pointerEvents = "auto";
-    dayCol.appendChild(block);
+  // Ações que NÃO estão no grid de hoje (para mostrar no bay area)
+  const actionsNotInGrid = allActions.filter(action => {
+    return !scheduledToday.some(scheduled => scheduled.id === action.id);
   });
   
-  timeline.appendChild(timelineBody);
-
-  bronzeList.innerHTML = "";
-  // Mostrar TODAS ações que não estão no grid do dia atual
-  // Isso inclui ações backlog e ações de outras arenas que não estão scheduled/done para hoje
-  const bronzeBacklog = planner.bronzeActions.filter((action) => {
-    // Não mostrar ações que já estão no grid
-    if (actionsInGrid.has(action.id)) return false;
-    // Mostrar todas outras ações (backlog, scheduled para outros dias, etc.)
-    return true;
-  });
-  console.log('🔍 Total de ações no planner:', planner.bronzeActions.length);
-  console.log('🔍 Ações no grid:', actionsInGrid.size);
-  console.log('🔍 Backlog:', bronzeBacklog.length);
+  console.log('🔍 Total de ações:', allActions.length);
+  console.log('🔍 Ações no grid hoje:', scheduledToday.length);
+  console.log('🔍 Ações para bay area:', actionsNotInGrid.length);
   
-  if (bronzeBacklog.length === 0) {
+  if (actionsNotInGrid.length === 0) {
     const empty = document.createElement("div");
     empty.className = "backlog-empty";
-    empty.textContent = "Sem acoes de bronze.";
+    empty.textContent = "Todas as ações estão agendadas!";
     bronzeList.appendChild(empty);
   } else {
-  bronzeBacklog.forEach((action) => {
-    console.log('🔍 Criando bronze para:', action.id, action.title);
-    const bronzeEl = buildBronzeElement(action);
-    console.log('🔍 Elemento criado:', bronzeEl);
-    bronzeList.appendChild(bronzeEl);
-  });
+    actionsNotInGrid.forEach(action => {
+      const bronzeItem = createBronzeItemForBayArea(action);
+      bronzeList.appendChild(bronzeItem);
+    });
   }
-
-  if (window.lucide) window.lucide.createIcons();
-  // Só renderizar semana se estiver em view de semana
-  // Reutilizar plannerLayout já declarado acima
-  const isWeekView = plannerLayout?.classList.contains("week-view");
-  if (isWeekView) {
-    renderWeekView();
-  }
-  const arenaIds = Array.from(
-    new Set(planner.bronzeActions.map((action) => action.arenaId).filter(Boolean)),
-  );
-  arenaIds.forEach((arenaId) => updateGlobalArenaProgress(arenaId, planner.bronzeActions));
 };
 
-
-
-// REMOVIDO - Agora usa buildBronzeBlock para tudo
-// const buildPillElement = (pill, arenaTitle) => {
-//   const block = buildBronzeBlock(pill, {});
-//   const meta = document.createElement("div");
-//   meta.className = "pill-meta";
-//   meta.textContent = pill.arenaId ? `Arena: ${arenaTitle}` : "Sem arena";
-//   block.appendChild(meta);
-//   return block;
-// };
-
-// REMOVIDO - Sistema pills unificado em bronzeActions
+// Criar bronze item para bay area
+const createBronzeItemForBayArea = (action) => {
+  const item = document.createElement("div");
+  item.className = "bronze-item";
+  item.dataset.id = action.id;
+  if (action.serious) item.classList.add("serious");
+  
+  const icon = document.createElement("i");
+  icon.setAttribute("data-lucide", action.icon || "circle");
+  item.appendChild(icon);
+  
+  const title = document.createElement("div");
+  title.className = "bronze-title";
+  title.textContent = action.title || "Ação";
+  item.appendChild(title);
+  
+  // Clique para abrir modal
+  item.addEventListener("click", () => {
+    openBronzeModal(action.arenaId, action.id);
+  });
+  
+  return item;
+};
 
 let navInitialized = false;
 
@@ -4046,6 +3789,77 @@ const seedDNAIfMissing = () => {
   const seeded = buildDefaultDNA();
   saveDNA(seeded, { skipSync: true });
   return seeded;
+};
+
+// Forçar migração completa de todos os dados antigos
+const forceCompleteMigration = () => {
+  console.log("[MIGRATION] Iniciando migração completa...");
+  
+  // Migrar DNA
+  const dna = getDNA();
+  if (dna && Array.isArray(dna.assets)) {
+    const migrated = migrateAssetIds(dna);
+    if (migrated) {
+      saveDNA(dna, { skipSync: true });
+      console.log("[MIGRATION] DNA migrado!");
+    }
+  }
+  
+  // Migrar Planner
+  const planner = loadPlanner();
+  if (planner && Array.isArray(planner.bronzeActions)) {
+    const idMapping = {
+      "conexao": "consciencia",
+      "mente": "espaco-mental",
+      "verdade": "proposito",
+      "inspiracao": "projetos",
+      "amor": "conexoes",
+      "abundancia": "financas",
+      "autenticidade": "hobbies"
+    };
+    
+    let plannerMigrated = false;
+    planner.bronzeActions.forEach((action) => {
+      if (action.arenaId && idMapping[action.arenaId]) {
+        action.arenaId = idMapping[action.arenaId];
+        plannerMigrated = true;
+      }
+    });
+    
+    if (plannerMigrated) {
+      savePlanner(planner);
+      console.log("[MIGRATION] Planner migrado!");
+    }
+  }
+  
+  // Migrar Arenas
+  const arenas = loadArenas();
+  if (arenas && Array.isArray(arenas)) {
+    const idMapping = {
+      "conexao": "consciencia",
+      "mente": "espaco-mental",
+      "verdade": "proposito",
+      "inspiracao": "projetos",
+      "amor": "conexoes",
+      "abundancia": "financas",
+      "autenticidade": "hobbies"
+    };
+    
+    let arenasMigrated = false;
+    arenas.forEach((arena) => {
+      if (arena.assetId && idMapping[arena.assetId]) {
+        arena.assetId = idMapping[arena.assetId];
+        arenasMigrated = true;
+      }
+    });
+    
+    if (arenasMigrated) {
+      saveArenas(arenas);
+      console.log("[MIGRATION] Arenas migradas!");
+    }
+  }
+  
+  console.log("[MIGRATION] Migração completa finalizada!");
 };
 
 const getAssetFromDNA = (dna, assetId) => dna.assets.find((asset) => asset.id === assetId);
@@ -4782,12 +4596,9 @@ const openArenaDossier = (arenaId) => {
   const planner = loadPlanner();
   const actions = planner.bronzeActions.filter((action) => action.arenaId === arenaId);
   console.log('[DEBUG] Ações encontradas para arena:', actions.length);
-  if (actions.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "arena-empty";
-    empty.textContent = "Sem acoes de bronze.";
-    bronzeList.appendChild(empty);
-  } else {
+  
+  // Sempre mostrar o botão "+" (mesmo sem ações)
+  if (actions.length > 0) {
     // Criar layout horizontal para ações bronze
     const actionsContainer = document.createElement("div");
     actionsContainer.className = "arena-actions-container";
@@ -4905,6 +4716,38 @@ const openArenaDossier = (arenaId) => {
     
     actionsContainer.appendChild(addSquare);
     bronzeList.appendChild(actionsContainer);
+  } else {
+    // Sem ações: mostrar apenas o botão "+"
+    const addSquare = document.createElement("div");
+    addSquare.className = "arena-action-square arena-add-square";
+    addSquare.style.cssText = `
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      border: 2px dashed rgba(212, 175, 55, 0.6);
+      background: rgba(212, 175, 55, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    `;
+    
+    const plusIcon = document.createElement("i");
+    plusIcon.setAttribute("data-lucide", "plus");
+    plusIcon.style.cssText = `
+      width: 20px;
+      height: 20px;
+      color: #f7e7b3;
+    `;
+    addSquare.appendChild(plusIcon);
+    
+    addSquare.addEventListener("click", () => {
+      openBronzeModal(arenaId);
+    });
+    
+    bronzeList.appendChild(addSquare);
   }
   
   if (window.lucide) window.lucide.createIcons();
@@ -5074,6 +4917,10 @@ const openBronzeModal = (arenaId, actionId) => {
   const seriousToggle = document.getElementById("bronze-serious");
   const atemporalToggle = document.getElementById("bronze-atemporal");
   const titleInput = document.getElementById("bronze-title");
+  const deleteContainer = document.getElementById("bronze-delete-container");
+  const deleteBtn = document.getElementById("bronze-delete-btn");
+  const editContainer = document.getElementById("bronze-edit-container");
+  const editBtn = document.getElementById("bronze-edit-btn");
   if (!modal || !iconGrid || !durationInput || !seriousToggle || !titleInput) return;
   const formatDuration = (minutes) => {
     const total = Math.max(0, Math.round(Number(minutes) || 0));
@@ -5104,6 +4951,49 @@ const openBronzeModal = (arenaId, actionId) => {
   modal.querySelectorAll(".weekday-grid input[type='checkbox']").forEach((input) => {
     input.checked = Array.isArray(existing?.weekdays) ? existing.weekdays.includes(input.value) : false;
   });
+  
+  // Mostrar/ocultar botões (só para ações existentes = edição)
+  if (existing && actionId) {
+    // Botão Editar - sempre visível em ações existentes
+    if (editContainer && editBtn) {
+      editContainer.style.display = "block";
+      editBtn.onclick = () => {
+        // Habilitar edição dos campos
+        titleInput.removeAttribute("readonly");
+        durationInput.removeAttribute("disabled");
+        seriousToggle.removeAttribute("disabled");
+        if (atemporalToggle) atemporalToggle.removeAttribute("disabled");
+        modal.querySelectorAll(".weekday-grid input").forEach(input => input.removeAttribute("disabled"));
+        iconGrid.querySelectorAll("button").forEach(btn => btn.removeAttribute("disabled"));
+        
+        // Mostrar lixeira só quando está editando
+        if (deleteContainer && deleteBtn) {
+          deleteContainer.style.display = "block";
+          setupDeleteHold(deleteBtn, actionId);
+        }
+        
+        // Esconder botão editar
+        editContainer.style.display = "none";
+      };
+    }
+    
+    // Lixeira - só aparece quando está editando
+    if (deleteContainer) {
+      deleteContainer.style.display = "none";
+    }
+  } else {
+    // Criar nova ação - campos editáveis, sem botões
+    titleInput.removeAttribute("readonly");
+    durationInput.removeAttribute("disabled");
+    seriousToggle.removeAttribute("disabled");
+    if (atemporalToggle) atemporalToggle.removeAttribute("disabled");
+    modal.querySelectorAll(".weekday-grid input").forEach(input => input.removeAttribute("disabled"));
+    iconGrid.querySelectorAll("button").forEach(btn => btn.removeAttribute("disabled"));
+    
+    if (editContainer) editContainer.style.display = "none";
+    if (deleteContainer) deleteContainer.style.display = "none";
+  }
+  
   iconGrid.innerHTML = "";
   BRONZE_ICONS.forEach((iconName) => {
     const option = document.createElement("button");
@@ -5126,6 +5016,98 @@ const openBronzeModal = (arenaId, actionId) => {
   });
   if (window.lucide) window.lucide.createIcons();
   modal.classList.add("is-open");
+};
+
+// Configurar hold para deletar ação
+const setupDeleteHold = (deleteBtn, actionId) => {
+  console.log('🔧 Configurando hold para deletar:', actionId);
+  let holdTimer = null;
+  let isPressing = false;
+  let startTime = null;
+  
+  const startHold = (e) => {
+    console.log('🚀 Iniciando hold para deletar:', actionId);
+    e.preventDefault();
+    if (isPressing) return;
+    
+    isPressing = true;
+    startTime = performance.now(); // Mais preciso que Date.now()
+    deleteBtn.classList.add("is-pressing");
+    
+    holdTimer = setTimeout(() => {
+      const elapsed = performance.now() - startTime;
+      console.log('⏰ Tempo decorrido EXATO:', elapsed, 'ms - deletando:', actionId);
+      deleteBtn.classList.remove("is-pressing");
+      deleteBtn.classList.add("is-deleting");
+      
+      // Confirmar deleção
+      setTimeout(() => {
+        deleteBronzeAction(actionId);
+      }, 500);
+    }, 1000); // 1 segundo para testar timing
+  };
+  
+  const endHold = () => {
+    if (isPressing && startTime) {
+      const elapsed = performance.now() - startTime;
+      console.log('🛑 Hold cancelado após', elapsed, 'ms:', actionId);
+    }
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    isPressing = false;
+    startTime = null;
+    deleteBtn.classList.remove("is-pressing", "is-deleting");
+  };
+  
+  // Remover eventos anteriores
+  const newBtn = deleteBtn.cloneNode(true);
+  deleteBtn.parentNode.replaceChild(newBtn, deleteBtn);
+  
+  // Adicionar novos eventos
+  newBtn.addEventListener("mousedown", startHold);
+  newBtn.addEventListener("touchstart", startHold);
+  newBtn.addEventListener("mouseup", endHold);
+  newBtn.addEventListener("mouseleave", endHold);
+  newBtn.addEventListener("touchend", endHold);
+  newBtn.addEventListener("touchcancel", endHold);
+  
+  // Prevenir menu de contexto
+  newBtn.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    return false;
+  });
+  
+  console.log('✅ Hold configurado com sucesso!');
+};
+
+// Deletar ação bronze completa
+const deleteBronzeAction = (actionId) => {
+  console.log('🗑️ Deletando ação bronze:', actionId);
+  
+  // 1. Remover do planner
+  const planner = loadPlanner();
+  const updatedActions = planner.bronzeActions.filter(action => action.id !== actionId);
+  savePlanner({ ...planner, bronzeActions: updatedActions });
+  
+  // 2. Remover da arena (se tiver count)
+  const actionToDelete = planner.bronzeActions.find(action => action.id === actionId);
+  if (actionToDelete?.arenaId) {
+    updateArenaCountsForBronze(actionToDelete.arenaId, -1);
+    updateGlobalArenaProgress(actionToDelete.arenaId, updatedActions);
+  }
+  
+  // 3. Remover logs (se existirem)
+  // TODO: Implementar remoção de logs se necessário
+  
+  // 4. Fechar modal e atualizar UI em tempo real
+  closeBronzeModal();
+  renderPlanner();
+  renderArenas();
+  checkMissionProgress();
+  
+  console.log('✅ Ação deletada com sucesso!');
 };
 
 const closeBronzeModal = () => {
@@ -5303,11 +5285,11 @@ const createBronzeFromInit = (title, icon) => {
   return action;
 };
 
-const getConexaoLema = () => {
+const getConscienciaLema = () => {
   const dna = seedDNAIfMissing();
   const asset = getAssetFromDNA(dna, "consciencia");
   const slot = asset?.profileSlots?.["consciencia.lema"];
-  return (slot?.value || "").trim();
+  return slot?.value;
 };
 
 const reconcileMissionState = (nextState) => {
@@ -5331,7 +5313,7 @@ const checkMissionProgress = () => {
     (action) =>
       action.status === "done" && Number(action.scheduledDayOffset || 0) !== 0,
   );
-  const m4 = Boolean(getConexaoLema());
+  const m4 = Boolean(getConscienciaLema());
   const m5 = missionState.m5;
   reconcileMissionState({
     m1,
@@ -5451,13 +5433,13 @@ const renderInitiationOverlay = () => {
   if (step === "m4") {
     title.textContent = "M4 - Lema";
     body.innerHTML = `
-      <div class="drawer-title">Defina seu Lema no Ativo Conexao</div>
+      <div class="drawer-title">Defina seu Lema no Ativo Consciência</div>
       <div class="init-actions">
-        <button class="gold-button" id="init-open-conexao">Abrir Conexao</button>
+        <button class="gold-button" id="init-open-consciencia">Abrir Consciência</button>
         <button class="silver-button" id="init-pass-through">Liberar interacao</button>
       </div>
     `;
-    const button = document.getElementById("init-open-conexao");
+    const button = document.getElementById("init-open-consciencia");
     button?.addEventListener("click", () => {
       openTreeEditor("consciencia");
     });
@@ -5708,6 +5690,7 @@ const initPlanner = () => {
     });
     bronzeList.addEventListener("drop", (e) => {
       e.preventDefault();
+      console.log('🎯 Drop no bronzeList (bay area)');
       const payload = e.dataTransfer?.getData("text/plain");
       if (!payload || !payload.startsWith("bronze:")) return;
       const actionId = payload.replace("bronze:", "");
@@ -6246,7 +6229,7 @@ const initMoodBar = () => {
       trackEnd: "#3a93e6",
     },
     {
-      label: "Amor",
+      label: "Conexões",
       min: 75,
       max: 85,
       color: "linear-gradient(90deg, #3c5bff, #5a79ff)",
@@ -6311,6 +6294,10 @@ const initApp = () => {
   if (appInitialized) return;
   appInitialized = true;
   ensureV2Reset();
+  
+  // Forçar migração completa de dados antigos
+  forceCompleteMigration();
+  
   const initialProfile = loadProfile();
   applyTheme(initialProfile.theme || "gold");
   if (initialProfile.status === "oracle") {
@@ -6456,16 +6443,27 @@ const initApp = () => {
   }
   if (bronzeSave) {
     bronzeSave.addEventListener("click", () => {
+      console.log('💾 Botão salvar bronze clicado');
       const modal = document.getElementById("bronze-modal");
       const titleInput = document.getElementById("bronze-title");
       const durationInput = document.getElementById("bronze-duration");
       const seriousToggle = document.getElementById("bronze-serious");
       const atemporalToggle = document.getElementById("bronze-atemporal");
-      if (!modal || !durationInput || !seriousToggle || !titleInput) return;
+      if (!modal || !durationInput || !seriousToggle || !titleInput) {
+        console.log('❌ Elementos não encontrados');
+        return;
+      }
       const arenaId = modal.dataset.arenaId;
-      if (!arenaId) return;
+      if (!arenaId) {
+        console.log('❌ Arena ID não encontrado');
+        return;
+      }
       const title = titleInput.value.trim();
-      if (!title) return;
+      if (!title) {
+        console.log('❌ Título vazio');
+        return;
+      }
+      console.log('💾 Dados da ação:', { title, arenaId });
       const durationMinutes = Number(durationInput.value || 60);
       const duration = `${durationMinutes}min`;
       const selectedIcon = modal.dataset.icon || BRONZE_ICONS[0];
@@ -6477,6 +6475,7 @@ const initApp = () => {
       const atemporal = !!atemporalToggle?.checked;
       const weeklyTarget = atemporal ? null : weekdays.length;
       const planner = loadPlanner();
+      console.log('💾 Planner antes:', planner.bronzeActions.length, 'ações');
       const editingId = modal.dataset.actionId;
       if (editingId) {
         planner.bronzeActions = planner.bronzeActions.map((action) =>
@@ -6510,9 +6509,15 @@ const initApp = () => {
           locked: false,
           createdDate: new Date().toISOString(),
         });
+        console.log('💾 Nova ação adicionada ao planner');
       }
+      console.log('💾 Planner depois:', planner.bronzeActions.length, 'ações');
+      console.log('💾 Salvando planner...');
       savePlanner(planner);
+      console.log('💾 Planner salvo, chamando renderPlanner()');
       renderPlanner();
+      renderArenas();
+      console.log('💾 renderPlanner() concluído');
       closeBronzeModal();
       checkMissionProgress();
     });

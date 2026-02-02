@@ -2919,6 +2919,307 @@ const buildBronzeBlock = (action, options = {}) => {
   block.addEventListener("pointerdown", onPointerDown);
   block.addEventListener("pointerup", endPress);
   block.addEventListener("pointerleave", endPress);
+  
+  // TOUCH EVENTS - TRANSFORM TRANSLATE CORRIGIDO
+  let isTouchDragging = false;
+  let touchHasMoved = false;
+  let originalPosition = null; // Guardar posição original
+  const isMobile = window.innerWidth <= 768; // MOVER PARA ESCOPO SUPERIOR
+  let lastScrollTime = 0; // THROTTLE PARA SCROLL
+  
+  block.addEventListener("touchstart", (e) => {
+    if (isGridAction || isBayAction) {
+      // NÃO interferir com startPress - deixar o hold to complete funcionar
+      // Apenas marcar que iniciou touch
+      isTouchDragging = true;
+      touchHasMoved = false;
+      
+      // Guardar posição ORIGINAL APENAS UMA VEZ se não existir
+      if (!originalPosition) {
+        const rect = block.getBoundingClientRect();
+        originalPosition = {
+          left: rect.left,
+          top: rect.top
+        };
+      }
+      
+      window.touchDraggedAction = action.id;
+      
+      // NÃO fazer transform ainda - esperar movimento
+      e.preventDefault();
+    }
+  });
+  
+  block.addEventListener("touchmove", (e) => {
+    if (isTouchDragging && !touchHasMoved) {
+      // PRIMEIRO MOVIMENTO
+      touchHasMoved = true;
+      
+      // Cancelar o hold to complete
+      const completeTimer = block.dataset.completeTimer;
+      if (completeTimer) {
+        clearTimeout(Number(completeTimer));
+        block.dataset.completeTimer = "";
+      }
+      endPress();
+      
+      const touch = e.touches[0];
+      
+      if (isMobile) {
+        // Mobile: transform translate com cálculo correto
+        // Calcular delta da posição ORIGINAL guardada
+        const deltaX = touch.clientX - originalPosition.left;
+        const deltaY = touch.clientY - originalPosition.top;
+        
+        // Aplicar transform
+        block.style.position = "";
+        block.style.zIndex = "10000";
+        block.style.opacity = "0.8";
+        block.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        block.style.transition = "none";
+        
+        // AUTO-SCROLL: se arrastar perto das bordas, rolar o planner
+        const scrollThreshold = 150;
+        const scrollSpeed = 5;
+        
+        // USAR TIMELINE COMO CONTAINER (tem overflow-y: auto)
+        let plannerContainer = document.querySelector('.timeline');
+        
+        if (!plannerContainer) {
+          plannerContainer = document.body;
+        }
+        
+        if (touch.clientY > window.innerHeight - scrollThreshold) {
+          const now = Date.now();
+          if (now - lastScrollTime > 50) {
+            plannerContainer.scrollTop += scrollSpeed;
+            lastScrollTime = now;
+          }
+        }
+        if (touch.clientY < scrollThreshold) {
+          const now = Date.now();
+          if (now - lastScrollTime > 50) {
+            plannerContainer.scrollTop -= scrollSpeed;
+            lastScrollTime = now;
+          }
+        }
+      } else {
+        // Desktop: usar page coordinates com scroll
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        block.style.position = "fixed";
+        block.style.zIndex = "10000";
+        block.style.opacity = "0.8";
+        block.style.left = `${touch.pageX - 30 - scrollX}px`;
+        block.style.top = `${touch.pageY - 15 - scrollY}px`;
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+    } else if (isTouchDragging && touchHasMoved) {
+      // MOVIMENTOS SEGUINTES
+      const touch = e.touches[0];
+      
+      if (isMobile) {
+        // Mobile: atualizar transform usando posição ORIGINAL guardada
+        const deltaX = touch.clientX - originalPosition.left;
+        const deltaY = touch.clientY - originalPosition.top;
+        
+        block.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        
+        // AUTO-SCROLL: se arrastar perto das bordas, rolar o planner
+        const scrollThreshold = 150;
+        const scrollSpeed = 5;
+        
+        // USAR TIMELINE COMO CONTAINER (tem overflow-y: auto)
+        let plannerContainer = document.querySelector('.timeline');
+        
+        if (!plannerContainer) {
+          plannerContainer = document.body;
+        }
+        
+        if (touch.clientY > window.innerHeight - scrollThreshold) {
+          // THROTTLE: só scroll a cada 50ms
+          const now = Date.now();
+          if (now - lastScrollTime > 50) {
+            plannerContainer.scrollTop += scrollSpeed;
+            lastScrollTime = now;
+          }
+        }
+        
+        // Scroll para cima se perto do top
+        if (touch.clientY < scrollThreshold) {
+          // THROTTLE: só scroll a cada 50ms
+          const now = Date.now();
+          if (now - lastScrollTime > 50) {
+            plannerContainer.scrollTop -= scrollSpeed;
+            lastScrollTime = now;
+          }
+        }
+      } else {
+        // Desktop: page coordinates
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        block.style.left = `${touch.pageX - 30 - scrollX}px`;
+        block.style.top = `${touch.pageY - 15 - scrollY}px`;
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+  
+  block.addEventListener("touchend", (e) => {
+    if (isTouchDragging) {
+      isTouchDragging = false;
+      
+      // Se não moveu, era hold to complete - não fazer nada
+      if (!touchHasMoved) {
+        window.touchDraggedAction = null;
+        return;
+      }
+      
+      // Restaurar estilos
+      if (isMobile) {
+        // Mobile: limpar transform
+        block.style.transform = "";
+        block.style.transition = "";
+      } else {
+        // Desktop: limpar position
+        block.style.position = "";
+        block.style.left = "";
+        block.style.top = "";
+      }
+      block.style.zIndex = "";
+      block.style.opacity = "";
+      
+      // Resetar posição original
+      originalPosition = null;
+      
+      // Drop livre - onde soltou, fica exatamente ali
+      const touch = e.changedTouches[0];
+      
+      let x, y;
+      if (isMobile) {
+        // Mobile: client coordinates (compatível com position fixed)
+        x = touch.clientX;
+        y = touch.clientY;
+      } else {
+        // Desktop: page coordinates com scroll
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        x = touch.pageX - scrollX;
+        y = touch.pageY - scrollY;
+      }
+      
+      // Timeline - DROP LIVRE
+      const timeline = document.getElementById('timeline');
+      if (timeline) {
+        const rect = timeline.getBoundingClientRect();
+        
+        // Ajustar rect para considerar bottom nav (reduzir área útil)
+        const bottomNavHeight = 40;
+        const adjustedBottom = rect.bottom - bottomNavHeight;
+        
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= adjustedBottom) {
+          const timelineBody = document.querySelector('.timeline-body');
+          if (timelineBody) {
+            const timelineRect = timelineBody.getBoundingClientRect();
+            const timelineTopPadding = 16;
+            const dayStartHour = 4;
+            const dayEndHour = 24;
+            const slotHeight = 60;
+            
+            // CORREÇÃO: Considerar scroll do timeline
+            const scrollContainer = document.querySelector('.timeline') || document.body;
+            const currentScroll = scrollContainer.scrollTop || 0;
+            
+            // DROP LIVRE - ONDE SOLTOU, FICA EXATAMENTE ALI
+            const yDrop = y - timelineRect.top - timelineTopPadding + currentScroll;
+            
+            const hour = dayStartHour + (yDrop / slotHeight);
+            const finalHour = Math.max(dayStartHour, Math.min(hour, dayEndHour));
+            
+            // Arredondar para hora inteira ou meia hora
+            const roundedHour = Math.round(finalHour * 2) / 2;
+            
+            console.log('📍 ONDE SOLTOU:', y, '→ 💾 ONDE SALVOU:', roundedHour + 'h');
+            
+            // Atualizar planner
+            const planner = loadPlanner();
+            const updated = planner.bronzeActions.map((action) => {
+              if (action.id !== window.touchDraggedAction) return action;
+              return {
+                ...action,
+                status: "scheduled",
+                scheduledHour: roundedHour,
+                scheduledMinute: roundedHour % 1 === 0 ? 0 : 30,
+                scheduledDayOffset: plannerDayOffset,
+              };
+            });
+            
+            // Salvar planner
+            savePlanner({ ...planner, bronzeActions: updated });
+            
+            window.touchDraggedAction = null;
+            return;
+          }
+        }
+      }
+      
+      // Bay area
+      const bronzeLists = document.querySelectorAll('.bronze-list');
+      for (const list of bronzeLists) {
+        const rect = list.getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          const planner = loadPlanner();
+          const updated = planner.bronzeActions.map((action) => {
+            if (action.id !== window.touchDraggedAction) return action;
+            if (action.status === "done") updateArenaCountsForBronze(action.arenaId, -1);
+            return {
+              ...action,
+              status: "backlog",
+              scheduledHour: undefined,
+              scheduledMinute: undefined,
+              scheduledDayOffset: undefined,
+              completedAt: undefined,
+              locked: false,
+            };
+          });
+          // Salvar planner imediatamente (sem delay para não mudar posição)
+          savePlanner({ ...planner, bronzeActions: updated });
+          window.touchDraggedAction = null;
+          return;
+        }
+      }
+      
+      window.touchDraggedAction = null;
+    }
+  });
+  
+  // FIX SVG MOBILE DRAG - impedir que SVG bloqueie o drag
+  const svgElements = block.querySelectorAll('svg, i, img');
+  svgElements.forEach(el => {
+    el.style.pointerEvents = 'none';
+    el.style.touchAction = 'none';
+    el.style.userSelect = 'none';
+    el.style.webkitUserSelect = 'none';
+    el.style.webkitTouchCallout = 'none';
+  });
+  
+  // FIX para todos os elementos internos
+  const allChildren = block.querySelectorAll('*');
+  allChildren.forEach(el => {
+    el.style.pointerEvents = 'none';
+    el.style.touchAction = 'none';
+  });
+  
+  // Permitir apenas o block principal receber eventos
+  block.style.pointerEvents = 'auto';
+  block.style.touchAction = 'none';
+  block.style.userSelect = 'none';
+  block.style.webkitUserSelect = 'none';
+  
   block.addEventListener("pointercancel", endPress);
   block.style.touchAction = "none";
   

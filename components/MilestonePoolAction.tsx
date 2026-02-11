@@ -1,0 +1,98 @@
+
+
+import React, { useRef, useState, useEffect } from 'react';
+import { Action } from '../types';
+import { useGame } from '../contexts/GameContext';
+import { useLongPress } from '../hooks/useLongPress';
+
+interface MilestonePoolActionProps {
+    action: Action;
+    onComplete: (actionId: string) => void;
+    onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
+}
+
+export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action, onComplete, onCustomDragStart }) => {
+    const { getAssetForAction } = useGame();
+    const [isHolding, setIsHolding] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const milestoneRef = useRef<HTMLDivElement>(null);
+    const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (completionTimeout.current) {
+                clearTimeout(completionTimeout.current);
+            }
+        };
+    }, []);
+
+    const asset = getAssetForAction(action.id);
+    const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+
+    const handleLongPress = () => {
+        if (isTransitioning) return;
+        setIsHolding(true);
+        setIsTransitioning(true);
+        if (completionTimeout.current) clearTimeout(completionTimeout.current);
+        completionTimeout.current = setTimeout(() => {
+            onComplete(action.id);
+            setIsHolding(false);
+            setIsTransitioning(false);
+        }, 3000);
+    };
+    
+    const cancelLongPress = () => {
+        if (completionTimeout.current) {
+            clearTimeout(completionTimeout.current);
+            completionTimeout.current = null;
+        }
+        setIsHolding(false);
+        setIsTransitioning(false);
+    };
+
+    const handleDragStart = (e: MouseEvent | TouchEvent) => {
+        const ghost = (
+             <div style={backgroundStyle} className="w-10 h-10 flex-shrink-0 flex items-center justify-center transform rotate-45 bg-gray-700 rounded-md border border-[var(--accent-silver)] opacity-80">
+                <span className="transform -rotate-45 text-xl">{action.icon}</span>
+            </div>
+        );
+        const duration = action.actionType === 'Marco' ? Math.max(15, action.duration) : action.duration;
+        const item = { type: 'new_action', payload: { actionId: action.id }, duration };
+        onCustomDragStart(e, item, ghost, milestoneRef);
+    };
+
+    const longPressEvents = useLongPress({
+        onLongPress: handleLongPress,
+        onLongPressCancel: cancelLongPress,
+        onLongPressRelease: cancelLongPress,
+        onDragStart: handleDragStart,
+        delay: 300,
+    });
+
+    return (
+        <div
+            ref={milestoneRef}
+            {...longPressEvents}
+            className="flex items-center space-x-2 p-1 rounded-lg hover:bg-white/10 cursor-grab relative"
+        >
+            <div
+                style={backgroundStyle}
+                className="w-8 h-8 flex-shrink-0 flex items-center justify-center transform rotate-45 bg-gray-700 rounded-md border border-[var(--accent-silver)]"
+            >
+                <span className="transform -rotate-45 text-lg">{action.icon}</span>
+            </div>
+            <span className="text-xs truncate">{action.name}</span>
+
+            {isHolding && (
+                <div className="absolute inset-0 bg-black/50 rounded-lg animate-pulse">
+                    <div className="h-full w-full bg-[var(--accent-silver)] opacity-50 animate-[fill_3s_linear_forwards]" style={{clipPath: 'inset(100% 0 0 0)'}}></div>
+                </div>
+            )}
+            <style>{`
+                @keyframes fill {
+                    to { clip-path: inset(0% 0 0 0); }
+                }
+            `}</style>
+        </div>
+    );
+};

@@ -1,0 +1,80 @@
+
+import React, { useState } from 'react';
+import { GlassCard } from './GlassCard';
+import { useGame } from '../contexts/GameContext';
+import { IconPickerModal } from './IconPickerModal';
+import { ClanType, RecruitmentStatus } from '../types';
+
+const clanTypes: ClanType[] = ['Casual', 'Focado', 'Competitivo'];
+const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
+
+export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const { createClan } = useGame();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [icon, setIcon] = useState('🏛️');
+    const [clanType, setClanType] = useState<ClanType>('Casual');
+    const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
+    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+
+    const handleSave = async () => {
+        if (!name.trim()) {
+            alert("O nome do clã não pode estar vazio.");
+            return;
+        }
+        await createClan({ name, icon, description, clan_type: clanType, recruitment_status: recruitmentStatus });
+        onClose();
+    };
+
+    return (
+        <>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">Fundar Clã</h2>
+                    <div className="flex flex-col items-center space-y-4">
+                        <button onClick={() => setIsIconPickerOpen(true)} className="w-24 h-24 bg-black/20 rounded-2xl flex items-center justify-center text-5xl">
+                            {icon}
+                        </button>
+                        <div className="w-full space-y-3">
+                            <input
+                                type="text"
+                                placeholder="Nome do Clã"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] text-center font-bold"
+                            />
+                             <textarea
+                                placeholder="Lore / Descrição do Clã..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={2}
+                                className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] text-sm text-center"
+                            />
+                            <div>
+                                <label className="text-xs font-bold text-gray-400">Tipo de Clã</label>
+                                <div className="flex bg-black/20 p-1 rounded-xl mt-1">
+                                    {clanTypes.map(type => (
+                                        <button key={type} onClick={() => setClanType(type)} className={`w-full py-1 text-sm rounded-lg ${clanType === type ? 'bg-white/10' : 'text-gray-400'}`}>{type}</button>
+                                    ))}
+                                </div>
+                            </div>
+                             <div>
+                                <label className="text-xs font-bold text-gray-400">Recrutamento</label>
+                                <div className="flex bg-black/20 p-1 rounded-xl mt-1">
+                                    {recruitmentOptions.map(opt => (
+                                        <button key={opt} onClick={() => setRecruitmentStatus(opt)} className={`w-full py-1 text-sm rounded-lg ${recruitmentStatus === opt ? 'bg-white/10' : 'text-gray-400'}`}>{opt}</button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex space-x-2">
+                        <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
+                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">FUNDAR</button>
+                    </div>
+                </GlassCard>
+            </div>
+            {isIconPickerOpen && <IconPickerModal onSelect={(i) => { setIcon(i); setIsIconPickerOpen(false); }} onClose={() => setIsIconPickerOpen(false)} />}
+        </>
+    );
+};

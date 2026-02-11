@@ -1,0 +1,107 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useGame } from '../contexts/GameContext';
+import { Arena } from '../types';
+import { CrownIcon, ChevronRightIcon } from './Icons';
+import { GlassCard } from './GlassCard';
+import { ArenaSelectionModal } from './ArenaSelectionModal'; // Re-using for asset selection
+import { useTutorial } from '../contexts/TutorialContext';
+
+interface NewArenaModalProps {
+    assetId: string;
+    onClose: () => void;
+    onArenaCreated?: (newArena: Arena) => void;
+}
+
+const AssetSelectionModal: React.FC<{currentAssetId: string, onSelect: (assetId: string) => void, onClose: () => void}> = ({ onSelect, onClose }) => {
+    const { assets } = useGame();
+    return (
+         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Ativo</h2>
+                 <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {assets.filter(a => a.id !== 'geral').map(asset => (
+                        <button key={asset.id} onClick={() => onSelect(asset.id)} className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-white/10">
+                            {asset.name}
+                        </button>
+                    ))}
+                 </div>
+            </GlassCard>
+        </div>
+    )
+}
+
+
+export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAssetId, onClose, onArenaCreated }) => {
+    const { addArena, assets } = useGame();
+    const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [assetId, setAssetId] = useState(initialAssetId);
+    const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
+    const modalCardRef = useRef<HTMLDivElement>(null);
+
+     useEffect(() => {
+        if (isTutorialActive && currentStep === 3 && modalCardRef.current) {
+            const rect = modalCardRef.current.getBoundingClientRect();
+            setSpotlight(rect, {
+                title: "Passo 3: Detalhes da Arena",
+                text: "Defina os detalhes da sua nova Arena. Escolha um Ativo pai, dê um nome e descreva seu objetivo.",
+            });
+        }
+    }, [isTutorialActive, currentStep, setSpotlight]);
+
+    const handleSave = () => {
+        if (!name.trim() || !assetId) {
+            alert("Por favor, selecione um Ativo e dê um nome à Arena.");
+            return;
+        };
+        const newArena = addArena(assetId, { name, description, icon: '🏆' });
+
+        if (isTutorialActive && currentStep === 3) {
+            nextStep();
+        }
+
+        if (onArenaCreated) {
+            onArenaCreated(newArena);
+        } else {
+            onClose();
+        }
+    };
+    
+    const selectedAsset = assets.find(a => a.id === assetId);
+
+    return (
+        <>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard ref={ modalCardRef } variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                    <div className="text-center">
+                        <CrownIcon className="w-8 h-8 mx-auto text-[var(--gold)]" />
+                        <h2 className="text-lg font-bold uppercase tracking-wider mt-2">Nova Arena</h2>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <button
+                            onClick={() => setIsAssetPickerOpen(true)}
+                            className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl flex justify-between items-center text-left"
+                        >
+                            <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAsset?.name || 'Selecione o Ativo Pai'}</span>
+                            <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                        </button>
+                        <input type="text" placeholder="Nome da Arena" value={name} onChange={e => setName(e.target.value)} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                        <textarea placeholder="Descrição da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                    </div>
+                    
+                    <div className="flex space-x-2 pt-2">
+                        <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
+                            CANCELAR
+                        </button>
+                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">
+                            CRIAR ARENA
+                        </button>
+                    </div>
+                </GlassCard>
+            </div>
+            {isAssetPickerOpen && <AssetSelectionModal currentAssetId={assetId} onSelect={(id) => {setAssetId(id); setIsAssetPickerOpen(false)}} onClose={() => setIsAssetPickerOpen(false)} />}
+        </>
+    );
+};

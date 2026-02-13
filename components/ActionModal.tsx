@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Action, DayOfWeek, ActionType } from '../types';
 import { GlassCard } from './GlassCard';
-import { ChevronRightIcon, EditIcon, XIcon } from './Icons';
+import { ChevronRightIcon, EditIcon, XIcon, CalendarIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
 import { WheelPicker } from './inputs/WheelPicker';
 import { SelectionModal } from './SelectionModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
+import { DatePickerModal } from './DatePickerModal';
 import { useTutorial } from '../contexts/TutorialContext';
 
 interface ActionModalProps {
@@ -102,8 +103,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const [isActionTypePickerOpen, setIsActionTypePickerOpen] = useState(false);
     const [isArenaPickerOpen, setIsArenaPickerOpen] = useState(false);
     const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
     const [startTime, setStartTime] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isConfirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const arenas = getArenas();
@@ -123,10 +126,24 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
         };
         
         const scheduleTasks = (actionIdToSchedule: string) => {
-            if (selectedDays.length > 0 && startTime !== null && actionData.actionType === 'Ação Recorrente') {
+            // Para Ação Recorrente: usa dias da semana
+            if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Horário') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
                 scheduleMultipleTasks(actionIdToSchedule, selectedDays, startTimeInMinutes);
+            }
+            
+            // Para Compromisso: usa data específica
+            if (editableAction.actionType === 'Compromisso' && selectedDate && startTime !== null && startTime !== 'Sem Horário') {
+                // Aqui você precisará implementar uma função para agendar em data específica
+                // Por enquanto, vamos apenas logar para debug
+                console.log('Agendando compromisso:', {
+                    action: editableAction.name,
+                    date: selectedDate.toLocaleDateString('pt-BR'),
+                    time: startTime
+                });
+                
+                // TODO: Implementar scheduleSingleTask(actionIdToSchedule, selectedDate, startTimeInMinutes)
             }
         }
 
@@ -151,7 +168,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
 
     const handleCancel = () => {
         if (isNew) onClose();
-        else { setEditableAction(action || {}); setMode('view'); setSelectedDays([]); setStartTime(null); setIsTimePickerOpen(false); }
+        else { setEditableAction(action || {}); setMode('view'); setSelectedDays([]); setStartTime(null); setSelectedDate(null); setIsTimePickerOpen(false); setIsDatePickerOpen(false); }
     };
 
     const handleIconSelect = (icon: string) => { setEditableAction(p => ({ ...p, icon })); setIsIconPickerOpen(false); };
@@ -159,12 +176,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const handleActionTypeChange = (type: ActionType) => { setEditableAction(p => ({...p, actionType: type, repetitions: type === 'Ação Recorrente' ? (p.repetitions || 1) : 1 })); setIsActionTypePickerOpen(false); }
     const handleArenaSelect = (id: string) => { setEditableAction(p => ({ ...p, arenaId: id })); setIsArenaPickerOpen(false); };
     const handleTimeSelect = (time: string) => { setStartTime(time); setIsTimePickerOpen(false); };
+    const handleDateSelect = (date: Date) => { setSelectedDate(date); setIsDatePickerOpen(false); };
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) onClose(); };
 
     const displayAction = mode === 'view' ? action : editableAction;
     const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÍCIL', 'EXTREMO'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
-    const timeOptions = Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; });
+    const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco'];
 
     return (
@@ -195,6 +213,26 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                         <div className="space-y-2">
                             {mode === 'edit' ? (
                                 <>
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-400">Arena</label>
+                                        <button
+                                            onClick={() => setIsArenaPickerOpen(true)}
+                                            className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
+                                        >
+                                            <span>{currentArena?.icon} {currentArena?.name || 'Selecionar Arena'}</span>
+                                            <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-400">Tipo de Ação</label>
+                                        <button
+                                            onClick={() => setIsActionTypePickerOpen(true)}
+                                            className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
+                                        >
+                                            <span>{editableAction.actionType || 'Ação Recorrente'}</span>
+                                            <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                                        </button>
+                                    </div>
                                     <StyledRangeInput inputRef={durationInputRef} label="Duração" value={editableAction.duration || 60} min={15} max={240} step={15} unit="min" onChange={val => { setEditableAction(p => ({...p, duration: val})); handleTutorialNextFormStep(); }} />
                                     {editableAction.actionType === 'Ação Recorrente' && <StyledRangeInput inputRef={repsInputRef} label="Repetições" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({...p, repetitions: val})); handleTutorialNextFormStep(); }} />}
                                     <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3)-1]} onChange={val => setEditableAction(p => ({...p, difficulty: val}))} />
@@ -209,6 +247,62 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                             )}
                         </div>
                         
+                        {/* Scheduling Section - só para Ação Recorrente e Compromisso */}
+                        {mode === 'edit' && (editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
+                            <div className="p-3 bg-black/20 rounded-xl space-y-2">
+                                <h3 className="text-xs font-semibold text-gray-400 uppercase text-center">Planejar Ações</h3>
+                                
+                                {/* Dias da Semana - só para Ação Recorrente */}
+                                {editableAction.actionType === 'Ação Recorrente' && (
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-400">Dias da Semana</label>
+                                        <div className="grid grid-cols-7 gap-1 mt-1">
+                                            {week.map(day => <DayToggle key={day} day={day} selected={selectedDays.includes(day)} onClick={() => handleDayToggle(day)} />)}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* Data Específica - só para Compromisso */}
+                                {editableAction.actionType === 'Compromisso' && (
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-400">Data do Compromisso</label>
+                                        <button
+                                            onClick={() => setIsDatePickerOpen(true)}
+                                            className="w-full p-4 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 hover:border-yellow-600/80 transition-all cursor-pointer"
+                                        >
+                                            <span className="flex items-center space-x-3">
+                                                <CalendarIcon className="w-5 h-5 text-yellow-500" />
+                                                <span className="text-sm font-medium">
+                                                    {selectedDate 
+                                                        ? selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                                        : 'Selecionar Data'
+                                                    }
+                                                </span>
+                                            </span>
+                                            <ChevronRightIcon className="w-5 h-5 text-yellow-600" />
+                                        </button>
+                                    </div>
+                                )}
+                                
+                                {/* Horário de Início */}
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-400">Horário de Início</label>
+                                    <button
+                                        onClick={() => setIsTimePickerOpen(!isTimePickerOpen)}
+                                        className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
+                                    >
+                                        <span>{startTime || 'Sem Horário'}</span>
+                                        <ChevronRightIcon className={`w-5 h-5 text-gray-400 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
+                                    </button>
+                                    {isTimePickerOpen && (
+                                        <div className="mt-2">
+                                            <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        
                         {mode === 'edit' && !isNew && (
                             <div className="pt-2">
                                 <button onClick={handleDelete} className="w-full py-2 rounded-xl bg-red-800/50 text-red-300 hover:bg-red-800/80"> EXCLUIR AÇÃO </button>
@@ -218,6 +312,32 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                 </GlassCard>
             </div>
             {isIconPickerOpen && <IconPickerModal onSelect={handleIconSelect} onClose={() => setIsIconPickerOpen(false)} />}
+            {isActionTypePickerOpen && (
+                <SelectionModal<ActionType>
+                    title="Tipo de Ação"
+                    options={actionTypeOptions}
+                    currentValue={editableAction.actionType || 'Ação Recorrente'}
+                    onSelect={handleActionTypeChange}
+                    onClose={() => setIsActionTypePickerOpen(false)}
+                />
+            )}
+            {isArenaPickerOpen && (
+                <ArenaSelectionModal
+                    arenas={arenas}
+                    selectedArenaId={editableAction.arenaId || ''}
+                    onSelect={handleArenaSelect}
+                    onClose={() => setIsArenaPickerOpen(false)}
+                />
+            )}
+            {isDatePickerOpen && (
+                <DatePickerModal
+                    title="Data do Compromisso"
+                    selectedDate={selectedDate}
+                    onSelect={handleDateSelect}
+                    onClose={() => setIsDatePickerOpen(false)}
+                    minDate={new Date()} // Não permitir datas passadas
+                />
+            )}
             {isConfirmDeleteOpen && (<ConfirmationModal title="Confirmar Exclusão" message={`Tem certeza que deseja excluir a ação "${action?.name}"?`} onConfirm={confirmDelete} onCancel={() => setConfirmDeleteOpen(false)}/>)}
         </>
     );

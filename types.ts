@@ -189,6 +189,8 @@ export interface Cycle {
     name: string;
     startDate: string;
     endDate: string;
+    arenaIds: string[]; // IDs das arenas ativas neste ciclo
+    userId: string; // ID do usuário dono do ciclo
 }
 
 export type DailyCommitmentStage = 'planning' | 'battle' | 'judgment';

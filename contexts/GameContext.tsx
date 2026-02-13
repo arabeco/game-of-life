@@ -6,6 +6,33 @@ import { DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { supabase } from '../supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 
+// --- Universal Supabase Data Mappers ---
+
+const mapToCamelCase = (obj: any): any => {
+    if (Array.isArray(obj)) return obj.map(v => mapToCamelCase(v));
+    if (obj !== null && obj.constructor === Object) {
+        return Object.keys(obj).reduce((result, key) => {
+            const camelKey = key.replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''));
+            result[camelKey] = mapToCamelCase(obj[key]);
+            return result;
+        }, {} as any);
+    }
+    return obj;
+};
+
+const mapToSnakeCase = (obj: any): any => {
+    if (Array.isArray(obj)) return obj.map(v => mapToSnakeCase(v));
+    if (obj !== null && obj.constructor === Object) {
+        return Object.keys(obj).reduce((result, key) => {
+            const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+            result[snakeKey] = mapToSnakeCase(obj[key]);
+            return result;
+        }, {} as any);
+    }
+    return obj;
+};
+
+
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
 
 const TUTORIAL_ACTION: Action = {
@@ -51,8 +78,8 @@ const NOBILITY_RANKS: NobilityRank[] = [
 ];
 
 const MOCK_SEARCHABLE_CLANS: Clan[] = [
-    { id: 'clan_01', name: 'The Seekers', icon: '👁️', description: 'Um clã para aqueles que buscam conhecimento.', clan_type: 'Focado', recruitment_status: 'Aberto', exp: 42500, rankId: 'provincia' },
-    { id: 'clan_02', name: 'Dragon Guard', icon: '🐲', description: 'Defensores do antigo pacto dos dragões.', clan_type: 'Competitivo', recruitment_status: 'Aberto', exp: 150000, rankId: 'principado' },
+    { id: 'clan_01', name: 'The Seekers', icon: '👁️', description: 'Um clã para aqueles que buscam conhecimento.', clanType: 'Focado', recruitmentStatus: 'Aberto', exp: 42500, rankId: 'provincia' },
+    { id: 'clan_02', name: 'Dragon Guard', icon: '🐲', description: 'Defensores do antigo pacto dos dragões.', clanType: 'Competitivo', recruitmentStatus: 'Aberto', exp: 150000, rankId: 'principado' },
 ];
 
 const DEFAULT_USER_PROFILE: UserProfile = {
@@ -321,36 +348,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const { data: clanData, error: clanError } = await supabase.from('clans').select('*').eq('id', clanId).single();
     if (clanError || !clanData) { console.error('Error fetching clan data:', clanError?.message); return; }
 
-    const mappedClan: Clan = { id: clanData.id, name: clanData.name, icon: clanData.icon, description: clanData.description, clan_type: clanData.clan_type, recruitment_status: clanData.recruitment_status, exp: clanData.exp, rankId: clanData.rank_id };
-    setClan(mappedClan);
+    setClan(mapToCamelCase(clanData) as Clan);
 
     const { data: membersData, error: membersError } = await supabase.from('clan_members').select('*').eq('clan_id', clanId);
     if (membersError || !membersData) { console.error('Error fetching clan members:', membersError?.message); return; }
 
-    const memberIds = membersData.map((m: ClanMember) => m.user_id);
+    const memberIds = membersData.map((m: any) => m.user_id);
     if (memberIds.length === 0) { setEnrichedClanMembers([]); return; }
 
     const { data: memberProfiles, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', memberIds);
     if (profilesError || !memberProfiles) { console.error('Error fetching member profiles:', profilesError?.message); return; }
 
-    const enrichedMembers = memberProfiles.map((profile: any) => {
-        const memberInfo = membersData.find((m: ClanMember) => m.user_id === profile.id);
+    const enrichedMembers: EnrichedClanMember[] = memberProfiles.map((profile: any) => {
+        const memberInfo = membersData.find((m: any) => m.user_id === profile.id);
         if (!memberInfo) return null;
-        const { role: userRole, ...profileWithoutRole } = profile;
+        
+        const { role: userRole, ...camelCaseProfile } = mapToCamelCase(profile) as UserProfile;
+
         return {
-            ...DEFAULT_USER_PROFILE, ...profileWithoutRole,
-            sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, ...(profile.sovereign || {}) },
+            ...camelCaseProfile,
             role: memberInfo.role as 'leader' | 'member',
-            joined_at: memberInfo.joined_at,
+            joinedAt: memberInfo.joined_at,
         };
     }).filter((m): m is EnrichedClanMember => m !== null);
+
     setEnrichedClanMembers(enrichedMembers);
   }, [setClan, setEnrichedClanMembers]);
 
 
   // --- Supabase Data Sync ---
   useEffect(() => {
-    // FIX: Removed the `!session` check to allow the function to work in offline mode, relying on the mock client for data.
     const userId = session?.user.id ?? userProfile.id;
     if (!userId) return;
 
@@ -369,11 +396,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const { data: seasonsData, error: seasonsError } = await supabase.from('seasons').select('*');
         if (seasonsError) console.error("Error fetching seasons", seasonsError.message);
-        else setSeasons(seasonsData as Season[] || []);
+        else setSeasons(mapToCamelCase(seasonsData) as Season[] || []);
 
         const { data: missionsData, error: missionsError } = await supabase.from('season_missions').select('*');
         if (missionsError) console.error("Error fetching season missions", missionsError.message);
-        else setSeasonMissions(missionsData as SeasonMission[] || []);
+        else setSeasonMissions(mapToCamelCase(missionsData) as SeasonMission[] || []);
     };
 
 
@@ -462,7 +489,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const updateUserProfile = (profileData: Partial<UserProfile>) => {
     setUserProfile(prev => ({ ...prev, ...profileData }));
-    if (session) supabase.from('user_profiles').update(profileData).eq('id', session.user.id).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        const snakeCaseData = mapToSnakeCase(profileData);
+        supabase.from('user_profiles').update(snakeCaseData).eq('id', userId).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
+    }
   };
 
   const updateMood = (mood: number) => updateUserProfile({ mood });
@@ -534,14 +565,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const updateAssetSlotValue = (assetId: string, slotId: string, value: SlotValue) => {
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, slots: asset.slots.map(slot => slot.id === slotId ? { ...slot, value } : slot) } : asset));
-    if (session) supabase.from('asset_slots').upsert({ id: slotId, user_id: session.user.id, value }).then(({ error }) => { if (error) console.error("Supabase slot update error:", error.message); });
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) supabase.from('asset_slots').upsert({ id: slotId, user_id: userId, value: JSON.stringify(value) }).then(({ error }) => { if (error) console.error("Supabase slot update error:", error.message); });
   };
 
   const getArenas = () => assets.flatMap(asset => asset.arenas);
   const addArena = (assetId: string, arenaData: Pick<Arena, 'name' | 'description' | 'icon'>): Arena => {
     const newArena: Arena = { ...arenaData, id: `arena_${Date.now()}`, assetId, actionIds: [], isArchived: false };
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
-    if (session) supabase.from('arenas').insert({ ...newArena, user_id: session.user.id }).then(({error}) => { if (error) console.error("Supabase add arena error:", error.message) });
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
+        delete snakeCaseData.action_ids; // Not a column
+        supabase.from('arenas').insert(snakeCaseData).then(({error}) => { if (error) console.error("Supabase add arena error:", error.message) });
+    }
     return newArena;
   };
   
@@ -720,38 +757,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   // --- Clan Functions ---
   const createClan = async (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => {
-    // FIX: Use fallback user ID for offline mode
     const userId = session ? session.user.id : userProfile.id;
     if (!userId) { console.error("User not authenticated"); return; }
     
-    // 1. Create the clan
+    const snakeCaseDetails = { ...mapToSnakeCase(clanDetails), exp: 0, rank_id: 'feudo' };
+
     const { data: clanData, error: clanError } = await supabase
         .from('clans')
-        .insert({ ...clanDetails, exp: 0, rank_id: 'feudo' })
+        .insert(snakeCaseDetails)
         .select()
         .single();
         
     if (clanError || !clanData) { console.error('Error creating clan:', clanError?.message); return; }
 
-    // 2. Add the current user as the leader
     const { error: memberError } = await supabase
         .from('clan_members')
         .insert({ user_id: userId, clan_id: clanData.id, role: 'leader' });
         
     if (memberError) { console.error('Error adding leader to clan:', memberError?.message); return; }
 
-    // 3. Update local state by reloading from DB
     await loadClanAndMembers(clanData.id);
   };
 
   const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description'>>) => {
-      const { error } = await supabase.from('clans').update(data).eq('id', clanId);
+      const { error } = await supabase.from('clans').update(mapToSnakeCase(data)).eq('id', clanId);
       if (error) { console.error("Error updating clan:", error.message); return; }
       setClan(prev => (prev && prev.id === clanId) ? { ...prev, ...data } : prev);
   };
   
   const leaveClan = async () => {
-      // FIX: Use fallback user ID for offline mode
       const userId = session ? session.user.id : userProfile.id;
       if (!userId) { console.error("User not authenticated"); return; }
       const { error } = await supabase.from('clan_members').delete().eq('user_id', userId);
@@ -762,10 +796,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const transferLeadershipAndLeave = async (newLeaderId: string) => {
     if (!clan || !session) return;
-    // 1. Promote new leader
     const { error: promoteError } = await supabase.from('clan_members').update({ role: 'leader' }).eq('clan_id', clan.id).eq('user_id', newLeaderId);
     if (promoteError) { console.error("Error transferring leadership:", promoteError.message); return; }
-    // 2. Leave clan
     await leaveClan();
   };
 
@@ -790,7 +822,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       
       const friendProfile = friends.find(f => f.id === memberId);
       if (friendProfile) {
-          const newMember: EnrichedClanMember = { ...friendProfile, role: 'member', joined_at: new Date().toISOString() };
+          const newMember: EnrichedClanMember = { ...friendProfile, role: 'member', joinedAt: new Date().toISOString() };
           setEnrichedClanMembers(prev => [...prev, newMember]);
       }
   };
@@ -799,12 +831,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       if (!query.trim()) return [];
       const { data, error } = await supabase.from('clans').select('*').ilike('name', `%${query}%`).limit(10);
       if (error) { console.error('Error searching clans:', error.message); return []; }
-      return (data || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, description: c.description, clan_type: c.clan_type, recruitment_status: c.recruitment_status, exp: c.exp, rankId: c.rank_id }));
+      return mapToCamelCase(data || []) as Clan[];
   };
 
   const joinClan = async (clanToJoin: Clan) => {
-    // FIX: Use fallback user ID for offline mode and remove session check
-    if (clan) return; // Already in a clan, do nothing.
+    if (clan) return; 
     const userId = session ? session.user.id : userProfile.id;
     if (!userId) { console.error("User ID not found"); return; }
 
@@ -815,38 +846,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   
   // --- Season Functions ---
   const addSeason = async (seasonData: Omit<Season, 'id'>) => {
-    const { data, error } = await supabase.from('seasons').insert(seasonData).select().single();
+    const { data, error } = await supabase.from('seasons').insert(mapToSnakeCase(seasonData)).select().single();
     if (error) { console.error("Error adding season:", error.message); return; }
     if (data) {
-        if (data.is_active) {
-            setSeasons(prev => [...prev.map(s => ({...s, is_active: false})), data]);
+        const newSeason = mapToCamelCase(data) as Season;
+        if (newSeason.isActive) {
+            setSeasons(prev => [...prev.map(s => ({...s, isActive: false})), newSeason]);
         } else {
-            setSeasons(prev => [...prev, data]);
+            setSeasons(prev => [...prev, newSeason]);
         }
     }
   };
 
   const updateSeason = async (seasonId: string, seasonData: Partial<Omit<Season, 'id'>>) => {
-      const { data, error } = await supabase.from('seasons').update(seasonData).eq('id', seasonId).select().single();
+      const { data, error } = await supabase.from('seasons').update(mapToSnakeCase(seasonData)).eq('id', seasonId).select().single();
       if (error) { console.error("Error updating season:", error.message); return; }
       if (data) {
+          const updatedSeason = mapToCamelCase(data) as Season;
           setSeasons(prev => {
               let newSeasons = [...prev];
-              if (data.is_active) {
-                  newSeasons = newSeasons.map(s => s.id === data.id ? s : { ...s, is_active: false });
+              if (updatedSeason.isActive) {
+                  newSeasons = newSeasons.map(s => s.id === updatedSeason.id ? s : { ...s, isActive: false });
               }
               const index = newSeasons.findIndex(s => s.id === seasonId);
-              if (index > -1) newSeasons[index] = data;
+              if (index > -1) newSeasons[index] = updatedSeason;
               return newSeasons;
           });
       }
   };
 
   const addSeasonMission = async (missionData: Omit<SeasonMission, 'id'>) => {
-      const { data, error } = await supabase.from('season_missions').insert(missionData).select().single();
+      const { data, error } = await supabase.from('season_missions').insert(mapToSnakeCase(missionData)).select().single();
       if (error) { console.error("Error adding season mission:", error.message); return; }
       if (data) {
-          setSeasonMissions(prev => [...prev, data]);
+          setSeasonMissions(prev => [...prev, mapToCamelCase(data) as SeasonMission]);
       }
   };
 

@@ -192,7 +192,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <GameProvider session={session}>
+        <GameProvider>
           <TutorialProvider>
             {renderContent()}
           </TutorialProvider>

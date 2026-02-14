@@ -1,85 +1,94 @@
 # 🏛️ Life OS: Gamified Hermetic System
 
-**Identidade:** Interface Cyberpunk/Hermética (Dark Mode com acentos Dourados/Prateados).
-**Conceito:** Não é uma lista de tarefas, é um painel de controle para "Soberania Pessoal". O usuário transforma tarefas chatas em "Ações de Bronze" e projetos em "Arenas".
+**Identidade:** Interface cyberpunk/hermética (Dark Mode com acentos dourados/prateados).
+**Conceito:** Não é uma lista de tarefas, é um painel de soberania pessoal. Tarefas viram Ações e projetos viram Arenas.
 
 ---
 
-## 1. Arquitetura Modular (Estrutura de Código)
+## 1. Visão Geral do Produto
 
-O app foi refatorado para separar responsabilidades e facilitar a manutenção:
-
-- **Core:** Motor do app, reset CSS, variáveis de tema, autenticação e telas de loading.
-- **Profile (Identidade):** Avatar, Nível, HUD (Sliders de Humor/Energia), Inventário (Bordas/Banners).
-- **Assets (A Árvore):** Atributos do personagem (Foco, Força, Espírito). Visualização em árvore (Sephirot).
-- **Arenas (Contextos):** Projetos de vida (Trabalho, Casa, Treino). Contém o "Dossier" (modal de detalhes).
-- **Planner (O Campo de Batalha):** Timeline diária, Grid semanal, Backlog (Bay Area) e Blocos de Ação (Bronze).
-- **Analytics (Scan):** Relatórios, Gráfico de Radar, Histórico de Scores.
-- **Social:** Busca de usuários, Cards de Aliados, Clãs.
+Life OS é um sistema de gamificação da vida com foco em execução diária, progresso por áreas e identidade visual forte. O app combina agenda, rituais de fechamento (SITREP), ciclos de performance e evolução do soberano.
 
 ---
 
-## 2. Funcionalidades Principais (Core Features)
+## 2. Estrutura do Domínio
+
+- **Assets (Árvore de Vida):** áreas macro de evolução com slots visuais.
+- **Arenas:** projetos/contextos vinculados a um Asset.
+- **Ações:** unidades executáveis com duração, tipo e dificuldade.
+- **Tarefas Agendadas:** instâncias de ações posicionadas no tempo.
+- **Ciclos e Relatórios:** recortes de performance com métricas e highlights.
+- **SITREP Diário:** ritual de fechamento com score e travamento de metas.
+- **Clãs:** organização social com membros e progressão.
+- **Perfil e Soberano:** identidade, nível e personalização.
+
+---
+
+## 3. Funcionalidades Atuais
 
 ### A. Gestão de Vida (CRUD)
 
-- **Visualização:** Cards distintos para Ativos, Arenas, Ações e Perfil.
-- **Persistência:** Salvar todas as edições (nome, ícone, cor, peso) localmente e no banco de dados.
-- **Oráculo (Input Rápido):** Botão para adicionar tarefas via Texto ou Voz ("Treino na arena físico amanhã às 11h"). O sistema interpreta (parser) e preenche o card automaticamente.
+- Criar, editar e excluir Arenas e Ações.
+- Ações possuem duração, tipo (Recorrente, Compromisso, Marco) e dificuldade.
+- Persistência local e sincronização com Supabase quando logado.
 
-### B. O Planner (Fluxo de Trabalho)
+### B. Planner (Campo de Batalha)
 
-- **Drag & Drop Tático:**
-  - Arrastar do Backlog -> Timeline (Agendar).
-  - Arrastar na Timeline (Reagendar).
-  - Arrastar da Timeline -> Backlog (Desagendar/Guardar).
-- **Recorrência:** Criação de ações que se repetem (ex: "Toda Terça e Quinta").
-- **Backlog Inteligente:** Tarefas não concluídas no dia não somem; voltam para a "Bay Area" do dia seguinte automaticamente.
-- **Checklists:** Sub-tarefas rápidas dentro de uma Ação ou Arena (ex: "Tomar Sol", "Vitamina").
+- Drag & drop do estoque para timeline e replanejamento.
+- Visão diária e semanal com escala de horários.
+- Long press para concluir tarefas com feedback visual.
+- Marcos com comportamento próprio e tratamento especial.
+- Zoom do grid para ajuste de densidade visual.
 
-### C. Sistema de Score (Algoritmo S.O.L.)
+### C. Agendamento
 
-Um score de 0 a 100 que mede eficiência, não apenas volume.
+- Ações recorrentes agendadas por dias da semana.
+- Compromissos com data e horário específicos.
+- Reagendamento direto no grid.
 
-- **Cálculo:** (Ações Feitas / Ações Planejadas) * 100.
-- **Justiça:** Quem planeja pouco e cumpre = 100. Quem planeja muito e cumpre = 100.
-- **XP (Experience):** Dias mais cheios dão mais XP absoluto para subir de nível, mas o Score de qualidade do dia independe do volume.
-- **Relatório Diário:** Ao fechar o dia, mostra o Score, XP ganho e gera uma imagem compartilhável.
+### D. Rituais e Métricas
 
----
+- SITREP diário com score e travamento de metas.
+- Ciclos com relatório de performance e métricas agregadas.
+- Evolução de nível baseada no progresso das áreas.
 
-## 3. A "Transferência de Codex" (Ideia do Usuário)
+### E. Social e Clãs
 
-Funcionalidade Multiplayer/Platform para Personal Trainers e Mentores.
+- Criação e gestão de clãs.
+- Entrada, saída e expulsão de membros.
+- Busca e ingresso em clãs.
 
-- **O Conceito:** Criar e compartilhar "Planos de Ação" via Link/QR Code.
-- **O Criador (Mentor):**
-  1. Cria um pacote contendo: Arenas sugeridas + Ações Recorrentes + Checklists Diárias.
-  2. Gera um link (ex: app.com/protocol/hipertrofia-xyz).
-- **O Receptor (Aluno):**
-  1. Clica no link e vê o modal "Protocolo Detectado".
-  2. Ao aceitar: O app cria as arenas automaticamente e povoa a agenda futura do aluno com os treinos e dietas.
-- **Valor:** Facilita o onboarding de alunos e cria viralidade para o app.
+### F. Identidade e UI
+
+- Avatar do soberano e personalização visual.
+- UI com glassmorphism e feedbacks contínuos de progresso.
 
 ---
 
-## 4. Ideias de Expansão (Selecionadas)
+## 4. Fluxos Principais do Usuário
 
-Estas são as mecânicas para aumentar a retenção e a imersão:
+1. Criar Assets, Arenas e Ações.
+2. Planejar Ações no Planner (drag, data e horário).
+3. Executar tarefas e concluir via long press.
+4. Travar metas e fechar o dia no SITREP.
+5. Revisar ciclos e ajustar estratégia.
 
-### 🎮 Gamificação
+---
 
-1.  **Protocolo Fênix (Botão de Pânico):** Um botão nas configs para "queimar" (arquivar) todo o backlog atrasado de uma vez, zerando a culpa e dando um bônus de XP de "Renascimento".
-2.  **Drops de Loot:** Chance aleatória (RNG) de ganhar cosméticos (ícones raros, bordas de avatar, temas de cor) ao completar dias com Score 100.
-3.  **Árvore Dinâmica:** (Já iniciado) A aparência visual da Tree (Sephirot) muda conforme o uso. Se não treinar por 3 dias, a esfera "Força" racha ou apaga. Se treinar, ela brilha intensamente.
+## 5. Direção de Experiência
 
-### 📱 Utilidade
+- Clareza e peso visual: cada ação deve parecer decisiva.
+- Progresso visível: feedback constante e legível.
+- Ritual diário: o fechamento do dia é parte central do produto.
 
-6.  **Widget "Próxima Batalha":** Widget nativo (Android/iOS) na home do celular mostrando apenas a próxima tarefa e horário, estilo "Pager".
-12. **Design de Som Dourado:** Efeitos sonoros satisfatórios (bainha de espada, clique mecânico, sons graves) para ações de completar e arrastar.
+---
 
-### 🤝 Social
+## 6. Ideias Futuras (Mantidas no Roadmap)
 
-9.  **Raid de Clã:** Objetivos coletivos semanais (ex: "O Clã precisa somar 50 horas de Foco"). Se baterem a meta, todos ganham um banner exclusivo.
-10. **O Vigilante (Accountability):** Designar um amigo para receber notificação se você não cumprir sua tarefa mais importante (Highlight) até certo horário.
-14. **Shareable Score:** (Semi-implementado) Gerar imagem quadrada estilosa com o Score do dia, insígnias das arenas trabalhadas e frase do oráculo para postar no Instagram Stories.
+### A. Oráculo (Input por Texto/Voz)
+
+Entrada rápida por texto ou voz que interpreta intenção e agenda automaticamente ações.
+
+### B. Transferência de Codex
+
+Mentores criam pacotes de arenas e ações com link/QR para onboarding imediato de alunos.

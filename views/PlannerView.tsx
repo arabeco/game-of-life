@@ -1,7 +1,7 @@
 
 
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, FolderIcon, DollarSignIcon, FolderStarIcon, FlameIcon, LightbulbIcon, PlusIcon, MinusIcon } from '../components/Icons';
 import { useGame } from '../contexts/GameContext';
 import { Action, ScheduledTask } from '../types';
@@ -253,6 +253,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const lastPointerPosRef = useRef<{ x: number; y: number } | null>(null);
     const lastScrollTopRef = useRef<number>(0);
     const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const bayAreaElRef = useRef<HTMLElement | null>(null);
+    const dailyGridElRef = useRef<HTMLElement | null>(null);
+    const weeklyGridElRef = useRef<HTMLElement | null>(null);
+    const weeklyDaysContainerRef = useRef<HTMLElement | null>(null);
+    const pointerDisabledElsRef = useRef<HTMLElement[]>([]);
     
     // Custom Drag State
     const [dragState, setDragState] = useState({
@@ -266,6 +271,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const zoomFactors: Record<number, number> = { 3: 1, 2: 0.75, 1: 0.5 };
     const scaleFactor = zoomFactors[zoomLevel];
 
+    const refreshDragTargets = useCallback(() => {
+        bayAreaElRef.current = document.querySelector('[data-testid="bay-area"]') as HTMLElement | null;
+        dailyGridElRef.current = scrollContainerRef.current?.querySelector('[data-testid="daily-timeline"] .flex-grow.relative.border-l') as HTMLElement | null;
+        weeklyGridElRef.current = scrollContainerRef.current?.querySelector('[data-testid="weekly-grid"]') as HTMLElement | null;
+        weeklyDaysContainerRef.current = weeklyGridElRef.current?.querySelector('.flex-grow.grid.grid-cols-7') as HTMLElement | null;
+    }, []);
+
     const handleCustomDragStart = ( event: MouseEvent | TouchEvent, item: { type: string; payload: any; duration: number; }, ghostElement: React.ReactNode, draggedElementRef: React.RefObject<HTMLDivElement> ) => {
         const isTouchEvent = 'touches' in event;
         const pos = isTouchEvent ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : { x: event.clientX, y: event.clientY };
@@ -273,6 +285,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const offset = elemRect ? { x: pos.x - elemRect.left, y: pos.y - elemRect.top } : { x: 0, y: 0 };
         if (isTutorialActive && (currentStep === 7 || currentStep === 8)) setSpotlight(null, null);
         setIsMilestonePoolOpen(false);
+        refreshDragTargets();
         if (scrollContainerRef.current) {
             lastScrollTopRef.current = scrollContainerRef.current.scrollTop;
         }
@@ -280,6 +293,22 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         dragOffsetRef.current = offset;
         setDragState({ isDragging: true, item, ghostElement, pointerOffset: offset, currentPosition: pos });
     };
+
+    useEffect(() => {
+        if (!dragState.isDragging) return;
+        refreshDragTargets();
+    }, [dragState.isDragging, viewMode, refreshDragTargets]);
+
+    useEffect(() => {
+        if (!dragState.isDragging) return;
+        const elements = Array.from(document.querySelectorAll('.grid-day-container')) as HTMLElement[];
+        pointerDisabledElsRef.current = elements;
+        elements.forEach(el => { el.style.pointerEvents = 'none'; });
+        return () => {
+            pointerDisabledElsRef.current.forEach(el => { el.style.pointerEvents = ''; });
+            pointerDisabledElsRef.current = [];
+        };
+    }, [dragState.isDragging]);
 
     // Dedicated Auto-Scroll Effect
     useEffect(() => {
@@ -370,8 +399,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             if ('touches' in e) {
                 if (e.cancelable) {
                     e.preventDefault();
-                } else {
-                    console.warn("Touchmove event not cancelable, browser might scroll anyway");
                 }
             }
             e.stopPropagation();
@@ -380,18 +407,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             setDragState(prev => ({ ...prev, currentPosition: pos }));
             lastPointerPosRef.current = pos;
             
-            const bayAreaEl = document.querySelector('[data-testid="bay-area"]');
-            const bayAreaRect = bayAreaEl?.getBoundingClientRect();
+            if (!bayAreaElRef.current || !dailyGridElRef.current || !weeklyGridElRef.current) {
+                refreshDragTargets();
+            }
+            const bayAreaRect = bayAreaElRef.current?.getBoundingClientRect();
             const isOverBayAreaCheck = (rect: DOMRect | undefined) => rect ? (pos.y > rect.top && pos.y < rect.bottom && pos.x > rect.left && pos.x < rect.right) : false;
 
             // Snap-back removed because overflow: hidden already prevents scroll. 
             // We rely on auto-scroll loop to update scrollTop programmatically.
-
-            // Forçar pointer-events none nos dias para evitar que o scroll do container seja ativado pelo toque neles
-            const gridDays = document.querySelectorAll('.grid-day-container');
-            gridDays.forEach(el => {
-                (el as HTMLElement).style.pointerEvents = 'none';
-            });
 
             if (dragState.item?.type === 'reschedule_task' && isOverBayAreaCheck(bayAreaRect)) {
                 setIsOverBayArea(true);
@@ -401,7 +424,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 setIsOverBayArea(false);
                 if (viewMode === 'day' && scrollContainerRef.current && dragState.item) {
                     setWeeklyDropIndicator(null);
-                    const dailyViewEl = scrollContainerRef.current.querySelector('[data-testid="daily-timeline"] .flex-grow.relative.border-l');
+                    const dailyViewEl = dailyGridElRef.current;
                     if (!dailyViewEl) return;
                     const gridRect = dailyViewEl.getBoundingClientRect();
                     
@@ -421,9 +444,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     setDailyDropIndicator({ top: snappedMinutes * scaleFactor, height: dragState.item.duration * scaleFactor });
                 } else if (viewMode === 'week' && scrollContainerRef.current && dragState.item) {
                     setDailyDropIndicator(null);
-                    const weeklyGridEl = scrollContainerRef.current.querySelector('[data-testid="weekly-grid"]');
-                    if (!weeklyGridEl) { setWeeklyDropIndicator(null); return; }
-                    const daysContainer = weeklyGridEl.querySelector('.flex-grow.grid.grid-cols-7');
+                    const daysContainer = weeklyDaysContainerRef.current;
                     if (!daysContainer) { setWeeklyDropIndicator(null); return; }
                     const containerRect = daysContainer.getBoundingClientRect();
                     const scrollMargin = 150;
@@ -460,13 +481,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 pos = dragState.currentPosition;
             }
             
-            const dailyTimelineEl = scrollContainerRef.current?.querySelector('[data-testid="daily-timeline"] .flex-grow.relative.border-l');
-            const weeklyGridEl = scrollContainerRef.current?.querySelector('[data-testid="weekly-grid"]');
-            const bayAreaEl = document.querySelector('[data-testid="bay-area"]');
-            
-            const bayAreaRect = bayAreaEl?.getBoundingClientRect();
-            const dailyTimelineRect = dailyTimelineEl?.getBoundingClientRect();
-            const weeklyGridRect = weeklyGridEl?.getBoundingClientRect();
+            if (!bayAreaElRef.current || !dailyGridElRef.current || !weeklyGridElRef.current) {
+                refreshDragTargets();
+            }
+
+            const bayAreaRect = bayAreaElRef.current?.getBoundingClientRect();
+            const dailyTimelineRect = dailyGridElRef.current?.getBoundingClientRect();
+            const weeklyGridRect = weeklyGridElRef.current?.getBoundingClientRect();
 
             const isOver = (rect: DOMRect | undefined, verticalMargin = 0) => {
                 if (!rect || !pos) return false;
@@ -567,14 +588,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     {dragState.ghostElement}
                 </div>
             )}
-            <div className="flex-shrink-0 z-20 bg-black">
+            <div className="flex-shrink-0 z-30 bg-black sticky top-20">
                 <div className="relative flex items-center justify-between px-2 text-lg font-bold h-16">
-                    <div className="flex items-center space-x-1"><button onClick={() => setChecklistVisible(true)} className="p-1 rounded-full hover:bg-white/10 relative">{allTasksCompleted ? <FolderStarIcon className="w-5 h-5" /> : <FolderIcon className="w-5 h-5" />}</button><button onClick={() => setIsSitrepVisible(true)} className="p-1 rounded-full hover:bg-white/10"><LightbulbIcon className="w-5 h-5" /></button><button onClick={onReportsClick} className="p-1 rounded-full hover:bg-white/10"><ClockIcon className="w-5 h-5" /></button></div>
+                    <div className="flex items-center space-x-1"><button onClick={() => setChecklistVisible(true)} className="p-1 rounded-full hover:bg-white/10 relative">{allTasksCompleted ? <FolderStarIcon className="w-4 h-4" /> : <FolderIcon className="w-4 h-4" />}</button><button onClick={() => setIsSitrepVisible(true)} className="p-1 rounded-full hover:bg-white/10"><LightbulbIcon className="w-4 h-4" /></button><button onClick={onReportsClick} className="p-1 rounded-full hover:bg-white/10"><ClockIcon className="w-4 h-4" /></button></div>
                     <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1"><button onClick={() => changeDate(-1)} className="p-2 rounded-full hover:bg-white/10"><ChevronLeftIcon /></button><span className="uppercase tracking-wider text-base w-32 text-center">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span><button onClick={() => changeDate(1)} className="p-2 rounded-full hover:bg-white/10"><ChevronRightIcon /></button></div>
                     <div className="flex items-center bg-black/20 rounded-full p-1 text-sm"><button onClick={() => setViewMode('day')} className={`px-2 py-1 rounded-full ${viewMode === 'day' ? 'bg-white/10' : ''}`}>D</button><button onClick={() => setViewMode('week')} className={`px-2 py-1 rounded-full ${viewMode === 'week' ? 'bg-white/10' : ''}`}>S</button></div>
                 </div>
             
-                <div className="flex items-center space-x-2 my-4">
+                <div className="flex items-center space-x-2 my-0">
                     <div 
                         data-testid="bay-area" 
                         className={`flex-grow bg-black/20 border border-white/10 rounded-3xl p-2 h-[60px] transition-all duration-300 ${isOverBayArea ? 'border-[var(--gold)] ring-2 ring-[var(--gold)] shadow-lg shadow-[var(--gold)]/20' : ''}`}

@@ -44,7 +44,7 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
 );
 
 export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initialMode, onClose }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks } = useGame();
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     
     const isNew = !action;
@@ -135,15 +135,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
             
             // Para Compromisso: usa data específica
             if (editableAction.actionType === 'Compromisso' && selectedDate && startTime !== null && startTime !== 'Sem Horário') {
-                // Aqui você precisará implementar uma função para agendar em data específica
-                // Por enquanto, vamos apenas logar para debug
-                console.log('Agendando compromisso:', {
-                    action: editableAction.name,
-                    date: selectedDate.toLocaleDateString('pt-BR'),
-                    time: startTime
-                });
-                
-                // TODO: Implementar scheduleSingleTask(actionIdToSchedule, selectedDate, startTimeInMinutes)
+                const [hour, minute] = startTime.split(':').map(Number);
+                const startTimeInMinutes = hour * 60 + minute;
+                const dateString = selectedDate.toISOString().split('T')[0];
+                scheduleTask(actionIdToSchedule, dateString, startTimeInMinutes);
             }
         }
 

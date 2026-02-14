@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef } from 'react';
 import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS } from '../constants';
 import { DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
@@ -343,17 +343,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [seasonMissions, setSeasonMissions] = useState<SeasonMission[]>([]);
 
-  // --- Data Persistence Effects ---
-  useEffect(() => { try { localStorage.setItem('assets', JSON.stringify(assets)); } catch(e) { console.error(e) } }, [assets]);
-  useEffect(() => { try { localStorage.setItem('actions', JSON.stringify(actions)); } catch(e) { console.error(e) } }, [actions]);
-  useEffect(() => { try { localStorage.setItem('tasks', JSON.stringify(tasks)); } catch(e) { console.error(e) } }, [tasks]);
-  useEffect(() => { try { localStorage.setItem('reports', JSON.stringify(reports)); } catch(e) { console.error(e) } }, [reports]);
-  useEffect(() => { try { if(clan) localStorage.setItem('clan', JSON.stringify(clan)); else localStorage.removeItem('clan'); } catch(e) { console.error(e) } }, [clan]);
-  useEffect(() => { try { localStorage.setItem('checklistItems', JSON.stringify(checklistItems)); } catch(e) { console.error(e) } }, [checklistItems]);
-  useEffect(() => { try { localStorage.setItem('userProfile', JSON.stringify(userProfile)); } catch (e) { console.error(e); } }, [userProfile]);
-  useEffect(() => { try { if (activeCycle) { localStorage.setItem('activeCycle', JSON.stringify(activeCycle)); } else { localStorage.removeItem('activeCycle'); } } catch (e) { console.error(e); } }, [activeCycle]);
-  useEffect(() => { try { localStorage.setItem('feed', JSON.stringify(feed)); } catch(e) { console.error(e) } }, [feed]);
-  useEffect(() => { try { localStorage.setItem('dailyCommitment', JSON.stringify(dailyCommitment)); } catch(e) { console.error(e) } }, [dailyCommitment]);
+  const persistTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (persistTimeoutRef.current !== null) window.clearTimeout(persistTimeoutRef.current);
+    persistTimeoutRef.current = window.setTimeout(() => {
+        try {
+            localStorage.setItem('assets', JSON.stringify(assets));
+            localStorage.setItem('actions', JSON.stringify(actions));
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('reports', JSON.stringify(reports));
+            if (clan) localStorage.setItem('clan', JSON.stringify(clan));
+            else localStorage.removeItem('clan');
+            localStorage.setItem('checklistItems', JSON.stringify(checklistItems));
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            if (activeCycle) localStorage.setItem('activeCycle', JSON.stringify(activeCycle));
+            else localStorage.removeItem('activeCycle');
+            localStorage.setItem('feed', JSON.stringify(feed));
+            localStorage.setItem('dailyCommitment', JSON.stringify(dailyCommitment));
+        } catch (e) {
+            console.error(e);
+        }
+    }, 250);
+    return () => {
+        if (persistTimeoutRef.current !== null) window.clearTimeout(persistTimeoutRef.current);
+    };
+  }, [assets, actions, tasks, reports, clan, checklistItems, userProfile, activeCycle, feed, dailyCommitment]);
 
   const loadClanAndMembers = useCallback(async (clanId: string) => {
     const { data: clanData, error: clanError } = await supabase.from('clans').select('*').eq('id', clanId).single();
@@ -402,7 +417,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (!userId || userId === 'placeholder_user') return; // Don't load if it's the default placeholder
 
     const loadDataFromSupabase = async () => {
-        console.log("Syncing data for user:", userId);
+        
         
         // 1. Load Profile
         const { data: profileData, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
@@ -411,14 +426,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setUserProfile(prev => ({ ...prev, ...camelProfile }));
         }
 
-        // 2. Load Arenas
+        let camelArenas: Arena[] | null = null;
         const { data: arenasData, error: arenasError } = await supabase.from('arenas').select('*').eq('user_id', userId);
         if (!arenasError && arenasData) {
-            const camelArenas = mapToCamelCase(arenasData) as Arena[];
-            setAssets(prevAssets => prevAssets.map(asset => ({
-                ...asset,
-                arenas: camelArenas.filter(a => a.assetId === asset.id)
-            })));
+            camelArenas = mapToCamelCase(arenasData) as Arena[];
         }
 
         // 3. Load Actions
@@ -433,29 +444,39 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setTasks(mapToCamelCase(tasksData) as ScheduledTask[]);
         }
 
-        // 5. Load Slots
         const { data: slotsData, error: slotsError } = await supabase.from('asset_slots').select('*').eq('user_id', userId);
-        if (!slotsError && slotsData) {
-            setAssets(prevAssets => prevAssets.map(asset => ({
-                ...asset,
-                slots: asset.slots.map(slot => {
-                    const dbSlot = slotsData.find(s => s.slot_id === slot.id);
-                    if (dbSlot) {
-                        try {
-                            return { ...slot, value: JSON.parse(dbSlot.value) };
-                        } catch {
-                            return { ...slot, value: dbSlot.value };
-                        }
-                    }
-                    return slot;
-                })
-            })));
+        if ((!arenasError && arenasData) || (!slotsError && slotsData)) {
+            setAssets(prevAssets => {
+                let nextAssets = prevAssets;
+                if (camelArenas) {
+                    nextAssets = nextAssets.map(asset => ({
+                        ...asset,
+                        arenas: camelArenas.filter(a => a.assetId === asset.id)
+                    }));
+                }
+                if (!slotsError && slotsData) {
+                    nextAssets = nextAssets.map(asset => ({
+                        ...asset,
+                        slots: asset.slots.map(slot => {
+                            const dbSlot = slotsData.find(s => s.slot_id === slot.id);
+                            if (dbSlot) {
+                                try {
+                                    return { ...slot, value: JSON.parse(dbSlot.value) };
+                                } catch {
+                                    return { ...slot, value: dbSlot.value };
+                                }
+                            }
+                            return slot;
+                        })
+                    }));
+                }
+                return nextAssets;
+            });
         }
         
         const { data: clanMemberData, error: clanMemberError } = await supabase.from('clan_members').select('clan_id').eq('user_id', userId).single();
 
         if (clanMemberError || !clanMemberData) {
-            console.warn('User not in a clan or fetch error:', clanMemberError?.message);
             setClan(null);
             setEnrichedClanMembers([]);
         } else {
@@ -510,6 +531,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const resetDailyCommitment = () => setDailyCommitmentState({ date: getTodayString(), taskIds: [], stage: 'planning', score: null });
   const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds }));
   const lockDailyCommitment = () => setDailyCommitmentState(prev => ({...prev, stage: 'battle' }));
+
+  useEffect(() => {
+    const checkDailyReset = () => {
+        const today = getTodayString();
+        if (dailyCommitment.date !== today) {
+            resetDailyCommitment();
+            setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
+        }
+    };
+
+    checkDailyReset();
+    const intervalId = window.setInterval(checkDailyReset, 60000);
+    return () => window.clearInterval(intervalId);
+  }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
   
   const endDailyBattle = () => {
     const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id));
@@ -911,7 +946,47 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
   
   const scheduleMultipleTasks = (actionId: string, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
-    // This is a complex function. For now, we will implement simple scheduling.
+    const action = getActionById(actionId);
+    if (!action) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayMap: DayOfWeek[] = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+    const existingKeys = new Set(tasks.map(t => `${t.actionId}_${t.date}_${t.startTime}`));
+    const newTasks: ScheduledTask[] = [];
+
+    for (let i = 0; i < 7; i += 1) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const dayKey = dayMap[date.getDay()];
+        if (!daysOfWeek.includes(dayKey)) continue;
+
+        const dateString = date.toISOString().split('T')[0];
+        const key = `${actionId}_${dateString}_${startTimeInMinutes}`;
+        if (existingKeys.has(key)) continue;
+
+        newTasks.push({
+            id: crypto.randomUUID(),
+            actionId: actionId,
+            date: dateString,
+            startTime: startTimeInMinutes,
+            duration: action.duration,
+            completed: false,
+        });
+        existingKeys.add(key);
+    }
+
+    if (newTasks.length === 0) return;
+
+    setTasks(prevTasks => [...prevTasks, ...newTasks]);
+
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        const snakeCaseData = newTasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
+        supabase.from('scheduled_tasks').insert(snakeCaseData).then(({ error }) => {
+            if (error) console.error("Supabase schedule multiple tasks error:", error.message);
+        });
+    }
   };
   const scheduleTask = (actionId: string, date: string, startTime: number): ScheduledTask | undefined => {
       const action = getActionById(actionId);
@@ -981,7 +1056,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const alreadyExists = tasks.some(t => t.actionId === actionId);
     if (alreadyExists) {
-        console.warn("Milestone already scheduled/completed");
         const existingTask = tasks.find(t => t.actionId === actionId);
         if (existingTask && !existingTask.completed) {
             toggleTaskCompletion(existingTask.id);

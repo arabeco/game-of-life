@@ -102,6 +102,19 @@ export interface UserProfile {
   role: 'admin' | 'user';
 }
 
+export type FriendRequestStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
+
+export interface FriendRequest {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  status: FriendRequestStatus;
+  createdAt: string;
+  respondedAt?: string | null;
+  senderProfile?: UserProfile;
+  recipientProfile?: UserProfile;
+}
+
 export interface ScheduledTask {
   id: string;
   actionId: string;

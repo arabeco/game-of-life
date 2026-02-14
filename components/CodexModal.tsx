@@ -1,57 +1,42 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { GlassCard } from './GlassCard';
-import { XIcon } from './Icons';
-import { ActionType } from '../types';
+import { XIcon, EyeIcon, PlusIcon, ChevronRightIcon, CheckIcon } from './Icons';
+import { Action, ActionType, Arena } from '../types';
+import { ArenaCard } from './ArenaCard';
+import { IconPickerModal } from './IconPickerModal';
+import { SelectionModal } from './SelectionModal';
 
-type ViewMode = 'export' | 'import';
-
-type CodexTemplate = {
-  schemaVersion: 1;
-  metadata: {
-    name: string;
-    author?: string;
-    price?: number;
-    description?: string;
-  };
-  arenas: Array<{
-    name: string;
-    description?: string;
-    icon?: string;
-    tags?: string[];
-  }>;
-  actions: Array<{
-    arenaName: string;
-    name: string;
-    description?: string;
-    icon?: string;
-    duration?: number;
-    repetitions?: number;
-    difficulty?: number;
-    actionType?: Exclude<ActionType, 'Marco'>;
-  }>;
-  milestones: Array<{
-    arenaName: string;
-    name: string;
-    description?: string;
-    icon?: string;
-    duration?: number;
-    difficulty?: number;
-  }>;
+type CodexDraft = {
+  id: string;
+  name: string;
+  description: string;
+  arenas: Arena[];
+  actions: Action[];
+  updatedAt: string;
 };
 
-type JsonParseResult = { ok: true; value: unknown } | { ok: false; error: string };
+const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÍCIL', 'EXTREMO'];
+const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco'];
 
-const tryParseJson = (text: string): JsonParseResult => {
-  try {
-    return { ok: true as const, value: JSON.parse(text) };
-  } catch (e: any) {
-    return { ok: false as const, error: e?.message || 'JSON inválido' };
-  }
-};
-
-const toPrettyJson = (value: unknown) => JSON.stringify(value, null, 2);
+const StyledRangeInput: React.FC<{label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void}> =
+({label, value, min, max, step, unit, onChange}) => (
+  <div className="p-2 bg-black/20 rounded-xl space-y-1">
+    <div className="flex justify-between items-center">
+      <label className="text-xs font-semibold text-gray-400 uppercase">{label}</label>
+      <span className="text-sm font-bold">{value} {unit}</span>
+    </div>
+    <input
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={e => onChange(Number(e.target.value))}
+      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-[var(--bronze)]"
+    />
+  </div>
+);
 
 const encodeUtf8Base64Url = (text: string) => {
   const bytes = new TextEncoder().encode(text);
@@ -60,141 +45,88 @@ const encodeUtf8Base64Url = (text: string) => {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 };
 
-const decodeUtf8Base64Url = (base64Url: string) => {
-  const padded = base64Url
-    .replace(/-/g, '+')
-    .replace(/_/g, '/')
-    .padEnd(Math.ceil(base64Url.length / 4) * 4, '=');
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
-};
-
-const validateCodexTemplate = (value: unknown): { ok: true; template: CodexTemplate } | { ok: false; error: string } => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return { ok: false, error: 'Codex precisa ser um objeto JSON.' };
-  const obj = value as Record<string, unknown>;
-  if (obj.schemaVersion !== 1) return { ok: false, error: 'schemaVersion inválido (esperado: 1).' };
-
-  const metadata = obj.metadata;
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return { ok: false, error: 'metadata inválido.' };
-  const meta = metadata as Record<string, unknown>;
-  const name = typeof meta.name === 'string' ? meta.name.trim() : '';
-  if (!name) return { ok: false, error: 'metadata.name é obrigatório.' };
-
-  const arenas = obj.arenas;
-  if (!Array.isArray(arenas) || arenas.length === 0) return { ok: false, error: 'arenas precisa ser um array não vazio.' };
-  for (const a of arenas) {
-    if (!a || typeof a !== 'object' || Array.isArray(a)) return { ok: false, error: 'arena inválida.' };
-    const ar = a as Record<string, unknown>;
-    if (typeof ar.name !== 'string' || !ar.name.trim()) return { ok: false, error: 'arena.name é obrigatório.' };
+const loadDrafts = (): CodexDraft[] => {
+  try {
+    const raw = localStorage.getItem('codexDrafts');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as CodexDraft[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
-
-  const actions = Array.isArray(obj.actions) ? obj.actions : [];
-  for (const a of actions) {
-    if (!a || typeof a !== 'object' || Array.isArray(a)) return { ok: false, error: 'action inválida.' };
-    const act = a as Record<string, unknown>;
-    if (typeof act.arenaName !== 'string' || !act.arenaName.trim()) return { ok: false, error: 'action.arenaName é obrigatório.' };
-    if (typeof act.name !== 'string' || !act.name.trim()) return { ok: false, error: 'action.name é obrigatório.' };
-  }
-
-  const milestones = Array.isArray(obj.milestones) ? obj.milestones : [];
-  for (const m of milestones) {
-    if (!m || typeof m !== 'object' || Array.isArray(m)) return { ok: false, error: 'milestone inválido.' };
-    const ms = m as Record<string, unknown>;
-    if (typeof ms.arenaName !== 'string' || !ms.arenaName.trim()) return { ok: false, error: 'milestone.arenaName é obrigatório.' };
-    if (typeof ms.name !== 'string' || !ms.name.trim()) return { ok: false, error: 'milestone.name é obrigatório.' };
-  }
-
-  return { ok: true, template: obj as CodexTemplate };
-};
-
-const uniqueName = (desired: string, taken: Set<string>) => {
-  const base = desired.trim() || 'Sem nome';
-  if (!taken.has(base)) {
-    taken.add(base);
-    return base;
-  }
-  for (let i = 2; i < 2000; i++) {
-    const attempt = `${base} (${i})`;
-    if (!taken.has(attempt)) {
-      taken.add(attempt);
-      return attempt;
-    }
-  }
-  const fallback = `${base} (${crypto.randomUUID().slice(0, 6)})`;
-  taken.add(fallback);
-  return fallback;
 };
 
 export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { userProfile, assets, getArenas, getActionsForArena, addArena, addAction } = useGame();
-  const { enterBuilderMode } = useCodexBuilder();
-  const isPremium = userProfile.role === 'admin';
-
-  const [mode, setMode] = useState<ViewMode>('export');
+  const { assets } = useGame();
+  const [codexes, setCodexes] = useState<CodexDraft[]>(() => loadDrafts());
+  const [activeCodexId, setActiveCodexId] = useState<string | null>(null);
+  const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
+  const [isCreatingArena, setIsCreatingArena] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+  const [iconTarget, setIconTarget] = useState<'arena' | 'action' | null>(null);
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+  const [isActionTypePickerOpen, setIsActionTypePickerOpen] = useState(false);
+  const [isArenaPickerOpen, setIsArenaPickerOpen] = useState(false);
+  const [editingActionId, setEditingActionId] = useState<string | null>(null);
+  const [actionDraft, setActionDraft] = useState<Partial<Action>>({});
+  const [arenaDraft, setArenaDraft] = useState({ name: '', description: '', icon: '🏆', assetId: '' });
 
-  const allArenas = useMemo(() => getArenas().filter(a => !a.isArchived), [getArenas]);
-  const defaultArenaId = allArenas[0]?.id || '';
-  const [exportArenaId, setExportArenaId] = useState<string>(defaultArenaId);
+  useEffect(() => {
+    localStorage.setItem('codexDrafts', JSON.stringify(codexes));
+  }, [codexes]);
 
-  const exportArena = useMemo(() => allArenas.find(a => a.id === exportArenaId) || null, [allArenas, exportArenaId]);
-  const exportArenaActions = useMemo(() => (exportArena ? getActionsForArena(exportArena.id) : []), [exportArena, getActionsForArena]);
+  const activeCodex = codexes.find(c => c.id === activeCodexId) || null;
+  const visibleArenas = useMemo(() => {
+    if (!activeCodex) return [];
+    return activeCodex.arenas.filter(a => showArchived || !a.isArchived);
+  }, [activeCodex, showArchived]);
 
-  const [metaName, setMetaName] = useState('');
-  const [metaAuthor, setMetaAuthor] = useState('');
-  const [metaPrice, setMetaPrice] = useState<string>('0');
-  const [metaDescription, setMetaDescription] = useState('');
-  const [exportJson, setExportJson] = useState('');
+  const actionsForArena = (arenaId: string) => activeCodex?.actions.filter(a => a.arenaId === arenaId) || [];
 
-  const [importText, setImportText] = useState('');
-  const [importError, setImportError] = useState<string | null>(null);
-
-  const defaultAssetId = useMemo(() => assets.find(a => a.id === 'geral')?.id || assets[0]?.id || '', [assets]);
-  const [installAssetId, setInstallAssetId] = useState(defaultAssetId);
-
-  const requirePremium = () => {
-    if (isPremium) return true;
-    setStatus('Disponível no Premium.');
-    window.setTimeout(() => setStatus(null), 1400);
-    return false;
+  const updateCodex = (id: string, updater: (draft: CodexDraft) => CodexDraft) => {
+    setCodexes(prev => prev.map(c => (c.id === id ? updater(c) : c)));
   };
 
-  useEffect(() => {
-    const selected = exportArena;
-    if (!selected) return;
-    setMetaName(prev => (prev.trim() ? prev : selected.name));
-    setMetaAuthor(prev => (prev.trim() ? prev : userProfile.nickname));
-    setMetaDescription(prev => (prev.trim() ? prev : selected.description));
-  }, [exportArena, userProfile.nickname]);
+  const createCodex = () => {
+    const newCodex: CodexDraft = {
+      id: crypto.randomUUID(),
+      name: 'Novo Codex',
+      description: '',
+      arenas: [],
+      actions: [],
+      updatedAt: new Date().toISOString(),
+    };
+    setCodexes(prev => [newCodex, ...prev]);
+    setActiveCodexId(newCodex.id);
+  };
 
-  useEffect(() => {
-    if (!exportArena) {
-      setExportJson('');
-      return;
-    }
-    const regular = exportArenaActions.filter(a => a.actionType !== 'Marco');
-    const milestones = exportArenaActions.filter(a => a.actionType === 'Marco');
+  const openCodex = (id: string) => {
+    setActiveCodexId(id);
+    setSelectedArenaId(null);
+  };
 
-    const template: CodexTemplate = {
-      schemaVersion: 1,
-      metadata: {
-        name: (metaName.trim() || exportArena.name).trim(),
-        author: metaAuthor.trim() || undefined,
-        price: Number.isFinite(Number(metaPrice)) ? Number(metaPrice) : 0,
-        description: metaDescription.trim() || undefined,
-      },
-      arenas: [
-        {
-          name: exportArena.name,
-          description: exportArena.description || undefined,
-          icon: exportArena.icon || undefined,
-          tags: exportArena.tags && exportArena.tags.length > 0 ? exportArena.tags : undefined,
-        },
-      ],
-      actions: regular.map(a => ({
-        arenaName: exportArena.name,
+  const closeCodex = () => {
+    setActiveCodexId(null);
+    setSelectedArenaId(null);
+    setIsCreatingArena(false);
+    setIsActionModalOpen(false);
+    setEditingActionId(null);
+  };
+
+  const buildTemplateJson = (draft: CodexDraft) => {
+    const arenaIdToName = new Map(draft.arenas.map(a => [a.id, a.name] as const));
+    const arenas = draft.arenas.map(a => ({
+      name: a.name,
+      description: a.description || undefined,
+      icon: a.icon || undefined,
+      tags: a.tags && a.tags.length > 0 ? a.tags : undefined,
+    }));
+    const actions = draft.actions
+      .filter(a => a.actionType !== 'Marco')
+      .map(a => ({
+        arenaName: arenaIdToName.get(a.arenaId) || 'Sem Arena',
         name: a.name,
         description: a.description || undefined,
         icon: a.icon || undefined,
@@ -202,306 +134,345 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         repetitions: a.repetitions,
         difficulty: a.difficulty,
         actionType: a.actionType === 'Compromisso' ? 'Compromisso' : 'Ação Recorrente',
-      })),
-      milestones: milestones.map(a => ({
-        arenaName: exportArena.name,
+      }));
+    const milestones = draft.actions
+      .filter(a => a.actionType === 'Marco')
+      .map(a => ({
+        arenaName: arenaIdToName.get(a.arenaId) || 'Sem Arena',
         name: a.name,
         description: a.description || undefined,
         icon: a.icon || undefined,
         duration: a.duration,
         difficulty: a.difficulty,
-      })),
+      }));
+    return JSON.stringify({
+      schemaVersion: 1,
+      metadata: { name: draft.name.trim() || 'Codex', description: draft.description || undefined },
+      arenas,
+      actions,
+      milestones,
+    }, null, 2);
+  };
+
+  const handleCopyJson = async () => {
+    if (!activeCodex) return;
+    const json = buildTemplateJson(activeCodex);
+    await navigator.clipboard.writeText(json);
+    setStatus('Código copiado.');
+    window.setTimeout(() => setStatus(null), 1200);
+  };
+
+  const handleCopyLink = async () => {
+    if (!activeCodex) return;
+    const json = buildTemplateJson(activeCodex);
+    const encoded = encodeUtf8Base64Url(json);
+    const link = `${window.location.origin}${window.location.pathname}?codex=${encoded}`;
+    await navigator.clipboard.writeText(link);
+    setStatus('Link copiado.');
+    window.setTimeout(() => setStatus(null), 1200);
+  };
+
+  const openNewArena = () => {
+    const firstAsset = assets.find(a => a.id !== 'geral')?.id || assets[0]?.id || '';
+    setArenaDraft({ name: '', description: '', icon: '🏆', assetId: firstAsset });
+    setIsCreatingArena(true);
+  };
+
+  const saveArena = () => {
+    if (!activeCodex || !arenaDraft.name.trim() || !arenaDraft.assetId) return;
+    const newArena: Arena = {
+      id: crypto.randomUUID(),
+      assetId: arenaDraft.assetId,
+      name: arenaDraft.name.trim(),
+      description: arenaDraft.description.trim(),
+      icon: arenaDraft.icon || '🏆',
+      actionIds: [],
+      isArchived: false,
     };
-
-    setExportJson(toPrettyJson(template));
-  }, [exportArena, exportArenaActions, metaAuthor, metaDescription, metaName, metaPrice]);
-
-  useEffect(() => {
-    if (mode !== 'import') return;
-    const params = new URLSearchParams(window.location.search);
-    const param = params.get('codex');
-    if (!param) return;
-    try {
-      const decoded = decodeUtf8Base64Url(param);
-      const parsed = tryParseJson(decoded);
-      if (parsed.ok === true) {
-        setImportText(toPrettyJson(parsed.value));
-        setImportError(null);
-      }
-    } catch {
-      setImportError('Link de Codex inválido.');
-    }
-  }, [mode]);
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setStatus('Copiado.');
-      window.setTimeout(() => setStatus(null), 1200);
-    } catch {
-      setStatus('Falha ao copiar.');
-      window.setTimeout(() => setStatus(null), 1200);
-    }
+    updateCodex(activeCodex.id, draft => ({
+      ...draft,
+      arenas: [newArena, ...draft.arenas],
+      updatedAt: new Date().toISOString(),
+    }));
+    setIsCreatingArena(false);
+    setSelectedArenaId(newArena.id);
   };
 
-  const handleCopyJson = () => {
-    if (!requirePremium()) return;
-    if (!exportJson.trim()) return;
-    copyToClipboard(exportJson);
+  const openActionModal = (arenaId: string, action?: Action) => {
+    setEditingActionId(action?.id || null);
+    setActionDraft(action || { arenaId, icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 });
+    setIsActionModalOpen(true);
   };
 
-  const handleCopyLink = () => {
-    if (!requirePremium()) return;
-    if (!exportJson.trim()) return;
-    const b64 = encodeUtf8Base64Url(exportJson);
-    const url = `${window.location.origin}${window.location.pathname}?codex=${encodeURIComponent(b64)}`;
-    copyToClipboard(url);
+  const saveAction = () => {
+    if (!activeCodex || !actionDraft.arenaId || !actionDraft.name?.trim()) return;
+    const actionId = editingActionId || crypto.randomUUID();
+    const actionType = (actionDraft.actionType || 'Ação Recorrente') as ActionType;
+    const repetitions = actionType === 'Ação Recorrente' ? Math.max(1, actionDraft.repetitions || 1) : 1;
+    const newAction: Action = {
+      id: actionId,
+      arenaId: actionDraft.arenaId,
+      name: actionDraft.name.trim(),
+      description: actionDraft.description?.trim() || undefined,
+      icon: actionDraft.icon || '📝',
+      duration: actionDraft.duration || 60,
+      repetitions,
+      actionType,
+      difficulty: actionDraft.difficulty || 3,
+    };
+    updateCodex(activeCodex.id, draft => {
+      const without = draft.actions.filter(a => a.id !== actionId);
+      const nextActions = [newAction, ...without];
+      const nextArenas = draft.arenas.map(a => a.id === newAction.arenaId ? { ...a, actionIds: Array.from(new Set([...(a.actionIds || []), newAction.id])) } : a);
+      return { ...draft, actions: nextActions, arenas: nextArenas, updatedAt: new Date().toISOString() };
+    });
+    setIsActionModalOpen(false);
+    setEditingActionId(null);
   };
 
-  const handleDownload = () => {
-    if (!requirePremium()) return;
-    if (!exportJson.trim()) return;
-    const safe = (metaName.trim() || exportArena?.name || 'codex')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-    const blob = new Blob([exportJson], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${safe || 'codex'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  const normalizeImportInput = (raw: string): { ok: true; jsonText: string } | { ok: false; error: string } => {
-    const trimmed = raw.trim();
-    if (!trimmed) return { ok: false, error: 'Cole um JSON ou um link.' };
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) return { ok: true, jsonText: trimmed };
-
-    try {
-      const url = new URL(trimmed);
-      const param = url.searchParams.get('codex');
-      if (param) {
-        const decoded = decodeUtf8Base64Url(param);
-        return { ok: true, jsonText: decoded };
-      }
-    } catch {
-    }
-
-    try {
-      const decoded = decodeUtf8Base64Url(trimmed);
-      return { ok: true, jsonText: decoded };
-    } catch {
-      return { ok: false, error: 'Entrada inválida. Cole o JSON ou um link gerado no Exportar.' };
-    }
-  };
-
-  const handleInstall = () => {
-    if (!requirePremium()) return;
-    setImportError(null);
-    setStatus(null);
-
-    const normalized = normalizeImportInput(importText);
-    if (normalized.ok === false) {
-      setImportError(normalized.error);
-      return;
-    }
-
-    const parsed = tryParseJson(normalized.jsonText);
-    if (parsed.ok === false) {
-      setImportError(parsed.error);
-      return;
-    }
-
-    const validated = validateCodexTemplate(parsed.value);
-    if (validated.ok === false) {
-      setImportError(validated.error);
-      return;
-    }
-
-    const assetId = assets.some(a => a.id === installAssetId) ? installAssetId : (assets[0]?.id || '');
-    if (!assetId) {
-      setImportError('Nenhum Asset disponível para instalar.');
-      return;
-    }
-
-    const template = validated.template;
-    const taken = new Set<string>(getArenas().map(a => a.name));
-    const arenaNameToId = new Map<string, string>();
-
-    for (const arena of template.arenas) {
-      const createdName = uniqueName(arena.name, taken);
-      const created = addArena(assetId, {
-        name: createdName,
-        icon: arena.icon || '🗂️',
-        description: arena.description || template.metadata.description || 'Arena instalada via Codex',
-      });
-      arenaNameToId.set(arena.name, created.id);
-    }
-
-    const firstArenaId = arenaNameToId.values().next().value as string | undefined;
-    if (!firstArenaId) {
-      setImportError('Falha ao criar arenas.');
-      return;
-    }
-
-    let createdActions = 0;
-    let createdMilestones = 0;
-
-    for (const action of template.actions) {
-      const targetArenaId = arenaNameToId.get(action.arenaName) || firstArenaId;
-      const actionType: Exclude<ActionType, 'Marco'> = action.actionType === 'Compromisso' ? 'Compromisso' : 'Ação Recorrente';
-      addAction({
-        arenaId: targetArenaId,
-        name: action.name,
-        description: action.description || undefined,
-        icon: action.icon || '📝',
-        duration: typeof action.duration === 'number' && action.duration > 0 ? Math.round(action.duration) : 60,
-        repetitions: typeof action.repetitions === 'number' && action.repetitions > 0 ? Math.round(action.repetitions) : 1,
-        actionType,
-        difficulty: typeof action.difficulty === 'number' ? action.difficulty : undefined,
-      });
-      createdActions++;
-    }
-
-    for (const milestone of template.milestones) {
-      const targetArenaId = arenaNameToId.get(milestone.arenaName) || firstArenaId;
-      addAction({
-        arenaId: targetArenaId,
-        name: milestone.name,
-        description: milestone.description || undefined,
-        icon: milestone.icon || '🎯',
-        duration: typeof milestone.duration === 'number' && milestone.duration > 0 ? Math.round(milestone.duration) : 15,
-        repetitions: 1,
-        actionType: 'Marco',
-        difficulty: typeof milestone.difficulty === 'number' ? milestone.difficulty : undefined,
-      });
-      createdMilestones++;
-    }
-
-    setStatus(`Instalado: ${template.arenas.length} arena(s), ${createdActions} ação(ões), ${createdMilestones} marco(s).`);
-    window.setTimeout(() => setStatus(null), 2500);
-    setImportText('');
-  };
-
-  const headerLabel = mode === 'export' ? 'EXPORTAR CODEX' : 'IMPORTAR CODEX';
+  const selectedArena = activeCodex?.arenas.find(a => a.id === selectedArenaId) || null;
+  const selectedArenaActions = selectedArena ? actionsForArena(selectedArena.id) : [];
+  const actionArena = activeCodex?.arenas.find(a => a.id === actionDraft.arenaId) || null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-      <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className={`text-xs font-bold uppercase tracking-wider ${isPremium ? 'text-[var(--gold)]' : 'text-gray-400'}`}>{headerLabel}</div>
+    <>
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center">
+            <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">CODEXES</div>
+            <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
-        </div>
 
-        {!isPremium && (
-          <div className="text-center text-xs text-gray-400 bg-black/20 border border-white/10 rounded-xl p-2">
-            Codex é Premium.
-          </div>
-        )}
-
-        <div className="flex space-x-2">
-          <button onClick={() => setMode('export')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${mode === 'export' ? 'bg-black/30 text-[var(--gold)]' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>EXPORTAR</button>
-          <button onClick={() => setMode('import')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${mode === 'import' ? 'bg-black/30 text-[var(--gold)]' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>IMPORTAR</button>
-        </div>
-
-        {mode === 'export' && (
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                if (!requirePremium()) return;
-                enterBuilderMode(metaName.trim() || undefined);
-                onClose();
-              }}
-              disabled={!isPremium}
-              className="w-full py-3 rounded-xl luxe-gold-button disabled:opacity-50"
-            >
-              CRIAR NOVO CODEX (MODO ARQUITETO)
-            </button>
-            {allArenas.length === 0 ? (
-              <div className="text-center text-sm text-gray-500 py-6">Nenhuma arena para exportar.</div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-xs font-bold text-gray-400">Arena</label>
-                    <select value={exportArenaId} onChange={e => setExportArenaId(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]">
-                      {allArenas.map(a => (
-                        <option key={a.id} value={a.id}>{a.name}</option>
-                      ))}
-                    </select>
+          {!activeCodex ? (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                {codexes.map(codex => (
+                  <button key={codex.id} onClick={() => openCodex(codex.id)} className="bg-black/30 border border-white/10 rounded-2xl p-3 text-left hover:border-[var(--gold)] transition-colors">
+                    <div className="text-xs font-bold uppercase tracking-wider text-gray-400">{codex.name}</div>
+                    <div className="text-[11px] text-gray-500 line-clamp-2 mt-1">{codex.description || 'Sem descrição'}</div>
+                    <div className="text-[10px] text-gray-400 mt-2">{codex.arenas.length} arenas • {codex.actions.length} ações</div>
+                  </button>
+                ))}
+                <button onClick={createCodex} className="bg-black/30 border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center text-center hover:border-[var(--gold)] transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-2">
+                    <PlusIcon className="w-5 h-5 text-[var(--gold)]" />
                   </div>
+                  <div className="text-xs font-bold tracking-widest text-[var(--gold)]">NOVO CODEX</div>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Codex</div>
+                <button onClick={closeCodex} className="text-[10px] font-bold text-gray-400 hover:text-white">Voltar</button>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400">Título</label>
+                <input
+                  value={activeCodex.name}
+                  onChange={e => updateCodex(activeCodex.id, draft => ({ ...draft, name: e.target.value, updatedAt: new Date().toISOString() }))}
+                  className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400">Descrição</label>
+                <textarea
+                  rows={2}
+                  value={activeCodex.description}
+                  onChange={e => updateCodex(activeCodex.id, draft => ({ ...draft, description: e.target.value, updatedAt: new Date().toISOString() }))}
+                  className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]"
+                />
+              </div>
 
-                  <div>
-                    <label className="text-xs font-bold text-gray-400">Nome do Codex</label>
-                    <input value={metaName} onChange={e => setMetaName(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs font-bold text-gray-400">Autor</label>
-                      <input value={metaAuthor} onChange={e => setMetaAuthor(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-gray-400">Preço</label>
-                      <input value={metaPrice} onChange={e => setMetaPrice(e.target.value)} inputMode="numeric" className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-gray-400">Descrição</label>
-                    <textarea value={metaDescription} onChange={e => setMetaDescription(e.target.value)} rows={3} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-gray-400">JSON do Template</label>
-                    <textarea value={exportJson} readOnly rows={10} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)] font-mono text-xs" />
+              <div className="bg-black border border-white/10 rounded-2xl p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Arenas</div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setShowArchived(s => !s)} className={`p-2 rounded-full transition-colors ${showArchived ? 'bg-white/20 text-white' : 'text-gray-500'}`}>
+                      <EyeIcon className="w-4 h-4" />
+                    </button>
+                    <button onClick={openNewArena} className="px-3 py-2 rounded-xl luxe-gold-button text-xs">Adicionar arena</button>
                   </div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <button onClick={handleCopyJson} disabled={!isPremium} className="w-full py-3 rounded-xl luxe-button-secondary disabled:opacity-50">COPIAR JSON</button>
-                  <button onClick={handleCopyLink} disabled={!isPremium} className="w-full py-3 rounded-xl luxe-button-secondary disabled:opacity-50">COPIAR LINK</button>
-                </div>
+                {visibleArenas.length === 0 ? (
+                  <div className="text-center text-xs text-gray-500 py-4">Nenhuma arena no codex.</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {visibleArenas.map(arena => (
+                      <ArenaCard
+                        key={arena.id}
+                        arena={arena}
+                        actions={actionsForArena(arena.id)}
+                        onClick={() => setSelectedArenaId(arena.id)}
+                        variant="dossier"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                <button onClick={handleDownload} disabled={!isPremium} className="w-full py-3 rounded-xl luxe-button-primary disabled:opacity-50">BAIXAR .JSON</button>
-              </>
-            )}
-          </div>
-        )}
-
-        {mode === 'import' && (
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-bold text-gray-400">Cole o JSON ou Link</label>
-              <textarea value={importText} onChange={e => setImportText(e.target.value)} rows={12} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)] font-mono text-xs" />
-              {importError && <div className="text-xs text-red-400 mt-1">{importError}</div>}
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">OK</button>
+                <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary">COPIAR CÓDIGO</button>
+                <button onClick={handleCopyLink} className="w-full py-2 rounded-xl luxe-button-secondary">COPIAR LINK</button>
+              </div>
+              {status && <div className="text-center text-[10px] text-gray-500">{status}</div>}
             </div>
+          )}
+        </GlassCard>
+      </div>
 
-            <div>
-              <label className="text-xs font-bold text-gray-400">Instalar em</label>
-              <select value={installAssetId} onChange={e => setInstallAssetId(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]">
-                {assets.map(a => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
+      {isCreatingArena && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={() => setIsCreatingArena(false)}>
+          <GlassCard variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+            <div className="text-center">
+              <h2 className="text-lg font-bold uppercase tracking-wider">Nova Arena</h2>
+            </div>
+            <div className="space-y-2">
+              <select value={arenaDraft.assetId} onChange={e => setArenaDraft(prev => ({ ...prev, assetId: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]">
+                {assets.filter(a => a.id !== 'geral').map(asset => (
+                  <option key={asset.id} value={asset.id}>{asset.name}</option>
                 ))}
               </select>
+              <input type="text" placeholder="Nome da Arena" value={arenaDraft.name} onChange={e => setArenaDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+              <textarea placeholder="Descrição da Meta..." value={arenaDraft.description} onChange={e => setArenaDraft(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+              <button onClick={() => { setIconTarget('arena'); setIsIconPickerOpen(true); }} className="w-full py-2 rounded-xl bg-black/30 border border-white/20 flex items-center justify-center text-2xl">{arenaDraft.icon}</button>
             </div>
+            <div className="flex space-x-2 pt-2">
+              <button onClick={() => setIsCreatingArena(false)} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
+              <button onClick={saveArena} className="w-full py-2 rounded-xl luxe-button-primary">CRIAR ARENA</button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
 
-            <button onClick={handleInstall} disabled={!isPremium} className="w-full py-3 rounded-xl luxe-gold-button disabled:opacity-50">INSTALAR TEMPLATE</button>
+      {selectedArena && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={() => setSelectedArenaId(null)}>
+          <div className="dossier-bg border border-[color:var(--accent-silver-soft)] w-full max-w-sm m-4 space-y-3 rounded-2xl p-4 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center">
+              <div className="text-xs font-bold uppercase tracking-wider text-gray-400">{selectedArena.name}</div>
+              <button onClick={() => setSelectedArenaId(null)} className="px-4 py-2 text-sm font-bold rounded-xl luxe-gold-button">OK</button>
+            </div>
+            <div className="flex flex-col items-center text-center space-y-1">
+              <div className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center">
+                <span className="text-5xl">{selectedArena.icon}</span>
+              </div>
+              <p className="text-sm text-gray-500">{selectedArena.description || 'Sem descrição.'}</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Ações</div>
+              <button onClick={() => openActionModal(selectedArena.id)} className="px-3 py-2 rounded-xl luxe-gold-button text-xs">Nova ação</button>
+            </div>
+            {selectedArenaActions.length === 0 ? (
+              <div className="text-center text-xs text-gray-500">Nenhuma ação ainda.</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {selectedArenaActions.map(action => (
+                  <button key={action.id} onClick={() => openActionModal(selectedArena.id, action)} className="bg-black/30 border border-white/10 rounded-xl p-2 text-left">
+                    <div className="text-2xl">{action.icon}</div>
+                    <div className="text-xs font-bold text-white mt-1 truncate">{action.name}</div>
+                    <div className="text-[10px] text-gray-500">{action.actionType}</div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {status && (
-          <div className="text-center text-[10px] text-gray-500">
-            {status}
-          </div>
-        )}
-      </GlassCard>
-    </div>
+      {isActionModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setIsActionModalOpen(false)}>
+          <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[90vh] p-3 space-y-3" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center">
+              <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Nova Ação</div>
+              <button onClick={() => setIsActionModalOpen(false)} className="px-4 py-2 text-sm font-bold rounded-xl luxe-gold-button">OK</button>
+            </div>
+            <button onClick={() => { setIconTarget('action'); setIsIconPickerOpen(true); }} className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--accent-bronze)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center self-center">
+              <span className="text-5xl">{actionDraft.icon || '📝'}</span>
+            </button>
+            <input type="text" placeholder="Nome da Ação" value={actionDraft.name || ''} onChange={e => setActionDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-1" />
+            <textarea placeholder="Descrição (opcional)" value={actionDraft.description || ''} onChange={e => setActionDraft(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50" />
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs font-bold text-gray-400">Arena</label>
+                <button
+                  onClick={() => setIsArenaPickerOpen(true)}
+                  className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
+                >
+                  <span>{actionArena ? `${actionArena.icon} ${actionArena.name}` : 'Selecionar Arena'}</span>
+                  <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400">Tipo de Ação</label>
+                <button
+                  onClick={() => setIsActionTypePickerOpen(true)}
+                  className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
+                >
+                  <span>{actionDraft.actionType || 'Ação Recorrente'}</span>
+                  <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                <StyledRangeInput label="Duração" value={actionDraft.duration ?? 60} min={15} max={240} step={15} unit="min" onChange={val => setActionDraft(prev => ({ ...prev, duration: val }))} />
+                {actionDraft.actionType === 'Ação Recorrente' && (
+                  <StyledRangeInput label="Repetições" value={actionDraft.repetitions ?? 1} min={1} max={50} step={1} unit="x" onChange={val => setActionDraft(prev => ({ ...prev, repetitions: val }))} />
+                )}
+                <StyledRangeInput label="Dificuldade" value={actionDraft.difficulty ?? 3} min={1} max={5} step={1} unit={difficultyLabels[(actionDraft.difficulty ?? 3) - 1]} onChange={val => setActionDraft(prev => ({ ...prev, difficulty: val }))} />
+              </div>
+            </div>
+            <div className="flex space-x-2 pt-2">
+              <button onClick={() => setIsActionModalOpen(false)} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
+              <button onClick={saveAction} className="w-full py-2 rounded-xl luxe-button-primary">SALVAR AÇÃO</button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {isIconPickerOpen && (
+        <IconPickerModal
+          onSelect={icon => {
+            if (iconTarget === 'arena') setArenaDraft(prev => ({ ...prev, icon }));
+            if (iconTarget === 'action') setActionDraft(prev => ({ ...prev, icon }));
+            setIsIconPickerOpen(false);
+            setIconTarget(null);
+          }}
+          onClose={() => { setIsIconPickerOpen(false); setIconTarget(null); }}
+        />
+      )}
+      {isActionTypePickerOpen && (
+        <SelectionModal<ActionType>
+          title="Tipo de Ação"
+          options={actionTypeOptions}
+          currentValue={actionDraft.actionType || 'Ação Recorrente'}
+          onSelect={value => setActionDraft(prev => ({ ...prev, actionType: value }))}
+          onClose={() => setIsActionTypePickerOpen(false)}
+        />
+      )}
+      {isArenaPickerOpen && activeCodex && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setIsArenaPickerOpen(false)}>
+          <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Arena</h2>
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {activeCodex.arenas.map(arena => (
+                <button
+                  key={arena.id}
+                  onClick={() => {
+                    setActionDraft(prev => ({ ...prev, arenaId: arena.id }));
+                    setIsArenaPickerOpen(false);
+                  }}
+                  className={`w-full p-3 rounded-xl text-left flex justify-between items-center transition-colors ${actionDraft.arenaId === arena.id ? 'bg-white/20' : 'bg-black/20 hover:bg-white/10'}`}
+                >
+                  <span>{arena.icon} {arena.name}</span>
+                  {actionDraft.arenaId === arena.id && <CheckIcon className="w-5 h-5 text-[var(--gold)]" />}
+                </button>
+              ))}
+            </div>
+          </GlassCard>
+        </div>
+      )}
+    </>
   );
 };

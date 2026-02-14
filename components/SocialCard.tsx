@@ -2,7 +2,7 @@ import React from 'react';
 import { UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
 
-export const SocialCard: React.FC<{ profile: UserProfile }> = ({ profile }) => {
+export const SocialCard: React.FC<{ profile: UserProfile; subtitle?: string; actions?: React.ReactNode }> = ({ profile, subtitle, actions }) => {
     const { clan } = useGame();
     
     return (
@@ -16,13 +16,14 @@ export const SocialCard: React.FC<{ profile: UserProfile }> = ({ profile }) => {
                 </div>
                 {profile.isOnline && <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800"></div>}
             </div>
-            <div>
+            <div className="flex-1">
                 <div className="flex items-center space-x-2">
                     <h3 className="font-bold text-lg">{profile.nickname}</h3>
                     {profile.bannerUrl && <img src={profile.bannerUrl} alt="Banner" className="h-6 object-contain" />}
                 </div>
-                <p className="text-sm text-gray-300">Level {profile.level} - {clan?.name || 'Sem Clã'}</p>
+                <p className="text-sm text-gray-300">{subtitle ?? `Level ${profile.level} - ${clan?.name || 'Sem Clã'}`}</p>
             </div>
+            {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
     );
 };

@@ -15,6 +15,10 @@ import { ChestOpeningModal } from '../components/ChestOpeningModal';
 
 // --- Helper Functions ---
 export const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+const parseDate = (value: string) => {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+};
 export const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
 const getScoreGrade = (score: number) => {
@@ -34,9 +38,9 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const today = new Date().toISOString().split('T')[0];
     
     // Cálculo de dias
-    const startD = new Date(startDate);
-    const endD = new Date(endDate);
-    const todayD = new Date(today);
+    const startD = parseDate(startDate);
+    const endD = parseDate(endDate);
+    const todayD = parseDate(today);
     
     const totalDays = Math.max(1, daysBetween(startD, endD) + 1);
     const daysElapsed = Math.max(0, daysBetween(startD, todayD) + 1);

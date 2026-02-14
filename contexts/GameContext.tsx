@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef } from 'react';
-import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission } from '../types';
+import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, FriendRequest } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS } from '../constants';
 import { DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { supabase } from '../supabaseClient';
@@ -10,8 +10,9 @@ import { useCodexBuilder } from './CodexBuilderContext';
 // --- Universal Supabase Data Mappers ---
 
 const mapToCamelCase = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
     if (Array.isArray(obj)) return obj.map(v => mapToCamelCase(v));
-    if (obj !== null && obj.constructor === Object) {
+    if (obj.constructor === Object) {
         return Object.keys(obj).reduce((result, key) => {
             const camelKey = key.replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''));
             result[camelKey] = mapToCamelCase(obj[key]);
@@ -22,8 +23,9 @@ const mapToCamelCase = (obj: any): any => {
 };
 
 const mapToSnakeCase = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
     if (Array.isArray(obj)) return obj.map(v => mapToSnakeCase(v));
-    if (obj !== null && obj.constructor === Object) {
+    if (obj.constructor === Object) {
         return Object.keys(obj).reduce((result, key) => {
             const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
             result[snakeKey] = mapToSnakeCase(obj[key]);
@@ -101,6 +103,13 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     skin: 'default'
 };
 
+const defaultChecklistItems: ChecklistItem[] = [
+    { id: 'c1', text: 'Arrumar a cama', completed: true },
+    { id: 'c2', text: 'Beber 1L de água', completed: false },
+    { id: 'c3', text: 'Ler 10 páginas', completed: false },
+    { id: 'c4', text: 'Meditar 5 min', completed: false },
+];
+
 const DEFAULT_FRIENDS: UserProfile[] = [
     { ...DEFAULT_USER_PROFILE, id: 'friend_01', nickname: 'Nexus', avatarUrl: 'https://picsum.photos/seed/friend01/100/100', sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, body: 'female_base', hairStyle: 'parted', hairColor: '#B8860B', outfit: 'lab_coat', head_under: 'glasses' }, isOnline: true, role: 'user' },
     { ...DEFAULT_USER_PROFILE, id: 'friend_02', nickname: 'Zypher', avatarUrl: 'https://picsum.photos/seed/friend02/100/100', sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, hairStyle: 'mullet', hairColor: '#FFFFFF', skinTone: '#C68642', outfit: 'silver_armor', helmet: 'silver_helm' }, isOnline: false, role: 'user' },
@@ -121,6 +130,42 @@ const getTodayString = () => new Date().toISOString().split('T')[0];
 const SITREP_BONUS_A = 60;
 const SITREP_BONUS_S = 120;
 
+const createDefaultDailyCommitment = (): DailyCommitment => ({
+    date: getTodayString(),
+    taskIds: [],
+    stage: 'planning',
+    score: null,
+    expDeposited: null,
+    sitrepBonus: null,
+});
+
+const createDefaultAssets = (newUser: boolean) => {
+    const defaultAssets = JSON.parse(JSON.stringify(ASSETS_DATA));
+    if (newUser) {
+        const geralAsset = defaultAssets.find((a: Asset) => a.id === 'geral');
+        if (geralAsset) {
+            const outrosArena = geralAsset.arenas.find((ar: Arena) => ar.id === 'arena_outros');
+            if (outrosArena && !outrosArena.actionIds.includes(TUTORIAL_ACTION_ID)) {
+                outrosArena.actionIds.push(TUTORIAL_ACTION_ID);
+            }
+        }
+    }
+    return defaultAssets;
+};
+
+const createDefaultActions = (newUser: boolean): Action[] => {
+    const defaultActions: Action[] = [
+        { id: 'act1', arenaId: 'arena_proposito_1', name: 'Estudar Carreira', icon: '📚', duration: 60, repetitions: 12, actionType: 'Ação Recorrente', difficulty: 3 },
+        { id: 'act2', arenaId: 'arena_financas_1', name: 'Analisar Gastos', icon: '$', duration: 30, repetitions: 4, actionType: 'Ação Recorrente', difficulty: 2 },
+        { id: 'act3', arenaId: 'arena_financas_2', name: 'Estudar Ações', icon: '📈', duration: 45, repetitions: 8, actionType: 'Ação Recorrente', difficulty: 4 },
+        { id: 'act4', arenaId: 'arena_fisico_1', name: 'Correr 5km', icon: '🏃‍♂️', duration: 30, repetitions: 1, actionType: 'Marco', difficulty: 3 },
+    ];
+    if (newUser) {
+        return [...defaultActions, TUTORIAL_ACTION];
+    }
+    return defaultActions;
+};
+
 interface EndCycleResult {
     report: Report;
     expGained: number;
@@ -135,6 +180,8 @@ export interface GameContextType {
   checklistItems: ChecklistItem[];
   userProfile: UserProfile;
   friends: UserProfile[];
+  friendRequestsIncoming: FriendRequest[];
+  friendRequestsOutgoing: FriendRequest[];
   reports: Report[];
   nobilityRanks: NobilityRank[];
   clan: Clan | null;
@@ -176,6 +223,10 @@ export interface GameContextType {
   updateMood: (mood: number) => void;
   setCurrentSkin: (skinId: string) => void;
   addFriend: (nickname: string) => void;
+  searchPlayers: (query: string) => Promise<UserProfile[]>;
+  sendFriendRequest: (recipientId: string) => Promise<void>;
+  acceptFriendRequest: (requestId: string) => Promise<void>;
+  declineFriendRequest: (requestId: string) => Promise<void>;
   updateAllAssetLevels: (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>) => boolean;
   startCycle: (name: string, endDate: string) => void;
   endCycle: (currentAssets: Asset[], currentActions: Action[]) => EndCycleResult;
@@ -212,18 +263,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const saved = localStorage.getItem('assets');
         if (saved) return JSON.parse(saved);
     } catch (e) { console.error("Failed to load assets from storage", e); }
-    
-    const defaultAssets = JSON.parse(JSON.stringify(ASSETS_DATA)); // Deep copy
-    if (isNewUser) {
-        const geralAsset = defaultAssets.find(a => a.id === 'geral');
-        if (geralAsset) {
-            const outrosArena = geralAsset.arenas.find(ar => ar.id === 'arena_outros');
-            if (outrosArena && !outrosArena.actionIds.includes(TUTORIAL_ACTION_ID)) {
-                outrosArena.actionIds.push(TUTORIAL_ACTION_ID);
-            }
-        }
-    }
-    return defaultAssets;
+    return createDefaultAssets(isNewUser);
   });
   
   const [actions, setActions] = useState<Action[]>(() => {
@@ -231,17 +271,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const saved = localStorage.getItem('actions');
         if (saved) return JSON.parse(saved);
     } catch (e) { console.error("Failed to load actions from storage", e); }
-    
-    const defaultActions: Action[] = [
-        { id: 'act1', arenaId: 'arena_proposito_1', name: 'Estudar Carreira', icon: '📚', duration: 60, repetitions: 12, actionType: 'Ação Recorrente', difficulty: 3 },
-        { id: 'act2', arenaId: 'arena_financas_1', name: 'Analisar Gastos', icon: '$', duration: 30, repetitions: 4, actionType: 'Ação Recorrente', difficulty: 2 },
-        { id: 'act3', arenaId: 'arena_financas_2', name: 'Estudar Ações', icon: '📈', duration: 45, repetitions: 8, actionType: 'Ação Recorrente', difficulty: 4 },
-        { id: 'act4', arenaId: 'arena_fisico_1', name: 'Correr 5km', icon: '🏃‍♂️', duration: 30, repetitions: 1, actionType: 'Marco', difficulty: 3 },
-    ];
-    if (isNewUser) {
-        return [...defaultActions, TUTORIAL_ACTION];
-    }
-    return defaultActions;
+    return createDefaultActions(isNewUser);
   });
 
   const [tasks, setTasks] = useState<ScheduledTask[]>(() => {
@@ -272,14 +302,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (parsed.date === getTodayString()) return parsed;
         }
     } catch (e) { console.error("Failed to load dailyCommitment from storage", e); }
-    return {
-        date: getTodayString(),
-        taskIds: [],
-        stage: 'planning',
-        score: null,
-        expDeposited: null,
-        sitrepBonus: null,
-    };
+    return createDefaultDailyCommitment();
   });
 
   const [cycleExpBonus, setCycleExpBonus] = useState<number>(() => {
@@ -317,6 +340,64 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
   }, [session?.user.id]);
 
+  useEffect(() => {
+    const currentUserId = session?.user.id;
+    if (!currentUserId) return;
+
+    let storedUserId: string | null = null;
+    let storedProfileId: string | null = null;
+    try {
+        storedUserId = localStorage.getItem('activeUserId');
+        const savedProfile = localStorage.getItem('userProfile');
+        if (savedProfile) {
+            const parsed = JSON.parse(savedProfile);
+            if (parsed?.id) storedProfileId = parsed.id;
+        }
+    } catch {
+        storedUserId = null;
+        storedProfileId = null;
+    }
+
+    const previousId = storedUserId || storedProfileId;
+    if (previousId && previousId !== currentUserId) {
+        const keysToClear = [
+            'assets',
+            'actions',
+            'tasks',
+            'reports',
+            'clan',
+            'checklistItems',
+            'userProfile',
+            'activeCycle',
+            'feed',
+            'dailyCommitment',
+            'cycleExpBonus',
+        ];
+        keysToClear.forEach(key => localStorage.removeItem(key));
+
+        setAssets(createDefaultAssets(isNewUser));
+        setActions(createDefaultActions(isNewUser));
+        setTasks([]);
+        setReports([]);
+        setClan(null);
+        setEnrichedClanMembers([]);
+        setChecklistItems([...defaultChecklistItems]);
+        setFeed([]);
+        setActiveCycle(null);
+        setDailyCommitmentState(createDefaultDailyCommitment());
+        setCycleExpBonus(0);
+        setUserProfile({
+            ...DEFAULT_USER_PROFILE,
+            id: currentUserId,
+            sovereign: { ...DEFAULT_SOVEREIGN_CONFIG },
+        });
+    }
+
+    try {
+        localStorage.setItem('activeUserId', currentUserId);
+    } catch {}
+  }, [session?.user.id, isNewUser]);
+
   const [activeCycle, setActiveCycle] = useState<Cycle | null>(() => {
     try {
         const savedCycle = localStorage.getItem('activeCycle');
@@ -338,18 +419,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const [enrichedClanMembers, setEnrichedClanMembers] = useState<EnrichedClanMember[]>([]);
 
   const [friends, setFriends] = useState<UserProfile[]>(DEFAULT_FRIENDS);
+  const [friendRequestsIncoming, setFriendRequestsIncoming] = useState<FriendRequest[]>([]);
+  const [friendRequestsOutgoing, setFriendRequestsOutgoing] = useState<FriendRequest[]>([]);
   
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(() => {
       try {
         const saved = localStorage.getItem('checklistItems');
         if (saved) return JSON.parse(saved);
     } catch (e) { console.error("Failed to load checklistItems from storage", e); }
-    return [
-      { id: 'c1', text: 'Arrumar a cama', completed: true },
-      { id: 'c2', text: 'Beber 1L de água', completed: false },
-      { id: 'c3', text: 'Ler 10 páginas', completed: false },
-      { id: 'c4', text: 'Meditar 5 min', completed: false },
-    ];
+    return [...defaultChecklistItems];
   });
 
   const [achievementUnlocked, setAchievementUnlocked] = useState<{ type: FeedEventType; data: any; } | null>(null);
@@ -423,6 +501,76 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setEnrichedClanMembers(enrichedMembers);
   }, [setClan, setEnrichedClanMembers]);
 
+  const hydrateProfilesByIds = useCallback(async (ids: string[]) => {
+    const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+    if (uniqueIds.length === 0) return {} as Record<string, UserProfile>;
+
+    const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', uniqueIds);
+    if (profilesError || !profilesData) {
+        console.error('Error fetching profiles:', profilesError?.message);
+        return {} as Record<string, UserProfile>;
+    }
+
+    const mapped = mapToCamelCase(profilesData) as UserProfile[];
+    return mapped.reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+    }, {} as Record<string, UserProfile>);
+  }, []);
+
+  const loadFriendsAndRequests = useCallback(async (userId: string) => {
+    const [{ data: friendsData, error: friendsError }, { data: incomingData, error: incomingError }, { data: outgoingData, error: outgoingError }] = await Promise.all([
+        supabase.from('friends').select('*').eq('user_id', userId),
+        supabase.from('friend_requests').select('*').eq('recipient_id', userId),
+        supabase.from('friend_requests').select('*').eq('sender_id', userId),
+    ]);
+
+    if (friendsError) console.error('Error fetching friends:', friendsError.message);
+    if (incomingError) console.error('Error fetching incoming friend requests:', incomingError.message);
+    if (outgoingError) console.error('Error fetching outgoing friend requests:', outgoingError.message);
+
+    const incomingRequests = (incomingData || []).filter((row: any) => row.status === 'pending').map((row: any) => ({
+        id: row.id,
+        senderId: row.sender_id,
+        recipientId: row.recipient_id,
+        status: row.status,
+        createdAt: row.created_at,
+        respondedAt: row.responded_at,
+    })) as FriendRequest[];
+
+    const outgoingRequests = (outgoingData || []).filter((row: any) => row.status === 'pending').map((row: any) => ({
+        id: row.id,
+        senderId: row.sender_id,
+        recipientId: row.recipient_id,
+        status: row.status,
+        createdAt: row.created_at,
+        respondedAt: row.responded_at,
+    })) as FriendRequest[];
+
+    const friendIds = (friendsData || []).map((row: any) => row.friend_id).filter(Boolean);
+    const profileIdsToHydrate = [
+        ...friendIds,
+        ...incomingRequests.map(r => r.senderId),
+        ...incomingRequests.map(r => r.recipientId),
+        ...outgoingRequests.map(r => r.senderId),
+        ...outgoingRequests.map(r => r.recipientId),
+    ];
+
+    const profilesById = await hydrateProfilesByIds(profileIdsToHydrate);
+
+    setFriends(friendIds.map(id => profilesById[id]).filter(Boolean));
+    setFriendRequestsIncoming(incomingRequests.map(r => ({
+        ...r,
+        senderProfile: profilesById[r.senderId],
+        recipientProfile: profilesById[r.recipientId],
+    })));
+    setFriendRequestsOutgoing(outgoingRequests.map(r => ({
+        ...r,
+        senderProfile: profilesById[r.senderId],
+        recipientProfile: profilesById[r.recipientId],
+    })));
+  }, [hydrateProfilesByIds]);
+
 
   // --- Supabase Data Sync ---
   useEffect(() => {
@@ -448,10 +596,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setUserProfile(prev => ({ ...prev, ...camelProfile }));
         }
 
+        await loadFriendsAndRequests(userId);
+
         let camelArenas: Arena[] | null = null;
         const { data: arenasData, error: arenasError } = await supabase.from('arenas').select('*').eq('user_id', userId);
         if (!arenasError && arenasData) {
-            camelArenas = mapToCamelCase(arenasData) as Arena[];
+            camelArenas = (mapToCamelCase(arenasData) as Arena[]).map(arena => ({
+                ...arena,
+                actionIds: Array.isArray(arena.actionIds) ? arena.actionIds : [],
+                isArchived: typeof arena.isArchived === 'boolean' ? arena.isArchived : false,
+            }));
         }
 
         // 3. Load Actions
@@ -518,7 +672,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
     loadDataFromSupabase();
-  }, [session, userProfile.id, loadClanAndMembers]);
+  }, [session, userProfile.id, loadClanAndMembers, loadFriendsAndRequests]);
 
   const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
     const newEvent: FeedEvent = {
@@ -569,15 +723,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
   
   const endDailyBattle = () => {
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id));
-    const completedCount = committedTasks.filter(t => t.completed).length;
+    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date);
+    const committedCounts = committedTasks.reduce((acc, task) => {
+        acc[task.actionId] = (acc[task.actionId] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const completedCounts = tasks.reduce((acc, task) => {
+        if (task.date !== dailyCommitment.date) return acc;
+        if (!committedCounts[task.actionId]) return acc;
+        if (task.completed) acc[task.actionId] = (acc[task.actionId] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const completedCount = Object.keys(committedCounts).reduce((sum, actionId) => {
+        const committed = committedCounts[actionId] || 0;
+        const completed = completedCounts[actionId] || 0;
+        return sum + Math.min(committed, completed);
+    }, 0);
     const totalCount = committedTasks.length;
     const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
-    const expDepositBase = committedTasks.filter(t => t.completed).reduce((sum, task) => {
-        const duration = Number.isFinite(task.duration) ? task.duration : 0;
-        if (duration > 0) return sum + duration;
-        const action = actions.find(a => a.id === task.actionId);
-        return sum + (action?.duration || 0);
+    const expDepositBase = Object.keys(committedCounts).reduce((sum, actionId) => {
+        const committed = committedCounts[actionId] || 0;
+        const completed = completedCounts[actionId] || 0;
+        const count = Math.min(committed, completed);
+        if (count === 0) return sum;
+        const action = actions.find(a => a.id === actionId);
+        const duration = Number.isFinite(action?.duration) ? (action?.duration || 0) : 0;
+        return sum + (duration * count);
     }, 0);
     const sitrepBonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
     const expDeposited = expDepositBase + sitrepBonus;
@@ -860,6 +1031,92 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setFriends(prev => [newFriend, ...prev]);
     }
   };
+
+  const searchPlayers = async (query: string): Promise<UserProfile[]> => {
+    const normalized = query.trim();
+    if (!normalized) return [];
+
+    const baseQuery = normalized.replace(/\d+$/g, '').trim();
+    const searchTerms = [normalized];
+    if (baseQuery && baseQuery !== normalized) searchTerms.push(baseQuery);
+
+    const responses = await Promise.all(
+        searchTerms.flatMap(term => ([
+            supabase.from('user_profiles').select('*').ilike('nickname', `%${term}%`).limit(20),
+            supabase.from('user_profiles').select('*').ilike('email', `%${term}%`).limit(20),
+        ]))
+    );
+
+    const errors = responses.map(r => r.error).filter(Boolean);
+    if (errors.length > 0) {
+        console.error('Error searching players:', errors[0]?.message);
+        return [];
+    }
+
+    const merged = responses.flatMap(r => r.data || []);
+    const mapped = mapToCamelCase(merged) as UserProfile[];
+    const unique = Array.from(new Map(mapped.map(profile => [profile.id, profile])).values());
+    return unique.filter(profile => profile.id !== userProfile.id).slice(0, 20);
+  };
+
+  const sendFriendRequest = async (recipientId: string): Promise<void> => {
+    const senderId = session?.user.id ?? userProfile.id;
+    if (!senderId || senderId === 'placeholder_user') return;
+    if (!recipientId || recipientId === senderId) return;
+    if (friends.some(friend => friend.id === recipientId)) return;
+    if (friendRequestsOutgoing.some(request => request.recipientId === recipientId)) return;
+    if (friendRequestsIncoming.some(request => request.senderId === recipientId)) return;
+
+    const { error } = await supabase.from('friend_requests').insert({
+        sender_id: senderId,
+        recipient_id: recipientId,
+        status: 'pending',
+    });
+    if (error) {
+        console.error('Error sending friend request:', error.message);
+        return;
+    }
+    await loadFriendsAndRequests(senderId);
+  };
+
+  const acceptFriendRequest = async (requestId: string): Promise<void> => {
+    const userId = session?.user.id ?? userProfile.id;
+    if (!userId || userId === 'placeholder_user') return;
+    const request = friendRequestsIncoming.find(r => r.id === requestId);
+    if (!request) return;
+
+    const { error: updateError } = await supabase.from('friend_requests')
+        .update({ status: 'accepted', responded_at: new Date().toISOString() })
+        .eq('id', requestId);
+    if (updateError) {
+        console.error('Error accepting friend request:', updateError.message);
+        return;
+    }
+
+    const { error: insertError } = await supabase.from('friends').insert([
+        { user_id: request.senderId, friend_id: request.recipientId },
+        { user_id: request.recipientId, friend_id: request.senderId },
+    ]);
+    if (insertError) {
+        console.error('Error creating friend link:', insertError.message);
+        return;
+    }
+
+    await loadFriendsAndRequests(userId);
+  };
+
+  const declineFriendRequest = async (requestId: string): Promise<void> => {
+    const userId = session?.user.id ?? userProfile.id;
+    if (!userId || userId === 'placeholder_user') return;
+    const { error } = await supabase.from('friend_requests')
+        .update({ status: 'declined', responded_at: new Date().toISOString() })
+        .eq('id', requestId);
+    if (error) {
+        console.error('Error declining friend request:', error.message);
+        return;
+    }
+    await loadFriendsAndRequests(userId);
+  };
   
   const getActionById = (actionId: string) => actions.find(a => a.id === actionId);
 
@@ -949,7 +1206,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (arena) {
             return {
                 ...asset,
-                arenas: asset.arenas.map(ar => ar.id === newAction.arenaId ? { ...ar, actionIds: [...ar.actionIds, newAction.id] } : ar)
+                arenas: asset.arenas.map(ar => {
+                    if (ar.id !== newAction.arenaId) return ar;
+                    const actionIds = Array.isArray(ar.actionIds) ? ar.actionIds : [];
+                    return { ...ar, actionIds: [...actionIds, newAction.id] };
+                })
             };
         }
         return asset;
@@ -980,10 +1241,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setTasks(prev => prev.filter(t => t.actionId !== actionId));
     setAssets(prevAssets => prevAssets.map(asset => ({
         ...asset,
-        arenas: asset.arenas.map(arena => ({
-            ...arena,
-            actionIds: arena.actionIds.filter(id => id !== actionId)
-        }))
+        arenas: asset.arenas.map(arena => {
+            const actionIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+            return {
+                ...arena,
+                actionIds: actionIds.filter(id => id !== actionId)
+            };
+        })
     })));
     const userId = session?.user.id ?? userProfile.id;
     if (userId) {
@@ -1384,7 +1648,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, setAchievementUnlocked, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, addSeason, updateSeason, addSeasonMission }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, setAchievementUnlocked, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, addSeason, updateSeason, addSeasonMission }}>
       {children}
     </GameContext.Provider>
   );

@@ -17,22 +17,19 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
     return (
         <>
-            <header className="fixed left-0 right-0 z-40 bg-[#111111]/80 backdrop-blur-lg" style={{ top: topOffsetPx }}>
-                <div className="max-w-[420px] mx-auto flex items-center justify-between h-20 px-4 text-xs font-bold text-gray-400">
-                    <span className="text-center w-20 flex-shrink-0">{day}, {dateStr}</span>
+            <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-black/40 backdrop-blur-lg border-b border-white/10" style={{ top: topOffsetPx }}>
+                <div className="max-w-[420px] mx-auto flex items-center justify-between h-20 px-4 text-xs font-semibold text-gray-300">
+                    <span className="text-center w-24 flex-shrink-0 text-[10px] uppercase tracking-[0.2em] bg-white/5 border border-white/10 px-3 py-1 rounded-full">{day} • {dateStr}</span>
                     
                     <div className="flex-grow flex items-center justify-center relative mx-2">
                         {/* Clickable Mood Bar (positioned behind the avatar) */}
                         <button 
                             onClick={() => setMoodModalOpen(true)} 
-                            className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-10 w-full z-0 flex items-center"
+                            className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-8 w-full z-0 flex items-center"
                             aria-label="Adjust mood"
                         >
-                            {/* The visual bar itself - a container acting as the border */}
-                             <div className="w-full h-1 rounded-full p-px bg-[var(--skin-accent-color)]/50">
-                                {/* The inner track */}
-                                <div className="relative h-full w-full bg-black/30 rounded-full">
-                                    {/* The colored fill */}
+                             <div className="w-full h-1.5 rounded-full p-px bg-[var(--skin-accent-color)]/40 shadow-[0_0_12px_rgba(0,0,0,0.35)]">
+                                <div className="relative h-full w-full bg-black/40 rounded-full">
                                     <div 
                                         className="h-full rounded-full transition-all duration-500"
                                         style={{ 
@@ -46,7 +43,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
                         {/* Avatar and Level Button (on top of the bar) */}
                         <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0 z-10">
-                            <div className="relative w-20 h-20 group-hover:scale-105 transition-transform">
+                            <div className="relative w-16 h-16 group-hover:scale-105 transition-transform">
                                 {/* Avatar Image */}
                                 <div className="w-full h-full flex items-center justify-center">
                                     <img 
@@ -72,19 +69,19 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                             backgroundRepeat: 'no-repeat',
                                         }
                                         : {
-                                            border: `3px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
+                                            border: `2px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
                                             borderRadius: '50%',
                                         }
                                     }
                                 />
                             </div>
-                            <div className="absolute top-[4.25rem] bg-gray-800 rounded-full w-7 h-7 flex items-center justify-center border-2 group-hover:scale-110 transition-transform z-10" style={{borderColor: 'var(--skin-accent-color)'}}>
-                                <span className="text-sm font-black text-white">{userProfile.level}</span>
+                            <div className="absolute top-[3.3rem] bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border group-hover:scale-110 transition-transform z-10" style={{borderColor: 'var(--skin-accent-color)'}}>
+                                <span className="text-[11px] font-black text-white">{userProfile.level}</span>
                             </div>
                         </button>
                     </div>
 
-                    <span className="text-center w-20 flex-shrink-0">{timeStr}</span>
+                    <span className="text-center w-20 flex-shrink-0 text-[11px] tracking-[0.2em] bg-white/5 border border-white/10 px-3 py-1 rounded-full">{timeStr}</span>
                 </div>
             </header>
             {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}

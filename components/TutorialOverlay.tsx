@@ -50,7 +50,7 @@ export const TutorialOverlay: React.FC = () => {
                     <h2 className="text-2xl font-bold text-white">Bem-vindo ao Life OS!</h2>
                     <p className="text-gray-300">Vamos configurar sua primeira missão. Este tutorial rápido irá guiá-lo pelos conceitos básicos.</p>
                     <div className="flex space-x-2">
-                        <button onClick={() => endTutorial(false)} className="w-full py-2 rounded-lg bg-gray-700 text-white">Pular Tutorial</button>
+                        <button onClick={() => endTutorial(true)} className="w-full py-2 rounded-lg bg-gray-700 text-white">Pular Tutorial</button>
                         <button onClick={nextStep} className="w-full py-2 rounded-lg bg-yellow-500 text-black font-bold">Começar</button>
                     </div>
                 </div>

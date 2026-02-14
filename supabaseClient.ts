@@ -25,6 +25,12 @@ const initialMockSeasonMissions: SeasonMission[] = [
     { id: 'sm_3', season_id: 'season_0', title: 'O Monge', description: 'Meditar por 20 dias.', goal_type: 'meditation_days', goal_value: 20, reward_type: 'exp', reward_value: 750 },
 ];
 
+const initialMockUserProfiles = [
+    { id: 'mock_user_1', email: 'mock1@domain.com', nickname: 'Afonso', sovereign: { body: 'male_base', skinTone: '#E2A984', hairStyle: 'none', hairColor: '#2C1608', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' }, avatar_url: 'https://picsum.photos/seed/mock_user_1/100/100', border: 'default', level: 7, background_url: '', is_online: true, visible_widgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user', banner_url: '' },
+    { id: 'mock_user_2', email: 'mock2@domain.com', nickname: 'Luna', sovereign: { body: 'female_base', skinTone: '#F6C9AA', hairStyle: 'none', hairColor: '#3C1F0B', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' }, avatar_url: 'https://picsum.photos/seed/mock_user_2/100/100', border: 'default', level: 4, background_url: '', is_online: true, visible_widgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user', banner_url: '' },
+    { id: 'mock_user_3', email: 'mock3@domain.com', nickname: 'Cael', sovereign: { body: 'male_base', skinTone: '#D7A581', hairStyle: 'none', hairColor: '#2C1608', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' }, avatar_url: 'https://picsum.photos/seed/mock_user_3/100/100', border: 'default', level: 9, background_url: '', is_online: false, visible_widgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user', banner_url: '' },
+];
+
 const getMockData = <T>(key: string, initialData: T): T => {
     try {
         const saved = localStorage.getItem(key);
@@ -52,6 +58,18 @@ let MOCK_CLANS_DATA = getMockData('mock_clans', initialMockClans);
 let MOCK_CLAN_MEMBERS_DATA: any[] = getMockData('mock_clan_members', []);
 let MOCK_SEASONS_DATA = getMockData('mock_seasons', initialMockSeasons);
 let MOCK_SEASON_MISSIONS_DATA = getMockData('mock_season_missions', initialMockSeasonMissions);
+let MOCK_USER_PROFILES_DATA = getMockData('mock_user_profiles', initialMockUserProfiles);
+let MOCK_FRIENDS_DATA: any[] = getMockData('mock_friends', []);
+let MOCK_FRIEND_REQUESTS_DATA: any[] = getMockData('mock_friend_requests', []);
+
+const buildMockProfile = (id: string) => ({
+    id: id,
+    email: `${id}@mock.com`,
+    nickname: id === 'placeholder_user' ? 'Sovereign' : `User_${id.slice(-4)}`,
+    sovereign: { body: 'male_base', skinTone: '#E2A984', hairStyle: 'none', hairColor: '#2C1608', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' },
+    avatar_url: `https://picsum.photos/seed/${id}/100/100`,
+    border: 'default', level: 1, background_url: '', is_online: true, visible_widgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user', banner_url: ''
+});
 
 if (supabaseUrl && supabaseAnonKey) {
     // We have credentials, use the real client
@@ -85,6 +103,15 @@ if (supabaseUrl && supabaseAnonKey) {
                                 if (table === 'clans') {
                                     MOCK_CLANS_DATA.push(newRecord as any);
                                     setMockData('mock_clans', MOCK_CLANS_DATA);
+                                } else if (table === 'friends') {
+                                    MOCK_FRIENDS_DATA.push(newRecord as any);
+                                    setMockData('mock_friends', MOCK_FRIENDS_DATA);
+                                } else if (table === 'friend_requests') {
+                                    const request = { ...newRecord, created_at: new Date().toISOString(), responded_at: null };
+                                    MOCK_FRIEND_REQUESTS_DATA.push(request as any);
+                                    setMockData('mock_friend_requests', MOCK_FRIEND_REQUESTS_DATA);
+                                    resolve({ data: request, error: null });
+                                    return;
                                 } else if (table === 'seasons') {
                                     MOCK_SEASONS_DATA.push(newRecord as any);
                                     setMockData('mock_seasons', MOCK_SEASONS_DATA);
@@ -103,6 +130,17 @@ if (supabaseUrl && supabaseAnonKey) {
                             newMembers.forEach(member => MOCK_CLAN_MEMBERS_DATA.push({ ...member, joined_at: new Date().toISOString() }));
                              setMockData('mock_clan_members', MOCK_CLAN_MEMBERS_DATA);
                              resolve({ data: newMembers, error: null });
+                        } else if (table === 'friends') {
+                            const newFriends = Array.isArray(data) ? data : [data];
+                            newFriends.forEach(friend => MOCK_FRIENDS_DATA.push({ ...friend, id: `friends_${Date.now()}` }));
+                            setMockData('mock_friends', MOCK_FRIENDS_DATA);
+                            resolve({ data: newFriends, error: null });
+                        } else if (table === 'friend_requests') {
+                            const newRequestData = Array.isArray(data) ? data[0] : data;
+                            const newRequest = { ...newRequestData, id: `friend_requests_${Date.now()}`, created_at: new Date().toISOString(), responded_at: null };
+                            MOCK_FRIEND_REQUESTS_DATA.push(newRequest as any);
+                            setMockData('mock_friend_requests', MOCK_FRIEND_REQUESTS_DATA);
+                            resolve({ data: [newRequest], error: null });
                         } else {
                             // Generic insert for non-single selects
                             const newRecordData = Array.isArray(data) ? data[0] : data;
@@ -130,6 +168,14 @@ if (supabaseUrl && supabaseAnonKey) {
                              if (table === 'clans') {
                                 const idx = MOCK_CLANS_DATA.findIndex((c: any) => c[column] === value);
                                 if (idx > -1) { MOCK_CLANS_DATA[idx] = { ...MOCK_CLANS_DATA[idx], ...data }; setMockData('mock_clans', MOCK_CLANS_DATA); return Promise.resolve({ data: [MOCK_CLANS_DATA[idx]], error: null }); }
+                            }
+                             if (table === 'friend_requests') {
+                                const idx = MOCK_FRIEND_REQUESTS_DATA.findIndex((r: any) => r[column] === value);
+                                if (idx > -1) {
+                                    MOCK_FRIEND_REQUESTS_DATA[idx] = { ...MOCK_FRIEND_REQUESTS_DATA[idx], ...data };
+                                    setMockData('mock_friend_requests', MOCK_FRIEND_REQUESTS_DATA);
+                                    return Promise.resolve({ data: [MOCK_FRIEND_REQUESTS_DATA[idx]], error: null });
+                                }
                             }
                              if (table === 'seasons') {
                                 const idx = MOCK_SEASONS_DATA.findIndex((s: any) => s[column] === value);
@@ -185,6 +231,16 @@ if (supabaseUrl && supabaseAnonKey) {
                         }
                         return;
                     }
+                    if (table === 'friends' && eqFilter) {
+                        const friendRows = MOCK_FRIENDS_DATA.filter(f => f[eqFilter!.column] === eqFilter!.value);
+                        resolve({ data: friendRows, error: null });
+                        return;
+                    }
+                    if (table === 'friend_requests' && eqFilter) {
+                        const requestRows = MOCK_FRIEND_REQUESTS_DATA.filter(r => r[eqFilter!.column] === eqFilter!.value);
+                        resolve({ data: requestRows, error: null });
+                        return;
+                    }
                     if (table === 'seasons' && !eqFilter) {
                          resolve({ data: MOCK_SEASONS_DATA, error: null });
                          return;
@@ -194,15 +250,22 @@ if (supabaseUrl && supabaseAnonKey) {
                         resolve({ data: missions, error: null });
                         return;
                     }
+                    if (table === 'user_profiles' && ilikeFilter) {
+                        const query = ilikeFilter.value.replace(/%/g, '').toLowerCase();
+                        const filteredProfiles = MOCK_USER_PROFILES_DATA.filter(profile => {
+                            if (ilikeFilter?.column === 'email') {
+                                return (profile.email || '').toLowerCase().includes(query);
+                            }
+                            return profile.nickname.toLowerCase().includes(query);
+                        });
+                        resolve({ data: filteredProfiles, error: null });
+                        return;
+                    }
                     if (table === 'user_profiles' && inFilter) {
-                        const profiles = inFilter.values.map(id => ({
-                            id: id,
-                            email: `${id}@mock.com`,
-                            nickname: id === 'placeholder_user' ? 'Sovereign' : `User_${id.slice(-4)}`,
-                            sovereign: { body: 'male_base', skinTone: '#E2A984', hairStyle: 'none', hairColor: '#2C1608', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' },
-                            avatarUrl: `https://picsum.photos/seed/${id}/100/100`,
-                            border: 'default', level: 1, backgroundUrl: '', isOnline: true, visibleWidgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user'
-                        }));
+                        const profiles = inFilter.values.map(id => {
+                            const existing = MOCK_USER_PROFILES_DATA.find(profile => profile.id === id);
+                            return existing || buildMockProfile(id);
+                        });
                         resolve({ data: profiles, error: null });
                         return;
                     }

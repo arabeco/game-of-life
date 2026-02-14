@@ -346,9 +346,10 @@ const AppWithTutorial: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
-    const { isNewUser, achievementUnlocked, setAchievementUnlocked } = useGame();
+    const { isNewUser, achievementUnlocked, setAchievementUnlocked, userProfile } = useGame();
     const { isTutorialCompleted, startTutorial } = useTutorial();
-    const [showTerms, setShowTerms] = useState(true);
+    const [showTerms, setShowTerms] = useState(false);
+    const termsKey = `termsAccepted:${userProfile.id || 'guest'}`;
 
     useEffect(() => {
         if (isNewUser && !isTutorialCompleted) {
@@ -357,10 +358,26 @@ const MainApp: React.FC = () => {
         }
     }, [isNewUser, isTutorialCompleted, startTutorial]);
 
+    useEffect(() => {
+        try {
+            const accepted = localStorage.getItem(termsKey) === 'true';
+            setShowTerms(!accepted);
+        } catch {
+            setShowTerms(true);
+        }
+    }, [termsKey]);
+
+    const handleAcceptTerms = () => {
+        try {
+            localStorage.setItem(termsKey, 'true');
+        } catch {}
+        setShowTerms(false);
+    };
+
     return (
         <>
             <AppWithTutorial />
-            <TermsOverlay open={showTerms} onAccept={() => setShowTerms(false)} />
+            <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
             {achievementUnlocked && (
                 <AchievementModal 
                     achievement={achievementUnlocked}
@@ -418,7 +435,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <GameProvider>
+        <GameProvider session={session}>
           <CodexBuilderProvider>
             <TutorialProvider>
               {renderContent()}

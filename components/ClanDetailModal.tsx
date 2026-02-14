@@ -289,10 +289,19 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         }
     }
     
-    const clanMissions = [
-        { title: 'Raid Semanal: Acumular 50h de Foco', progress: 75 },
-        { title: 'Desafio do Clã: Completar 100 Ações', progress: 42 },
-    ];
+    const [missions, setMissions] = useState([
+        { id: 1, title: 'Raid Semanal: Acumular 50h de Foco', progress: 75, pledged: false, totalPledges: 4, requiredPledges: 5 },
+        { id: 2, title: 'Desafio do Clã: Completar 100 Ações', progress: 42, pledged: false, totalPledges: 2, requiredPledges: 5 },
+    ]);
+
+    const handlePledge = (id: number) => {
+        setMissions(prev => prev.map(m => {
+            if (m.id === id) {
+                return { ...m, pledged: true, totalPledges: m.totalPledges + 1 };
+            }
+            return m;
+        }));
+    };
 
     return (
         <>
@@ -344,9 +353,57 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
                         {activeTab === 'missoes' && (
                             <div className="absolute top-28 bottom-24 left-4 right-4 overflow-y-auto space-y-3 hide-scrollbar">
-                                {clanMissions.map(mission => (
-                                    <MissionCard key={mission.title} title={mission.title} progress={mission.progress} />
-                                ))}
+                                {missions.map(mission => {
+                                    const isFullyPledged = mission.totalPledges >= mission.requiredPledges;
+                                    const isCompleted = mission.progress >= 100;
+
+                                    return (
+                                        <GlassCard key={mission.id} variant={isCompleted ? 'gold' : 'neutral'} className={`p-4 transition-all duration-300 ${isCompleted ? 'border-[var(--gold)] shadow-[0_0_15px_rgba(212,175,55,0.3)]' : ''}`}>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-sm w-2/3">{mission.title}</span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="text-xs font-mono">{mission.progress}%</span>
+                                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--gold)] bg-[var(--gold)] text-black' : 'border-gray-500'}`}>
+                                                            {isCompleted && <CheckIcon className="w-4 h-4" />}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
+                                                    <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--gold)]' : 'bg-gray-500'}`} style={{width: `${mission.progress}%`}}></div>
+                                                </div>
+
+                                                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                                    <div className="flex items-center space-x-1 text-xs text-gray-400">
+                                                        <span className={isFullyPledged ? 'text-[var(--gold)]' : ''}>{mission.totalPledges}/{mission.requiredPledges}</span>
+                                                        <span>Pactos</span>
+                                                    </div>
+                                                    
+                                                    {!mission.pledged ? (
+                                                        <button 
+                                                            onClick={() => handlePledge(mission.id)}
+                                                            className="px-3 py-1 rounded-lg text-xs font-bold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)] hover:text-black transition-colors"
+                                                        >
+                                                            FIRMAR PACTO
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] flex items-center gap-1 bg-[var(--gold)]/10 px-2 py-1 rounded">
+                                                            <div className="w-1.5 h-1.5 bg-[var(--gold)] rounded-full animate-pulse"></div>
+                                                            Pacto Ativo
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                
+                                                {isCompleted && (
+                                                    <div className="absolute top-0 right-0 -mt-2 -mr-2 w-12 h-12 flex items-center justify-center bg-[var(--gold)] text-black rounded-full shadow-lg font-black text-xs border-2 border-white transform rotate-12 animate-bounce-slow z-10">
+                                                        SELO
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </GlassCard>
+                                    );
+                                })}
                             </div>
                         )}
                         

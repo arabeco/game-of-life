@@ -28,11 +28,11 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
     );
 
     return (
-        <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
+                <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
             <h3 className="text-[10px] font-semibold text-white uppercase tracking-wider">{slot.label}</h3>
             <button
                 onClick={isEditing ? onClick : undefined}
-                className={`w-full flex-grow mx-auto p-2 rounded-2xl bg-black/40 border border-[#4a3a11] transition-colors flex items-center justify-center ${editableClasses}`}
+                        className={`w-full flex-grow mx-auto p-2 rounded-xl bg-black/40 border border-[color:var(--accent-gold-soft)] transition-colors flex items-center justify-center ${editableClasses}`}
             >
                 {valueDisplay}
             </button>
@@ -73,7 +73,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
     return (
         <>
             <div className="animate-fade-in h-full">
-                <div className={`dossier-bg border border-[#4a3a11] rounded-3xl p-4 h-full flex flex-col shadow-2xl shadow-black/50 relative overflow-hidden ${playShimmer ? 'shimmer-effect' : ''}`}>
+                <div className={`dossier-bg border border-[color:var(--accent-gold-soft)] rounded-2xl p-4 h-full flex flex-col shadow-2xl shadow-black/50 relative overflow-hidden ${playShimmer ? 'shimmer-effect' : ''}`}>
                     {/* Fixed Header */}
                     <div className="flex-shrink-0">
                         <div className="flex justify-between items-center">
@@ -86,8 +86,8 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                             </button>
                         </div>
 
-                        <div className="bg-black/40 rounded-2xl p-2 flex items-center space-x-3 border border-[#4a3a11] my-2">
-                            <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[#4a3a11] bg-black">
+                        <div className="bg-black/35 rounded-xl p-2 flex items-center space-x-3 border border-[color:var(--accent-gold-soft)] my-2">
+                            <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[color:var(--accent-gold)] bg-black">
                                 {asset.level}
                             </div>
                             <p className="text-sm text-gray-300">Nível {asset.level}: {asset.levelDescriptions[asset.level] || 'Descrição não disponível.'}</p>
@@ -104,7 +104,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                     {/* Fixed Arenas Footer */}
                     <div className="flex-shrink-0 pt-2">
                         <div className='relative text-center mb-2'>
-                                <hr className="border-t border-[#4a3a11]" />
+                                <hr className="border-t border-[color:var(--accent-gold-soft)]" />
                                 <h3 className="text-sm font-semibold text-white uppercase tracking-wider absolute -top-3 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Arenas</h3>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -120,7 +120,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                                     />
                                 );
                             })}
-                            <button onClick={() => setIsCreatingArena(true)} className="w-full h-40 flex-shrink-0 border-2 border-dashed border-gray-600 rounded-2xl flex flex-col items-center justify-center hover:border-gray-400 transition-colors text-gray-500 hover:text-gray-400">
+                            <button onClick={() => setIsCreatingArena(true)} className="w-full h-40 flex-shrink-0 border-2 border-dashed border-[color:var(--accent-silver-soft)] rounded-xl flex flex-col items-center justify-center hover:border-[color:var(--accent-silver)] transition-colors text-gray-500 hover:text-gray-300">
                                 <PlusIcon className="w-8 h-8"/>
                                 <span className="text-xs font-bold mt-1">ADD ARENA</span>
                             </button>

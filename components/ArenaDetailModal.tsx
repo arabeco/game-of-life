@@ -100,7 +100,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         <>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
                 <div 
-                    className="dossier-bg border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-3xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
+                    className="dossier-bg border border-[color:var(--accent-silver-soft)] w-full max-w-sm m-4 space-y-3 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
                 >
                     <div className="flex justify-between items-center flex-shrink-0">
                          <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
@@ -116,7 +116,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                         <button 
                             onClick={() => isEditing && setIsIconPickerOpen(true)}
                             disabled={!isEditing}
-                            className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center cursor-pointer disabled:cursor-default"
+                            className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center cursor-pointer disabled:cursor-default"
                         >
                            <span className="text-5xl">{editableArena.icon}</span>
                         </button>
@@ -138,7 +138,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             </>
                         ) : (
                             <>
-                                <h2 className="text-3xl font-black uppercase tracking-wider text-[var(--gold)] pt-2 luxe-title-shadow">{arena.name}</h2>
+                                <h2 className="text-3xl font-black uppercase tracking-wider text-[var(--accent-silver)] pt-2 luxe-title-shadow">{arena.name}</h2>
                                 <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
                             </>
                         )}
@@ -149,7 +149,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             <div className="flex-shrink-0">
                                 <div className='relative text-center mb-2'>
                                    <hr className="border-t border-gray-800" />
-                                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Marcos de Prata</h3>
+                                   <h3 className="text-xs font-semibold text-[var(--accent-bronze)] uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Marcos</h3>
                                 </div>
                                 <div className="flex flex-col items-center space-y-2 py-2">
                                     {milestoneActions.map(action => {
@@ -163,7 +163,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                                 <button 
                                                     onClick={() => openActionDetails(action)}
                                                     style={backgroundStyle}
-                                                    className="w-20 h-20 flex-shrink-0 border border-[var(--accent-silver)] rounded-2xl hover:scale-105 transition-transform flex items-center justify-center text-center p-1 transform rotate-45"
+                                                    className="w-20 h-20 flex-shrink-0 border border-[var(--accent-bronze)] rounded-xl hover:scale-105 transition-transform flex items-center justify-center text-center p-1 transform rotate-45"
                                                 >
                                                     <div className="transform -rotate-45 flex flex-col items-center justify-center space-y-1">
                                                         <span className="text-3xl">{action.icon}</span>

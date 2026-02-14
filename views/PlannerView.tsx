@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, FolderIcon, DollarSignIcon, FolderStarIcon, FlameIcon, LightbulbIcon, PlusIcon, MinusIcon } from '../components/Icons';
 import { useGame } from '../contexts/GameContext';
-import { Action, ScheduledTask } from '../types';
+import { Action, ScheduledTask, Arena, ActionType, DayOfWeek } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
 import { WeeklyPlannerGrid } from '../components/WeeklyPlannerGrid';
 import { PoolAction } from '../components/PoolAction';
@@ -12,6 +12,7 @@ import { DropIndicator } from '../components/DropIndicator';
 import { SitrepModal } from '../components/SitrepModal';
 import { MilestonePoolAction } from '../components/MilestonePoolAction';
 import { ActionModal } from '../components/ActionModal';
+import { GlassCard } from '../components/GlassCard';
 import { useTutorial } from '../contexts/TutorialContext';
 import { useLongPress } from '../hooks/useLongPress';
 
@@ -234,12 +235,343 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
 };
 
 export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReportsClick }) => {
-    const { actions, taskPool, scheduleTask, getTasksForDate, tasks, checklistItems, rescheduleTask, returnTaskToPool, deleteTask, scheduleAndCompleteNow, scheduleAndCompleteMilestoneNow } = useGame();
+    const { 
+        actions, 
+        taskPool, 
+        scheduleTask, 
+        scheduleMultipleTasks,
+        getTasksForDate, 
+        tasks, 
+        checklistItems, 
+        rescheduleTask, 
+        returnTaskToPool, 
+        deleteTask, 
+        scheduleAndCompleteNow, 
+        scheduleAndCompleteMilestoneNow,
+        addAction,
+        assets,
+        addArena
+    } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
     const [isChecklistVisible, setChecklistVisible] = useState(false);
     const [isSitrepVisible, setIsSitrepVisible] = useState(false);
+    const [showOracleInput, setShowOracleInput] = useState(false);
+    const [oracleInput, setOracleInput] = useState('');
+    const oracleInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (showOracleInput && oracleInputRef.current) {
+            oracleInputRef.current.focus();
+        }
+    }, [showOracleInput]);
+
+    const normalizeText = (value: string) => value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+    const levenshteinDistance = (a: string, b: string) => {
+        if (a === b) return 0;
+        if (!a.length) return b.length;
+        if (!b.length) return a.length;
+
+        const prev = new Array(b.length + 1).fill(0).map((_, i) => i);
+        const curr = new Array(b.length + 1).fill(0);
+
+        for (let i = 1; i <= a.length; i++) {
+            curr[0] = i;
+            const ai = a.charCodeAt(i - 1);
+            for (let j = 1; j <= b.length; j++) {
+                const cost = ai === b.charCodeAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(
+                    curr[j - 1] + 1,
+                    prev[j] + 1,
+                    prev[j - 1] + cost
+                );
+            }
+            for (let j = 0; j <= b.length; j++) prev[j] = curr[j];
+        }
+
+        return prev[b.length];
+    };
+
+    const parseDurationMinutes = (raw: string): number | null => {
+        const s = normalizeText(raw);
+        const cleaned = s.replace(/\b\d{1,2}\s*(hora|horas)\s*(da|de)\s*(manha|tarde|noite)\b/i, ' ');
+
+        const hm = cleaned.match(/\b(\d{1,2})\s*h\s*(\d{1,2})\b/);
+        if (hm) {
+            const h = Number(hm[1]);
+            const m = Number(hm[2]);
+            if (Number.isFinite(h) && Number.isFinite(m)) return h * 60 + m;
+        }
+
+        const hOnly = cleaned.match(/\b(\d{1,2})\s*(h|hora|horas)\b/);
+        if (hOnly) {
+            const h = Number(hOnly[1]);
+            if (Number.isFinite(h)) return h * 60;
+        }
+
+        const minOnly = cleaned.match(/\b(\d{1,3})\s*(m|min|mins|minuto|minutos)\b/);
+        if (minOnly) {
+            const m = Number(minOnly[1]);
+            if (Number.isFinite(m)) return m;
+        }
+
+        return null;
+    };
+
+    const parseRepetitions = (raw: string): number | null => {
+        const s = normalizeText(raw);
+        const m = s.match(/\b(\d{1,2})\s*(x|vez|vezes)\b/);
+        if (!m) return null;
+        const n = Number(m[1]);
+        return Number.isFinite(n) ? n : null;
+    };
+
+    const parseTimeMinutes = (raw: string): number | null => {
+        const s = normalizeText(raw);
+
+        const periodHour = s.match(/\b(\d{1,2})\s*(?:hora|horas)?\s*(?:da|de)\s*(manha|tarde|noite)\b/);
+        if (periodHour) {
+            const hhRaw = Number(periodHour[1]);
+            if (!Number.isFinite(hhRaw) || hhRaw < 0 || hhRaw > 23) return null;
+            const period = periodHour[2];
+            let hh = hhRaw;
+            if (period === 'tarde' || period === 'noite') {
+                if (hh >= 1 && hh <= 11) hh += 12;
+                if (hh === 24) hh = 0;
+            }
+            if (period === 'manha' && hh === 12) hh = 0;
+            return hh * 60;
+        }
+
+        const periodOnly = s.match(/\b(?:de|da)\s*(manha|tarde|noite)\b/);
+        if (periodOnly) {
+            const period = periodOnly[1];
+            if (period === 'manha') return 9 * 60;
+            if (period === 'tarde') return 15 * 60;
+            return 21 * 60;
+        }
+
+        const prefixed = s.match(/\b(?:as)\s*(\d{1,2})(?::(\d{2}))?\b/);
+        const clock = s.match(/\b(\d{1,2})[:h](\d{2})\b/);
+        const hourOnly = s.match(/\b(\d{1,2})h\b/);
+
+        const m = prefixed || clock || hourOnly;
+        if (!m) return null;
+        const hh = Number(m[1]);
+        const mm = m[2] ? Number(m[2]) : 0;
+        if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+        if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+        return hh * 60 + mm;
+    };
+
+    const parseDaysOfWeek = (raw: string): DayOfWeek[] => {
+        const s = normalizeText(raw);
+        const tokens = s
+            .replace(/[,/]/g, ' ')
+            .replace(/\be\b/g, ' ')
+            .split(/\s+/)
+            .filter(Boolean);
+
+        const map: Array<[RegExp, DayOfWeek]> = [
+            [/^(seg|segunda)$/i, 'SEG'],
+            [/^(ter|terca|terça)$/i, 'TER'],
+            [/^(qua|quarta)$/i, 'QUA'],
+            [/^(qui|quinta)$/i, 'QUI'],
+            [/^(sex|sexta)$/i, 'SEX'],
+            [/^(sab|sabado|sábado)$/i, 'SAB'],
+            [/^(dom|domingo)$/i, 'DOM'],
+        ];
+
+        const out: DayOfWeek[] = [];
+        for (const token of tokens) {
+            for (const [rx, day] of map) {
+                if (rx.test(token) && !out.includes(day)) {
+                    out.push(day);
+                    break;
+                }
+            }
+        }
+        return out;
+    };
+
+    const splitOracleInput = (raw: string) => {
+        const input = raw.trim();
+        const quoteMatch = input.match(/"([^"]+)"/);
+        const description = quoteMatch?.[1]?.trim() || '';
+        const withoutQuote = quoteMatch ? input.replace(quoteMatch[0], '').trim() : input;
+
+        const findAtIndex = (value: string) => {
+            for (let i = value.length - 1; i >= 0; i -= 1) {
+                if (value[i] !== '@') continue;
+                if (i === 0) return i;
+                if (/\s/.test(value[i - 1])) return i;
+            }
+            return -1;
+        };
+
+        const atIndex = findAtIndex(withoutQuote);
+        if (atIndex < 0) return { base: withoutQuote, arenaName: '', description };
+
+        const before = withoutQuote.slice(0, atIndex).trim();
+        const after = withoutQuote.slice(atIndex + 1).trim();
+        if (!after) return { base: before, arenaName: '', description };
+
+        const numeric = after.match(/^\s*(\d{1,3})\b/);
+        if (numeric) {
+            const arenaName = numeric[1];
+            const remainder = after.slice(numeric[0].length).trim();
+            const base = `${before} ${remainder}`.trim();
+            return { base, arenaName, description };
+        }
+
+        const quotedArena = after.match(/^\s*"([^"]+)"\s*/);
+        if (quotedArena) {
+            const arenaName = quotedArena[1].trim();
+            const remainder = after.slice(quotedArena[0].length).trim();
+            const base = `${before} ${remainder}`.trim();
+            return { base, arenaName, description };
+        }
+
+        const normalizedAfter = after;
+        const cutPoints = [
+            normalizedAfter.search(/\b\d+\s*(x|vez|vezes)\b/i),
+            normalizedAfter.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
+            normalizedAfter.search(/\b(\d{1,2}\s*(?:hora|horas)?\s*(?:da|de)\s*(manha|tarde|noite)|(?:de|da)\s*(manha|tarde|noite)|as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
+            normalizedAfter.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
+            normalizedAfter.search(/\s[-—]\s/),
+            normalizedAfter.search(/[|,;]/),
+        ].filter(i => i >= 0);
+
+        const cut = cutPoints.length > 0 ? Math.min(...cutPoints) : normalizedAfter.length;
+        const arenaName = normalizedAfter.slice(0, cut).trim();
+        const remainder = normalizedAfter.slice(cut).trim();
+        const base = `${before} ${remainder}`.trim();
+
+        return { base, arenaName, description };
+    };
+
+    const handleOracleSubmit = () => {
+        if (!oracleInput.trim()) return;
+
+        const { base, arenaName, description } = splitOracleInput(oracleInput);
+        const duration = parseDurationMinutes(base) ?? 30;
+        const repetitions = parseRepetitions(base) ?? 1;
+        const startTimeInMinutes = parseTimeMinutes(base);
+        const selectedDays = parseDaysOfWeek(base);
+
+        const normalizedBase = base;
+        const cutPoints = [
+            normalizedBase.search(/\b\d+\s*(x|vez|vezes)\b/i),
+            normalizedBase.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
+            normalizedBase.search(/\b(?:as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
+            normalizedBase.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
+        ].filter(i => i >= 0);
+        const nameEnd = cutPoints.length > 0 ? Math.min(...cutPoints) : normalizedBase.length;
+        const parsedName = normalizedBase.slice(0, nameEnd).trim();
+        const actionName = parsedName;
+        const actionDescription = description;
+
+        // 2. Find Target Arena
+        let targetArenaId = '';
+
+        const allArenas: Array<{ arena: Arena; assetId: string; normalizedName: string }> = assets.flatMap(asset =>
+            asset.arenas.map(arena => ({ arena, assetId: asset.id, normalizedName: normalizeText(arena.name) }))
+        );
+
+        const findArena = (name: string): { arena: Arena, assetId: string } | null => {
+            const normalizedQuery = normalizeText(name);
+            const exact = allArenas.find(a => a.normalizedName === normalizedQuery);
+            if (exact) return { arena: exact.arena, assetId: exact.assetId };
+
+            let best: { arena: Arena; assetId: string; score: number; dist: number } | null = null;
+            for (const candidate of allArenas) {
+                const candName = candidate.normalizedName;
+                const dist = levenshteinDistance(normalizedQuery, candName);
+                const maxLen = Math.max(normalizedQuery.length, candName.length) || 1;
+                const score = 1 - dist / maxLen;
+                const prefixBonus = candName.startsWith(normalizedQuery) || normalizedQuery.startsWith(candName) ? 0.08 : 0;
+                const finalScore = Math.min(1, score + prefixBonus);
+                if (!best || finalScore > best.score) {
+                    best = { arena: candidate.arena, assetId: candidate.assetId, score: finalScore, dist };
+                }
+            }
+
+            if (best && (best.dist <= 2 || best.score >= 0.82)) {
+                return { arena: best.arena, assetId: best.assetId };
+            }
+
+            return null;
+        };
+
+        const geralAsset = assets.find(a => a.id === 'geral') || assets[0];
+
+        if (arenaName) {
+            const found = findArena(arenaName);
+            if (found) {
+                targetArenaId = found.arena.id;
+            } else if (geralAsset) {
+                const newArena = addArena(geralAsset.id, {
+                    name: arenaName,
+                    icon: '🏟️',
+                    description: 'Arena criada pelo Oráculo'
+                });
+                targetArenaId = newArena.id;
+            }
+        }
+
+        if (!targetArenaId) {
+            const outros = findArena('Outros');
+            if (outros) {
+                targetArenaId = outros.arena.id;
+            } else if (geralAsset) {
+                const newArena = addArena(geralAsset.id, {
+                    name: 'Outros',
+                    icon: '📦',
+                    description: 'Arena criada pelo Oráculo'
+                });
+                targetArenaId = newArena.id;
+            }
+        }
+
+        // 4. Create Action
+        if (!targetArenaId || !actionName) return;
+
+        const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ? 'Compromisso' : 'Ação Recorrente';
+
+        const created = addAction({
+            name: actionName,
+            description: actionDescription || undefined,
+            arenaId: targetArenaId,
+            icon: '📝',
+            duration,
+            difficulty: 1,
+            actionType,
+            repetitions: actionType === 'Ação Recorrente' ? Math.max(1, repetitions) : 1,
+        });
+
+        if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
+            const dateString = currentDate.toISOString().split('T')[0];
+            scheduleTask(created.id, dateString, startTimeInMinutes);
+        }
+
+        if (actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTimeInMinutes !== null) {
+            scheduleMultipleTasks(created.id, selectedDays, startTimeInMinutes);
+        }
+
+        setOracleInput('');
+        setShowOracleInput(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleOracleSubmit();
+        }
+    };
     const [isMilestonePoolOpen, setIsMilestonePoolOpen] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [dailyDropIndicator, setDailyDropIndicator] = useState<{ top: number, height: number } | null>(null);
@@ -628,8 +960,53 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             </div>
             
+            {/* Floating Action Button */}
             <div className="fixed bottom-20 right-4 z-20 flex flex-col items-center space-y-2">
-                <div className="flex flex-col items-center bg-black/50 backdrop-blur-lg border border-[var(--glass-border)] rounded-full p-1 space-y-1"><button onClick={() => setZoomLevel(prev => Math.min(3, prev + 1) as 1 | 2 | 3)} disabled={zoomLevel === 3} className="p-2 disabled:opacity-50"><PlusIcon className="w-5 h-5" /></button><span className="font-bold text-xs text-white">{zoomLevel}x</span><button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="p-2 disabled:opacity-50"><MinusIcon className="w-5 h-5" /></button></div>
+                
+                {/* Oracle Input Panel */}
+                {showOracleInput && (
+                    <div className="absolute bottom-full mb-4 right-0 w-72 z-30">
+                        <GlassCard variant="gold" className="p-2 backdrop-blur-xl border border-[var(--gold)]/30 shadow-2xl">
+                            <div className="flex flex-col space-y-2">
+                                <label className="text-[10px] uppercase font-bold text-[var(--gold)] tracking-wider ml-1">Oráculo</label>
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        ref={oracleInputRef}
+                                        type="text"
+                                        value={oracleInput}
+                                        onChange={(e) => setOracleInput(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        placeholder="Ação @ Arena..."
+                                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--gold)]/50 placeholder-gray-500"
+                                    />
+                                    <button 
+                                        onClick={handleOracleSubmit}
+                                        className="p-2 bg-[var(--gold)] text-black rounded-lg hover:bg-yellow-400 transition-colors"
+                                    >
+                                        <PlusIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div className="text-[10px] text-gray-400 px-1">
+                                    Ex: "Ler Livro @ Estudos" ou apenas "Ler Livro"
+                                </div>
+                            </div>
+                        </GlassCard>
+                    </div>
+                )}
+
+                <div className="flex flex-col items-center bg-black/50 backdrop-blur-lg border border-[var(--glass-border)] rounded-full p-1 space-y-1">
+                    <button 
+                        onClick={() => setShowOracleInput(!showOracleInput)} 
+                        className={`p-2 rounded-full transition-all ${showOracleInput ? 'bg-[var(--gold)] text-black' : 'text-white hover:bg-white/10'}`}
+                        title="Adicionar por texto"
+                    >
+                        <span className="text-lg">📝</span>
+                    </button>
+                    <div className="w-full h-px bg-white/10 my-1"></div>
+                    <button onClick={() => setZoomLevel(prev => Math.min(3, prev + 1) as 1 | 2 | 3)} disabled={zoomLevel === 3} className="p-2 disabled:opacity-50"><PlusIcon className="w-5 h-5" /></button>
+                    <span className="font-bold text-xs text-white">{zoomLevel}x</span>
+                    <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="p-2 disabled:opacity-50"><MinusIcon className="w-5 h-5" /></button>
+                </div>
                 <button onClick={() => setIsActionModalOpen(true)} className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-8 h-8 text-black" /></button>
             </div>
             {isChecklistVisible && <ChecklistModal onClose={() => setChecklistVisible(false)} />}

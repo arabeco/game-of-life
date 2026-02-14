@@ -59,7 +59,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
 
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
-             <div style={backgroundStyle} className="w-10 h-10 flex-shrink-0 flex items-center justify-center transform rotate-45 bg-gray-700 rounded-md border border-[var(--accent-silver)] opacity-80">
+             <div style={backgroundStyle} className="w-10 h-10 flex-shrink-0 flex items-center justify-center transform rotate-45 bg-gray-700 rounded-md border border-[var(--accent-bronze)] opacity-80">
                 <span className="transform -rotate-45 text-xl">{action.icon}</span>
             </div>
         );
@@ -84,7 +84,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
         >
             <div
                 style={backgroundStyle}
-                className="w-8 h-8 flex-shrink-0 flex items-center justify-center transform rotate-45 bg-gray-700 rounded-md border border-[var(--accent-silver)]"
+                className="w-8 h-8 flex-shrink-0 flex items-center justify-center transform rotate-45 bg-gray-700 rounded-md border border-[var(--accent-bronze)]"
             >
                 <span className="transform -rotate-45 text-lg">{action.icon}</span>
             </div>
@@ -92,7 +92,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
 
             {isHolding && (
                 <div className="absolute inset-0 bg-black/50 rounded-lg animate-pulse">
-                    <div className="h-full w-full bg-[var(--accent-silver)] opacity-50 animate-[fill_3s_linear_forwards]" style={{clipPath: 'inset(100% 0 0 0)'}}></div>
+                    <div className="h-full w-full bg-[var(--accent-bronze)] opacity-50 animate-[fill_3s_linear_forwards]" style={{clipPath: 'inset(100% 0 0 0)'}}></div>
                 </div>
             )}
             <style>{`

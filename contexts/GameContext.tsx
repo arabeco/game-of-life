@@ -65,21 +65,21 @@ const CLAN_RANKS: ClanRank[] = [
 ];
 
 const NOBILITY_RANKS: NobilityRank[] = [
-    { id: 'vagante', name: 'Vagante', levelRequired: 0 },
-    { id: 'escudeiro', name: 'Escudeiro', levelRequired: 10 },
-    { id: 'cavaleiro', name: 'Cavaleiro', levelRequired: 20 },
-    { id: 'lorde', name: 'Lorde', levelRequired: 30 },
-    { id: 'barao', name: 'Barão', levelRequired: 40 },
-    { id: 'conde', name: 'Conde', levelRequired: 50 },
-    { id: 'duque', name: 'Duque', levelRequired: 60 },
-    { id: 'principe', name: 'Príncipe', levelRequired: 70 },
-    { id: 'rei', name: 'Rei', levelRequired: 80 },
-    { id: 'soberano', name: 'Soberano', levelRequired: 90 },
+    { id: 'vagante', name: 'Vagante', levelRequired: 0, expTotalRequired: 0 },
+    { id: 'escudeiro', name: 'Escudeiro', levelRequired: 10, expTotalRequired: 10000 },
+    { id: 'cavaleiro', name: 'Cavaleiro', levelRequired: 20, expTotalRequired: 35000 },
+    { id: 'lorde', name: 'Lorde', levelRequired: 30, expTotalRequired: 85000 },
+    { id: 'barao', name: 'Barão', levelRequired: 40, expTotalRequired: 185000 },
+    { id: 'conde', name: 'Conde', levelRequired: 50, expTotalRequired: 350000 },
+    { id: 'duque', name: 'Duque', levelRequired: 60, expTotalRequired: 512500 },
+    { id: 'principe', name: 'Príncipe', levelRequired: 70, expTotalRequired: 675000 },
+    { id: 'rei', name: 'Rei', levelRequired: 80, expTotalRequired: 837500 },
+    { id: 'soberano', name: 'Soberano', levelRequired: 90, expTotalRequired: 1000000 },
 ];
 
 const MOCK_SEARCHABLE_CLANS: Clan[] = [
-    { id: 'clan_01', name: 'The Seekers', icon: '👁️', description: 'Um clã para aqueles que buscam conhecimento.', clanType: 'Focado', recruitmentStatus: 'Aberto', exp: 42500, rankId: 'provincia' },
-    { id: 'clan_02', name: 'Dragon Guard', icon: '🐲', description: 'Defensores do antigo pacto dos dragões.', clanType: 'Competitivo', recruitmentStatus: 'Aberto', exp: 150000, rankId: 'principado' },
+    { id: 'clan_01', name: 'The Seekers', icon: '👁️', description: 'Um clã para aqueles que buscam conhecimento.', clan_type: 'Focado', recruitment_status: 'Aberto', exp: 42500, rankId: 'provincia' },
+    { id: 'clan_02', name: 'Dragon Guard', icon: '🐲', description: 'Defensores do antigo pacto dos dragões.', clan_type: 'Competitivo', recruitment_status: 'Aberto', exp: 150000, rankId: 'principado' },
 ];
 
 const DEFAULT_USER_PROFILE: UserProfile = {
@@ -87,7 +87,10 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     nickname: 'Soberano',
     level: 1,
     avatarUrl: '',
+    border: 'default',
     backgroundUrl: '',
+    isOnline: false,
+    visibleWidgets: [],
     sovereign: DEFAULT_SOVEREIGN_CONFIG,
     nobility: { exp: 0, rankId: 'vagante' },
     mood: 50,
@@ -704,7 +707,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     let mostFocusedArenaId = '';
     let maxArenaCompletions = 0;
-    Object.entries(arenaCompletionCounts).forEach(([id, count]) => {
+    (Object.entries(arenaCompletionCounts) as Array<[string, number]>).forEach(([id, count]) => {
         if (count > maxArenaCompletions) {
             maxArenaCompletions = count;
             mostFocusedArenaId = id;
@@ -719,7 +722,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     let mostRepeatedActionId = '';
     let maxActionCompletions = 0;
-    Object.entries(actionCompletionCounts).forEach(([id, count]) => {
+    (Object.entries(actionCompletionCounts) as Array<[string, number]>).forEach(([id, count]) => {
         if (count > maxActionCompletions) {
             maxActionCompletions = count;
             mostRepeatedActionId = id;
@@ -1301,9 +1304,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const { data, error } = await supabase.from('seasons').insert(mapToSnakeCase(seasonData)).select().single();
     if (error) { console.error("Error adding season:", error.message); return; }
     if (data) {
-        const newSeason = mapToCamelCase(data) as Season;
-        if (newSeason.isActive) {
-            setSeasons(prev => [...prev.map(s => ({...s, isActive: false})), newSeason]);
+        const newSeason = data as Season;
+        if (newSeason.is_active) {
+            setSeasons(prev => [...prev.map(s => ({...s, is_active: false})), newSeason]);
         } else {
             setSeasons(prev => [...prev, newSeason]);
         }
@@ -1314,11 +1317,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       const { data, error } = await supabase.from('seasons').update(mapToSnakeCase(seasonData)).eq('id', seasonId).select().single();
       if (error) { console.error("Error updating season:", error.message); return; }
       if (data) {
-          const updatedSeason = mapToCamelCase(data) as Season;
+          const updatedSeason = data as Season;
           setSeasons(prev => {
               let newSeasons = [...prev];
-              if (updatedSeason.isActive) {
-                  newSeasons = newSeasons.map(s => s.id === updatedSeason.id ? s : { ...s, isActive: false });
+              if (updatedSeason.is_active) {
+                  newSeasons = newSeasons.map(s => s.id === updatedSeason.id ? s : { ...s, is_active: false });
               }
               const index = newSeasons.findIndex(s => s.id === seasonId);
               if (index > -1) newSeasons[index] = updatedSeason;

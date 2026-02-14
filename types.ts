@@ -29,6 +29,7 @@ export interface Action {
   id: string;
   arenaId: string;
   name: string;
+  description?: string;
   icon: string;
   duration: number; // in minutes
   repetitions: number; // For 'Ação Recorrente'
@@ -139,6 +140,7 @@ export interface NobilityRank {
     id: string;
     name: string;
     levelRequired: number;
+    expTotalRequired: number;
 }
 
 export interface ClanRank {

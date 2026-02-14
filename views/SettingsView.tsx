@@ -251,11 +251,35 @@ const NobrezaHierarchyView: React.FC = () => {
             <GlassCard variant="gold" className="text-center">
                 <p className="text-sm uppercase tracking-wider">NOBREZA</p>
                 <h2 className="text-3xl font-black" style={{ color: 'var(--gold)' }}>{currentRank?.name || 'N/A'}</h2>
-                <div className="mt-4"><div className="flex justify-between text-xs font-bold"><span>NÍVEL ATUAL: {userProfile.level}</span><span>{nextRank ? `PRÓXIMO: NÍVEL ${nextRank.levelRequired}`: 'Nível Máximo'}</span></div><div className="w-full bg-black/30 rounded-full h-2.5 mt-1"><div className="bg-[var(--gold)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div></div></div>
+                <div className="mt-4">
+                    <div className="flex justify-between text-xs font-bold">
+                        <span>NÍVEL ATUAL: {userProfile.level}</span>
+                        <span>{nextRank ? `PRÓXIMO: NÍVEL ${nextRank.levelRequired}`: 'Nível Máximo'}</span>
+                    </div>
+                    <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
+                        <div className="bg-[var(--gold)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold text-white/70 mt-2">
+                        <span>{currentRank ? `${currentRank.expTotalRequired.toLocaleString('pt-BR')} XP (patente)` : ''}</span>
+                        <span>{nextRank ? `${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP (próxima)` : 'Topo'}</span>
+                    </div>
+                </div>
             </GlassCard>
             <div>
                 <h3 className="text-lg font-bold tracking-wider mb-2">Hierarquia da Nobreza</h3>
-                <div className="space-y-2">{nobilityRanks.map(rank => (<GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--gold)]' : 'opacity-70'}`}><div className="flex justify-between items-center"><span className="font-bold">{rank.name}</span><span className="text-sm text-gray-400">Nível {rank.levelRequired}</span></div></GlassCard>))}</div>
+                <div className="space-y-2">
+                    {nobilityRanks.map(rank => (
+                        <GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--gold)]' : 'opacity-70'}`}>
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold">{rank.name}</span>
+                                <span className="text-sm text-gray-400">Nível {rank.levelRequired}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-bold text-white/60 mt-1">
+                                <span>{rank.expTotalRequired.toLocaleString('pt-BR')} XP total</span>
+                            </div>
+                        </GlassCard>
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -309,6 +333,10 @@ const MissionsTab: React.FC = () => {
                         </div>
                         <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
                             <div className="bg-[var(--gold)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold text-white/70 mt-2">
+                            <span>{currentRank ? `${currentRank.expTotalRequired.toLocaleString('pt-BR')} XP (patente)` : ''}</span>
+                            <span>{nextRank ? `${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP (próxima)` : 'Topo'}</span>
                         </div>
                     </div>
                 </GlassCard>

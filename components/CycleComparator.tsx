@@ -176,7 +176,6 @@ const ArenaBattleSlide: React.FC<{ analysis: any }> = ({ analysis }) => {
 
 export const CycleComparator: React.FC<CycleComparatorProps> = ({ currentCycleReport, pastCycleReport }) => {
     const { tasks, actions, assets } = useGame();
-    const [slide, setSlide] = useState(0);
 
     const analysis = useMemo(() => {
         const current = calculateAnalysis(currentCycleReport, tasks, actions, assets);
@@ -184,22 +183,67 @@ export const CycleComparator: React.FC<CycleComparatorProps> = ({ currentCycleRe
         return { current, past };
     }, [currentCycleReport, pastCycleReport, tasks, actions, assets]);
     
-    const slides = [
-        <OverviewSlide analysis={analysis} />,
-        <AssetRadarSlide analysis={analysis} />,
-        <ArenaBattleSlide analysis={analysis} />,
-    ];
-
-    const next = () => setSlide(s => (s + 1) % slides.length);
-    const prev = () => setSlide(s => (s - 1 + slides.length) % slides.length);
-    
     return (
-        <div className="h-full flex flex-col justify-between">
-            <div className="flex-grow flex items-center">{slides[slide]}</div>
-            <div className="flex-shrink-0 flex items-center justify-center space-x-4 p-2">
-                <button onClick={prev} className="p-2 rounded-full bg-white/10 hover:bg-white/20"><ChevronLeftIcon /></button>
-                <div className="flex space-x-2">{slides.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full ${i === slide ? 'bg-white' : 'bg-white/30'}`} />)}</div>
-                <button onClick={next} className="p-2 rounded-full bg-white/10 hover:bg-white/20"><ChevronRightIcon /></button>
+        <div className="h-full overflow-y-auto p-2 space-y-4">
+            {/* Header: Cycle Timeline Comparison */}
+            <div className="grid grid-cols-2 gap-4">
+                <GlassCard variant="gold" className="p-3 flex flex-col justify-center text-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-[var(--gold)] opacity-5 group-hover:opacity-10 transition-opacity"></div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--gold)] mb-1">Ciclo Atual</h3>
+                    <p className="text-sm font-bold">{formatDate(analysis.current.report.startDate)}</p>
+                    <p className="text-xs text-gray-400">a</p>
+                    <p className="text-sm font-bold">{formatDate(analysis.current.report.endDate)}</p>
+                    <div className="mt-2 text-xs bg-black/30 rounded-full py-1 px-2 mx-auto w-max border border-[var(--gold)]/30">
+                        {analysis.current.durationDays} dias
+                    </div>
+                </GlassCard>
+                <GlassCard variant="neutral" className="p-3 flex flex-col justify-center text-center relative overflow-hidden opacity-80">
+                     <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Ciclo Anterior</h3>
+                    <p className="text-sm font-bold text-gray-300">{formatDate(analysis.past.report.startDate)}</p>
+                    <p className="text-xs text-gray-500">a</p>
+                    <p className="text-sm font-bold text-gray-300">{formatDate(analysis.past.report.endDate)}</p>
+                    <div className="mt-2 text-xs bg-black/30 rounded-full py-1 px-2 mx-auto w-max border border-white/10">
+                        {analysis.past.durationDays} dias
+                    </div>
+                </GlassCard>
+            </div>
+
+            {/* KPI Layer */}
+            <div className="grid grid-cols-2 gap-2">
+                <ComparisonCard title="XP Force / Dia" current={analysis.current.xpPerDay} past={analysis.past.xpPerDay} unit="XP" format={n => n.toFixed(0)} />
+                <ComparisonCard title="Volume / Dia" current={analysis.current.actionsPerDay} past={analysis.past.actionsPerDay} unit="Ações" />
+            </div>
+
+            {/* Asset Radar Layer (The "Ghost" Comparison) */}
+            <GlassCard variant="neutral" className="p-4">
+                 <h3 className="text-xs font-bold uppercase text-center mb-4 text-gray-400 flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--gold)]"></span> Estabilidade da Forma
+                    <span className="w-2 h-2 rounded-full bg-[#8884d8] opacity-50 ml-2"></span>
+                </h3>
+                <div className="h-64 w-full relative">
+                     <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={analysis.current.assetDedication.map((d: any) => {
+                            const pastData = analysis.past.assetDedication.find((pd: any) => pd.fullAsset === d.fullAsset);
+                            return {
+                                asset: d.asset,
+                                current: d.value,
+                                past: pastData ? pastData.value : 0,
+                            };
+                        })}>
+                            <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
+                            <PolarAngleAxis dataKey="asset" tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 10 }} />
+                            <PolarRadiusAxis angle={30} domain={[0, 'dataMax + 5']} tick={false} axisLine={false} />
+                            <Radar name="Anterior" dataKey="past" stroke="#8884d8" fill="#8884d8" fillOpacity={0.1} strokeWidth={1} />
+                            <Radar name="Atual" dataKey="current" stroke="var(--gold)" fill="var(--gold)" fillOpacity={0.4} strokeWidth={2} />
+                        </RadarChart>
+                    </ResponsiveContainer>
+                </div>
+            </GlassCard>
+
+            {/* Arena Battle Layer */}
+            <div className="space-y-2">
+                <h3 className="text-xs font-bold uppercase text-gray-500 ml-1">Batalha das Arenas</h3>
+                <ArenaBattleSlide analysis={analysis} />
             </div>
         </div>
     );

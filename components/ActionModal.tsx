@@ -20,7 +20,7 @@ interface ActionModalProps {
 
 const StyledRangeInput: React.FC<{label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>}> = 
 ({label, value, min, max, step, unit, onChange, inputRef}) => (
-    <div ref={inputRef} className="p-3 bg-black/20 rounded-xl space-y-2">
+    <div ref={inputRef} className="p-2 bg-black/20 rounded-xl space-y-1">
         <div className="flex justify-between items-center">
             <label className="text-xs font-semibold text-gray-400 uppercase">{label}</label>
             <span className="text-sm font-bold">{value} {unit}</span>
@@ -51,7 +51,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     
     const [mode, setMode] = useState(isNew ? 'edit' : initialMode);
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
-        action || { arenaId: arenaId, name: '', icon: '🏆', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 }
+        action || { arenaId: arenaId, name: '', description: '', icon: '🏆', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 }
     );
     // Tutorial state
     const [formStep, setFormStep] = useState(0);
@@ -118,6 +118,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
         const actionData: Omit<Action, 'id'> = {
             arenaId: editableAction.arenaId || '', // Será tratado no context
             name: editableAction.name,
+            description: editableAction.description?.trim() || undefined,
             icon: editableAction.icon || '🏆',
             duration: editableAction.duration || 60,
             repetitions: editableAction.actionType === 'Ação Recorrente' ? (editableAction.repetitions || 1) : 1,
@@ -183,8 +184,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     return (
         <>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
-                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-3xl flex flex-col max-h-[90vh] p-0">
-                    <div className="dossier-bg overflow-y-auto p-3 space-y-3 rounded-3xl">
+                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[90vh] p-0">
+                    <div className="dossier-bg overflow-y-auto p-3 space-y-3 rounded-2xl">
                         <div className="flex justify-between items-center">
                             <button onClick={mode === 'view' ? () => setMode('edit') : handleCancel} className={`p-2 rounded-full transition-colors border ${mode === 'edit' ? 'border-red-500/50 bg-red-500/20' : 'border-white/20'}`}>
                                 {mode === 'view' ? <EditIcon className="w-5 h-5 text-gray-300" /> : <XIcon className="w-5 h-5 text-red-300" />}
@@ -199,9 +200,23 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                 <span className="text-5xl">{displayAction?.icon}</span>
                             </button>
                             {mode === 'edit' ? (
-                                <input ref={nameInputRef} type="text" placeholder="Nome da Ação" value={editableAction.name || ''} onBlur={handleTutorialNextFormStep} onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))} className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-1" />
+                                <>
+                                    <input ref={nameInputRef} type="text" placeholder="Nome da Ação" value={editableAction.name || ''} onBlur={handleTutorialNextFormStep} onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))} className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-1" />
+                                    <textarea
+                                        placeholder="Descrição (opcional)"
+                                        value={editableAction.description || ''}
+                                        onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
+                                        rows={2}
+                                        className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50"
+                                    />
+                                </>
                             ) : (
-                                <h2 className="text-xl font-bold text-white text-center">{displayAction?.name}</h2>
+                                <>
+                                    <h2 className="text-xl font-bold text-white text-center">{displayAction?.name}</h2>
+                                    {!!displayAction?.description && (
+                                        <p className="text-sm text-white/80 text-center leading-snug">{displayAction.description}</p>
+                                    )}
+                                </>
                             )}
                         </div>
                         
@@ -245,7 +260,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                         {/* Scheduling Section - só para Ação Recorrente e Compromisso */}
                         {mode === 'edit' && (editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
                             <div className="p-3 bg-black/20 rounded-xl space-y-2">
-                                <h3 className="text-xs font-semibold text-gray-400 uppercase text-center">Planejar Ações</h3>
                                 
                                 {/* Dias da Semana - só para Ação Recorrente */}
                                 {editableAction.actionType === 'Ação Recorrente' && (

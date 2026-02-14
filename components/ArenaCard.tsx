@@ -48,10 +48,10 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
     };
 
     const isOverview = variant === 'overview';
-    const baseClasses = `p-3 rounded-2xl flex flex-col justify-between cursor-pointer relative overflow-hidden transition-all duration-300`;
+    const baseClasses = `p-3 rounded-xl flex flex-col justify-between cursor-pointer relative overflow-hidden transition-all duration-300`;
     const styleClasses = isOverview 
         ? 'bg-[#181818] gradient-border gradient-border-silver h-48' 
-        : 'bg-black/40 border border-[#4a3a11] h-40';
+        : 'bg-black/35 border border-[color:var(--accent-silver-soft)] h-40';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
     
     return (
@@ -76,7 +76,7 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
                                     <div className="w-full h-full transform rotate-45">
                                         <div 
                                             style={backgroundStyle}
-                                            className="w-full h-full border border-[var(--accent-silver)] rounded-sm relative"
+                                            className="w-full h-full border border-[var(--accent-bronze)] rounded-sm relative"
                                         >
                                             <div className="transform flex items-center justify-center h-full w-full">
                                                 <span className="transform -rotate-45 text-sm">{action.icon}</span>
@@ -102,7 +102,7 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
                         className="h-full rounded-full" 
                         style={{ 
                             width: `${progress}%`,
-                            backgroundColor: isOverview ? 'var(--accent-silver)' : 'var(--accent-gold)'
+                            backgroundColor: 'var(--accent-silver)'
                         }}
                     ></div>
                 </div>

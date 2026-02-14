@@ -8,6 +8,7 @@ import { ProfileView } from './views/ProfileView';
 import { ReportsView } from './views/ReportsView';
 import { LoginView } from './views/LoginView';
 import { GameProvider, useGame } from './contexts/GameContext';
+import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import { TutorialOverlay } from './components/TutorialOverlay';
 import { GlobalHeader } from './components/GlobalHeader';
@@ -15,6 +16,7 @@ import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon } from './com
 import { AchievementModal } from './components/AchievementModal';
 import { supabase } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
+import { useLongPress } from './hooks/useLongPress';
 
 // --- MODO DE CONSTRUÇÃO OFFLINE ---
 // Defina como 'false' para reativar a autenticação do Supabase.
@@ -22,11 +24,163 @@ const OFFLINE_MODE = false;
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
+const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open, onAccept }) => {
+    const clauses = [
+        'O DESPERTAR DO SOBERANO\n\nPara acessar a interface, você deve aceitar os termos do pacto que regem este domínio.',
+        'I. PROPRIEDADE ABSOLUTA\nSeus dados são sua soberania. O Life OS é “Local First”: anotações, diários e SITREPS residem no seu dispositivo. A nuvem é apenas o seu espelho de segurança. Nós não mineramos sua vida.',
+        'II. O VÍNCULO DE MENTORIA\nAo aceitar um Mentor, você autoriza a visualização parcial do seu progresso. Seus diários privados permanecem ocultos. O Life OS não se responsabiliza por orientações de terceiros; você é o único executor de suas ações.',
+        'III. ISENÇÃO DE RESPONSABILIDADE\nEste sistema é uma ferramenta de autogestão. Não somos médicos, terapeutas ou consultores financeiros. O risco da execução física, mental ou financeira de qualquer Codex é inteiramente do Soberano.',
+        'IV. DIREITO AO EXÍLIO\nA qualquer momento, você pode incinerar seus dados. O comando “Deletar Conta” é definitivo e apaga sua existência em nossos servidores, sem rastro ou recuperação.',
+    ];
+    const [step, setStep] = useState(0);
+    const [typedText, setTypedText] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [isHolding, setIsHolding] = useState(false);
+    const [isSealing, setIsSealing] = useState(false);
+    const holdDurationMs = 800;
+    const currentClause = clauses[step];
+    const isLast = step === clauses.length - 1;
+
+    useEffect(() => {
+        if (!open) return;
+        setTypedText('');
+        setIsTyping(true);
+        setIsHolding(false);
+        let i = 0;
+        const timer = window.setInterval(() => {
+            i += 1;
+            setTypedText(currentClause.slice(0, i));
+            if (i >= currentClause.length) {
+                window.clearInterval(timer);
+                setIsTyping(false);
+            }
+        }, 26);
+        return () => window.clearInterval(timer);
+    }, [currentClause, open]);
+
+    const handleNext = () => {
+        if (isTyping || isLast) return;
+        setStep(prev => Math.min(prev + 1, clauses.length - 1));
+    };
+
+    const handleAccept = () => {
+        setIsHolding(false);
+        setIsSealing(true);
+        window.setTimeout(() => {
+            setIsSealing(false);
+            setStep(0);
+            onAccept();
+        }, 420);
+    };
+
+    const longPressEvents = useLongPress({
+        onLongPress: () => {
+            if (isTyping) {
+                setTypedText(currentClause);
+                setIsTyping(false);
+            }
+            if (isLast) handleAccept();
+            else setStep(prev => Math.min(prev + 1, clauses.length - 1));
+        },
+        onLongPressCancel: () => setIsHolding(false),
+        onLongPressRelease: () => setIsHolding(false),
+        delay: holdDurationMs,
+    });
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsHolding(true);
+        longPressEvents.onMouseDown?.(e);
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setIsHolding(true);
+        longPressEvents.onTouchStart?.(e);
+    };
+
+    if (!open) return null;
+
+    return (
+        <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center animate-fade-in"
+            style={{ background: 'radial-gradient(circle at center, #0A0A0A 0%, #000000 72%)' }}
+        >
+            <div className="absolute inset-4 border border-[rgba(197,160,89,0.2)] rounded-[32px]" />
+            {isSealing && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.35),rgba(0,0,0,0.95))] animate-fade-in" />}
+            <div className="relative w-full max-w-md mx-auto h-full px-6 py-12 flex flex-col justify-center gap-10">
+                <div className="text-center space-y-3">
+                    <p className="text-[11px] uppercase tracking-[0.45em] text-[#8f8f8f]">Pacto de Soberania</p>
+                    <h1
+                        className="text-2xl uppercase tracking-[0.18em]"
+                        style={{ color: '#C5A059', textShadow: '0 0 16px rgba(197,160,89,0.55)', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
+                    >
+                        O Despertar do Soberano
+                    </h1>
+                </div>
+
+                <div className="relative min-h-[220px] text-base leading-relaxed whitespace-pre-line text-[#E0E0E0] text-center">
+                    {typedText}
+                    {isTyping && <span className="inline-block w-2 h-5 bg-[#C5A059] ml-1 animate-pulse" />}
+                    {isTyping && <div className="absolute inset-0 dust-layer" />}
+                </div>
+
+                <div className="flex flex-col items-center gap-3">
+                    <div
+                        className="relative w-32 h-32 rounded-full border border-[rgba(197,160,89,0.6)] flex items-center justify-center text-[#C5A059] font-black tracking-[0.2em] select-none"
+                        onMouseDown={handleMouseDown}
+                        onTouchStart={handleTouchStart}
+                        onContextMenu={longPressEvents.onContextMenu}
+                        style={{ touchAction: 'none', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
+                    >
+                        SELO
+                        <div className="absolute inset-2 rounded-full border border-[rgba(197,160,89,0.25)]" />
+                        {isHolding && (
+                            <div
+                                className="absolute inset-2 rounded-full seal-fill"
+                                style={{ animationDuration: `${holdDurationMs}ms` }}
+                            />
+                        )}
+                    </div>
+                    <p className="text-[10px] uppercase tracking-[0.35em] text-[#9b9b9b]">
+                        {isLast ? 'Segure para selar o pacto' : 'Segure para avançar'}
+                    </p>
+                </div>
+            </div>
+            <style>{`
+                .seal-fill {
+                    background: radial-gradient(circle at center, rgba(197,160,89,0.5), rgba(197,160,89,0.08));
+                    animation: sealFill linear forwards;
+                    box-shadow: 0 0 25px rgba(197,160,89,0.45);
+                    clip-path: inset(100% 0 0 0);
+                }
+                .dust-layer {
+                    background-image:
+                        radial-gradient(circle at 20% 30%, rgba(197,160,89,0.5) 0 2px, transparent 3px),
+                        radial-gradient(circle at 60% 35%, rgba(197,160,89,0.35) 0 1px, transparent 3px),
+                        radial-gradient(circle at 35% 70%, rgba(197,160,89,0.4) 0 2px, transparent 3px),
+                        radial-gradient(circle at 75% 65%, rgba(197,160,89,0.3) 0 1px, transparent 3px);
+                    opacity: 0.65;
+                    animation: dustFade 1.6s ease-out infinite;
+                    pointer-events: none;
+                }
+                @keyframes sealFill {
+                    to { clip-path: inset(0% 0 0 0); }
+                }
+                @keyframes dustFade {
+                    0% { opacity: 0.2; transform: scale(0.98); }
+                    60% { opacity: 0.75; transform: scale(1); }
+                    100% { opacity: 0.2; transform: scale(1.02); }
+                }
+            `}</style>
+        </div>
+    );
+};
+
 const AppWithTutorial: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('assets');
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
+    const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
 
     const arenasNavRef = useRef<HTMLButtonElement>(null);
     const plannerNavRef = useRef<HTMLButtonElement>(null);
@@ -53,6 +207,10 @@ const AppWithTutorial: React.FC = () => {
 
     }, [isTutorialActive, currentStep, setSpotlight]);
 
+    useEffect(() => {
+        if (isBuilderMode) setCurrentView('arenas');
+    }, [isBuilderMode]);
+
     const handleSetView = (view: View) => {
         if (isTutorialActive) {
             if (currentStep === 1 && view === 'arenas') {
@@ -65,7 +223,48 @@ const AppWithTutorial: React.FC = () => {
                 return; // Block navigation during other tutorial steps
             }
         }
+        if (isBuilderMode && view !== 'arenas') return;
         setCurrentView(view);
+    };
+
+    const handlePackDraft = async () => {
+        const json = packDraftToJson();
+        const safeName = (draftName || 'codex').trim().replace(/[^a-z0-9-_ ]/gi, '').replace(/\s+/g, '_');
+        const fileName = `${safeName || 'codex'}.json`;
+
+        try {
+            const parsed = JSON.parse(json) as { schemaVersion?: number; metadata?: { name?: string; author?: string; price?: number; description?: string } };
+            const { data: sessionData } = await supabase.auth.getSession();
+            const userId = sessionData.session?.user.id;
+            const isUuid = typeof userId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId);
+
+            if (isUuid) {
+                await supabase
+                    .from('codexes')
+                    .insert({
+                        owner_id: userId,
+                        schema_version: typeof parsed.schemaVersion === 'number' ? parsed.schemaVersion : 1,
+                        name: (parsed.metadata?.name || draftName || 'Codex').toString(),
+                        author: parsed.metadata?.author ?? null,
+                        price: typeof parsed.metadata?.price === 'number' ? parsed.metadata.price : null,
+                        description: parsed.metadata?.description ?? null,
+                        template: parsed,
+                    });
+            }
+        } catch (e) {
+            console.error('Falha ao salvar Codex no Supabase:', e);
+        }
+
+        const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        exitBuilderMode();
     };
 
     const renderView = () => {
@@ -94,10 +293,35 @@ const AppWithTutorial: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen text-gray-200 font-sans flex flex-col">
+        <div className={`min-h-screen text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''}`}>
             <TutorialOverlay />
-            <GlobalHeader onProfileClick={() => setProfileVisible(true)} />
-            <main className="flex-1 pt-20 pb-16 flex flex-col">
+            {isBuilderMode && (
+                <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/15 backdrop-blur-lg border-b border-yellow-500/40">
+                    <div className="max-w-[420px] mx-auto px-4 h-11 flex items-center gap-2">
+                        <span className="text-[10px] font-black tracking-widest text-yellow-300 whitespace-nowrap">MODO ARQUITETO</span>
+                        <input
+                            value={draftName}
+                            onChange={(e) => setDraftName(e.target.value)}
+                            className="flex-1 bg-black/30 border border-yellow-500/40 rounded-md px-2 py-1 text-xs font-bold text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/40"
+                            placeholder="Nome do Codex"
+                        />
+                        <button
+                            onClick={exitBuilderMode}
+                            className="text-[11px] font-black tracking-wider text-gray-200 px-2 py-1 rounded-md bg-black/30 border border-yellow-500/30 hover:bg-black/40"
+                        >
+                            CANCELAR
+                        </button>
+                        <button
+                            onClick={handlePackDraft}
+                            className="text-[11px] font-black tracking-wider text-black px-2 py-1 rounded-md bg-yellow-400 hover:bg-yellow-300"
+                        >
+                            EMPACOTAR
+                        </button>
+                    </div>
+                </div>
+            )}
+            <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ? 44 : 0} />
+            <main className={`flex-1 ${isBuilderMode ? 'pt-32' : 'pt-20'} pb-16 flex flex-col`}>
                 <div className="max-w-[420px] mx-auto w-full h-full flex flex-col">
                     {renderView()}
                 </div>
@@ -124,6 +348,7 @@ const AppWithTutorial: React.FC = () => {
 const MainApp: React.FC = () => {
     const { isNewUser, achievementUnlocked, setAchievementUnlocked } = useGame();
     const { isTutorialCompleted, startTutorial } = useTutorial();
+    const [showTerms, setShowTerms] = useState(true);
 
     useEffect(() => {
         if (isNewUser && !isTutorialCompleted) {
@@ -135,6 +360,7 @@ const MainApp: React.FC = () => {
     return (
         <>
             <AppWithTutorial />
+            <TermsOverlay open={showTerms} onAccept={() => setShowTerms(false)} />
             {achievementUnlocked && (
                 <AchievementModal 
                     achievement={achievementUnlocked}
@@ -193,9 +419,11 @@ const App: React.FC = () => {
 
     return (
         <GameProvider>
-          <TutorialProvider>
-            {renderContent()}
-          </TutorialProvider>
+          <CodexBuilderProvider>
+            <TutorialProvider>
+              {renderContent()}
+            </TutorialProvider>
+          </CodexBuilderProvider>
         </GameProvider>
     );
 };

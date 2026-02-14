@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Arena, Action } from '../types';
+import { Arena, Action, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { PlusIcon, EditIcon, CheckIcon } from './Icons';
 import { ActionModal } from './ActionModal';
 import { IconPickerModal } from './IconPickerModal';
 import { useTutorial } from '../contexts/TutorialContext';
+import { supabase } from '../supabaseClient';
 
 const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ action, onClick }) => {
     const { getAssetForAction, tasks } = useGame();
@@ -32,12 +33,14 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ actio
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, tasks, getAssetForAction } = useGame();
+    const { getActionsForArena, assets, updateArena, tasks, getAssetForAction, friends } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ name: arena.name, description: arena.description, icon: arena.icon });
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+    const [isLinkingObserver, setIsLinkingObserver] = useState(false);
+    const [linkStatus, setLinkStatus] = useState<string | null>(null);
     const newActionRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
@@ -95,6 +98,42 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             onClose();
         }
     };
+
+    const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+    const availableFriends = friends.filter(f => isUuid(f.id));
+
+    const sendObserverInvite = async (friend: UserProfile) => {
+        setLinkStatus(null);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData.session?.user.id;
+        if (!uid || !isUuid(uid)) {
+            setLinkStatus('Faça login para enviar convites.');
+            return;
+        }
+        if (!isUuid(friend.id)) {
+            setLinkStatus('Este aliado não possui ID válido.');
+            return;
+        }
+
+        const { error } = await supabase.from('relationship_link_invites').insert({
+            sender_id: uid,
+            recipient_id: friend.id,
+            link_type: 'mentoria',
+            arena_id: arena.id,
+            arena_snapshot: { name: editableArena.name || arena.name, icon: editableArena.icon || arena.icon },
+            status: 'pending',
+        });
+        if (error) {
+            setLinkStatus(error.message);
+            return;
+        }
+        setLinkStatus(`Convite enviado para ${friend.nickname}.`);
+        window.setTimeout(() => {
+            setIsLinkingObserver(false);
+            setLinkStatus(null);
+        }, 1200);
+    };
     
     return (
         <>
@@ -107,6 +146,16 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
                         </button>
                          <h2 className="text-lg font-black uppercase tracking-wider text-white">{isEditing ? "EDITAR ARENA" : parentAsset?.name}</h2>
+                        {isEditing ? (
+                            <button
+                                onClick={() => setIsLinkingObserver(true)}
+                                className="px-3 py-2 text-[10px] font-black tracking-widest rounded-xl bg-black/30 border border-white/15 text-[var(--gold)] hover:bg-black/40"
+                            >
+                                VINCULAR OBSERVADOR
+                            </button>
+                        ) : (
+                            <div className="w-[142px]" />
+                        )}
                         <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
                             OK
                         </button>
@@ -213,6 +262,39 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     initialMode={actionModalState.mode}
                     onClose={() => setActionModalState(null)}
                 />
+            )}
+            {isLinkingObserver && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setIsLinkingObserver(false)}>
+                    <div className="bg-black/70 border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center">
+                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">ESCOLHA SEU JUIZ</div>
+                            <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">×</span></button>
+                        </div>
+                        <div className="text-xs text-gray-400">Convide um aliado para observar {editableArena.name || arena.name}.</div>
+                        {availableFriends.length === 0 ? (
+                            <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID válido.</div>
+                        ) : (
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                {availableFriends.map(friend => (
+                                    <button
+                                        key={friend.id}
+                                        onClick={() => sendObserverInvite(friend)}
+                                        className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-black/30 border border-white/10 flex items-center gap-3"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
+                                            {friend.avatarUrl ? <img src={friend.avatarUrl} alt={friend.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="text-sm font-bold text-white">{friend.nickname}</div>
+                                            <div className="text-[10px] text-gray-500">{friend.isOnline ? 'ONLINE' : 'OFFLINE'}</div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {linkStatus && <div className="text-xs text-gray-300 bg-black/30 border border-white/10 rounded-xl p-2">{linkStatus}</div>}
+                    </div>
+                </div>
             )}
         </>
     );

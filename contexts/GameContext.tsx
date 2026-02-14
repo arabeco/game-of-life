@@ -5,6 +5,7 @@ import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS } from '../co
 import { DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { supabase } from '../supabaseClient';
 import type { Session } from '@supabase/supabase-js';
+import { useCodexBuilder } from './CodexBuilderContext';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -31,6 +32,8 @@ const mapToSnakeCase = (obj: any): any => {
     }
     return obj;
 };
+
+const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
@@ -115,13 +118,15 @@ export type ArenaSetupChange = {
 
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
+const SITREP_BONUS_A = 60;
+const SITREP_BONUS_S = 120;
 
 interface EndCycleResult {
     report: Report;
     expGained: number;
 }
 
-interface GameContextType {
+export interface GameContextType {
   isNewUser: boolean;
   assets: Asset[];
   actions: Action[];
@@ -272,7 +277,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         taskIds: [],
         stage: 'planning',
         score: null,
+        expDeposited: null,
+        sitrepBonus: null,
     };
+  });
+
+  const [cycleExpBonus, setCycleExpBonus] = useState<number>(() => {
+    try {
+        const saved = localStorage.getItem('cycleExpBonus');
+        if (saved) {
+            const parsed = Number(saved);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+    } catch (e) { console.error("Failed to load cycleExpBonus from storage", e); }
+    return 0;
   });
   
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
@@ -364,6 +382,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             else localStorage.removeItem('activeCycle');
             localStorage.setItem('feed', JSON.stringify(feed));
             localStorage.setItem('dailyCommitment', JSON.stringify(dailyCommitment));
+            localStorage.setItem('cycleExpBonus', String(cycleExpBonus));
         } catch (e) {
             console.error(e);
         }
@@ -371,7 +390,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return () => {
         if (persistTimeoutRef.current !== null) window.clearTimeout(persistTimeoutRef.current);
     };
-  }, [assets, actions, tasks, reports, clan, checklistItems, userProfile, activeCycle, feed, dailyCommitment]);
+  }, [assets, actions, tasks, reports, clan, checklistItems, userProfile, activeCycle, feed, dailyCommitment, cycleExpBonus]);
 
   const loadClanAndMembers = useCallback(async (clanId: string) => {
     const { data: clanData, error: clanError } = await supabase.from('clans').select('*').eq('id', clanId).single();
@@ -531,7 +550,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   
 
 
-  const resetDailyCommitment = () => setDailyCommitmentState({ date: getTodayString(), taskIds: [], stage: 'planning', score: null });
+  const resetDailyCommitment = () => setDailyCommitmentState({ date: getTodayString(), taskIds: [], stage: 'planning', score: null, expDeposited: null, sitrepBonus: null });
   const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds }));
   const lockDailyCommitment = () => setDailyCommitmentState(prev => ({...prev, stage: 'battle' }));
 
@@ -554,9 +573,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const completedCount = committedTasks.filter(t => t.completed).length;
     const totalCount = committedTasks.length;
     const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
+    const expDepositBase = committedTasks.filter(t => t.completed).reduce((sum, task) => {
+        const duration = Number.isFinite(task.duration) ? task.duration : 0;
+        if (duration > 0) return sum + duration;
+        const action = actions.find(a => a.id === task.actionId);
+        return sum + (action?.duration || 0);
+    }, 0);
+    const sitrepBonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
+    const expDeposited = expDepositBase + sitrepBonus;
     
     const newStage = 'judgment';
-    setDailyCommitmentState(prev => ({...prev, stage: newStage, score }));
+    setDailyCommitmentState(prev => ({...prev, stage: newStage, score, expDeposited, sitrepBonus }));
+    if (activeCycle && sitrepBonus > 0) {
+        setCycleExpBonus(prev => prev + sitrepBonus);
+    }
 
     // Persist to Supabase if logged in
     const userId = session?.user.id ?? userProfile.id;
@@ -622,8 +652,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const updateUserProfile = (profileData: Partial<UserProfile>) => {
     setUserProfile(prev => ({ ...prev, ...profileData }));
-    const userId = session?.user.id ?? userProfile.id;
-    if (userId) {
+    const userId = session?.user.id;
+    if (userId && userId !== 'placeholder_user' && isUuid(userId)) {
         const snakeCaseData = mapToSnakeCase(profileData);
         supabase.from('user_profiles').update(snakeCaseData).eq('id', userId).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
     }
@@ -661,6 +691,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         userId: userId,
         arenaIds: assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id))
     };
+    setCycleExpBonus(0);
     setActiveCycle(newCycle);
 
     // Sync to Supabase
@@ -785,10 +816,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     }
 
-    const expGained = completedTasks.length * 10;
+    const expFromActions = completedTasks.reduce((sum, task) => {
+        const duration = Number.isFinite(task.duration) ? task.duration : 0;
+        if (duration > 0) return sum + duration;
+        const action = currentActions.find(a => a.id === task.actionId);
+        return sum + (action?.duration || 0);
+    }, 0);
+    const missionBonusExp = completedTasks.reduce((sum, task) => {
+        const action = currentActions.find(a => a.id === task.actionId);
+        if (action?.actionType !== 'Marco') return sum;
+        const duration = Number.isFinite(task.duration) ? task.duration : (action?.duration || 0);
+        return sum + duration;
+    }, 0);
+    const expGained = expFromActions + missionBonusExp + cycleExpBonus;
     
     // Encerrar ciclo ativo
     setActiveCycle(null);
+    setCycleExpBonus(0);
     
     // Adicionar relatório à lista
     setReports(prev => [newReport, ...prev]);
@@ -797,7 +841,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const applyExp = (expGained: number) => {
-    // ... (rest of the function is correct)
+    if (!expGained) return;
+    updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + expGained } });
   };
 
   const addChest = (chestType: ChestType) => {
@@ -805,7 +850,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
   
   const startNewCycle = (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; endDate: string; }) => {
-    // ... (rest of the function is correct)
+    setCycleExpBonus(0);
   };
 
   const setCurrentSkin = (skinId: string) => updateUserProfile({ skin: skinId });
@@ -1347,6 +1392,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 export const useGame = () => {
   const context = useContext(GameContext);
+  const builder = useCodexBuilder();
   if (context === undefined) throw new Error('useGame must be used within a GameProvider');
-  return context;
+  if (!builder.isBuilderMode) return context;
+  return { ...context, ...builder.gameOverrides };
 };

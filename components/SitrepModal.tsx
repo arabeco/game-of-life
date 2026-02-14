@@ -209,6 +209,8 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     
     const renderJudgment = () => {
         const score = dailyCommitment.score || 0;
+        const expDeposited = dailyCommitment.expDeposited ?? 0;
+        const sitrepBonus = dailyCommitment.sitrepBonus ?? 0;
         let verdict = "Guerreiro. Mantenha a disciplina.";
         if (score === 100) verdict = "Soberano. A vitória foi absoluta.";
         else if (score < 50) verdict = "A Batalha foi dura. Recupere e avance.";
@@ -221,6 +223,11 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <p className="text-sm uppercase text-gray-400">Score de Hoje</p>
                         <p className="text-8xl font-black text-[var(--gold)]">{score}</p>
                         <p className="text-sm text-gray-300">"{verdict}"</p>
+                        <div className="pt-3">
+                            <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
+                            <p className="text-xl font-black text-[var(--gold)]">{expDeposited}</p>
+                            {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus SITREP: +{sitrepBonus}</p>}
+                        </div>
                     </div>
                 </div>
                  <div className="flex items-center space-x-2">

@@ -202,6 +202,8 @@ export interface DailyCommitment {
     taskIds: string[];
     stage: DailyCommitmentStage;
     score: number | null;
+    expDeposited?: number | null;
+    sitrepBonus?: number | null;
 }
 
 // --- Sovereign Control Panel Types ---
@@ -250,4 +252,44 @@ export interface FeedEvent {
     rankName?: string;
   };
   timestamp: string;
+}
+
+export type RelationshipLinkType = 'mentoria' | 'parceria';
+
+export type RelationshipInviteStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
+
+export interface RelationshipLinkInvite {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  linkType: RelationshipLinkType;
+  arenaId: string;
+  arenaSnapshot: { name: string; icon?: string };
+  status: RelationshipInviteStatus;
+  createdAt: string;
+  respondedAt?: string | null;
+}
+
+export interface RelationshipLink {
+  id: string;
+  mentorId: string;
+  pupilId: string;
+  linkType: RelationshipLinkType;
+  arenaId: string;
+  arenaSnapshot: { name: string; icon?: string };
+  satisfactionLevel: number;
+  createdAt: string;
+  updatedAt: string;
+  endedAt?: string | null;
+}
+
+export type LinkNotificationType = 'praise' | 'support' | 'scold';
+
+export interface LinkNotificationLog {
+  id: string;
+  linkId: string;
+  senderId: string;
+  recipientId: string;
+  notificationType: LinkNotificationType;
+  createdAt: string;
 }

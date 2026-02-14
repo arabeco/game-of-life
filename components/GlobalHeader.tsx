@@ -4,7 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { MoodModal } from './MoodModal';
 
-export const GlobalHeader: React.FC<{ onProfileClick: () => void }> = ({ onProfileClick }) => {
+export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
     const { userProfile } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const date = new Date();
@@ -17,7 +17,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void }> = ({ onProfi
 
     return (
         <>
-            <header className="fixed top-0 left-0 right-0 z-40 bg-[#111111]/80 backdrop-blur-lg">
+            <header className="fixed left-0 right-0 z-40 bg-[#111111]/80 backdrop-blur-lg" style={{ top: topOffsetPx }}>
                 <div className="max-w-[420px] mx-auto flex items-center justify-between h-20 px-4 text-xs font-bold text-gray-400">
                     <span className="text-center w-20 flex-shrink-0">{day}, {dateStr}</span>
                     

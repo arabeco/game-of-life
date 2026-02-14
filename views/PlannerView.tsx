@@ -250,7 +250,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         scheduleAndCompleteMilestoneNow,
         addAction,
         assets,
-        addArena
+        addArena,
+        userProfile
     } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -926,7 +927,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1"><button onClick={() => changeDate(-1)} className="p-2 rounded-full hover:bg-white/10"><ChevronLeftIcon /></button><span className="uppercase tracking-wider text-base w-32 text-center">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span><button onClick={() => changeDate(1)} className="p-2 rounded-full hover:bg-white/10"><ChevronRightIcon /></button></div>
                     <div className="flex items-center bg-black/20 rounded-full p-1 text-sm"><button onClick={() => setViewMode('day')} className={`px-2 py-1 rounded-full ${viewMode === 'day' ? 'bg-white/10' : ''}`}>D</button><button onClick={() => setViewMode('week')} className={`px-2 py-1 rounded-full ${viewMode === 'week' ? 'bg-white/10' : ''}`}>S</button></div>
                 </div>
-            
+
                 <div className="flex items-center space-x-2 my-0">
                     <div 
                         data-testid="bay-area" 

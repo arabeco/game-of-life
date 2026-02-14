@@ -198,7 +198,7 @@ if (supabaseUrl && supabaseAnonKey) {
                         const profiles = inFilter.values.map(id => ({
                             id: id,
                             email: `${id}@mock.com`,
-                            nickname: id === 'user_01' ? 'Sovereign' : `User_${id.slice(-4)}`,
+                            nickname: id === 'placeholder_user' ? 'Sovereign' : `User_${id.slice(-4)}`,
                             sovereign: { body: 'male_base', skinTone: '#E2A984', hairStyle: 'none', hairColor: '#2C1608', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' },
                             avatarUrl: `https://picsum.photos/seed/${id}/100/100`,
                             border: 'default', level: 1, backgroundUrl: '', isOnline: true, visibleWidgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user'

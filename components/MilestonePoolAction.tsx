@@ -19,7 +19,14 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
     const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
+        const el = milestoneRef.current;
+        const preventScroll = (e: TouchEvent) => {
+            if (e.cancelable) e.preventDefault();
+        };
+        if (el) el.addEventListener('touchmove', preventScroll, { passive: false });
+
         return () => {
+            if (el) el.removeEventListener('touchmove', preventScroll);
             if (completionTimeout.current) {
                 clearTimeout(completionTimeout.current);
             }

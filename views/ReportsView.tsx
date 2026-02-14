@@ -28,31 +28,34 @@ const getScoreGrade = (score: number) => {
 
 // --- Sub-components for Active Cycle HUD ---
 const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
-    const { tasks, assets, actions } = useGame();
-    const startDate = new Date(cycle.startDate);
-    const endDate = new Date(cycle.endDate);
-    const today = new Date();
+    const { tasks, assets, actions, userProfile, session } = useGame();
+    const startDate = cycle.startDate;
+    const endDate = cycle.endDate;
+    const today = new Date().toISOString().split('T')[0];
     
-    const totalDays = Math.max(1, daysBetween(startDate, endDate) + 1);
-    const daysElapsed = Math.max(0, daysBetween(startDate, today) + 1);
+    // Cálculo de dias
+    const startD = new Date(startDate);
+    const endD = new Date(endDate);
+    const todayD = new Date(today);
+    
+    const totalDays = Math.max(1, daysBetween(startD, endD) + 1);
+    const daysElapsed = Math.max(0, daysBetween(startD, todayD) + 1);
     const timeProgress = Math.min(100, (daysElapsed / totalDays) * 100);
 
-    const activeArenas = assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived));
-    const activeArenaIds = new Set(activeArenas.map(ar => ar.id));
-    const activeActions = actions.filter(a => activeArenaIds.has(a.arenaId));
+    // Filtrar tarefas apenas do usuário atual e dentro do período do ciclo
+    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate);
+    const completedTasks = cycleTasks.filter(t => t.completed);
 
-    const totalPlannedRepetitions = activeActions.reduce((sum, action) => {
-        return sum + (action.actionType === 'Marco' ? 1 : action.repetitions);
-    }, 0);
-
-    const cycleTasks = tasks.filter(t => {
-        const taskDate = new Date(t.date);
-        return taskDate >= startDate && taskDate <= endDate;
-    });
-    const completedCycleTasksCount = cycleTasks.filter(t => t.completed).length;
+    // Arenas e Ações envolvidas (seguindo a mesma lógica do endCycle)
+    const actionIdsInCycle = new Set(cycleTasks.map(t => t.actionId));
+    const involvedActions = actions.filter(a => actionIdsInCycle.has(a.id));
     
-    const conquestProgress = totalPlannedRepetitions > 0
-        ? (completedCycleTasksCount / totalPlannedRepetitions) * 100
+    const arenaIdsInCycle = new Set(involvedActions.map(a => a.arenaId));
+    const involvedArenas = assets.flatMap(as => as.arenas).filter(ar => arenaIdsInCycle.has(ar.id));
+
+    // Progresso baseado no planejado vs realizado
+    const conquestProgress = cycleTasks.length > 0
+        ? (completedTasks.length / cycleTasks.length) * 100
         : 0;
 
     const delta = conquestProgress - timeProgress;
@@ -83,6 +86,9 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
             <div className='text-center border-t border-yellow-800/50 pt-3'>
                  <p className="text-xs font-bold text-gray-400">RANK ATUAL</p>
                  <p className={`text-4xl font-black ${rank.color}`}>{rank.label}</p>
+                 <p className="text-[10px] text-gray-500 mt-1 uppercase">
+                    {completedTasks.length} de {cycleTasks.length} tarefas | {involvedArenas.length} Arenas
+                 </p>
             </div>
         </GlassCard>
     );

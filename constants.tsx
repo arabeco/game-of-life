@@ -1,5 +1,7 @@
 import { Asset, Skin, Mood } from './types';
 
+export const MAX_CLAN_MEMBERS = 10;
+
 // Default empty value for image slots
 const emptyImage = { imageUrl: '', caption: '' };
 

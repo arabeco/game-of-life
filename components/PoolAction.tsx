@@ -32,7 +32,14 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, onComplet
     }, [isTutorialActive, currentStep, setSpotlight]);
 
     useEffect(() => {
+        const el = poolActionRef.current;
+        const preventScroll = (e: TouchEvent) => {
+            if (e.cancelable) e.preventDefault();
+        };
+        if (el) el.addEventListener('touchmove', preventScroll, { passive: false });
+
         return () => {
+            if (el) el.removeEventListener('touchmove', preventScroll);
             if (completionTimeout.current) {
                 clearTimeout(completionTimeout.current);
             }

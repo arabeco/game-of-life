@@ -52,7 +52,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
     const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        if (isTutorialActive && currentStep === 8 && taskRef.current) {
+        const handleDragMove = (e: MouseEvent | TouchEvent) => {
             // A small delay to ensure the element is positioned after drop
             setTimeout(() => {
                 if (taskRef.current) {
@@ -67,7 +67,14 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
 
     useEffect(() => {
         // Cleanup timeout on unmount
+        const el = taskRef.current;
+        const preventScroll = (e: TouchEvent) => {
+            if (e.cancelable) e.preventDefault();
+        };
+        if (el) el.addEventListener('touchmove', preventScroll, { passive: false });
+
         return () => {
+            if (el) el.removeEventListener('touchmove', preventScroll);
             if (completionTimeout.current) {
                 clearTimeout(completionTimeout.current);
             }
@@ -144,7 +151,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 ref={taskRef}
                 {...longPressEvents}
                 className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer flex items-center justify-center"
-                style={{ top: `${top}px`, height: `${height}px` }}
+                style={{ top: `${top}px`, height: `${height}px`, touchAction: 'none' }}
             >
                 <div className="relative w-full h-full">
                     <div className="absolute inset-0 w-full h-full" style={{ ...backgroundStyle, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
@@ -169,7 +176,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             ref={taskRef}
             {...longPressEvents}
             className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer" 
-            style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`}}
+            style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div 
                 className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${task.completed ? 'text-white/80 font-bold' : 'text-orange-200'}`}
@@ -243,6 +250,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const weeklyTimeIndicatorRef = useRef<HTMLDivElement>(null);
     const [zoomLevel, setZoomLevel] = useState<3 | 2 | 1>(3);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+    const lastPointerPosRef = useRef<{ x: number; y: number } | null>(null);
+    const lastScrollTopRef = useRef<number>(0);
+    const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     
     // Custom Drag State
     const [dragState, setDragState] = useState({
@@ -263,19 +273,125 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const offset = elemRect ? { x: pos.x - elemRect.left, y: pos.y - elemRect.top } : { x: 0, y: 0 };
         if (isTutorialActive && (currentStep === 7 || currentStep === 8)) setSpotlight(null, null);
         setIsMilestonePoolOpen(false);
+        if (scrollContainerRef.current) {
+            lastScrollTopRef.current = scrollContainerRef.current.scrollTop;
+        }
+        lastPointerPosRef.current = pos;
+        dragOffsetRef.current = offset;
         setDragState({ isDragging: true, item, ghostElement, pointerOffset: offset, currentPosition: pos });
     };
 
+    // Dedicated Auto-Scroll Effect
+    useEffect(() => {
+        let rafId: number | null = null;
+        let wheelHandler: ((ev: WheelEvent) => void) | null = null;
+
+        if (dragState.isDragging) {
+            const scroller = scrollContainerRef.current;
+            wheelHandler = (ev: WheelEvent) => { ev.preventDefault(); };
+            scroller?.addEventListener('wheel', wheelHandler, { passive: false });
+
+            const maxSpeed = 40;
+            const step = () => {
+                if (scrollContainerRef.current && lastPointerPosRef.current) {
+                    const p = lastPointerPosRef.current;
+                    const rect = scrollContainerRef.current.getBoundingClientRect();
+                    let dy = 0;
+
+                    // Zonas de Trigger
+                    const containerTop = rect.top;
+                    const containerBottom = rect.bottom;
+                    const draggedElementTop = p.y - dragOffsetRef.current.y;
+                    
+                    // Lógica Dupla para Subir:
+                    // 1. Se o topo do elemento tocar o topo do container (precisão)
+                    // 2. OU se o ponteiro estiver nos primeiros 200px da tela (fallback de segurança)
+                    const isTopZone = draggedElementTop < (containerTop + 80) || p.y < 200;
+                    
+                    // Lógica para Descer:
+                    // 1. Ponteiro nos últimos 150px do container ou da tela
+                    const isBottomZone = p.y > (containerBottom - 100) || p.y > (window.innerHeight - 150);
+
+                    if (isTopZone) {
+                        // Calcula intensidade baseada no quão "pra cima" está
+                        const distElement = (containerTop + 80) - draggedElementTop;
+                        const distPointer = 200 - p.y;
+                        const dist = Math.max(distElement, distPointer);
+                        
+                        const intensity = Math.min(3.0, dist / 100); 
+                        dy = -Math.max(15, intensity * maxSpeed); 
+                    } 
+                    else if (isBottomZone) {
+                         const distPointer = p.y - (containerBottom - 100);
+                         const distScreen = p.y - (window.innerHeight - 150);
+                         const dist = Math.max(distPointer, distScreen);
+
+                         const intensity = Math.min(3.0, dist / 100);
+                         dy = Math.max(15, intensity * maxSpeed);
+                    }
+
+                    if (dy !== 0) {
+                        scrollContainerRef.current.style.scrollBehavior = 'auto';
+                        
+                        let handledByWindow = false;
+                        // Prioritize bringing the container into view
+                        if (dy < 0 && rect.top < 0) {
+                            // Container top is above viewport, scroll window up to show it
+                            window.scrollBy(0, dy);
+                            handledByWindow = true;
+                        } else if (dy > 0 && rect.bottom > window.innerHeight) {
+                             // Container bottom is below viewport, scroll window down to show it
+                             window.scrollBy(0, dy);
+                             handledByWindow = true;
+                        }
+
+                        if (!handledByWindow) {
+                            scrollContainerRef.current.scrollTop += dy;
+                            lastScrollTopRef.current = scrollContainerRef.current.scrollTop; 
+                        }
+                    }
+                }
+                rafId = requestAnimationFrame(step);
+            };
+            rafId = requestAnimationFrame(step);
+        }
+
+        return () => {
+            if (rafId !== null) cancelAnimationFrame(rafId);
+            if (wheelHandler) {
+                const scroller = scrollContainerRef.current;
+                scroller?.removeEventListener('wheel', wheelHandler as any);
+            }
+        };
+    }, [dragState.isDragging]);
+
     useEffect(() => {
         const handleDragMove = (e: MouseEvent | TouchEvent) => {
-            if ('touches' in e) e.preventDefault();
+            if ('touches' in e) {
+                if (e.cancelable) {
+                    e.preventDefault();
+                } else {
+                    console.warn("Touchmove event not cancelable, browser might scroll anyway");
+                }
+            }
+            e.stopPropagation();
             const isTouchEvent = 'touches' in e;
             const pos = isTouchEvent ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
             setDragState(prev => ({ ...prev, currentPosition: pos }));
+            lastPointerPosRef.current = pos;
             
             const bayAreaEl = document.querySelector('[data-testid="bay-area"]');
             const bayAreaRect = bayAreaEl?.getBoundingClientRect();
             const isOverBayAreaCheck = (rect: DOMRect | undefined) => rect ? (pos.y > rect.top && pos.y < rect.bottom && pos.x > rect.left && pos.x < rect.right) : false;
+
+            // Snap-back removed because overflow: hidden already prevents scroll. 
+            // We rely on auto-scroll loop to update scrollTop programmatically.
+
+            // Forçar pointer-events none nos dias para evitar que o scroll do container seja ativado pelo toque neles
+            const gridDays = document.querySelectorAll('.grid-day-container');
+            gridDays.forEach(el => {
+                (el as HTMLElement).style.pointerEvents = 'none';
+            });
 
             if (dragState.item?.type === 'reschedule_task' && isOverBayAreaCheck(bayAreaRect)) {
                 setIsOverBayArea(true);
@@ -288,8 +404,18 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const dailyViewEl = scrollContainerRef.current.querySelector('[data-testid="daily-timeline"] .flex-grow.relative.border-l');
                     if (!dailyViewEl) return;
                     const gridRect = dailyViewEl.getBoundingClientRect();
-                    if (pos.y < gridRect.top || pos.y > gridRect.bottom) { setDailyDropIndicator(null); return; }
-                    let dropY = pos.y - gridRect.top;
+                    
+                    // Permitir margem para manter o indicador visível durante o auto-scroll nas bordas
+                    const scrollMargin = 150;
+                    if (pos.y < gridRect.top - scrollMargin || pos.y > gridRect.bottom + scrollMargin) { 
+                        setDailyDropIndicator(null); 
+                        return; 
+                    }
+                    
+                    // Calcular dropY relativo ao topo do grid rolável
+                    let dropY = pos.y - gridRect.top + scrollContainerRef.current.scrollTop;
+                    dropY = Math.max(0, dropY); // Impedir valores negativos
+                    
                     const minutesFromViewStart = dropY / scaleFactor;
                     const snappedMinutes = Math.round(minutesFromViewStart / 15) * 15;
                     setDailyDropIndicator({ top: snappedMinutes * scaleFactor, height: dragState.item.duration * scaleFactor });
@@ -300,14 +426,16 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const daysContainer = weeklyGridEl.querySelector('.flex-grow.grid.grid-cols-7');
                     if (!daysContainer) { setWeeklyDropIndicator(null); return; }
                     const containerRect = daysContainer.getBoundingClientRect();
-                    if (pos.x > containerRect.left && pos.x < containerRect.right && pos.y > containerRect.top && pos.y < containerRect.bottom) {
-                        const dayColumnWidth = containerRect.width / 7;
-                        let dayIndex = Math.floor((pos.x - containerRect.left) / dayColumnWidth);
-                        dayIndex = Math.max(0, Math.min(6, dayIndex));
-                        const headerHeight = 32;
-                        let dropY = pos.y - containerRect.top - headerHeight;
-                        if (dropY < 0) dropY = 0;
-                        const minutesFromViewStart = dropY / scaleFactor;
+                    const scrollMargin = 150;
+                    if (pos.x > containerRect.left && pos.x < containerRect.right && 
+                        pos.y > containerRect.top - scrollMargin && pos.y < containerRect.bottom + scrollMargin) {
+                            const dayColumnWidth = containerRect.width / 7;
+                            let dayIndex = Math.floor((pos.x - containerRect.left) / dayColumnWidth);
+                            dayIndex = Math.max(0, Math.min(6, dayIndex));
+                            const headerHeight = 32;
+                            let dropY = pos.y - containerRect.top - headerHeight + scrollContainerRef.current.scrollTop;
+                            if (dropY < 0) dropY = 0;
+                            const minutesFromViewStart = dropY / scaleFactor;
                         const snappedMinutes = Math.round(minutesFromViewStart / 15) * 15;
                         setWeeklyDropIndicator({ dayIndex, top: snappedMinutes * scaleFactor, height: dragState.item.duration * scaleFactor });
                     } else { setWeeklyDropIndicator(null); }
@@ -340,9 +468,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             const dailyTimelineRect = dailyTimelineEl?.getBoundingClientRect();
             const weeklyGridRect = weeklyGridEl?.getBoundingClientRect();
 
-            const isOver = (rect: DOMRect | undefined) => {
+            const isOver = (rect: DOMRect | undefined, verticalMargin = 0) => {
                 if (!rect || !pos) return false;
-                return pos.y > rect.top && pos.y < rect.bottom && pos.x > rect.left && pos.x < rect.right;
+                return pos.y > rect.top - verticalMargin && pos.y < rect.bottom + verticalMargin && pos.x > rect.left && pos.x < rect.right;
             };
             
             if (isOver(bayAreaRect)) {
@@ -356,14 +484,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         deleteTask(payload);
                     }
                 }
-            } else if (isOver(dailyTimelineRect) && viewMode === 'day' && dailyDropIndicator) {
+            } else if (isOver(dailyTimelineRect, 150) && viewMode === 'day' && dailyDropIndicator) {
                 const dateString = currentDate.toISOString().split('T')[0];
                 const minutesFromViewStart = dailyDropIndicator.top / scaleFactor;
                 const startTimeInMinutes = minutesFromViewStart + (4 * 60);
                 const { type, payload } = dragState.item;
                 const scheduledTask = type === 'new_action' ? scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
                 if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
-            } else if (isOver(weeklyGridRect) && viewMode === 'week' && weeklyDropIndicator) {
+            } else if (isOver(weeklyGridRect, 150) && viewMode === 'week' && weeklyDropIndicator) {
                 const dayIndex = weeklyDropIndicator.dayIndex;
                 const startOfWeek = new Date(currentDate);
                 const dayOfWeek = startOfWeek.getDay();
@@ -379,6 +507,10 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
             }
             
+            if (scrollContainerRef.current) {
+                scrollContainerRef.current.style.overflow = '';
+            }
+
             setDragState({ isDragging: false, item: null, ghostElement: null, pointerOffset: {x: 0, y: 0}, currentPosition: {x: 0, y: 0} });
             setDailyDropIndicator(null);
             setWeeklyDropIndicator(null);
@@ -388,6 +520,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         if (dragState.isDragging) {
             document.body.style.userSelect = 'none';
             document.body.style.webkitUserSelect = 'none';
+            document.body.style.touchAction = 'none';
             window.addEventListener('mousemove', handleDragMove);
             window.addEventListener('mouseup', handleDragEnd);
             window.addEventListener('touchmove', handleDragMove, { passive: false });
@@ -396,10 +529,17 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return () => {
             document.body.style.userSelect = '';
             document.body.style.webkitUserSelect = '';
+            document.body.style.touchAction = '';
             window.removeEventListener('mousemove', handleDragMove);
             window.removeEventListener('mouseup', handleDragEnd);
             window.removeEventListener('touchmove', handleDragMove);
             window.removeEventListener('touchend', handleDragEnd);
+            
+            // Restaurar pointer-events
+            const gridDays = document.querySelectorAll('.grid-day-container');
+            gridDays.forEach(el => {
+                (el as HTMLElement).style.pointerEvents = '';
+            });
         };
     }, [dragState.isDragging, currentDate, scaleFactor, viewMode, dailyDropIndicator, weeklyDropIndicator]);
 
@@ -454,15 +594,17 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             </div>
 
-            <div ref={scrollContainerRef} className="flex-grow overflow-y-auto relative min-h-0">
-                {viewMode === 'day' ? (
-                     <div>
-                        <DayHeader currentDate={currentDate} />
-                        <DailyView tasks={dailyTasks} actions={actions} scaleFactor={scaleFactor} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
-                    </div>
-                ) : (
-                    <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} scaleFactor={scaleFactor} stickyHeaderOffset={'0rem'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
-                )}
+            <div ref={scrollContainerRef} className={`flex-grow overflow-y-auto ${dragState.isDragging ? 'touch-none select-none' : ''} relative min-h-0`}>
+                <div className={dragState.isDragging ? 'pointer-events-auto' : ''}>
+                    {viewMode === 'day' ? (
+                        <div>
+                            <DayHeader currentDate={currentDate} />
+                            <DailyView tasks={dailyTasks} actions={actions} scaleFactor={scaleFactor} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
+                        </div>
+                    ) : (
+                        <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} scaleFactor={scaleFactor} stickyHeaderOffset={'0rem'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
+                    )}
+                </div>
             </div>
             
             <div className="fixed bottom-20 right-4 z-20 flex flex-col items-center space-y-2">

@@ -57,7 +57,15 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
     const completionTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     React.useEffect(() => {
+        const el = taskRef.current;
+        if (!el) return;
+        const preventScroll = (e: TouchEvent) => {
+            // Se o usuário está segurando (para drag ou long press), impedimos o scroll
+            if (e.cancelable) e.preventDefault();
+        };
+        el.addEventListener('touchmove', preventScroll, { passive: false });
         return () => {
+            el.removeEventListener('touchmove', preventScroll);
             if (completionTimeout.current) {
                 clearTimeout(completionTimeout.current);
             }
@@ -128,7 +136,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
             key={task.id} 
             ref={taskRef}
             className="absolute w-full px-1 cursor-pointer" 
-            style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px` }}
+            style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
             {...longPressEvents}
         >
             <div 

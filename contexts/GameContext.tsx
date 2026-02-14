@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission } from '../types';
-import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
+import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS } from '../constants';
 import { DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { supabase } from '../supabaseClient';
 import type { Session } from '@supabase/supabase-js';
@@ -83,22 +83,17 @@ const MOCK_SEARCHABLE_CLANS: Clan[] = [
 ];
 
 const DEFAULT_USER_PROFILE: UserProfile = {
-    id: 'user_01',
+    id: 'placeholder_user',
+    nickname: 'Soberano',
+    level: 1,
+    avatarUrl: '',
+    backgroundUrl: '',
     sovereign: DEFAULT_SOVEREIGN_CONFIG,
-    avatarUrl: 'https://picsum.photos/seed/user01/100/100',
-    border: 'GOLD',
-    nickname: 'Sovereign',
-    level: 2,
-    backgroundUrl: 'https://picsum.photos/seed/picsum/400/150',
-    isOnline: true,
-    visibleWidgets: ['consciencia.lema', 'espiritualidade.sistema'],
-    skin: 'GOLD',
-    lastLevelUpdate: 0,
-    nobility: { exp: 450, rankId: 'vagante' },
-    mood: 80,
-    chests: [{ type: 'Comum', count: 2 }, { type: 'Raro', count: 1 }],
-    role: 'admin',
-}
+    nobility: { exp: 0, rankId: 'vagante' },
+    mood: 50,
+    role: 'user',
+    skin: 'default'
+};
 
 const DEFAULT_FRIENDS: UserProfile[] = [
     { ...DEFAULT_USER_PROFILE, id: 'friend_01', nickname: 'Nexus', avatarUrl: 'https://picsum.photos/seed/friend01/100/100', sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, body: 'female_base', hairStyle: 'parted', hairColor: '#B8860B', outfit: 'lab_coat', head_under: 'glasses' }, isOnline: true, role: 'user' },
@@ -196,6 +191,7 @@ interface GameContextType {
   addSeason: (seasonData: Omit<Season, 'id'>) => Promise<void>;
   updateSeason: (seasonId: string, seasonData: Partial<Omit<Season, 'id'>>) => Promise<void>;
   addSeasonMission: (missionData: Omit<SeasonMission, 'id'>) => Promise<void>;
+  manualCloseSITREP: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -260,19 +256,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const nobilityRanks = NOBILITY_RANKS;
   const clanRanks = CLAN_RANKS;
   
-  const [dailyCommitment, setDailyCommitmentState] = useState<DailyCommitment>({
-    date: getTodayString(),
-    taskIds: [],
-    stage: 'planning',
-    score: null,
+  const [dailyCommitment, setDailyCommitmentState] = useState<DailyCommitment>(() => {
+    try {
+        const saved = localStorage.getItem('dailyCommitment');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.date === getTodayString()) return parsed;
+        }
+    } catch (e) { console.error("Failed to load dailyCommitment from storage", e); }
+    return {
+        date: getTodayString(),
+        taskIds: [],
+        stage: 'planning',
+        score: null,
+    };
   });
   
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     try {
         const savedProfile = localStorage.getItem('userProfile');
         const parsedProfile = savedProfile ? JSON.parse(savedProfile) : {};
+        // Use a generic ID if no session exists yet, but avoid hardcoded 'placeholder_user' as the source of truth
         return { 
           ...DEFAULT_USER_PROFILE, 
+          id: session?.user.id || parsedProfile.id || DEFAULT_USER_PROFILE.id,
           ...parsedProfile, 
           sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, ...(parsedProfile.sovereign || {}) } 
         };
@@ -281,6 +288,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return DEFAULT_USER_PROFILE;
     }
   });
+
+  // Update profile when session changes
+  useEffect(() => {
+    if (session?.user.id && userProfile.id !== session.user.id) {
+        setUserProfile(prev => ({ ...prev, id: session.user.id }));
+    }
+  }, [session?.user.id]);
 
   const [activeCycle, setActiveCycle] = useState<Cycle | null>(() => {
     try {
@@ -323,11 +337,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const saved = localStorage.getItem('feed');
         if (saved) return JSON.parse(saved);
     } catch (e) { console.error("Failed to load feed from storage", e); }
-    return [ // Some mock data to test
-        { id: 'feed_1', userId: 'friend_01', type: 'MILESTONE_COMPLETED', content: { title: 'Correr 5km', icon: '🏃‍♂️' }, timestamp: new Date(Date.now() - 3600000).toISOString() },
-        { id: 'feed_2', userId: 'user_01', type: 'PLAYER_RANK_UP', content: { title: 'Rank Up', rankName: 'Cavaleiro' }, timestamp: new Date(Date.now() - 86400000).toISOString() },
-        { id: 'feed_3', userId: 'friend_02', type: 'CYCLE_COMPLETED', content: { title: 'Conquista de Julho', score: 88 }, timestamp: new Date(Date.now() - 172800000).toISOString() }
-    ];
+    return [];
   });
 
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -343,6 +353,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   useEffect(() => { try { localStorage.setItem('userProfile', JSON.stringify(userProfile)); } catch (e) { console.error(e); } }, [userProfile]);
   useEffect(() => { try { if (activeCycle) { localStorage.setItem('activeCycle', JSON.stringify(activeCycle)); } else { localStorage.removeItem('activeCycle'); } } catch (e) { console.error(e); } }, [activeCycle]);
   useEffect(() => { try { localStorage.setItem('feed', JSON.stringify(feed)); } catch(e) { console.error(e) } }, [feed]);
+  useEffect(() => { try { localStorage.setItem('dailyCommitment', JSON.stringify(dailyCommitment)); } catch(e) { console.error(e) } }, [dailyCommitment]);
 
   const loadClanAndMembers = useCallback(async (clanId: string) => {
     const { data: clanData, error: clanError } = await supabase.from('clans').select('*').eq('id', clanId).single();
@@ -378,11 +389,68 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   // --- Supabase Data Sync ---
   useEffect(() => {
+    const today = getTodayString();
+    
+    // Check for daily reset
+    if (dailyCommitment.date !== today) {
+        resetDailyCommitment();
+        // Also reset checklist items (uncheck them)
+        setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
+    }
+    
     const userId = session?.user.id ?? userProfile.id;
-    if (!userId) return;
+    if (!userId || userId === 'placeholder_user') return; // Don't load if it's the default placeholder
 
     const loadDataFromSupabase = async () => {
         console.log("Syncing data for user:", userId);
+        
+        // 1. Load Profile
+        const { data: profileData, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
+        if (!profileError && profileData) {
+            const camelProfile = mapToCamelCase(profileData) as UserProfile;
+            setUserProfile(prev => ({ ...prev, ...camelProfile }));
+        }
+
+        // 2. Load Arenas
+        const { data: arenasData, error: arenasError } = await supabase.from('arenas').select('*').eq('user_id', userId);
+        if (!arenasError && arenasData) {
+            const camelArenas = mapToCamelCase(arenasData) as Arena[];
+            setAssets(prevAssets => prevAssets.map(asset => ({
+                ...asset,
+                arenas: camelArenas.filter(a => a.assetId === asset.id)
+            })));
+        }
+
+        // 3. Load Actions
+        const { data: actionsData, error: actionsError } = await supabase.from('actions').select('*').eq('user_id', userId);
+        if (!actionsError && actionsData) {
+            setActions(mapToCamelCase(actionsData) as Action[]);
+        }
+
+        // 4. Load Scheduled Tasks
+        const { data: tasksData, error: tasksError } = await supabase.from('scheduled_tasks').select('*').eq('user_id', userId);
+        if (!tasksError && tasksData) {
+            setTasks(mapToCamelCase(tasksData) as ScheduledTask[]);
+        }
+
+        // 5. Load Slots
+        const { data: slotsData, error: slotsError } = await supabase.from('asset_slots').select('*').eq('user_id', userId);
+        if (!slotsError && slotsData) {
+            setAssets(prevAssets => prevAssets.map(asset => ({
+                ...asset,
+                slots: asset.slots.map(slot => {
+                    const dbSlot = slotsData.find(s => s.slot_id === slot.id);
+                    if (dbSlot) {
+                        try {
+                            return { ...slot, value: JSON.parse(dbSlot.value) };
+                        } catch {
+                            return { ...slot, value: dbSlot.value };
+                        }
+                    }
+                    return slot;
+                })
+            })));
+        }
         
         const { data: clanMemberData, error: clanMemberError } = await supabase.from('clan_members').select('clan_id').eq('user_id', userId).single();
 
@@ -394,13 +462,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             loadClanAndMembers(clanMemberData.clan_id);
         }
 
-        const { data: seasonsData, error: seasonsError } = await supabase.from('seasons').select('*');
-        if (seasonsError) console.error("Error fetching seasons", seasonsError.message);
-        else setSeasons(mapToCamelCase(seasonsData) as Season[] || []);
+        const { data: reportsData, error: reportsError } = await supabase.from('reports').select('*').eq('user_id', userId).order('end_date', { ascending: false });
+        if (!reportsError && reportsData) {
+            setReports(mapToCamelCase(reportsData) as Report[]);
+        }
 
-        const { data: missionsData, error: missionsError } = await supabase.from('season_missions').select('*');
-        if (missionsError) console.error("Error fetching season missions", missionsError.message);
-        else setSeasonMissions(mapToCamelCase(missionsData) as SeasonMission[] || []);
+        const { data: cyclesData, error: cyclesError } = await supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1);
+        if (!cyclesError && cyclesData && cyclesData.length > 0) {
+            setActiveCycle(mapToCamelCase(cyclesData[0]) as Cycle);
+        }
     };
 
 
@@ -435,7 +505,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return success;
   };
   
-  useEffect(() => { if (dailyCommitment.date !== getTodayString()) resetDailyCommitment(); }, []);
+
 
   const resetDailyCommitment = () => setDailyCommitmentState({ date: getTodayString(), taskIds: [], stage: 'planning', score: null });
   const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds }));
@@ -446,8 +516,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const completedCount = committedTasks.filter(t => t.completed).length;
     const totalCount = committedTasks.length;
     const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
-    setDailyCommitmentState(prev => ({...prev, stage: 'judgment', score }));
-  }
+    
+    const newStage = 'judgment';
+    setDailyCommitmentState(prev => ({...prev, stage: newStage, score }));
+
+    // Persist to Supabase if logged in
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId && userId !== 'placeholder_user') {
+      const sitrepReport = {
+        id: crypto.randomUUID(),
+        user_id: userId,
+        date: dailyCommitment.date,
+        score: score,
+        completed_tasks: completedCount,
+        total_tasks: totalCount,
+        task_ids: dailyCommitment.taskIds
+      };
+
+      supabase.from('sitrep_reports').insert(sitrepReport).then(({ error }) => {
+        if (error) console.error("Supabase SITREP report insert error:", error.message);
+      });
+    }
+  };
+
+  const manualCloseSITREP = () => {
+    if (dailyCommitment.stage !== 'battle') return;
+    endDailyBattle();
+  };
 
 
   useEffect(() => {
@@ -518,11 +613,148 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return true;
   };
 
-  const startCycle = (name: string, endDate: string) => setActiveCycle({ id: `cycle_${Date.now()}`, name, startDate: new Date().toISOString().split('T')[0], endDate: endDate });
+  const startCycle = (name: string, endDate: string) => {
+    const userId = session?.user.id ?? userProfile.id;
+    const newCycle: Cycle = { 
+        id: crypto.randomUUID(), 
+        name, 
+        startDate: new Date().toISOString().split('T')[0], 
+        endDate: endDate,
+        userId: userId,
+        arenaIds: assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id))
+    };
+    setActiveCycle(newCycle);
+
+    // Sync to Supabase
+    if (userId && userId !== 'placeholder_user') {
+        const snakeCaseCycle = {
+            id: newCycle.id,
+            user_id: userId,
+            name: newCycle.name,
+            start_date: newCycle.startDate,
+            end_date: newCycle.endDate,
+            arena_ids: newCycle.arenaIds
+        };
+        supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
+            if (error) console.error("Supabase start cycle error:", error.message);
+        });
+    }
+  };
   const endCycle = (currentAssets: Asset[], currentActions: Action[]): EndCycleResult => {
-    // ... (rest of the function is correct)
-    const newReport: Report = { id: `report_${Date.now()}`, startDate: '', endDate: '', performanceScore: 0, metrics: { actionsCompleted: 0, totalPlannedActions: 0, arenasInvolved: 0, goalsMet: 0, totalHours: 0 }, highlight: { mostFocusedArena: '', mostRepeatedAction: '' }, assetProgress: [] };
-    const expGained = 0;
+    const cycle = activeCycle;
+    const userId = session?.user.id ?? userProfile.id;
+    const startDate = cycle?.startDate || '2000-01-01'; // Fallback para o primeiro ciclo sem data
+    const endDate = new Date().toISOString().split('T')[0];
+
+    // Filtrar tarefas apenas do usuário atual e dentro do período do ciclo
+    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate);
+    const completedTasks = cycleTasks.filter(t => t.completed);
+
+    // Arenas e Ações envolvidas (baseado nas tarefas do ciclo)
+    const actionIdsInCycle = new Set(cycleTasks.map(t => t.actionId));
+    const involvedActions = currentActions.filter(a => actionIdsInCycle.has(a.id));
+    
+    const arenaIdsInCycle = new Set(involvedActions.map(a => a.arenaId));
+    const involvedArenas = currentAssets.flatMap(as => as.arenas).filter(ar => arenaIdsInCycle.has(ar.id));
+
+    // Performance Score baseado nas tarefas planejadas do ciclo
+    const performanceScore = cycleTasks.length > 0 ? Math.round((completedTasks.length / cycleTasks.length) * 100) : 100;
+
+    // Highlights
+    const arenaCompletionCounts = completedTasks.reduce((acc, task) => {
+        const action = currentActions.find(a => a.id === task.actionId);
+        if (action) acc[action.arenaId] = (acc[action.arenaId] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    let mostFocusedArenaId = '';
+    let maxArenaCompletions = 0;
+    Object.entries(arenaCompletionCounts).forEach(([id, count]) => {
+        if (count > maxArenaCompletions) {
+            maxArenaCompletions = count;
+            mostFocusedArenaId = id;
+        }
+    });
+    const mostFocusedArena = involvedArenas.find(a => a.id === mostFocusedArenaId)?.name || 'Nenhuma';
+
+    const actionCompletionCounts = completedTasks.reduce((acc, task) => {
+        acc[task.actionId] = (acc[task.actionId] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    let mostRepeatedActionId = '';
+    let maxActionCompletions = 0;
+    Object.entries(actionCompletionCounts).forEach(([id, count]) => {
+        if (count > maxActionCompletions) {
+            maxActionCompletions = count;
+            mostRepeatedActionId = id;
+        }
+    });
+    const mostRepeatedAction = currentActions.find(a => a.id === mostRepeatedActionId)?.name || 'Nenhuma';
+
+    const newReport: Report = { 
+        id: crypto.randomUUID(), 
+        startDate, 
+        endDate, 
+        performanceScore, 
+        metrics: { 
+            actionsCompleted: completedTasks.length, 
+            totalPlannedActions: cycleTasks.length, 
+            arenasInvolved: involvedArenas.length, 
+            goalsMet: involvedActions.filter(a => a.actionType === 'Marco').length, 
+            totalHours: Math.round(completedTasks.reduce((sum, t) => sum + (t.duration / 60), 0)) 
+        }, 
+        highlight: { 
+            mostFocusedArena, 
+            mostRepeatedAction 
+        }, 
+        assetProgress: currentAssets.map(asset => {
+            // Se o asset não for 'geral', calcular o progresso se necessário
+            return {
+                asset: asset.name, // ReportsView usa .asset para RadarChart
+                value: asset.level, // ReportsView usa .value para RadarChart
+                assetId: asset.id,
+                startLevel: asset.level,
+                endLevel: asset.level,
+                expGained: 0
+            };
+        }).filter(a => a.assetId !== 'geral')
+    };
+
+    // Salvar relatório e atualizar ciclo no Supabase se logado
+    if (userId && userId !== 'placeholder_user') {
+        const snakeCaseReport = {
+            id: newReport.id,
+            user_id: userId,
+            start_date: newReport.startDate,
+            end_date: newReport.endDate,
+            performance_score: newReport.performanceScore,
+            metrics: newReport.metrics,
+            highlight: newReport.highlight,
+            asset_progress: newReport.assetProgress
+        };
+        
+        // 1. Insert Report
+        supabase.from('reports').insert(snakeCaseReport).then(({error}) => {
+            if (error) console.error("Supabase report insert error:", error.message);
+        });
+
+        // 2. Update/Delete Cycle (Mark as ended)
+        if (cycle?.id) {
+            supabase.from('cycles').update({ end_date: endDate }).eq('id', cycle.id).then(({ error }) => {
+                if (error) console.error("Supabase cycle update error:", error.message);
+            });
+        }
+    }
+
+    const expGained = completedTasks.length * 10;
+    
+    // Encerrar ciclo ativo
+    setActiveCycle(null);
+    
+    // Adicionar relatório à lista
+    setReports(prev => [newReport, ...prev]);
+
     return { report: newReport, expGained };
   };
 
@@ -553,7 +785,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
   const addChecklistItem = (text: string) => {
     if (!text.trim()) return;
-    const newItem: ChecklistItem = { id: `cl_${Date.now()}`, text, completed: false };
+    const newItem: ChecklistItem = { id: crypto.randomUUID(), text, completed: false };
     setChecklistItems(prev => [...prev, newItem]);
   };
   const updateChecklistItem = (id: string, text: string) => {
@@ -566,12 +798,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const updateAssetSlotValue = (assetId: string, slotId: string, value: SlotValue) => {
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, slots: asset.slots.map(slot => slot.id === slotId ? { ...slot, value } : slot) } : asset));
     const userId = session?.user.id ?? userProfile.id;
-    if (userId) supabase.from('asset_slots').upsert({ id: slotId, user_id: userId, value: JSON.stringify(value) }).then(({ error }) => { if (error) console.error("Supabase slot update error:", error.message); });
+    if (userId) {
+        // Correct upsert for asset_slots: use user_id and slot_id as composite key or unique identifiers
+        supabase.from('asset_slots').upsert({ 
+            slot_id: slotId, 
+            user_id: userId, 
+            value: typeof value === 'object' ? JSON.stringify(value) : String(value) 
+        }, { onConflict: 'user_id,slot_id' }).then(({ error }) => { 
+            if (error) console.error("Supabase slot update error:", error.message); 
+        });
+    }
   };
 
   const getArenas = () => assets.flatMap(asset => asset.arenas);
   const addArena = (assetId: string, arenaData: Pick<Arena, 'name' | 'description' | 'icon'>): Arena => {
-    const newArena: Arena = { ...arenaData, id: `arena_${Date.now()}`, assetId, actionIds: [], isArchived: false };
+    const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
     const userId = session?.user.id ?? userProfile.id;
     if (userId) {
@@ -587,6 +828,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         ...asset,
         arenas: asset.arenas.map(arena => arena.id === arenaId ? { ...arena, ...arenaData } : arena)
     })));
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        const snakeCaseData = mapToSnakeCase(arenaData);
+        supabase.from('arenas').update(snakeCaseData).eq('id', arenaId).then(({error}) => { 
+            if (error) console.error("Supabase update arena error:", error.message);
+        });
+    }
   };
   const deleteArena = (arenaId: string) => {
      setAssets(prevAssets => prevAssets.map(asset => ({
@@ -594,6 +842,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         arenas: asset.arenas.filter(arena => arena.id !== arenaId)
     })));
     setActions(prevActions => prevActions.filter(action => action.arenaId !== arenaId));
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        supabase.from('arenas').delete().eq('id', arenaId).then(({error}) => { 
+            if (error) console.error("Supabase delete arena error:", error.message);
+        });
+    }
   };
   const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
   const getAssetForAction = (actionId: string): Asset | undefined => {
@@ -605,7 +859,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const addAction = (actionData: Omit<Action, 'id'>): Action => {
-    const newAction: Action = { ...actionData, id: `action_${Date.now()}` };
+    const newAction: Action = { ...actionData, id: crypto.randomUUID() };
     setActions(prev => [...prev, newAction]);
     setAssets(prevAssets => prevAssets.map(asset => {
         const arena = asset.arenas.find(ar => ar.id === newAction.arenaId);
@@ -617,10 +871,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         return asset;
     }));
+
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        const snakeCaseData = { ...mapToSnakeCase(newAction), user_id: userId };
+        supabase.from('actions').insert(snakeCaseData).then(({error}) => { 
+            if (error) console.error("Supabase add action error:", error.message);
+        });
+    }
+
     return newAction;
   };
   const updateAction = (actionId: string, actionData: Partial<Action>) => {
     setActions(prev => prev.map(a => a.id === actionId ? { ...a, ...actionData } : a));
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        const snakeCaseData = mapToSnakeCase(actionData);
+        supabase.from('actions').update(snakeCaseData).eq('id', actionId).then(({error}) => { 
+            if (error) console.error("Supabase update action error:", error.message);
+        });
+    }
   };
   const deleteAction = (actionId: string) => {
     setActions(prev => prev.filter(a => a.id !== actionId));
@@ -632,6 +902,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             actionIds: arena.actionIds.filter(id => id !== actionId)
         }))
     })));
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        supabase.from('actions').delete().eq('id', actionId).then(({error}) => { 
+            if (error) console.error("Supabase delete action error:", error.message);
+        });
+    }
   };
   
   const scheduleMultipleTasks = (actionId: string, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
@@ -642,7 +918,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       if (!action) return undefined;
 
       const newTask: ScheduledTask = {
-        id: `task_${Date.now()}`,
+        id: crypto.randomUUID(),
         actionId: actionId,
         date: date,
         startTime: startTime,
@@ -651,6 +927,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       };
 
       setTasks(prevTasks => [...prevTasks, newTask]);
+
+      const userId = session?.user.id ?? userProfile.id;
+      if (userId) {
+          const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+          supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+              if (error) console.error("Supabase schedule task error:", error.message);
+          });
+      }
+
       return newTask;
   };
   const scheduleAndCompleteNow = (actionId: string) => {
@@ -659,10 +944,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const now = new Date();
     const date = now.toISOString().split('T')[0];
-    const startTime = now.getHours() * 60 + now.getMinutes();
+    const nowInMinutes = now.getHours() * 60 + now.getMinutes();
+    // O horário de início retrocede para que o fim da ação seja exatamente AGORA
+    const startTime = Math.max(0, nowInMinutes - action.duration);
 
     const newTask: ScheduledTask = {
-        id: `task_${Date.now()}`,
+        id: crypto.randomUUID(),
         actionId: actionId,
         date: date,
         startTime: startTime,
@@ -671,7 +958,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
-    // Optionally give XP/rewards here
+    
+    // If it's today, add to daily commitment so it shows in SITREP
+    if (date === dailyCommitment.date) {
+        setDailyCommitmentState(prev => ({
+            ...prev,
+            taskIds: [...prev.taskIds, newTask.id]
+        }));
+    }
+
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+        supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+            if (error) console.error("Supabase schedule task now error:", error.message);
+        });
+    }
   };
   const scheduleAndCompleteMilestoneNow = (actionId: string) => {
     const action = getActionById(actionId);
@@ -680,7 +982,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const alreadyExists = tasks.some(t => t.actionId === actionId);
     if (alreadyExists) {
         console.warn("Milestone already scheduled/completed");
-        // Maybe just complete it if it exists and is not completed
         const existingTask = tasks.find(t => t.actionId === actionId);
         if (existingTask && !existingTask.completed) {
             toggleTaskCompletion(existingTask.id);
@@ -690,10 +991,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const now = new Date();
     const date = now.toISOString().split('T')[0];
-    const startTime = now.getHours() * 60 + now.getMinutes();
+    const nowInMinutes = now.getHours() * 60 + now.getMinutes();
+    // O horário de início retrocede para que o fim da ação seja exatamente AGORA
+    const startTime = Math.max(0, nowInMinutes - action.duration);
 
     const newTask: ScheduledTask = {
-        id: `task_${Date.now()}`,
+        id: crypto.randomUUID(),
         actionId: actionId,
         date: date,
         startTime: startTime,
@@ -702,11 +1005,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
+    
+    // If it's today, add to daily commitment
+    if (date === dailyCommitment.date) {
+        setDailyCommitmentState(prev => ({
+            ...prev,
+            taskIds: [...prev.taskIds, newTask.id]
+        }));
+    }
+
     setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
     addFeedEvent({
         type: 'MILESTONE_COMPLETED',
         content: { title: action.name, icon: action.icon }
     });
+
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+        supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+            if (error) console.error("Supabase schedule milestone now error:", error.message);
+        });
+    }
   };
   const completeTutorialMission = () => {
     const tutorialTask = tasks.find(t => t.actionId === TUTORIAL_ACTION_ID);
@@ -718,6 +1038,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
   const deleteTask = (taskId: string) => {
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        supabase.from('scheduled_tasks').delete().eq('id', taskId).then(({ error }) => {
+            if (error) console.error("Supabase delete task error:", error.message);
+        });
+    }
   };
   const returnTaskToPool = (taskId: string) => {
     deleteTask(taskId);
@@ -728,12 +1054,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         ? { ...task, date: newDate, startTime: newStartTime }
         : task
     ));
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId) {
+        supabase.from('scheduled_tasks')
+            .update({ date: newDate, start_time: newStartTime })
+            .eq('id', taskId)
+            .then(({ error }) => {
+                if (error) console.error("Supabase reschedule task error:", error.message);
+            });
+    }
   };
   const toggleTaskCompletion = (taskId: string) => {
     setTasks(prevTasks => {
         const newTasks = prevTasks.map(task => {
             if (task.id === taskId) {
                 const updatedTask = { ...task, completed: !task.completed };
+
+                // Update in daily commitment if it exists there
+                if (dailyCommitment.taskIds.includes(taskId)) {
+                    // This will trigger a re-render of SITREP since dailyCommitment is state
+                    setDailyCommitmentState(prev => ({ ...prev }));
+                }
 
                 // If we are completing a milestone, trigger achievement
                 if (updatedTask.completed) {
@@ -746,6 +1087,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         });
                     }
                 }
+
+                // Update in Supabase
+                const userId = session?.user.id ?? userProfile.id;
+                if (userId) {
+                    supabase.from('scheduled_tasks')
+                        .update({ completed: updatedTask.completed })
+                        .eq('id', taskId)
+                        .then(({ error }) => {
+                            if (error) console.error("Supabase toggle task completion error:", error.message);
+                        });
+                }
+
                 return updatedTask;
             }
             return task;
@@ -817,6 +1170,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const addClanMember = async (memberId: string) => {
       if (!clan) return;
+
+      const { count, error: countError } = await supabase
+          .from('clan_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('clan_id', clan.id);
+
+      if (countError) { console.error("Error checking clan size:", countError.message); return; }
+
+      if (count !== null && count >= MAX_CLAN_MEMBERS) {
+          alert(`O clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+          return;
+      }
+
       const { error } = await supabase.from('clan_members').insert({ user_id: memberId, clan_id: clan.id, role: 'member'});
       if (error) { console.error("Error adding member:", error.message); return; }
       
@@ -838,6 +1204,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (clan) return; 
     const userId = session ? session.user.id : userProfile.id;
     if (!userId) { console.error("User ID not found"); return; }
+
+    const { count, error: countError } = await supabase
+        .from('clan_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('clan_id', clanToJoin.id);
+
+    if (countError) { console.error("Error checking clan size:", countError.message); return; }
+
+    if (count !== null && count >= MAX_CLAN_MEMBERS) {
+        alert(`Este clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+        return;
+    }
 
     const { error } = await supabase.from('clan_members').insert({ user_id: userId, clan_id: clanToJoin.id, role: 'member'});
     if (error) { console.error("Error joining clan:", error.message); return; }
@@ -884,7 +1262,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, setAchievementUnlocked, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, addSeason, updateSeason, addSeasonMission }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, setAchievementUnlocked, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, addSeason, updateSeason, addSeasonMission }}>
       {children}
     </GameContext.Provider>
   );

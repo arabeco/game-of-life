@@ -32,8 +32,13 @@ const notificationModes: { id: NotificationMode, name: string, icon: string, des
 
 const privacyModes: PrivacyMode[] = ['Todos', 'Amigos', 'Personalizado', 'Ninguém'];
 
-const NotificationCard: React.FC<{ icon: React.ReactNode, title: string, time?: string, message: string }> = ({ icon, title, time, message }) => (
-    <GlassCard variant="neutral" className="p-3 animate-fade-in">
+const NotificationCard: React.FC<{ icon: React.ReactNode, title: string, time?: string, message: string, fixedAtTop?: boolean, stackIndex?: number }> = ({ icon, title, time, message, fixedAtTop = true, stackIndex = 0 }) => {
+    const topClasses = ['top-[88px]', 'top-[168px]', 'top-[248px]'];
+    const topClass = topClasses[Math.max(0, Math.min(stackIndex, topClasses.length - 1))];
+    const fixedClasses = fixedAtTop ? `fixed left-1/2 -translate-x-1/2 z-[90] w-[min(360px,92vw)] ${topClass}` : '';
+
+    return (
+    <GlassCard variant="neutral" className={`p-3 animate-fade-in ${fixedClasses}`}>
         <div className="flex items-start space-x-3">
             <div className="mt-1">{icon}</div>
             <div className="flex-grow">
@@ -46,7 +51,8 @@ const NotificationCard: React.FC<{ icon: React.ReactNode, title: string, time?: 
             <button className="p-1 text-gray-500 hover:text-white"><XIcon className="w-4 h-4" /></button>
         </div>
     </GlassCard>
-);
+    );
+};
 
 const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSave: (mode: NotificationMode) => void, onClose: () => void }> = ({ currentMode, onSave, onClose }) => {
     const [selectedMode, setSelectedMode] = useState<NotificationMode>(currentMode);
@@ -56,9 +62,15 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
     const renderPreview = () => {
         switch(selectedMode) {
             case 'Silencioso': return (<div className="text-center text-gray-400 space-y-2 p-4"><svg viewBox="0 0 100 20" className="w-24 mx-auto"><path d="M 0 10 Q 25 10, 50 10 T 100 10" stroke="currentColor" strokeWidth="2" fill="none"/></svg><p className="text-sm">{notificationModes.find(m => m.id === 'Silencioso')?.description}</p></div>);
-            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-yellow-400" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'"/>);
-            case 'Essencial': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-blue-400" />} title="Alerta de Compromisso" time="12:00" message="Reunião de Alinhamento em 2h."/>);
-            case 'Militar': return (<div className="space-y-2"><NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento Tático. Verifique o Grid ou o Sitrep."/><NotificationCard icon={<ClockIcon className="w-5 h-5 text-orange-400" />} title="Radar de Batalha" time="09:00" message="Próxima ação: Treino de Força (11:00). Prepare-se."/><NotificationCard icon={<ClockIcon className="w-5 h-5 text-yellow-400" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2."/></div>);
+            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-yellow-400" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'" fixedAtTop stackIndex={0} />);
+            case 'Essencial': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-blue-400" />} title="Alerta de Compromisso" time="12:00" message="Reunião de Alinhamento em 2h." fixedAtTop stackIndex={0} />);
+            case 'Militar': return (
+                <>
+                    <NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento Tático. Verifique o Grid ou o Sitrep." fixedAtTop stackIndex={0} />
+                    <NotificationCard icon={<ClockIcon className="w-5 h-5 text-orange-400" />} title="Radar de Batalha" time="09:00" message="Próxima ação: Treino de Força (11:00). Prepare-se." fixedAtTop stackIndex={1} />
+                    <NotificationCard icon={<ClockIcon className="w-5 h-5 text-yellow-400" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2." fixedAtTop stackIndex={2} />
+                </>
+            );
             default: return null;
         }
     };
@@ -718,18 +730,26 @@ const GeralTab: React.FC = () => {
                  >
                     📊 FEEDBACK BETA
                  </button>
-                 <button
-                    onClick={() => setCodexOpen(true)}
-                    className={`w-full py-3 rounded-2xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest ${isPremium ? 'text-[var(--gold)]' : 'opacity-60'}`}
-                 >
+                <button
+                    onClick={() => {
+                        if (!isPremium) return;
+                        setCodexOpen(true);
+                    }}
+                    disabled={!isPremium}
+                    className={`w-full py-3 rounded-2xl border border-white/10 bg-black/20 font-bold text-xs tracking-widest ${isPremium ? 'text-[var(--gold)] hover:bg-black/30' : 'opacity-60 cursor-not-allowed'}`}
+                >
                     📚 CODEXES
-                 </button>
-                 <button
-                    onClick={() => setLinksOpen(true)}
-                    className="w-full py-3 rounded-2xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest text-[var(--gold)]"
-                 >
+                </button>
+                <button
+                    onClick={() => {
+                        if (!isPremium) return;
+                        setLinksOpen(true);
+                    }}
+                    disabled={!isPremium}
+                    className={`w-full py-3 rounded-2xl border border-white/10 bg-black/20 font-bold text-xs tracking-widest ${isPremium ? 'text-[var(--gold)] hover:bg-black/30' : 'opacity-60 cursor-not-allowed'}`}
+                >
                     🔗 VÍNCULOS
-                 </button>
+                </button>
             </div>
              <div className="text-center pt-4">
                  <button onClick={() => setModal('delete')} className="text-red-500 hover:text-red-400 text-sm font-semibold">Deletar Conta</button>
@@ -745,8 +765,8 @@ const GeralTab: React.FC = () => {
             {modal === 'privacy' && <ConfirmationModal title="Modo de Privacidade" message="Função ainda não implementada." onConfirm={() => setModal(null)} onCancel={() => setModal(null)} />}
             {modal === 'delete' && <ConfirmationModal title="Deletar Conta" message="Tem certeza? Esta ação é irreversível." onConfirm={() => alert("Conta deletada!")} onCancel={() => setModal(null)} />}
             {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}
-            {isCodexOpen && <CodexModal onClose={() => setCodexOpen(false)} />}
-            {isLinksOpen && <LinksModal onClose={() => setLinksOpen(false)} />}
+            {isPremium && isCodexOpen && <CodexModal onClose={() => setCodexOpen(false)} />}
+            {isPremium && isLinksOpen && <LinksModal onClose={() => setLinksOpen(false)} />}
             {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
         </div>
     );
@@ -816,11 +836,11 @@ const NobrezaHierarchyView: React.FC = () => {
     const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);
     const nextRankIndex = nobilityRanks.findIndex(r => r.id === userProfile.nobility.rankId) + 1;
     const nextRank = nobilityRanks[nextRankIndex];
-    const levelForCurrentRank = currentRank?.levelRequired || 0;
-    const levelForNextRank = nextRank?.levelRequired || (currentRank?.levelRequired || 0) + 10;
-    const progressInRank = userProfile.level - levelForCurrentRank;
-    const levelsToNextRank = levelForNextRank - levelForCurrentRank;
-    const progressPercentage = levelsToNextRank > 0 ? (progressInRank / levelsToNextRank) * 100 : 100;
+    const expForCurrentRank = currentRank?.expTotalRequired || 0;
+    const expForNextRank = nextRank?.expTotalRequired || expForCurrentRank;
+    const progressInRank = userProfile.nobility.exp - expForCurrentRank;
+    const expToNextRank = expForNextRank - expForCurrentRank;
+    const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
 
     return (
         <div className="space-y-6">
@@ -829,8 +849,8 @@ const NobrezaHierarchyView: React.FC = () => {
                 <h2 className="text-3xl font-black" style={{ color: 'var(--gold)' }}>{currentRank?.name || 'N/A'}</h2>
                 <div className="mt-4">
                     <div className="flex justify-between text-xs font-bold">
-                        <span>NÍVEL ATUAL: {userProfile.level}</span>
-                        <span>{nextRank ? `PRÓXIMO: NÍVEL ${nextRank.levelRequired}`: 'Nível Máximo'}</span>
+                        <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
+                        <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
                     </div>
                     <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
                         <div className="bg-[var(--gold)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div>
@@ -848,7 +868,7 @@ const NobrezaHierarchyView: React.FC = () => {
                         <GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--gold)]' : 'opacity-70'}`}>
                             <div className="flex justify-between items-center">
                                 <span className="font-bold">{rank.name}</span>
-                                <span className="text-sm text-gray-400">Nível {rank.levelRequired}</span>
+                                <span className="text-sm text-gray-400">{rank.expTotalRequired.toLocaleString('pt-BR')} XP</span>
                             </div>
                             <div className="flex justify-between items-center text-[10px] font-bold text-white/60 mt-1">
                                 <span>{rank.expTotalRequired.toLocaleString('pt-BR')} XP total</span>
@@ -886,11 +906,11 @@ const MissionsTab: React.FC = () => {
     const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);
     const nextRankIndex = nobilityRanks.findIndex(r => r.id === userProfile.nobility.rankId) + 1;
     const nextRank = nobilityRanks[nextRankIndex];
-    const levelForCurrentRank = currentRank?.levelRequired || 0;
-    const levelForNextRank = nextRank?.levelRequired || (currentRank?.levelRequired || 0) + 10;
-    const progressInRank = userProfile.level - levelForCurrentRank;
-    const levelsToNextRank = levelForNextRank - levelForCurrentRank;
-    const progressPercentage = levelsToNextRank > 0 ? (progressInRank / levelsToNextRank) * 100 : 100;
+    const expForCurrentRank = currentRank?.expTotalRequired || 0;
+    const expForNextRank = nextRank?.expTotalRequired || expForCurrentRank;
+    const progressInRank = userProfile.nobility.exp - expForCurrentRank;
+    const expToNextRank = expForNextRank - expForCurrentRank;
+    const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
 
     if (isHierarchyVisible) return (<div><button onClick={() => setIsHierarchyVisible(false)} className="mb-4 text-sm font-bold text-gray-400 hover:text-white">&larr; Voltar</button><NobrezaHierarchyView /></div>);
     
@@ -904,8 +924,8 @@ const MissionsTab: React.FC = () => {
                     <h2 className="text-3xl font-black" style={{ color: 'var(--gold)' }}>{currentRank?.name || 'N/A'}</h2>
                     <div className="mt-4">
                         <div className="flex justify-between text-xs font-bold">
-                            <span>NÍVEL ATUAL: {userProfile.level}</span>
-                            <span>{nextRank ? `PRÓXIMO: NÍVEL ${nextRank.levelRequired}`: 'Nível Máximo'}</span>
+                            <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
+                            <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
                         </div>
                         <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
                             <div className="bg-[var(--gold)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div>

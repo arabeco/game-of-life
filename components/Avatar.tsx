@@ -48,13 +48,16 @@ export const Sovereign: React.FC<SovereignProps> = ({ sovereignConfig, className
     
     const hairFilter = hexToCssFilter(hairColor);
     const showHair = (!helmetUrl || helmet === 'none');
+    const isBelowHairAccessory = head_under === 'glasses' || head_under === 'aviators' || head_under === 'mask';
+    const headUnderBelowHairUrl = isBelowHairAccessory ? headUnderUrl : null;
+    const headUnderAboveHairUrl = !isBelowHairAccessory ? headUnderUrl : null;
 
     return (
         <div className={`relative w-full h-full ${className}`}>
             {/* Body Layer with Colorization using CSS Mask */}
             {bodyUrl && (
                 <div
-                    className="absolute inset-0 w-full h-full"
+                    className="absolute inset-0 w-full h-full z-0"
                     style={{
                         backgroundColor: skinTone,
                         maskImage: `url(${bodyUrl})`,
@@ -70,16 +73,17 @@ export const Sovereign: React.FC<SovereignProps> = ({ sovereignConfig, className
             )}
             
             {/* Face Features Layer */}
-            {bodyUrl && <img src={FACE_FEATURES_URL} alt="Face" className="absolute inset-0 w-full h-full object-contain" />}
+            {bodyUrl && <img src={FACE_FEATURES_URL} alt="Face" className="absolute inset-0 w-full h-full object-contain z-10" />}
 
 
             {/* Rendered Layers - These go on top of the base layer */}
-            {outfitUrl && <img src={outfitUrl} alt="Outfit" className="absolute inset-0 w-full h-full object-contain" />}
-            {headUnderUrl && <img src={headUnderUrl} alt="Head Under" className="absolute inset-0 w-full h-full object-contain" />}
-            {showHair && hairUrl && <img src={hairUrl} alt="Hair" className="absolute inset-0 w-full h-full object-contain" style={hairFilter} />}
-            {helmetUrl && <img src={helmetUrl} alt="Helmet" className="absolute inset-0 w-full h-full object-contain" />}
-            {headOverUrl && <img src={headOverUrl} alt="Head Over" className="absolute inset-0 w-full h-full object-contain" />}
-            {artifactUrl && <img src={artifactUrl} alt="Artifact" className="absolute inset-0 w-full h-full object-contain" />}
+            {outfitUrl && <img src={outfitUrl} alt="Outfit" className="absolute inset-0 w-full h-full object-contain z-20" />}
+            {headUnderBelowHairUrl && <img src={headUnderBelowHairUrl} alt="Head Under" className="absolute inset-0 w-full h-full object-contain z-30" />}
+            {showHair && hairUrl && <img src={hairUrl} alt="Hair" className="absolute inset-0 w-full h-full object-contain z-40" style={hairFilter} />}
+            {headUnderAboveHairUrl && <img src={headUnderAboveHairUrl} alt="Head Under" className="absolute inset-0 w-full h-full object-contain z-45" />}
+            {helmetUrl && <img src={helmetUrl} alt="Helmet" className="absolute inset-0 w-full h-full object-contain z-50" />}
+            {headOverUrl && <img src={headOverUrl} alt="Head Over" className="absolute inset-0 w-full h-full object-contain z-60" />}
+            {artifactUrl && <img src={artifactUrl} alt="Artifact" className="absolute inset-0 w-full h-full object-contain z-70" />}
         </div>
     );
 };

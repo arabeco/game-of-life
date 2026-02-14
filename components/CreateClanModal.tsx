@@ -4,6 +4,7 @@ import { GlassCard } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
 import { IconPickerModal } from './IconPickerModal';
 import { ClanType, RecruitmentStatus } from '../types';
+import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
 
 const clanTypes: ClanType[] = ['Casual', 'Focado', 'Competitivo'];
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
@@ -16,13 +17,14 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const [clanType, setClanType] = useState<ClanType>('Casual');
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+    const [backgroundUrl, setBackgroundUrl] = useState(DEFAULT_SANCTUARY_BACKGROUND);
 
     const handleSave = async () => {
         if (!name.trim()) {
             alert("O nome do clã não pode estar vazio.");
             return;
         }
-        await createClan({ name, icon, description, clan_type: clanType, recruitment_status: recruitmentStatus });
+        await createClan({ name, icon, description, clan_type: clanType, recruitment_status: recruitmentStatus, backgroundUrl });
         onClose();
     };
 
@@ -64,6 +66,35 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     {recruitmentOptions.map(opt => (
                                         <button key={opt} onClick={() => setRecruitmentStatus(opt)} className={`w-full py-1 text-sm rounded-lg ${recruitmentStatus === opt ? 'bg-white/10' : 'text-gray-400'}`}>{opt}</button>
                                     ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400">Fundo do Santuário</label>
+                                <div className="mt-2 rounded-xl overflow-hidden border border-white/10">
+                                    <div
+                                        className="aspect-[16/9] w-full bg-cover bg-center"
+                                        style={{ backgroundImage: `url(${backgroundUrl})` }}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    {SANCTUARY_BACKGROUND_OPTIONS.map(option => {
+                                        const isSelected = backgroundUrl === option.value;
+                                        return (
+                                            <button
+                                                key={option.id}
+                                                onClick={() => setBackgroundUrl(option.value)}
+                                                className={`rounded-lg overflow-hidden border ${isSelected ? 'border-white' : 'border-white/10'}`}
+                                            >
+                                                <div
+                                                    className="aspect-[16/9] w-full bg-cover bg-center"
+                                                    style={{ backgroundImage: `url(${option.value})` }}
+                                                />
+                                                <div className="text-[10px] text-center py-1 text-gray-300 bg-black/40">
+                                                    {option.name}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>

@@ -15,16 +15,30 @@ export const SKINS_DATA: Skin[] = [
 ];
 
 export const BORDERS_DATA: Skin[] = [
-  { id: 'DISCIPLINADO', name: 'Disciplinado', color: '#c0c0c0', imageUrl: 'https://i.imgur.com/dQxDD1A.png' },
-  { id: 'GELIDA', name: 'Gélida', color: '#a3c2d1', imageUrl: 'https://i.imgur.com/h9yV7lP.png' },
+  { id: 'DISCIPLINADO', name: 'Disciplinado', color: '#c0c0c0', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borada_disciplinado.png' },
+  { id: 'GRAO_MESTRE', name: 'Grão Mestre', color: '#b3b3b3', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_gm.png' },
+  { id: 'IMPARAVEL', name: 'Imparável', color: '#d4af37', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_imparavel.png' },
+  { id: 'LENDA_VIVA', name: 'Lenda Viva', color: '#8fd0ff', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_lendaviva.png' },
+  { id: 'POPULAR', name: 'Popular', color: '#ff8fd4', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_popular.png' },
 ];
 
 export const BANNERS_DATA = [
-    { id: 'grao_mestre', name: 'Grão Mestre', url: 'https://i.imgur.com/8d23RLG.png' },
-    { id: 'disciplinado', name: 'Disciplinado', url: 'https://i.imgur.com/L7d2nZ1.png' },
-    { id: 'disciplinado_guerreiro', name: 'Disciplinado (Guerreiro)', url: 'https://i.imgur.com/vnYNisP.png' },
-    { id: 'soberano', name: 'Soberano', url: 'https://i.imgur.com/Y38s2ms.png' },
+    { id: 'grao_mestre', name: 'Grão Mestre', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_gm.png' },
+    { id: 'disciplinado', name: 'Disciplinado', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_disciplinado.png' },
+    { id: 'imparavel', name: 'Imparável', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_imparavel.png' },
+    { id: 'lendaviva', name: 'Lenda Viva', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_lendaviva.png' },
+    { id: 'popular', name: 'Popular', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_poopular.png' },
 ];
+
+export const SANCTUARY_BACKGROUND_OPTIONS = [
+  { id: 'garden', name: 'Jardim', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/garden.jpg' },
+  { id: 'garden-aurora', name: 'Jardim Aurora', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenaurora.jpg' },
+  { id: 'garden-cyber', name: 'Jardim Cyber', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardencyber.jpg' },
+  { id: 'garden-ember', name: 'Jardim Ember', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenember.jpg' },
+  { id: 'garden-frost', name: 'Jardim Frost', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenfrost.jpg' },
+];
+
+export const DEFAULT_SANCTUARY_BACKGROUND = SANCTUARY_BACKGROUND_OPTIONS[0].value;
 
 export const MOODS_DATA: Mood[] = [
     { label: "Vergonha", min: 0, max: 5, color: "linear-gradient(90deg, #6b1e1e, #8b2b2b)", trackStart: "#6b1e1e", trackEnd: "#8b2b2b" },

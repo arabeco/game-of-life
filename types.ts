@@ -170,6 +170,7 @@ export interface Clan {
     name: string;
     icon: string;
     description: string;
+    backgroundUrl?: string;
     clan_type: ClanType;
     recruitment_status: RecruitmentStatus;
     exp: number;

@@ -239,7 +239,7 @@ export interface GameContextType {
   resetDailyCommitment: () => void;
   openChest: (chestType: ChestType) => boolean;
   createClan: (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => Promise<void>;
-  updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description'>>) => Promise<void>;
+  updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => Promise<void>;
   leaveClan: () => Promise<void>;
   transferLeadershipAndLeave: (newLeaderId: string) => Promise<void>;
   deleteClan: () => Promise<void>;
@@ -811,15 +811,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   useEffect(() => {
     const displayedAssets = assets.filter(a => a.id !== 'geral');
     const totalLevel = displayedAssets.reduce((sum, asset) => sum + asset.level, 0);
+
+    if (userProfile.level !== totalLevel) {
+        updateUserProfile({ level: totalLevel });
+    }
+  }, [assets, userProfile.level]);
+
+  useEffect(() => {
     const oldRankId = userProfile.nobility.rankId;
-    const newRank = nobilityRanks.slice().reverse().find(r => totalLevel >= r.levelRequired);
+    const currentExp = userProfile.nobility.exp || 0;
+    const newRank = nobilityRanks.slice().reverse().find(r => currentExp >= r.expTotalRequired);
     const newRankId = newRank ? newRank.id : oldRankId;
 
-    if (userProfile.level !== totalLevel || oldRankId !== newRankId) {
-        if (newRank && newRank.id !== oldRankId) setAchievementUnlocked({ type: 'PLAYER_RANK_UP', data: newRank });
-        updateUserProfile({ level: totalLevel, nobility: { ...userProfile.nobility, rankId: newRankId } });
+    if (oldRankId !== newRankId) {
+        if (newRank) setAchievementUnlocked({ type: 'PLAYER_RANK_UP', data: newRank });
+        updateUserProfile({ nobility: { ...userProfile.nobility, rankId: newRankId } });
     }
-  }, [assets, userProfile.level, userProfile.nobility.rankId]);
+  }, [userProfile.nobility.exp, userProfile.nobility.rankId]);
 
   const updateUserProfile = (profileData: Partial<UserProfile>) => {
     setUserProfile(prev => ({ ...prev, ...profileData }));
@@ -840,6 +848,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return false;
     }
 
+    const nextTotalLevel = assets.filter(a => a.id !== 'geral').reduce((sum, asset) => {
+        const nextLevel = levels[asset.id] ?? asset.level;
+        return sum + nextLevel;
+    }, 0);
+
     setAssets(prev => prev.map(asset => ({
         ...asset,
         level: levels[asset.id] || asset.level,
@@ -848,7 +861,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             : asset.levelDescriptions
     })));
 
-    updateUserProfile({ lastLevelUpdate: Date.now() });
+    updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
     return true;
   };
 
@@ -1518,7 +1531,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     await loadClanAndMembers(clanData.id);
   };
 
-  const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description'>>) => {
+  const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => {
       const { error } = await supabase.from('clans').update(mapToSnakeCase(data)).eq('id', clanId);
       if (error) { console.error("Error updating clan:", error.message); return; }
       setClan(prev => (prev && prev.id === clanId) ? { ...prev, ...data } : prev);

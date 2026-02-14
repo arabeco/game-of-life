@@ -1,18 +1,46 @@
 import React from 'react';
+import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { XIcon } from './Icons';
 
 interface ItemDetailModalProps {
-    item: { name: string; url?: string; imageUrl?: string; color?: string };
+    item: { id: string; name: string; url?: string; imageUrl?: string; color?: string };
     type: string;
     onClose: () => void;
 }
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, type, onClose }) => {
+    const { userProfile, updateUserProfile } = useGame();
     const imageUrl = item.url || item.imageUrl;
+    const canEquip = ['Skin', 'Borda', 'Banner', 'Artefato'].includes(type);
+    const isEquipped = type === 'Skin'
+        ? userProfile.skin === item.id
+        : type === 'Borda'
+            ? userProfile.border === item.id
+            : type === 'Banner'
+                ? userProfile.bannerUrl === imageUrl
+                : type === 'Artefato'
+                    ? (userProfile.sovereign?.artifact || 'none') === item.id
+                    : false;
 
     const handleAction = (action: string) => {
         alert(`${action} não implementado.`);
+    };
+
+    const handleEquip = () => {
+        if (!canEquip || isEquipped) return;
+
+        if (type === 'Skin') {
+            updateUserProfile({ skin: item.id });
+        } else if (type === 'Borda') {
+            updateUserProfile({ border: item.id });
+        } else if (type === 'Banner') {
+            updateUserProfile({ bannerUrl: imageUrl || '' });
+        } else if (type === 'Artefato') {
+            updateUserProfile({ sovereign: { ...userProfile.sovereign, artifact: item.id } });
+        }
+
+        onClose();
     };
 
     return (
@@ -33,7 +61,16 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, type, on
                     )}
                 </div>
                 
-                <div className="grid grid-cols-3 gap-2">
+                <div className={`grid ${canEquip ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
+                    {canEquip && (
+                        <button
+                            onClick={handleEquip}
+                            disabled={isEquipped}
+                            className={`py-2 rounded-xl text-sm font-semibold ${isEquipped ? 'bg-black/30 text-gray-500 cursor-not-allowed' : 'luxe-gold-button'}`}
+                        >
+                            {isEquipped ? 'EQUIPADO' : 'EQUIPAR'}
+                        </button>
+                    )}
                     <button onClick={() => handleAction('Doar')} className="py-2 rounded-xl luxe-button-secondary text-sm">Doar</button>
                     <button onClick={() => handleAction('Excluir')} className="py-2 rounded-xl bg-red-800/50 text-red-300 hover:bg-red-800/80 text-sm">Excluir</button>
                     <button onClick={onClose} className="py-2 rounded-xl luxe-button-primary text-sm">OK</button>

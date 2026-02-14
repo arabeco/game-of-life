@@ -7,6 +7,9 @@ interface BackgroundImageSelectionModalProps {
     currentBackground: string;
     onClose: () => void;
     onSelect: (backgroundValue: string) => void;
+    options?: Array<{ id: string; name: string; value: string }>;
+    title?: string;
+    showUpload?: boolean;
 }
 
 const BACKGROUND_OPTIONS = [
@@ -16,9 +19,11 @@ const BACKGROUND_OPTIONS = [
     { id: 'bronze', name: 'Bronze', value: 'var(--metal-bronze)' },
 ];
 
-export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionModalProps> = ({ currentBackground, onClose, onSelect }) => {
-    
-    // Placeholder for file upload logic
+export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionModalProps> = ({ currentBackground, onClose, onSelect, options, title, showUpload }) => {
+    const backgroundOptions = options ?? BACKGROUND_OPTIONS;
+    const modalTitle = title ?? 'Selecionar Plano de Fundo';
+    const allowUpload = showUpload ?? true;
+
     const handleFileUpload = () => {
         alert("Upload de imagem ainda não implementado.");
     }
@@ -26,9 +31,9 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Plano de Fundo</h2>
+                <h2 className="text-lg font-bold uppercase tracking-wider text-center">{modalTitle}</h2>
                 <div className="grid grid-cols-2 gap-2 p-2 max-h-64 overflow-y-auto">
-                    {BACKGROUND_OPTIONS.map(bg => {
+                    {backgroundOptions.map(bg => {
                         const isSelected = currentBackground === bg.value;
                         const isUrl = bg.value.startsWith('http');
                         
@@ -51,15 +56,17 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                             </div>
                         )
                     })}
-                    <div className="text-center">
-                        <button 
-                            onClick={handleFileUpload}
-                            className="aspect-[16/9] w-full rounded-lg bg-black/30 border-2 border-dashed border-gray-500 flex flex-col items-center justify-center text-gray-400 hover:border-white hover:text-white transition-colors"
-                        >
-                            <UploadIcon className="w-8 h-8"/>
-                        </button>
-                        <p className="text-xs mt-1">UPLOAD</p>
-                    </div>
+                    {allowUpload && (
+                        <div className="text-center">
+                            <button 
+                                onClick={handleFileUpload}
+                                className="aspect-[16/9] w-full rounded-lg bg-black/30 border-2 border-dashed border-gray-500 flex flex-col items-center justify-center text-gray-400 hover:border-white hover:text-white transition-colors"
+                            >
+                                <UploadIcon className="w-8 h-8"/>
+                            </button>
+                            <p className="text-xs mt-1">UPLOAD</p>
+                        </div>
+                    )}
                 </div>
                  <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">
                     FECHAR

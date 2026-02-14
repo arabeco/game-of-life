@@ -31,7 +31,7 @@ export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style }) => 
                 className="relative w-full h-full rounded-full flex items-center justify-center text-center transition-all"
                 style={{ 
                     backgroundImage: `var(--sephirot-bg-image), var(--sephirot-bg-gradient)`,
-                    backgroundSize: '105%, cover',
+                    backgroundSize: '135%, cover',
                     backgroundPosition: 'center, center',
                     backgroundRepeat: 'no-repeat, no-repeat',
                     boxShadow: `inset 0 0 0 1px var(--sephirot-border-color)`

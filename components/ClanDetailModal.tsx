@@ -10,6 +10,8 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { TransferLeadershipModal } from './TransferLeadershipModal';
 import { ClanMemberCard } from './ClanMemberCard';
 import { AddClanMemberModal } from './AddClanMemberModal';
+import { BackgroundImageSelectionModal } from './BackgroundImageSelectionModal';
+import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
 
 // --- Types ---
 type Zone = 'Árvore' | 'Cristal' | 'Descanso' | 'Jardim' | 'Indefinida';
@@ -176,7 +178,7 @@ const getZoneAndState = (row: number, col: number): { zone: Zone, state: ActionS
 };
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan } = useGame();
+    const { userProfile, enrichedClanMembers, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, updateClan } = useGame();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const [userPlacement, setUserPlacement] = useState<MemberPlacement>({ member: userProfile, gridPos: { row: 4, col: 3 }, state: getZoneAndState(4, 3).state! });
     const [otherPlacements, setOtherPlacements] = useState<MemberPlacement[]>([]);
@@ -186,10 +188,16 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const [subModal, setSubModal] = useState<'manage' | 'leave' | 'transfer' | null>(null);
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
     const [memberToKick, setMemberToKick] = useState<EnrichedClanMember | null>(null);
+    const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
     
     const userClanRole = useMemo(() => {
         return enrichedClanMembers.find(m => m.id === userProfile.id)?.role;
     }, [enrichedClanMembers, userProfile.id]);
+
+    const activeSeason = seasons.find(s => s.is_active);
+    const today = new Date().toISOString().split('T')[0];
+    const canEditBackground = !!activeSeason && activeSeason.start_date === today;
+    const sanctuaryBackground = clan?.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND;
 
     useEffect(() => {
         const allOccupied = new Set<string>([`${userPlacement.gridPos.row},${userPlacement.gridPos.col}`]);
@@ -288,6 +296,12 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             setMemberToKick(null);
         }
     }
+
+    const handleBackgroundSelect = async (value: string) => {
+        if (!clan || !canEditBackground) return;
+        await updateClan(clan.id, { backgroundUrl: value });
+        setIsBackgroundModalOpen(false);
+    };
     
     const [missions, setMissions] = useState([
         { id: 1, title: 'Raid Semanal: Acumular 50h de Foco', progress: 75, pledged: false, totalPledges: 4, requiredPledges: 5 },
@@ -307,9 +321,18 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         <>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <div className="relative w-full max-w-sm m-4 aspect-[9/16] rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <div className="relative w-full h-full rounded-3xl overflow-hidden bg-cover bg-center border border-white/10" style={{ backgroundImage: "url('https://i.imgur.com/nSWKQKL.jpeg')" }}>
+                    <div className="relative w-full h-full rounded-3xl overflow-hidden bg-cover bg-center border border-white/10" style={{ backgroundImage: `url('${sanctuaryBackground}')` }}>
                         <ClanHeader userClanRole={userClanRole} />
                         <button onClick={onClose} className="absolute top-4 right-4 z-40 p-1 rounded-full bg-black/50 hover:bg-black/80"><XIcon className="w-5 h-5"/></button>
+                        {userClanRole === 'leader' && (
+                            <button
+                                onClick={() => canEditBackground && setIsBackgroundModalOpen(true)}
+                                disabled={!canEditBackground}
+                                className={`absolute top-4 left-4 z-40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${canEditBackground ? 'bg-black/50 text-white hover:bg-black/80' : 'bg-black/30 text-gray-400 cursor-not-allowed'}`}
+                            >
+                                {canEditBackground ? 'Editar Fundo' : 'Fundo Bloqueado'}
+                            </button>
+                        )}
 
                         {activeTab === 'santuario' && (
                             <div className="absolute inset-0 grid grid-cols-6 grid-rows-6">
@@ -424,6 +447,16 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             {showGardenModal && <GardenActionModal onSelect={handleGardenActionSelect} onClose={() => setShowGardenModal(false)} />}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
             {subModal === 'manage' && <ClanManagementModal onClose={() => setSubModal(null)} />}
+            {isBackgroundModalOpen && (
+                <BackgroundImageSelectionModal
+                    currentBackground={sanctuaryBackground}
+                    onSelect={handleBackgroundSelect}
+                    onClose={() => setIsBackgroundModalOpen(false)}
+                    options={SANCTUARY_BACKGROUND_OPTIONS}
+                    title="Fundo do Santuário"
+                    showUpload={false}
+                />
+            )}
             {memberToKick && <ConfirmationModal title="Expulsar Membro" message={`Tem certeza que deseja expulsar ${memberToKick.nickname} do clã?`} onConfirm={handleKickMember} onCancel={() => setMemberToKick(null)} />}
             {subModal === 'leave' && (
                 <ConfirmationModal 

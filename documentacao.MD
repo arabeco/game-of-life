@@ -11,13 +11,21 @@ Life OS é um sistema de execução diária com gamificação e ritual. O núcle
 
 O domínio é composto por Assets (áreas macro), Arenas (contextos/projetos), Ações (unidades executáveis), Tarefas Agendadas (instâncias temporais), Ciclos e Relatórios (recortes de performance), além de Perfil/Soberano e estrutura social (Clãs). Esse conjunto sustenta o fluxo diário de planejar, executar, avaliar e evoluir.
 
-## 3. Funcionalidades Atuais
+## 3. Funcionalidades Atuais (Base)
 
-O app oferece CRUD completo de Arenas e Ações, com tipos e dificuldade, persistência local e sincronização com Supabase quando logado. O Planner permite drag & drop, replanejamento, zoom do grid e long press para conclusão com feedback visual. O SITREP diário fecha o ciclo, trava metas e consolida métricas, alimentando evolução de nível e score. A identidade visual reforça o progresso com avatar, skins e UI glassmorphism.
+- Gestão de Ativos com visão em árvore e dossiês por área de vida.
+- Arenas e Ações com tipos (recorrente, compromisso e marco), dificuldade, duração, repetição e ícones.
+- Planner semanal com grid, drag & drop, zoom, replanejamento e pool de ações/marcos.
+- Execução com checklist, long press para conclusão e feedback visual de progresso.
+- SITREP diário e ciclos com fechamento de metas, métricas e evolução de nível/score.
+- Perfil e personalização do Soberano (avatar, humor, skins, bordas, banners, inventário e baús).
+- Social com clãs, busca de aliados e fluxo de solicitações.
+- Sincronização com Supabase quando autenticado.
 
 ## 4. Premium: Codex & Vínculos
 
-O Codex Builder cria templates em modo sandbox com borda de aviso, dados isolados e exportação de JSON sem tocar o conteúdo real do usuário. Vínculos introduz mentoria com convites por arena, cards de pupilos/mentores, slider de satisfação e sinais rápidos (elogio/força/bronca), focando intervenção tática e acompanhamento visual.
+- Codex Builder para criação de templates em sandbox, com exportação de JSON/link sem tocar dados reais.
+- Vínculos de mentoria por arena com convites, cards de pupilos/mentores, slider de satisfação e sinais rápidos.
 
 ## 5. Feedback Beta
 

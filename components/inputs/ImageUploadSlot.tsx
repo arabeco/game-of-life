@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { SlotValueImage } from '../../types';
 import { UploadIcon } from '../Icons';
 import { ImageCropper } from '../ImageCropper';
+import { useGame } from '../../contexts/GameContext';
+import { supabase } from '../../supabaseClient';
 
 interface ImageUploadSlotProps {
     value: SlotValueImage;
@@ -12,11 +14,20 @@ interface ImageUploadSlotProps {
 
 export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChange }) => {
     const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const { userProfile } = useGame();
+    const maxBytes = 2 * 1024 * 1024;
+    const bucketName = 'user-images';
+    const userFolder = userProfile.id && userProfile.id !== 'placeholder_user' ? userProfile.id : 'guest';
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            if (file.size > maxBytes) {
+                alert('Imagem muito grande. Limite de 2MB.');
+                return;
+            }
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImageToCrop(reader.result as string);
@@ -25,16 +36,46 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
         }
     };
     
-    const handleCropComplete = (croppedImageDataUrl: string) => {
-        onChange({ ...value, imageUrl: croppedImageDataUrl });
-        setImageToCrop(null);
+    const uploadDataUrl = async (dataUrl: string, pathPrefix: string) => {
+        if (!(supabase as any)?.storage) return dataUrl;
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        if (blob.size > maxBytes) {
+            alert('Imagem muito grande. Limite de 2MB.');
+            return dataUrl;
+        }
+        const extension = blob.type.split('/')[1] || 'png';
+        const filePath = `${pathPrefix}/${crypto.randomUUID()}.${extension}`;
+        const { error } = await supabase.storage.from(bucketName).upload(filePath, blob, { contentType: blob.type, upsert: true });
+        if (error) {
+            alert('Falha ao enviar imagem.');
+            return dataUrl;
+        }
+        const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+        return data.publicUrl || dataUrl;
+    };
+
+    const handleCropComplete = async (croppedImageDataUrl: string) => {
+        setIsUploading(true);
+        try {
+            const uploadedUrl = await uploadDataUrl(croppedImageDataUrl, `slots/${userFolder}`);
+            onChange({ ...value, imageUrl: uploadedUrl });
+            setImageToCrop(null);
+        } catch {
+            alert('Falha ao enviar imagem.');
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const handleCaptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         onChange({ ...value, caption: event.target.value });
     };
 
-    const triggerFileSelect = () => fileInputRef.current?.click();
+    const triggerFileSelect = () => {
+        if (isUploading) return;
+        fileInputRef.current?.click();
+    };
     
     if (imageToCrop) {
         return (
@@ -50,7 +91,11 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
     return (
         <div className="space-y-2">
             <div onClick={triggerFileSelect} className="aspect-square w-full bg-black/20 rounded-xl flex items-center justify-center cursor-pointer">
-                {value.imageUrl ? (
+                {isUploading ? (
+                    <div className="text-center text-gray-500">
+                        <p>Enviando...</p>
+                    </div>
+                ) : value.imageUrl ? (
                     <img src={value.imageUrl} alt="Upload preview" className="w-full h-full object-cover rounded-xl" />
                 ) : (
                     <div className="text-center text-gray-500">

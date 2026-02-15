@@ -57,7 +57,7 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
         <div onClick={onClick} className={`${baseClasses} ${styleClasses} ${archivedClasses}`}>
             <div className="text-center">
                 {getIcon()}
-                <h3 className="font-bold uppercase mt-2 text-xs text-white">{arena.name}</h3>
+                <h3 className="luxe-title-ornate font-bold uppercase mt-2 text-xs text-[color:var(--skin-accent-color)] luxe-title-shadow">{arena.name}</h3>
                 {isOverview && assetName && <p className="text-[10px] text-gray-500 uppercase">{assetName}</p>}
             </div>
             

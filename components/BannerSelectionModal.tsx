@@ -1,6 +1,7 @@
 import React from 'react';
 import { GlassCard } from './GlassCard';
 import { BANNERS_DATA } from '../constants';
+import { useGame } from '../contexts/GameContext';
 
 interface BannerSelectionModalProps {
     currentBanner: string;
@@ -9,12 +10,17 @@ interface BannerSelectionModalProps {
 }
 
 export const BannerSelectionModal: React.FC<BannerSelectionModalProps> = ({ currentBanner, onClose, onSelect }) => {
+    const { userProfile } = useGame();
+    const isStaff = userProfile.role === 'admin' || userProfile.role === 'gm';
+    const availableBanners = isStaff
+        ? BANNERS_DATA
+        : BANNERS_DATA.filter(banner => banner.url === userProfile.bannerUrl);
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Banner</h2>
                 <div className="grid grid-cols-1 gap-2 p-2 max-h-64 overflow-y-auto">
-                    {BANNERS_DATA.map(banner => (
+                    {availableBanners.map(banner => (
                         <button 
                             key={banner.id}
                             onClick={() => onSelect(banner.url)}

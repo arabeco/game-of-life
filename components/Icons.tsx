@@ -29,6 +29,13 @@ export const Trash2Icon: React.FC<{ className?: string }> = ({ className }) => (
 export const DoorIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M13 4h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><polyline points="10 17 15 12 10 7"/><path d="M15 12H3"/></IconWrapper>);
 export const UsersIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></IconWrapper>);
 
+export const LinkIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <IconWrapper className={className}>
+        <path d="M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 0 0-7.07-7.07L12 3" />
+        <path d="M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 0 0 7.07 7.07L12 21" />
+    </IconWrapper>
+);
+
 
 export const FolderStarIcon: React.FC<{ className?: string }> = ({ className }) => (
     <IconWrapper className={className}>
@@ -40,18 +47,48 @@ export const FolderStarIcon: React.FC<{ className?: string }> = ({ className }) 
 export const GameLogoIcon: React.FC<{ className?: string }> = ({ className = "w-24 h-24" }) => (
     <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
         <defs>
-            <linearGradient id="logo-silver-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style={{stopColor: '#f0f0f0'}} />
-                <stop offset="50%" style={{stopColor: '#c0c0c0'}} />
-                <stop offset="100%" style={{stopColor: '#f0f0f0'}} />
+            <linearGradient id="logo-gold-main" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FDF2BF" />
+                <stop offset="40%" stopColor="#F7E29C" />
+                <stop offset="70%" stopColor="#C5A059" />
+                <stop offset="100%" stopColor="#8C6A2F" />
             </linearGradient>
-            <radialGradient id="logo-purple-grad">
-                <stop offset="0%" stopColor="#c787ff" />
-                <stop offset="100%" stopColor="#8a2be2" />
+            <linearGradient id="logo-gold-edge" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#5C4A1F" />
+                <stop offset="50%" stopColor="#D4AF37" />
+                <stop offset="100%" stopColor="#FCEFB0" />
+            </linearGradient>
+            <radialGradient id="logo-core" cx="50%" cy="45%" r="60%">
+                <stop offset="0%" stopColor="#F9F0FF" />
+                <stop offset="22%" stopColor="#B178FF" />
+                <stop offset="46%" stopColor="#4C7DFF" />
+                <stop offset="66%" stopColor="#2EF2C2" />
+                <stop offset="82%" stopColor="#FFB347" />
+                <stop offset="100%" stopColor="#FF4D6D" />
             </radialGradient>
+            <radialGradient id="logo-core-glow" cx="50%" cy="50%" r="65%">
+                <stop offset="0%" stopColor="rgba(249,240,255,0.7)" />
+                <stop offset="40%" stopColor="rgba(76,125,255,0.45)" />
+                <stop offset="65%" stopColor="rgba(46,242,194,0.3)" />
+                <stop offset="85%" stopColor="rgba(255,77,109,0.18)" />
+                <stop offset="100%" stopColor="rgba(255,77,109,0)" />
+            </radialGradient>
+            <filter id="logo-depth" x="-40%" y="-40%" width="180%" height="180%">
+                <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#000000" floodOpacity="0.6" />
+                <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#FCEFB0" floodOpacity="0.6" />
+            </filter>
+            <filter id="logo-core-glow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="6" />
+            </filter>
         </defs>
-        <path d="M50 5 L95 50 L50 95 L5 50 Z" fill="url(#logo-silver-grad)" stroke="#ffffff" strokeWidth="1" />
-        <circle cx="50" cy="50" r="18" fill="url(#logo-purple-grad)" />
+        <g filter="url(#logo-depth)">
+            <path d="M50 6 L94 50 L50 94 L6 50 Z" fill="url(#logo-gold-main)" stroke="url(#logo-gold-edge)" strokeWidth="1.2" />
+            <path d="M50 12 L88 50 L50 88 L12 50 Z" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
+            <path d="M50 20 L80 50 L50 80 L20 50 Z" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="0.8" />
+            <circle cx="50" cy="50" r="20" fill="url(#logo-core-glow)" filter="url(#logo-core-glow)" />
+            <circle cx="50" cy="50" r="16" fill="url(#logo-core)" />
+            <circle cx="50" cy="50" r="11" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1" />
+        </g>
     </svg>
 );
 

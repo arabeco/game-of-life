@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://esm.sh/react-easy-crop@5.0.7/style.css" />
     <style>
       :root {
@@ -31,6 +31,8 @@
           --btn-pad-x: 14px;
           --btn-radius: 14px;
           --btn-min-h: 36px;
+          --tilt-x: 0;
+          --tilt-y: 0;
           
           /* Legacy for compatibility */
           --gold: #D4AF37;
@@ -67,12 +69,12 @@
       }
 
       [data-skin="GOLD"] {
-        --skin-accent-color: var(--gold);
-        --sephirot-bg-gradient: radial-gradient(circle, #3a3017 0%, #1c1608 100%);
+        --skin-accent-color: #C5A059;
+        --sephirot-bg-gradient: radial-gradient(circle, #2c2314 0%, #141008 100%);
         --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gold.jpg');
-        --sephirot-border-color: #b6804a;
-        --sephirot-glow-color: rgba(212, 175, 55, 0.4);
-        --sephirot-text-color: #FFFFFF;
+        --sephirot-border-color: #C5A059;
+        --sephirot-glow-color: rgba(197, 160, 89, 0.45);
+        --sephirot-text-color: #F6EBD1;
       }
       [data-skin="CYBER"] {
         --skin-accent-color: #00d9ff;
@@ -193,13 +195,67 @@
         text-shadow: 0px 2px 4px rgba(0,0,0,0.5);
       }
 
+      .luxe-title-ornate {
+        font-family: 'Cinzel Decorative', 'Inter', sans-serif;
+      }
+
       .luxe-gold-button {
-        background: linear-gradient(to bottom right, var(--gold), #B8860B);
-        color: black;
-        font-weight: bold;
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 38%), linear-gradient(135deg, #F7E29C 0%, #C5A059 48%, #8C6A2F 100%);
+        color: #1b1408;
+        font-weight: 800;
+        border: 1px solid rgba(197, 160, 89, 0.9);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 24px rgba(197, 160, 89, 0.25), 0 2px 6px rgba(0, 0, 0, 0.4);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-image 0.2s ease;
       }
       .luxe-gold-button:hover {
-        background: linear-gradient(to bottom right, #FDE047, var(--gold));
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 36%), linear-gradient(135deg, #FCEFB0 0%, #D0AE6B 48%, #A67B3B 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 12px 28px rgba(197, 160, 89, 0.35), 0 2px 8px rgba(0, 0, 0, 0.5);
+      }
+
+      .depth-grid {
+        position: relative;
+        background: linear-gradient(180deg, rgba(18, 18, 18, 0.95) 0%, rgba(8, 8, 8, 0.9) 100%);
+        backdrop-filter: blur(22px);
+        box-shadow:
+          calc(2px + var(--tilt-x) * 0.2px) calc(18px + var(--tilt-y) * 0.6px) calc(40px + var(--tilt-y) * 0.6px) rgba(0, 0, 0, 0.75),
+          calc(var(--tilt-x) * 0.4px) calc(6px + var(--tilt-y) * 0.2px) calc(14px + var(--tilt-y) * 0.2px) rgba(197, 160, 89, 0.12),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        transform: translate3d(calc(var(--tilt-x) * 0.25px), calc(var(--tilt-y) * 0.2px), 0);
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+      }
+      .depth-grid > * {
+        position: relative;
+        z-index: 1;
+      }
+      .depth-grid::before {
+        content: '';
+        position: absolute;
+        inset: 6px;
+        border-radius: 20px;
+        z-index: 0;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.2));
+        pointer-events: none;
+      }
+      .depth-grid::after {
+        content: '';
+        position: absolute;
+        inset: -10px;
+        border-radius: 36px;
+        z-index: 0;
+        background: radial-gradient(circle at 30% 20%, rgba(197, 160, 89, 0.12), transparent 55%);
+        opacity: 0.7;
+        pointer-events: none;
+      }
+
+      .click-flash {
+        animation: clickFlash 0.18s ease-out;
+      }
+      @keyframes clickFlash {
+        0% { transform: translateY(0); box-shadow: 0 0 0 rgba(197, 160, 89, 0); }
+        40% { transform: translateY(1px); box-shadow: 0 0 16px rgba(197, 160, 89, 0.35); }
+        100% { transform: translateY(0); box-shadow: 0 0 0 rgba(197, 160, 89, 0); }
       }
 
       .luxe-input {
@@ -300,6 +356,16 @@
           cursor: grabbing;
       }
 
+      @keyframes logo-core-rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .logo-core-spin {
+        animation: logo-core-rotate 6s linear infinite;
+        transform-origin: 50% 50%;
+        will-change: transform;
+        display: block;
+      }
 
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }

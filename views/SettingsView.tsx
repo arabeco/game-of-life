@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
-import { SKINS_DATA, BORDERS_DATA, BANNERS_DATA } from '../constants';
+import { SKINS_DATA, BORDERS_DATA, BANNERS_DATA, SKIN_UNLOCKS_BY_RANK, SKIN_SEASON_UNLOCKS } from '../constants';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { MasteryView } from './MasteryView';
 import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
@@ -773,7 +773,7 @@ const GeralTab: React.FC = () => {
 };
 
 const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSovereignEditor }) => {
-    const { userProfile, openChest, levelUnlocks } = useGame();
+    const { userProfile, openChest, levelUnlocks, nobilityRanks } = useGame();
     const [openingChest, setOpeningChest] = useState<ChestType | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ item: any; type: ItemType } | null>(null);
     
@@ -795,9 +795,34 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
     );
     
     const chestColors: Record<ChestType, string> = { 'Comum': 'gray', 'Raro': '#3b82f6', 'Épico': '#a855f7', 'Lendário': '#f59e0b' };
+    const unlockedSkins = userProfile.unlockedSkins || {};
+    const completedSeasonMissions = userProfile.completedSeasonMissions || [];
+    const currentRankIndex = nobilityRanks.findIndex(rank => rank.id === userProfile.nobility.rankId);
+    const rankIndexFor = (rankId: string) => nobilityRanks.findIndex(rank => rank.id === rankId);
+    const isRankAtLeast = (rankId: string) => currentRankIndex >= rankIndexFor(rankId);
+    const isStaff = userProfile.role === 'admin' || userProfile.role === 'gm';
     const isItemUnlocked = (category: 'artifacts', itemId: string) => {
         const levelRequired = levelUnlocks[category]?.[itemId] ?? 1;
         return levelRequired <= userProfile.level || userProfile.unlockedItems?.[category]?.[itemId];
+    };
+    const isSkinUnlocked = (skinId: string) => {
+        if (isStaff) return true;
+        if (userProfile.skin === skinId) return true;
+        if (unlockedSkins[skinId]) return true;
+        if ((SKIN_UNLOCKS_BY_RANK[userProfile.nobility.rankId] || []).includes(skinId)) return true;
+        const seasonMissionIds = SKIN_SEASON_UNLOCKS[skinId] || [];
+        return seasonMissionIds.some(missionId => completedSeasonMissions.includes(missionId));
+    };
+    const isBorderUnlocked = (borderId: string) => {
+        if (isStaff) return true;
+        if (userProfile.border === borderId) return true;
+        if (borderId === 'DISCIPLINADO') return isRankAtLeast('escudeiro');
+        return false;
+    };
+    const isBannerUnlocked = (bannerUrl: string) => {
+        if (isStaff) return true;
+        if (!bannerUrl) return false;
+        return bannerUrl === userProfile.bannerUrl;
     };
 
     return (
@@ -824,9 +849,21 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
                     </InventoryRow>
                     <InventoryRow title="ARTEFATOS">{SOVEREIGN_ASSETS.artifacts.filter(a => a.id !== 'none').filter(item => isItemUnlocked('artifacts', item.id)).map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Artefato'})} />)}</InventoryRow>
                     <InventoryRow title="CONSUMÍVEIS"><InventoryPlaceholder /><InventoryPlaceholder /><InventoryPlaceholder /></InventoryRow>
-                    <InventoryRow title="SKINS">{SKINS_DATA.map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Skin'})} />)}</InventoryRow>
-                    <InventoryRow title="BORDAS">{BORDERS_DATA.map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Borda'})} />)}</InventoryRow>
-                    <InventoryRow title="BANNERS">{BANNERS_DATA.map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Banner'})} />)}</InventoryRow>
+                    <InventoryRow title="SKINS">
+                        {SKINS_DATA.filter(item => isSkinUnlocked(item.id)).map(item => (
+                            <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Skin'})} />
+                        ))}
+                    </InventoryRow>
+                    <InventoryRow title="BORDAS">
+                        {BORDERS_DATA.filter(item => isBorderUnlocked(item.id)).map(item => (
+                            <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Borda'})} />
+                        ))}
+                    </InventoryRow>
+                    <InventoryRow title="BANNERS">
+                        {BANNERS_DATA.filter(item => isBannerUnlocked(item.url)).map(item => (
+                            <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Banner'})} />
+                        ))}
+                    </InventoryRow>
                 </div>
             </div>
             {openingChest && <ChestOpeningModal chestType={openingChest} onClose={() => setOpeningChest(null)} />}

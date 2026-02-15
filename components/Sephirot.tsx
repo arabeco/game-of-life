@@ -15,7 +15,7 @@ export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style }) => 
 
   return (
     <div style={style} className="flex flex-col items-center justify-center z-10 animate-fade-in">
-        <div className={`text-white text-[10px] font-black uppercase tracking-wider ${titleMargin} px-1.5 py-0.5 bg-black/50 rounded z-10`}>
+        <div className={`luxe-title-ornate text-[color:var(--skin-accent-color)] text-[10px] font-black uppercase tracking-wider ${titleMargin} px-2 py-0.5 bg-black/60 border border-white/10 rounded z-10 shadow-[0_4px_12px_rgba(0,0,0,0.45)]`}>
             {asset.name}
         </div>
         <button 

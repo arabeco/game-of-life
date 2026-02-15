@@ -80,7 +80,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                             <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
                                 <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
                             </button>
-                            <h2 className="text-xl font-black uppercase tracking-widest text-white luxe-title-shadow">{asset.name}</h2>
+                            <h2 className="luxe-title-ornate text-xl font-black uppercase tracking-widest text-[color:var(--skin-accent-color)] luxe-title-shadow">{asset.name}</h2>
                             <button onClick={handleMainButton} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
                                 OK
                             </button>
@@ -90,7 +90,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                             <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[color:var(--accent-gold)] bg-black">
                                 {asset.level}
                             </div>
-                            <p className="text-sm text-gray-300">Nível {asset.level}: {asset.levelDescriptions[asset.level] || 'Descrição não disponível.'}</p>
+                            <p className="text-sm text-gray-300">{(asset.levelDescriptions[asset.level] || 'Descrição não disponível.').replace(/^Nível\s+\d+:\s*/, '')}</p>
                         </div>
                     </div>
                     
@@ -105,7 +105,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                     <div className="flex-shrink-0 pt-2">
                         <div className='relative text-center mb-2'>
                                 <hr className="border-t border-[color:var(--accent-gold-soft)]" />
-                                <h3 className="text-sm font-semibold text-white uppercase tracking-wider absolute -top-3 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Arenas</h3>
+                                <h3 className="luxe-title-ornate text-sm font-semibold text-[color:var(--skin-accent-color)] uppercase tracking-wider absolute -top-3 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Arenas</h3>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             {asset.arenas.map(arena => {

@@ -197,7 +197,7 @@ export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDat
     const todayForCheck = new Date();
 
     return (
-        <div className="flex dark-card-bg rounded-3xl p-1" ref={gridRef} data-testid="weekly-grid">
+        <div className="flex dark-card-bg rounded-3xl p-1 depth-grid" ref={gridRef} data-testid="weekly-grid">
             <div className="w-12 flex-shrink-0 pt-8">
                 {hours.map(hour => (
                     <div key={hour} style={{ height: `${60 * scaleFactor}px` }} className="text-right pr-2">

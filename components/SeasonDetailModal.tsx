@@ -6,9 +6,9 @@ import { useGame } from '../contexts/GameContext';
 import { Arena, Season, SeasonMission, SeasonQuest } from '../types';
 import { ArenaDetailModal } from './ArenaDetailModal';
 
-const MissionCard: React.FC<{ mission: SeasonMission; progress: number; isCompleted: boolean; canClaim: boolean; onComplete: () => void; onSelect: () => void }> = ({ mission, progress, isCompleted, canClaim, onComplete, onSelect }) => {
+const MissionCard: React.FC<{ mission: SeasonMission; progress: number; isCompleted: boolean; canClaim: boolean; onComplete: () => void; onSelect: () => void; isShimmering?: boolean }> = ({ mission, progress, isCompleted, canClaim, onComplete, onSelect, isShimmering }) => {
     return (
-        <GlassCard variant="neutral" className="p-3 cursor-pointer" onClick={onSelect}>
+        <GlassCard variant="neutral" className={`p-3 cursor-pointer relative overflow-hidden ${isShimmering ? 'shimmer-effect' : ''}`} onClick={onSelect}>
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm">{mission.title}</span>
@@ -32,9 +32,9 @@ const MissionCard: React.FC<{ mission: SeasonMission; progress: number; isComple
     );
 };
 
-const MissionDetailModal: React.FC<{ mission: SeasonMission; progress: number; isCompleted: boolean; onClose: () => void; onClaim: () => void }> = ({ mission, progress, isCompleted, onClose, onClaim }) => (
+const MissionDetailModal: React.FC<{ mission: SeasonMission; progress: number; isCompleted: boolean; onClose: () => void; onClaim: () => void; isShimmering?: boolean }> = ({ mission, progress, isCompleted, onClose, onClaim, isShimmering }) => (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
-        <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl p-4" onClick={e => e.stopPropagation()}>
+        <GlassCard variant="neutral" className={`w-full max-w-sm m-4 space-y-4 rounded-3xl p-4 relative overflow-hidden ${isShimmering ? 'shimmer-effect' : ''}`} onClick={e => e.stopPropagation()}>
             <div className="text-center space-y-1">
                 <h3 className="text-lg font-black uppercase tracking-widest">{mission.title}</h3>
                 <p className="text-xs text-gray-300">{mission.description}</p>
@@ -117,6 +117,7 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
     const [selectedMission, setSelectedMission] = useState<SeasonMission | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
     const [questArena, setQuestArena] = useState<Arena | null>(null);
+    const [shimmerMissionId, setShimmerMissionId] = useState<string | null>(null);
     const missionsForSeason = seasonMissions.filter(m => m.season_id === season.id);
     const questsForSeason = seasonQuests.filter(q => q.season_id === season.id && q.scope === 'season');
     const completedMissions = new Set(userProfile.completedSeasonMissions || []);
@@ -172,6 +173,15 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
         setSelectedQuest(null);
     };
 
+    const handleMissionComplete = (mission: SeasonMission) => {
+        if (completedMissions.has(mission.id)) return;
+        completeSeasonMission(mission);
+        setShimmerMissionId(mission.id);
+        window.setTimeout(() => {
+            setShimmerMissionId(prev => (prev === mission.id ? null : prev));
+        }, 1600);
+    };
+
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <div className="w-full max-w-sm m-4 h-[90vh] rounded-3xl" onClick={e => e.stopPropagation()}>
@@ -200,8 +210,9 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
                                     progress={completedMissions.has(mission.id) ? 100 : getMissionProgress(mission)}
                                     isCompleted={completedMissions.has(mission.id)}
                                     canClaim={!completedMissions.has(mission.id) && getMissionProgress(mission) >= 100}
-                                    onComplete={() => completeSeasonMission(mission)}
+                                    onComplete={() => handleMissionComplete(mission)}
                                     onSelect={() => setSelectedMission(mission)}
+                                    isShimmering={shimmerMissionId === mission.id}
                                 />
                             ))}
                         </div>
@@ -229,7 +240,8 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
                     progress={completedMissions.has(selectedMission.id) ? 100 : getMissionProgress(selectedMission)}
                     isCompleted={completedMissions.has(selectedMission.id)}
                     onClose={() => setSelectedMission(null)}
-                    onClaim={() => completeSeasonMission(selectedMission)}
+                    onClaim={() => handleMissionComplete(selectedMission)}
+                    isShimmering={shimmerMissionId === selectedMission.id}
                 />
             )}
             {selectedQuest && (

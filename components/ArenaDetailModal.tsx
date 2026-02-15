@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Arena, Action, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { PlusIcon, EditIcon, CheckIcon } from './Icons';
+import { PlusIcon, EditIcon, CheckIcon, LinkIcon } from './Icons';
 import { ActionModal } from './ActionModal';
 import { IconPickerModal } from './IconPickerModal';
 import { useTutorial } from '../contexts/TutorialContext';
@@ -159,21 +159,28 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                 <div 
                     className="dossier-bg border border-[color:var(--accent-silver-soft)] w-full max-w-sm m-4 space-y-3 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
                 >
-                    <div className="flex justify-between items-center flex-shrink-0">
-                         <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
-                            <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
-                        </button>
-                         <h2 className="text-lg font-black uppercase tracking-wider text-white">{isEditing ? "EDITAR ARENA" : parentAsset?.name}</h2>
-                        {isEditing ? (
-                            <button
-                                onClick={() => setIsLinkingObserver(true)}
-                                className="px-3 py-2 text-[10px] font-black tracking-widest rounded-xl bg-black/30 border border-white/15 text-[var(--gold)] hover:bg-black/40"
-                            >
-                                VINCULAR OBSERVADOR
+                    <div className="flex justify-between items-start flex-shrink-0 gap-2">
+                        <div className="flex flex-col items-center gap-1">
+                            <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
+                                <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
                             </button>
-                        ) : (
-                            <div className="w-[142px]" />
-                        )}
+                            {isEditing && (
+                                <button
+                                    onClick={() => setIsLinkingObserver(true)}
+                                    className="p-2 rounded-full transition-colors border border-white/15 bg-black/30 hover:bg-black/40"
+                                >
+                                    <LinkIcon className="w-4 h-4 text-[var(--gold)]" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex-1 flex flex-col items-center text-center">
+                            <h2 className="luxe-title-ornate text-lg font-black uppercase tracking-wider text-[color:var(--skin-accent-color)]">
+                                {isEditing ? "EDITAR ARENA" : arena.name}
+                            </h2>
+                            {parentAsset?.name && (
+                                <p className="text-[10px] font-medium uppercase tracking-wider text-white/70">{parentAsset.name}</p>
+                            )}
+                        </div>
                         <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
                             OK
                         </button>
@@ -194,7 +201,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     type="text" 
                                     value={editableArena.name}
                                     onChange={(e) => setEditableArena(prev => ({...prev, name: e.target.value}))}
-                                    className="w-full text-center bg-transparent text-2xl font-bold uppercase tracking-wider text-white pt-2 focus:outline-none border-b border-dashed border-white/20"
+                                    className="luxe-title-ornate w-full text-center bg-transparent text-2xl font-bold uppercase tracking-wider text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/20"
                                 />
                                 <textarea 
                                     value={editableArena.description}
@@ -204,10 +211,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 />
                             </>
                         ) : (
-                            <>
-                                <h2 className="text-3xl font-black uppercase tracking-wider text-[var(--accent-silver)] pt-2 luxe-title-shadow">{arena.name}</h2>
-                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
-                            </>
+                            <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
                         )}
                     </div>
 

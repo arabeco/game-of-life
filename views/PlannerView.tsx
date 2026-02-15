@@ -216,7 +216,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
     }
 
     return (
-        <div className="flex-grow relative bg-[#111] border border-white/10 rounded-3xl p-2 h-full" data-testid="daily-timeline">
+        <div className="flex-grow relative bg-[#111] border border-white/10 rounded-3xl p-2 h-full depth-grid" data-testid="daily-timeline">
             <div className="flex h-full">
                 <div className="w-12 flex-shrink-0">
                     {hours.map(hour => (<div key={hour} className="text-right pr-2" style={{height: `${60 * scaleFactor}px`}}><span className="text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span></div>))}
@@ -952,7 +952,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         className={`flex-grow bg-black/20 border border-white/10 rounded-3xl p-2 h-[60px] transition-all duration-300 ${isOverBayArea ? 'border-[var(--gold)] ring-2 ring-[var(--gold)] shadow-lg shadow-[var(--gold)]/20' : ''}`}
                     >
                         <div className="flex space-x-2 h-full overflow-x-auto">
-                            {Object.entries(groupedTaskPool).length > 0 ? Object.entries(groupedTaskPool).map(([actionId, payload]) => {
+                            {Object.entries(groupedTaskPool).length > 0 ? (Object.entries(groupedTaskPool) as [string, { count: number; isUnlimited: boolean }][]).map(([actionId, payload]) => {
                                 const action = getActionById(actionId);
                                 if (!action) return null;
                                 return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} />);

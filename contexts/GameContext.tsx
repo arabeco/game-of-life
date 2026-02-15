@@ -99,6 +99,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     role: 'user',
     isPremium: false,
     skin: 'default',
+    unlockedSkins: {},
     unlockedItems: {
         bodyStyles: {},
         hairStyles: {},
@@ -949,9 +950,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setUserProfile(prev => ({ ...prev, ...profileData }));
     const userId = session?.user.id;
     if (userId && userId !== 'placeholder_user' && isUuid(userId)) {
-        const { unlockedItems, completedSeasonMissions, ...safeData } = profileData;
-        if (Object.keys(safeData).length > 0) {
-            const snakeCaseData = mapToSnakeCase(safeData);
+        if (Object.keys(profileData).length > 0) {
+            const snakeCaseData = mapToSnakeCase(profileData);
             supabase.from('user_profiles').update(snakeCaseData).eq('id', userId).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
         }
     }
@@ -964,28 +964,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const grantUserUnlock = (category: UnlockCategory, itemId: string) => {
-    setUserProfile(prev => {
-        const unlockedItems: UserUnlocks = prev.unlockedItems || {
-            bodyStyles: {},
-            hairStyles: {},
-            outfits: {},
-            head_under_items: {},
-            helmets: {},
-            head_over_items: {},
-            artifacts: {},
-        };
-        if (unlockedItems[category]?.[itemId]) return prev;
-        return {
-            ...prev,
-            unlockedItems: {
-                ...unlockedItems,
-                [category]: {
-                    ...unlockedItems[category],
-                    [itemId]: true,
-                },
-            },
-        };
-    });
+    const unlockedItems: UserUnlocks = userProfile.unlockedItems || {
+        bodyStyles: {},
+        hairStyles: {},
+        outfits: {},
+        head_under_items: {},
+        helmets: {},
+        head_over_items: {},
+        artifacts: {},
+    };
+    if (unlockedItems[category]?.[itemId]) return;
+    const nextUnlockedItems = {
+        ...unlockedItems,
+        [category]: {
+            ...unlockedItems[category],
+            [itemId]: true,
+        },
+    };
+    updateUserProfile({ unlockedItems: nextUnlockedItems });
   };
 
   const completeSeasonMission = (mission: SeasonMission) => {
@@ -994,32 +990,29 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const rewardCategory = rewardParts[0] as UnlockCategory | undefined;
     const rewardItemId = rewardParts[1];
 
-    setUserProfile(prev => {
-        const completed = prev.completedSeasonMissions || [];
-        if (completed.includes(mission.id)) return prev;
-        const unlockedItems: UserUnlocks = prev.unlockedItems || {
-            bodyStyles: {},
-            hairStyles: {},
-            outfits: {},
-            head_under_items: {},
-            helmets: {},
-            head_over_items: {},
-            artifacts: {},
-        };
-        const shouldUnlock = mission.reward_type === 'item_id' && rewardCategory && rewardItemId;
-        const nextUnlockedItems = shouldUnlock ? {
-            ...unlockedItems,
-            [rewardCategory]: {
-                ...unlockedItems[rewardCategory],
-                [rewardItemId]: true,
-            },
-        } : unlockedItems;
+    const completed = userProfile.completedSeasonMissions || [];
+    if (completed.includes(mission.id)) return;
+    const unlockedItems: UserUnlocks = userProfile.unlockedItems || {
+        bodyStyles: {},
+        hairStyles: {},
+        outfits: {},
+        head_under_items: {},
+        helmets: {},
+        head_over_items: {},
+        artifacts: {},
+    };
+    const shouldUnlock = mission.reward_type === 'item_id' && rewardCategory && rewardItemId;
+    const nextUnlockedItems = shouldUnlock ? {
+        ...unlockedItems,
+        [rewardCategory]: {
+            ...unlockedItems[rewardCategory],
+            [rewardItemId]: true,
+        },
+    } : unlockedItems;
 
-        return {
-            ...prev,
-            completedSeasonMissions: [...completed, mission.id],
-            unlockedItems: nextUnlockedItems,
-        };
+    updateUserProfile({
+        completedSeasonMissions: [...completed, mission.id],
+        unlockedItems: nextUnlockedItems,
     });
   };
 
@@ -1040,7 +1033,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         ...asset,
         level: levels[asset.id] || asset.level,
         levelDescriptions: levelDescriptions ? 
-            levelDescriptions[asset.id]?.reduce((acc, desc, i) => ({ ...acc, [i+1]: `Nível ${i+1}: ${desc}` }), {}) || asset.levelDescriptions 
+            levelDescriptions[asset.id]?.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}) || asset.levelDescriptions 
             : asset.levelDescriptions
     })));
 

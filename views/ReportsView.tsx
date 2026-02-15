@@ -312,6 +312,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [expGained, setExpGained] = useState(0);
     const [earnedChest, setEarnedChest] = useState<ChestType | null>(null);
     const [isPostCycleFlow, setIsPostCycleFlow] = useState(false);
+    const [cycleShimmer, setCycleShimmer] = useState(false);
     
     useEffect(() => {
         if (view === 'scanning') {
@@ -332,6 +333,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             return () => clearTimeout(timer);
         }
     }, [view, endCycle, assets, actions]);
+
+    useEffect(() => {
+        if (view === 'results' && isPostCycleFlow) {
+            setCycleShimmer(true);
+            const timer = window.setTimeout(() => setCycleShimmer(false), 1500);
+            return () => window.clearTimeout(timer);
+        }
+        setCycleShimmer(false);
+    }, [view, isPostCycleFlow]);
 
     const handleEndCycle = () => setShowConfirmEndCycle(true);
     const confirmEndCycle = () => { setShowConfirmEndCycle(false); setView('scanning'); };
@@ -474,7 +484,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         </div>
                         <button onClick={onClose}><XIcon /></button>
                     </div>
-                    <div className="flex-grow overflow-y-auto">
+                    <div className={`flex-grow overflow-y-auto relative overflow-hidden ${cycleShimmer ? 'shimmer-effect' : ''}`}>
                         {renderContent()}
                     </div>
                 </div>

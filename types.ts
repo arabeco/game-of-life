@@ -106,6 +106,7 @@ export interface UserProfile {
   mood: number; // From 0 to 100
   chests?: { type: ChestType; count: number }[];
   unlockedItems?: UserUnlocks;
+  unlockedSkins?: Record<string, boolean>;
   completedSeasonMissions?: string[];
   role: 'admin' | 'gm' | 'user';
   isPremium?: boolean;

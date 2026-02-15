@@ -22,6 +22,12 @@ export const GM_CONFIG = {
       Épico: 0.02,
       Lendário: 0.03,
     } as Record<ChestType, number>,
+    skinDropChanceByChest: {
+      Comum: 0.005,
+      Raro: 0.02,
+      Épico: 0.05,
+      Lendário: 0.1,
+    } as Record<ChestType, number>,
     itemPool: {
       categories: [
         'bodyStyles',
@@ -45,7 +51,7 @@ export const GM_CONFIG = {
       { id: 'VOID', name: 'VOID', color: '#a95eff' },
     ] as Skin[],
     borders: [
-      { id: 'DISCIPLINADO', name: 'Disciplinado', color: '#c0c0c0', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borada_disciplinado.png' },
+      { id: 'DISCIPLINADO', name: 'Pupilo', color: '#c0c0c0', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borada_disciplinado.png' },
       { id: 'GRAO_MESTRE', name: 'Grão Mestre', color: '#b3b3b3', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_gm.png' },
       { id: 'IMPARAVEL', name: 'Imparável', color: '#d4af37', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_imparavel.png' },
       { id: 'LENDA_VIVA', name: 'Lenda Viva', color: '#8fd0ff', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_lendaviva.png' },
@@ -74,6 +80,19 @@ export const SKINS_DATA: Skin[] = GM_CONFIG.cosmetics.skins;
 export const BORDERS_DATA: Skin[] = GM_CONFIG.cosmetics.borders;
 
 export const BANNERS_DATA = GM_CONFIG.cosmetics.banners;
+
+export const SKIN_UNLOCKS_BY_RANK: Record<string, string[]> = {
+  vagante: ['FROST'],
+  escudeiro: ['CYBER'],
+  cavaleiro: ['EMBER'],
+  lorde: ['AURORA'],
+};
+
+export const SKIN_SEASON_UNLOCKS: Record<string, string[]> = {
+  GOLD: ['sm_3'],
+};
+
+export const SKIN_CHEST_POOL = ['VOID'];
 
 export const SANCTUARY_BACKGROUND_OPTIONS = [
   { id: 'garden', name: 'Jardim', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/garden.jpg' },
@@ -107,124 +126,124 @@ export const MOODS_DATA: Mood[] = [
 
 export const MASTERY_LEVEL_DESCRIPTIONS: Record<string, string[]> = {
   consciencia: [
-    "Nível 1: Estou perdido em pensamentos, raramente presente.",
-    "Nível 2: Ocasionalmente, percebo a beleza ao meu redor.",
-    "Nível 3: Às vezes sinto uma breve gratidão, mas o ceticismo domina.",
-    "Nível 4: Começo a praticar a atenção plena, mas me distraio facilmente.",
-    "Nível 5: A gratidão se torna um hábito diário, mesmo que forçado.",
-    "Nível 6: Sinto uma conexão mais profunda com o momento presente.",
-    "Nível 7: A paz interior surge com mais frequência em meu dia a dia.",
-    "Nível 8: Vejo a interconexão de todas as coisas com clareza.",
-    "Nível 9: A consciência plena é meu estado natural, não um esforço.",
-    "Nível 10: Vivo em um estado de fluxo, uno com o momento presente."
+    "Estou perdido em pensamentos, raramente presente.",
+    "Ocasionalmente, percebo a beleza ao meu redor.",
+    "Às vezes sinto uma breve gratidão, mas o ceticismo domina.",
+    "Começo a praticar a atenção plena, mas me distraio facilmente.",
+    "A gratidão se torna um hábito diário, mesmo que forçado.",
+    "Sinto uma conexão mais profunda com o momento presente.",
+    "A paz interior surge com mais frequência em meu dia a dia.",
+    "Vejo a interconexão de todas as coisas com clareza.",
+    "A consciência plena é meu estado natural, não um esforço.",
+    "Vivo em um estado de fluxo, uno com o momento presente."
   ],
   espiritualidade: [
-    "Nível 1: Nego qualquer dimensão além do material.",
-    "Nível 2: Questiono a existência de algo maior, mas com ceticismo.",
-    "Nível 3: Exploro diferentes filosofias, mas sem compromisso.",
-    "Nível 4: Adoto uma prática espiritual, mas de forma irregular.",
-    "Nível 5: Minha prática se torna consistente e significativa.",
-    "Nível 6: Sinto uma presença ou energia superior em minha vida.",
-    "Nível 7: A fé (ou confiança no universo) guia minhas decisões.",
-    "Nível 8: Experimento momentos de transcendência e unidade.",
-    "Nível 9: Minha vida é uma expressão da minha verdade espiritual.",
-    "Nível 10: Sinto-me em comunhão constante com o divino/universo."
+    "Nego qualquer dimensão além do material.",
+    "Questiono a existência de algo maior, mas com ceticismo.",
+    "Exploro diferentes filosofias, mas sem compromisso.",
+    "Adoto uma prática espiritual, mas de forma irregular.",
+    "Minha prática se torna consistente e significativa.",
+    "Sinto uma presença ou energia superior em minha vida.",
+    "A fé (ou confiança no universo) guia minhas decisões.",
+    "Experimento momentos de transcendência e unidade.",
+    "Minha vida é uma expressão da minha verdade espiritual.",
+    "Sinto-me em comunhão constante com o divino/universo."
   ],
   'espaco-mental': [
-    "Nível 1: Minha mente é um caos de pensamentos negativos e reativos.",
-    "Nível 2: Reconheço meus padrões de pensamento, mas não consigo mudá-los.",
-    "Nível 3: Começo a desafiar crenças limitantes com algum sucesso.",
-    "Nível 4: Pratico técnicas para acalmar a mente, como meditação.",
-    "Nível 5: Consigo observar meus pensamentos sem me identificar com eles.",
-    "Nível 6: Escolho conscientemente minhas reações em vez de ser reativo.",
-    "Nível 7: Minha mente se torna uma ferramenta a meu serviço, não meu mestre.",
-    "Nível 8: Cultivo clareza e foco com facilidade.",
-    "Nível 9: A paz mental é meu estado padrão, mesmo em meio ao caos.",
-    "Nível 10: Minha mente é um santuário de criatividade e sabedoria."
+    "Minha mente é um caos de pensamentos negativos e reativos.",
+    "Reconheço meus padrões de pensamento, mas não consigo mudá-los.",
+    "Começo a desafiar crenças limitantes com algum sucesso.",
+    "Pratico técnicas para acalmar a mente, como meditação.",
+    "Consigo observar meus pensamentos sem me identificar com eles.",
+    "Escolho conscientemente minhas reações em vez de ser reativo.",
+    "Minha mente se torna uma ferramenta a meu serviço, não meu mestre.",
+    "Cultivo clareza e foco com facilidade.",
+    "A paz mental é meu estado padrão, mesmo em meio ao caos.",
+    "Minha mente é um santuário de criatividade e sabedoria."
   ],
   projetos: [
-    "Nível 1: Tenho ideias, mas nunca começo nada.",
-    "Nível 2: Começo projetos, mas desisto na primeira dificuldade.",
-    "Nível 3: Consigo completar pequenos projetos com muito esforço.",
-    "Nível 4: Aprendo a planejar e organizar minhas ideias de forma eficaz.",
-    "Nível 5: Executo projetos de médio prazo com consistência.",
-    "Nível 6: A criatividade flui e encontro soluções inovadoras.",
-    "Nível 7: Colaboro efetivamente com outros para realizar grandes visões.",
-    "Nível 8: Meus projetos impactam positivamente minha vida e a dos outros.",
-    "Nível 9: Sou uma fonte de inspiração e realização criativa.",
-    "Nível 10: Manifesto minhas visões no mundo com maestria e propósito."
+    "Tenho ideias, mas nunca começo nada.",
+    "Começo projetos, mas desisto na primeira dificuldade.",
+    "Consigo completar pequenos projetos com muito esforço.",
+    "Aprendo a planejar e organizar minhas ideias de forma eficaz.",
+    "Executo projetos de médio prazo com consistência.",
+    "A criatividade flui e encontro soluções inovadoras.",
+    "Colaboro efetivamente com outros para realizar grandes visões.",
+    "Meus projetos impactam positivamente minha vida e a dos outros.",
+    "Sou uma fonte de inspiração e realização criativa.",
+    "Manifesto minhas visões no mundo com maestria e propósito."
   ],
   proposito: [
-    "Nível 1: Sinto-me perdido, sem direção ou sentido na vida.",
-    "Nível 2: Busco um propósito, mas sinto que nada me preenche.",
-    "Nível 3: Identifico meus valores, mas não sei como aplicá-los.",
-    "Nível 4: Experimento diferentes caminhos em busca de alinhamento.",
-    "Nível 5: Defino uma missão de vida que ressoa com minha verdade.",
-    "Nível 6: Minhas ações diárias começam a refletir minha missão.",
-    "Nível 7: Meu trabalho e vida pessoal estão alinhados com meu propósito.",
-    "Nível 8: Sinto uma profunda sensação de significado e contribuição.",
-    "Nível 9: Inspiro outros a encontrarem e viverem seus propósitos.",
-    "Nível 10: Minha vida é a personificação do meu propósito."
+    "Sinto-me perdido, sem direção ou sentido na vida.",
+    "Busco um propósito, mas sinto que nada me preenche.",
+    "Identifico meus valores, mas não sei como aplicá-los.",
+    "Experimento diferentes caminhos em busca de alinhamento.",
+    "Defino uma missão de vida que ressoa com minha verdade.",
+    "Minhas ações diárias começam a refletir minha missão.",
+    "Meu trabalho e vida pessoal estão alinhados com meu propósito.",
+    "Sinto uma profunda sensação de significado e contribuição.",
+    "Inspiro outros a encontrarem e viverem seus propósitos.",
+    "Minha vida é a personificação do meu propósito."
   ],
   conexoes: [
-    "Nível 1: Sinto-me isolado e desconectado dos outros.",
-    "Nível 2: Tenho relacionamentos superficiais e baseados em necessidade.",
-    "Nível 3: Começo a praticar a escuta ativa e a empatia.",
-    "Nível 4: Estabeleço limites saudáveis em meus relacionamentos.",
-    "Nível 5: Cultivo amizades genuínas e de apoio mútuo.",
-    "Nível 6: Sou capaz de expressar amor e vulnerabilidade de forma autêntica.",
-    "Nível 7: Meus relacionamentos são fontes de crescimento e alegria.",
-    "Nível 8: Crio uma comunidade forte e unida ao meu redor.",
-    "Nível 9: Minhas conexões transcendem o ego e se baseiam na alma.",
-    "Nível 10: Sou um catalisador de amor e união no mundo."
+    "Sinto-me isolado e desconectado dos outros.",
+    "Tenho relacionamentos superficiais e baseados em necessidade.",
+    "Começo a praticar a escuta ativa e a empatia.",
+    "Estabeleço limites saudáveis em meus relacionamentos.",
+    "Cultivo amizades genuínas e de apoio mútuo.",
+    "Sou capaz de expressar amor e vulnerabilidade de forma autêntica.",
+    "Meus relacionamentos são fontes de crescimento e alegria.",
+    "Crio uma comunidade forte e unida ao meu redor.",
+    "Minhas conexões transcendem o ego e se baseiam na alma.",
+    "Sou um catalisador de amor e união no mundo."
   ],
   financas: [
-    "Nível 1: Estou constantemente endividado e ansioso com dinheiro.",
-    "Nível 2: Consigo pagar as contas, mas vivo de salário em salário.",
-    "Nível 3: Crio um orçamento e começo a controlar meus gastos.",
-    "Nível 4: Construo uma reserva de emergência e quito dívidas ruins.",
-    "Nível 5: Começo a investir para o futuro de forma consistente.",
-    "Nível 6: Minha renda passiva começa a crescer.",
-    "Nível 7: Tenho clareza sobre meus objetivos e plano financeiro.",
-    "Nível 8: O dinheiro se torna uma ferramenta para liberdade e impacto.",
-    "Nível 9: Alcanço a independência financeira.",
-    "Nível 10: Uso minha riqueza para criar um legado e ajudar os outros."
+    "Estou constantemente endividado e ansioso com dinheiro.",
+    "Consigo pagar as contas, mas vivo de salário em salário.",
+    "Crio um orçamento e começo a controlar meus gastos.",
+    "Construo uma reserva de emergência e quito dívidas ruins.",
+    "Começo a investir para o futuro de forma consistente.",
+    "Minha renda passiva começa a crescer.",
+    "Tenho clareza sobre meus objetivos e plano financeiro.",
+    "O dinheiro se torna uma ferramenta para liberdade e impacto.",
+    "Alcanço a independência financeira.",
+    "Uso minha riqueza para criar um legado e ajudar os outros."
   ],
   trabalho: [
-    "Nível 1: Detesto meu trabalho e sinto-me estagnado.",
-    "Nível 2: Faço o mínimo necessário para manter o emprego.",
-    "Nível 3: Busco desenvolver novas habilidades, mas sem foco.",
-    "Nível 4: Encontro um trabalho que se alinha melhor com meus interesses.",
-    "Nível 5: Torno-me proficiente e valorizado em minha área.",
-    "Nível 6: Encontro prazer e desafio no meu trabalho diário.",
-    "Nível 7: Sou reconhecido como um especialista ou líder.",
-    "Nível 8: Meu trabalho contribui para algo maior que eu.",
-    "Nível 9: Inovo e crio valor de forma excepcional em minha carreira.",
-    "Nível 10: Meu trabalho é uma expressão de minha maestria e paixão."
+    "Detesto meu trabalho e sinto-me estagnado.",
+    "Faço o mínimo necessário para manter o emprego.",
+    "Busco desenvolver novas habilidades, mas sem foco.",
+    "Encontro um trabalho que se alinha melhor com meus interesses.",
+    "Torno-me proficiente e valorizado em minha área.",
+    "Encontro prazer e desafio no meu trabalho diário.",
+    "Sou reconhecido como um especialista ou líder.",
+    "Meu trabalho contribui para algo maior que eu.",
+    "Inovo e crio valor de forma excepcional em minha carreira.",
+    "Meu trabalho é uma expressão de minha maestria e paixão."
   ],
   hobbies: [
-    "Nível 1: Não tenho tempo ou energia para hobbies.",
-    "Nível 2: Meus hobbies são passivos, como assistir TV.",
-    "Nível 3: Experimento novas atividades, mas nada me prende.",
-    "Nível 4: Encontro um hobby que me desafia e me dá prazer.",
-    "Nível 5: Dedico tempo regularmente para minhas paixões.",
-    "Nível 6: Atinjo um nível de habilidade que me orgulha.",
-    "Nível 7: Meus hobbies são uma fonte de relaxamento e criatividade.",
-    "Nível 8: Conecto-me com outras pessoas através dos meus interesses.",
-    "Nível 9: Meus hobbies se tornam uma parte essencial da minha identidade.",
-    "Nível 10: Alcanço um estado de fluxo e maestria em minhas paixões."
+    "Não tenho tempo ou energia para hobbies.",
+    "Meus hobbies são passivos, como assistir TV.",
+    "Experimento novas atividades, mas nada me prende.",
+    "Encontro um hobby que me desafia e me dá prazer.",
+    "Dedico tempo regularmente para minhas paixões.",
+    "Atinjo um nível de habilidade que me orgulha.",
+    "Meus hobbies são uma fonte de relaxamento e criatividade.",
+    "Conecto-me com outras pessoas através dos meus interesses.",
+    "Meus hobbies se tornam uma parte essencial da minha identidade.",
+    "Alcanço um estado de fluxo e maestria em minhas paixões."
   ],
   fisico: [
-    "Nível 1: Negligencio completamente minha saúde física.",
-    "Nível 2: Tenho hábitos prejudiciais (má alimentação, sedentarismo).",
-    "Nível 3: Tento me exercitar e comer melhor, mas sou inconsistente.",
-    "Nível 4: Adoto uma rotina de exercícios e alimentação mais saudável.",
-    "Nível 5: Meu corpo se torna mais forte, flexível e com mais energia.",
-    "Nível 6: O bem-estar físico se torna um pilar da minha vida.",
-    "Nível 7: Escuto meu corpo e atendo às suas necessidades com sabedoria.",
-    "Nível 8: Supero meus limites e atinjo metas físicas desafiadoras.",
-    "Nível 9: Meu corpo é um templo de vitalidade e alto desempenho.",
-    "Nível 10: Irradio saúde e inspiro outros a cuidarem de si mesmos."
+    "Negligencio completamente minha saúde física.",
+    "Tenho hábitos prejudiciais (má alimentação, sedentarismo).",
+    "Tento me exercitar e comer melhor, mas sou inconsistente.",
+    "Adoto uma rotina de exercícios e alimentação mais saudável.",
+    "Meu corpo se torna mais forte, flexível e com mais energia.",
+    "O bem-estar físico se torna um pilar da minha vida.",
+    "Escuto meu corpo e atendo às suas necessidades com sabedoria.",
+    "Supero meus limites e atinjo metas físicas desafiadoras.",
+    "Meu corpo é um templo de vitalidade e alto desempenho.",
+    "Irradio saúde e inspiro outros a cuidarem de si mesmos."
   ],
   geral: [],
 };

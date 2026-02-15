@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { GameLogoIcon } from '../components/Icons';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
 import { GM_CONFIG } from '../constants';
@@ -101,6 +100,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                     isOnline: true,
                     visibleWidgets: ['consciencia.lema'],
                     skin: 'default',
+                    unlockedSkins: {},
+                    unlockedItems: {
+                        bodyStyles: {},
+                        hairStyles: {},
+                        outfits: {},
+                        head_under_items: {},
+                        helmets: {},
+                        head_over_items: {},
+                        artifacts: {},
+                    },
+                    completedSeasonMissions: [],
                     nobility: { exp: 0, rankId: 'vagante' },
                     mood: 50,
                     chests: [{ type: 'Comum', count: 1 }],
@@ -121,6 +131,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         is_online: newProfile.isOnline,
                         visible_widgets: newProfile.visibleWidgets,
                         skin: newProfile.skin,
+                        unlocked_skins: newProfile.unlockedSkins,
+                        unlocked_items: newProfile.unlockedItems,
+                        completed_season_missions: newProfile.completedSeasonMissions,
                         nobility: newProfile.nobility,
                         mood: newProfile.mood,
                         chests: newProfile.chests,
@@ -176,6 +189,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         isOnline: profile.is_online,
                         visibleWidgets: profile.visible_widgets,
                         skin: profile.skin,
+                        unlockedSkins: profile.unlocked_skins ?? {},
+                        unlockedItems: profile.unlocked_items ?? {
+                            bodyStyles: {},
+                            hairStyles: {},
+                            outfits: {},
+                            head_under_items: {},
+                            helmets: {},
+                            head_over_items: {},
+                            artifacts: {},
+                        },
+                        completedSeasonMissions: profile.completed_season_missions ?? [],
                         lastLevelUpdate: profile.last_level_update,
                         nobility: profile.nobility,
                         mood: profile.mood,
@@ -244,6 +268,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         isOnline: true,
                         visibleWidgets: ['consciencia.lema', 'espiritualidade.sistema'],
                         skin: 'GOLD',
+                        unlockedSkins: {},
+                        unlockedItems: {
+                            bodyStyles: {},
+                            hairStyles: {},
+                            outfits: {},
+                            head_under_items: {},
+                            helmets: {},
+                            head_over_items: {},
+                            artifacts: {},
+                        },
+                        completedSeasonMissions: [],
                         nobility: { exp: 999999, rankId: 'soberano' },
                         mood: 100,
                         chests: [
@@ -268,6 +303,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         is_online: adminProfileForState.isOnline,
                         visible_widgets: adminProfileForState.visibleWidgets,
                         skin: adminProfileForState.skin,
+                        unlocked_skins: adminProfileForState.unlockedSkins,
+                        unlocked_items: adminProfileForState.unlockedItems,
+                        completed_season_missions: adminProfileForState.completedSeasonMissions,
                         nobility: adminProfileForState.nobility,
                         mood: adminProfileForState.mood,
                         chests: adminProfileForState.chests,
@@ -305,6 +343,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         isOnline: profile.is_online,
                         visibleWidgets: profile.visible_widgets,
                         skin: profile.skin,
+                        unlockedSkins: profile.unlocked_skins ?? {},
+                        unlockedItems: profile.unlocked_items ?? {
+                            bodyStyles: {},
+                            hairStyles: {},
+                            outfits: {},
+                            head_under_items: {},
+                            helmets: {},
+                            head_over_items: {},
+                            artifacts: {},
+                        },
+                        completedSeasonMissions: profile.completed_season_missions ?? [],
                         lastLevelUpdate: profile.last_level_update,
                         nobility: profile.nobility,
                         mood: profile.mood,
@@ -341,10 +390,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
     return (
         <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black animate-fade-in">
             <div className="w-full max-w-sm mx-auto text-center border border-yellow-800/50 rounded-2xl p-6 space-y-6">
-                <GameLogoIcon className="w-24 h-24 mx-auto" />
+                <div className="relative w-56 h-56 mx-auto">
+                    <img src="/logo-diamond.png" alt="Logo" className="w-full h-full object-contain" />
+                    <img src="/logo-core.png" alt="Núcleo" className="absolute inset-0 m-auto w-[100%] h-[100%] object-contain logo-core-spin" />
+                </div>
 
-                <h1 className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400">
-                    {isSigningUp ? 'REGISTRO DO SOBERANO' : 'ACESSO DO SOBERANO'}
+                <h1 className="luxe-title-ornate text-3xl font-bold uppercase tracking-[0.25em] text-[var(--accent-gold)]">
+                    GLYPH
                 </h1>
 
                 <div className="space-y-4">
@@ -408,30 +460,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                     </button>
                 </div>
 
-                <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-gray-700"></div>
-                    <span className="flex-shrink mx-4 text-gray-500 text-xs">OU</span>
-                    <div className="flex-grow border-t border-gray-700"></div>
-                </div>
-
-                <button 
-                    onClick={loginAsAdmin} 
-                    disabled={loading}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-semibold disabled:opacity-50"
-                >
-                    {loading ? 'PROCESSANDO...' : '👑 ENTRAR COMO ADMIN'}
-                </button>
-
-                <button 
-                    onClick={onGuestLogin} 
-                    className="w-full py-3 rounded-2xl bg-gray-800 border border-gray-600 text-white font-semibold hover:bg-gray-700 transition-colors"
-                >
-                    ENTRAR COMO CONVIDADO
-                </button>
-                
-                <p className="text-xs text-gray-500 text-center">
-                    Admin: admin@gol.local / admin123
-                </p>
             </div>
         </div>
     );

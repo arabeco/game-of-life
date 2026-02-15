@@ -3,7 +3,7 @@ import { GlassCard } from './GlassCard';
 import { XIcon } from './Icons';
 import { ChestType, UnlockCategory } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { GM_CONFIG } from '../constants';
+import { GM_CONFIG, SKINS_DATA, SKIN_CHEST_POOL } from '../constants';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 
 interface ChestOpeningModalProps {
@@ -32,7 +32,7 @@ const ASSET_POOL: Record<UnlockCategory, { id: string; name: string }[]> = {
     artifacts: SOVEREIGN_ASSETS.artifacts,
 };
 
-const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: UnlockCategory; itemId: string } } => {
+const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string } => {
     const poolConfig = GM_CONFIG.chestDrops.itemPool;
     const pool = poolConfig.categories.flatMap(category =>
         ASSET_POOL[category].filter(item => !poolConfig.excludeIds?.includes(item.id))
@@ -41,6 +41,12 @@ const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: U
     if (pool.length > 0 && Math.random() < GM_CONFIG.chestDrops.itemDropChanceByChest[type]) {
         const picked = pool[Math.floor(Math.random() * pool.length)];
         return { type: 'Item', value: picked.name, rarity: type, itemUnlock: { category: picked.category, itemId: picked.itemId } };
+    }
+    const skinDropChance = GM_CONFIG.chestDrops.skinDropChanceByChest?.[type] ?? 0;
+    const skinPool = SKINS_DATA.filter(skin => SKIN_CHEST_POOL.includes(skin.id));
+    if (skinPool.length > 0 && Math.random() < skinDropChance) {
+        const pickedSkin = skinPool[Math.floor(Math.random() * skinPool.length)];
+        return { type: 'Skin', value: pickedSkin.name, rarity: type, skinUnlock: pickedSkin.id };
     }
     const rewards: Omit<Reward, 'rarity'>[] = [
         { type: 'EXP', value: 100 },
@@ -70,7 +76,7 @@ const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: U
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose }) => {
     const [stage, setStage] = useState<'opening' | 'revealing' | 'revealed'>('opening');
     const [reward, setReward] = useState<Reward | null>(null);
-    const { grantUserUnlock } = useGame();
+    const { grantUserUnlock, updateUserProfile, userProfile } = useGame();
 
     const chestStyle = getChestStyle(chestType);
 
@@ -91,9 +97,13 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
     }, [stage, chestType]);
 
     const handleCollect = () => {
-        const rewardValue = reward as (Reward & { itemUnlock?: { category: UnlockCategory; itemId: string } }) | null;
+        const rewardValue = reward as (Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string }) | null;
         if (rewardValue?.itemUnlock) {
             grantUserUnlock(rewardValue.itemUnlock.category, rewardValue.itemUnlock.itemId);
+        }
+        if (rewardValue?.skinUnlock) {
+            const nextUnlockedSkins = { ...(userProfile.unlockedSkins || {}), [rewardValue.skinUnlock]: true };
+            updateUserProfile({ unlockedSkins: nextUnlockedSkins });
         }
         onClose();
     };

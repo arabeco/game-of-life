@@ -12,7 +12,7 @@ import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderCo
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import { TutorialOverlay } from './components/TutorialOverlay';
 import { GlobalHeader } from './components/GlobalHeader';
-import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon } from './components/Icons';
+import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from './components/Icons';
 import { AchievementModal } from './components/AchievementModal';
 import { supabase } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
@@ -170,6 +170,46 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                     60% { opacity: 0.75; transform: scale(1); }
                     100% { opacity: 0.2; transform: scale(1.02); }
                 }
+            `}</style>
+        </div>
+    );
+};
+
+const BootRitualOverlay: React.FC<{ open: boolean }> = ({ open }) => {
+    if (!open) return null;
+
+    return (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(7,6,4,0.8),rgba(0,0,0,0.98))]" />
+            <div className="absolute inset-8 rounded-[36px] border border-[rgba(197,160,89,0.25)] boot-frame" />
+            <div className="relative flex flex-col items-center gap-8">
+                <div className="relative w-48 h-48">
+                    <div className="absolute inset-0 boot-orbit" />
+                    <div className="absolute inset-6 boot-orbit boot-orbit-delayed" />
+                    <div className="absolute inset-12 boot-orbit" />
+                    <div className="absolute left-1/2 top-1/2 w-40 h-px -translate-x-1/2 -translate-y-1/2 boot-line" />
+                    <div className="absolute left-1/2 top-1/2 w-px h-40 -translate-x-1/2 -translate-y-1/2 boot-line" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="boot-logo">
+                            <GameLogoIcon />
+                        </div>
+                    </div>
+                </div>
+                <div className="text-center space-y-2">
+                    <p className="text-[10px] uppercase tracking-[0.5em] text-[#7f7f7f]">Ritual de Boot</p>
+                    <p className="text-sm font-semibold text-[#C5A059] tracking-[0.2em]">Modo Soberano</p>
+                </div>
+            </div>
+            <style>{`
+                .boot-frame { animation: bootFrame 2s ease-out forwards; }
+                .boot-orbit { border: 1px solid rgba(197,160,89,0.35); border-radius: 9999px; box-shadow: 0 0 25px rgba(197,160,89,0.2); animation: bootOrbit 2s ease-out forwards; }
+                .boot-orbit-delayed { animation-delay: 0.25s; }
+                .boot-line { background: linear-gradient(90deg, transparent, rgba(197,160,89,0.6), transparent); animation: bootLine 2s ease-out forwards; }
+                .boot-logo { color: #C5A059; filter: drop-shadow(0 0 18px rgba(197,160,89,0.55)); transform: scale(0.6); opacity: 0; animation: bootLogo 2s ease-out forwards; }
+                @keyframes bootOrbit { 0% { opacity: 0; transform: scale(0.75); } 45% { opacity: 1; transform: scale(1); } 100% { opacity: 0.9; transform: scale(1.02); } }
+                @keyframes bootLine { 0% { opacity: 0; transform: scaleX(0.6); } 40% { opacity: 0.7; transform: scaleX(1); } 100% { opacity: 0.25; transform: scaleX(1.1); } }
+                @keyframes bootLogo { 0% { opacity: 0; transform: scale(0.4) rotate(-6deg); } 55% { opacity: 1; transform: scale(1) rotate(0deg); } 100% { opacity: 0.85; transform: scale(1.05); } }
+                @keyframes bootFrame { 0% { opacity: 0; } 60% { opacity: 1; } 100% { opacity: 0.8; } }
             `}</style>
         </div>
     );
@@ -392,6 +432,11 @@ const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [isGuest, setIsGuest] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [showBootRitual, setShowBootRitual] = useState(false);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const lastSoundAtRef = useRef(0);
+    const lastActivityKey = 'gol:last-active';
+    const inactivityWindowMs = 6 * 60 * 60 * 1000;
 
     useEffect(() => {
         // --- Auth Logic ---
@@ -413,6 +458,143 @@ const App: React.FC = () => {
         });
 
         return () => subscription.unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const now = Date.now();
+        let lastActive = 0;
+        try {
+            lastActive = Number(localStorage.getItem(lastActivityKey) || 0);
+        } catch {}
+
+        if (lastActive && now - lastActive > inactivityWindowMs) {
+            setShowBootRitual(true);
+            if (navigator.vibrate) navigator.vibrate([28, 40, 28]);
+            const timer = window.setTimeout(() => {
+                setShowBootRitual(false);
+                try {
+                    localStorage.setItem(lastActivityKey, String(Date.now()));
+                } catch {}
+            }, 2000);
+            return () => window.clearTimeout(timer);
+        }
+        try {
+            localStorage.setItem(lastActivityKey, String(now));
+        } catch {}
+    }, []);
+
+    useEffect(() => {
+        const updateLastActive = () => {
+            try {
+                localStorage.setItem(lastActivityKey, String(Date.now()));
+            } catch {}
+        };
+
+        const playClickSound = () => {
+            const now = performance.now();
+            if (now - lastSoundAtRef.current < 40) return;
+            lastSoundAtRef.current = now;
+
+            const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+            if (!AudioContextClass) return;
+            if (!audioContextRef.current) audioContextRef.current = new AudioContextClass();
+            const ctx = audioContextRef.current;
+            if (ctx.state === 'suspended') ctx.resume();
+
+            const t = ctx.currentTime;
+            const master = ctx.createGain();
+            master.gain.setValueAtTime(0.0001, t);
+            master.gain.exponentialRampToValueAtTime(0.08, t + 0.002);
+            master.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+
+            const click = ctx.createOscillator();
+            click.type = 'square';
+            click.frequency.setValueAtTime(1400, t);
+            click.frequency.exponentialRampToValueAtTime(700, t + 0.02);
+
+            const snap = ctx.createOscillator();
+            snap.type = 'sine';
+            snap.frequency.setValueAtTime(3000, t);
+            snap.frequency.exponentialRampToValueAtTime(1800, t + 0.015);
+            const snapGain = ctx.createGain();
+            snapGain.gain.setValueAtTime(0.0001, t);
+            snapGain.gain.exponentialRampToValueAtTime(0.05, t + 0.001);
+            snapGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.02);
+
+            click.connect(master);
+            snap.connect(snapGain);
+            snapGain.connect(master);
+            master.connect(ctx.destination);
+
+            click.start(t);
+            snap.start(t);
+            click.stop(t + 0.05);
+            snap.stop(t + 0.03);
+        };
+
+        const handlePointerDown = (event: PointerEvent) => {
+            updateLastActive();
+            const target = event.target as HTMLElement | null;
+            if (!target) return;
+            const interactive = target.closest('button, [role="button"], a, input[type="button"], input[type="submit"], .luxe-button-primary, .luxe-gold-button') as HTMLElement | null;
+            if (!interactive) return;
+            playClickSound();
+            interactive.classList.add('click-flash');
+            window.setTimeout(() => interactive.classList.remove('click-flash'), 180);
+        };
+
+        const handleVisibility = () => updateLastActive();
+
+        document.addEventListener('pointerdown', handlePointerDown, { passive: true });
+        document.addEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('beforeunload', updateLastActive);
+
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown);
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('beforeunload', updateLastActive);
+        };
+    }, []);
+
+    useEffect(() => {
+        const root = document.documentElement;
+        let hasOrientation = false;
+        let mouseListener: ((event: MouseEvent) => void) | null = null;
+
+        const updateTilt = (x: number, y: number) => {
+            root.style.setProperty('--tilt-x', x.toFixed(2));
+            root.style.setProperty('--tilt-y', y.toFixed(2));
+        };
+
+        const handleOrientation = (event: DeviceOrientationEvent) => {
+            if (event.gamma === null || event.beta === null) return;
+            hasOrientation = true;
+            const x = Math.max(-18, Math.min(18, event.gamma));
+            const y = Math.max(-18, Math.min(18, event.beta));
+            updateTilt(x, y);
+        };
+
+        const attachMouseFallback = () => {
+            mouseListener = (event: MouseEvent) => {
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                const x = ((event.clientX - centerX) / centerX) * 10;
+                const y = ((event.clientY - centerY) / centerY) * 10;
+                updateTilt(x, y);
+            };
+            window.addEventListener('mousemove', mouseListener, { passive: true });
+        };
+
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        const fallbackTimer = window.setTimeout(() => {
+            if (!hasOrientation) attachMouseFallback();
+        }, 800);
+
+        return () => {
+            window.removeEventListener('deviceorientation', handleOrientation, true);
+            window.clearTimeout(fallbackTimer);
+            if (mouseListener) window.removeEventListener('mousemove', mouseListener);
+        };
     }, []);
     
     const handleGuestLogin = () => {
@@ -439,6 +621,7 @@ const App: React.FC = () => {
           <CodexBuilderProvider>
             <TutorialProvider>
               {renderContent()}
+              <BootRitualOverlay open={showBootRitual} />
             </TutorialProvider>
           </CodexBuilderProvider>
         </GameProvider>

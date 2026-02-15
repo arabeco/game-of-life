@@ -17,6 +17,11 @@ const MasterySlider: React.FC<{
     onPhraseChange: (assetId: string, phrase: string) => void;
 }> = ({ asset, mode, tempLevel, tempPhrase, onLevelChange, onPhraseChange }) => {
     
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = Number(e.target.value);
+        onLevelChange(asset.id, newValue);
+    };
+
     return (
         <GlassCard variant="neutral" className="space-y-3">
             <div className="flex justify-between items-center">
@@ -28,7 +33,7 @@ const MasterySlider: React.FC<{
                 min={1}
                 max={10}
                 value={tempLevel}
-                onChange={e => onLevelChange(asset.id, parseInt(e.target.value))}
+                onChange={handleSliderChange}
                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg"
                 style={{ accentColor: 'var(--skin-accent-color)'}}
             />
@@ -56,6 +61,11 @@ export const MasteryView: React.FC = () => {
 
     useEffect(() => {
         // Initialize temporary state from global context
+        // Only initialize if we haven't set them up yet, to prevent slider jumping during background updates
+        if (Object.keys(tempLevels).length > 0) return;
+        
+        if (assets.length === 0) return;
+
         const initialLevels = assets.reduce((acc, asset) => ({ ...acc, [asset.id]: asset.level }), {});
         const initialPhrases = assets.reduce((acc, asset) => {
             const fullPhrases = MASTERY_LEVEL_DESCRIPTIONS[asset.id];

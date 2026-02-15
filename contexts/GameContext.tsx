@@ -3,8 +3,9 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG } from '../constants';
 import { buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
-import { supabase } from '../supabaseClient';
+import { supabase, isSupabaseMock } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
+import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
 import { useCodexBuilder } from './CodexBuilderContext';
 
@@ -363,6 +364,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
   }, [session?.user.id]);
 
+  const getSupabaseUserId = useCallback(() => {
+    const candidate = isSupabaseMock ? (session?.user.id ?? userProfile.id) : session?.user.id;
+    if (!candidate) return null;
+    if (!isSupabaseMock && !isUuid(candidate)) return null;
+    return candidate;
+  }, [session?.user.id, userProfile.id]);
+
   useEffect(() => {
     const currentUserId = session?.user.id;
     if (!currentUserId) return;
@@ -557,7 +565,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, []);
 
   const hydrateProfilesByIds = useCallback(async (ids: string[]) => {
-    const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+    let uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+    if (!isSupabaseMock) {
+        uniqueIds = uniqueIds.filter(id => isUuid(id));
+    }
     if (uniqueIds.length === 0) return {} as Record<string, UserProfile>;
 
     const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', uniqueIds);
@@ -574,66 +585,95 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, []);
 
   const loadFriendsAndRequests = useCallback(async (userId: string) => {
-    const [{ data: friendsData, error: friendsError }, { data: incomingData, error: incomingError }, { data: outgoingData, error: outgoingError }] = await Promise.all([
-        supabase.from('friends').select('*').eq('user_id', userId),
-        supabase.from('friend_requests').select('*').eq('recipient_id', userId),
-        supabase.from('friend_requests').select('*').eq('sender_id', userId),
-    ]);
-
-    if (friendsError) console.error('Error fetching friends:', friendsError.message);
-    if (incomingError) console.error('Error fetching incoming friend requests:', incomingError.message);
-    if (outgoingError) console.error('Error fetching outgoing friend requests:', outgoingError.message);
-
-    const incomingRequests = (incomingData || []).filter((row: any) => row.status === 'pending').map((row: any) => ({
-        id: row.id,
-        senderId: row.sender_id,
-        recipientId: row.recipient_id,
-        status: row.status,
-        createdAt: row.created_at,
-        respondedAt: row.responded_at,
-    })) as FriendRequest[];
-
-    const outgoingRequests = (outgoingData || []).filter((row: any) => row.status === 'pending').map((row: any) => ({
-        id: row.id,
-        senderId: row.sender_id,
-        recipientId: row.recipient_id,
-        status: row.status,
-        createdAt: row.created_at,
-        respondedAt: row.responded_at,
-    })) as FriendRequest[];
-
-    const friendIds = (friendsData || []).map((row: any) => row.friend_id).filter(Boolean);
-    const profileIdsToHydrate = [
-        ...friendIds,
-        ...incomingRequests.map(r => r.senderId),
-        ...incomingRequests.map(r => r.recipientId),
-        ...outgoingRequests.map(r => r.senderId),
-        ...outgoingRequests.map(r => r.recipientId),
-    ];
-
-    const profilesById = await hydrateProfilesByIds(profileIdsToHydrate);
-
-    setFriends(friendIds.map(id => profilesById[id]).filter(Boolean));
-    setFriendRequestsIncoming(incomingRequests.map(r => ({
-        ...r,
-        senderProfile: profilesById[r.senderId],
-        recipientProfile: profilesById[r.recipientId],
-    })));
-    setFriendRequestsOutgoing(outgoingRequests.map(r => ({
-        ...r,
-        senderProfile: profilesById[r.senderId],
-        recipientProfile: profilesById[r.recipientId],
-    })));
-  }, [hydrateProfilesByIds]);
-
-  const loadClanJoinRequestsOutgoing = useCallback(async (userId: string) => {
-    const { data, error } = await supabase.from('clan_join_requests').select('*').eq('user_id', userId);
-    if (error || !data) {
-        if (error) console.error('Error fetching outgoing clan join requests:', error.message);
+    if (!isSupabaseMock && !isUuid(userId)) {
+        setFriends([]);
+        setFriendRequestsIncoming([]);
+        setFriendRequestsOutgoing([]);
         return;
     }
-    const mapped = mapToCamelCase(data || []) as ClanJoinRequest[];
-    setClanJoinRequestsOutgoing(mapped.filter(r => r.status === 'pending'));
+
+    try {
+        // Usar rate limiter para controlar número de requisições simultâneas
+        const results = await rateLimiter.batchRequests([
+            () => supabase.from('friends').select('*').eq('user_id', userId),
+            () => supabase.from('friend_requests').select('*').eq('recipient_id', userId),
+            () => supabase.from('friend_requests').select('*').eq('sender_id', userId),
+        ]);
+
+        const [{ data: friendsData, error: friendsError }, { data: incomingData, error: incomingError }, { data: outgoingData, error: outgoingError }] = results;
+
+        if (friendsError) console.error('Error fetching friends:', friendsError.message);
+        if (incomingError) console.error('Error fetching incoming friend requests:', incomingError.message);
+        if (outgoingError) console.error('Error fetching outgoing friend requests:', outgoingError.message);
+
+        const incomingRequests = (incomingData || []).filter((row: any) => row.status === 'pending').map((row: any) => ({
+            id: row.id,
+            senderId: row.sender_id,
+            recipientId: row.recipient_id,
+            status: row.status,
+            createdAt: row.created_at,
+            respondedAt: row.responded_at,
+        })) as FriendRequest[];
+
+        const outgoingRequests = (outgoingData || []).filter((row: any) => row.status === 'pending').map((row: any) => ({
+            id: row.id,
+            senderId: row.sender_id,
+            recipientId: row.recipient_id,
+            status: row.status,
+            createdAt: row.created_at,
+            respondedAt: row.responded_at,
+        })) as FriendRequest[];
+
+        const friendIds = (friendsData || []).map((row: any) => row.friend_id).filter(Boolean);
+        const profileIdsToHydrate = [
+            ...friendIds,
+            ...incomingRequests.map(r => r.senderId),
+            ...incomingRequests.map(r => r.recipientId),
+            ...outgoingRequests.map(r => r.senderId),
+            ...outgoingRequests.map(r => r.recipientId),
+        ].filter((id, index, arr) => id && arr.indexOf(id) === index);
+
+        setFriendRequestsIncoming(incomingRequests);
+        setFriendRequestsOutgoing(outgoingRequests);
+
+        if (profileIdsToHydrate.length > 0) {
+            const profiles = await hydrateProfilesByIds(profileIdsToHydrate);
+            // Criar array de perfis de amigos a partir dos IDs
+            const friendProfiles = friendIds.map(id => profiles[id]).filter(Boolean);
+            setFriends(friendProfiles);
+        } else {
+            setFriends([]);
+        }
+    } catch (error) {
+        console.error('Error in loadFriendsAndRequests:', error);
+        setFriends([]);
+        setFriendRequestsIncoming([]);
+        setFriendRequestsOutgoing([]);
+    }
+  }, []);
+
+  const loadClanJoinRequestsOutgoing = useCallback(async (userId: string) => {
+    if (!isSupabaseMock && !isUuid(userId)) {
+        setClanJoinRequestsOutgoing([]);
+        return;
+    }
+    
+    try {
+        const result = await rateLimiter.addRequest(() => 
+            supabase.from('clan_join_requests').select('*').eq('user_id', userId)
+        );
+        
+        const { data, error } = result;
+        if (error || !data) {
+            if (error) console.error('Error fetching outgoing clan join requests:', error.message);
+            return;
+        }
+        const mapped = mapToCamelCase(data || []) as ClanJoinRequest[];
+        setClanJoinRequestsOutgoing(mapped.filter(r => r.status === 'pending'));
+    } catch (error) {
+        console.error('Error in loadClanJoinRequestsOutgoing:', error);
+        setClanJoinRequestsOutgoing([]);
+    }
   }, []);
 
   const loadClanJoinRequestsIncoming = useCallback(async (clanId: string) => {
@@ -658,7 +698,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const { data: membersData, error: membersError } = await supabase.from('clan_members').select('*').eq('clan_id', clanId);
     if (membersError || !membersData) { console.error('Error fetching clan members:', membersError?.message); return; }
 
-    const memberIds = membersData.map((m: any) => m.user_id);
+    const memberIds = membersData.map((m: any) => m.user_id).filter((id: string) => isSupabaseMock || isUuid(id));
     if (memberIds.length === 0) { setEnrichedClanMembers([]); return; }
 
     const { data: memberProfiles, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', memberIds);
@@ -689,6 +729,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [setClan, setEnrichedClanMembers, fetchClanQuestProgress, session?.user.id, userProfile.id, loadClanJoinRequestsIncoming]);
 
   const migrateGuestDataToSupabase = useCallback(async (userId: string) => {
+    if (!isSupabaseMock && !isUuid(userId)) {
+        console.error("Invalid userId for migration to Supabase");
+        return;
+    }
+    
     const errors: string[] = [];
     const syncedProfile = await SupabaseService.syncUserProfile({ ...userProfile, id: userId, isOnline: true });
     if (!syncedProfile) errors.push('profile');
@@ -706,8 +751,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     if (actions.length > 0) {
         const actionsPayload = actions.map(action => ({ ...mapToSnakeCase(action), user_id: userId }));
-        const { error } = await supabase.from('actions').upsert(actionsPayload, { onConflict: 'id' });
-        if (error) errors.push('actions');
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for actions upsert");
+        } else {
+            const { error } = await supabase.from('actions').upsert(actionsPayload, { onConflict: 'id' });
+            if (error) errors.push('actions');
+        }
     }
 
     if (tasks.length > 0) {
@@ -753,14 +802,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
     }
     
-    const userId = session?.user.id ?? userProfile.id;
-    if (!userId || userId === 'placeholder_user') return; // Don't load if it's the default placeholder
+    const userId = getSupabaseUserId();
+    if (!userId) return;
 
     const loadDataFromSupabase = async () => {
-        
+        // Verificar se o userId é válido antes de fazer queries
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for loading data from Supabase");
+            return;
+        }
         
         // 1. Load Profile
-        const { data: profileData, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
+        const profileResult = await rateLimiter.addRequest(() => 
+            supabase.from('user_profiles').select('*').eq('id', userId).single()
+        );
+        const { data: profileData, error: profileError } = profileResult;
         if (!profileError && profileData) {
             const camelProfile = mapToCamelCase(profileData) as UserProfile;
             setUserProfile(prev => ({ ...prev, ...camelProfile }));
@@ -770,7 +826,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await loadClanJoinRequestsOutgoing(userId);
 
         let camelArenas: Arena[] | null = null;
-        const { data: arenasData, error: arenasError } = await supabase.from('arenas').select('*').eq('user_id', userId);
+        const arenasResult = await rateLimiter.addRequest(() => 
+            supabase.from('arenas').select('*').eq('user_id', userId)
+        );
+        const { data: arenasData, error: arenasError } = arenasResult;
         if (!arenasError && arenasData) {
             camelArenas = (mapToCamelCase(arenasData) as Arena[]).map(arena => ({
                 ...arena,
@@ -780,18 +839,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 3. Load Actions
-        const { data: actionsData, error: actionsError } = await supabase.from('actions').select('*').eq('user_id', userId);
+        const actionsResult = await rateLimiter.addRequest(() => 
+            supabase.from('actions').select('*').eq('user_id', userId)
+        );
+        const { data: actionsData, error: actionsError } = actionsResult;
         if (!actionsError && actionsData) {
             setActions(mapToCamelCase(actionsData) as Action[]);
         }
 
         // 4. Load Scheduled Tasks
-        const { data: tasksData, error: tasksError } = await supabase.from('scheduled_tasks').select('*').eq('user_id', userId);
+        const tasksResult = await rateLimiter.addRequest(() => 
+            supabase.from('scheduled_tasks').select('*').eq('user_id', userId)
+        );
+        const { data: tasksData, error: tasksError } = tasksResult;
         if (!tasksError && tasksData) {
             setTasks(mapToCamelCase(tasksData) as ScheduledTask[]);
         }
 
-        const { data: slotsData, error: slotsError } = await supabase.from('asset_slots').select('*').eq('user_id', userId);
+        const slotsResult = await rateLimiter.addRequest(() => 
+            supabase.from('asset_slots').select('*').eq('user_id', userId)
+        );
+        const { data: slotsData, error: slotsError } = slotsResult;
         if ((!arenasError && arenasData) || (!slotsError && slotsData)) {
             setAssets(prevAssets => {
                 let nextAssets = prevAssets;
@@ -821,7 +889,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
         
-        const { data: clanMemberData, error: clanMemberError } = await supabase.from('clan_members').select('clan_id').eq('user_id', userId).single();
+        const clanMemberResult = await rateLimiter.addRequest(() => 
+            supabase.from('clan_members').select('clan_id').eq('user_id', userId).single()
+        );
+        const { data: clanMemberData, error: clanMemberError } = clanMemberResult;
 
         if (clanMemberError || !clanMemberData) {
             setClan(null);
@@ -831,12 +902,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             loadClanAndMembers(clanMemberData.clan_id);
         }
 
-        const { data: reportsData, error: reportsError } = await supabase.from('reports').select('*').eq('user_id', userId).order('end_date', { ascending: false });
+        const reportsResult = await rateLimiter.addRequest(() => 
+            supabase.from('reports').select('*').eq('user_id', userId).order('end_date', { ascending: false })
+        );
+        const { data: reportsData, error: reportsError } = reportsResult;
         if (!reportsError && reportsData) {
             setReports(mapToCamelCase(reportsData) as Report[]);
         }
 
-        const { data: cyclesData, error: cyclesError } = await supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1);
+        const cyclesResult = await rateLimiter.addRequest(() => 
+            supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1)
+        );
+        const { data: cyclesData, error: cyclesError } = cyclesResult;
         if (!cyclesError && cyclesData && cyclesData.length > 0) {
             setActiveCycle(mapToCamelCase(cyclesData[0]) as Cycle);
         }
@@ -854,7 +931,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     run();
-  }, [session, userProfile.id, loadClanAndMembers, loadFriendsAndRequests, loadClanJoinRequestsOutgoing, migrateGuestDataToSupabase]);
+  }, [session, userProfile.id, loadClanAndMembers, loadFriendsAndRequests, loadClanJoinRequestsOutgoing, migrateGuestDataToSupabase, getSupabaseUserId]);
 
   const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
     const newEvent: FeedEvent = {
@@ -952,11 +1029,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
 
     // Persist to Supabase if logged in
-    const userId = session?.user.id ?? userProfile.id;
-    if (userId && userId !== 'placeholder_user') {
+    const supabaseUserId = getSupabaseUserId();
+    if (supabaseUserId) {
       const sitrepReport = {
         id: crypto.randomUUID(),
-        user_id: userId,
+        user_id: supabaseUserId,
         date: dailyCommitment.date,
         score: score,
         completed_tasks: completedCount,
@@ -1030,8 +1107,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const updateUserProfile = (profileData: Partial<UserProfile>) => {
     setUserProfile(prev => ({ ...prev, ...profileData }));
-    const userId = session?.user.id;
-    if (userId && userId !== 'placeholder_user' && isUuid(userId)) {
+    const supabaseUserId = getSupabaseUserId();
+    if (supabaseUserId) {
+        if (!isSupabaseMock && !isUuid(supabaseUserId)) {
+            // console.error("Invalid Supabase User ID for profile update"); // Optional logging to avoid spam
+            return;
+        }
         const allowedKeys: (keyof UserProfile)[] = [
             'email',
             'sovereign',
@@ -1057,7 +1138,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const entries = Object.entries(profileData).filter(([key, value]) => allowedKeys.includes(key as keyof UserProfile) && value !== undefined);
         if (entries.length > 0) {
             const snakeCaseData = mapToSnakeCase(Object.fromEntries(entries));
-            supabase.from('user_profiles').update(snakeCaseData).eq('id', userId).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
+            supabase.from('user_profiles').update(snakeCaseData).eq('id', supabaseUserId).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
         }
     }
   };
@@ -1147,7 +1228,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const startCycle = (name: string, endDate: string) => {
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId() ?? userProfile.id;
     const newCycle: Cycle = { 
         id: crypto.randomUUID(), 
         name, 
@@ -1160,23 +1241,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setActiveCycle(newCycle);
 
     // Sync to Supabase
-    if (userId && userId !== 'placeholder_user') {
-        const snakeCaseCycle = {
-            id: newCycle.id,
-            user_id: userId,
-            name: newCycle.name,
-            start_date: newCycle.startDate,
-            end_date: newCycle.endDate,
-            arena_ids: newCycle.arenaIds
-        };
-        supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
-            if (error) console.error("Supabase start cycle error:", error.message);
-        });
+    const supabaseUserId = getSupabaseUserId();
+    if (supabaseUserId) {
+        if (!isSupabaseMock && !isUuid(supabaseUserId)) {
+            console.error("Invalid Supabase User ID for startCycle");
+        } else {
+            const snakeCaseCycle = {
+                id: newCycle.id,
+                user_id: supabaseUserId,
+                name: newCycle.name,
+                start_date: newCycle.startDate,
+                end_date: newCycle.endDate,
+                arena_ids: newCycle.arenaIds
+            };
+            supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
+                if (error) console.error("Supabase start cycle error:", error.message);
+            });
+        }
     }
   };
   const endCycle = (currentAssets: Asset[], currentActions: Action[]): EndCycleResult => {
     const cycle = activeCycle;
-    const userId = session?.user.id ?? userProfile.id;
+    const supabaseUserId = getSupabaseUserId();
     const startDate = cycle?.startDate || '2000-01-01'; // Fallback para o primeiro ciclo sem data
     const endDate = new Date().toISOString().split('T')[0];
 
@@ -1256,28 +1342,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     // Salvar relatório e atualizar ciclo no Supabase se logado
-    if (userId && userId !== 'placeholder_user') {
-        const snakeCaseReport = {
-            id: newReport.id,
-            user_id: userId,
-            start_date: newReport.startDate,
-            end_date: newReport.endDate,
-            performance_score: newReport.performanceScore,
-            metrics: newReport.metrics,
-            highlight: newReport.highlight,
-            asset_progress: newReport.assetProgress
-        };
-        
-        // 1. Insert Report
-        supabase.from('reports').insert(snakeCaseReport).then(({error}) => {
-            if (error) console.error("Supabase report insert error:", error.message);
-        });
-
-        // 2. Update/Delete Cycle (Mark as ended)
-        if (cycle?.id) {
-            supabase.from('cycles').update({ end_date: endDate }).eq('id', cycle.id).then(({ error }) => {
-                if (error) console.error("Supabase cycle update error:", error.message);
+    if (supabaseUserId) {
+        if (!isSupabaseMock && !isUuid(supabaseUserId)) {
+             console.error("Invalid Supabase User ID for endCycle");
+        } else {
+            const snakeCaseReport = {
+                id: newReport.id,
+                user_id: supabaseUserId,
+                start_date: newReport.startDate,
+                end_date: newReport.endDate,
+                performance_score: newReport.performanceScore,
+                metrics: newReport.metrics,
+                highlight: newReport.highlight,
+                asset_progress: newReport.assetProgress
+            };
+            
+            // 1. Insert Report
+            supabase.from('reports').insert(snakeCaseReport).then(({error}) => {
+                if (error) console.error("Supabase report insert error:", error.message);
             });
+
+            // 2. Update/Delete Cycle (Mark as ended)
+            if (cycle?.id) {
+                supabase.from('cycles').update({ end_date: endDate }).eq('id', cycle.id).then(({ error }) => {
+                    if (error) console.error("Supabase cycle update error:", error.message);
+                });
+            }
         }
     }
 
@@ -1354,9 +1444,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const sendFriendRequest = async (recipientId: string): Promise<void> => {
-    const senderId = session?.user.id ?? userProfile.id;
-    if (!senderId || senderId === 'placeholder_user') return;
+    const senderId = getSupabaseUserId();
+    if (!senderId) return;
     if (!recipientId || recipientId === senderId) return;
+    if (!isSupabaseMock && !isUuid(recipientId)) {
+        console.error("Invalid recipient ID for friend request");
+        return;
+    }
     if (friends.some(friend => friend.id === recipientId)) return;
     if (friendRequestsOutgoing.some(request => request.recipientId === recipientId)) return;
     if (friendRequestsIncoming.some(request => request.senderId === recipientId)) return;
@@ -1374,10 +1468,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const acceptFriendRequest = async (requestId: string): Promise<void> => {
-    const userId = session?.user.id ?? userProfile.id;
-    if (!userId || userId === 'placeholder_user') return;
+    const userId = getSupabaseUserId();
+    if (!userId) return;
     const request = friendRequestsIncoming.find(r => r.id === requestId);
     if (!request) return;
+
+    if (!isSupabaseMock && (!isUuid(request.senderId) || !isUuid(request.recipientId))) {
+        console.error("Invalid sender or recipient ID in friend request");
+        return;
+    }
 
     const { error: updateError } = await supabase.from('friend_requests')
         .update({ status: 'accepted', responded_at: new Date().toISOString() })
@@ -1400,8 +1499,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const declineFriendRequest = async (requestId: string): Promise<void> => {
-    const userId = session?.user.id ?? userProfile.id;
-    if (!userId || userId === 'placeholder_user') return;
+    const userId = getSupabaseUserId();
+    if (!userId) return;
     const { error } = await supabase.from('friend_requests')
         .update({ status: 'declined', responded_at: new Date().toISOString() })
         .eq('id', requestId);
@@ -1427,7 +1526,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         nextValue = Math.max(0, (clanProgress[questId] || 0) + delta);
         return { ...prev, [clan.id]: { ...clanProgress, [questId]: nextValue } };
     });
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId && clanQuestProgressTableReadyRef.current) {
         supabase.from('clan_quest_progress').upsert({
             clan_id: clan.id,
@@ -1459,7 +1558,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const updateAssetSlotValue = (assetId: string, slotId: string, value: SlotValue) => {
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, slots: asset.slots.map(slot => slot.id === slotId ? { ...slot, value } : slot) } : asset));
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
         // Correct upsert for asset_slots: use user_id and slot_id as composite key or unique identifiers
         supabase.from('asset_slots').upsert({ 
@@ -1476,11 +1575,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const addArena = (assetId: string, arenaData: Pick<Arena, 'name' | 'description' | 'icon'>): Arena => {
     const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
-        const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
-        delete snakeCaseData.action_ids; // Not a column
-        supabase.from('arenas').insert(snakeCaseData).then(({error}) => { if (error) console.error("Supabase add arena error:", error.message) });
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for add arena");
+        } else {
+            const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
+            delete snakeCaseData.action_ids; // Not a column
+            supabase.from('arenas').insert(snakeCaseData).then(({error}) => { if (error) console.error("Supabase add arena error:", error.message) });
+        }
     }
     return newArena;
   };
@@ -1490,7 +1593,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         ...asset,
         arenas: asset.arenas.map(arena => arena.id === arenaId ? { ...arena, ...arenaData } : arena)
     })));
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
         const snakeCaseData = mapToSnakeCase(arenaData);
         supabase.from('arenas').update(snakeCaseData).eq('id', arenaId).then(({error}) => { 
@@ -1504,11 +1607,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         arenas: asset.arenas.filter(arena => arena.id !== arenaId)
     })));
     setActions(prevActions => prevActions.filter(action => action.arenaId !== arenaId));
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
-        supabase.from('arenas').delete().eq('id', arenaId).then(({error}) => { 
-            if (error) console.error("Supabase delete arena error:", error.message);
-        });
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for delete arena");
+        } else {
+            supabase.from('arenas').delete().eq('id', arenaId).then(({error}) => { 
+                if (error) console.error("Supabase delete arena error:", error.message);
+            });
+        }
     }
   };
   const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
@@ -1551,19 +1658,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return asset;
     }));
 
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
-        const snakeCaseData = { ...mapToSnakeCase(newAction), user_id: userId };
-        supabase.from('actions').insert(snakeCaseData).then(({error}) => { 
-            if (error) console.error("Supabase add action error:", error.message);
-        });
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for add action");
+        } else {
+            const snakeCaseData = { ...mapToSnakeCase(newAction), user_id: userId };
+            supabase.from('actions').insert(snakeCaseData).then(({error}) => { 
+                if (error) console.error("Supabase add action error:", error.message);
+            });
+        }
     }
 
     return newAction;
   };
   const updateAction = (actionId: string, actionData: Partial<Action>) => {
     setActions(prev => prev.map(a => a.id === actionId ? { ...a, ...actionData } : a));
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
         const snakeCaseData = mapToSnakeCase(actionData);
         supabase.from('actions').update(snakeCaseData).eq('id', actionId).then(({error}) => { 
@@ -1584,11 +1695,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
         })
     })));
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
-        supabase.from('actions').delete().eq('id', actionId).then(({error}) => { 
-            if (error) console.error("Supabase delete action error:", error.message);
-        });
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for delete action");
+        } else {
+            supabase.from('actions').delete().eq('id', actionId).then(({error}) => { 
+                if (error) console.error("Supabase delete action error:", error.message);
+            });
+        }
     }
   };
   
@@ -1627,7 +1742,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     setTasks(prevTasks => [...prevTasks, ...newTasks]);
 
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
         const snakeCaseData = newTasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
         supabase.from('scheduled_tasks').insert(snakeCaseData).then(({ error }) => {
@@ -1650,12 +1765,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
       setTasks(prevTasks => [...prevTasks, newTask]);
 
-      const userId = session?.user.id ?? userProfile.id;
+      const userId = getSupabaseUserId();
       if (userId) {
-          const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-          supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
-              if (error) console.error("Supabase schedule task error:", error.message);
-          });
+          if (!isSupabaseMock && !isUuid(userId)) {
+              console.error("Invalid userId for schedule task");
+          } else {
+              const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+              supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+                  if (error) console.error("Supabase schedule task error:", error.message);
+              });
+          }
       }
 
       return newTask;
@@ -1689,12 +1808,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }));
     }
 
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
-        const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-        supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
-            if (error) console.error("Supabase schedule task now error:", error.message);
-        });
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for schedule task now");
+        } else {
+            const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+            supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+                if (error) console.error("Supabase schedule task now error:", error.message);
+            });
+        }
     }
   };
   const scheduleAndCompleteMilestoneNow = (actionId: string) => {
@@ -1741,12 +1864,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         content: { title: action.name, icon: action.icon }
     });
 
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
-        const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-        supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
-            if (error) console.error("Supabase schedule milestone now error:", error.message);
-        });
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for schedule milestone now");
+        } else {
+            const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+            supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+                if (error) console.error("Supabase schedule milestone now error:", error.message);
+            });
+        }
     }
   };
   const completeTutorialMission = () => {
@@ -1759,7 +1886,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
   const deleteTask = (taskId: string) => {
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
         supabase.from('scheduled_tasks').delete().eq('id', taskId).then(({ error }) => {
             if (error) console.error("Supabase delete task error:", error.message);
@@ -1775,14 +1902,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         ? { ...task, date: newDate, startTime: newStartTime }
         : task
     ));
-    const userId = session?.user.id ?? userProfile.id;
+    const userId = getSupabaseUserId();
     if (userId) {
-        supabase.from('scheduled_tasks')
-            .update({ date: newDate, start_time: newStartTime })
-            .eq('id', taskId)
-            .then(({ error }) => {
-                if (error) console.error("Supabase reschedule task error:", error.message);
-            });
+        if (!isSupabaseMock && !isUuid(userId)) {
+            console.error("Invalid userId for reschedule task");
+        } else {
+            supabase.from('scheduled_tasks')
+                .update({ date: newDate, start_time: newStartTime })
+                .eq('id', taskId)
+                .then(({ error }) => {
+                    if (error) console.error("Supabase reschedule task error:", error.message);
+                });
+        }
     }
   };
   const getClanQuestForAction = (action: Action | undefined) => {
@@ -1825,14 +1956,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
 
                 // Update in Supabase
-                const userId = session?.user.id ?? userProfile.id;
+                const userId = getSupabaseUserId();
                 if (userId) {
-                    supabase.from('scheduled_tasks')
-                        .update({ completed: updatedTask.completed })
-                        .eq('id', taskId)
-                        .then(({ error }) => {
-                            if (error) console.error("Supabase toggle task completion error:", error.message);
-                        });
+                    if (!isSupabaseMock && !isUuid(userId)) {
+                        console.error("Invalid userId for toggle task completion");
+                    } else {
+                        supabase.from('scheduled_tasks')
+                            .update({ completed: updatedTask.completed })
+                            .eq('id', taskId)
+                            .then(({ error }) => {
+                                if (error) console.error("Supabase toggle task completion error:", error.message);
+                            });
+                    }
                 }
 
                 return updatedTask;
@@ -1846,7 +1981,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   // --- Clan Functions ---
   const createClan = async (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => {
-    const userId = session ? session.user.id : userProfile.id;
+    const userId = getSupabaseUserId();
     if (!userId) { console.error("User not authenticated"); return; }
     
     const snakeCaseDetails = { ...mapToSnakeCase(clanDetails), exp: 0, rank_id: 'feudo' };
@@ -1878,8 +2013,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
   
   const leaveClan = async () => {
-      const userId = session ? session.user.id : userProfile.id;
+      const userId = getSupabaseUserId();
       if (!userId) { console.error("User not authenticated"); return; }
+      if (!isSupabaseMock && !isUuid(userId)) {
+          console.error("Invalid userId for leaving clan");
+          return;
+      }
       const { error } = await supabase.from('clan_members').delete().eq('user_id', userId);
       if (error) { console.error("Error leaving clan:", error.message); return; }
       setClan(null);
@@ -1889,6 +2028,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const transferLeadershipAndLeave = async (newLeaderId: string) => {
     if (!clan || !session) return;
+    if (!isSupabaseMock && !isUuid(newLeaderId)) {
+        console.error("Invalid new leader ID");
+        return;
+    }
     const { error: promoteError } = await supabase.from('clan_members').update({ role: 'leader' }).eq('clan_id', clan.id).eq('user_id', newLeaderId);
     if (promoteError) { console.error("Error transferring leadership:", promoteError.message); return; }
     await leaveClan();
@@ -1903,6 +2046,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const kickClanMember = async (memberId: string) => {
       if(!clan) return;
+      if (!isSupabaseMock && !isUuid(memberId)) {
+          console.error("Invalid member ID for kicking");
+          return;
+      }
       const { error } = await supabase.from('clan_members').delete().eq('user_id', memberId).eq('clan_id', clan.id);
       if (error) { console.error("Error kicking member:", error.message); return; }
       setEnrichedClanMembers(prev => prev.filter(m => m.id !== memberId));
@@ -1910,6 +2057,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const addClanMember = async (memberId: string) => {
       if (!clan) return;
+      if (!isSupabaseMock && !isUuid(memberId)) {
+          console.error("Invalid member ID for clan addition");
+          return;
+      }
 
       const { count, error: countError } = await supabase
           .from('clan_members')
@@ -1942,7 +2093,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const requestClanJoin = async (clanToJoin: Clan) => {
     if (clan) return;
-    const userId = session ? session.user.id : userProfile.id;
+    const userId = getSupabaseUserId();
     if (!userId) { console.error("User ID not found"); return; }
     if (clanJoinRequestsOutgoing.some(r => r.clanId === clanToJoin.id && r.status === 'pending')) return;
 
@@ -1963,7 +2114,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const joinClan = async (clanToJoin: Clan) => {
     if (clan) return; 
-    const userId = session ? session.user.id : userProfile.id;
+    const userId = getSupabaseUserId();
     if (!userId) { console.error("User ID not found"); return; }
 
     const recruitmentStatus = (clanToJoin as any).recruitment_status ?? (clanToJoin as any).recruitmentStatus;
@@ -2059,6 +2210,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const addSeasonMission = async (missionData: Omit<SeasonMission, 'id'>) => {
+      const userId = getSupabaseUserId();
+      if (!userId) { console.error("User not authenticated for adding season mission"); return; }
+      if (!isSupabaseMock && !isUuid(userId)) {
+          console.error("Invalid userId for adding season mission");
+          return;
+      }
+      
       const { data, error } = await supabase.from('season_missions').insert(mapToSnakeCase(missionData)).select().single();
       if (error) { console.error("Error adding season mission:", error.message); return; }
       if (data) {

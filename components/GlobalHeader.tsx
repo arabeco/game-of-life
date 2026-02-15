@@ -11,6 +11,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const day = date.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '');
     const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase().replace('.', '');
     const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const avatarUrl = userProfile.avatarUrl?.trim();
 
     const currentMood = MOODS_DATA.find(m => userProfile.mood >= m.min && userProfile.mood < m.max) || MOODS_DATA[MOODS_DATA.length - 1];
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
@@ -46,15 +47,25 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                             <div className="relative w-16 h-16 group-hover:scale-105 transition-transform">
                                 {/* Avatar Image */}
                                 <div className="w-full h-full flex items-center justify-center">
-                                    <img 
-                                        src={userProfile.avatarUrl} 
-                                        alt="Profile" 
-                                        className="w-full h-full object-cover rounded-full"
-                                        style={{
-                                            width: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
-                                            height: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
-                                        }}
-                                    />
+                                    {avatarUrl ? (
+                                        <img 
+                                            src={avatarUrl} 
+                                            alt="Profile" 
+                                            className="w-full h-full object-cover rounded-full"
+                                            style={{
+                                                width: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
+                                                height: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
+                                            }}
+                                        />
+                                    ) : (
+                                        <div
+                                            className="w-full h-full rounded-full bg-black/40"
+                                            style={{
+                                                width: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
+                                                height: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
+                                            }}
+                                        />
+                                    )}
                                 </div>
 
                                 {/* Border as Overlay */}

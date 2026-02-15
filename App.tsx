@@ -20,6 +20,8 @@ import { useLongPress } from './hooks/useLongPress';
 
 const OFFLINE_MODE = isSupabaseMock;
 
+const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
 const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open, onAccept }) => {
@@ -82,6 +84,7 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
         },
         onLongPressCancel: () => setIsHolding(false),
         onLongPressRelease: () => setIsHolding(false),
+        onClick: () => setIsHolding(false),
         delay: holdDurationMs,
     });
 
@@ -274,9 +277,9 @@ const AppWithTutorial: React.FC = () => {
             const parsed = JSON.parse(json) as { schemaVersion?: number; metadata?: { name?: string; author?: string; price?: number; description?: string } };
             const { data: sessionData } = await supabase.auth.getSession();
             const userId = sessionData.session?.user.id;
-            const isUuid = typeof userId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId);
-
-            if (isUuid) {
+            
+            // Verificar se temos um userId válido antes de tentar inserir
+            if (userId && isUuid(userId)) {
                 await supabase
                     .from('codexes')
                     .insert({
@@ -288,6 +291,8 @@ const AppWithTutorial: React.FC = () => {
                         description: parsed.metadata?.description ?? null,
                         template: parsed,
                     });
+            } else {
+                console.warn('Usuário não autenticado ou ID inválido. Salvando apenas localmente.');
             }
         } catch (e) {
             console.error('Falha ao salvar Codex no Supabase:', e);
@@ -387,7 +392,8 @@ const MainApp: React.FC = () => {
     const { isNewUser, achievementUnlocked, setAchievementUnlocked, userProfile } = useGame();
     const { isTutorialCompleted, startTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
-    const termsKey = `termsAccepted:${userProfile.id || 'guest'}`;
+    const safeUserId = userProfile.id && isUuid(userProfile.id) ? userProfile.id : 'guest';
+    const termsKey = `termsAccepted:${safeUserId}`;
 
     useEffect(() => {
         if (isNewUser && !isTutorialCompleted) {
@@ -398,7 +404,7 @@ const MainApp: React.FC = () => {
 
     useEffect(() => {
         try {
-            const accepted = localStorage.getItem(termsKey) === 'true';
+            const accepted = localStorage.getItem(termsKey) === 'true' || localStorage.getItem('termsAccepted') === 'true';
             setShowTerms(!accepted);
         } catch {
             setShowTerms(true);
@@ -408,6 +414,7 @@ const MainApp: React.FC = () => {
     const handleAcceptTerms = () => {
         try {
             localStorage.setItem(termsKey, 'true');
+            localStorage.setItem('termsAccepted', 'true');
         } catch {}
         setShowTerms(false);
     };

@@ -4,9 +4,8 @@ import { DollarSignIcon, FlameIcon, CheckIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 
 const ActionIcon: React.FC<{ action: Action }> = ({ action }) => {
-    const { getAssetForAction } = useGame();
-    const asset = getAssetForAction(action.id);
-    const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+    const { getActionBackgroundStyle } = useGame();
+    const backgroundStyle = getActionBackgroundStyle(action.id);
 
     const renderIcon = () => {
         switch (action.icon) {
@@ -31,7 +30,7 @@ interface ArenaCardProps {
 }
 
 export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, assetName, variant }) => {
-    const { tasks, getAssetForAction } = useGame();
+    const { tasks, getActionBackgroundStyle } = useGame();
 
     const milestoneActions = actions.filter(a => a.actionType === 'Marco');
     const bronzeActions = actions.filter(a => a.actionType !== 'Marco');
@@ -66,8 +65,7 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
                  {milestoneActions.length > 0 && (
                     <div className="w-full flex items-center justify-center h-8 gap-2">
                         {milestoneActions.map(action => {
-                            const asset = getAssetForAction(action.id);
-                            const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+                            const backgroundStyle = getActionBackgroundStyle(action.id);
                             const task = tasks.find(t => t.actionId === action.id);
                             const isCompleted = !!task?.completed;
 

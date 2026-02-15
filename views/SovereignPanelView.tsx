@@ -1,23 +1,57 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
-import { GoldenInvite, Season, SeasonMission } from '../types';
+import { GoldenInvite, LevelUnlocks, Season, SeasonMission } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { CheckIcon } from '../components/Icons';
-
-// Mock data for demonstration purposes
-const mockInvites: GoldenInvite[] = [
-    { id: '1', code: 'ouro2026ahtn19g', is_used: true, claimed_by_user_id: 'user_abc', claimed_at: '2024-07-28T10:00:00Z', created_at: '2024-07-20T10:00:00Z' },
-    { id: '2', code: 'ouro2026zxcv12h', is_used: false, claimed_by_user_id: null, claimed_at: null, created_at: '2024-07-25T10:00:00Z' },
-];
+import { buildDefaultLevelUnlocks, SOVEREIGN_ASSETS } from '../constants/avatar';
+import { GM_CONFIG } from '../constants';
+import { SupabaseService } from '../services/SupabaseService';
 
 const InviteManager: React.FC = () => {
-    const [invites, setInvites] = useState<GoldenInvite[]>(mockInvites);
+    const INVITE_STORAGE_KEY = 'goldenInvitesUsed';
+    const isOnline = SupabaseService.isConnectionActive();
+    const getUsedCodes = () => {
+        try {
+            const saved = localStorage.getItem(INVITE_STORAGE_KEY);
+            if (saved) return new Set<string>(JSON.parse(saved));
+        } catch {
+            return new Set<string>();
+        }
+        return new Set<string>();
+    };
+    const getBaseCodes = () => GM_CONFIG.goldenInvites.seedCodes.length > 0
+        ? GM_CONFIG.goldenInvites.seedCodes
+        : Array.from({ length: GM_CONFIG.goldenInvites.seedCount }, (_, i) => `${GM_CONFIG.goldenInvites.codePrefix}${new Date().getFullYear()}-${String(i + 1).padStart(3, '0')}`);
+    const buildSeedInvites = () => {
+        const usedCodes = getUsedCodes();
+        const baseCodes = getBaseCodes();
+        return baseCodes.map((code, index) => ({
+            id: `seed_${index + 1}`,
+            code,
+            is_used: usedCodes.has(code),
+            claimed_by_user_id: usedCodes.has(code) ? 'local' : null,
+            claimed_at: usedCodes.has(code) ? new Date().toISOString() : null,
+            created_at: new Date().toISOString(),
+        } as GoldenInvite));
+    };
 
-    const generateInvite = () => {
-        const newCode = `ouro${new Date().getFullYear()}${(Math.random() + 1).toString(36).substring(2, 10)}`;
+    const [invites, setInvites] = useState<GoldenInvite[]>(() => (isOnline ? [] : buildSeedInvites()));
+
+    useEffect(() => {
+        if (!isOnline) return;
+        SupabaseService.getGoldenInvites().then(setInvites);
+    }, [isOnline]);
+
+    const generateInvite = async () => {
+        if (isOnline) {
+            const invite = await SupabaseService.generateGoldenInvite();
+            if (invite) setInvites(prev => [invite, ...prev]);
+            return;
+        }
+        const newCode = `${GM_CONFIG.goldenInvites.codePrefix}${new Date().getFullYear()}${crypto.randomUUID().split('-')[0]}`;
         const newInvite: GoldenInvite = {
-            id: String(invites.length + 1),
+            id: crypto.randomUUID(),
             code: newCode,
             is_used: false,
             claimed_by_user_id: null,
@@ -32,9 +66,24 @@ const InviteManager: React.FC = () => {
         alert(`Código "${code}" copiado!`);
     };
 
+    const applySeedInvites = async () => {
+        if (isOnline) {
+            const updated = await SupabaseService.seedGoldenInvites(getBaseCodes());
+            setInvites(updated);
+            return;
+        }
+        const seeds = buildSeedInvites();
+        setInvites(prev => {
+            const existingCodes = new Set(prev.map(invite => invite.code));
+            const nextSeeds = seeds.filter(invite => !existingCodes.has(invite.code));
+            return [...nextSeeds, ...prev];
+        });
+    };
+
     return (
         <div className="space-y-4">
             <h2 className="text-lg font-bold tracking-wider">Gerenciar Convites Dourados</h2>
+            <button onClick={applySeedInvites} className="w-full py-2 rounded-xl luxe-button-secondary">Aplicar 5 Iniciais</button>
             <button onClick={generateInvite} className="w-full py-2 rounded-xl luxe-button-primary">Gerar Novo Convite</button>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {invites.map(invite => (
@@ -188,6 +237,66 @@ const SeasonManager: React.FC = () => {
     );
 }
 
+const UnlocksManager: React.FC = () => {
+    const { levelUnlocks, updateLevelUnlocks } = useGame();
+    const [draftUnlocks, setDraftUnlocks] = useState<LevelUnlocks>(levelUnlocks);
+
+    useEffect(() => {
+        setDraftUnlocks(levelUnlocks);
+    }, [levelUnlocks]);
+
+    const handleLevelChange = (category: keyof LevelUnlocks, itemId: string, value: number) => {
+        setDraftUnlocks(prev => ({
+            ...prev,
+            [category]: {
+                ...prev[category],
+                [itemId]: value,
+            },
+        }));
+    };
+
+    const categories: { id: keyof LevelUnlocks; label: string; items: { id: string; name: string }[] }[] = [
+        { id: 'bodyStyles', label: 'Corpo', items: SOVEREIGN_ASSETS.bodyStyles },
+        { id: 'hairStyles', label: 'Cabelo', items: SOVEREIGN_ASSETS.hairStyles },
+        { id: 'outfits', label: 'Roupa', items: SOVEREIGN_ASSETS.outfits },
+        { id: 'head_under_items', label: 'Rosto', items: SOVEREIGN_ASSETS.head_under_items },
+        { id: 'helmets', label: 'Elmo', items: SOVEREIGN_ASSETS.helmets },
+        { id: 'head_over_items', label: 'Topo', items: SOVEREIGN_ASSETS.head_over_items },
+        { id: 'artifacts', label: 'Artefato', items: SOVEREIGN_ASSETS.artifacts },
+    ];
+
+    return (
+        <div className="space-y-4">
+            <h2 className="text-lg font-bold tracking-wider">Desbloqueios por Nível</h2>
+            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-2">
+                {categories.map(category => (
+                    <GlassCard key={category.id} variant="neutral" className="p-3 space-y-2">
+                        <div className="text-xs font-bold tracking-widest text-gray-300">{category.label}</div>
+                        <div className="space-y-2">
+                            {category.items.map(item => (
+                                <div key={item.id} className="flex items-center justify-between text-xs">
+                                    <span className="text-gray-200 truncate max-w-[180px]">{item.name}</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={draftUnlocks[category.id]?.[item.id] ?? 1}
+                                        onChange={e => handleLevelChange(category.id, item.id, Math.max(1, Number(e.target.value) || 1))}
+                                        className="w-20 p-1 bg-black/30 rounded-lg border border-white/20 text-center"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </GlassCard>
+                ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setDraftUnlocks(buildDefaultLevelUnlocks())} className="py-2 rounded-xl luxe-button-secondary">Padrão</button>
+                <button onClick={() => updateLevelUnlocks(draftUnlocks)} className="py-2 rounded-xl luxe-button-primary">Salvar</button>
+            </div>
+        </div>
+    );
+};
+
 export const SovereignPanelView: React.FC = () => {
     return (
         <div className="space-y-8 animate-fade-in">
@@ -196,6 +305,8 @@ export const SovereignPanelView: React.FC = () => {
             <InviteManager />
             
             <SeasonManager />
+
+            <UnlocksManager />
         </div>
     );
 };

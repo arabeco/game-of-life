@@ -12,8 +12,9 @@ interface ClanMemberCardProps {
 }
 
 export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeaderView, onKick }) => {
-    const { nobilityRanks } = useGame();
+    const { nobilityRanks, userProfile } = useGame();
     const rank = nobilityRanks.find(r => r.id === member.nobility.rankId);
+    const isSelf = member.id === userProfile.id;
     
     const timeSince = (date: string) => {
         const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -31,7 +32,13 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
             <div className="flex-grow">
                 <div className="flex items-center space-x-2">
                     <h4 className="font-bold text-white">{member.nickname}</h4>
-                    {member.role === 'leader' && <CrownIcon className="w-4 h-4 text-yellow-400" />}
+                    {isSelf && <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] bg-[var(--gold)]/10 px-2 py-0.5 rounded-full">Você</span>}
+                    {member.role === 'leader' && (
+                        <span className="flex items-center space-x-1 text-[10px] font-bold uppercase tracking-wider text-yellow-300 bg-yellow-400/10 px-2 py-0.5 rounded-full">
+                            <CrownIcon className="w-3 h-3" />
+                            <span>Líder</span>
+                        </span>
+                    )}
                 </div>
                 <p className="text-xs text-gray-400">Nível {member.level} • Membro há {timeSince(member.joined_at)}</p>
             </div>

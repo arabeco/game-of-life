@@ -10,12 +10,13 @@ interface ClanSearchResultCardProps {
 }
 
 export const ClanSearchResultCard: React.FC<ClanSearchResultCardProps> = ({ clan, onJoin }) => {
-    const { clanRanks, clan: userClan } = useGame();
+    const { clanRanks, clan: userClan, clanJoinRequestsOutgoing } = useGame();
     const rank = clanRanks.find(r => r.id === clan.rankId);
 
     const isMemberOfThisClan = userClan?.id === clan.id;
     const isMemberOfAnyClan = !!userClan;
     const isPrivate = clan.recruitment_status === 'Privado';
+    const hasPendingRequest = clanJoinRequestsOutgoing.some(request => request.clanId === clan.id && request.status === 'pending');
 
     let buttonText = 'Entrar';
     let isDisabled = false;
@@ -26,9 +27,11 @@ export const ClanSearchResultCard: React.FC<ClanSearchResultCardProps> = ({ clan
     } else if (isMemberOfAnyClan) {
         buttonText = 'Em um clã';
         isDisabled = true;
-    } else if (isPrivate) {
-        buttonText = 'Privado';
+    } else if (hasPendingRequest) {
+        buttonText = 'Solicitado';
         isDisabled = true;
+    } else if (isPrivate) {
+        buttonText = 'Solicitar';
     }
 
     return (

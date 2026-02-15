@@ -1,4 +1,4 @@
-import { SovereignConfig } from '../types';
+import { LevelUnlocks, SovereignConfig } from '../types';
 
 // A paleta de cores para tons de pele
 export const SKIN_TONES = [
@@ -85,3 +85,15 @@ export const SOVEREIGN_ASSETS = {
     { id: 'iron_shield', name: 'Escudo de Ferro', url: `${AVATAR_BASE_URL}/item-silvershield.png` },
   ],
 };
+
+const buildUnlockMap = (items: { id: string }[]) => items.reduce((acc, item) => ({ ...acc, [item.id]: 1 }), {} as Record<string, number>);
+
+export const buildDefaultLevelUnlocks = (): LevelUnlocks => ({
+  bodyStyles: buildUnlockMap(SOVEREIGN_ASSETS.bodyStyles),
+  hairStyles: buildUnlockMap(SOVEREIGN_ASSETS.hairStyles),
+  outfits: buildUnlockMap(SOVEREIGN_ASSETS.outfits),
+  head_under_items: buildUnlockMap(SOVEREIGN_ASSETS.head_under_items),
+  helmets: buildUnlockMap(SOVEREIGN_ASSETS.helmets),
+  head_over_items: buildUnlockMap(SOVEREIGN_ASSETS.head_over_items),
+  artifacts: buildUnlockMap(SOVEREIGN_ASSETS.artifacts),
+});

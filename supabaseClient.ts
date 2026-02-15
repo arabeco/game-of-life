@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Season, SeasonMission } from './types';
+import { GM_CONFIG } from './constants';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -9,27 +10,15 @@ let supabase;
 
 // --- MOCK DATA AND STATE ---
 
-const initialMockClans = [
-    { id: 'clan_01', name: 'The Seekers', icon: '👁️', description: 'Um clã para aqueles que buscam conhecimento.', clan_type: 'Focado' as const, recruitment_status: 'Aberto' as const, exp: 42500, rank_id: 'provincia' },
-    { id: 'clan_02', name: 'Dragon Guard', icon: '🐲', description: 'Defensores do antigo pacto dos dragões.', clan_type: 'Competitivo' as const, recruitment_status: 'Aberto' as const, exp: 150000, rank_id: 'principado' },
-    { id: 'clan_03', name: 'Shadow Syndicate', icon: '⚔️', description: 'Operamos nas sombras para manter o equilíbrio.', clan_type: 'Competitivo' as const, recruitment_status: 'Privado' as const, exp: 800000, rank_id: 'reino' },
-];
+const initialMockClans: any[] = [];
 
-const initialMockSeasons: Season[] = [
-    { id: 'season_0', name: 'Season 0 - Aquário', start_date: '2024-01-01', end_date: '2026-02-18', background_png_url: 'https://i.imgur.com/6c2z3uH.jpeg', lore_text: 'Um tempo de purificação e novos começos, onde a fluidez da água nos ensina a adaptar e superar.', is_active: true }
-];
+const initialMockSeasons: Season[] = GM_CONFIG.seasons.map(season => ({ ...season }));
 
-const initialMockSeasonMissions: SeasonMission[] = [
-    { id: 'sm_1', season_id: 'season_0', title: 'O Peregrino', description: 'Correr um total de 50km.', goal_type: 'km_run', goal_value: 50, reward_type: 'exp', reward_value: 1000 },
-    { id: 'sm_2', season_id: 'season_0', title: 'O Sábio', description: 'Ler 1 livro completo.', goal_type: 'books_read', goal_value: 1, reward_type: 'exp', reward_value: 500 },
-    { id: 'sm_3', season_id: 'season_0', title: 'O Monge', description: 'Meditar por 20 dias.', goal_type: 'meditation_days', goal_value: 20, reward_type: 'exp', reward_value: 750 },
-];
+const initialMockSeasonMissions: SeasonMission[] = GM_CONFIG.seasonMissions.map(mission => ({ ...mission }));
 
-const initialMockUserProfiles = [
-    { id: 'mock_user_1', email: 'mock1@domain.com', nickname: 'Afonso', sovereign: { body: 'male_base', skinTone: '#E2A984', hairStyle: 'none', hairColor: '#2C1608', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' }, avatar_url: 'https://picsum.photos/seed/mock_user_1/100/100', border: 'default', level: 7, background_url: '', is_online: true, visible_widgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user', banner_url: '' },
-    { id: 'mock_user_2', email: 'mock2@domain.com', nickname: 'Luna', sovereign: { body: 'female_base', skinTone: '#F6C9AA', hairStyle: 'none', hairColor: '#3C1F0B', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' }, avatar_url: 'https://picsum.photos/seed/mock_user_2/100/100', border: 'default', level: 4, background_url: '', is_online: true, visible_widgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user', banner_url: '' },
-    { id: 'mock_user_3', email: 'mock3@domain.com', nickname: 'Cael', sovereign: { body: 'male_base', skinTone: '#D7A581', hairStyle: 'none', hairColor: '#2C1608', outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none' }, avatar_url: 'https://picsum.photos/seed/mock_user_3/100/100', border: 'default', level: 9, background_url: '', is_online: false, visible_widgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user', banner_url: '' },
-];
+const initialMockUserProfiles: any[] = [];
+
+const initialMockClanMembers: any[] = [];
 
 const getMockData = <T>(key: string, initialData: T): T => {
     try {
@@ -55,12 +44,35 @@ const setMockData = <T>(key: string, data: T) => {
 };
 
 let MOCK_CLANS_DATA = getMockData('mock_clans', initialMockClans);
-let MOCK_CLAN_MEMBERS_DATA: any[] = getMockData('mock_clan_members', []);
+let MOCK_CLAN_MEMBERS_DATA: any[] = getMockData('mock_clan_members', initialMockClanMembers);
 let MOCK_SEASONS_DATA = getMockData('mock_seasons', initialMockSeasons);
 let MOCK_SEASON_MISSIONS_DATA = getMockData('mock_season_missions', initialMockSeasonMissions);
 let MOCK_USER_PROFILES_DATA = getMockData('mock_user_profiles', initialMockUserProfiles);
 let MOCK_FRIENDS_DATA: any[] = getMockData('mock_friends', []);
 let MOCK_FRIEND_REQUESTS_DATA: any[] = getMockData('mock_friend_requests', []);
+let MOCK_CLAN_QUEST_PROGRESS_DATA: any[] = getMockData('mock_clan_quest_progress', []);
+let MOCK_CLAN_JOIN_REQUESTS_DATA: any[] = getMockData('mock_clan_join_requests', []);
+
+const mockClanIdsToRemove = new Set(['clan_01', 'clan_02', 'clan_03']);
+const mockUserIdsToRemove = new Set(['mock_user_1', 'mock_user_2', 'mock_user_3']);
+
+const nextMockClans = MOCK_CLANS_DATA.filter((clan: any) => !mockClanIdsToRemove.has(clan.id));
+if (nextMockClans.length !== MOCK_CLANS_DATA.length) {
+    MOCK_CLANS_DATA = nextMockClans;
+    setMockData('mock_clans', MOCK_CLANS_DATA);
+}
+
+const nextMockUsers = MOCK_USER_PROFILES_DATA.filter((profile: any) => !mockUserIdsToRemove.has(profile.id));
+if (nextMockUsers.length !== MOCK_USER_PROFILES_DATA.length) {
+    MOCK_USER_PROFILES_DATA = nextMockUsers;
+    setMockData('mock_user_profiles', MOCK_USER_PROFILES_DATA);
+}
+
+const nextMockMembers = MOCK_CLAN_MEMBERS_DATA.filter((member: any) => !mockClanIdsToRemove.has(member.clan_id) && !mockUserIdsToRemove.has(member.user_id));
+if (nextMockMembers.length !== MOCK_CLAN_MEMBERS_DATA.length) {
+    MOCK_CLAN_MEMBERS_DATA = nextMockMembers;
+    setMockData('mock_clan_members', MOCK_CLAN_MEMBERS_DATA);
+}
 
 const buildMockProfile = (id: string) => ({
     id: id,
@@ -70,6 +82,8 @@ const buildMockProfile = (id: string) => ({
     avatar_url: `https://picsum.photos/seed/${id}/100/100`,
     border: 'default', level: 1, background_url: '', is_online: true, visible_widgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user', banner_url: ''
 });
+
+const isSupabaseMock = !(supabaseUrl && supabaseAnonKey);
 
 if (supabaseUrl && supabaseAnonKey) {
     // We have credentials, use the real client
@@ -112,6 +126,12 @@ if (supabaseUrl && supabaseAnonKey) {
                                     setMockData('mock_friend_requests', MOCK_FRIEND_REQUESTS_DATA);
                                     resolve({ data: request, error: null });
                                     return;
+                                } else if (table === 'clan_join_requests') {
+                                    const request = { ...newRecord, created_at: new Date().toISOString(), responded_at: null };
+                                    MOCK_CLAN_JOIN_REQUESTS_DATA.push(request as any);
+                                    setMockData('mock_clan_join_requests', MOCK_CLAN_JOIN_REQUESTS_DATA);
+                                    resolve({ data: request, error: null });
+                                    return;
                                 } else if (table === 'seasons') {
                                     MOCK_SEASONS_DATA.push(newRecord as any);
                                     setMockData('mock_seasons', MOCK_SEASONS_DATA);
@@ -140,6 +160,12 @@ if (supabaseUrl && supabaseAnonKey) {
                             const newRequest = { ...newRequestData, id: `friend_requests_${Date.now()}`, created_at: new Date().toISOString(), responded_at: null };
                             MOCK_FRIEND_REQUESTS_DATA.push(newRequest as any);
                             setMockData('mock_friend_requests', MOCK_FRIEND_REQUESTS_DATA);
+                            resolve({ data: [newRequest], error: null });
+                        } else if (table === 'clan_join_requests') {
+                            const newRequestData = Array.isArray(data) ? data[0] : data;
+                            const newRequest = { ...newRequestData, id: `clan_join_requests_${Date.now()}`, created_at: new Date().toISOString(), responded_at: null };
+                            MOCK_CLAN_JOIN_REQUESTS_DATA.push(newRequest as any);
+                            setMockData('mock_clan_join_requests', MOCK_CLAN_JOIN_REQUESTS_DATA);
                             resolve({ data: [newRequest], error: null });
                         } else {
                             // Generic insert for non-single selects
@@ -177,6 +203,14 @@ if (supabaseUrl && supabaseAnonKey) {
                                     return Promise.resolve({ data: [MOCK_FRIEND_REQUESTS_DATA[idx]], error: null });
                                 }
                             }
+                             if (table === 'clan_join_requests') {
+                                const idx = MOCK_CLAN_JOIN_REQUESTS_DATA.findIndex((r: any) => r[column] === value);
+                                if (idx > -1) {
+                                    MOCK_CLAN_JOIN_REQUESTS_DATA[idx] = { ...MOCK_CLAN_JOIN_REQUESTS_DATA[idx], ...data };
+                                    setMockData('mock_clan_join_requests', MOCK_CLAN_JOIN_REQUESTS_DATA);
+                                    return Promise.resolve({ data: [MOCK_CLAN_JOIN_REQUESTS_DATA[idx]], error: null });
+                                }
+                            }
                              if (table === 'seasons') {
                                 const idx = MOCK_SEASONS_DATA.findIndex((s: any) => s[column] === value);
                                 if (idx > -1) { MOCK_SEASONS_DATA[idx] = { ...MOCK_SEASONS_DATA[idx], ...data }; setMockData('mock_seasons', MOCK_SEASONS_DATA); return Promise.resolve({ data: [MOCK_SEASONS_DATA[idx]], error: null }); }
@@ -202,7 +236,20 @@ if (supabaseUrl && supabaseAnonKey) {
                     };
                     return builder;
                 },
-                upsert: (data: any) => Promise.resolve({ data: [data], error: null }),
+                upsert: (data: any) => {
+                    if (table === 'clan_quest_progress') {
+                        const payload = Array.isArray(data) ? data[0] : data;
+                        const idx = MOCK_CLAN_QUEST_PROGRESS_DATA.findIndex(row => row.clan_id === payload.clan_id && row.quest_id === payload.quest_id);
+                        if (idx > -1) {
+                            MOCK_CLAN_QUEST_PROGRESS_DATA[idx] = { ...MOCK_CLAN_QUEST_PROGRESS_DATA[idx], ...payload };
+                        } else {
+                            MOCK_CLAN_QUEST_PROGRESS_DATA.push(payload);
+                        }
+                        setMockData('mock_clan_quest_progress', MOCK_CLAN_QUEST_PROGRESS_DATA);
+                        return Promise.resolve({ data: [payload], error: null });
+                    }
+                    return Promise.resolve({ data: [data], error: null });
+                },
                 eq: function(column: string, value: any) { eqFilter = { column, value }; return this; },
                 in: function(column: string, values: any[]) { inFilter = { column, values }; return this; },
                 order: function() { return this; },
@@ -231,6 +278,11 @@ if (supabaseUrl && supabaseAnonKey) {
                         }
                         return;
                     }
+                    if (table === 'clan_quest_progress' && eqFilter) {
+                        const progressRows = MOCK_CLAN_QUEST_PROGRESS_DATA.filter(row => row[eqFilter!.column] === eqFilter!.value);
+                        resolve({ data: progressRows, error: null });
+                        return;
+                    }
                     if (table === 'friends' && eqFilter) {
                         const friendRows = MOCK_FRIENDS_DATA.filter(f => f[eqFilter!.column] === eqFilter!.value);
                         resolve({ data: friendRows, error: null });
@@ -238,6 +290,11 @@ if (supabaseUrl && supabaseAnonKey) {
                     }
                     if (table === 'friend_requests' && eqFilter) {
                         const requestRows = MOCK_FRIEND_REQUESTS_DATA.filter(r => r[eqFilter!.column] === eqFilter!.value);
+                        resolve({ data: requestRows, error: null });
+                        return;
+                    }
+                    if (table === 'clan_join_requests' && eqFilter) {
+                        const requestRows = MOCK_CLAN_JOIN_REQUESTS_DATA.filter(r => r[eqFilter!.column] === eqFilter!.value);
                         resolve({ data: requestRows, error: null });
                         return;
                     }
@@ -282,4 +339,4 @@ if (supabaseUrl && supabaseAnonKey) {
     supabase = mockSupabase as any;
 }
 
-export { supabase };
+export { supabase, isSupabaseMock };

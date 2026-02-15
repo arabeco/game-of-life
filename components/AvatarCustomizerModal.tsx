@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { SovereignConfig } from '../types';
@@ -39,7 +39,7 @@ const ColorPalette: React.FC<{ colors: readonly string[]; selectedColor: string;
 );
 
 export const SovereignEditorModal: React.FC<SovereignEditorModalProps> = ({ onClose, onSave }) => {
-    const { userProfile } = useGame();
+    const { userProfile, levelUnlocks } = useGame();
     const [tempSovereign, setTempSovereign] = useState<SovereignConfig>(() => {
         const baseConfig = userProfile.sovereign || DEFAULT_SOVEREIGN_CONFIG;
         const oldAccessory = (baseConfig as any).accessory;
@@ -62,15 +62,41 @@ export const SovereignEditorModal: React.FC<SovereignEditorModalProps> = ({ onCl
     });
     const [activeCategory, setActiveCategory] = useState<Category>('Corpo');
 
+    const getAllowedItems = (category: 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts') => {
+        const items = SOVEREIGN_ASSETS[category];
+        const unlockMap = levelUnlocks[category] || {};
+        const userUnlocks = userProfile.unlockedItems?.[category] || {};
+        const allowed = items.filter(item => (unlockMap[item.id] ?? 1) <= userProfile.level || userUnlocks[item.id]);
+        return allowed;
+    };
+
+    const getFirstAllowedId = (category: 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts') => {
+        const allowed = getAllowedItems(category);
+        return allowed[0]?.id || 'none';
+    };
+
+    useEffect(() => {
+        setTempSovereign(prev => ({
+            ...prev,
+            body: getAllowedItems('bodyStyles').some(i => i.id === prev.body) ? prev.body : getFirstAllowedId('bodyStyles'),
+            hairStyle: getAllowedItems('hairStyles').some(i => i.id === prev.hairStyle) ? prev.hairStyle : getFirstAllowedId('hairStyles'),
+            outfit: getAllowedItems('outfits').some(i => i.id === prev.outfit) ? prev.outfit : getFirstAllowedId('outfits'),
+            head_under: getAllowedItems('head_under_items').some(i => i.id === prev.head_under) ? prev.head_under : getFirstAllowedId('head_under_items'),
+            helmet: getAllowedItems('helmets').some(i => i.id === prev.helmet) ? prev.helmet : getFirstAllowedId('helmets'),
+            head_over: getAllowedItems('head_over_items').some(i => i.id === prev.head_over) ? prev.head_over : getFirstAllowedId('head_over_items'),
+            artifact: getAllowedItems('artifacts').some(i => i.id === prev.artifact) ? prev.artifact : getFirstAllowedId('artifacts'),
+        }));
+    }, [levelUnlocks, userProfile.level, userProfile.unlockedItems]);
+
     const handleSave = () => {
         onSave(tempSovereign);
     };
 
     const createCycleHandler = (category: 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts', currentId: string, direction: 1 | -1) => {
-        const items = SOVEREIGN_ASSETS[category];
+        const items = getAllowedItems(category);
         const currentIndex = items.findIndex(item => item.id === currentId);
         const nextIndex = (currentIndex + direction + items.length) % items.length;
-        const newItemId = items[nextIndex].id;
+        const newItemId = items[nextIndex]?.id || currentId;
         
         let key: keyof SovereignConfig;
         switch (category) {

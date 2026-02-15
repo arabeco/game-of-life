@@ -703,7 +703,7 @@ const GeralTab: React.FC = () => {
     };
 
     const currentNotificationName = notificationModes.find(m => m.id === notificationMode)?.name || 'N/A';
-    const isPremium = userProfile.role === 'admin';
+    const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
 
     return (
         <div className="space-y-6">
@@ -755,7 +755,7 @@ const GeralTab: React.FC = () => {
                  <button onClick={() => setModal('delete')} className="text-red-500 hover:text-red-400 text-sm font-semibold">Deletar Conta</button>
             </div>
             
-            {userProfile.role === 'admin' && (
+            {(userProfile.role === 'admin' || userProfile.role === 'gm') && (
                 <div className="pt-6 mt-6 border-t border-yellow-800/50">
                     <SovereignPanelView />
                 </div>
@@ -773,7 +773,7 @@ const GeralTab: React.FC = () => {
 };
 
 const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSovereignEditor }) => {
-    const { userProfile, openChest } = useGame();
+    const { userProfile, openChest, levelUnlocks } = useGame();
     const [openingChest, setOpeningChest] = useState<ChestType | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ item: any; type: ItemType } | null>(null);
     
@@ -795,6 +795,10 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
     );
     
     const chestColors: Record<ChestType, string> = { 'Comum': 'gray', 'Raro': '#3b82f6', 'Épico': '#a855f7', 'Lendário': '#f59e0b' };
+    const isItemUnlocked = (category: 'artifacts', itemId: string) => {
+        const levelRequired = levelUnlocks[category]?.[itemId] ?? 1;
+        return levelRequired <= userProfile.level || userProfile.unlockedItems?.[category]?.[itemId];
+    };
 
     return (
         <div className="space-y-6">
@@ -818,7 +822,7 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
                             ))
                         ) : <InventoryPlaceholder />}
                     </InventoryRow>
-                    <InventoryRow title="ARTEFATOS">{SOVEREIGN_ASSETS.artifacts.filter(a => a.id !== 'none').map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Artefato'})} />)}</InventoryRow>
+                    <InventoryRow title="ARTEFATOS">{SOVEREIGN_ASSETS.artifacts.filter(a => a.id !== 'none').filter(item => isItemUnlocked('artifacts', item.id)).map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Artefato'})} />)}</InventoryRow>
                     <InventoryRow title="CONSUMÍVEIS"><InventoryPlaceholder /><InventoryPlaceholder /><InventoryPlaceholder /></InventoryRow>
                     <InventoryRow title="SKINS">{SKINS_DATA.map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Skin'})} />)}</InventoryRow>
                     <InventoryRow title="BORDAS">{BORDERS_DATA.map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Borda'})} />)}</InventoryRow>

@@ -1,8 +1,8 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef } from 'react';
-import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, FriendRequest } from '../types';
-import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS } from '../constants';
-import { DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
+import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks } from '../types';
+import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG } from '../constants';
+import { buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { supabase } from '../supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import { useCodexBuilder } from './CodexBuilderContext';
@@ -82,10 +82,7 @@ const NOBILITY_RANKS: NobilityRank[] = [
     { id: 'soberano', name: 'Soberano', levelRequired: 90, expTotalRequired: 1000000 },
 ];
 
-const MOCK_SEARCHABLE_CLANS: Clan[] = [
-    { id: 'clan_01', name: 'The Seekers', icon: '👁️', description: 'Um clã para aqueles que buscam conhecimento.', clan_type: 'Focado', recruitment_status: 'Aberto', exp: 42500, rankId: 'provincia' },
-    { id: 'clan_02', name: 'Dragon Guard', icon: '🐲', description: 'Defensores do antigo pacto dos dragões.', clan_type: 'Competitivo', recruitment_status: 'Aberto', exp: 150000, rankId: 'principado' },
-];
+const MOCK_SEARCHABLE_CLANS: Clan[] = [];
 
 const DEFAULT_USER_PROFILE: UserProfile = {
     id: 'placeholder_user',
@@ -100,7 +97,18 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     nobility: { exp: 0, rankId: 'vagante' },
     mood: 50,
     role: 'user',
-    skin: 'default'
+    isPremium: false,
+    skin: 'default',
+    unlockedItems: {
+        bodyStyles: {},
+        hairStyles: {},
+        outfits: {},
+        head_under_items: {},
+        helmets: {},
+        head_over_items: {},
+        artifacts: {},
+    },
+    completedSeasonMissions: []
 };
 
 const defaultChecklistItems: ChecklistItem[] = [
@@ -117,6 +125,7 @@ const DEFAULT_FRIENDS: UserProfile[] = [
 
 type TaskPoolItem = {
     actionId: string;
+    unlimited?: boolean;
 }
 
 export type ArenaSetupChange = {
@@ -182,6 +191,8 @@ export interface GameContextType {
   friends: UserProfile[];
   friendRequestsIncoming: FriendRequest[];
   friendRequestsOutgoing: FriendRequest[];
+  clanJoinRequestsIncoming: ClanJoinRequest[];
+  clanJoinRequestsOutgoing: ClanJoinRequest[];
   reports: Report[];
   nobilityRanks: NobilityRank[];
   clan: Clan | null;
@@ -192,7 +203,14 @@ export interface GameContextType {
   achievementUnlocked: { type: FeedEventType; data: any; } | null;
   seasons: Season[];
   seasonMissions: SeasonMission[];
+  seasonQuests: SeasonQuest[];
+  clanQuestProgress: Record<string, Record<string, number>>;
+  getClanQuestProgress: (questId: string) => number;
+  levelUnlocks: LevelUnlocks;
   setAchievementUnlocked: (achievement: { type: FeedEventType; data: any; } | null) => void;
+  updateLevelUnlocks: (next: LevelUnlocks) => void;
+  grantUserUnlock: (category: UnlockCategory, itemId: string) => void;
+  completeSeasonMission: (mission: SeasonMission) => void;
   feed: FeedEvent[];
   addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
   updateAssetSlotValue: (assetId: string, slotId: string, value: SlotValue) => void;
@@ -202,6 +220,7 @@ export interface GameContextType {
   deleteArena: (arenaId: string) => void;
   getActionsForArena: (arenaId: string) => Action[];
   getAssetForAction: (actionId: string) => Asset | undefined;
+  getActionBackgroundStyle: (actionId: string) => React.CSSProperties;
   addAction: (actionData: Omit<Action, 'id'>) => Action;
   updateAction: (actionId: string, actionData: Partial<Action>) => void;
   deleteAction: (actionId: string) => void;
@@ -247,6 +266,8 @@ export interface GameContextType {
   addClanMember: (memberId: string) => Promise<void>;
   searchClans: (query: string) => Promise<Clan[]>;
   joinClan: (clanToJoin: Clan) => Promise<void>;
+  approveClanJoinRequest: (request: ClanJoinRequest) => Promise<void>;
+  rejectClanJoinRequest: (request: ClanJoinRequest) => Promise<void>;
   addSeason: (seasonData: Omit<Season, 'id'>) => Promise<void>;
   updateSeason: (seasonId: string, seasonData: Partial<Omit<Season, 'id'>>) => Promise<void>;
   addSeasonMission: (missionData: Omit<SeasonMission, 'id'>) => Promise<void>;
@@ -372,6 +393,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             'feed',
             'dailyCommitment',
             'cycleExpBonus',
+            'levelUnlocks',
+            'clanQuestProgress',
         ];
         keysToClear.forEach(key => localStorage.removeItem(key));
 
@@ -386,6 +409,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setActiveCycle(null);
         setDailyCommitmentState(createDefaultDailyCommitment());
         setCycleExpBonus(0);
+        setLevelUnlocks(buildDefaultLevelUnlocks());
+        setClanQuestProgress({});
         setUserProfile({
             ...DEFAULT_USER_PROFILE,
             id: currentUserId,
@@ -421,6 +446,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const [friends, setFriends] = useState<UserProfile[]>(DEFAULT_FRIENDS);
   const [friendRequestsIncoming, setFriendRequestsIncoming] = useState<FriendRequest[]>([]);
   const [friendRequestsOutgoing, setFriendRequestsOutgoing] = useState<FriendRequest[]>([]);
+  const [clanJoinRequestsIncoming, setClanJoinRequestsIncoming] = useState<ClanJoinRequest[]>([]);
+  const [clanJoinRequestsOutgoing, setClanJoinRequestsOutgoing] = useState<ClanJoinRequest[]>([]);
   
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(() => {
       try {
@@ -439,10 +466,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return [];
   });
 
+  const [clanQuestProgress, setClanQuestProgress] = useState<Record<string, Record<string, number>>>(() => {
+    try {
+        const saved = localStorage.getItem('clanQuestProgress');
+        if (saved) return JSON.parse(saved);
+    } catch (e) { console.error("Failed to load clanQuestProgress from storage", e); }
+    return {};
+  });
+
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [seasonMissions, setSeasonMissions] = useState<SeasonMission[]>([]);
+  const seasonQuests = GM_CONFIG.seasonQuests || [];
+  const [levelUnlocks, setLevelUnlocks] = useState<LevelUnlocks>(() => {
+    try {
+        const saved = localStorage.getItem('levelUnlocks');
+        if (saved) return JSON.parse(saved);
+    } catch (e) { console.error("Failed to load levelUnlocks from storage", e); }
+    return buildDefaultLevelUnlocks();
+  });
 
   const persistTimeoutRef = useRef<number | null>(null);
+  const clanQuestProgressTableReadyRef = useRef(true);
 
   useEffect(() => {
     if (persistTimeoutRef.current !== null) window.clearTimeout(persistTimeoutRef.current);
@@ -461,6 +505,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             localStorage.setItem('feed', JSON.stringify(feed));
             localStorage.setItem('dailyCommitment', JSON.stringify(dailyCommitment));
             localStorage.setItem('cycleExpBonus', String(cycleExpBonus));
+            localStorage.setItem('levelUnlocks', JSON.stringify(levelUnlocks));
+            localStorage.setItem('clanQuestProgress', JSON.stringify(clanQuestProgress));
         } catch (e) {
             console.error(e);
         }
@@ -468,38 +514,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return () => {
         if (persistTimeoutRef.current !== null) window.clearTimeout(persistTimeoutRef.current);
     };
-  }, [assets, actions, tasks, reports, clan, checklistItems, userProfile, activeCycle, feed, dailyCommitment, cycleExpBonus]);
+  }, [assets, actions, tasks, reports, clan, checklistItems, userProfile, activeCycle, feed, dailyCommitment, cycleExpBonus, levelUnlocks, clanQuestProgress]);
 
-  const loadClanAndMembers = useCallback(async (clanId: string) => {
-    const { data: clanData, error: clanError } = await supabase.from('clans').select('*').eq('id', clanId).single();
-    if (clanError || !clanData) { console.error('Error fetching clan data:', clanError?.message); return; }
-
-    setClan(mapToCamelCase(clanData) as Clan);
-
-    const { data: membersData, error: membersError } = await supabase.from('clan_members').select('*').eq('clan_id', clanId);
-    if (membersError || !membersData) { console.error('Error fetching clan members:', membersError?.message); return; }
-
-    const memberIds = membersData.map((m: any) => m.user_id);
-    if (memberIds.length === 0) { setEnrichedClanMembers([]); return; }
-
-    const { data: memberProfiles, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', memberIds);
-    if (profilesError || !memberProfiles) { console.error('Error fetching member profiles:', profilesError?.message); return; }
-
-    const enrichedMembers: EnrichedClanMember[] = memberProfiles.map((profile: any) => {
-        const memberInfo = membersData.find((m: any) => m.user_id === profile.id);
-        if (!memberInfo) return null;
-        
-        const { role: userRole, ...camelCaseProfile } = mapToCamelCase(profile) as UserProfile;
-
-        return {
-            ...camelCaseProfile,
-            role: memberInfo.role as 'leader' | 'member',
-            joinedAt: memberInfo.joined_at,
-        };
-    }).filter((m): m is EnrichedClanMember => m !== null);
-
-    setEnrichedClanMembers(enrichedMembers);
-  }, [setClan, setEnrichedClanMembers]);
+  const fetchClanQuestProgress = useCallback(async (clanId: string) => {
+    if (!clanQuestProgressTableReadyRef.current) return;
+    const { data, error } = await supabase.from('clan_quest_progress').select('*').eq('clan_id', clanId);
+    if (error || !data) {
+        const status = (error as any)?.status;
+        const message = (error as any)?.message;
+        if (status === 404 || (typeof message === 'string' && message.includes('Not Found'))) {
+            clanQuestProgressTableReadyRef.current = false;
+        }
+        return;
+    }
+    const progressMap = data.reduce((acc: Record<string, number>, row: any) => {
+        const mapped = mapToCamelCase(row);
+        if (!mapped?.questId) return acc;
+        acc[mapped.questId] = Number(mapped.progress) || 0;
+        return acc;
+    }, {} as Record<string, number>);
+    setClanQuestProgress(prev => ({ ...prev, [clanId]: progressMap }));
+  }, []);
 
   const hydrateProfilesByIds = useCallback(async (ids: string[]) => {
     const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
@@ -571,6 +606,68 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     })));
   }, [hydrateProfilesByIds]);
 
+  const loadClanJoinRequestsOutgoing = useCallback(async (userId: string) => {
+    const { data, error } = await supabase.from('clan_join_requests').select('*').eq('user_id', userId);
+    if (error || !data) {
+        if (error) console.error('Error fetching outgoing clan join requests:', error.message);
+        return;
+    }
+    const mapped = mapToCamelCase(data || []) as ClanJoinRequest[];
+    setClanJoinRequestsOutgoing(mapped.filter(r => r.status === 'pending'));
+  }, []);
+
+  const loadClanJoinRequestsIncoming = useCallback(async (clanId: string) => {
+    const { data, error } = await supabase.from('clan_join_requests').select('*').eq('clan_id', clanId);
+    if (error || !data) {
+        if (error) console.error('Error fetching incoming clan join requests:', error.message);
+        return;
+    }
+    const mapped = mapToCamelCase(data || []) as ClanJoinRequest[];
+    const pending = mapped.filter(r => r.status === 'pending');
+    const profilesById = await hydrateProfilesByIds(pending.map(r => r.userId));
+    setClanJoinRequestsIncoming(pending.map(req => ({ ...req, requesterProfile: profilesById[req.userId] })));
+  }, [hydrateProfilesByIds]);
+
+  const loadClanAndMembers = useCallback(async (clanId: string) => {
+    const { data: clanData, error: clanError } = await supabase.from('clans').select('*').eq('id', clanId).single();
+    if (clanError || !clanData) { console.error('Error fetching clan data:', clanError?.message); return; }
+
+    setClan(mapToCamelCase(clanData) as Clan);
+    await fetchClanQuestProgress(clanId);
+
+    const { data: membersData, error: membersError } = await supabase.from('clan_members').select('*').eq('clan_id', clanId);
+    if (membersError || !membersData) { console.error('Error fetching clan members:', membersError?.message); return; }
+
+    const memberIds = membersData.map((m: any) => m.user_id);
+    if (memberIds.length === 0) { setEnrichedClanMembers([]); return; }
+
+    const { data: memberProfiles, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', memberIds);
+    if (profilesError || !memberProfiles) { console.error('Error fetching member profiles:', profilesError?.message); return; }
+
+    const enrichedMembers: EnrichedClanMember[] = memberProfiles.map((profile: any) => {
+        const memberInfo = membersData.find((m: any) => m.user_id === profile.id);
+        if (!memberInfo) return null;
+        
+        const { role: userRole, ...camelCaseProfile } = mapToCamelCase(profile) as UserProfile;
+
+        return {
+            ...camelCaseProfile,
+            role: memberInfo.role as 'leader' | 'member',
+            joinedAt: memberInfo.joined_at,
+        };
+    }).filter((m): m is EnrichedClanMember => m !== null);
+
+    setEnrichedClanMembers(enrichedMembers);
+
+    const currentUserId = session?.user.id ?? userProfile.id;
+    const currentMember = membersData.find((m: any) => m.user_id === currentUserId);
+    if (currentMember?.role === 'leader') {
+        await loadClanJoinRequestsIncoming(clanId);
+    } else {
+        setClanJoinRequestsIncoming([]);
+    }
+  }, [setClan, setEnrichedClanMembers, fetchClanQuestProgress, session?.user.id, userProfile.id, loadClanJoinRequestsIncoming]);
+
 
   // --- Supabase Data Sync ---
   useEffect(() => {
@@ -597,6 +694,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         await loadFriendsAndRequests(userId);
+        await loadClanJoinRequestsOutgoing(userId);
 
         let camelArenas: Arena[] | null = null;
         const { data: arenasData, error: arenasError } = await supabase.from('arenas').select('*').eq('user_id', userId);
@@ -655,6 +753,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (clanMemberError || !clanMemberData) {
             setClan(null);
             setEnrichedClanMembers([]);
+            setClanJoinRequestsIncoming([]);
         } else {
             loadClanAndMembers(clanMemberData.clan_id);
         }
@@ -672,7 +771,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
     loadDataFromSupabase();
-  }, [session, userProfile.id, loadClanAndMembers, loadFriendsAndRequests]);
+  }, [session, userProfile.id, loadClanAndMembers, loadFriendsAndRequests, loadClanJoinRequestsOutgoing]);
 
   const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
     const newEvent: FeedEvent = {
@@ -704,6 +803,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   
 
 
+  const isClanQuestActionId = (actionId: string) => {
+    const action = actions.find(a => a.id === actionId);
+    if (!action) return false;
+    const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
+    if (!arena?.name) return false;
+    const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return normalized.includes('quests - cla');
+  };
+
   const resetDailyCommitment = () => setDailyCommitmentState({ date: getTodayString(), taskIds: [], stage: 'planning', score: null, expDeposited: null, sitrepBonus: null });
   const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds }));
   const lockDailyCommitment = () => setDailyCommitmentState(prev => ({...prev, stage: 'battle' }));
@@ -723,7 +831,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
   
   const endDailyBattle = () => {
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date);
+    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date && !isClanQuestActionId(t.actionId));
     const committedCounts = committedTasks.reduce((acc, task) => {
         acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
@@ -731,6 +839,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const completedCounts = tasks.reduce((acc, task) => {
         if (task.date !== dailyCommitment.date) return acc;
         if (!committedCounts[task.actionId]) return acc;
+        if (isClanQuestActionId(task.actionId)) return acc;
         if (task.completed) acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
@@ -783,6 +892,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     endDailyBattle();
   };
 
+  useEffect(() => {
+    if (!clan?.id) return;
+    fetchClanQuestProgress(clan.id);
+    const intervalId = window.setInterval(() => fetchClanQuestProgress(clan.id), 15000);
+    return () => window.clearInterval(intervalId);
+  }, [clan?.id, fetchClanQuestProgress]);
 
   useEffect(() => {
     const activeArenas = assets.flatMap(asset => asset.arenas.filter(a => !a.isArchived));
@@ -798,6 +913,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const poolableActions = activeActions.filter(action => action.actionType !== 'Marco');
 
     const pool = poolableActions.flatMap(action => {
+        if (isClanQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
         const scheduledCount = scheduledCounts[action.id] || 0;
         const poolCount = Math.max(0, action.repetitions - scheduledCount);
         return Array.from({ length: poolCount }, () => ({ actionId: action.id }));
@@ -833,12 +949,79 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setUserProfile(prev => ({ ...prev, ...profileData }));
     const userId = session?.user.id;
     if (userId && userId !== 'placeholder_user' && isUuid(userId)) {
-        const snakeCaseData = mapToSnakeCase(profileData);
-        supabase.from('user_profiles').update(snakeCaseData).eq('id', userId).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
+        const { unlockedItems, completedSeasonMissions, ...safeData } = profileData;
+        if (Object.keys(safeData).length > 0) {
+            const snakeCaseData = mapToSnakeCase(safeData);
+            supabase.from('user_profiles').update(snakeCaseData).eq('id', userId).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
+        }
     }
   };
 
   const updateMood = (mood: number) => updateUserProfile({ mood });
+
+  const updateLevelUnlocks = (next: LevelUnlocks) => {
+    setLevelUnlocks(next);
+  };
+
+  const grantUserUnlock = (category: UnlockCategory, itemId: string) => {
+    setUserProfile(prev => {
+        const unlockedItems: UserUnlocks = prev.unlockedItems || {
+            bodyStyles: {},
+            hairStyles: {},
+            outfits: {},
+            head_under_items: {},
+            helmets: {},
+            head_over_items: {},
+            artifacts: {},
+        };
+        if (unlockedItems[category]?.[itemId]) return prev;
+        return {
+            ...prev,
+            unlockedItems: {
+                ...unlockedItems,
+                [category]: {
+                    ...unlockedItems[category],
+                    [itemId]: true,
+                },
+            },
+        };
+    });
+  };
+
+  const completeSeasonMission = (mission: SeasonMission) => {
+    const rewardValue = typeof mission.reward_value === 'string' ? mission.reward_value : '';
+    const rewardParts = rewardValue.includes(':') ? rewardValue.split(':') : [];
+    const rewardCategory = rewardParts[0] as UnlockCategory | undefined;
+    const rewardItemId = rewardParts[1];
+
+    setUserProfile(prev => {
+        const completed = prev.completedSeasonMissions || [];
+        if (completed.includes(mission.id)) return prev;
+        const unlockedItems: UserUnlocks = prev.unlockedItems || {
+            bodyStyles: {},
+            hairStyles: {},
+            outfits: {},
+            head_under_items: {},
+            helmets: {},
+            head_over_items: {},
+            artifacts: {},
+        };
+        const shouldUnlock = mission.reward_type === 'item_id' && rewardCategory && rewardItemId;
+        const nextUnlockedItems = shouldUnlock ? {
+            ...unlockedItems,
+            [rewardCategory]: {
+                ...unlockedItems[rewardCategory],
+                [rewardItemId]: true,
+            },
+        } : unlockedItems;
+
+        return {
+            ...prev,
+            completedSeasonMissions: [...completed, mission.id],
+            unlockedItems: nextUnlockedItems,
+        };
+    });
+  };
 
   const updateAllAssetLevels = (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>): boolean => {
     const lastUpdate = userProfile.lastLevelUpdate || 0;
@@ -900,7 +1083,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const endDate = new Date().toISOString().split('T')[0];
 
     // Filtrar tarefas apenas do usuário atual e dentro do período do ciclo
-    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate);
+    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && !isClanQuestActionId(t.actionId));
     const completedTasks = cycleTasks.filter(t => t.completed);
 
     // Arenas e Ações envolvidas (baseado nas tarefas do ciclo)
@@ -1133,6 +1316,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   
   const getActionById = (actionId: string) => actions.find(a => a.id === actionId);
 
+  const getClanQuestProgress = (questId: string) => {
+    if (!clan) return 0;
+    return clanQuestProgress[clan.id]?.[questId] || 0;
+  };
+
+  const updateClanQuestProgress = (questId: string, delta: number) => {
+    if (!clan) return;
+    let nextValue = 0;
+    setClanQuestProgress(prev => {
+        const clanProgress = prev[clan.id] || {};
+        nextValue = Math.max(0, (clanProgress[questId] || 0) + delta);
+        return { ...prev, [clan.id]: { ...clanProgress, [questId]: nextValue } };
+    });
+    const userId = session?.user.id ?? userProfile.id;
+    if (userId && clanQuestProgressTableReadyRef.current) {
+        supabase.from('clan_quest_progress').upsert({
+            clan_id: clan.id,
+            quest_id: questId,
+            progress: nextValue
+        }).then(({ error }) => {
+            if (!error) return;
+            const status = (error as any)?.status;
+            const message = (error as any)?.message;
+            if (status === 404 || (typeof message === 'string' && message.includes('Not Found'))) {
+                clanQuestProgressTableReadyRef.current = false;
+            }
+        });
+    }
+  };
+
   const toggleChecklistItem = (id: string) => {
     setChecklistItems(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
   };
@@ -1209,6 +1422,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const arena = getArenas().find(ar => ar.id === action.arenaId);
     if (!arena) return undefined;
     return assets.find(as => as.id === arena.assetId);
+  };
+  const getActionBackgroundStyle = (actionId: string): React.CSSProperties => {
+    const action = actions.find(a => a.id === actionId);
+    if (!action) return { background: 'var(--asset-grad-default)' };
+    const arena = getArenas().find(ar => ar.id === action.arenaId);
+    if (arena?.name) {
+        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (normalized.includes('quests - season')) return { background: 'var(--quest-grad-season)' };
+        if (normalized.includes('quests - cla')) return { background: 'var(--quest-grad-clan)' };
+    }
+    const asset = getAssetForAction(actionId);
+    return { background: `var(--asset-grad-${asset?.id || 'default'})` };
   };
 
   const addAction = (actionData: Omit<Action, 'id'>): Action => {
@@ -1360,7 +1585,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setTasks(prevTasks => [...prevTasks, newTask]);
     
     // If it's today, add to daily commitment so it shows in SITREP
-    if (date === dailyCommitment.date) {
+    if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
         setDailyCommitmentState(prev => ({
             ...prev,
             taskIds: [...prev.taskIds, newTask.id]
@@ -1406,7 +1631,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setTasks(prevTasks => [...prevTasks, newTask]);
     
     // If it's today, add to daily commitment
-    if (date === dailyCommitment.date) {
+    if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
         setDailyCommitmentState(prev => ({
             ...prev,
             taskIds: [...prev.taskIds, newTask.id]
@@ -1463,6 +1688,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
     }
   };
+  const getClanQuestForAction = (action: Action | undefined) => {
+    if (!action) return null;
+    const arena = getArenas().find(ar => ar.id === action.arenaId);
+    if (!arena?.name) return null;
+    const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (!normalized.includes('quests - cla')) return null;
+    const activeSeason = seasons.find(s => s.is_active);
+    return seasonQuests.find(q => q.scope === 'clan' && q.title === action.name && (!activeSeason || q.season_id === activeSeason.id)) || null;
+  };
   const toggleTaskCompletion = (taskId: string) => {
     setTasks(prevTasks => {
         const newTasks = prevTasks.map(task => {
@@ -1485,6 +1719,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             content: { title: action.name, icon: action.icon }
                         });
                     }
+                }
+
+                const actionForClanQuest = getActionById(task.actionId);
+                const clanQuest = getClanQuestForAction(actionForClanQuest);
+                if (clanQuest) {
+                    updateClanQuestProgress(clanQuest.id, updatedTask.completed ? 1 : -1);
                 }
 
                 // Update in Supabase
@@ -1544,6 +1784,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       if (error) { console.error("Error leaving clan:", error.message); return; }
       setClan(null);
       setEnrichedClanMembers([]);
+      setClanJoinRequestsIncoming([]);
   };
 
   const transferLeadershipAndLeave = async (newLeaderId: string) => {
@@ -1599,10 +1840,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       return mapToCamelCase(data || []) as Clan[];
   };
 
+  const requestClanJoin = async (clanToJoin: Clan) => {
+    if (clan) return;
+    const userId = session ? session.user.id : userProfile.id;
+    if (!userId) { console.error("User ID not found"); return; }
+    if (clanJoinRequestsOutgoing.some(r => r.clanId === clanToJoin.id && r.status === 'pending')) return;
+
+    const payload = {
+        clan_id: clanToJoin.id,
+        user_id: userId,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase.from('clan_join_requests').insert(payload).select().single();
+    if (error) { console.error("Error requesting clan join:", error.message); return; }
+    if (data) {
+        const mapped = mapToCamelCase(data) as ClanJoinRequest;
+        setClanJoinRequestsOutgoing(prev => [...prev, mapped]);
+    }
+  };
+
   const joinClan = async (clanToJoin: Clan) => {
     if (clan) return; 
     const userId = session ? session.user.id : userProfile.id;
     if (!userId) { console.error("User ID not found"); return; }
+
+    const recruitmentStatus = (clanToJoin as any).recruitment_status ?? (clanToJoin as any).recruitmentStatus;
+    if (recruitmentStatus === 'Privado') {
+        await requestClanJoin(clanToJoin);
+        return;
+    }
 
     const { count, error: countError } = await supabase
         .from('clan_members')
@@ -1619,6 +1887,44 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const { error } = await supabase.from('clan_members').insert({ user_id: userId, clan_id: clanToJoin.id, role: 'member'});
     if (error) { console.error("Error joining clan:", error.message); return; }
     await loadClanAndMembers(clanToJoin.id);
+  };
+
+  const approveClanJoinRequest = async (request: ClanJoinRequest) => {
+    if (!clan || request.clanId !== clan.id) return;
+
+    const { count, error: countError } = await supabase
+        .from('clan_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('clan_id', clan.id);
+
+    if (countError) { console.error("Error checking clan size:", countError.message); return; }
+    if (count !== null && count >= MAX_CLAN_MEMBERS) {
+        alert(`O clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+        return;
+    }
+
+    const { error: updateError } = await supabase
+        .from('clan_join_requests')
+        .update({ status: 'approved', responded_at: new Date().toISOString() })
+        .eq('id', request.id);
+    if (updateError) { console.error("Error approving clan join request:", updateError.message); return; }
+
+    const { error: insertError } = await supabase.from('clan_members').insert({ user_id: request.userId, clan_id: clan.id, role: 'member'});
+    if (insertError) { console.error("Error adding member from request:", insertError.message); return; }
+
+    await loadClanAndMembers(clan.id);
+    await loadClanJoinRequestsIncoming(clan.id);
+  };
+
+  const rejectClanJoinRequest = async (request: ClanJoinRequest) => {
+    if (!clan || request.clanId !== clan.id) return;
+    const { error } = await supabase
+        .from('clan_join_requests')
+        .update({ status: 'rejected', responded_at: new Date().toISOString() })
+        .eq('id', request.id);
+    if (error) { console.error("Error rejecting clan join request:", error.message); return; }
+
+    setClanJoinRequestsIncoming(prev => prev.filter(r => r.id !== request.id));
   };
   
   // --- Season Functions ---
@@ -1661,7 +1967,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, setAchievementUnlocked, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, addSeason, updateSeason, addSeasonMission }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, getClanQuestProgress, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, completeSeasonMission, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission }}>
       {children}
     </GameContext.Provider>
   );

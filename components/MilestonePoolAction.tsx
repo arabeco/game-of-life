@@ -12,7 +12,7 @@ interface MilestonePoolActionProps {
 }
 
 export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action, onComplete, onCustomDragStart }) => {
-    const { getAssetForAction } = useGame();
+    const { getActionBackgroundStyle } = useGame();
     const [isHolding, setIsHolding] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const milestoneRef = useRef<HTMLDivElement>(null);
@@ -33,8 +33,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
         };
     }, []);
 
-    const asset = getAssetForAction(action.id);
-    const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+    const backgroundStyle = getActionBackgroundStyle(action.id);
 
     const handleLongPress = () => {
         if (isTransitioning) return;

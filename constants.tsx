@@ -1,34 +1,79 @@
-import { Asset, Skin, Mood } from './types';
+import { Asset, Skin, Mood, ChestType, UnlockCategory, Season, SeasonMission, SeasonQuest } from './types';
 
 export const MAX_CLAN_MEMBERS = 10;
+
+export const GM_CONFIG = {
+  seasons: [
+    { id: 'season_0', name: 'Season 0 - Aquário', start_date: '2024-01-01', end_date: '2026-02-18', background_png_url: 'https://i.imgur.com/6c2z3uH.jpeg', lore_text: 'Um tempo de purificação e novos começos, onde a fluidez da água nos ensina a adaptar e superar.', is_active: true }
+  ] as Season[],
+  seasonMissions: [
+    { id: 'sm_1', season_id: 'season_0', title: 'O Peregrino', description: 'Correr um total de 50km.', goal_type: 'km_run', goal_value: 50, reward_type: 'exp', reward_value: 1000 },
+    { id: 'sm_2', season_id: 'season_0', title: 'O Sábio', description: 'Ler 1 livro completo.', goal_type: 'books_read', goal_value: 1, reward_type: 'exp', reward_value: 500 },
+    { id: 'sm_3', season_id: 'season_0', title: 'O Monge', description: 'Meditar por 20 dias.', goal_type: 'meditation_days', goal_value: 20, reward_type: 'item_id', reward_value: 'head_over_items:crown' },
+  ] as SeasonMission[],
+  seasonQuests: [
+    { id: 'sq_1', season_id: 'season_0', scope: 'season', title: 'Quest da Season', description: 'Complete 30 ações durante a season.', goal_type: 'actions_completed', goal_value: 30 },
+    { id: 'sq_2', season_id: 'season_0', scope: 'clan', title: 'Quest do Clã', description: 'Complete ações em equipe no clã.', goal_type: 'actions_completed', goal_value: 30 },
+  ] as SeasonQuest[],
+  chestDrops: {
+    itemDropChanceByChest: {
+      Comum: 0.005,
+      Raro: 0.01,
+      Épico: 0.02,
+      Lendário: 0.03,
+    } as Record<ChestType, number>,
+    itemPool: {
+      categories: [
+        'bodyStyles',
+        'hairStyles',
+        'outfits',
+        'head_under_items',
+        'helmets',
+        'head_over_items',
+        'artifacts',
+      ] as UnlockCategory[],
+      excludeIds: ['none'],
+    },
+  },
+  cosmetics: {
+    skins: [
+      { id: 'GOLD', name: 'GOLD', color: '#d4af37' },
+      { id: 'CYBER', name: 'CYBER', color: '#00d9ff' },
+      { id: 'FROST', name: 'FROST', color: '#92d4f3' },
+      { id: 'EMBER', name: 'EMBER', color: '#ff6a00' },
+      { id: 'AURORA', name: 'AURORA', color: '#5effa5' },
+      { id: 'VOID', name: 'VOID', color: '#a95eff' },
+    ] as Skin[],
+    borders: [
+      { id: 'DISCIPLINADO', name: 'Disciplinado', color: '#c0c0c0', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borada_disciplinado.png' },
+      { id: 'GRAO_MESTRE', name: 'Grão Mestre', color: '#b3b3b3', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_gm.png' },
+      { id: 'IMPARAVEL', name: 'Imparável', color: '#d4af37', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_imparavel.png' },
+      { id: 'LENDA_VIVA', name: 'Lenda Viva', color: '#8fd0ff', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_lendaviva.png' },
+      { id: 'POPULAR', name: 'Popular', color: '#ff8fd4', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_popular.png' },
+    ] as Skin[],
+    banners: [
+      { id: 'grao_mestre', name: 'Grão Mestre', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_gm.png' },
+      { id: 'disciplinado', name: 'Disciplinado', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_disciplinado.png' },
+      { id: 'imparavel', name: 'Imparável', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_imparavel.png' },
+      { id: 'lendaviva', name: 'Lenda Viva', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_lendaviva.png' },
+      { id: 'popular', name: 'Popular', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_poopular.png' },
+    ],
+  },
+  goldenInvites: {
+    codePrefix: 'ouro',
+    seedCount: 5,
+    seedCodes: ['ouro2026-001', 'ouro2026-002', 'ouro2026-003', 'ouro2026-004', 'ouro2026-005'],
+  },
+};
 
 // Default empty value for image slots
 const emptyImage = { imageUrl: '', caption: '' };
 
-export const SKINS_DATA: Skin[] = [
-  { id: 'GOLD', name: 'GOLD', color: '#d4af37' },
-  { id: 'CYBER', name: 'CYBER', color: '#00d9ff' },
-  { id: 'FROST', name: 'FROST', color: '#92d4f3' },
-  { id: 'EMBER', name: 'EMBER', color: '#ff6a00' },
-  { id: 'AURORA', name: 'AURORA', color: '#5effa5' },
-  { id: 'VOID', name: 'VOID', color: '#a95eff' },
-];
+export const SKINS_DATA: Skin[] = GM_CONFIG.cosmetics.skins;
 
-export const BORDERS_DATA: Skin[] = [
-  { id: 'DISCIPLINADO', name: 'Disciplinado', color: '#c0c0c0', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borada_disciplinado.png' },
-  { id: 'GRAO_MESTRE', name: 'Grão Mestre', color: '#b3b3b3', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_gm.png' },
-  { id: 'IMPARAVEL', name: 'Imparável', color: '#d4af37', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_imparavel.png' },
-  { id: 'LENDA_VIVA', name: 'Lenda Viva', color: '#8fd0ff', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_lendaviva.png' },
-  { id: 'POPULAR', name: 'Popular', color: '#ff8fd4', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_popular.png' },
-];
+export const BORDERS_DATA: Skin[] = GM_CONFIG.cosmetics.borders;
 
-export const BANNERS_DATA = [
-    { id: 'grao_mestre', name: 'Grão Mestre', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_gm.png' },
-    { id: 'disciplinado', name: 'Disciplinado', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_disciplinado.png' },
-    { id: 'imparavel', name: 'Imparável', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_imparavel.png' },
-    { id: 'lendaviva', name: 'Lenda Viva', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_lendaviva.png' },
-    { id: 'popular', name: 'Popular', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_poopular.png' },
-];
+export const BANNERS_DATA = GM_CONFIG.cosmetics.banners;
 
 export const SANCTUARY_BACKGROUND_OPTIONS = [
   { id: 'garden', name: 'Jardim', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/garden.jpg' },

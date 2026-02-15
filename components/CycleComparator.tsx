@@ -16,6 +16,15 @@ const calculateAnalysis = (report: Report, allTasks: any[], allActions: any[], a
     const endDate = new Date(report.endDate);
     const durationDays = Math.max(1, daysBetween(startDate, endDate) + 1);
 
+    const isClanQuestActionId = (actionId: string) => {
+        const action = allActions.find(a => a.id === actionId);
+        if (!action) return false;
+        const arena = allAssets.flatMap(as => as.arenas).find(ar => ar.id === action.arenaId);
+        if (!arena?.name) return false;
+        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return normalized.includes('quests - cla');
+    };
+
     const xpGained = report.metrics.totalHours * 60;
     const xpPerDay = xpGained / durationDays;
     const actionsPerDay = report.metrics.actionsCompleted / durationDays;
@@ -29,7 +38,7 @@ const calculateAnalysis = (report: Report, allTasks: any[], allActions: any[], a
 
     const tasksInCycle = allTasks.filter(t => {
         const taskDate = new Date(t.date);
-        return taskDate >= startDate && taskDate <= endDate;
+        return taskDate >= startDate && taskDate <= endDate && !isClanQuestActionId(t.actionId);
     });
 
     const arenaMetrics = new Map<string, { planned: number; completed: number; completedMilestones: number; name: string; icon: string }>();

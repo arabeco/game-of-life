@@ -1,13 +1,11 @@
-import { supabase } from '../supabaseClient';
+import { supabase, isSupabaseMock } from '../supabaseClient';
 import { UserProfile, GoldenInvite, SovereignConfig } from '../types';
 
 // Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
   // Verificar se conexão está ativa
   static isConnectionActive(): boolean {
-    // A verificação `typeof supabase.from === 'function'` é uma maneira mais robusta
-    // de garantir que não estamos usando o cliente mock.
-    return !!(supabase && typeof supabase.from === 'function');
+    return !isSupabaseMock;
   }
 
   // Garantir conta admin soberana
@@ -54,7 +52,8 @@ export class SupabaseService {
           { type: 'Épico', count: 25 },
           { type: 'Lendário', count: 10 }
         ],
-        role: 'admin'
+        role: 'admin',
+        is_premium: true
       };
 
       const { data } = await supabase
@@ -93,7 +92,8 @@ export class SupabaseService {
           nobility: profile.nobility,
           mood: profile.mood,
           chests: profile.chests,
-          role: profile.role
+          role: profile.role,
+          is_premium: profile.isPremium ?? false
         })
         .select()
         .single();
@@ -113,7 +113,6 @@ export class SupabaseService {
       let queryBuilder = supabase
         .from('user_profiles')
         .select('*')
-        .neq('role', 'admin')
         .order('nickname')
         .limit(20);
 
@@ -122,7 +121,7 @@ export class SupabaseService {
       }
 
       const { data } = await queryBuilder;
-      return (data || []) as UserProfile[];
+      return (data || []).filter((profile: any) => profile.role !== 'admin' && profile.role !== 'gm') as UserProfile[];
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
       return [];
@@ -162,6 +161,67 @@ export class SupabaseService {
       return (data || []) as GoldenInvite[];
     } catch (error) {
       console.error('Erro ao listar convites:', error);
+      return [];
+    }
+  }
+
+  static async getGoldenInviteByCode(code: string): Promise<GoldenInvite | null> {
+    if (!this.isConnectionActive()) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('golden_invites')
+        .select('*')
+        .eq('code', code)
+        .single();
+
+      if (error || !data) return null;
+      return data as GoldenInvite;
+    } catch (error) {
+      console.error('Erro ao buscar convite:', error);
+      return null;
+    }
+  }
+
+  static async consumeGoldenInvite(inviteId: string, userId: string): Promise<GoldenInvite | null> {
+    if (!this.isConnectionActive()) return null;
+
+    try {
+      const { data } = await supabase
+        .from('golden_invites')
+        .update({ is_used: true, claimed_by_user_id: userId, claimed_at: new Date().toISOString() })
+        .eq('id', inviteId)
+        .eq('is_used', false)
+        .select()
+        .single();
+
+      return (data || null) as GoldenInvite | null;
+    } catch (error) {
+      console.error('Erro ao consumir convite:', error);
+      return null;
+    }
+  }
+
+  static async seedGoldenInvites(codes: string[]): Promise<GoldenInvite[]> {
+    if (!this.isConnectionActive()) return [];
+
+    try {
+      const { data: existing } = await supabase
+        .from('golden_invites')
+        .select('code');
+
+      const existingCodes = new Set((existing || []).map((row: any) => row.code));
+      const missing = codes.filter(code => !existingCodes.has(code));
+
+      if (missing.length > 0) {
+        await supabase
+          .from('golden_invites')
+          .insert(missing.map(code => ({ code, is_used: false })));
+      }
+
+      return await this.getGoldenInvites();
+    } catch (error) {
+      console.error('Erro ao aplicar convites iniciais:', error);
       return [];
     }
   }

@@ -81,6 +81,12 @@ export interface SovereignConfig {
     artifact: string;
 }
 
+export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts';
+
+export type LevelUnlocks = Record<UnlockCategory, Record<string, number>>;
+
+export type UserUnlocks = Record<UnlockCategory, Record<string, boolean>>;
+
 export interface UserProfile {
   id: string;
   // FIX: Added optional email property to align with database schema and fix typing errors.
@@ -99,7 +105,10 @@ export interface UserProfile {
   nobility: Nobility;
   mood: number; // From 0 to 100
   chests?: { type: ChestType; count: number }[];
-  role: 'admin' | 'user';
+  unlockedItems?: UserUnlocks;
+  completedSeasonMissions?: string[];
+  role: 'admin' | 'gm' | 'user';
+  isPremium?: boolean;
 }
 
 export type FriendRequestStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
@@ -184,6 +193,16 @@ export interface ClanMember {
   joined_at: string; // ISO String
 }
 
+export interface ClanJoinRequest {
+  id: string;
+  clanId: string;
+  userId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  respondedAt?: string | null;
+  requesterProfile?: UserProfile;
+}
+
 // FIX: Define EnrichedClanMember to resolve role conflict and be reusable.
 export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
     role: 'leader' | 'member';
@@ -250,6 +269,16 @@ export interface SeasonMission {
     goal_value: number;
     reward_type: 'exp' | 'item_id';
     reward_value: number | string;
+}
+
+export interface SeasonQuest {
+    id: string;
+    season_id: string;
+    scope: 'season' | 'clan';
+    title: string;
+    description: string;
+    goal_type: 'actions_completed' | 'milestones_completed';
+    goal_value: number;
 }
 
 // --- Hall of Fame / Feed Types ---

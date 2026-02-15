@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
 import { XIcon } from './Icons';
-import { ChestType } from '../types';
+import { ChestType, UnlockCategory } from '../types';
+import { useGame } from '../contexts/GameContext';
+import { GM_CONFIG } from '../constants';
+import { SOVEREIGN_ASSETS } from '../constants/avatar';
 
 interface ChestOpeningModalProps {
     chestType: ChestType;
@@ -19,7 +22,26 @@ const getChestStyle = (type: ChestType) => {
 
 type Reward = { type: string; value: string | number; rarity: 'Comum' | 'Raro' | 'Épico' | 'Lendário' };
 
-const getRandomReward = (type: ChestType): Reward => {
+const ASSET_POOL: Record<UnlockCategory, { id: string; name: string }[]> = {
+    bodyStyles: SOVEREIGN_ASSETS.bodyStyles,
+    hairStyles: SOVEREIGN_ASSETS.hairStyles,
+    outfits: SOVEREIGN_ASSETS.outfits,
+    head_under_items: SOVEREIGN_ASSETS.head_under_items,
+    helmets: SOVEREIGN_ASSETS.helmets,
+    head_over_items: SOVEREIGN_ASSETS.head_over_items,
+    artifacts: SOVEREIGN_ASSETS.artifacts,
+};
+
+const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: UnlockCategory; itemId: string } } => {
+    const poolConfig = GM_CONFIG.chestDrops.itemPool;
+    const pool = poolConfig.categories.flatMap(category =>
+        ASSET_POOL[category].filter(item => !poolConfig.excludeIds?.includes(item.id))
+            .map(item => ({ category, itemId: item.id, name: item.name }))
+    );
+    if (pool.length > 0 && Math.random() < GM_CONFIG.chestDrops.itemDropChanceByChest[type]) {
+        const picked = pool[Math.floor(Math.random() * pool.length)];
+        return { type: 'Item', value: picked.name, rarity: type, itemUnlock: { category: picked.category, itemId: picked.itemId } };
+    }
     const rewards: Omit<Reward, 'rarity'>[] = [
         { type: 'EXP', value: 100 },
         { type: 'Conselho', value: 'A disciplina é a ponte entre metas e realizações.' },
@@ -48,6 +70,7 @@ const getRandomReward = (type: ChestType): Reward => {
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose }) => {
     const [stage, setStage] = useState<'opening' | 'revealing' | 'revealed'>('opening');
     const [reward, setReward] = useState<Reward | null>(null);
+    const { grantUserUnlock } = useGame();
 
     const chestStyle = getChestStyle(chestType);
 
@@ -66,6 +89,14 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
             return () => clearTimeout(timer);
         }
     }, [stage, chestType]);
+
+    const handleCollect = () => {
+        const rewardValue = reward as (Reward & { itemUnlock?: { category: UnlockCategory; itemId: string } }) | null;
+        if (rewardValue?.itemUnlock) {
+            grantUserUnlock(rewardValue.itemUnlock.category, rewardValue.itemUnlock.itemId);
+        }
+        onClose();
+    };
 
     const renderContent = () => {
         switch (stage) {
@@ -111,8 +142,8 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                      <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
                 </div>
                 {renderContent()}
-                 {stage === 'revealed' && (
-                    <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">
+                {stage === 'revealed' && (
+                    <button onClick={handleCollect} className="w-full py-2 rounded-xl luxe-button-primary">
                         COLETAR
                     </button>
                 )}

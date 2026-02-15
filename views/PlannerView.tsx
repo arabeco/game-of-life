@@ -42,9 +42,8 @@ const Sparkles: React.FC = () => (
     </div>
 );
 
-
 const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void }> = ({ task, action, scaleFactor, onCustomDragStart }) => {
-    const { getAssetForAction, toggleTaskCompletion } = useGame();
+    const { getActionBackgroundStyle, toggleTaskCompletion } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [isHolding, setIsHolding] = useState(false);
     const [showSparkles, setShowSparkles] = useState(false);
@@ -82,8 +81,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         };
     }, []);
 
-    const asset = action ? getAssetForAction(action.id) : undefined;
-    const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+    const backgroundStyle = action ? getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isMilestone = action?.actionType === 'Marco';
 
     const handleLongPress = () => {
@@ -251,7 +249,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         addAction,
         assets,
         addArena,
-        userProfile
+        userProfile,
+        getActionBackgroundStyle
     } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -267,6 +266,19 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             oracleInputRef.current.focus();
         }
     }, [showOracleInput]);
+
+    const toDateString = (value: Date) => value.toISOString().split('T')[0];
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    const dayOfWeek = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    const weekStart = toDateString(startOfWeek);
+    const weekEnd = toDateString(endOfWeek);
+    const completedTasksInWeek = tasks.filter(task => task.completed && task.date >= weekStart && task.date <= weekEnd);
 
     const normalizeText = (value: string) => value
         .normalize('NFD')
@@ -907,7 +919,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
      useEffect(() => { if (viewMode === 'week' && scrollContainerRef.current) { const startOfWeek = new Date(currentDate); const day = startOfWeek.getDay(); const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); startOfWeek.setDate(diff); startOfWeek.setHours(0, 0, 0, 0); const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23, 59, 59, 999); const today = new Date(); if (today >= startOfWeek && today <= endOfWeek) { const currentHour = today.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { weeklyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
     
     const milestoneActions = actions.filter(a => a.actionType === 'Marco' && !tasks.some(task => task.actionId === a.id));
-    const groupedTaskPool = taskPool.reduce((acc, item) => { acc[item.actionId] = (acc[item.actionId] || 0) + 1; return acc; }, {} as Record<string, number>);
+    const groupedTaskPool = taskPool.reduce((acc, item) => {
+        const existing = acc[item.actionId] || { count: 0, isUnlimited: false };
+        const nextUnlimited = existing.isUnlimited || !!item.unlimited;
+        const nextCount = nextUnlimited ? 0 : existing.count + 1;
+        acc[item.actionId] = { count: nextCount, isUnlimited: nextUnlimited };
+        return acc;
+    }, {} as Record<string, { count: number; isUnlimited: boolean }>);
     const getActionById = (id: string) => actions.find(a => a.id === id);
     const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
     const dailyTasks = getTasksForDate(currentDate).filter(t => t.startTime >= 0);
@@ -934,10 +952,10 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         className={`flex-grow bg-black/20 border border-white/10 rounded-3xl p-2 h-[60px] transition-all duration-300 ${isOverBayArea ? 'border-[var(--gold)] ring-2 ring-[var(--gold)] shadow-lg shadow-[var(--gold)]/20' : ''}`}
                     >
                         <div className="flex space-x-2 h-full overflow-x-auto">
-                            {Object.entries(groupedTaskPool).length > 0 ? Object.entries(groupedTaskPool).map(([actionId, count]) => {
+                            {Object.entries(groupedTaskPool).length > 0 ? Object.entries(groupedTaskPool).map(([actionId, payload]) => {
                                 const action = getActionById(actionId);
                                 if (!action) return null;
-                                return (<PoolAction key={actionId} action={action} count={count} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} />);
+                                return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} />);
                             }) : (<div className="w-full h-full flex items-center justify-center text-sm text-gray-500">Sem ações no pool.</div>)}
                         </div>
                     </div>

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { GlassCard } from './GlassCard';
 import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
-import { UserProfile, EnrichedClanMember } from '../types';
+import { Arena, UserProfile, EnrichedClanMember, SeasonQuest } from '../types';
 import { Sovereign } from './Avatar';
 import { ClanManagementModal } from './ClanManagementModal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -12,6 +12,7 @@ import { ClanMemberCard } from './ClanMemberCard';
 import { AddClanMemberModal } from './AddClanMemberModal';
 import { BackgroundImageSelectionModal } from './BackgroundImageSelectionModal';
 import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
+import { ArenaDetailModal } from './ArenaDetailModal';
 
 // --- Types ---
 type Zone = 'Árvore' | 'Cristal' | 'Descanso' | 'Jardim' | 'Indefinida';
@@ -94,6 +95,34 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member' }> = ({ userClan
         </div>
     );
 };
+
+const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; onClose: () => void; onTake: () => void }> = ({ quest, progress, isActive, onClose, onTake }) => (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl p-4" onClick={e => e.stopPropagation()}>
+            <div className="text-center space-y-1">
+                <h3 className="text-lg font-black uppercase tracking-widest">{quest.title}</h3>
+                <p className="text-xs text-gray-300">{quest.description}</p>
+            </div>
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Progresso</span>
+                    <span className="text-xs font-mono">{progress}%</span>
+                </div>
+                <div className="w-full bg-black/30 rounded-full h-1.5">
+                    <div className="bg-[var(--gold)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                </div>
+            </div>
+            <div className="space-y-2">
+                <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-button-primary'}`}>
+                    {isActive ? 'QUEST ATIVA' : 'PEGAR QUEST'}
+                </button>
+                <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-bold bg-black/30 text-gray-300 hover:bg-black/50">
+                    FECHAR
+                </button>
+            </div>
+        </GlassCard>
+    </div>
+);
 
 const ClanMember: React.FC<{ placement: MemberPlacement }> = ({ placement }) => {
     return (
@@ -178,7 +207,7 @@ const getZoneAndState = (row: number, col: number): { zone: Zone, state: ActionS
 };
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, updateClan } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction } = useGame();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const [userPlacement, setUserPlacement] = useState<MemberPlacement>({ member: userProfile, gridPos: { row: 4, col: 3 }, state: getZoneAndState(4, 3).state! });
     const [otherPlacements, setOtherPlacements] = useState<MemberPlacement[]>([]);
@@ -189,14 +218,16 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
     const [memberToKick, setMemberToKick] = useState<EnrichedClanMember | null>(null);
     const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
+    const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
+    const [questArena, setQuestArena] = useState<Arena | null>(null);
     
     const userClanRole = useMemo(() => {
         return enrichedClanMembers.find(m => m.id === userProfile.id)?.role;
     }, [enrichedClanMembers, userProfile.id]);
 
     const activeSeason = seasons.find(s => s.is_active);
-    const today = new Date().toISOString().split('T')[0];
-    const canEditBackground = !!activeSeason && activeSeason.start_date === today;
+    const todayString = new Date().toISOString().split('T')[0];
+    const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
     const sanctuaryBackground = clan?.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND;
 
     useEffect(() => {
@@ -303,18 +334,44 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         setIsBackgroundModalOpen(false);
     };
     
-    const [missions, setMissions] = useState([
-        { id: 1, title: 'Raid Semanal: Acumular 50h de Foco', progress: 75, pledged: false, totalPledges: 4, requiredPledges: 5 },
-        { id: 2, title: 'Desafio do Clã: Completar 100 Ações', progress: 42, pledged: false, totalPledges: 2, requiredPledges: 5 },
-    ]);
+    const clanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
+    const questArenaName = activeSeason ? `Quests - Clã ${activeSeason.id}` : 'Quests - Clã';
+    const ensureQuestArena = () => {
+        const existing = getArenas().find(arena => arena.name === questArenaName);
+        if (existing) return existing;
+        const fallbackAssetId = assets.find(asset => asset.id === 'geral')?.id || assets[0]?.id || '';
+        return addArena(fallbackAssetId, { name: questArenaName, description: 'Missões do clã', icon: '🛡️' });
+    };
 
-    const handlePledge = (id: number) => {
-        setMissions(prev => prev.map(m => {
-            if (m.id === id) {
-                return { ...m, pledged: true, totalPledges: m.totalPledges + 1 };
-            }
-            return m;
-        }));
+    const isQuestActive = (quest: SeasonQuest) => {
+        const arena = getArenas().find(arena => arena.name === questArenaName);
+        if (!arena) return false;
+        return getActionsForArena(arena.id).some(action => action.name === quest.title);
+    };
+
+    const getQuestProgress = (quest: SeasonQuest) => {
+        const completed = getClanQuestProgress(quest.id);
+        if (quest.goal_value > 0) return Math.min(100, Math.round((completed / quest.goal_value) * 100));
+        return Math.min(100, completed);
+    };
+
+    const handleTakeQuest = (quest: SeasonQuest) => {
+        const arena = ensureQuestArena();
+        const exists = getActionsForArena(arena.id).some(action => action.name === quest.title);
+        if (!exists) {
+            addAction({
+                arenaId: arena.id,
+                name: quest.title,
+                description: quest.description,
+                icon: '🛡️',
+                duration: 30,
+                repetitions: 0,
+                actionType: quest.goal_type === 'milestones_completed' ? 'Marco' : 'Ação Recorrente',
+                difficulty: 3
+            });
+        }
+        setQuestArena(arena);
+        setSelectedQuest(null);
     };
 
     return (
@@ -360,6 +417,43 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 text-sm rounded-lg luxe-button-secondary">Convidar</button>
                                     </div>
                                 )}
+                                {userClanRole === 'leader' && clanJoinRequestsIncoming.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between px-2 text-xs text-gray-300">
+                                            <span className="font-bold uppercase tracking-wider">Pedidos</span>
+                                            <span>{clanJoinRequestsIncoming.length} pendentes</span>
+                                        </div>
+                                        {clanJoinRequestsIncoming.map(request => {
+                                            const nickname = request.requesterProfile?.nickname || 'Soberano';
+                                            const initial = nickname.charAt(0).toUpperCase();
+                                            return (
+                                                <div key={request.id} className="bg-black/20 p-3 rounded-2xl flex items-center space-x-3 border border-white/10">
+                                                    <div className="w-12 h-12 rounded-full border-2 border-white/20 bg-gray-800 flex items-center justify-center text-sm font-bold">
+                                                        {initial}
+                                                    </div>
+                                                    <div className="flex-grow">
+                                                        <div className="flex items-center space-x-2">
+                                                            <h4 className="font-bold text-white">{nickname}</h4>
+                                                        </div>
+                                                        <p className="text-xs text-gray-400">Solicitou entrada no clã</p>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <button onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-full bg-green-500/20 text-green-300 hover:bg-green-500/30">
+                                                            <CheckIcon className="w-4 h-4" />
+                                                        </button>
+                                                        <button onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30">
+                                                            <XIcon className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                <div className="flex items-center justify-between px-2 text-xs text-gray-300">
+                                    <span className="font-bold uppercase tracking-wider">Membros</span>
+                                    <span>{enrichedClanMembers.length} total</span>
+                                </div>
                                 {enrichedClanMembers.map(member => (
                                     <ClanMemberCard 
                                         key={member.id}
@@ -376,17 +470,25 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
                         {activeTab === 'missoes' && (
                             <div className="absolute top-28 bottom-24 left-4 right-4 overflow-y-auto space-y-3 hide-scrollbar">
-                                {missions.map(mission => {
-                                    const isFullyPledged = mission.totalPledges >= mission.requiredPledges;
-                                    const isCompleted = mission.progress >= 100;
+                                <div className="text-center text-xs font-bold uppercase tracking-wider text-gray-300">
+                                    Quests do Clã
+                                </div>
+                                {clanQuests.length === 0 && (
+                                    <GlassCard variant="neutral" className="p-4 text-center text-sm text-gray-300">
+                                        Nenhuma quest de clã ativa nesta season.
+                                    </GlassCard>
+                                )}
+                                {clanQuests.map(quest => {
+                                    const progress = getQuestProgress(quest);
+                                    const isCompleted = progress >= 100;
 
                                     return (
-                                        <GlassCard key={mission.id} variant={isCompleted ? 'gold' : 'neutral'} className={`p-4 transition-all duration-300 ${isCompleted ? 'border-[var(--gold)] shadow-[0_0_15px_rgba(212,175,55,0.3)]' : ''}`}>
+                                        <GlassCard key={quest.id} variant={isCompleted ? 'gold' : 'neutral'} className={`p-4 transition-all duration-300 cursor-pointer ${isCompleted ? 'border-[var(--gold)] shadow-[0_0_15px_rgba(212,175,55,0.3)]' : ''}`} onClick={() => setSelectedQuest(quest)}>
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="font-bold text-sm w-2/3">{mission.title}</span>
+                                                    <span className="font-bold text-sm w-2/3">{quest.title}</span>
                                                     <div className="flex items-center space-x-2">
-                                                        <span className="text-xs font-mono">{mission.progress}%</span>
+                                                        <span className="text-xs font-mono">{progress}%</span>
                                                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--gold)] bg-[var(--gold)] text-black' : 'border-gray-500'}`}>
                                                             {isCompleted && <CheckIcon className="w-4 h-4" />}
                                                         </div>
@@ -394,35 +496,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                 </div>
                                                 
                                                 <div className="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
-                                                    <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--gold)]' : 'bg-gray-500'}`} style={{width: `${mission.progress}%`}}></div>
+                                                    <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--gold)]' : 'bg-gray-500'}`} style={{width: `${progress}%`}}></div>
                                                 </div>
-
-                                                <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                                                    <div className="flex items-center space-x-1 text-xs text-gray-400">
-                                                        <span className={isFullyPledged ? 'text-[var(--gold)]' : ''}>{mission.totalPledges}/{mission.requiredPledges}</span>
-                                                        <span>Pactos</span>
-                                                    </div>
-                                                    
-                                                    {!mission.pledged ? (
-                                                        <button 
-                                                            onClick={() => handlePledge(mission.id)}
-                                                            className="px-3 py-1 rounded-lg text-xs font-bold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)] hover:text-black transition-colors"
-                                                        >
-                                                            FIRMAR PACTO
-                                                        </button>
-                                                    ) : (
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] flex items-center gap-1 bg-[var(--gold)]/10 px-2 py-1 rounded">
-                                                            <div className="w-1.5 h-1.5 bg-[var(--gold)] rounded-full animate-pulse"></div>
-                                                            Pacto Ativo
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                
-                                                {isCompleted && (
-                                                    <div className="absolute top-0 right-0 -mt-2 -mr-2 w-12 h-12 flex items-center justify-center bg-[var(--gold)] text-black rounded-full shadow-lg font-black text-xs border-2 border-white transform rotate-12 animate-bounce-slow z-10">
-                                                        SELO
-                                                    </div>
-                                                )}
                                             </div>
                                         </GlassCard>
                                     );
@@ -435,7 +510,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                 <div className="flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
                                     <button onClick={() => setActiveTab('santuario')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'santuario' ? 'bg-white/10' : 'text-gray-400'}`}>Santuário</button>
                                     <button onClick={() => setActiveTab('membros')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'membros' ? 'bg-white/10' : 'text-gray-400'}`}>Membros</button>
-                                    <button onClick={() => setActiveTab('missoes')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'missoes' ? 'bg-white/10' : 'text-gray-400'}`}>Missões</button>
+                                    <button onClick={() => setActiveTab('missoes')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'missoes' ? 'bg-white/10' : 'text-gray-400'}`}>Quests</button>
                                 </div>
                             </GlassCard>
                         </div>
@@ -444,6 +519,21 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 </div>
             </div>
             
+            {selectedQuest && (
+                <ClanMissionDetailModal
+                    quest={selectedQuest}
+                    progress={getQuestProgress(selectedQuest)}
+                    isActive={isQuestActive(selectedQuest)}
+                    onClose={() => setSelectedQuest(null)}
+                    onTake={() => handleTakeQuest(selectedQuest)}
+                />
+            )}
+            {questArena && (
+                <ArenaDetailModal
+                    arena={questArena}
+                    onClose={() => setQuestArena(null)}
+                />
+            )}
             {showGardenModal && <GardenActionModal onSelect={handleGardenActionSelect} onClose={() => setShowGardenModal(false)} />}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
             {subModal === 'manage' && <ClanManagementModal onClose={() => setSubModal(null)} />}

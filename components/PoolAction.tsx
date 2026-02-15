@@ -9,12 +9,13 @@ import { useLongPress } from '../hooks/useLongPress';
 interface PoolActionProps {
     action: Action;
     count: number;
+    isUnlimited?: boolean;
     onComplete: (actionId: string) => void;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
 }
 
-export const PoolAction: React.FC<PoolActionProps> = ({ action, count, onComplete, onCustomDragStart }) => {
-    const { getAssetForAction } = useGame();
+export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimited, onComplete, onCustomDragStart }) => {
+    const { getActionBackgroundStyle } = useGame();
     const { isTutorialActive, currentStep, setSpotlight } = useTutorial();
     const [isHolding, setIsHolding] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -46,8 +47,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, onComplet
         };
     }, []);
 
-    const asset = getAssetForAction(action.id);
-    const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+    const backgroundStyle = getActionBackgroundStyle(action.id);
 
     const handleLongPress = () => {
         if (isTransitioning) return;
@@ -97,7 +97,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, onComplet
             className="h-full aspect-square border border-[var(--accent-bronze)] rounded-xl flex items-center justify-center p-1 flex-shrink-0 cursor-grab active:cursor-grabbing relative"
         >
             <span className="text-2xl">{action.icon}</span>
-            {count > 1 && <div className="absolute -top-1 -right-1 bg-[var(--bronze)] text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">x{count}</div>}
+            {(isUnlimited || count > 1) && <div className="absolute -top-1 -right-1 bg-[var(--bronze)] text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{isUnlimited ? '∞' : `x${count}`}</div>}
             {isHolding && (
                 <div className="absolute inset-0 bg-black/50 rounded-xl animate-pulse">
                     <div className="h-full w-full bg-[var(--bronze)] opacity-50 animate-[fill_3s_linear_forwards]" style={{clipPath: 'inset(100% 0 0 0)'}}></div>

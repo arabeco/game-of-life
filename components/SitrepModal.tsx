@@ -14,8 +14,8 @@ const parseDate = (value: string) => {
 
 const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment) => {
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date);
+const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, isClanQuestActionId: (actionId: string) => boolean) => {
+    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date && !isClanQuestActionId(t.actionId));
     const committedCounts = committedTasks.reduce((acc, task) => {
         acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
@@ -23,6 +23,7 @@ const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyComm
     const completedCounts = tasks.reduce((acc, task) => {
         if (task.date !== dailyCommitment.date) return acc;
         if (!committedCounts[task.actionId]) return acc;
+        if (isClanQuestActionId(task.actionId)) return acc;
         if (task.completed) acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
@@ -57,11 +58,10 @@ const CycleHeader: React.FC = () => {
 };
 
 const BattleTaskItem: React.FC<{ task: ScheduledTask, action: Action | undefined, onUncommit: (taskId: string) => void, isAdjusting: boolean, isCompleted: boolean }> = ({ task, action, onUncommit, isAdjusting, isCompleted }) => {
-    const { getAssetForAction } = useGame();
+    const { getActionBackgroundStyle } = useGame();
     if (!action) return null;
 
-    const asset = getAssetForAction(action.id);
-    const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+    const backgroundStyle = getActionBackgroundStyle(action.id);
 
     return (
         <div 
@@ -91,15 +91,26 @@ const BattleTaskItem: React.FC<{ task: ScheduledTask, action: Action | undefined
 // --- Main Modal ---
 
 export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool } = useGame();
+    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas } = useGame();
 
     const [isAdjusting, setIsAdjusting] = useState(false);
+
+    const isClanQuestActionId = (actionId: string) => {
+        const action = actions.find(a => a.id === actionId);
+        if (!action) return false;
+        const arena = getArenas().find(ar => ar.id === action.arenaId);
+        if (!arena?.name) return false;
+        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return normalized.includes('quests - cla');
+    };
 
     const handleCommitAction = (actionId: string) => {
         const today = new Date().toISOString().split('T')[0];
         const newTask = scheduleTask(actionId, today, 0); // Schedule for today with no specific time
         if (newTask) {
-            setDailyCommitment([...dailyCommitment.taskIds, newTask.id]);
+            if (!isClanQuestActionId(actionId)) {
+                setDailyCommitment([...dailyCommitment.taskIds, newTask.id]);
+            }
         }
     };
 
@@ -108,12 +119,12 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setDailyCommitment(dailyCommitment.taskIds.filter(id => id !== taskId));
     };
 
-    const groupedTaskPool = useMemo(() => taskPool.reduce((acc, item) => {
+    const groupedTaskPool = useMemo(() => taskPool.filter(item => !isClanQuestActionId(item.actionId)).reduce((acc, item) => {
         acc[item.actionId] = (acc[item.actionId] || 0) + 1;
         return acc;
-    }, {} as Record<string, number>), [taskPool]);
+    }, {} as Record<string, number>), [taskPool, actions, getArenas]);
     
-    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment), [tasks, dailyCommitment]);
+    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment, isClanQuestActionId), [tasks, dailyCommitment, actions, getArenas]);
     
     const getActionById = (id: string) => actions.find(a => a.id === id);
 

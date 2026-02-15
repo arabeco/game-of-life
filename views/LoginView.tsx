@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { GameLogoIcon } from '../components/Icons';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
-import { UserProfile } from '../types';
+import { GM_CONFIG } from '../constants';
+import { SupabaseService } from '../services/SupabaseService';
+import { GoldenInvite, UserProfile } from '../types';
 
 interface LoginViewProps {
     onGuestLogin: () => void;
@@ -20,12 +22,45 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     
-    const MASTER_INVITE_CODE = 'temp123';
+    const INVITE_STORAGE_KEY = 'goldenInvitesUsed';
+    const getUsedInvites = (): string[] => {
+        try {
+            const saved = localStorage.getItem(INVITE_STORAGE_KEY);
+            if (saved) return JSON.parse(saved);
+        } catch {
+            return [];
+        }
+        return [];
+    };
 
     const handleSignUp = async () => {
-        if (inviteCode !== MASTER_INVITE_CODE) {
-            setError("Convite Dourado inválido.");
-            return;
+        const normalizedInvite = inviteCode.trim();
+        const isOnline = SupabaseService.isConnectionActive();
+        let inviteRecord: GoldenInvite | null = null;
+        let offlineUsedInvites: string[] = [];
+
+        if (isOnline) {
+            inviteRecord = await SupabaseService.getGoldenInviteByCode(normalizedInvite);
+            if (!inviteRecord) {
+                setError('Convite Dourado inválido.');
+                return;
+            }
+            if (inviteRecord.is_used) {
+                setError('Convite Dourado já utilizado.');
+                return;
+            }
+        } else {
+            const allowedInvites = new Set(GM_CONFIG.goldenInvites.seedCodes);
+            const usedInvites = new Set(getUsedInvites());
+            if (!allowedInvites.has(normalizedInvite)) {
+                setError('Convite Dourado inválido.');
+                return;
+            }
+            if (usedInvites.has(normalizedInvite)) {
+                setError('Convite Dourado já utilizado.');
+                return;
+            }
+            offlineUsedInvites = [...usedInvites];
         }
         setLoading(true);
         setError(null);
@@ -45,6 +80,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
             if (error) throw error;
             
             if (data.user) {
+                if (isOnline && inviteRecord) {
+                    const consumed = await SupabaseService.consumeGoldenInvite(inviteRecord.id, data.user.id);
+                    if (!consumed) {
+                        setError('Convite Dourado já utilizado.');
+                        await supabase.auth.signOut();
+                        setLoading(false);
+                        return;
+                    }
+                }
                 // Criar perfil do usuário
                 const newProfile: UserProfile = {
                     id: data.user.id,
@@ -60,7 +104,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                     nobility: { exp: 0, rankId: 'vagante' },
                     mood: 50,
                     chests: [{ type: 'Comum', count: 1 }],
-                    role: 'user'
+                    role: 'user',
+                    isPremium: false
                 };
 
                 const { error: profileError } = await supabase
@@ -80,10 +125,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         mood: newProfile.mood,
                         chests: newProfile.chests,
                         role: newProfile.role,
+                        is_premium: newProfile.isPremium ?? false,
                     }]);
 
                 if (profileError) throw profileError;
 
+                if (!isOnline) {
+                    const nextUsed = [...offlineUsedInvites, normalizedInvite];
+                    localStorage.setItem(INVITE_STORAGE_KEY, JSON.stringify(nextUsed));
+                }
                 setMessage('Cadastro realizado! Verifique seu email para confirmar a conta.');
                 setIsSigningUp(false);
             }
@@ -131,6 +181,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         mood: profile.mood,
                         chests: profile.chests,
                         role: profile.role,
+                        isPremium: profile.is_premium ?? false,
                     };
                     updateUserProfile(userProfileForState);
                 }
@@ -201,7 +252,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                             { type: 'Épico', count: 25 },
                             { type: 'Lendário', count: 10 }
                         ],
-                        role: 'admin'
+                        role: 'admin',
+                        isPremium: true
                     };
 
                     const adminProfileForDB = {
@@ -219,7 +271,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         nobility: adminProfileForState.nobility,
                         mood: adminProfileForState.mood,
                         chests: adminProfileForState.chests,
-                        role: adminProfileForState.role
+                        role: adminProfileForState.role,
+                        is_premium: adminProfileForState.isPremium ?? true
                     };
                     
                     const { error: profileError } = await supabase
@@ -257,6 +310,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                         mood: profile.mood,
                         chests: profile.chests,
                         role: profile.role,
+                        isPremium: profile.is_premium ?? false,
                     };
                     updateUserProfile(userProfileForState);
                 }

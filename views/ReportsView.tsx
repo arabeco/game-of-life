@@ -36,6 +36,15 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
     const today = new Date().toISOString().split('T')[0];
+
+    const isClanQuestActionId = (actionId: string) => {
+        const action = actions.find(a => a.id === actionId);
+        if (!action) return false;
+        const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
+        if (!arena?.name) return false;
+        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return normalized.includes('quests - cla');
+    };
     
     // Cálculo de dias
     const startD = parseDate(startDate);
@@ -47,7 +56,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const timeProgress = Math.min(100, (daysElapsed / totalDays) * 100);
 
     // Filtrar tarefas apenas do usuário atual e dentro do período do ciclo
-    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate);
+    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && !isClanQuestActionId(t.actionId));
     const completedTasks = cycleTasks.filter(t => t.completed);
 
     // Arenas e Ações envolvidas (seguindo a mesma lógica do endCycle)

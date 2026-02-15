@@ -8,12 +8,17 @@ import { useTutorial } from '../contexts/TutorialContext';
 import { supabase } from '../supabaseClient';
 
 const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ action, onClick }) => {
-    const { getAssetForAction, tasks } = useGame();
-    const asset = getAssetForAction(action.id);
-    const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+    const { getActionBackgroundStyle, tasks, getArenas, seasonQuests, getClanQuestProgress } = useGame();
+    const backgroundStyle = getActionBackgroundStyle(action.id);
     
     const completedCount = tasks.filter(t => t.actionId === action.id && t.completed).length;
     const totalProposed = action.repetitions;
+    const arena = getArenas().find(ar => ar.id === action.arenaId);
+    const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+    const isClanQuest = normalizedArena.includes('quests - cla');
+    const clanQuest = isClanQuest ? seasonQuests.find(q => q.scope === 'clan' && q.title === action.name) : undefined;
+    const clanProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
+    const clanPercent = clanQuest && clanQuest.goal_value > 0 ? Math.min(100, Math.round((clanProgress / clanQuest.goal_value) * 100)) : Math.min(100, clanProgress);
 
     return (
         <div className="relative flex-shrink-0">
@@ -26,14 +31,14 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ actio
                 <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
             </button>
             <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none">
-                {completedCount}/{totalProposed}
+                {isClanQuest ? `${clanPercent}%` : `${completedCount}/${totalProposed}`}
             </div>
         </div>
     );
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, tasks, getAssetForAction, friends } = useGame();
+    const { getActionsForArena, assets, updateArena, tasks, getActionBackgroundStyle, friends, seasonQuests, getClanQuestProgress } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -59,15 +64,28 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     const parentAsset = assets.find(a => a.id === arena.assetId);
     
+    const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const isClanQuestArena = normalizedArena.includes('quests - cla');
+    const clanQuestTotals = allActions.reduce((acc, action) => {
+        const quest = seasonQuests.find(q => q.scope === 'clan' && q.title === action.name);
+        if (!quest) return acc;
+        const progressValue = getClanQuestProgress(quest.id);
+        return {
+            totalProgress: acc.totalProgress + progressValue,
+            totalGoal: acc.totalGoal + (quest.goal_value > 0 ? quest.goal_value : 0)
+        };
+    }, { totalProgress: 0, totalGoal: 0 });
     const allActionInstances = allActions.reduce((acc, action) => acc + action.repetitions, 0);
     const allCompletedInstances = allActions.reduce((acc, action) => {
         const completed = tasks.filter(t => t.actionId === action.id && t.completed).length;
         return acc + completed;
     }, 0);
-    
-    const progress = allActionInstances > 0
-        ? (allCompletedInstances / allActionInstances) * 100
-        : 0;
+
+    const progress = isClanQuestArena
+        ? (clanQuestTotals.totalGoal > 0
+            ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
+            : Math.min(100, clanQuestTotals.totalProgress))
+        : (allActionInstances > 0 ? (allCompletedInstances / allActionInstances) * 100 : 0);
 
     const handleEditToggle = () => {
         if (isEditing) {
@@ -202,8 +220,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 </div>
                                 <div className="flex flex-col items-center space-y-2 py-2">
                                     {milestoneActions.map(action => {
-                                        const asset = getAssetForAction(action.id);
-                                        const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+                                        const backgroundStyle = getActionBackgroundStyle(action.id);
                                         const task = tasks.find(t => t.actionId === action.id);
                                         const isCompleted = task?.completed;
 

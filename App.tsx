@@ -14,13 +14,11 @@ import { TutorialOverlay } from './components/TutorialOverlay';
 import { GlobalHeader } from './components/GlobalHeader';
 import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from './components/Icons';
 import { AchievementModal } from './components/AchievementModal';
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseMock } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import { useLongPress } from './hooks/useLongPress';
 
-// --- MODO DE CONSTRUÇÃO OFFLINE ---
-// Defina como 'false' para reativar a autenticação do Supabase.
-const OFFLINE_MODE = false;
+const OFFLINE_MODE = isSupabaseMock;
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
@@ -497,9 +495,18 @@ const App: React.FC = () => {
 
             const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
             if (!AudioContextClass) return;
-            if (!audioContextRef.current) audioContextRef.current = new AudioContextClass();
+            if (!audioContextRef.current) {
+                try {
+                    audioContextRef.current = new AudioContextClass();
+                } catch {
+                    return;
+                }
+            }
             const ctx = audioContextRef.current;
-            if (ctx.state === 'suspended') ctx.resume();
+            if (!ctx) return;
+            if (ctx.state === 'suspended') {
+                ctx.resume().catch(() => {});
+            }
 
             const t = ctx.currentTime;
             const master = ctx.createGain();

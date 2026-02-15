@@ -65,8 +65,7 @@ export const ArenasView: React.FC = () => {
     
     const getAssetById = (id: string) => assets.find(a => a.id === id);
     const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
-    const selectableAssets = assets.filter(a => a.id !== 'geral');
-    const assetOptions = selectableAssets.length > 0 ? selectableAssets : assets;
+    const assetOptions = assets;
 
     const handleAddPendingAction = () => {
         if (!actionName.trim()) return;
@@ -153,7 +152,7 @@ export const ArenasView: React.FC = () => {
                             <label className="text-xs font-bold text-gray-400">Ativo</label>
                             <select value={builderAssetId} onChange={e => setBuilderAssetId(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]">
                                 {assetOptions.map(asset => (
-                                    <option key={asset.id} value={asset.id}>{asset.name}</option>
+                                    <option key={asset.id} value={asset.id}>{asset.id === 'geral' ? 'OUTROS / SIDEQUEST' : asset.name}</option>
                                 ))}
                             </select>
                         </div>

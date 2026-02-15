@@ -332,8 +332,8 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
             <div className="space-y-2">
               <select value={arenaDraft.assetId} onChange={e => setArenaDraft(prev => ({ ...prev, assetId: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]">
-                {assets.filter(a => a.id !== 'geral').map(asset => (
-                  <option key={asset.id} value={asset.id}>{asset.name}</option>
+                {assets.map(asset => (
+                  <option key={asset.id} value={asset.id}>{asset.id === 'geral' ? 'OUTROS / SIDEQUEST' : asset.name}</option>
                 ))}
               </select>
               <input type="text" placeholder="Nome da Arena" value={arenaDraft.name} onChange={e => setArenaDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />

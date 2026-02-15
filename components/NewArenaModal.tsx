@@ -14,14 +14,21 @@ interface NewArenaModalProps {
 
 const AssetSelectionModal: React.FC<{currentAssetId: string, onSelect: (assetId: string) => void, onClose: () => void}> = ({ onSelect, onClose }) => {
     const { assets } = useGame();
+    const geralAsset = assets.find(a => a.id === 'geral');
+    const assetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
     return (
          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                  <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Ativo</h2>
                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {geralAsset && (
+                        <button onClick={() => onSelect(geralAsset.id)} className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-white/10">
+                            {assetLabel(geralAsset.id, geralAsset.name)}
+                        </button>
+                    )}
                     {assets.filter(a => a.id !== 'geral').map(asset => (
                         <button key={asset.id} onClick={() => onSelect(asset.id)} className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-white/10">
-                            {asset.name}
+                            {assetLabel(asset.id, asset.name)}
                         </button>
                     ))}
                  </div>
@@ -69,6 +76,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     };
     
     const selectedAsset = assets.find(a => a.id === assetId);
+    const selectedAssetLabel = selectedAsset?.id === 'geral' ? 'OUTROS / SIDEQUEST' : selectedAsset?.name;
 
     return (
         <>
@@ -84,7 +92,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                             onClick={() => setIsAssetPickerOpen(true)}
                             className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl flex justify-between items-center text-left"
                         >
-                            <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAsset?.name || 'Selecione o Ativo Pai'}</span>
+                            <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione o Ativo Pai'}</span>
                             <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                         </button>
                         <input type="text" placeholder="Nome da Arena" value={name} onChange={e => setName(e.target.value)} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />

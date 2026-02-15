@@ -4,6 +4,7 @@ import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, Us
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG } from '../constants';
 import { buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { supabase } from '../supabaseClient';
+import { SupabaseService } from '../services/SupabaseService';
 import type { Session } from '@supabase/supabase-js';
 import { useCodexBuilder } from './CodexBuilderContext';
 
@@ -382,41 +383,52 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const previousId = storedUserId || storedProfileId;
     if (previousId && previousId !== currentUserId) {
-        const keysToClear = [
-            'assets',
-            'actions',
-            'tasks',
-            'reports',
-            'clan',
-            'checklistItems',
-            'userProfile',
-            'activeCycle',
-            'feed',
-            'dailyCommitment',
-            'cycleExpBonus',
-            'levelUnlocks',
-            'clanQuestProgress',
-        ];
-        keysToClear.forEach(key => localStorage.removeItem(key));
+        if (previousId === DEFAULT_USER_PROFILE.id) {
+            pendingGuestMigrationRef.current = { fromId: previousId, toId: currentUserId };
+            setUserProfile(prev => ({ ...prev, id: currentUserId, isOnline: true }));
+            try {
+                const prevTermsKey = `termsAccepted:${previousId}`;
+                const nextTermsKey = `termsAccepted:${currentUserId}`;
+                const accepted = localStorage.getItem(prevTermsKey);
+                if (accepted === 'true') localStorage.setItem(nextTermsKey, 'true');
+            } catch {}
+        } else {
+            const keysToClear = [
+                'assets',
+                'actions',
+                'tasks',
+                'reports',
+                'clan',
+                'checklistItems',
+                'userProfile',
+                'activeCycle',
+                'feed',
+                'dailyCommitment',
+                'cycleExpBonus',
+                'levelUnlocks',
+                'clanQuestProgress',
+            ];
+            keysToClear.forEach(key => localStorage.removeItem(key));
 
-        setAssets(createDefaultAssets(isNewUser));
-        setActions(createDefaultActions(isNewUser));
-        setTasks([]);
-        setReports([]);
-        setClan(null);
-        setEnrichedClanMembers([]);
-        setChecklistItems([...defaultChecklistItems]);
-        setFeed([]);
-        setActiveCycle(null);
-        setDailyCommitmentState(createDefaultDailyCommitment());
-        setCycleExpBonus(0);
-        setLevelUnlocks(buildDefaultLevelUnlocks());
-        setClanQuestProgress({});
-        setUserProfile({
-            ...DEFAULT_USER_PROFILE,
-            id: currentUserId,
-            sovereign: { ...DEFAULT_SOVEREIGN_CONFIG },
-        });
+            setAssets(createDefaultAssets(isNewUser));
+            setActions(createDefaultActions(isNewUser));
+            setTasks([]);
+            setReports([]);
+            setClan(null);
+            setEnrichedClanMembers([]);
+            setChecklistItems([...defaultChecklistItems]);
+            setFeed([]);
+            setActiveCycle(null);
+            setDailyCommitmentState(createDefaultDailyCommitment());
+            setCycleExpBonus(0);
+            setLevelUnlocks(buildDefaultLevelUnlocks());
+            setClanQuestProgress({});
+            setUserProfile({
+                ...DEFAULT_USER_PROFILE,
+                id: currentUserId,
+                sovereign: { ...DEFAULT_SOVEREIGN_CONFIG },
+            });
+        }
     }
 
     try {
@@ -487,7 +499,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   });
 
   const persistTimeoutRef = useRef<number | null>(null);
-  const clanQuestProgressTableReadyRef = useRef(true);
+  const enableClanQuestProgress = process.env.VITE_ENABLE_CLAN_QUEST_PROGRESS === 'true';
+  const clanQuestProgressTableReadyRef = useRef(enableClanQuestProgress);
+  const pendingGuestMigrationRef = useRef<{ fromId: string; toId: string } | null>(null);
 
   useEffect(() => {
     if (persistTimeoutRef.current !== null) window.clearTimeout(persistTimeoutRef.current);
@@ -674,6 +688,59 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
   }, [setClan, setEnrichedClanMembers, fetchClanQuestProgress, session?.user.id, userProfile.id, loadClanJoinRequestsIncoming]);
 
+  const migrateGuestDataToSupabase = useCallback(async (userId: string) => {
+    const errors: string[] = [];
+    const syncedProfile = await SupabaseService.syncUserProfile({ ...userProfile, id: userId, isOnline: true });
+    if (!syncedProfile) errors.push('profile');
+
+    const arenas = assets.flatMap(asset => asset.arenas.map(arena => ({ ...arena, assetId: arena.assetId || asset.id })));
+    if (arenas.length > 0) {
+        const arenasPayload = arenas.map(arena => {
+            const snake = mapToSnakeCase(arena);
+            delete snake.action_ids;
+            return { ...snake, user_id: userId };
+        });
+        const { error } = await supabase.from('arenas').upsert(arenasPayload, { onConflict: 'id' });
+        if (error) errors.push('arenas');
+    }
+
+    if (actions.length > 0) {
+        const actionsPayload = actions.map(action => ({ ...mapToSnakeCase(action), user_id: userId }));
+        const { error } = await supabase.from('actions').upsert(actionsPayload, { onConflict: 'id' });
+        if (error) errors.push('actions');
+    }
+
+    if (tasks.length > 0) {
+        const tasksPayload = tasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
+        const { error } = await supabase.from('scheduled_tasks').upsert(tasksPayload, { onConflict: 'id' });
+        if (error) errors.push('scheduled_tasks');
+    }
+
+    if (reports.length > 0) {
+        const reportsPayload = reports.map(report => ({ ...mapToSnakeCase(report), user_id: userId }));
+        const { error } = await supabase.from('reports').upsert(reportsPayload, { onConflict: 'id' });
+        if (error) errors.push('reports');
+    }
+
+    if (activeCycle?.id) {
+        const cyclePayload = { ...mapToSnakeCase(activeCycle), user_id: userId };
+        const { error } = await supabase.from('cycles').upsert([cyclePayload], { onConflict: 'id' });
+        if (error) errors.push('cycles');
+    }
+
+    const slotsPayload = assets.flatMap(asset => asset.slots.map(slot => ({
+        slot_id: slot.id,
+        user_id: userId,
+        value: typeof slot.value === 'object' ? JSON.stringify(slot.value) : String(slot.value)
+    })));
+    if (slotsPayload.length > 0) {
+        const { error } = await supabase.from('asset_slots').upsert(slotsPayload, { onConflict: 'user_id,slot_id' });
+        if (error) errors.push('asset_slots');
+    }
+
+    return errors.length === 0;
+  }, [assets, actions, tasks, reports, activeCycle, userProfile]);
+
 
   // --- Supabase Data Sync ---
   useEffect(() => {
@@ -776,8 +843,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
 
-    loadDataFromSupabase();
-  }, [session, userProfile.id, loadClanAndMembers, loadFriendsAndRequests, loadClanJoinRequestsOutgoing]);
+    const run = async () => {
+        const pendingMigration = pendingGuestMigrationRef.current;
+        if (pendingMigration?.toId === userId) {
+            const ok = await migrateGuestDataToSupabase(userId);
+            if (ok) pendingGuestMigrationRef.current = null;
+            return;
+        }
+        await loadDataFromSupabase();
+    };
+
+    run();
+  }, [session, userProfile.id, loadClanAndMembers, loadFriendsAndRequests, loadClanJoinRequestsOutgoing, migrateGuestDataToSupabase]);
 
   const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
     const newEvent: FeedEvent = {
@@ -1047,7 +1124,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const updateAllAssetLevels = (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>): boolean => {
     const lastUpdate = userProfile.lastLevelUpdate || 0;
     const threeDays = 72 * 60 * 60 * 1000;
-    if (Date.now() - lastUpdate < threeDays && userProfile.role !== 'admin') {
+    if (Date.now() - lastUpdate < threeDays && userProfile.role !== 'admin' && userProfile.role !== 'gm') {
         alert("Você só pode atualizar seus níveis de maestria a cada 72 horas.");
         return false;
     }
@@ -1450,6 +1527,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         if (normalized.includes('quests - season')) return { background: 'var(--quest-grad-season)' };
         if (normalized.includes('quests - cla')) return { background: 'var(--quest-grad-clan)' };
+        if (normalized.includes('outros') || normalized.includes('sidequest') || normalized.includes('side quest')) return { background: 'var(--quest-grad-sidequest)' };
     }
     const asset = getAssetForAction(actionId);
     return { background: `var(--asset-grad-${asset?.id || 'default'})` };

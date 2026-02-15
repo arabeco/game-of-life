@@ -99,8 +99,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                     backgroundUrl: `https://picsum.photos/seed/bg-${data.user.id}/400/150`,
                     isOnline: true,
                     visibleWidgets: ['consciencia.lema'],
-                    skin: 'default',
-                    unlockedSkins: {},
+                    skin: 'GOLD',
+                    unlockedSkins: { GOLD: true },
                     unlockedItems: {
                         bodyStyles: {},
                         hairStyles: {},

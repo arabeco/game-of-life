@@ -135,6 +135,8 @@ export const SocialView: React.FC = () => {
         setSearchResults({ players: [], clans: [] });
     }
 
+    const showSearchResults = searchResults.players.length > 0 || searchResults.clans.length > 0;
+
     if (!clan) {
         return (
             <div className="p-4 space-y-4">
@@ -177,12 +179,87 @@ export const SocialView: React.FC = () => {
                         </div>
                     )}
                 </div>
+                <div className="space-y-3">
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setActiveTab('aliados')}
+                            className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'aliados' ? 'luxe-button-primary' : 'luxe-button-secondary'}`}
+                        >
+                            Aliados
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('solicitacoes')}
+                            className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'solicitacoes' ? 'luxe-button-primary' : 'luxe-button-secondary'}`}
+                        >
+                            Solicitações {friendRequestsIncoming.length > 0 ? `(${friendRequestsIncoming.length})` : ''}
+                        </button>
+                    </div>
+                    <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2">
+                        {activeTab === 'aliados' && friends.map(friend => (
+                            <SocialCard key={friend.id} profile={friend} />
+                        ))}
+                        {activeTab === 'solicitacoes' && (
+                            <div className="space-y-4">
+                                {friendRequestsIncoming.length === 0 && friendRequestsOutgoing.length === 0 && (
+                                    <div className="text-center text-xs text-gray-500">Nenhuma solicitação pendente.</div>
+                                )}
+                                {friendRequestsIncoming.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="text-[10px] font-bold text-gray-500">RECEBIDAS</div>
+                                        {friendRequestsIncoming.map(request => {
+                                            const senderProfile = request.senderProfile || buildFallbackProfile(request.senderId);
+                                            return (
+                                                <SocialCard
+                                                    key={request.id}
+                                                    profile={senderProfile}
+                                                    subtitle="Convite de amizade"
+                                                    actions={
+                                                        <>
+                                                            <button
+                                                                onClick={() => declineFriendRequest(request.id)}
+                                                                className="p-2 rounded-xl bg-black/40 border border-white/10 hover:border-red-400/60 text-red-300"
+                                                            >
+                                                                <XIcon className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => acceptFriendRequest(request.id)}
+                                                                className="p-2 rounded-xl bg-black/40 border border-white/10 hover:border-green-400/60 text-green-300"
+                                                            >
+                                                                <CheckIcon className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    }
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {friendRequestsOutgoing.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="text-[10px] font-bold text-gray-500">ENVIADAS</div>
+                                        {friendRequestsOutgoing.map(request => {
+                                            const recipientProfile = request.recipientProfile || buildFallbackProfile(request.recipientId);
+                                            return (
+                                                <SocialCard
+                                                    key={request.id}
+                                                    profile={recipientProfile}
+                                                    subtitle="Solicitação enviada"
+                                                    actions={
+                                                        <span className="px-3 py-2 text-[10px] font-bold rounded-xl bg-black/30 border border-white/10 text-gray-400">Enviado</span>
+                                                    }
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
                 {modal === 'create' && <CreateClanModal onClose={() => setModal(null)} />}
             </div>
         );
     }
-
-    const showSearchResults = searchResults.players.length > 0 || searchResults.clans.length > 0;
 
     return (
         <>

@@ -152,7 +152,15 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const handleSave = () => {
-        updateUserProfile(editableProfile);
+        const patch: Partial<UserProfile> = {};
+        if (editableProfile.avatarUrl !== userProfile.avatarUrl) patch.avatarUrl = editableProfile.avatarUrl;
+        if (editableProfile.border !== userProfile.border) patch.border = editableProfile.border;
+        if (editableProfile.backgroundUrl !== userProfile.backgroundUrl) patch.backgroundUrl = editableProfile.backgroundUrl;
+        if (editableProfile.bannerUrl !== userProfile.bannerUrl) patch.bannerUrl = editableProfile.bannerUrl;
+        const nextWidgets = editableProfile.visibleWidgets || [];
+        const currentWidgets = userProfile.visibleWidgets || [];
+        if (JSON.stringify(nextWidgets) !== JSON.stringify(currentWidgets)) patch.visibleWidgets = nextWidgets;
+        if (Object.keys(patch).length > 0) updateUserProfile(patch);
         setIsEditing(false);
     };
     
@@ -247,32 +255,14 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                             <div className="pt-8 flex flex-col items-center text-center">
                                 <div className="relative w-32 h-32">
-                                    {/* Border Button (Bottom Layer) */}
                                     <button
                                         onClick={() => isEditing && setBorderModalOpen(true)}
                                         disabled={!isEditing}
-                                        className="absolute inset-0 w-full h-full z-10"
-                                    >
-                                        <div 
-                                            className="absolute inset-0 w-full h-full pointer-events-none"
-                                            style={
-                                                selectedBorder?.imageUrl
-                                                ? {
-                                                    backgroundImage: `url(${selectedBorder.imageUrl})`,
-                                                    backgroundSize: 'contain',
-                                                    backgroundPosition: 'center',
-                                                    backgroundRepeat: 'no-repeat',
-                                                }
-                                                : {
-                                                    border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
-                                                    borderRadius: '50%',
-                                                }
-                                            }
-                                        />
-                                    </button>
+                                        className="absolute -inset-1 z-10"
+                                    />
                                     
                                     {/* Avatar Button (Top Layer) */}
-                                    <button onClick={() => isEditing && setIsAvatarModalOpen(true)} disabled={!isEditing} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75%] h-[75%] rounded-full group flex items-center justify-center z-20">
+                                    <button onClick={() => isEditing && setIsAvatarModalOpen(true)} disabled={!isEditing} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75%] h-[75%] rounded-full group flex items-center justify-center z-30">
                                         <div className="w-full h-full rounded-full overflow-hidden relative">
                                             <img src={displayProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                                             {isEditing && (
@@ -282,6 +272,23 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             )}
                                         </div>
                                     </button>
+
+                                    <div
+                                        className="absolute -inset-1 pointer-events-none z-40"
+                                        style={
+                                            selectedBorder?.imageUrl
+                                            ? {
+                                                backgroundImage: `url(${selectedBorder.imageUrl})`,
+                                                backgroundSize: 'contain',
+                                                backgroundPosition: 'center',
+                                                backgroundRepeat: 'no-repeat',
+                                            }
+                                            : {
+                                                border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
+                                                borderRadius: '50%',
+                                            }
+                                        }
+                                    />
                                     
                                     <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-10" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
                                         <span className="text-lg font-black text-white">{displayProfile.level}</span>

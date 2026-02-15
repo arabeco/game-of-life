@@ -34,7 +34,7 @@ A qualquer momento, você pode incinerar seus dados. O comando “Deletar Conta�
 Como removemos os insights 1 e 2, focamos na relação entre Mentor e Legado:
 
 - **A Cláusula de Não-Agência (Proteção):** O texto deixa claro que o Mentor é um “terceiro”. Isso reduz risco de processos caso um Mentor dê um conselho ruim ou tente alegar vínculo empregatício com o app.
-- **Gamificação do Consentimento (UX):** Ao fazer o texto “se escrever” e exigir um Long Press no selo, você cria uma evidência digital de que o usuário não apenas clicou “aceitar” por reflexo. Ele participou do ritual.
+
 - **O Protocolo de Legado (Dica Bônus):** O app se posiciona como algo que vale a pena ser guardado. A ideia do “Herdeiro de Soberania” (dar acesso aos dados após inatividade longa) transforma o software em um ativo familiar, aumentando absurdamente o valor percebido do plano Premium.
 
 ## ✅ Checklist de Implementação dos Termos

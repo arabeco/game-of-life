@@ -1,44 +1,59 @@
-# 🏛️ Life OS: Gamified Hermetic System
+# ✦ GLYPH: Hermetic Sovereignty OS
 
-**Identidade:** Interface cyberpunk/hermética em dark mode com acentos dourados/prateados.  
-**Conceito:** não é uma lista de tarefas, é um painel de soberania pessoal; tarefas viram Ações e projetos viram Arenas.
+**Identidade:** interface hermética em dark mode, metal dourado/prateado, ritual e peso visual.  
+**Conceito:** não é lista de tarefas; é um painel de soberania pessoal onde ações viram ritos e projetos viram arenas.
 
 ## 1. Visão Geral do Produto
 
-Life OS é um sistema de execução diária com gamificação e ritual. O núcleo combina planejamento no grid, execução de ações com feedback tátil, fechamento diário via SITREP e evolução do Soberano por áreas de vida.
+GLYPH é um sistema de execução diária com gamificação e ritual. O núcleo combina planejamento em grid, execução com feedback tátil/visual, fechamento diário via SITREP e evolução do Soberano por áreas de vida.
 
 ## 2. Estrutura do Domínio
 
-O domínio é composto por Assets (áreas macro), Arenas (contextos/projetos), Ações (unidades executáveis), Tarefas Agendadas (instâncias temporais), Ciclos e Relatórios (recortes de performance), além de Perfil/Soberano e estrutura social (Clãs). Esse conjunto sustenta o fluxo diário de planejar, executar, avaliar e evoluir.
+O domínio é composto por Assets (áreas macro), Arenas (contextos/projetos), Ações (unidades executáveis), Tarefas Agendadas (instâncias temporais), Ciclos e Relatórios (recortes de performance), Perfil/Soberano e camada social (Clãs e Aliados). Esse conjunto sustenta o fluxo de planejar, executar, avaliar e evoluir.
 
-## 3. Funcionalidades Atuais (Base)
+## 3. Áreas do App (Telas Principais)
 
-- Gestão de Ativos com visão em árvore e dossiês por área de vida.
-- Arenas e Ações com tipos (recorrente, compromisso e marco), dificuldade, duração, repetição e ícones.
-- Planner semanal com grid, drag & drop, zoom, replanejamento e pool de ações/marcos.
-- Execução com checklist, long press para conclusão e feedback visual de progresso.
-- SITREP diário e ciclos com fechamento de metas, métricas e evolução de nível/score.
-- Perfil e personalização do Soberano (avatar, humor, skins, bordas, banners, inventário e baús).
-- Social com clãs, busca de aliados e fluxo de solicitações.
-- Sincronização com Supabase quando autenticado.
+- **Login/Onboarding:** autenticação por email/senha, cadastro com convite dourado e integração Supabase.
+- **Ativos:** árvore tipo Sephirot com níveis e dossiês por área de vida.
+- **Arenas:** criação/gestão de arenas e ações, com ícones, descrições e arquivamento.
+- **Planner:** visão diária/semanal com grid, agenda e execução de tarefas.
+- **Relatórios:** ciclos, resultados, comparação e recompensas.
+- **Social:** clãs, aliados e solicitações.
+- **Configurações:** Geral, Arsenal, Maestria, Missões e Hall da Fama.
+- **Perfil:** identidade do Soberano, widgets e personalização visual.
 
-## 4. Premium: Codex & Vínculos
+## 4. Funcionalidades por Área
 
-- Codex Builder para criação de templates em sandbox, com exportação de JSON/link sem tocar dados reais.
-- Vínculos de mentoria por arena com convites, cards de pupilos/mentores, slider de satisfação e sinais rápidos.
+- **Ativos:** dossier com slots editáveis, níveis com descrições, arenas por área e visão em árvore conectada.
+- **Arenas:** ações com tipos (Ação Recorrente, Compromisso, Marco), duração, repetições, dificuldade e ícones; criação rápida e edição contextual.
+- **Planner:** drag & drop, replanejamento, ações recorrentes no pool, marcos, long press para concluir e feedback visual; checklist e oráculo de input rápido.
+- **SITREP Diário:** travar metas do dia, acompanhar progresso em batalha diária e gerar score final com EXP.
+- **Relatórios e Ciclos:** criação de ciclos, HUD de progresso, métricas, comparador de ciclos e recompensas por desempenho.
+- **Social e Clãs:** busca de aliados, convites, solicitações; clã com santuário, membros, missões e progressão.
+- **Perfil/Soberano:** avatar, bordas, banners, humor, widgets, inventário e skins.
+- **Arsenal e Maestria:** baús, desbloqueios cosméticos e progressão de nobreza.
+- **Missões e Temporadas:** missões sazonais, quests e recompensas associadas.
+- **Conquistas:** feedback de eventos (marcos, promoções e vitórias).
 
-## 5. Feedback Beta
+## 5. Premium: Codex & Vínculos
 
-Existe um módulo de feedback dentro das Configurações, com sliders soberanos e envio de relatório para Supabase, permitindo coletar percepção de core loop, dopamina e valor de produto de forma estruturada.
+- **Codex Builder:** modo arquiteto em sandbox para criar templates de arenas/ações e exportar JSON.
+- **Vínculos:** mentoria por arena com convites, cards de pupilos/mentores e feedback de satisfação.
 
-## 6. Fluxos Principais do Usuário
+## 6. Infraestrutura e Arquitetura
 
-O fluxo central é: criar Arenas e Ações, planejar no grid, executar com feedback, fechar o dia no SITREP e revisar ciclos para ajustar estratégia. Esse ciclo reforça identidade, disciplina e visibilidade de progresso.
+- **Frontend:** React + TypeScript com estado central em GameContext e módulos por área.
+- **Dados:** Supabase para autenticação e persistência; fallback local/mock quando necessário.
+- **Camadas:** contexts para jogo, tutorial e codex builder; components para UI ritualizada e modais.
 
-## 7. Direção de Experiência
+## 7. Fluxo Central do Usuário
+
+Criar arenas e ações → planejar no grid → executar com feedback → fechar o dia no SITREP → revisar ciclos e ajustar a estratégia.
+
+## 8. Direção de Experiência
 
 O produto prioriza peso visual, clareza e ritual. Cada ação deve parecer decisiva, o progresso precisa ser legível e a rotina diária deve ter início, meio e fim com sentido.
 
-## 8. Roadmap (ideias futuras)
+## 9. Roadmap (ideias futuras)
 
 O Oráculo deve permitir entrada por texto/voz com interpretação automática. A Transferência de Codex permitirá mentores distribuírem templates via link/QR para onboarding instantâneo.

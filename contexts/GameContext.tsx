@@ -98,8 +98,8 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     mood: 50,
     role: 'user',
     isPremium: false,
-    skin: 'default',
-    unlockedSkins: {},
+    skin: 'GOLD',
+    unlockedSkins: { GOLD: true },
     unlockedItems: {
         bodyStyles: {},
         hairStyles: {},
@@ -517,13 +517,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
   }, [assets, actions, tasks, reports, clan, checklistItems, userProfile, activeCycle, feed, dailyCommitment, cycleExpBonus, levelUnlocks, clanQuestProgress]);
 
+  const isClanQuestProgressMissing = (error: unknown) => {
+    if (!error) return false;
+    const status = (error as any)?.status ?? (error as any)?.code;
+    const message = String((error as any)?.message || '');
+    return status === 404 || message.includes('Not Found') || message.includes('404') || (message.includes('relation') && message.includes('clan_quest_progress'));
+  };
+
   const fetchClanQuestProgress = useCallback(async (clanId: string) => {
     if (!clanQuestProgressTableReadyRef.current) return;
     const { data, error } = await supabase.from('clan_quest_progress').select('*').eq('clan_id', clanId);
     if (error || !data) {
-        const status = (error as any)?.status;
-        const message = (error as any)?.message;
-        if (status === 404 || (typeof message === 'string' && message.includes('Not Found'))) {
+        if (isClanQuestProgressMissing(error)) {
             clanQuestProgressTableReadyRef.current = false;
         }
         return;
@@ -950,8 +955,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setUserProfile(prev => ({ ...prev, ...profileData }));
     const userId = session?.user.id;
     if (userId && userId !== 'placeholder_user' && isUuid(userId)) {
-        if (Object.keys(profileData).length > 0) {
-            const snakeCaseData = mapToSnakeCase(profileData);
+        const allowedKeys: (keyof UserProfile)[] = [
+            'email',
+            'sovereign',
+            'avatarUrl',
+            'border',
+            'nickname',
+            'level',
+            'backgroundUrl',
+            'bannerUrl',
+            'isOnline',
+            'visibleWidgets',
+            'skin',
+            'lastLevelUpdate',
+            'nobility',
+            'mood',
+            'chests',
+            'unlockedItems',
+            'unlockedSkins',
+            'completedSeasonMissions',
+            'role',
+            'isPremium'
+        ];
+        const entries = Object.entries(profileData).filter(([key, value]) => allowedKeys.includes(key as keyof UserProfile) && value !== undefined);
+        if (entries.length > 0) {
+            const snakeCaseData = mapToSnakeCase(Object.fromEntries(entries));
             supabase.from('user_profiles').update(snakeCaseData).eq('id', userId).then(({ error }) => { if (error) console.error("Supabase profile update error:", error.message); });
         }
     }
@@ -1330,9 +1358,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             progress: nextValue
         }).then(({ error }) => {
             if (!error) return;
-            const status = (error as any)?.status;
-            const message = (error as any)?.message;
-            if (status === 404 || (typeof message === 'string' && message.includes('Not Found'))) {
+            if (isClanQuestProgressMissing(error)) {
                 clanQuestProgressTableReadyRef.current = false;
             }
         });
@@ -1746,6 +1772,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (!userId) { console.error("User not authenticated"); return; }
     
     const snakeCaseDetails = { ...mapToSnakeCase(clanDetails), exp: 0, rank_id: 'feudo' };
+    delete (snakeCaseDetails as Record<string, unknown>).background_url;
 
     const { data: clanData, error: clanError } = await supabase
         .from('clans')
@@ -1765,7 +1792,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => {
-      const { error } = await supabase.from('clans').update(mapToSnakeCase(data)).eq('id', clanId);
+      const snakeCaseData = mapToSnakeCase(data) as Record<string, unknown>;
+      delete snakeCaseData.background_url;
+      const { error } = await supabase.from('clans').update(snakeCaseData).eq('id', clanId);
       if (error) { console.error("Error updating clan:", error.message); return; }
       setClan(prev => (prev && prev.id === clanId) ? { ...prev, ...data } : prev);
   };

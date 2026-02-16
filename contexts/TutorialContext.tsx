@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import { useGame, PROFILE_FLAG_TUTORIAL_COMPLETED } from './GameContext';
 
 interface TooltipContent {
     title: string;
@@ -21,17 +22,14 @@ interface TutorialContextType {
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { userProfile, updateUserProfile } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [spotlightTarget, setSpotlightTarget] = useState<DOMRect | null>(null);
     const [tooltipContent, setTooltipContent] = useState<TooltipContent | null>(null);
-    const [isTutorialCompleted, setIsTutorialCompleted] = useState(() => {
-        try {
-            return localStorage.getItem('tutorialCompleted') === 'true';
-        } catch {
-            return false;
-        }
-    });
+    
+    // Get tutorial completion status from user profile
+    const isTutorialCompleted = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
 
     const startTutorial = useCallback(() => {
         setIsTutorialActive(true);
@@ -44,14 +42,14 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         setTooltipContent(null);
         setCurrentStep(0);
         if (completed) {
-            setIsTutorialCompleted(true);
-            try {
-                localStorage.setItem('tutorialCompleted', 'true');
-            } catch (error) {
-                console.error("Failed to save tutorial completion state", error);
+            // Save tutorial completion to user profile instead of localStorage
+            if (!(userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED)) {
+                updateUserProfile({
+                    completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TUTORIAL_COMPLETED],
+                });
             }
         }
-    }, []);
+    }, [userProfile.completedSeasonMissions, updateUserProfile]);
 
     const nextStep = useCallback(() => {
         setCurrentStep(prev => prev + 1);

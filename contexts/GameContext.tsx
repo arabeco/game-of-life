@@ -3,7 +3,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { Asset, Slot, SlotValue, Arena, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG } from '../constants';
 import { buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
-import { supabase, isSupabaseMock } from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
@@ -41,6 +41,9 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 
 
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
+
+export const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
+export const PROFILE_FLAG_TUTORIAL_COMPLETED = '__flag_tutorial_completed_v1';
 
 const TUTORIAL_ACTION: Action = {
     id: TUTORIAL_ACTION_ID,
@@ -84,7 +87,7 @@ const NOBILITY_RANKS: NobilityRank[] = [
     { id: 'soberano', name: 'Soberano', levelRequired: 90, expTotalRequired: 1000000 },
 ];
 
-const MOCK_SEARCHABLE_CLANS: Clan[] = [];
+
 
 const DEFAULT_USER_PROFILE: UserProfile = {
     id: 'placeholder_user',
@@ -275,12 +278,17 @@ export interface GameContextType {
   updateSeason: (seasonId: string, seasonData: Partial<Omit<Season, 'id'>>) => Promise<void>;
   addSeasonMission: (missionData: Omit<SeasonMission, 'id'>) => Promise<void>;
   manualCloseSITREP: () => void;
+  saveSanctuaryPosition: (payload: { clanId: string; userId: string; row: number; col: number; area: string; action: string; timestamp: string }) => Promise<void>;
+  getSanctuaryPositionsForClan: (clanId: string) => Promise<Record<string, { row: number; col: number; area: string; action: string; timestamp: string }>>;
+  getSanctuaryAreaStats: (clanId: string) => Promise<Record<string, { totalSeconds: number; lastUpdated: string }>>;
+  updateSanctuaryAreaTime: (clanId: string, area: string, seconds: number) => Promise<void>;
+  applySanctuaryAreaDecay: (clanId: string, occupancy: Record<string, number>) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode, session: Session | null }> = ({ children, session }) => {
-  const [isNewUser] = useState(isNewUserCheck);
+  const isNewUser = isNewUserCheck();
   
   const [assets, setAssets] = useState<Asset[]>(() => {
     try {
@@ -365,15 +373,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [session?.user.id]);
 
   const getSupabaseUserId = useCallback(() => {
-    const candidate = isSupabaseMock ? (session?.user.id ?? userProfile.id) : session?.user.id;
+    const candidate = session?.user.id;
     if (!candidate) return null;
-    if (!isSupabaseMock && !isUuid(candidate)) return null;
+    if (!isUuid(candidate)) return null;
     return candidate;
-  }, [session?.user.id, userProfile.id]);
+  }, [session?.user.id]);
 
   useEffect(() => {
     const currentUserId = session?.user.id;
     if (!currentUserId) return;
+
+    suspendPersistenceRef.current = true;
+    setHasHydratedFromSupabase(false);
 
     let storedUserId: string | null = null;
     let storedProfileId: string | null = null;
@@ -507,11 +518,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   });
 
   const persistTimeoutRef = useRef<number | null>(null);
+  const dataLoadTimeoutRef = useRef<number | null>(null);
+  const clanCacheRef = useRef<{ clanId: string; timestamp: number; members: EnrichedClanMember[] } | null>(null);
   const enableClanQuestProgress = process.env.VITE_ENABLE_CLAN_QUEST_PROGRESS === 'true';
   const clanQuestProgressTableReadyRef = useRef(enableClanQuestProgress);
   const pendingGuestMigrationRef = useRef<{ fromId: string; toId: string } | null>(null);
+  const suspendPersistenceRef = useRef(false);
+  const [hasHydratedFromSupabase, setHasHydratedFromSupabase] = useState(false);
 
   useEffect(() => {
+    const supabaseUserId = getSupabaseUserId();
+    if (supabaseUserId && !hasHydratedFromSupabase) return;
+    if (suspendPersistenceRef.current) return;
     if (persistTimeoutRef.current !== null) window.clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = window.setTimeout(() => {
         try {
@@ -537,7 +555,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return () => {
         if (persistTimeoutRef.current !== null) window.clearTimeout(persistTimeoutRef.current);
     };
-  }, [assets, actions, tasks, reports, clan, checklistItems, userProfile, activeCycle, feed, dailyCommitment, cycleExpBonus, levelUnlocks, clanQuestProgress]);
+  }, [assets, actions, tasks, reports, clan, checklistItems, userProfile, activeCycle, feed, dailyCommitment, cycleExpBonus, levelUnlocks, clanQuestProgress, hasHydratedFromSupabase, session?.user.id]);
 
   const isClanQuestProgressMissing = (error: unknown) => {
     if (!error) return false;
@@ -566,9 +584,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const hydrateProfilesByIds = useCallback(async (ids: string[]) => {
     let uniqueIds = Array.from(new Set(ids.filter(Boolean)));
-    if (!isSupabaseMock) {
-        uniqueIds = uniqueIds.filter(id => isUuid(id));
-    }
+    uniqueIds = uniqueIds.filter(id => isUuid(id));
     if (uniqueIds.length === 0) return {} as Record<string, UserProfile>;
 
     const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', uniqueIds);
@@ -585,7 +601,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, []);
 
   const loadFriendsAndRequests = useCallback(async (userId: string) => {
-    if (!isSupabaseMock && !isUuid(userId)) {
+    if (!isUuid(userId)) {
         setFriends([]);
         setFriendRequestsIncoming([]);
         setFriendRequestsOutgoing([]);
@@ -653,7 +669,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, []);
 
   const loadClanJoinRequestsOutgoing = useCallback(async (userId: string) => {
-    if (!isSupabaseMock && !isUuid(userId)) {
+    if (!isUuid(userId)) {
         setClanJoinRequestsOutgoing([]);
         return;
     }
@@ -689,6 +705,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [hydrateProfilesByIds]);
 
   const loadClanAndMembers = useCallback(async (clanId: string) => {
+    // Check cache first - use cache if less than 30 seconds old
+    const now = Date.now();
+    const cacheExpiry = 30 * 1000; // 30 seconds
+    
+    if (clanCacheRef.current && 
+        clanCacheRef.current.clanId === clanId && 
+        (now - clanCacheRef.current.timestamp) < cacheExpiry) {
+        // Use cached data
+        setEnrichedClanMembers(clanCacheRef.current.members);
+        return;
+    }
+
     const { data: clanData, error: clanError } = await supabase.from('clans').select('*').eq('id', clanId).single();
     if (clanError || !clanData) { console.error('Error fetching clan data:', clanError?.message); return; }
 
@@ -698,7 +726,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const { data: membersData, error: membersError } = await supabase.from('clan_members').select('*').eq('clan_id', clanId);
     if (membersError || !membersData) { console.error('Error fetching clan members:', membersError?.message); return; }
 
-    const memberIds = membersData.map((m: any) => m.user_id).filter((id: string) => isSupabaseMock || isUuid(id));
+    const memberIds = membersData.map((m: any) => m.user_id).filter((id: string) => isUuid(id));
     if (memberIds.length === 0) { setEnrichedClanMembers([]); return; }
 
     const { data: memberProfiles, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', memberIds);
@@ -717,10 +745,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     }).filter((m): m is EnrichedClanMember => m !== null);
 
+    // Cache the results
+    clanCacheRef.current = {
+        clanId,
+        timestamp: now,
+        members: enrichedMembers
+    };
+
     setEnrichedClanMembers(enrichedMembers);
 
-    const currentUserId = session?.user.id ?? userProfile.id;
-    const currentMember = membersData.find((m: any) => m.user_id === currentUserId);
+    const currentUserId = session?.user.id;
+    const currentMember = currentUserId ? membersData.find((m: any) => m.user_id === currentUserId) : null;
     if (currentMember?.role === 'leader') {
         await loadClanJoinRequestsIncoming(clanId);
     } else {
@@ -729,7 +764,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [setClan, setEnrichedClanMembers, fetchClanQuestProgress, session?.user.id, userProfile.id, loadClanJoinRequestsIncoming]);
 
   const migrateGuestDataToSupabase = useCallback(async (userId: string) => {
-    if (!isSupabaseMock && !isUuid(userId)) {
+    if (!isUuid(userId)) {
         console.error("Invalid userId for migration to Supabase");
         return;
     }
@@ -751,12 +786,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     if (actions.length > 0) {
         const actionsPayload = actions.map(action => ({ ...mapToSnakeCase(action), user_id: userId }));
-        if (!isSupabaseMock && !isUuid(userId)) {
-            console.error("Invalid userId for actions upsert");
-        } else {
-            const { error } = await supabase.from('actions').upsert(actionsPayload, { onConflict: 'id' });
-            if (error) errors.push('actions');
-        }
+        const { error } = await supabase.from('actions').upsert(actionsPayload, { onConflict: 'id' });
+        if (error) errors.push('actions');
     }
 
     if (tasks.length > 0) {
@@ -807,7 +838,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const loadDataFromSupabase = async () => {
         // Verificar se o userId é válido antes de fazer queries
-        if (!isSupabaseMock && !isUuid(userId)) {
+        if (!isUuid(userId)) {
             console.error("Invalid userId for loading data from Supabase");
             return;
         }
@@ -890,16 +921,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         
         const clanMemberResult = await rateLimiter.addRequest(() => 
-            supabase.from('clan_members').select('clan_id').eq('user_id', userId).single()
+            supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle()
         );
         const { data: clanMemberData, error: clanMemberError } = clanMemberResult;
 
-        if (clanMemberError || !clanMemberData) {
+        if (clanMemberError) {
+            console.error('Error fetching clan membership:', clanMemberError.message);
+            // Não limpar estado em erro transitório para evitar piscar
+        } else if (!clanMemberData) {
+            // Usuário não está em nenhum clã
             setClan(null);
             setEnrichedClanMembers([]);
             setClanJoinRequestsIncoming([]);
         } else {
-            loadClanAndMembers(clanMemberData.clan_id);
+            // Só recarregar se mudou o clan_id
+            if (!clan || clan.id !== clanMemberData.clan_id) {
+                loadClanAndMembers(clanMemberData.clan_id);
+            }
         }
 
         const reportsResult = await rateLimiter.addRequest(() => 
@@ -921,13 +959,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
     const run = async () => {
-        const pendingMigration = pendingGuestMigrationRef.current;
-        if (pendingMigration?.toId === userId) {
-            const ok = await migrateGuestDataToSupabase(userId);
-            if (ok) pendingGuestMigrationRef.current = null;
-            return;
+        let hydrated = false;
+        try {
+            const pendingMigration = pendingGuestMigrationRef.current;
+            if (pendingMigration?.toId === userId) {
+                const ok = await migrateGuestDataToSupabase(userId);
+                if (ok) {
+                    pendingGuestMigrationRef.current = null;
+                    hydrated = true;
+                }
+                return;
+            }
+            await loadDataFromSupabase();
+            hydrated = true;
+        } finally {
+            if (hydrated) setHasHydratedFromSupabase(true);
+            suspendPersistenceRef.current = false;
         }
-        await loadDataFromSupabase();
     };
 
     run();
@@ -1052,6 +1100,184 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     endDailyBattle();
   };
 
+  const saveSanctuaryPosition = async (payload: { clanId: string; userId: string; row: number; col: number; area: string; action: string; timestamp: string }) => {
+    try {
+      // Usar Supabase para salvar posição
+      const { error } = await supabase
+        .from('sanctuary_positions')
+        .upsert({
+          clan_id: payload.clanId,
+          user_id: payload.userId,
+          row: payload.row,
+          col: payload.col,
+          area: payload.area,
+          action: payload.action,
+          timestamp: payload.timestamp
+        }, {
+          onConflict: 'clan_id,user_id'
+        });
+
+      if (error) {
+        console.error('Failed to save sanctuary position to Supabase:', error);
+      }
+    } catch (e) {
+      console.error('Failed to save sanctuary position:', e);
+    }
+  };
+
+  const getSanctuaryPositionsForClan = async (clanId: string) => {
+    try {
+      // Buscar posições do Supabase
+      const { data, error } = await supabase
+        .from('sanctuary_positions')
+        .select('*')
+        .eq('clan_id', clanId);
+
+      if (error) {
+        console.error('Failed to get sanctuary positions from Supabase:', error);
+        return {};
+      }
+
+      if (!data || data.length === 0) {
+        // Se não houver dados, retornar valores padrão de 50% (14400 segundos)
+        return {
+          meditation: { totalSeconds: 14400, lastUpdated: currentTime },
+          devotion: { totalSeconds: 14400, lastUpdated: currentTime },
+          rest: { totalSeconds: 14400, lastUpdated: currentTime },
+          garden: { totalSeconds: 14400, lastUpdated: currentTime }
+        };
+      }
+
+      // Converter array do Supabase para objeto com userId como chave
+      const positions: Record<string, { row: number; col: number; area: string; action: string; timestamp: string }> = {};
+      data.forEach((position: any) => {
+        positions[position.user_id] = {
+          row: position.row,
+          col: position.col,
+          area: position.area,
+          action: position.action,
+          timestamp: position.timestamp
+        };
+      });
+
+      return positions;
+    } catch (e) {
+      console.error('Failed to get sanctuary positions:', e);
+      return {};
+    }
+  };
+
+  const getSanctuaryAreaStats = useCallback(async (clanId: string) => {
+    try {
+      const currentTime = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('sanctuary_area_stats')
+        .select('*')
+        .eq('clan_id', clanId);
+
+      if (error) {
+        console.error('Failed to get sanctuary area stats from Supabase:', error);
+        return {};
+      }
+
+      if (!data || data.length === 0) {
+        return {};
+      }
+
+      const stats: Record<string, { totalSeconds: number; lastUpdated: string }> = {};
+      data.forEach((stat: any) => {
+        stats[stat.area] = {
+          totalSeconds: stat.total_seconds,
+          lastUpdated: stat.last_updated || currentTime
+        };
+      });
+
+      return stats;
+    } catch (e) {
+      console.error('Failed to get sanctuary area stats:', e);
+      return {};
+    }
+  }, []);
+
+  const updateSanctuaryAreaTime = async (clanId: string, area: string, seconds: number) => {
+    try {
+      const { data: currentStats, error: fetchError } = await supabase
+        .from('sanctuary_area_stats')
+        .select('total_seconds')
+        .eq('clan_id', clanId)
+        .eq('area', area)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Failed to load sanctuary area time from Supabase:', fetchError);
+        return;
+      }
+
+      const nextTotalSeconds = (currentStats?.total_seconds ?? 0) + seconds;
+      const { error } = await supabase
+        .from('sanctuary_area_stats')
+        .upsert({
+          clan_id: clanId,
+          area: area,
+          total_seconds: nextTotalSeconds,
+          last_updated: new Date().toISOString()
+        }, {
+          onConflict: 'clan_id,area'
+        });
+
+      if (error) {
+        console.error('Failed to update sanctuary area time in Supabase:', error);
+      }
+    } catch (e) {
+      console.error('Failed to update sanctuary area time:', e);
+    }
+  };
+
+  // Função para aplicar decaimento nas barrinhas douradas quando áreas estão vazias
+  const applySanctuaryAreaDecay = async (clanId: string, occupancy: Record<string, number>) => {
+    try {
+      const decayRatePerMinute = 30; // 30 segundos de decaimento por minuto quando vazio
+      const currentTime = new Date().toISOString();
+      
+      // Áreas do santuário
+      const areas = ['meditation', 'devotion', 'rest', 'garden'];
+      
+      for (const area of areas) {
+        // Se a área estiver vazia (0 ocupantes), aplicar decaimento
+        if (occupancy[area] === 0) {
+          // Atualizar no Supabase - decrementar o tempo total
+          const { data: currentStats, error: fetchError } = await supabase
+            .from('sanctuary_area_stats')
+            .select('total_seconds')
+            .eq('clan_id', clanId)
+            .eq('area', area)
+            .maybeSingle();
+          
+          if (!fetchError && currentStats && currentStats.total_seconds > 0) {
+            const newTotalSeconds = Math.max(0, currentStats.total_seconds - decayRatePerMinute);
+            
+            const { error: updateError } = await supabase
+              .from('sanctuary_area_stats')
+              .upsert({
+                clan_id: clanId,
+                area: area,
+                total_seconds: newTotalSeconds,
+                last_updated: currentTime
+              }, {
+                onConflict: 'clan_id,area'
+              });
+            
+            if (updateError) {
+              console.error(`Failed to apply decay to area ${area}:`, updateError);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to apply sanctuary area decay:', e);
+    }
+  };
+
   useEffect(() => {
     if (!clan?.id) return;
     fetchClanQuestProgress(clan.id);
@@ -1085,13 +1311,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   useEffect(() => { document.body.setAttribute('data-skin', userProfile.skin); }, [userProfile.skin]);
 
   useEffect(() => {
+    const supabaseUserId = getSupabaseUserId();
+    if (supabaseUserId) return;
+
     const displayedAssets = assets.filter(a => a.id !== 'geral');
     const totalLevel = displayedAssets.reduce((sum, asset) => sum + asset.level, 0);
 
     if (userProfile.level !== totalLevel) {
         updateUserProfile({ level: totalLevel });
     }
-  }, [assets, userProfile.level]);
+  }, [assets, userProfile.level, session?.user.id]);
 
   useEffect(() => {
     const oldRankId = userProfile.nobility.rankId;
@@ -1109,7 +1338,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setUserProfile(prev => ({ ...prev, ...profileData }));
     const supabaseUserId = getSupabaseUserId();
     if (supabaseUserId) {
-        if (!isSupabaseMock && !isUuid(supabaseUserId)) {
+        if (!isUuid(supabaseUserId)) {
             // console.error("Invalid Supabase User ID for profile update"); // Optional logging to avoid spam
             return;
         }
@@ -1170,7 +1399,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     updateUserProfile({ unlockedItems: nextUnlockedItems });
   };
 
-  const completeSeasonMission = (mission: SeasonMission) => {
+  const addCompletedMission = (mission: SeasonMission) => {
     const rewardValue = typeof mission.reward_value === 'string' ? mission.reward_value : '';
     const rewardParts = rewardValue.includes(':') ? rewardValue.split(':') : [];
     const rewardCategory = rewardParts[0] as UnlockCategory | undefined;
@@ -1228,7 +1457,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const startCycle = (name: string, endDate: string) => {
-    const userId = getSupabaseUserId() ?? userProfile.id;
+    const userId = getSupabaseUserId();
+    if (!userId) return;
     const newCycle: Cycle = { 
         id: crypto.randomUUID(), 
         name, 
@@ -1241,24 +1471,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setActiveCycle(newCycle);
 
     // Sync to Supabase
-    const supabaseUserId = getSupabaseUserId();
-    if (supabaseUserId) {
-        if (!isSupabaseMock && !isUuid(supabaseUserId)) {
-            console.error("Invalid Supabase User ID for startCycle");
-        } else {
-            const snakeCaseCycle = {
-                id: newCycle.id,
-                user_id: supabaseUserId,
-                name: newCycle.name,
-                start_date: newCycle.startDate,
-                end_date: newCycle.endDate,
-                arena_ids: newCycle.arenaIds
-            };
-            supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
-                if (error) console.error("Supabase start cycle error:", error.message);
-            });
-        }
-    }
+    const snakeCaseCycle = {
+        id: newCycle.id,
+        user_id: userId,
+        name: newCycle.name,
+        start_date: newCycle.startDate,
+        end_date: newCycle.endDate,
+        arena_ids: newCycle.arenaIds
+    };
+    supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
+        if (error) console.error("Supabase start cycle error:", error.message);
+    });
   };
   const endCycle = (currentAssets: Asset[], currentActions: Action[]): EndCycleResult => {
     const cycle = activeCycle;
@@ -1343,31 +1566,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Salvar relatório e atualizar ciclo no Supabase se logado
     if (supabaseUserId) {
-        if (!isSupabaseMock && !isUuid(supabaseUserId)) {
-             console.error("Invalid Supabase User ID for endCycle");
-        } else {
-            const snakeCaseReport = {
-                id: newReport.id,
-                user_id: supabaseUserId,
-                start_date: newReport.startDate,
-                end_date: newReport.endDate,
-                performance_score: newReport.performanceScore,
-                metrics: newReport.metrics,
-                highlight: newReport.highlight,
-                asset_progress: newReport.assetProgress
-            };
-            
-            // 1. Insert Report
-            supabase.from('reports').insert(snakeCaseReport).then(({error}) => {
-                if (error) console.error("Supabase report insert error:", error.message);
-            });
+        const snakeCaseReport = {
+            id: newReport.id,
+            user_id: supabaseUserId,
+            start_date: newReport.startDate,
+            end_date: newReport.endDate,
+            performance_score: newReport.performanceScore,
+            metrics: newReport.metrics,
+            highlight: newReport.highlight,
+            asset_progress: newReport.assetProgress
+        };
+        
+        // 1. Insert Report
+        supabase.from('reports').insert(snakeCaseReport).then(({error}) => {
+            if (error) console.error("Supabase report insert error:", error.message);
+        });
 
-            // 2. Update/Delete Cycle (Mark as ended)
-            if (cycle?.id) {
-                supabase.from('cycles').update({ end_date: endDate }).eq('id', cycle.id).then(({ error }) => {
-                    if (error) console.error("Supabase cycle update error:", error.message);
-                });
-            }
+        // 2. Update/Delete Cycle (Mark as ended)
+        if (cycle?.id) {
+            supabase.from('cycles').update({ end_date: endDate }).eq('id', cycle.id).then(({ error }) => {
+                if (error) console.error("Supabase cycle update error:", error.message);
+            });
         }
     }
 
@@ -1447,7 +1666,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const senderId = getSupabaseUserId();
     if (!senderId) return;
     if (!recipientId || recipientId === senderId) return;
-    if (!isSupabaseMock && !isUuid(recipientId)) {
+    if (!isUuid(recipientId)) {
         console.error("Invalid recipient ID for friend request");
         return;
     }
@@ -1473,7 +1692,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const request = friendRequestsIncoming.find(r => r.id === requestId);
     if (!request) return;
 
-    if (!isSupabaseMock && (!isUuid(request.senderId) || !isUuid(request.recipientId))) {
+    if (!isUuid(request.senderId) || !isUuid(request.recipientId)) {
         console.error("Invalid sender or recipient ID in friend request");
         return;
     }
@@ -1577,13 +1796,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
     const userId = getSupabaseUserId();
     if (userId) {
-        if (!isSupabaseMock && !isUuid(userId)) {
-            console.error("Invalid userId for add arena");
-        } else {
-            const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
-            delete snakeCaseData.action_ids; // Not a column
-            supabase.from('arenas').insert(snakeCaseData).then(({error}) => { if (error) console.error("Supabase add arena error:", error.message) });
-        }
+        const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
+        delete snakeCaseData.action_ids; // Not a column
+        supabase.from('arenas').insert(snakeCaseData).then(({error}) => { if (error) console.error("Supabase add arena error:", error.message) });
     }
     return newArena;
   };
@@ -1609,13 +1824,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setActions(prevActions => prevActions.filter(action => action.arenaId !== arenaId));
     const userId = getSupabaseUserId();
     if (userId) {
-        if (!isSupabaseMock && !isUuid(userId)) {
-            console.error("Invalid userId for delete arena");
-        } else {
-            supabase.from('arenas').delete().eq('id', arenaId).then(({error}) => { 
-                if (error) console.error("Supabase delete arena error:", error.message);
-            });
-        }
+        supabase.from('arenas').delete().eq('id', arenaId).then(({error}) => { 
+            if (error) console.error("Supabase delete arena error:", error.message);
+        });
     }
   };
   const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
@@ -1660,14 +1871,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const userId = getSupabaseUserId();
     if (userId) {
-        if (!isSupabaseMock && !isUuid(userId)) {
-            console.error("Invalid userId for add action");
-        } else {
-            const snakeCaseData = { ...mapToSnakeCase(newAction), user_id: userId };
-            supabase.from('actions').insert(snakeCaseData).then(({error}) => { 
-                if (error) console.error("Supabase add action error:", error.message);
-            });
-        }
+        const snakeCaseData = { ...mapToSnakeCase(newAction), user_id: userId };
+        supabase.from('actions').insert(snakeCaseData).then(({error}) => { 
+            if (error) console.error("Supabase add action error:", error.message);
+        });
     }
 
     return newAction;
@@ -1697,13 +1904,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     })));
     const userId = getSupabaseUserId();
     if (userId) {
-        if (!isSupabaseMock && !isUuid(userId)) {
-            console.error("Invalid userId for delete action");
-        } else {
-            supabase.from('actions').delete().eq('id', actionId).then(({error}) => { 
-                if (error) console.error("Supabase delete action error:", error.message);
-            });
-        }
+        supabase.from('actions').delete().eq('id', actionId).then(({error}) => { 
+            if (error) console.error("Supabase delete action error:", error.message);
+        });
     }
   };
   
@@ -1767,14 +1970,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
       const userId = getSupabaseUserId();
       if (userId) {
-          if (!isSupabaseMock && !isUuid(userId)) {
-              console.error("Invalid userId for schedule task");
-          } else {
-              const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-              supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
-                  if (error) console.error("Supabase schedule task error:", error.message);
-              });
-          }
+          const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+          supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+              if (error) console.error("Supabase schedule task error:", error.message);
+          });
       }
 
       return newTask;
@@ -1810,14 +2009,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const userId = getSupabaseUserId();
     if (userId) {
-        if (!isSupabaseMock && !isUuid(userId)) {
-            console.error("Invalid userId for schedule task now");
-        } else {
-            const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-            supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
-                if (error) console.error("Supabase schedule task now error:", error.message);
-            });
-        }
+        const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+        supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+            if (error) console.error("Supabase schedule task now error:", error.message);
+        });
     }
   };
   const scheduleAndCompleteMilestoneNow = (actionId: string) => {
@@ -1866,14 +2061,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const userId = getSupabaseUserId();
     if (userId) {
-        if (!isSupabaseMock && !isUuid(userId)) {
-            console.error("Invalid userId for schedule milestone now");
-        } else {
-            const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-            supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
-                if (error) console.error("Supabase schedule milestone now error:", error.message);
-            });
-        }
+        const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
+        supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
+            if (error) console.error("Supabase schedule milestone now error:", error.message);
+        });
     }
   };
   const completeTutorialMission = () => {
@@ -1904,16 +2095,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     ));
     const userId = getSupabaseUserId();
     if (userId) {
-        if (!isSupabaseMock && !isUuid(userId)) {
-            console.error("Invalid userId for reschedule task");
-        } else {
-            supabase.from('scheduled_tasks')
-                .update({ date: newDate, start_time: newStartTime })
-                .eq('id', taskId)
-                .then(({ error }) => {
-                    if (error) console.error("Supabase reschedule task error:", error.message);
-                });
-        }
+        supabase.from('scheduled_tasks')
+            .update({ date: newDate, start_time: newStartTime })
+            .eq('id', taskId)
+            .then(({ error }) => {
+                if (error) console.error("Supabase reschedule task error:", error.message);
+            });
     }
   };
   const getClanQuestForAction = (action: Action | undefined) => {
@@ -1958,16 +2145,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 // Update in Supabase
                 const userId = getSupabaseUserId();
                 if (userId) {
-                    if (!isSupabaseMock && !isUuid(userId)) {
-                        console.error("Invalid userId for toggle task completion");
-                    } else {
-                        supabase.from('scheduled_tasks')
-                            .update({ completed: updatedTask.completed })
-                            .eq('id', taskId)
-                            .then(({ error }) => {
-                                if (error) console.error("Supabase toggle task completion error:", error.message);
-                            });
-                    }
+                    supabase.from('scheduled_tasks')
+                        .update({ completed: updatedTask.completed })
+                        .eq('id', taskId)
+                        .then(({ error }) => {
+                            if (error) console.error("Supabase toggle task completion error:", error.message);
+                        });
                 }
 
                 return updatedTask;
@@ -2015,10 +2198,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const leaveClan = async () => {
       const userId = getSupabaseUserId();
       if (!userId) { console.error("User not authenticated"); return; }
-      if (!isSupabaseMock && !isUuid(userId)) {
-          console.error("Invalid userId for leaving clan");
-          return;
-      }
       const { error } = await supabase.from('clan_members').delete().eq('user_id', userId);
       if (error) { console.error("Error leaving clan:", error.message); return; }
       setClan(null);
@@ -2028,7 +2207,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const transferLeadershipAndLeave = async (newLeaderId: string) => {
     if (!clan || !session) return;
-    if (!isSupabaseMock && !isUuid(newLeaderId)) {
+    if (!isUuid(newLeaderId)) {
         console.error("Invalid new leader ID");
         return;
     }
@@ -2046,7 +2225,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const kickClanMember = async (memberId: string) => {
       if(!clan) return;
-      if (!isSupabaseMock && !isUuid(memberId)) {
+      if (!isUuid(memberId)) {
           console.error("Invalid member ID for kicking");
           return;
       }
@@ -2057,7 +2236,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const addClanMember = async (memberId: string) => {
       if (!clan) return;
-      if (!isSupabaseMock && !isUuid(memberId)) {
+      if (!isUuid(memberId)) {
           console.error("Invalid member ID for clan addition");
           return;
       }
@@ -2212,7 +2391,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const addSeasonMission = async (missionData: Omit<SeasonMission, 'id'>) => {
       const userId = getSupabaseUserId();
       if (!userId) { console.error("User not authenticated for adding season mission"); return; }
-      if (!isSupabaseMock && !isUuid(userId)) {
+      if (!isUuid(userId)) {
           console.error("Invalid userId for adding season mission");
           return;
       }
@@ -2225,7 +2404,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, getClanQuestProgress, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, completeSeasonMission, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, getClanQuestProgress, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay }}>
       {children}
     </GameContext.Provider>
   );

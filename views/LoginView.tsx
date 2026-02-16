@@ -2,15 +2,11 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
-import { GM_CONFIG } from '../constants';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
+import { GM_CONFIG } from '../constants';
 
-interface LoginViewProps {
-    onGuestLogin: () => void;
-}
-
-export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
+export const LoginView: React.FC = () => {
     const { updateUserProfile } = useGame();
     const [isSigningUp, setIsSigningUp] = useState(false);
     const [email, setEmail] = useState('');
@@ -21,24 +17,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     
-    const INVITE_STORAGE_KEY = 'goldenInvitesUsed';
-    const getUsedInvites = (): string[] => {
-        try {
-            const saved = localStorage.getItem(INVITE_STORAGE_KEY);
-            if (saved) return JSON.parse(saved);
-        } catch {
-            return [];
-        }
-        return [];
-    };
-
     const handleSignUp = async () => {
         const normalizedInvite = inviteCode.trim();
-        const isOnline = SupabaseService.isConnectionActive();
         let inviteRecord: GoldenInvite | null = null;
-        let offlineUsedInvites: string[] = [];
 
-        if (isOnline) {
+        if (!normalizedInvite) {
+            setError('Informe um Convite Dourado.');
+            return;
+        }
+
+        const multiUseCodes = (GM_CONFIG.goldenInvites as any)?.multiUseCodes as string[] | undefined;
+        const isMultiUseInvite = (multiUseCodes || []).includes(normalizedInvite);
+
+        if (!isMultiUseInvite) {
             inviteRecord = await SupabaseService.getGoldenInviteByCode(normalizedInvite);
             if (!inviteRecord) {
                 setError('Convite Dourado inválido.');
@@ -48,18 +39,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                 setError('Convite Dourado já utilizado.');
                 return;
             }
-        } else {
-            const allowedInvites = new Set(GM_CONFIG.goldenInvites.seedCodes);
-            const usedInvites = new Set(getUsedInvites());
-            if (!allowedInvites.has(normalizedInvite)) {
-                setError('Convite Dourado inválido.');
-                return;
-            }
-            if (usedInvites.has(normalizedInvite)) {
-                setError('Convite Dourado já utilizado.');
-                return;
-            }
-            offlineUsedInvites = [...usedInvites];
         }
         setLoading(true);
         setError(null);
@@ -79,7 +58,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
             if (error) throw error;
             
             if (data.user) {
-                if (isOnline && inviteRecord) {
+                if (!isMultiUseInvite && inviteRecord) {
                     const consumed = await SupabaseService.consumeGoldenInvite(inviteRecord.id, data.user.id);
                     if (!consumed) {
                         setError('Convite Dourado já utilizado.');
@@ -142,11 +121,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onGuestLogin }) => {
                     }]);
 
                 if (profileError) throw profileError;
-
-                if (!isOnline) {
-                    const nextUsed = [...offlineUsedInvites, normalizedInvite];
-                    localStorage.setItem(INVITE_STORAGE_KEY, JSON.stringify(nextUsed));
-                }
                 setMessage('Cadastro realizado! Verifique seu email para confirmar a conta.');
                 setIsSigningUp(false);
             }

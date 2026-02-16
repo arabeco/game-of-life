@@ -210,6 +210,35 @@ export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
     joined_at: string;
 };
 
+// Sistema de Santuário - Posicionamento e Tempo
+export type SanctuaryArea = 'meditation' | 'devotion' | 'rest' | 'garden';
+export type GardenAction = 'working' | 'watering' | 'walking';
+
+export interface SanctuaryPosition {
+    userId: string;
+    row: number;
+    col: number;
+    area: SanctuaryArea;
+    gardenAction?: GardenAction;
+    lastUpdated: string; // ISO timestamp
+}
+
+export interface SanctuaryTimeTracker {
+    userId: string;
+    area: SanctuaryArea;
+    totalTime: number; // seconds
+    currentSessionStart?: string; // ISO timestamp
+    lastCalculatedDecay: string; // ISO timestamp
+}
+
+export interface SanctuaryAreaStats {
+    area: SanctuaryArea;
+    totalTime: number; // seconds
+    activeUsers: number;
+    lastUpdated: string;
+    decayRate: number; // seconds per hour when empty
+}
+
 
 export interface Mood {
     label: string;
@@ -280,6 +309,18 @@ export interface SeasonQuest {
     description: string;
     goal_type: 'actions_completed' | 'milestones_completed';
     goal_value: number;
+    reward_type?: 'exp' | 'item_id' | 'chest';
+    reward_value?: number | string;
+    maxParticipants?: number;
+    action?: {
+        name?: string;
+        description?: string;
+        icon?: string;
+        duration?: number;
+        repetitions?: number;
+        actionType?: ActionType;
+        difficulty?: number;
+    };
 }
 
 // --- Hall of Fame / Feed Types ---

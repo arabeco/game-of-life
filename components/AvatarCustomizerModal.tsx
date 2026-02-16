@@ -6,6 +6,7 @@ import { GlassCard } from './GlassCard';
 import { Sovereign } from './Avatar';
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
+import { GM_CONFIG } from '../constants';
 
 interface SovereignEditorModalProps {
     onClose: () => void;
@@ -39,7 +40,7 @@ const ColorPalette: React.FC<{ colors: readonly string[]; selectedColor: string;
 );
 
 export const SovereignEditorModal: React.FC<SovereignEditorModalProps> = ({ onClose, onSave }) => {
-    const { userProfile, levelUnlocks } = useGame();
+    const { userProfile, levelUnlocks, nobilityRanks } = useGame();
     const [tempSovereign, setTempSovereign] = useState<SovereignConfig>(() => {
         const baseConfig = userProfile.sovereign || DEFAULT_SOVEREIGN_CONFIG;
         const oldAccessory = (baseConfig as any).accessory;
@@ -62,11 +63,16 @@ export const SovereignEditorModal: React.FC<SovereignEditorModalProps> = ({ onCl
     });
     const [activeCategory, setActiveCategory] = useState<Category>('Corpo');
 
+    const itemUnlockBasis = ((GM_CONFIG as any)?.unlocks?.itemUnlockBasis === 'nobility' ? 'nobility' : 'level') as 'level' | 'nobility';
+    const userUnlockValue = itemUnlockBasis === 'nobility'
+        ? Math.max(1, nobilityRanks.findIndex(rank => rank.id === userProfile.nobility.rankId) + 1)
+        : userProfile.level;
+
     const getAllowedItems = (category: 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts') => {
         const items = SOVEREIGN_ASSETS[category];
         const unlockMap = levelUnlocks[category] || {};
         const userUnlocks = userProfile.unlockedItems?.[category] || {};
-        const allowed = items.filter(item => (unlockMap[item.id] ?? 1) <= userProfile.level || userUnlocks[item.id]);
+        const allowed = items.filter(item => (unlockMap[item.id] ?? 1) <= userUnlockValue || userUnlocks[item.id]);
         return allowed;
     };
 
@@ -86,7 +92,7 @@ export const SovereignEditorModal: React.FC<SovereignEditorModalProps> = ({ onCl
             head_over: getAllowedItems('head_over_items').some(i => i.id === prev.head_over) ? prev.head_over : getFirstAllowedId('head_over_items'),
             artifact: getAllowedItems('artifacts').some(i => i.id === prev.artifact) ? prev.artifact : getFirstAllowedId('artifacts'),
         }));
-    }, [levelUnlocks, userProfile.level, userProfile.unlockedItems]);
+    }, [levelUnlocks, userProfile.level, userProfile.unlockedItems, userProfile.nobility.rankId, nobilityRanks.length, itemUnlockBasis, userUnlockValue]);
 
     const handleSave = () => {
         onSave(tempSovereign);

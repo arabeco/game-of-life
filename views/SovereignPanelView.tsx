@@ -10,7 +10,7 @@ import { SupabaseService } from '../services/SupabaseService';
 
 const InviteManager: React.FC = () => {
     const INVITE_STORAGE_KEY = 'goldenInvitesUsed';
-    const isOnline = SupabaseService.isConnectionActive();
+    const isOnline = navigator.onLine;
     const getUsedCodes = () => {
         try {
             const saved = localStorage.getItem(INVITE_STORAGE_KEY);

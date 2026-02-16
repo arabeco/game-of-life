@@ -1,23 +1,16 @@
-import { supabase, isSupabaseMock } from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { UserProfile, GoldenInvite, SovereignConfig } from '../types';
 
 // Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
-  // Verificar se conexão está ativa
-  static isConnectionActive(): boolean {
-    return !isSupabaseMock;
-  }
-
   // Garantir conta admin soberana
   static async ensureAdminAccount(): Promise<UserProfile | null> {
-    if (!this.isConnectionActive()) return null;
-
     try {
       const { data: existingAdmin } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('role', 'admin')
-        .single();
+        .maybeSingle();
 
       if (existingAdmin) return existingAdmin as UserProfile;
 
@@ -82,8 +75,6 @@ export class SupabaseService {
 
   // Sincronizar perfil
   static async syncUserProfile(profile: UserProfile): Promise<UserProfile | null> {
-    if (!this.isConnectionActive()) return null;
-
     try {
       const { data } = await supabase
         .from('user_profiles')
@@ -121,8 +112,6 @@ export class SupabaseService {
 
   // Buscar usuários
   static async searchUsers(query: string = ''): Promise<UserProfile[]> {
-    if (!this.isConnectionActive()) return [];
-
     try {
       let queryBuilder = supabase
         .from('user_profiles')
@@ -144,8 +133,6 @@ export class SupabaseService {
 
   // Gerar convite
   static async generateGoldenInvite(): Promise<GoldenInvite | null> {
-    if (!this.isConnectionActive()) return null;
-
     try {
       const code = `ouro${new Date().getFullYear()}${(Math.random() + 1).toString(36).substring(2, 10)}`;
       
@@ -164,8 +151,6 @@ export class SupabaseService {
 
   // Listar convites
   static async getGoldenInvites(): Promise<GoldenInvite[]> {
-    if (!this.isConnectionActive()) return [];
-
     try {
       const { data } = await supabase
         .from('golden_invites')
@@ -180,14 +165,12 @@ export class SupabaseService {
   }
 
   static async getGoldenInviteByCode(code: string): Promise<GoldenInvite | null> {
-    if (!this.isConnectionActive()) return null;
-
     try {
       const { data, error } = await supabase
         .from('golden_invites')
         .select('*')
         .eq('code', code)
-        .single();
+        .maybeSingle();
 
       if (error || !data) return null;
       return data as GoldenInvite;
@@ -198,8 +181,6 @@ export class SupabaseService {
   }
 
   static async consumeGoldenInvite(inviteId: string, userId: string): Promise<GoldenInvite | null> {
-    if (!this.isConnectionActive()) return null;
-
     try {
       const { data } = await supabase
         .from('golden_invites')
@@ -217,8 +198,6 @@ export class SupabaseService {
   }
 
   static async seedGoldenInvites(codes: string[]): Promise<GoldenInvite[]> {
-    if (!this.isConnectionActive()) return [];
-
     try {
       const { data: existing } = await supabase
         .from('golden_invites')

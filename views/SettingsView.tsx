@@ -1,8 +1,8 @@
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
-import { SKINS_DATA, BORDERS_DATA, BANNERS_DATA, SKIN_UNLOCKS_BY_RANK, SKIN_SEASON_UNLOCKS } from '../constants';
+import { GM_CONFIG, SKINS_DATA, BORDERS_DATA, BANNERS_DATA, SKIN_UNLOCKS_BY_RANK, SKIN_SEASON_UNLOCKS } from '../constants';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { MasteryView } from './MasteryView';
 import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
@@ -683,7 +683,8 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
 const GeralTab: React.FC = () => {
     const { userProfile, updateUserProfile } = useGame();
-    const [nickname, setNickname] = useState(userProfile.nickname);
+    // Inicializar nickname apenas uma vez para evitar loop infinito
+    const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [notificationMode, setNotificationMode] = useState<NotificationMode>('Militar');
     const [privacyMode, setPrivacyMode] = useState<PrivacyMode>('Amigos');
     const [modal, setModal] = useState<'notification' | 'privacy' | 'delete' | 'tutorial' | null>(null);
@@ -801,9 +802,12 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
     const rankIndexFor = (rankId: string) => nobilityRanks.findIndex(rank => rank.id === rankId);
     const isRankAtLeast = (rankId: string) => currentRankIndex >= rankIndexFor(rankId);
     const isStaff = userProfile.role === 'admin' || userProfile.role === 'gm';
+
+    const itemUnlockBasis = ((GM_CONFIG as any)?.unlocks?.itemUnlockBasis === 'nobility' ? 'nobility' : 'level') as 'level' | 'nobility';
+    const userUnlockValue = itemUnlockBasis === 'nobility' ? Math.max(1, currentRankIndex + 1) : userProfile.level;
     const isItemUnlocked = (category: 'artifacts', itemId: string) => {
         const levelRequired = levelUnlocks[category]?.[itemId] ?? 1;
-        return levelRequired <= userProfile.level || userProfile.unlockedItems?.[category]?.[itemId];
+        return levelRequired <= userUnlockValue || userProfile.unlockedItems?.[category]?.[itemId];
     };
     const isSkinUnlocked = (skinId: string) => {
         if (isStaff) return true;

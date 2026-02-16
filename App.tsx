@@ -7,18 +7,16 @@ import { SettingsView } from './views/SettingsView';
 import { ProfileView } from './views/ProfileView';
 import { ReportsView } from './views/ReportsView';
 import { LoginView } from './views/LoginView';
-import { GameProvider, useGame } from './contexts/GameContext';
+import { GameProvider, useGame, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from './contexts/GameContext';
 import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import { TutorialOverlay } from './components/TutorialOverlay';
 import { GlobalHeader } from './components/GlobalHeader';
 import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from './components/Icons';
 import { AchievementModal } from './components/AchievementModal';
-import { supabase, isSupabaseMock } from './supabaseClient';
+import { supabase } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import { useLongPress } from './hooks/useLongPress';
-
-const OFFLINE_MODE = isSupabaseMock;
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -389,11 +387,28 @@ const AppWithTutorial: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
-    const { isNewUser, achievementUnlocked, setAchievementUnlocked, userProfile } = useGame();
-    const { isTutorialCompleted, startTutorial } = useTutorial();
+    const { isNewUser, achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile } = useGame();
+    const { isTutorialCompleted, startTutorial, endTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
-    const safeUserId = userProfile.id && isUuid(userProfile.id) ? userProfile.id : 'guest';
-    const termsKey = `termsAccepted:${safeUserId}`;
+
+    // Handle tutorial completion flag migration from localStorage to Supabase
+    useEffect(() => {
+        const completedByProfile = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
+        if (completedByProfile) return;
+
+        let completedByStorage = false;
+        try {
+            completedByStorage = localStorage.getItem('tutorialCompleted') === 'true';
+        } catch {
+            completedByStorage = false;
+        }
+
+        if (completedByStorage) {
+            updateUserProfile({
+                completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TUTORIAL_COMPLETED],
+            });
+        }
+    }, [userProfile.id, userProfile.completedSeasonMissions]);
 
     useEffect(() => {
         if (isNewUser && !isTutorialCompleted) {
@@ -403,21 +418,55 @@ const MainApp: React.FC = () => {
     }, [isNewUser, isTutorialCompleted, startTutorial]);
 
     useEffect(() => {
-        try {
-            const accepted = localStorage.getItem(termsKey) === 'true' || localStorage.getItem('termsAccepted') === 'true';
-            setShowTerms(!accepted);
-        } catch {
-            setShowTerms(true);
+        const acceptedByProfile = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TERMS_ACCEPTED);
+        if (acceptedByProfile) {
+            setShowTerms(false);
+            return;
         }
-    }, [termsKey]);
+
+        const safeUserId = userProfile.id && isUuid(userProfile.id) ? userProfile.id : 'guest';
+        const termsKey = `termsAccepted:${safeUserId}`;
+        let acceptedByStorage = false;
+        try {
+            acceptedByStorage = localStorage.getItem(termsKey) === 'true' || localStorage.getItem('termsAccepted') === 'true';
+        } catch {
+            acceptedByStorage = false;
+        }
+
+        if (acceptedByStorage) {
+            updateUserProfile({
+                completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TERMS_ACCEPTED],
+            });
+            setShowTerms(false);
+            return;
+        }
+
+        setShowTerms(true);
+    }, [userProfile.id, userProfile.completedSeasonMissions]);
 
     const handleAcceptTerms = () => {
+        const safeUserId = userProfile.id && isUuid(userProfile.id) ? userProfile.id : 'guest';
+        const termsKey = `termsAccepted:${safeUserId}`;
         try {
             localStorage.setItem(termsKey, 'true');
-            localStorage.setItem('termsAccepted', 'true');
         } catch {}
+
+        if (!(userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TERMS_ACCEPTED)) {
+            updateUserProfile({
+                completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TERMS_ACCEPTED],
+            });
+        }
         setShowTerms(false);
     };
+
+    // Handle tutorial completion
+    useEffect(() => {
+        if (isTutorialCompleted && !(userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED)) {
+            updateUserProfile({
+                completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TUTORIAL_COMPLETED],
+            });
+        }
+    }, [isTutorialCompleted, userProfile.completedSeasonMissions]);
 
     return (
         <>
@@ -435,7 +484,6 @@ const MainApp: React.FC = () => {
 
 const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
-    const [isGuest, setIsGuest] = useState(false);
     const [loading, setLoading] = useState(true);
     const [showBootRitual, setShowBootRitual] = useState(false);
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -445,11 +493,6 @@ const App: React.FC = () => {
 
     useEffect(() => {
         // --- Auth Logic ---
-        if (OFFLINE_MODE) {
-            setLoading(false);
-            return;
-        }
-
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
@@ -611,23 +654,12 @@ const App: React.FC = () => {
         };
     }, []);
     
-    const handleGuestLogin = () => {
-        setIsGuest(true);
-    };
-
-    if (loading && !OFFLINE_MODE) {
+    if (loading) {
         return <div className="w-screen h-screen flex items-center justify-center bg-black">Carregando...</div>;
     }
 
     const renderContent = () => {
-        if (OFFLINE_MODE) {
-            // Em modo offline, sempre mostramos o MainApp, assumindo o "modo convidado".
-            return <MainApp />;
-        }
-        
-        return (session || isGuest) 
-            ? <MainApp /> 
-            : <LoginView onGuestLogin={handleGuestLogin} />;
+        return session ? <MainApp /> : <LoginView />;
     };
 
     return (

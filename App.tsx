@@ -387,7 +387,7 @@ const AppWithTutorial: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
-    const { isNewUser, achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile } = useGame();
+    const { isNewUser, achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag } = useGame();
     const { isTutorialCompleted, startTutorial, endTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
 
@@ -404,9 +404,7 @@ const MainApp: React.FC = () => {
         }
 
         if (completedByStorage) {
-            updateUserProfile({
-                completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TUTORIAL_COMPLETED],
-            });
+            addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
         }
     }, [userProfile.id, userProfile.completedSeasonMissions]);
 
@@ -418,6 +416,12 @@ const MainApp: React.FC = () => {
     }, [isNewUser, isTutorialCompleted, startTutorial]);
 
     useEffect(() => {
+        // Não mostrar termos para contas privilegiadas
+        if (userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm') {
+            setShowTerms(false);
+            return;
+        }
+
         const acceptedByProfile = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TERMS_ACCEPTED);
         if (acceptedByProfile) {
             setShowTerms(false);
@@ -434,15 +438,13 @@ const MainApp: React.FC = () => {
         }
 
         if (acceptedByStorage) {
-            updateUserProfile({
-                completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TERMS_ACCEPTED],
-            });
+            addProfileFlag(PROFILE_FLAG_TERMS_ACCEPTED);
             setShowTerms(false);
             return;
         }
 
         setShowTerms(true);
-    }, [userProfile.id, userProfile.completedSeasonMissions]);
+    }, [userProfile.id, userProfile.completedSeasonMissions, userProfile.role]);
 
     const handleAcceptTerms = () => {
         const safeUserId = userProfile.id && isUuid(userProfile.id) ? userProfile.id : 'guest';
@@ -452,9 +454,7 @@ const MainApp: React.FC = () => {
         } catch {}
 
         if (!(userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TERMS_ACCEPTED)) {
-            updateUserProfile({
-                completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TERMS_ACCEPTED],
-            });
+            addProfileFlag(PROFILE_FLAG_TERMS_ACCEPTED);
         }
         setShowTerms(false);
     };
@@ -462,9 +462,7 @@ const MainApp: React.FC = () => {
     // Handle tutorial completion
     useEffect(() => {
         if (isTutorialCompleted && !(userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED)) {
-            updateUserProfile({
-                completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TUTORIAL_COMPLETED],
-            });
+            addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
         }
     }, [isTutorialCompleted, userProfile.completedSeasonMissions]);
 

@@ -217,6 +217,7 @@ export interface GameContextType {
   updateLevelUnlocks: (next: LevelUnlocks) => void;
   grantUserUnlock: (category: UnlockCategory, itemId: string) => void;
   completeSeasonMission: (mission: SeasonMission) => void;
+  addProfileFlag: (flag: string) => void;
   feed: FeedEvent[];
   addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
   updateAssetSlotValue: (assetId: string, slotId: string, value: SlotValue) => void;
@@ -721,7 +722,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (clanError || !clanData) { console.error('Error fetching clan data:', clanError?.message); return; }
 
     setClan(mapToCamelCase(clanData) as Clan);
-    await fetchClanQuestProgress(clanId);
+    if (enableClanQuestProgress) {
+        await fetchClanQuestProgress(clanId);
+    }
 
     const { data: membersData, error: membersError } = await supabase.from('clan_members').select('*').eq('clan_id', clanId);
     if (membersError || !membersData) { console.error('Error fetching clan members:', membersError?.message); return; }
@@ -921,13 +924,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         
         const clanMemberResult = await rateLimiter.addRequest(() => 
-            supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle()
+            supabase.from('clan_members').select('clan_id').eq('user_id', userId).single()
         );
         const { data: clanMemberData, error: clanMemberError } = clanMemberResult;
 
         if (clanMemberError) {
             console.error('Error fetching clan membership:', clanMemberError.message);
-            // Não limpar estado em erro transitório para evitar piscar
+            // Se o erro for "No rows found", significa que não está em clan
+            if (clanMemberError.code === 'PGRST116') {
+                setClan(null);
+                setEnrichedClanMembers([]);
+                setClanJoinRequestsIncoming([]);
+            }
+            // Não limpar estado em outros erros para evitar piscar
         } else if (!clanMemberData) {
             // Usuário não está em nenhum clã
             setClan(null);
@@ -1279,11 +1288,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   useEffect(() => {
-    if (!clan?.id) return;
+    if (!clan?.id || !enableClanQuestProgress) return;
     fetchClanQuestProgress(clan.id);
     const intervalId = window.setInterval(() => fetchClanQuestProgress(clan.id), 15000);
     return () => window.clearInterval(intervalId);
-  }, [clan?.id, fetchClanQuestProgress]);
+  }, [clan?.id, fetchClanQuestProgress, enableClanQuestProgress]);
 
   useEffect(() => {
     const activeArenas = assets.flatMap(asset => asset.arenas.filter(a => !a.isArchived));
@@ -1431,10 +1440,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
   };
 
+  const addProfileFlag = (flag: string) => {
+    const completed = userProfile.completedSeasonMissions || [];
+    if (completed.includes(flag)) return;
+    
+    updateUserProfile({
+        completedSeasonMissions: [...completed, flag],
+    });
+  };
+
   const updateAllAssetLevels = (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>): boolean => {
     const lastUpdate = userProfile.lastLevelUpdate || 0;
     const threeDays = 72 * 60 * 60 * 1000;
-    if (Date.now() - lastUpdate < threeDays && userProfile.role !== 'admin' && userProfile.role !== 'gm') {
+    
+    // Sem restrição para contas admin, gm ou admin_gm
+    if (userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm') {
+        // Permite atualização imediata para contas privilegiadas
+    } else if (Date.now() - lastUpdate < threeDays) {
         alert("Você só pode atualizar seus níveis de maestria a cada 72 horas.");
         return false;
     }
@@ -1738,7 +1760,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const updateClanQuestProgress = (questId: string, delta: number) => {
-    if (!clan) return;
+    if (!clan || !enableClanQuestProgress) return;
     let nextValue = 0;
     setClanQuestProgress(prev => {
         const clanProgress = prev[clan.id] || {};
@@ -2404,7 +2426,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, getClanQuestProgress, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, getClanQuestProgress, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay }}>
       {children}
     </GameContext.Provider>
   );

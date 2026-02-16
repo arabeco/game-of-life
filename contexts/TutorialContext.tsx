@@ -22,7 +22,7 @@ interface TutorialContextType {
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { userProfile, updateUserProfile } = useGame();
+    const { userProfile, addProfileFlag } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [spotlightTarget, setSpotlightTarget] = useState<DOMRect | null>(null);
@@ -43,13 +43,9 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         setCurrentStep(0);
         if (completed) {
             // Save tutorial completion to user profile instead of localStorage
-            if (!(userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED)) {
-                updateUserProfile({
-                    completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), PROFILE_FLAG_TUTORIAL_COMPLETED],
-                });
-            }
+            addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
         }
-    }, [userProfile.completedSeasonMissions, updateUserProfile]);
+    }, [addProfileFlag]);
 
     const nextStep = useCallback(() => {
         setCurrentStep(prev => prev + 1);

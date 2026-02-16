@@ -164,24 +164,34 @@ const CycleRewardView: React.FC<{ exp: number; chest: ChestType; onContinue: () 
     const chestStyle = getChestStyle(chest);
 
     return (
-        <div className="flex flex-col items-center justify-center h-full text-center space-y-4 animate-fade-in">
-            <h2 className="text-xl font-bold uppercase tracking-widest">Parabéns!</h2>
-            <div>
-                <p className="text-6xl font-black text-[var(--gold)]">{exp.toLocaleString('pt-BR')}</p>
-                <p className="text-lg font-bold tracking-wider">de EXP computada!</p>
+        <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-fade-in relative overflow-hidden">
+            {/* Background effects */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--gold)_0%,_transparent_70%)] opacity-10 animate-pulse pointer-events-none"></div>
+            
+            <h2 className="text-2xl font-black uppercase tracking-widest text-white drop-shadow-lg">Ciclo Concluído!</h2>
+            
+            <div className="transform transition-all duration-1000 ease-out scale-100 hover:scale-105">
+                <p className="text-7xl font-black text-[var(--gold)] drop-shadow-[0_0_15px_rgba(212,175,55,0.5)]">
+                    +{exp.toLocaleString('pt-BR')}
+                </p>
+                <p className="text-lg font-bold tracking-widest text-white/80 uppercase mt-2">EXP Computada</p>
             </div>
-            <div>
-                <p>Você recebeu:</p>
-                <div className={`mt-2 w-32 h-32 mx-auto bg-gray-800 rounded-lg flex items-center justify-center border-4 ${chestStyle.shadow}`} style={{borderColor: chestStyle.color}}>
-                    <span className="text-6xl">?</span>
+
+            <div className="py-4">
+                <p className="text-sm text-gray-400 mb-4 uppercase tracking-wider">Recompensa Obtida</p>
+                <div className={`w-40 h-40 mx-auto bg-gray-900/80 rounded-2xl flex items-center justify-center border-4 ${chestStyle.shadow} animate-bounce relative`} style={{borderColor: chestStyle.color}}>
+                    <div className="absolute inset-0 bg-white/5 rounded-xl"></div>
+                    <span className="text-7xl filter drop-shadow-lg">🎁</span>
                 </div>
-                <p className="font-bold mt-2" style={{color: chestStyle.color}}>Baú {chest}</p>
+                <p className="font-black text-xl mt-4 uppercase tracking-widest" style={{color: chestStyle.color}}>Baú {chest}</p>
             </div>
-            <p className="text-gray-400">"Baú adicionado ao Arsenal!"</p>
-            <div className="w-full max-w-xs space-y-3 pt-2">
-                 <div className="flex space-x-2">
-                    <button onClick={onClose} className="w-full py-3 rounded-xl luxe-button-secondary">FECHAR</button>
-                    <button onClick={onContinue} className="w-full py-3 rounded-xl luxe-gold-button">EDITAR NOVO CICLO</button>
+
+            <p className="text-gray-400 italic text-sm">"Sua disciplina forja seu destino."</p>
+
+            <div className="w-full max-w-xs space-y-3 pt-4 z-10">
+                 <div className="flex space-x-3">
+                    <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-colors font-bold text-sm">FECHAR</button>
+                    <button onClick={onContinue} className="flex-1 py-3 rounded-xl luxe-gold-button font-bold text-sm shadow-lg shadow-[var(--gold)]/20">NOVO CICLO</button>
                 </div>
             </div>
         </div>

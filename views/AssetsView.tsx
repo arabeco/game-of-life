@@ -3,6 +3,8 @@ import { useGame } from '../contexts/GameContext';
 import { Asset } from '../types';
 import { AssetDossier } from '../components/AssetDossier';
 import { Sephirot } from '../components/Sephirot';
+import { SKINS_DATA } from '../constants';
+import { SephirotFog } from '../components/SephirotFog';
 
 const assetPositions: Record<string, { row: number; col: number }> = {
   consciencia: { row: 1, col: 2 },
@@ -17,36 +19,37 @@ const assetPositions: Record<string, { row: number; col: number }> = {
   fisico: { row: 7, col: 2 },
 };
 
-const TreeLinesSVG: React.FC = () => (
-    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0 -z-10">
-        <defs>
-            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style={{stopColor: '#2a211c', stopOpacity: 0.5}} />
-                <stop offset="50%" style={{stopColor: '#2a211c', stopOpacity: 1}} />
-                <stop offset="100%" style={{stopColor: '#2a211c', stopOpacity: 0.5}} />
-            </linearGradient>
-        </defs>
-        <line x1="50%" y1="7%" x2="50%" y2="93%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="16.66%" y1="21.5%" x2="16.66%" y2="64.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="83.33%" y1="21.5%" x2="83.33%" y2="64.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        
-        <line x1="16.66%" y1="21.5%" x2="83.33%" y2="21.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="16.66%" y1="35.5%" x2="83.33%" y2="35.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="16.66%" y1="64.5%" x2="83.33%" y2="64.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-
-        <line x1="16.66%" y1="21.5%" x2="50%" y2="49.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="83.33%" y1="21.5%" x2="50%" y2="49.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="16.66%" y1="35.5%" x2="50%" y2="49.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="83.33%" y1="35.5%" x2="50%" y2="49.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="16.66%" y1="64.5%" x2="50%" y2="78.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-        <line x1="83.33%" y1="64.5%" x2="50%" y2="78.5%" stroke="url(#lineGrad)" strokeWidth="1" />
-    </svg>
-);
-
+// Sephirot coordinates for the Fog Shader (0-100 scale)
+// ID is used to map asset levels
+const SEPHIROT_COORDS = [
+    { id: 'consciencia', x: 50, y: 7 },      // Keter
+    { id: 'espaco-mental', x: 16.66, y: 21.5 }, // Binah
+    { id: 'espiritualidade', x: 83.33, y: 21.5 }, // Chokmah
+    { id: 'proposito', x: 16.66, y: 35.5 }, // Gevurah
+    { id: 'projetos', x: 83.33, y: 35.5 }, // Chesed
+    { id: 'conexoes', x: 50, y: 49.5 },    // Tiphereth
+    { id: 'trabalho', x: 16.66, y: 64.5 }, // Hod
+    { id: 'financas', x: 83.33, y: 64.5 }, // Netzach
+    { id: 'hobbies', x: 50, y: 78.5 },    // Yesod
+    { id: 'fisico', x: 50, y: 93 }       // Malkuth
+];
 
 export const AssetsView: React.FC = () => {
-  const { assets } = useGame();
+  const { assets, userProfile } = useGame();
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+
+  // Get user skin color or default to GOLD
+  const skinColor = SKINS_DATA.find(s => s.id === userProfile.skin)?.color || '#d4af37';
+
+  // Prepare points with levels for the shader
+  const fogPoints = SEPHIROT_COORDS.map(coord => {
+      const asset = assets.find(a => a.id === coord.id);
+      return {
+          x: coord.x,
+          y: coord.y,
+          level: asset ? asset.level : 1 // Default level 1 if not found
+      };
+  });
 
   const handleSphereClick = (asset: Asset) => setSelectedAssetId(asset.id);
   const handleBack = () => setSelectedAssetId(null);
@@ -62,8 +65,13 @@ export const AssetsView: React.FC = () => {
   }
 
   return (
-    <div className="flex justify-center items-center h-full">
-        <div className="relative w-full aspect-[9/16]">
+    <div className="flex justify-center items-center h-full relative overflow-hidden bg-black">
+        {/* Background Fog Shader */}
+        <div className="absolute inset-0 z-0">
+            <SephirotFog points={fogPoints} color={skinColor} />
+        </div>
+        
+        <div className="relative w-full aspect-[9/16] z-10">
             <div className="grid grid-cols-3 grid-rows-7 w-full h-full">
                 {assets.map(asset => {
                     const pos = assetPositions[asset.id];
@@ -78,7 +86,6 @@ export const AssetsView: React.FC = () => {
                     )
                 })}
             </div>
-            <TreeLinesSVG />
         </div>
     </div>
   );

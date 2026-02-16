@@ -35,6 +35,8 @@ export interface Action {
   repetitions: number; // For 'Ação Recorrente'
   actionType: ActionType;
   difficulty?: number; // 1 to 5
+  scheduledDays?: DayOfWeek[]; // Days to automatically schedule
+  scheduledStartTime?: number; // Time in minutes to automatically schedule
 }
 
 export interface Arena {
@@ -46,6 +48,14 @@ export interface Arena {
   tags?: string[];
   actionIds: string[];
   isArchived?: boolean;
+  folderId?: string; // New: Arena grouping
+}
+
+export interface ArenaFolder {
+    id: string;
+    name: string;
+    icon: string;
+    assetId?: string;
 }
 
 export interface Asset {
@@ -83,9 +93,28 @@ export interface SovereignConfig {
 
 export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts';
 
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+
 export type LevelUnlocks = Record<UnlockCategory, Record<string, number>>;
 
 export type UserUnlocks = Record<UnlockCategory, Record<string, boolean>>;
+
+export interface ClanMissionParticipant {
+  id: string;
+  clanId: string;
+  missionId: string;
+  userId: string;
+  joinedAt: string;
+  contributionValue: number;
+}
+
+export interface ClanMissionState {
+  id: string;
+  clanId: string;
+  missionId: string;
+  isCompleted: boolean;
+  completedAt?: string;
+}
 
 export interface UserProfile {
   id: string;
@@ -104,6 +133,7 @@ export interface UserProfile {
   lastLevelUpdate?: number; // Timestamp of the last level update
   nobility: Nobility;
   mood: number; // From 0 to 100
+  gold?: number;
   chests?: { type: ChestType; count: number }[];
   unlockedItems?: UserUnlocks;
   unlockedSkins?: Record<string, boolean>;

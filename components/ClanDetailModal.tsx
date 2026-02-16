@@ -102,33 +102,63 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     );
 };
 
-const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; onClose: () => void; onTake: () => void }> = ({ quest, progress, isActive, onClose, onTake }) => (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
-        <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl p-4" onClick={e => e.stopPropagation()}>
-            <div className="text-center space-y-1">
-                <h3 className="text-lg font-black uppercase tracking-widest">{quest.title}</h3>
-                <p className="text-xs text-gray-300">{quest.description}</p>
-            </div>
-            <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Progresso</span>
-                    <span className="text-xs font-mono">{progress}%</span>
+const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; onClose: () => void; onTake: () => void; currentValue: number }> = ({ quest, progress, isActive, onClose, onTake, currentValue }) => {
+    const { fetchClanQuestParticipants, clanQuestParticipants } = useGame();
+    
+    useEffect(() => {
+        if (quest.id && quest.actionTemplate?.name) {
+            fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
+        }
+    }, [quest.id, quest.actionTemplate?.name, fetchClanQuestParticipants]);
+
+    const participants = clanQuestParticipants[quest.id] || 0;
+    const actionsRemaining = Math.max(0, quest.goal_value - currentValue);
+    
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl p-4" onClick={e => e.stopPropagation()}>
+                <div className="text-center space-y-1">
+                    <h3 className="text-lg font-black uppercase tracking-widest">{quest.title}</h3>
+                    <p className="text-xs text-gray-300">{quest.description}</p>
                 </div>
-                <div className="w-full bg-black/30 rounded-full h-1.5">
-                    <div className="bg-[var(--gold)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                
+                <div className="grid grid-cols-2 gap-2 text-center">
+                    <div className="bg-black/30 rounded-xl p-2">
+                        <div className="text-[10px] uppercase text-gray-400 font-bold">Participantes</div>
+                        <div className="text-lg font-mono text-[var(--gold)] flex items-center justify-center gap-1">
+                            <UsersIcon className="w-4 h-4" />
+                            {participants}
+                        </div>
+                    </div>
+                     <div className="bg-black/30 rounded-xl p-2">
+                        <div className="text-[10px] uppercase text-gray-400 font-bold">Ações Restantes</div>
+                        <div className="text-lg font-mono text-white">
+                            {actionsRemaining}
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div className="space-y-2">
-                <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-button-primary'}`}>
-                    {isActive ? 'QUEST ATIVA' : 'PEGAR QUEST'}
-                </button>
-                <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-bold bg-black/30 text-gray-300 hover:bg-black/50">
-                    FECHAR
-                </button>
-            </div>
-        </GlassCard>
-    </div>
-);
+
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Progresso</span>
+                        <span className="text-xs font-mono">{progress}%</span>
+                    </div>
+                    <div className="w-full bg-black/30 rounded-full h-1.5">
+                        <div className="bg-[var(--gold)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-button-primary'}`}>
+                        {isActive ? 'QUEST ATIVA' : 'PEGAR QUEST'}
+                    </button>
+                    <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-bold bg-black/30 text-gray-300 hover:bg-black/50">
+                        FECHAR
+                    </button>
+                </div>
+            </GlassCard>
+        </div>
+    );
+};
 
 // Componente para barrinhas douradas de tempo
 const GoldenTimeBar: React.FC<{ area: string; totalTime: number; maxTime: number }> = ({ area, totalTime, maxTime }) => {
@@ -253,7 +283,7 @@ const getZoneAndState = (row: number, col: number): { zone: Zone, state: ActionS
 };
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, applySanctuaryAreaDecay } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, applySanctuaryAreaDecay, loadClanAndMembers, acceptSeasonQuest } = useGame();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const [userPlacement, setUserPlacement] = useState<MemberPlacement | null>(null);
     const [otherPlacements, setOtherPlacements] = useState<MemberPlacement[]>([]);
@@ -270,6 +300,13 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     useEffect(() => {
         enrichedClanMembersRef.current = enrichedClanMembers;
     }, [enrichedClanMembers]);
+
+    // Force refresh members when opening modal
+    useEffect(() => {
+        if (clan?.id) {
+            loadClanAndMembers(clan.id, true);
+        }
+    }, [clan?.id, loadClanAndMembers]);
     
     const [sanctuaryStats, setSanctuaryStats] = useState<{ meditation: number; devotion: number; rest: number; garden: number }>({ meditation: 14400, devotion: 14400, rest: 14400, garden: 14400 }); // Começar em 50% (4 horas = 14400 segundos)
     const [showGardenModal, setShowGardenModal] = useState(false);
@@ -279,7 +316,6 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const [memberToKick, setMemberToKick] = useState<EnrichedClanMember | null>(null);
     const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
-    const [questArena, setQuestArena] = useState<Arena | null>(null);
     const [expandDescription, setExpandDescription] = useState(false);
     
     const userClanRole = useMemo(() => {
@@ -595,17 +631,15 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     
     const clanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
     const questArenaName = activeSeason ? `Quests - Clã ${activeSeason.id}` : 'Quests - Clã';
-    const ensureQuestArena = () => {
-        const existing = getArenas().find(arena => arena.name === questArenaName);
-        if (existing) return existing;
-        const fallbackAssetId = assets.find(asset => asset.id === 'geral')?.id || assets[0]?.id || '';
-        return addArena(fallbackAssetId, { name: questArenaName, description: 'Missões do clã', icon: '🛡️' });
-    };
 
     const isQuestActive = (quest: SeasonQuest) => {
         const arena = getArenas().find(arena => arena.name === questArenaName);
         if (!arena) return false;
-        return getActionsForArena(arena.id).some(action => action.name === quest.title);
+        return getActionsForArena(arena.id).some(action => action.name === quest.title || action.name === quest.action?.name);
+    };
+
+    const getQuestRawProgress = (quest: SeasonQuest) => {
+        return getClanQuestProgress(quest.id);
     };
 
     const getQuestProgress = (quest: SeasonQuest) => {
@@ -615,21 +649,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     };
 
     const handleTakeQuest = (quest: SeasonQuest) => {
-        const arena = ensureQuestArena();
-        const exists = getActionsForArena(arena.id).some(action => action.name === quest.title);
-        if (!exists) {
-            addAction({
-                arenaId: arena.id,
-                name: quest.title,
-                description: quest.description,
-                icon: '🛡️',
-                duration: 30,
-                repetitions: 0,
-                actionType: quest.goal_type === 'milestones_completed' ? 'Marco' : 'Ação Recorrente',
-                difficulty: 3
-            });
-        }
-        setQuestArena(arena);
+        acceptSeasonQuest(quest.id);
         setSelectedQuest(null);
     };
 
@@ -791,18 +811,13 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             </div>
             
             {selectedQuest && (
-                <ClanMissionDetailModal
-                    quest={selectedQuest}
+                <ClanMissionDetailModal 
+                    quest={selectedQuest} 
                     progress={getQuestProgress(selectedQuest)}
+                    currentValue={getQuestRawProgress(selectedQuest)}
                     isActive={isQuestActive(selectedQuest)}
                     onClose={() => setSelectedQuest(null)}
                     onTake={() => handleTakeQuest(selectedQuest)}
-                />
-            )}
-            {questArena && (
-                <ArenaDetailModal
-                    arena={questArena}
-                    onClose={() => setQuestArena(null)}
                 />
             )}
             {showGardenModal && <GardenActionModal onSelect={handleGardenActionSelect} onClose={() => setShowGardenModal(false)} />}

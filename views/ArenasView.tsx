@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { Arena, ActionType } from '../types';
+import { Arena, ActionType, ArenaFolder } from '../types';
 import { PlusIcon, EyeIcon, XIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
@@ -8,6 +8,7 @@ import { ArenaCard } from '../components/ArenaCard';
 import { useTutorial } from '../contexts/TutorialContext';
 import { useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { IconPickerModal } from '../components/IconPickerModal';
+import { FolderDetailModal } from '../components/FolderDetailModal';
 
 type PendingAction = {
     id: string;
@@ -21,13 +22,15 @@ type PendingAction = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, addArena, updateArena, addAction } = useGame();
+    const { getArenas, assets, actions, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const fabRef = useRef<HTMLButtonElement>(null);
+    const [dragOverId, setDragOverId] = useState<string | null>(null);
 
     const [builderAssetId, setBuilderAssetId] = useState('');
     const [arenaName, setArenaName] = useState('');
@@ -44,7 +47,54 @@ export const ArenasView: React.FC = () => {
     const [iconTarget, setIconTarget] = useState<'arena' | 'action' | null>(null);
     
     const allArenas = getArenas().filter(a => showArchived || !a.isArchived);
+    const rootArenas = allArenas.filter(a => !a.folderId);
     const selectedArena = allArenas.find(a => a.id === selectedArenaId);
+    const selectedFolder = arenaFolders.find(f => f.id === selectedFolderId);
+
+    const handleDragStart = (e: React.DragEvent, id: string, type: 'arena') => {
+        e.dataTransfer.setData('id', id);
+        e.dataTransfer.setData('type', type);
+    };
+
+    const handleDragOver = (e: React.DragEvent, id: string) => {
+        e.preventDefault();
+        setDragOverId(id);
+    };
+
+    const handleDragLeave = () => {
+         setDragOverId(null);
+    };
+
+    const handleDrop = async (e: React.DragEvent, targetId: string, targetType: 'arena' | 'folder') => {
+        e.preventDefault();
+        setDragOverId(null);
+        const draggedId = e.dataTransfer.getData('id');
+        const draggedType = e.dataTransfer.getData('type');
+
+        if (draggedType !== 'arena') return;
+        if (draggedId === targetId) return;
+
+        if (targetType === 'folder') {
+            await moveArenaToFolder(draggedId, targetId);
+        } else if (targetType === 'arena') {
+             const targetArena = allArenas.find(a => a.id === targetId);
+             if (!targetArena) return;
+             
+             // Se já está em uma pasta, move o arrastado para a mesma pasta
+             if (targetArena.folderId) {
+                 await moveArenaToFolder(draggedId, targetArena.folderId);
+                 return;
+             }
+
+             // Cria nova pasta automaticamente
+             const folderName = "Nova Pasta";
+             const newFolder = await createArenaFolder(folderName, '📁', targetArena.assetId);
+             if (newFolder) {
+                 await moveArenaToFolder(targetId, newFolder.id);
+                 await moveArenaToFolder(draggedId, newFolder.id);
+             }
+        }
+    };
 
     useEffect(() => {
         if (isTutorialActive && currentStep === 2 && fabRef.current) {
@@ -252,21 +302,38 @@ export const ArenasView: React.FC = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 {allArenas.map(arena => {
                                     const arenaActions = getActionsForArena(arena.id);
+                                    const isDragOver = dragOverId === arena.id;
+                                    
                                     return (
-                                        <ArenaCard
+                                        <div 
                                             key={arena.id}
-                                            arena={arena}
-                                            actions={arenaActions}
-                                            onClick={() => setSelectedArenaId(arena.id)}
-                                            variant="dossier"
-                                        />
+                                            draggable={!arena.isArchived}
+                                            onDragStart={(e) => handleDragStart(e, arena.id, 'arena')}
+                                            onDragOver={(e) => handleDragOver(e, arena.id)}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={(e) => handleDrop(e, arena.id, 'arena')}
+                                            className={`transition-all duration-200 ${isDragOver ? 'scale-105 z-10 ring-2 ring-[var(--gold)] rounded-xl' : ''}`}
+                                        >
+                                            <ArenaCard
+                                                arena={arena}
+                                                actions={arenaActions}
+                                                onClick={() => setSelectedArenaId(arena.id)}
+                                                variant="dossier"
+                                            />
+                                        </div>
                                     );
                                 })}
                             </div>
                         )}
                     </div>
                 </div>
-                {selectedArena && (
+                {selectedFolderId && (
+                <FolderDetailModal
+                    folder={arenaFolders.find(f => f.id === selectedFolderId)!}
+                    onClose={() => setSelectedFolderId(null)}
+                />
+            )}
+            {selectedArena && (
                     <ArenaDetailModal
                         arena={selectedArena}
                         onClose={() => setSelectedArenaId(null)}
@@ -295,18 +362,56 @@ export const ArenasView: React.FC = () => {
                     </button>
                 </div>
                 <div className="grid grid-cols-3 gap-3 pt-8">
-                    {allArenas.map((arena) => {
+                    {/* Render Folders */}
+                    {arenaFolders.map(folder => {
+                        const arenasInFolder = getArenas().filter(a => a.folderId === folder.id); // Use getArenas to include all including archived if needed
+                        const isDragOver = dragOverId === folder.id;
+                        
+                        return (
+                             <div 
+                                key={folder.id}
+                                onDragOver={(e) => handleDragOver(e, folder.id)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, folder.id, 'folder')}
+                                onClick={() => setSelectedFolderId(folder.id)}
+                                className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isDragOver ? 'border-[var(--gold)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--gold)] transition-colors group`}
+                            >
+                                {/* Stack visual effect */}
+                                <div className="absolute top-1 right-1 w-full h-full bg-gray-700/50 rounded-2xl -z-10 transform translate-x-1 -translate-y-1" />
+                                <div className="absolute top-2 right-2 w-full h-full bg-gray-600/30 rounded-2xl -z-20 transform translate-x-2 -translate-y-2" />
+                                
+                                <div className="flex flex-col items-center p-2 text-center">
+                                    <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{folder.icon}</span>
+                                    <span className="text-sm font-bold text-gray-200 line-clamp-2">{folder.name}</span>
+                                    <span className="text-xs text-gray-500 mt-1">{arenasInFolder.length} arenas</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    {rootArenas.map((arena) => {
                          const asset = getAssetById(arena.assetId);
                          const arenaActions = getActionsForArena(arena.id);
+                         const isDragOver = dragOverId === arena.id;
+
                         return (
-                            <ArenaCard 
-                                key={arena.id} 
-                                arena={arena} 
-                                assetName={asset?.name || ''}
-                                actions={arenaActions}
-                                onClick={() => setSelectedArenaId(arena.id)}
-                                variant="overview"
-                            />
+                            <div
+                                key={arena.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, arena.id, 'arena')}
+                                onDragOver={(e) => handleDragOver(e, arena.id)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, arena.id, 'arena')}
+                                className={`transition-transform ${isDragOver ? 'scale-105 brightness-110 z-10' : ''}`}
+                            >
+                                <ArenaCard 
+                                    arena={arena} 
+                                    assetName={asset?.name || ''}
+                                    actions={arenaActions}
+                                    onClick={() => setSelectedArenaId(arena.id)}
+                                    variant="overview"
+                                />
+                            </div>
                         )
                     })}
                 </div>

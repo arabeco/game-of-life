@@ -104,8 +104,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const [isArenaPickerOpen, setIsArenaPickerOpen] = useState(false);
     const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-    const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
-    const [startTime, setStartTime] = useState<string | null>(null);
+    const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(action?.scheduledDays || []);
+    const [startTime, setStartTime] = useState<string | null>(() => {
+        if (action?.scheduledStartTime !== undefined && action?.scheduledStartTime !== null) {
+            const h = Math.floor(action.scheduledStartTime / 60);
+            const m = action.scheduledStartTime % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+        return null;
+    });
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isConfirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
@@ -115,6 +122,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const handleSave = () => {
         if (!editableAction.name?.trim()) return;
         
+        let scheduledStartTime: number | undefined;
+        if (startTime && startTime !== 'Sem Horário') {
+             const [h, m] = startTime.split(':').map(Number);
+             scheduledStartTime = h * 60 + m;
+        }
+
         const actionData: Omit<Action, 'id'> = {
             arenaId: editableAction.arenaId || '', // Será tratado no context
             name: editableAction.name,
@@ -123,7 +136,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
             duration: editableAction.duration || 60,
             repetitions: editableAction.actionType === 'Ação Recorrente' ? (editableAction.repetitions || 1) : 1,
             actionType: editableAction.actionType || 'Ação Recorrente',
-            difficulty: editableAction.difficulty || 3
+            difficulty: editableAction.difficulty || 3,
+            scheduledDays: editableAction.actionType === 'Ação Recorrente' ? selectedDays : undefined,
+            scheduledStartTime
         };
         
         const scheduleTasks = (actionIdToSchedule: string) => {

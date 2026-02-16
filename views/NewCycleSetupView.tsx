@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame, ArenaSetupChange } from '../contexts/GameContext';
 import { Arena } from '../types';
 import { GlassCard } from '../components/GlassCard';
-import { EditIcon, RefreshCwIcon, ArchiveBoxIcon, Trash2Icon, XIcon, ChevronLeftIcon } from '../components/Icons';
+import { EditIcon, RefreshCwIcon, ArchiveBoxIcon, Trash2Icon, XIcon, ChevronLeftIcon, CalendarIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { DatePickerModal } from '../components/DatePickerModal';
+import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 
 type ArenaStatus = 'renew' | 'archive' | 'delete';
 
@@ -60,7 +62,9 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     const [editingArena, setEditingArena] = useState<Arena | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [cycleName, setCycleName] = useState(`Ciclo de ${new Date().toLocaleString('default', { month: 'long' })}`);
-    const [cycleEndDate, setCycleEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    const activeSeason = SEASONS[ACTIVE_SEASON_ID];
+    const [cycleEndDate, setCycleEndDate] = useState(activeSeason ? activeSeason.endDate : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    const [isDatePickerOpen, setDatePickerOpen] = useState(false);
     const today = new Date().toISOString().split('T')[0];
 
     const handleStatusChange = (arenaId: string, status: ArenaStatus) => {
@@ -72,6 +76,11 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
         const cycleDetails = { name: cycleName, endDate: cycleEndDate };
         startNewCycle(changes, cycleDetails);
         onComplete();
+    };
+
+    const handleDateSelect = (date: Date) => {
+        setCycleEndDate(date.toISOString().split('T')[0]);
+        setDatePickerOpen(false);
     };
 
     return (
@@ -86,23 +95,38 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                     </div>
                     
                     <div className="flex-shrink-0 space-y-3 mb-4">
-                        <GlassCard variant="gold" className="p-3">
-                             <h3 className='text-center text-xs font-bold uppercase tracking-wider text-gray-800 mb-2'>Detalhes da Campanha</h3>
+                        {activeSeason && (
+                            <GlassCard variant="gold" className="p-3 bg-gradient-to-r from-orange-900/40 to-yellow-900/40 border-yellow-500/30">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">SEASON ATUAL</p>
+                                        <h3 className="text-lg font-black text-white">{activeSeason.name}</h3>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-gray-400 uppercase">Termina em</p>
+                                        <p className="text-sm font-bold text-yellow-200">{new Date(activeSeason.endDate).toLocaleDateString('pt-BR')}</p>
+                                    </div>
+                                </div>
+                            </GlassCard>
+                        )}
+
+                        <GlassCard variant="neutral" className="p-3">
+                             <h3 className='text-center text-xs font-bold uppercase tracking-wider text-gray-400 mb-2'>Detalhes da Campanha</h3>
                              <div className="space-y-2">
                                  <input 
                                     type='text'
                                     placeholder='Nome do Novo Ciclo'
                                     value={cycleName}
                                     onChange={e => setCycleName(e.target.value)}
-                                    className='w-full p-2 bg-black/20 text-white rounded-lg border border-yellow-800/50' 
+                                    className='w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 focus:border-[var(--gold)] outline-none transition-colors' 
                                 />
-                                <input 
-                                    type='date' 
-                                    value={cycleEndDate} 
-                                    min={today}
-                                    onChange={e => setCycleEndDate(e.target.value)} 
-                                    className='w-full p-2 bg-black/20 text-white rounded-lg border border-yellow-800/50' 
-                                />
+                                <button 
+                                    onClick={() => setDatePickerOpen(true)}
+                                    className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 flex items-center justify-between hover:bg-black/60 transition-colors"
+                                >
+                                    <span className="text-gray-300">{new Date(cycleEndDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                    <CalendarIcon className="w-5 h-5 text-[var(--gold)]" />
+                                </button>
                             </div>
                         </GlassCard>
                     </div>
@@ -126,6 +150,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
             </div>
             {editingArena && <ArenaDetailModal arena={editingArena} onClose={() => setEditingArena(null)} />}
             {showConfirm && <ConfirmationModal title="Iniciar Novo Ciclo?" message="Suas arenas serão atualizadas e o Planner será reiniciado. Esta ação não pode ser desfeita." onConfirm={() => { setShowConfirm(false); handleStartCycle(); }} onCancel={() => setShowConfirm(false)} />}
+            {isDatePickerOpen && <DatePickerModal initialDate={new Date(cycleEndDate)} onClose={() => setDatePickerOpen(false)} onSelect={handleDateSelect} />}
         </>
     );
 };

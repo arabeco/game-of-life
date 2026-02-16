@@ -91,7 +91,7 @@ const BattleTaskItem: React.FC<{ task: ScheduledTask, action: Action | undefined
 // --- Main Modal ---
 
 export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas } = useGame();
+    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas, checklistItems } = useGame();
 
     const [isAdjusting, setIsAdjusting] = useState(false);
 
@@ -238,6 +238,11 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <p className="text-xl font-black text-[var(--gold)]">{expDeposited}</p>
                             {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus SITREP: +{sitrepBonus}</p>}
                         </div>
+                        
+                        <div className="pt-4 flex items-center justify-center space-x-2 text-gray-400">
+                            <CheckIcon className={`w-5 h-5 ${checklistItems.every(i => i.completed) && checklistItems.length > 0 ? 'text-[var(--gold)]' : ''}`} />
+                            <span className="text-sm uppercase tracking-wider">Checklist: {checklistItems.filter(i => i.completed).length}/{checklistItems.length}</span>
+                        </div>
                     </div>
                 </div>
                  <div className="flex items-center space-x-2">
@@ -251,12 +256,59 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         )
     }
 
-    const renderNoCycle = () => (
-        <div className="text-center py-8">
-            <p className="text-gray-400">Nenhum ciclo ativo.</p>
-            <p className="text-sm text-gray-500 mt-2">Vá para a tela de Ciclos para iniciar uma nova campanha.</p>
-        </div>
-    );
+    const renderNoCycle = () => {
+        const today = new Date().toISOString().split('T')[0];
+        const todaysTasks = tasks.filter(t => t.date === today && !isClanQuestActionId(t.actionId));
+        const completedTasks = todaysTasks.filter(t => t.completed);
+        
+        const checklistCompleted = checklistItems.filter(i => i.completed).length;
+        const checklistTotal = checklistItems.length;
+
+        const expFromActions = completedTasks.reduce((sum, task) => {
+            const action = getActionById(task.actionId);
+            const duration = Number.isFinite(task.duration) ? task.duration : (action?.duration || 0);
+            return sum + duration;
+        }, 0);
+        
+        return (
+            <div className="space-y-6 py-4">
+                <div className="text-center space-y-2">
+                    <p className="text-gray-400 uppercase tracking-widest text-xs">Status Atual</p>
+                    <h3 className="text-xl font-bold text-white">Sem Ciclo Ativo</h3>
+                    <p className="text-sm text-gray-500 px-4">
+                        Você está operando em modo livre. Seu progresso não está sendo registrado para a história.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 px-2">
+                    <div className="bg-black/20 p-3 rounded-xl text-center space-y-1">
+                        <p className="text-xs text-gray-400 uppercase">Tarefas</p>
+                        <p className="text-2xl font-black text-white">{completedTasks.length}/{todaysTasks.length}</p>
+                    </div>
+                    <div className="bg-black/20 p-3 rounded-xl text-center space-y-1">
+                        <p className="text-xs text-gray-400 uppercase">Checklist</p>
+                        <p className="text-2xl font-black text-white">{checklistCompleted}/{checklistTotal}</p>
+                    </div>
+                </div>
+
+                {expFromActions > 0 && (
+                    <div className="bg-[var(--gold)]/10 border border-[var(--gold)]/20 p-4 rounded-xl mx-2 text-center">
+                        <p className="text-[var(--gold)] font-bold text-lg">+{expFromActions} XP Potencial</p>
+                        <p className="text-xs text-[var(--gold)]/70 mt-1">Inicie um ciclo para reivindicar sua evolução.</p>
+                    </div>
+                )}
+
+                <div className="space-y-3 pt-2">
+                    <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-2">Vá para a aba <span className="text-white font-bold">CICLOS</span> para iniciar sua jornada.</p>
+                    </div>
+                    <button onClick={onClose} className="w-full py-3 rounded-xl luxe-button-secondary text-sm font-bold">
+                        CONTINUAR EM MODO ZEN
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     const renderContent = () => {
         if (!activeCycle) return renderNoCycle();
@@ -268,15 +320,24 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
     
+    const getLightbulbColor = () => {
+        if (!dailyCommitment.isLocked) return 'text-[var(--gold)]';
+        if (commitmentStats.totalCount === 0) return 'text-[var(--gold)]';
+        const ratio = commitmentStats.completedCount / commitmentStats.totalCount;
+        if (ratio === 1) return 'text-green-400';
+        if (ratio >= 0.5) return 'text-yellow-400';
+        return 'text-red-400';
+    };
+
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                <div className="relative flex items-center justify-center">
+            <GlassCard variant="dossier" className="w-full max-w-md m-4 rounded-3xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                <div className="relative flex items-center justify-center p-4 border-b border-white/10">
                     <div className="flex items-center space-x-2">
-                        <LightbulbIcon className="text-[var(--gold)]" />
+                        <LightbulbIcon className={`w-6 h-6 transition-colors duration-500 ${getLightbulbColor()}`} />
                         <h2 className="text-lg font-bold uppercase tracking-wider text-center">Plano Diário</h2>
                     </div>
-                    <button onClick={onClose} className="absolute right-0 p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
+                    <button onClick={onClose} className="absolute right-4 p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
                 </div>
                 {renderContent()}
             </GlassCard>

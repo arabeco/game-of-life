@@ -12,9 +12,10 @@ interface PoolActionProps {
     isUnlimited?: boolean;
     onComplete: (actionId: string) => void;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
+    onActionClick?: (action: Action) => void;
 }
 
-export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimited, onComplete, onCustomDragStart }) => {
+export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimited, onComplete, onCustomDragStart, onActionClick }) => {
     const { getActionBackgroundStyle } = useGame();
     const { isTutorialActive, currentStep, setSpotlight } = useTutorial();
     const [isHolding, setIsHolding] = useState(false);
@@ -58,7 +59,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
             onComplete(action.id);
             setIsHolding(false);
             setIsTransitioning(false);
-        }, 3000);
+        }, 1000);
     };
 
     const cancelLongPress = () => {
@@ -68,6 +69,11 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
         }
         setIsHolding(false);
         setIsTransitioning(false);
+    };
+
+    const handleClick = () => {
+        if (isTransitioning) return;
+        onActionClick?.(action);
     };
 
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
@@ -86,6 +92,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
       onLongPressCancel: cancelLongPress,
       onLongPressRelease: cancelLongPress,
       onDragStart: handleDragStart,
+      onClick: handleClick,
       delay: 300,
     });
 

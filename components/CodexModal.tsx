@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
-import { XIcon, EyeIcon, PlusIcon, ChevronRightIcon, CheckIcon } from './Icons';
+import { XIcon, EyeIcon, PlusIcon, ChevronRightIcon, CheckIcon, Trash2Icon } from './Icons';
 import { Action, ActionType, Arena } from '../types';
 import { ArenaCard } from './ArenaCard';
 import { IconPickerModal } from './IconPickerModal';
@@ -57,7 +57,7 @@ const loadDrafts = (): CodexDraft[] => {
 };
 
 export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { assets } = useGame();
+  const { assets, addArena, addAction, scheduleMultipleTasks } = useGame();
   const [codexes, setCodexes] = useState<CodexDraft[]>(() => loadDrafts());
   const [activeCodexId, setActiveCodexId] = useState<string | null>(null);
   const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
@@ -230,6 +230,57 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setEditingActionId(null);
   };
 
+  const handleDeleteCodex = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm('Tem certeza que deseja excluir este Codex?')) {
+        setCodexes(prev => prev.filter(c => c.id !== id));
+    }
+  };
+
+  const handleApplyCodex = () => {
+    if (!activeCodex) return;
+    if (!confirm('Deseja importar todas as arenas e ações deste Codex para o seu jogo?')) return;
+
+    const arenaIdMap: Record<string, string> = {};
+
+    activeCodex.arenas.forEach(arena => {
+        // Tenta encontrar o asset correspondente ou usa 'geral' como fallback
+        const targetAssetId = assets.find(a => a.id === arena.assetId)?.id || 'geral';
+        
+        const newArena = addArena(targetAssetId, {
+            name: arena.name,
+            description: arena.description,
+            icon: arena.icon
+        });
+        arenaIdMap[arena.id] = newArena.id;
+    });
+
+    activeCodex.actions.forEach(action => {
+        const realArenaId = arenaIdMap[action.arenaId];
+        if (realArenaId) {
+             const newAction = addAction({
+                arenaId: realArenaId,
+                name: action.name,
+                description: action.description,
+                icon: action.icon,
+                duration: action.duration,
+                repetitions: action.repetitions,
+                actionType: action.actionType,
+                difficulty: action.difficulty,
+                scheduledDays: action.scheduledDays,
+                scheduledStartTime: action.scheduledStartTime
+            });
+
+            if (newAction.actionType === 'Ação Recorrente' && newAction.scheduledDays && newAction.scheduledDays.length > 0 && newAction.scheduledStartTime !== undefined) {
+                scheduleMultipleTasks(newAction.id, newAction.scheduledDays, newAction.scheduledStartTime);
+            }
+        }
+    });
+
+    alert('Codex importado com sucesso!');
+    onClose();
+  };
+
   const selectedArena = activeCodex?.arenas.find(a => a.id === selectedArenaId) || null;
   const selectedArenaActions = selectedArena ? actionsForArena(selectedArena.id) : [];
   const actionArena = activeCodex?.arenas.find(a => a.id === actionDraft.arenaId) || null;
@@ -245,12 +296,15 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
           {!activeCodex ? (
             <>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
                 {codexes.map(codex => (
-                  <button key={codex.id} onClick={() => openCodex(codex.id)} className="bg-black/30 border border-white/10 rounded-2xl p-3 text-left hover:border-[var(--gold)] transition-colors">
+                  <button key={codex.id} onClick={() => openCodex(codex.id)} className="relative bg-black/30 border border-white/10 rounded-2xl p-3 text-left hover:border-[var(--gold)] transition-colors group">
                     <div className="text-xs font-bold uppercase tracking-wider text-gray-400">{codex.name}</div>
                     <div className="text-[11px] text-gray-500 line-clamp-2 mt-1">{codex.description || 'Sem descrição'}</div>
                     <div className="text-[10px] text-gray-400 mt-2">{codex.arenas.length} arenas • {codex.actions.length} ações</div>
+                    <div onClick={(e) => handleDeleteCodex(codex.id, e)} className="absolute top-2 right-2 p-1.5 rounded-full bg-black/40 hover:bg-red-900/50 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
+                        <Trash2Icon className="w-3 h-3" />
+                    </div>
                   </button>
                 ))}
                 <button onClick={createCodex} className="bg-black/30 border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center text-center hover:border-[var(--gold)] transition-colors">
@@ -313,10 +367,10 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">OK</button>
-                <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary">COPIAR CÓDIGO</button>
-                <button onClick={handleCopyLink} className="w-full py-2 rounded-xl luxe-button-secondary">COPIAR LINK</button>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-button-primary col-span-2 font-bold tracking-wider">IMPORTAR PARA O JOGO</button>
+                <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR CÓDIGO</button>
+                <button onClick={handleCopyLink} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR LINK</button>
               </div>
               {status && <div className="text-center text-[10px] text-gray-500">{status}</div>}
             </div>

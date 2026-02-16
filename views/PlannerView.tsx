@@ -42,7 +42,7 @@ const Sparkles: React.FC = () => (
     </div>
 );
 
-const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void }> = ({ task, action, scaleFactor, onCustomDragStart }) => {
+const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, onTaskClick: (task: ScheduledTask) => void }> = ({ task, action, scaleFactor, onCustomDragStart, onTaskClick }) => {
     const { getActionBackgroundStyle, toggleTaskCompletion } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [isHolding, setIsHolding] = useState(false);
@@ -90,6 +90,9 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         setIsTransitioning(true);
         if (completionTimeout.current) clearTimeout(completionTimeout.current);
         completionTimeout.current = setTimeout(() => {
+            // Only complete if not already completed (or toggle?) 
+            // User said "hold to complete", implying one-way or toggle. 
+            // Let's keep toggle behavior but only on hold.
             if (!task.completed) {
                 setShowSparkles(true);
                 setTimeout(() => setShowSparkles(false), 1000);
@@ -100,7 +103,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             }
             setIsHolding(false);
             setIsTransitioning(false);
-        }, 3000);
+        }, 1000); // Reduced to 1s for better UX
     };
 
     const cancelLongPress = () => {
@@ -114,9 +117,8 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
 
     const handleClick = () => {
         if (isTransitioning) return;
-        if (task.completed) {
-            toggleTaskCompletion(task.id);
-        }
+        // Open modal on click
+        onTaskClick(task);
     };
     
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
@@ -208,12 +210,20 @@ CurrentTimeIndicator.displayName = 'CurrentTimeIndicator';
 const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, dropIndicator: { top: number, height: number } | null, isToday: boolean, currentTime: Date, timeIndicatorRef: React.Ref<HTMLDivElement> }> = ({ tasks, actions, scaleFactor, onCustomDragStart, dropIndicator, isToday, currentTime, timeIndicatorRef }) => {
     const hours = Array.from({ length: 21 }, (_, i) => i + 4);
     const getActionById = (id: string) => actions.find(a => a.id === id);
+    const [actionToView, setActionToView] = useState<Action | null>(null);
 
     let timeIndicatorTop = -1;
     if (isToday) {
         const currentTotalMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
         timeIndicatorTop = (currentTotalMinutes - (4 * 60)) * scaleFactor;
     }
+
+    const handleTaskClick = (task: ScheduledTask) => {
+        const action = getActionById(task.actionId);
+        if (action) {
+            setActionToView(action);
+        }
+    };
 
     return (
         <div className="flex-grow relative bg-[#111] border border-white/10 rounded-3xl p-2 h-full depth-grid" data-testid="daily-timeline">
@@ -223,10 +233,75 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
                 </div>
                 <div className="flex-grow relative border-l border-white/10 h-full">
                     {hours.slice(0).map((hour, i) => (<div key={hour} className={`relative ${i > 0 ? 'border-t border-white/10' : ''}`} style={{height: `${60 * scaleFactor}px`}}><div className="absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
-                    {tasks.map((task) => <TaskSlot key={task.id} task={task} action={getActionById(task.actionId)} scaleFactor={scaleFactor} onCustomDragStart={onCustomDragStart} />)}
+                    {tasks.map((task) => <TaskSlot key={task.id} task={task} action={getActionById(task.actionId)} scaleFactor={scaleFactor} onCustomDragStart={onCustomDragStart} onTaskClick={handleTaskClick} />)}
                     {dropIndicator && <DropIndicator top={dropIndicator.top} height={dropIndicator.height} className="w-[calc(100%-0.5rem)] right-2" />}
                     {isToday && timeIndicatorTop >= 0 && <CurrentTimeIndicator ref={timeIndicatorRef} top={timeIndicatorTop} />}
                 </div>
+            </div>
+            {actionToView && (
+                <ActionModal 
+                    action={actionToView} 
+                    arenaId={actionToView.arenaId} 
+                    initialMode="view" 
+                    onClose={() => setActionToView(null)} 
+                />
+            )}
+        </div>
+    );
+};
+
+const TacticalHUD: React.FC = () => {
+    const { userProfile, activeCycle, nobilityRanks } = useGame();
+    
+    // Nobility Progress
+    const currentExp = userProfile.nobility.exp;
+    const currentRank = nobilityRanks.slice().reverse().find(r => currentExp >= r.expTotalRequired) || nobilityRanks[0];
+    const nextRank = nobilityRanks.find(r => r.expTotalRequired > currentExp);
+    
+    let progress = 0;
+    if (nextRank) {
+        const prevRankExp = currentRank.expTotalRequired;
+        const nextRankExp = nextRank.expTotalRequired;
+        progress = ((currentExp - prevRankExp) / (nextRankExp - prevRankExp)) * 100;
+    } else {
+        progress = 100; // Max rank
+    }
+
+    return (
+        <div className="px-3 py-2 bg-black/80 border-b border-white/10 flex items-center justify-between text-[10px] uppercase tracking-wider text-gray-400 backdrop-blur-md sticky top-0 z-50 shadow-lg shadow-black/50">
+            <div className="flex items-center space-x-3">
+                <div className="flex flex-col">
+                    <span className="text-[var(--gold)] font-black text-xs leading-none">LVL {userProfile.level}</span>
+                    <span className="text-[8px] text-gray-500 leading-none mt-0.5">MAESTRIA</span>
+                </div>
+                
+                <div className="h-6 w-px bg-white/10 mx-1"></div>
+
+                <div className="flex flex-col w-24">
+                    <div className="flex justify-between text-[9px] mb-0.5">
+                        <span className="text-white font-bold">{currentRank.name}</span>
+                        <span className="text-[var(--gold)]">{Math.round(progress)}%</span>
+                    </div>
+                    <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-[var(--gold)] to-yellow-200 transition-all duration-500 shadow-[0_0_10px_var(--gold)]" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+                {activeCycle ? (
+                    <div className="flex flex-col items-end">
+                        <span className="text-white font-bold text-[10px] truncate max-w-[80px]">{activeCycle.name}</span>
+                        <span className="text-[8px] text-green-400 animate-pulse">EM PROGRESSO</span>
+                    </div>
+                ) : (
+                    <span className="text-gray-600 text-[9px]">SEM CICLO ATIVO</span>
+                )}
+                 <div className="h-6 w-px bg-white/10 mx-1"></div>
+                 <div className="flex flex-col items-center">
+                     <span className="text-white font-black text-xs">{/* Streak placeholder */ (userProfile as any).streak || 0} 🔥</span>
+                     <span className="text-[8px]">DIAS</span>
+                 </div>
             </div>
         </div>
     );
@@ -595,6 +670,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const weeklyTimeIndicatorRef = useRef<HTMLDivElement>(null);
     const [zoomLevel, setZoomLevel] = useState<3 | 2 | 1>(3);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+    const [actionToView, setActionToView] = useState<Action | null>(null);
     const lastPointerPosRef = useRef<{ x: number; y: number } | null>(null);
     const lastScrollTopRef = useRef<number>(0);
     const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -955,13 +1031,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             {Object.entries(groupedTaskPool).length > 0 ? (Object.entries(groupedTaskPool) as [string, { count: number; isUnlimited: boolean }][]).map(([actionId, payload]) => {
                                 const action = getActionById(actionId);
                                 if (!action) return null;
-                                return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} />);
+                                return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} onActionClick={setActionToView} />);
                             }) : (<div className="w-full h-full flex items-center justify-center text-sm text-gray-500">Sem ações no pool.</div>)}
                         </div>
                     </div>
                     <div className="relative flex-shrink-0">
                         <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-14 h-[60px] bg-black/20 border border-white/10 rounded-3xl flex items-center justify-center hover:border-white/20 transition-colors"><svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--accent-silver)] transform rotate-45"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/></svg></button>
-                        {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-2 space-y-1 z-20 animate-fade-in"><h4 className="text-xs font-bold text-center text-gray-400 pb-1 border-b border-white/10">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow}/>)) : (<p className="text-xs text-center text-gray-500 py-2">Nenhum marco disponível.</p>)}</div>)}
+                        {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-2 space-y-1 z-20 animate-fade-in"><h4 className="text-xs font-bold text-center text-gray-400 pb-1 border-b border-white/10">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={setActionToView}/>)) : (<p className="text-xs text-center text-gray-500 py-2">Nenhum marco disponível.</p>)}</div>)}
                     </div>
                 </div>
             </div>
@@ -979,6 +1055,15 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             </div>
             
+            {actionToView && (
+                <ActionModal 
+                    action={actionToView} 
+                    arenaId={actionToView.arenaId} 
+                    initialMode="view" 
+                    onClose={() => setActionToView(null)} 
+                />
+            )}
+
             {/* Floating Action Button */}
             <div className="fixed bottom-20 right-4 z-20 flex flex-col items-center space-y-2">
                 

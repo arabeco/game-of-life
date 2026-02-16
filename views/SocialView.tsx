@@ -8,6 +8,8 @@ import { ClanDetailModal } from '../components/ClanDetailModal';
 import { SocialCard } from '../components/SocialCard';
 import { PlusIcon, CheckIcon, XIcon } from '../components/Icons';
 import { ClanSearchResultCard } from '../components/ClanSearchResultCard';
+import { SEASONS, ACTIVE_SEASON_ID, SeasonQuest as ConfigSeasonQuest } from '../constants/GameContent';
+import { ExpandableMissionCard } from './SettingsView';
 
 const JoinClanBox: React.FC<{onCreate: () => void}> = ({ onCreate }) => {
     return (
@@ -110,7 +112,7 @@ const SocialSearch: React.FC<{ onSearchResults: (results: { players: UserProfile
 };
 
 export const SocialView: React.FC = () => {
-    const { clan, friends, friendRequestsIncoming, friendRequestsOutgoing, joinClan, sendFriendRequest, acceptFriendRequest, declineFriendRequest } = useGame();
+    const { clan, friends, friendRequestsIncoming, friendRequestsOutgoing, joinClan, sendFriendRequest, acceptFriendRequest, declineFriendRequest, tasks, getArenas, getActionsForArena, acceptSeasonQuest, getClanQuestProgress } = useGame();
     const [modal, setModal] = useState<'create' | 'sanctuary' | null>(null);
     const [searchResults, setSearchResults] = useState<{ players: UserProfile[], clans: Clan[] }>({ players: [], clans: [] });
     const [activeTab, setActiveTab] = useState<'aliados' | 'solicitacoes'>('aliados');

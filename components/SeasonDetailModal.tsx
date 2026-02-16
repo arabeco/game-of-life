@@ -113,7 +113,7 @@ const QuestDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActiv
 
 
 export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }> = ({ season, onClose }) => {
-    const { seasonMissions, seasonQuests, completeSeasonMission, userProfile, tasks, assets, getArenas, getActionsForArena, addArena, addAction } = useGame();
+    const { seasonMissions, seasonQuests, addCompletedMission, userProfile, tasks, assets, getArenas, getActionsForArena, addArena, addAction } = useGame();
     const [selectedMission, setSelectedMission] = useState<SeasonMission | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
     const [questArena, setQuestArena] = useState<Arena | null>(null);
@@ -175,7 +175,7 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
 
     const handleMissionComplete = (mission: SeasonMission) => {
         if (completedMissions.has(mission.id)) return;
-        completeSeasonMission(mission);
+        addCompletedMission(mission);
         setShimmerMissionId(mission.id);
         window.setTimeout(() => {
             setShimmerMissionId(prev => (prev === mission.id ? null : prev));

@@ -1,21 +1,46 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Arena, Action } from '../types';
-import { DollarSignIcon, FlameIcon, CheckIcon } from './Icons';
+import { DollarSignIcon, FlameIcon, CheckIcon, UsersIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 
 const ActionIcon: React.FC<{ action: Action }> = ({ action }) => {
-    const { getActionBackgroundStyle } = useGame();
+    const { getActionBackgroundStyle, getArenas, seasonQuests, getClanQuestProgress } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
+    
+    const arena = getArenas().find(ar => ar.id === action.arenaId);
+    const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+    const isClanQuest = normalizedArena.includes('quests - cla');
+    const isSeasonQuest = normalizedArena.includes('quests - season');
+    const displayIcon = isClanQuest ? '🛡️' : (isSeasonQuest ? '🌟' : action.icon);
+
+    const quest = isClanQuest ? seasonQuests.find(q => q.scope === 'clan' && (q.title === action.name || q.action?.name === action.name)) : null;
+    const currentProgress = quest ? getClanQuestProgress(quest.id) : 0;
+    const actionsRemaining = quest ? Math.max(0, quest.goal_value - currentProgress) : 0;
 
     const renderIcon = () => {
+        // Override for special quests
+        if (isClanQuest) {
+             return (
+                 <div className="relative w-full h-full flex items-center justify-center">
+                     <span className="text-sm text-white">{displayIcon}</span>
+                     {actionsRemaining > 0 && (
+                         <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full min-w-[12px] text-center border border-black">
+                             {actionsRemaining}
+                         </div>
+                     )}
+                 </div>
+             );
+        }
+        if (isSeasonQuest) return <span className="text-sm text-white">{displayIcon}</span>;
+
         switch (action.icon) {
             case '$': return <DollarSignIcon className="w-4 h-4 text-white/80" />;
             case '🔥': return <FlameIcon className="w-4 h-4 text-white/80" />;
-            default: return <span className="text-sm text-white">{action.icon}</span>;
+            default: return <span className="text-sm text-white">{displayIcon}</span>;
         }
     };
     return (
-        <div style={backgroundStyle} className="w-6 h-6 border border-[var(--accent-bronze)] rounded-md flex items-center justify-center flex-shrink-0">
+        <div style={backgroundStyle} className="w-6 h-6 border border-[var(--accent-bronze)] rounded-md flex items-center justify-center flex-shrink-0 relative overflow-visible">
             {renderIcon()}
         </div>
     );
@@ -30,17 +55,54 @@ interface ArenaCardProps {
 }
 
 export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, assetName, variant }) => {
-    const { tasks, getActionBackgroundStyle } = useGame();
+    const { tasks, getActionBackgroundStyle, seasonQuests, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
 
     const milestoneActions = actions.filter(a => a.actionType === 'Marco');
     const bronzeActions = actions.filter(a => a.actionType !== 'Marco');
 
-    const scheduledTasksForArena = tasks.filter(t => actions.some(a => a.id === t.actionId));
-    const completedTasks = scheduledTasksForArena.filter(t => t.completed);
+    // Check if it's a clan arena
+    const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const isClanQuestArena = normalizedArena.includes('quests - cla');
+    const isSeasonQuestArena = normalizedArena.includes('quests - season');
     
-    const progress = scheduledTasksForArena.length > 0
-        ? (completedTasks.length / scheduledTasksForArena.length) * 100
-        : 0;
+    let progress = 0;
+    const isGold = isClanQuestArena; // Default to gold if clan arena
+    
+    // Clan Quest Data
+    const quest = isClanQuestArena ? seasonQuests.find(q => q.scope === 'clan' && (q.title === arena.name || q.action?.name === arena.name)) : null;
+    
+    useEffect(() => {
+        if (isClanQuestArena && quest && quest.actionTemplate?.name) {
+             fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
+        }
+    }, [isClanQuestArena, quest?.id, quest?.actionTemplate?.name, fetchClanQuestParticipants]);
+
+    const participants = quest ? (clanQuestParticipants[quest.id] || 0) : 0;
+    const currentProgress = quest ? getClanQuestProgress(quest.id) : 0;
+    const actionsRemaining = quest ? Math.max(0, quest.goal_value - currentProgress) : 0;
+
+    if (isClanQuestArena) {
+        // Calculate clan progress
+        const clanQuestTotals = actions.reduce((acc, action) => {
+            if (!quest) return acc;
+            return {
+                totalProgress: acc.totalProgress + currentProgress,
+                totalGoal: acc.totalGoal + (quest.goal_value > 0 ? quest.goal_value : 0)
+            };
+        }, { totalProgress: 0, totalGoal: 0 });
+        
+        progress = clanQuestTotals.totalGoal > 0 
+            ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
+            : (clanQuestTotals.totalProgress > 0 ? 100 : 0);
+            
+    } else {
+        // Standard progress: Completed vs Planned (Repetitions)
+        const totalPlanned = actions.reduce((acc, a) => acc + (a.repetitions || 0), 0);
+        const totalCompleted = tasks.filter(t => actions.some(a => a.id === t.actionId) && t.completed).length;
+        progress = totalPlanned > 0 ? (totalCompleted / totalPlanned) * 100 : 0;
+    }
+    
+    progress = Math.min(100, Math.max(0, progress));
 
     const getIcon = () => {
         return <span className="text-2xl">{arena.icon}</span>;
@@ -59,6 +121,15 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
                 {getIcon()}
                 <h3 className="luxe-title-ornate font-bold uppercase mt-2 text-xs text-[color:var(--skin-accent-color)] luxe-title-shadow">{arena.name}</h3>
                 {isOverview && assetName && <p className="text-[10px] text-gray-500 uppercase">{assetName}</p>}
+                
+                {isClanQuestArena && (
+                    <div className="flex justify-center gap-2 mt-1">
+                         <div className="flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded text-[10px] text-[var(--gold)]">
+                            <UsersIcon className="w-3 h-3" />
+                            <span className="font-mono">{participants}</span>
+                        </div>
+                    </div>
+                )}
             </div>
             
             <div className="flex flex-col items-center space-y-2 flex-shrink-0">
@@ -97,10 +168,10 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
                 </div>
                 <div className="w-full h-1 bg-black/30 rounded-full">
                     <div 
-                        className="h-full rounded-full" 
+                        className="h-full rounded-full transition-all duration-500" 
                         style={{ 
                             width: `${progress}%`,
-                            backgroundColor: 'var(--accent-silver)'
+                            backgroundColor: isGold ? 'var(--gold)' : 'var(--accent-silver)'
                         }}
                     ></div>
                 </div>

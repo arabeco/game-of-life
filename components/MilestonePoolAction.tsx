@@ -9,9 +9,10 @@ interface MilestonePoolActionProps {
     action: Action;
     onComplete: (actionId: string) => void;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
+    onActionClick?: (action: Action) => void;
 }
 
-export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action, onComplete, onCustomDragStart }) => {
+export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action, onComplete, onCustomDragStart, onActionClick }) => {
     const { getActionBackgroundStyle } = useGame();
     const [isHolding, setIsHolding] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -44,7 +45,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
             onComplete(action.id);
             setIsHolding(false);
             setIsTransitioning(false);
-        }, 3000);
+        }, 1000);
     };
     
     const cancelLongPress = () => {
@@ -54,6 +55,11 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
         }
         setIsHolding(false);
         setIsTransitioning(false);
+    };
+
+    const handleClick = () => {
+        if (isTransitioning) return;
+        onActionClick?.(action);
     };
 
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
@@ -72,6 +78,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
         onLongPressCancel: cancelLongPress,
         onLongPressRelease: cancelLongPress,
         onDragStart: handleDragStart,
+        onClick: handleClick,
         delay: 300,
     });
 

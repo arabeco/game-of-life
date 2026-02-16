@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Arena, Action, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { PlusIcon, EditIcon, CheckIcon, LinkIcon } from './Icons';
+import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon } from './Icons';
 import { ActionModal } from './ActionModal';
 import { IconPickerModal } from './IconPickerModal';
+import { ConfirmationModal } from './ConfirmationModal';
 import { useTutorial } from '../contexts/TutorialContext';
 import { supabase } from '../supabaseClient';
 
@@ -16,9 +17,14 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ actio
     const arena = getArenas().find(ar => ar.id === action.arenaId);
     const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
     const isClanQuest = normalizedArena.includes('quests - cla');
-    const clanQuest = isClanQuest ? seasonQuests.find(q => q.scope === 'clan' && q.title === action.name) : undefined;
+    const isSeasonQuest = normalizedArena.includes('quests - season');
+    const clanQuest = isClanQuest ? seasonQuests.find(q => q.scope === 'clan' && (q.title === action.name || q.action?.name === action.name)) : undefined;
     const clanProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
-    const clanPercent = clanQuest && clanQuest.goal_value > 0 ? Math.min(100, Math.round((clanProgress / clanQuest.goal_value) * 100)) : Math.min(100, clanProgress);
+    const actionsRemaining = clanQuest ? Math.max(0, clanQuest.goal_value - clanProgress) : 0;
+
+    // Override icon for special quests if desired, or just use what's in the action
+    // User requested "cool logos". We can use specific emojis for now to ensure consistency.
+    const displayIcon = isClanQuest ? '🛡️' : (isSeasonQuest ? '🌟' : action.icon);
 
     return (
         <div className="relative flex-shrink-0">
@@ -27,26 +33,36 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ actio
                 style={backgroundStyle}
                 className="w-24 h-24 border border-[var(--accent-bronze)] rounded-xl hover:opacity-80 transition-opacity flex flex-col items-center justify-center text-center p-1 space-y-1"
             >
-                <span className="text-3xl">{action.icon}</span>
+                <span className="text-3xl">{displayIcon}</span>
                 <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
             </button>
-            <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none">
-                {isClanQuest ? `${clanPercent}%` : `${completedCount}/${totalProposed}`}
+            <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border border-white/10">
+                {isClanQuest ? (
+                    <span className="text-[var(--gold)]">{actionsRemaining}</span>
+                ) : (
+                    `${completedCount}/${totalProposed}`
+                )}
             </div>
         </div>
     );
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, tasks, getActionBackgroundStyle, friends, seasonQuests, getClanQuestProgress } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, seasonQuests, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ name: arena.name, description: arena.description, icon: arena.icon });
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [isLinkingObserver, setIsLinkingObserver] = useState(false);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [linkStatus, setLinkStatus] = useState<string | null>(null);
     const newActionRef = useRef<HTMLButtonElement>(null);
+
+    const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const isClanQuestArena = normalizedArena.includes('quests - cla');
+    const isSeasonQuestArena = normalizedArena.includes('quests - season');
+    const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
 
     useEffect(() => {
         if (isTutorialActive && currentStep === 4 && newActionRef.current) {
@@ -58,14 +74,17 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         }
     }, [isTutorialActive, currentStep, setSpotlight]);
 
-    const allActions = getActionsForArena(arena.id);
-    const milestoneActions = allActions.filter(a => a.actionType === 'Marco');
-    const bronzeActions = allActions.filter(a => a.actionType !== 'Marco');
+    useEffect(() => {
+        if (isClanQuestArena) {
+            const quest = seasonQuests.find(q => q.scope === 'clan' && (q.title === arena.name || q.action?.name === arena.name));
+            if (quest && quest.actionTemplate?.name) {
+                 fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
+            }
+        }
+    }, [isClanQuestArena, arena.name, seasonQuests, fetchClanQuestParticipants]);
 
-    const parentAsset = assets.find(a => a.id === arena.assetId);
-    
-    const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const isClanQuestArena = normalizedArena.includes('quests - cla');
+    const allActions = getActionsForArena(arena.id);
+
     const clanQuestTotals = allActions.reduce((acc, action) => {
         const quest = seasonQuests.find(q => q.scope === 'clan' && q.title === action.name);
         if (!quest) return acc;
@@ -88,10 +107,16 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         : (allActionInstances > 0 ? (allCompletedInstances / allActionInstances) * 100 : 0);
 
     const handleEditToggle = () => {
+        if (isSpecialArena) return; // Disable editing for special arenas
         if (isEditing) {
             updateArena(arena.id, { name: editableArena.name, description: editableArena.description, icon: editableArena.icon });
         }
         setIsEditing(!isEditing);
+    };
+
+    const handleDeleteArena = () => {
+        deleteArena(arena.id);
+        onClose();
     };
 
     const handleIconSelect = (selectedIcon: string) => {
@@ -104,6 +129,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     };
 
     const openNewAction = () => {
+        if (isSpecialArena) {
+            alert("Para adicionar novas missões, acesse a aba Missões no Menu de Configurações ou no Clã.");
+            return;
+        }
         if (isTutorialActive && currentStep === 4) {
             setSpotlight(null, null);
             nextStep();
@@ -161,9 +190,19 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                 >
                     <div className="flex justify-between items-start flex-shrink-0 gap-2">
                         <div className="flex flex-col items-center gap-1">
-                            <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
-                                <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
-                            </button>
+                            {!isSpecialArena ? (
+                                <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
+                                    <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={() => setShowDeleteConfirmation(true)}
+                                    className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
+                                    title="Abandonar Missão"
+                                >
+                                    <Trash2Icon className="w-5 h-5 text-red-500" />
+                                </button>
+                            )}
                             {isEditing && (
                                 <button
                                     onClick={() => setIsLinkingObserver(true)}
@@ -180,11 +219,42 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             {parentAsset?.name && (
                                 <p className="text-[10px] font-medium uppercase tracking-wider text-white/70">{parentAsset.name}</p>
                             )}
+                            {isClanQuestArena && (
+                                <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full text-[10px] text-[var(--gold)] mt-1 border border-white/10">
+                                    <UsersIcon className="w-3 h-3" />
+                                    <span className="font-mono font-bold">
+                                        {(() => {
+                                            const quest = seasonQuests.find(q => q.scope === 'clan' && (q.title === arena.name || q.action?.name === arena.name));
+                                            return quest ? (clanQuestParticipants[quest.id] || 0) : 0;
+                                        })()}
+                                    </span>
+                                </div>
+                            )}
                         </div>
-                        <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
-                            OK
-                        </button>
+                        {/* Right side actions - redundant delete button removed if we moved it to left for special arenas, but kept for consistency in edit mode */}
+                        {isEditing && (
+                            <button 
+                                onClick={() => setShowDeleteConfirmation(true)}
+                                className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
+                            >
+                                <Trash2Icon className="w-5 h-5 text-red-500" />
+                            </button>
+                        )}
+                        {!isEditing && (
+                             <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
+                                OK
+                            </button>
+                        )}
                     </div>
+
+                    {showDeleteConfirmation && (
+                        <ConfirmationModal
+                            title={isSpecialArena ? "Sair da Missão" : "Excluir Arena"}
+                            message={isSpecialArena ? "Ao deletar esta arena, você abandonará todas as missões associadas. Tem certeza?" : "Tem certeza que deseja excluir esta arena? Esta ação não pode ser desfeita."}
+                            onConfirm={handleDeleteArena}
+                            onCancel={() => setShowDeleteConfirmation(false)}
+                        />
+                    )}
 
                     <div className="flex-shrink-0 flex flex-col items-center text-center space-y-1">
                         <button 

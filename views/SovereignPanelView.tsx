@@ -183,7 +183,7 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
 };
 
 
-const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onManageMissions: () => void }> = ({ season, onEdit, onManageMissions }) => {
+const SeasonCard: React.FC<{ season: Season; onEdit: () => void; }> = ({ season, onEdit }) => {
     const getStatus = () => {
         if (season.is_active) return { text: 'ATIVA', color: 'text-green-400' };
         if (new Date(season.start_date) > new Date()) return { text: 'FUTURA', color: 'text-blue-400' };
@@ -200,7 +200,6 @@ const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onManageMission
                 </div>
                 <div className="flex space-x-1">
                     <button onClick={onEdit} className="text-xs font-bold p-2 bg-black/20 rounded-lg">Editar</button>
-                    <button onClick={onManageMissions} className="text-xs font-bold p-2 bg-black/20 rounded-lg">Missões</button>
                 </div>
             </div>
         </GlassCard>
@@ -210,7 +209,6 @@ const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onManageMission
 const SeasonManager: React.FC = () => {
     const { seasons } = useGame();
     const [editorModal, setEditorModal] = useState<{ open: boolean, season: Season | null }>({ open: false, season: null });
-    const [missionModal, setMissionModal] = useState<{ open: boolean, season: Season | null }>({ open: false, season: null });
 
     const sortedSeasons = [...seasons].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
     const activeSeason = sortedSeasons.find(s => s.is_active);
@@ -222,80 +220,19 @@ const SeasonManager: React.FC = () => {
             <h2 className="text-lg font-bold tracking-wider">Gerenciar Seasons</h2>
             <button onClick={() => setEditorModal({ open: true, season: null })} className="w-full py-2 rounded-xl luxe-button-primary">Criar Nova Era</button>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({open: true, season: activeSeason})} onManageMissions={() => setMissionModal({open: true, season: activeSeason})} />}
+                {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({open: true, season: activeSeason})} />}
                 
                 {futureSeasons.length > 0 && <h3 className="text-xs font-bold text-gray-400 pt-2">FUTURAS</h3>}
-                {futureSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onManageMissions={() => setMissionModal({open: true, season: s})} />)}
+                {futureSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} />)}
                 
                 {pastSeasons.length > 0 && <h3 className="text-xs font-bold text-gray-400 pt-2">ENCERRADAS</h3>}
-                {pastSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onManageMissions={() => setMissionModal({open: true, season: s})} />)}
+                {pastSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} />)}
             </div>
             
             {editorModal.open && <SeasonEditorModal season={editorModal.season} onClose={() => setEditorModal({open: false, season: null})} />}
-            {missionModal.open && missionModal.season && <MissionEditorModal season={missionModal.season} onClose={() => setMissionModal({open: false, season: null})} />}
         </div>
     );
 }
-
-const UnlocksManager: React.FC = () => {
-    const { levelUnlocks, updateLevelUnlocks } = useGame();
-    const [draftUnlocks, setDraftUnlocks] = useState<LevelUnlocks>(levelUnlocks);
-
-    useEffect(() => {
-        setDraftUnlocks(levelUnlocks);
-    }, [levelUnlocks]);
-
-    const handleLevelChange = (category: keyof LevelUnlocks, itemId: string, value: number) => {
-        setDraftUnlocks(prev => ({
-            ...prev,
-            [category]: {
-                ...prev[category],
-                [itemId]: value,
-            },
-        }));
-    };
-
-    const categories: { id: keyof LevelUnlocks; label: string; items: { id: string; name: string }[] }[] = [
-        { id: 'bodyStyles', label: 'Corpo', items: SOVEREIGN_ASSETS.bodyStyles },
-        { id: 'hairStyles', label: 'Cabelo', items: SOVEREIGN_ASSETS.hairStyles },
-        { id: 'outfits', label: 'Roupa', items: SOVEREIGN_ASSETS.outfits },
-        { id: 'head_under_items', label: 'Rosto', items: SOVEREIGN_ASSETS.head_under_items },
-        { id: 'helmets', label: 'Elmo', items: SOVEREIGN_ASSETS.helmets },
-        { id: 'head_over_items', label: 'Topo', items: SOVEREIGN_ASSETS.head_over_items },
-        { id: 'artifacts', label: 'Artefato', items: SOVEREIGN_ASSETS.artifacts },
-    ];
-
-    return (
-        <div className="space-y-4">
-            <h2 className="text-lg font-bold tracking-wider">Desbloqueios por Nível</h2>
-            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-2">
-                {categories.map(category => (
-                    <GlassCard key={category.id} variant="neutral" className="p-3 space-y-2">
-                        <div className="text-xs font-bold tracking-widest text-gray-300">{category.label}</div>
-                        <div className="space-y-2">
-                            {category.items.map(item => (
-                                <div key={item.id} className="flex items-center justify-between text-xs">
-                                    <span className="text-gray-200 truncate max-w-[180px]">{item.name}</span>
-                                    <input
-                                        type="number"
-                                        min={1}
-                                        value={draftUnlocks[category.id]?.[item.id] ?? 1}
-                                        onChange={e => handleLevelChange(category.id, item.id, Math.max(1, Number(e.target.value) || 1))}
-                                        className="w-20 p-1 bg-black/30 rounded-lg border border-white/20 text-center"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </GlassCard>
-                ))}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setDraftUnlocks(buildDefaultLevelUnlocks())} className="py-2 rounded-xl luxe-button-secondary">Padrão</button>
-                <button onClick={() => updateLevelUnlocks(draftUnlocks)} className="py-2 rounded-xl luxe-button-primary">Salvar</button>
-            </div>
-        </div>
-    );
-};
 
 export const SovereignPanelView: React.FC = () => {
     return (
@@ -305,8 +242,6 @@ export const SovereignPanelView: React.FC = () => {
             <InviteManager />
             
             <SeasonManager />
-
-            <UnlocksManager />
         </div>
     );
 };

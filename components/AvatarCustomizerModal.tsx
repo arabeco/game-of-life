@@ -3,7 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { SovereignConfig } from '../types';
 import { GlassCard } from './GlassCard';
-import { Sovereign } from './Avatar';
+import { CanvasAvatar } from './CanvasAvatar';
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { GM_CONFIG } from '../constants';
@@ -169,8 +169,13 @@ export const SovereignEditorModal: React.FC<SovereignEditorModalProps> = ({ onCl
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Editor de Soberano</h2>
                 
-                <div className="w-48 h-64 mx-auto dossier-bg border border-[#4a3a11] rounded-2xl overflow-hidden">
-                    <Sovereign sovereignConfig={tempSovereign} />
+                <div className="w-48 h-64 mx-auto dossier-bg border border-[#4a3a11] rounded-2xl overflow-hidden flex items-center justify-center">
+                    <CanvasAvatar 
+                        sovereignConfig={tempSovereign} 
+                        width={300} 
+                        height={300} 
+                        className="w-full h-full object-contain"
+                    />
                 </div>
 
                 <div className="bg-black/20 p-1 rounded-2xl flex justify-around flex-wrap">

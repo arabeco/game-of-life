@@ -22,7 +22,12 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
     }
 
     const valueDisplay = typeof slot.value === 'object' && slot.value.imageUrl ? (
-         <img src={slot.value.imageUrl} alt={slot.value.caption} className="w-full h-full object-cover rounded-xl" />
+         <div className="relative w-full h-full rounded-xl overflow-hidden group">
+             <img src={slot.value.imageUrl} alt={slot.value.caption} className="w-full h-full object-cover" />
+             <div className="absolute bottom-0 inset-x-0 bg-black/70 p-1 text-[9px] text-white font-bold truncate text-center">
+                 {slot.value.caption}
+             </div>
+         </div>
     ) : (
         <span className="truncate font-semibold text-white">{String(slot.value)}</span>
     );

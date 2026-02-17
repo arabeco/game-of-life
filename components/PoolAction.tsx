@@ -17,27 +17,44 @@ interface PoolActionProps {
 }
 
 export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimited, onComplete, onCustomDragStart, onActionClick }) => {
-    const { getActionBackgroundStyle, getArenas, seasons, getClanQuestProgress } = useGame();
+    const { getActionBackgroundStyle, getArenas, seasonQuests, getClanQuestProgress } = useGame();
     const { isTutorialActive, currentStep, setSpotlight } = useTutorial();
     const [isHolding, setIsHolding] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const poolActionRef = useRef<HTMLDivElement>(null);
     const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const arena = getArenas().find(a => a.id === action.arenaId);
-    const isClanArena = arena?.name === 'Quests - Clã';
+    const arenas = getArenas() || [];
+    const arena = arenas.find(a => a.id === action.arenaId);
+    
+    const quests = (Array.isArray(seasonQuests) ? seasonQuests : []) || [];
+    
+    // Improved detection: Check if action matches a clan quest template
+    // Also check if the arena itself is a Clan Quest arena as a fallback
+    let clanQuest = quests.length > 0 ? quests.find(q => 
+        (q.type === 'clan' && q.actionTemplate?.name === action.name) ||
+        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
+    ) : undefined;
+    
+    if (!clanQuest && arena) {
+        const normalizedArenaName = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (normalizedArenaName.includes('quests - cla')) {
+             // If we are in a clan arena, try to find the quest by other means or assume it's the clan unity quest if name is similar
+             if (action.name.includes('Socializar') || action.name.includes('socializar')) {
+                 clanQuest = quests.find(q => q.id === 'quest-clan-unity');
+             }
+        }
+    }
+
     let clanProgressDisplay = null;
     let isCompleted = false;
 
-    if (isClanArena) {
-        const activeSeason = seasons.find(s => s.is_active) || (SEASONS[ACTIVE_SEASON_ID] as any);
-        const quest = activeSeason?.quests.find((q: any) => q.type === 'clan' && q.actionTemplate.name === action.name);
-        if (quest) {
-            const current = getClanQuestProgress(quest.id);
-            const target = quest.requirements?.clanGoal || 50;
-            clanProgressDisplay = `${current}/${target}`;
-            isCompleted = current >= target;
-        }
+    if (clanQuest) {
+        const current = getClanQuestProgress(clanQuest.id);
+        const target = clanQuest.requirements?.clanGoal || 50;
+        const remaining = Math.max(0, target - current);
+        clanProgressDisplay = `${remaining}`; // Show remaining count
+        isCompleted = current >= target;
     }
 
     useEffect(() => {

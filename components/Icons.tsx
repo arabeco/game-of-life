@@ -19,6 +19,7 @@ export const FolderIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const CrownIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></IconWrapper>);
 export const UploadIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></IconWrapper>);
 export const XIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></IconWrapper>);
+export const CloseIcon = XIcon;
 export const MinusIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><line x1="5" y1="12" x2="19" y2="12"></line></IconWrapper>);
 export const LightbulbIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 5 12.25V17a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-2.75A7 7 0 0 1 12 2z"/></IconWrapper>);
 export const ShareIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></IconWrapper>);

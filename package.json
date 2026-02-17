@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.29",
     "@supabase/supabase-js": "^2.45.0",
+    "ai": "^6.0.86",
+    "dotenv": "^17.3.1",
     "html2canvas": "^1.4.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

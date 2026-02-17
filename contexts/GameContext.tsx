@@ -36,7 +36,7 @@ const mapToSnakeCase = (obj: any): any => {
     return obj;
 };
 
-const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
@@ -438,7 +438,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       if (existing) {
           // Already participating, just update local state
           setUserMissionParticipations(prev => ({ ...prev, [questId]: true }));
-          setClanQuestParticipants(prev => ({ ...prev, [questId]: (prev[questId] || 0) })); // Don't increment if already exists
+          // Don't increment if already exists, just rely on fetchClanQuestParticipants
           
            // Ensure clan mission state exists (idempotent)
           await supabase.from('clan_mission_states').upsert({
@@ -459,34 +459,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error.code === '23505') {
             console.log("Already participating in clan mission (duplicate key ignored)");
             setUserMissionParticipations(prev => ({ ...prev, [questId]: true }));
-            // Do not increment participant count as they were already there
         } else {
-            console.error("Error joining clan mission:", error.message);
+            console.error("Error joining clan mission:", error);
             return;
         }
-    } else {
-        // Atualizar estado local only if new insertion
+      } else {
+        // Success: Update local state immediately
         setUserMissionParticipations(prev => ({ ...prev, [questId]: true }));
         setClanQuestParticipants(prev => ({ ...prev, [questId]: (prev[questId] || 0) + 1 }));
-    }
-    
-    // Garantir que o estado da missão existe para o clã
-    await supabase.from('clan_mission_states').upsert({
-        clan_id: clan.id,
-        mission_id: questId
-    }, { onConflict: 'clan_id,mission_id' });
+      }
+      
+      // Garantir que o estado da missão existe para o clã
+      await supabase.from('clan_mission_states').upsert({
+          clan_id: clan.id,
+          mission_id: questId
+      }, { onConflict: 'clan_id,mission_id' });
 
-    // FIX: Garantir que o progresso da missão existe (caso tenha sido deletado manualmente)
-    const quest = SEASONS[ACTIVE_SEASON_ID]?.quests.find(q => q.id === questId);
-    const targetValue = quest?.requirements?.clanGoal || 50;
-    
-    await supabase.from('clan_mission_progress').upsert({
-        clan_id: clan.id,
-        mission_id: questId,
-        target_value: targetValue,
-        current_value: 0 // Começa com 0 se não existir
-    }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se já existir, NÃO sobrescreve (mantém o progresso atual)
-};
+      // FIX: Garantir que o progresso da missão existe (caso tenha sido deletado manualmente)
+      const quest = SEASONS[ACTIVE_SEASON_ID]?.quests.find(q => q.id === questId);
+      const targetValue = quest?.requirements?.clanGoal || 50;
+      
+      await supabase.from('clan_mission_progress').upsert({
+          clan_id: clan.id,
+          mission_id: questId,
+          target_value: targetValue,
+          current_value: 0 // Começa com 0 se não existir
+      }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se já existir, NÃO sobrescreve (mantém o progresso atual)
+  };
 
   const updateClanMissionProgress = async (questId: string, increment: number) => {
       if (!clan) return;
@@ -568,7 +567,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const persistTimeoutRef = useRef<number | null>(null);
   const dataLoadTimeoutRef = useRef<number | null>(null);
   const clanCacheRef = useRef<{ clanId: string; timestamp: number; members: EnrichedClanMember[] } | null>(null);
-  const enableClanQuestProgress = process.env.VITE_ENABLE_CLAN_QUEST_PROGRESS === 'true';
+  const enableClanQuestProgress = true; // Always enable for now
   const clanQuestProgressTableReadyRef = useRef(enableClanQuestProgress);
   const pendingGuestMigrationRef = useRef<{ fromId: string; toId: string } | null>(null);
   const suspendPersistenceRef = useRef(false);
@@ -720,6 +719,55 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const profilesById = await hydrateProfilesByIds(pending.map(r => r.userId));
     setClanJoinRequestsIncoming(pending.map(req => ({ ...req, requesterProfile: profilesById[req.userId] })));
   }, [hydrateProfilesByIds]);
+
+  useEffect(() => {
+    if (!clan) return;
+
+    const channel = supabase.channel(`clan-updates-${clan.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clan_mission_progress',
+          filter: `clan_id=eq.${clan.id}`,
+        },
+        (payload) => {
+          if (payload.new && 'mission_id' in payload.new) {
+             const newRow = mapToCamelCase(payload.new);
+             setClanQuestProgress(prev => ({
+                 ...prev,
+                 [clan.id]: {
+                     ...(prev[clan.id] || {}),
+                     [newRow.missionId]: Number(newRow.currentValue) || 0
+                 }
+             }));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clan_mission_participants',
+          filter: `clan_id=eq.${clan.id}`,
+        },
+        () => {
+             // Refresh participants for all clan quests
+             seasonQuests.forEach(q => {
+                 if (q.type === 'clan' && q.actionTemplate) {
+                     fetchClanQuestParticipants(q.id, q.actionTemplate.name);
+                 }
+             });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clan?.id, seasonQuests, fetchClanQuestParticipants]);
 
   const loadClanAndMembers = useCallback(async (clanId: string, force = false) => {
     // Check cache first - use cache if less than 30 seconds old and not forced
@@ -1450,12 +1498,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return () => window.clearInterval(intervalId);
   }, [clan?.id, fetchClanQuestProgress, enableClanQuestProgress]);
 
-  // Real-time Clan Mission Progress
+  // Real-time Clan Mission Progress & Participants
   useEffect(() => {
       if (!clan?.id) return;
       
       const channel = supabase
-        .channel('public:clan_mission_progress')
+        .channel('public:clan_mission_data')
         .on(
             'postgres_changes',
             {
@@ -1465,16 +1513,42 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 filter: `clan_id=eq.${clan.id}`
             },
             (payload) => {
-                const { mission_id, progress } = payload.new as any;
-                if (mission_id && typeof progress === 'number') {
+                const { mission_id, current_value } = payload.new as any;
+                if (mission_id && typeof current_value === 'number') {
                     setClanQuestProgress(prev => ({
                         ...prev,
                         [clan.id]: {
                             ...(prev[clan.id] || {}),
-                            [mission_id]: progress
+                            [mission_id]: current_value
                         }
                     }));
                 }
+            }
+        )
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'clan_mission_participants',
+                filter: `clan_id=eq.${clan.id}`
+            },
+            async (payload) => {
+                 // When participants change, refetch the count for the affected mission
+                 const missionId = (payload.new as any)?.mission_id || (payload.old as any)?.mission_id;
+                 if (missionId) {
+                     // We can't just increment/decrement safely because we don't know the full state
+                     // So we refetch the count
+                     const { count } = await supabase
+                        .from('clan_mission_participants')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('clan_id', clan.id)
+                        .eq('mission_id', missionId);
+                        
+                     if (count !== null) {
+                         setClanQuestParticipants(prev => ({ ...prev, [missionId]: count }));
+                     }
+                 }
             }
         )
         .subscribe();
@@ -2022,10 +2096,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (userId && clanQuestProgressTableReadyRef.current) {
         // Fetch current value from DB to avoid race conditions
         const { data: currentData, error: fetchError } = await supabase
-            .from('clan_quest_progress')
-            .select('progress')
+            .from('clan_mission_progress')
+            .select('current_value')
             .eq('clan_id', clan.id)
-            .eq('quest_id', questId)
+            .eq('mission_id', questId)
             .maybeSingle();
 
         if (fetchError) {
@@ -2034,14 +2108,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        const dbValue = currentData?.progress || 0;
+        const dbValue = currentData?.current_value || 0;
         const nextValue = Math.max(0, dbValue + delta);
 
-        supabase.from('clan_quest_progress').upsert({
+        supabase.from('clan_mission_progress').upsert({
             clan_id: clan.id,
-            quest_id: questId,
-            progress: nextValue
-        }).then(({ error }) => {
+            mission_id: questId,
+            current_value: nextValue,
+            last_updated: new Date().toISOString()
+        }, { onConflict: 'clan_id,mission_id' }).then(({ error }) => {
             if (!error) {
                  // Update local state with the confirmed DB value
                  setClanQuestProgress(prev => {
@@ -2192,6 +2267,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const deleteArena = async (arenaId: string) => {
      const arena = getArenas().find(a => a.id === arenaId);
      const folderId = arena?.folderId;
+     const normalizedArenaName = arena?.name
+        ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        : '';
+     const isQuestArena = normalizedArenaName.includes('quests - season') || normalizedArenaName.includes('quests - cla');
      
      // Check if the arena contains any clan mission actions and remove participation
       // We iterate ALL actions in the arena to see if they correspond to a clan quest
@@ -2204,12 +2283,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           let quest = activeSeason?.quests.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
           
           // FALLBACK: If action name doesn't match, check for "Ler" vs "Socializar" mismatch
-          // Or just check if this is the ONLY clan quest available and the user is trying to delete an arena with an action in it.
-          // This is a "fuzzy match" for the specific bug report.
           if (!quest && activeSeason) {
                // Check if the action name is "Leitura Focada" (old bug) and we have a "Unidade do Clã" quest
                if (action.name.includes('Leitura') || action.name.includes('Ler')) {
-                   quest = activeSeason.quests.find(q => q.id === 'quest-clan-unity'); // Hardcoded fix for the specific bug
+                   // quest = activeSeason.quests.find(q => q.id === 'quest-scholar'); // Should be scholar? Assuming existing logic was trying to fix something specific.
+               }
+               if (action.name.includes('Socializar') || action.name.includes('socializar')) {
+                   quest = activeSeason.quests.find(q => q.id === 'quest-clan-unity');
                }
           }
 
@@ -2293,6 +2373,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                }
           }
       }
+
+     if (isQuestArena) {
+        if (arenaActions.length === 0) {
+            updateArena(arenaId, { isArchived: true });
+        }
+        return;
+     }
 
      setAssets(prevAssets => prevAssets.map(asset => ({
         ...asset,
@@ -2385,11 +2472,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     // Remove clan mission participation if applicable
     if (action && clan) {
         const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-        let quest = activeSeason?.quests.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
+        let quest = activeSeason?.quests?.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
         
         if (!quest && activeSeason) {
              // Fallback logic matches deleteArena
-             if (action.name.includes('Leitura') || action.name.includes('Ler')) {
+             if (action.name.includes('Socializar') || action.name.includes('socializar')) {
                  quest = activeSeason.quests.find(q => q.id === 'quest-clan-unity');
              }
         }
@@ -2453,14 +2540,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (remainingActions.length === 0) {
                 const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                 if (normalized.includes('quests - season') || normalized.includes('quests - cla')) {
-                    // It's a special arena and will be empty. Delete it.
-                    // We call deleteArena which handles Supabase and local state.
-                    // We need to use setTimeout to allow the current state update to process or just call it?
-                    // Calling deleteArena here might conflict with the setAssets above if not careful.
-                    // Actually deleteArena calls setAssets too.
-                    // To be safe, we can just trigger it.
-                    setTimeout(() => deleteArena(arenaId), 0);
+                    updateArena(arenaId, { isArchived: true });
                 }
+                setTimeout(() => deleteArena(arenaId), 0);
             }
         }
     }
@@ -2479,6 +2561,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     
     const quest = activeSeason.quests.find(q => q.id === questId);
     if (!quest) return;
+
+    // If it's a clan quest, ensure the user joins the mission participants list
+    if (quest.type === 'clan') {
+        joinClanMission(quest.id);
+    }
 
     // 1. Global Check: Does this action already exist anywhere AND is the arena valid?
     // This prevents duplicate actions even if arenas are duplicated.
@@ -2540,6 +2627,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 return; // Stop if arena creation failed
             }
         }
+    }
+
+    if (arena?.isArchived) {
+        updateArena(arena.id, { isArchived: false });
     }
 
     const newAction = addAction({
@@ -2706,6 +2797,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
+
+    // Handle Clan Quest Progress
+    // Check if this action corresponds to a clan quest, regardless of arena
+    const activeSeasonConfig = SEASONS[ACTIVE_SEASON_ID];
+    const clanQuest = activeSeasonConfig?.quests.find(q => 
+        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
+        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
+    );
+    
+    if (clanQuest) {
+        updateClanMissionProgress(clanQuest.id, 1);
+    }
     
     // If it's today, add to daily commitment so it shows in SITREP
     if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
@@ -2752,6 +2855,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
+
+    // Handle Clan Quest Progress for Milestones
+    // Check if this action corresponds to a clan quest, regardless of arena
+    const activeSeasonConfig = SEASONS[ACTIVE_SEASON_ID];
+    const clanQuest = activeSeasonConfig?.quests.find(q => 
+        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
+        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
+    );
+    
+    if (clanQuest) {
+        updateClanMissionProgress(clanQuest.id, 1);
+    }
     
     // If it's today, add to daily commitment
     if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
@@ -2813,17 +2928,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
   const getClanQuestForAction = (action: Action | undefined) => {
     if (!action) return null;
-    const arena = getArenas().find(ar => ar.id === action.arenaId);
-    if (!arena?.name) return null;
-    const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    if (!normalized.includes('quests - cla')) return null;
     
     const activeSeasonConfig = SEASONS[ACTIVE_SEASON_ID];
     if (!activeSeasonConfig) return null;
 
+    // Try to match strictly by template name or loose "Socializar" check
+    // We do NOT restrict by arena name anymore, so actions in any arena count
     return activeSeasonConfig.quests.find(q => 
-        q.type === 'clan' && 
-        q.actionTemplate.name === action.name
+        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
+        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
     ) || null;
   };
   const toggleTaskCompletion = (taskId: string) => {

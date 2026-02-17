@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Arena, Action, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon } from './Icons';
+import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIcon } from './Icons';
 import { ActionModal } from './ActionModal';
-import { SharedArenaView } from './SharedArenaView';
 import { IconPickerModal } from './IconPickerModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useTutorial } from '../contexts/TutorialContext';
@@ -17,11 +16,20 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ actio
     const totalProposed = action.repetitions;
     const arena = getArenas().find(ar => ar.id === action.arenaId);
     const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-    const isClanQuest = normalizedArena.includes('quests - cla');
     const isSeasonQuest = normalizedArena.includes('quests - season');
-    const clanQuest = isClanQuest ? seasonQuests.find(q => q.scope === 'clan' && (q.title === action.name || q.action?.name === action.name)) : undefined;
+    
+    // Check if it's a clan quest by looking at the action name matching a clan quest template
+    // OR if it's the specific Socialize action for the Clan Unity quest
+    const clanQuest = seasonQuests?.find(q => 
+        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
+        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
+    );
+    const isClanQuest = !!clanQuest;
+    
     const clanProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
-    const actionsRemaining = clanQuest ? Math.max(0, clanQuest.goal_value - clanProgress) : 0;
+    const target = clanQuest?.requirements?.clanGoal || 50;
+    // Show progress like "1/50" instead of remaining
+    const displayProgress = clanQuest ? `${clanProgress}/${target}` : `${completedCount}/${totalProposed}`;
 
     // Override icon for special quests if desired, or just use what's in the action
     // User requested "cool logos". We can use specific emojis for now to ensure consistency.
@@ -38,18 +46,14 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ actio
                 <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
             </button>
             <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border border-white/10">
-                {isClanQuest ? (
-                    <span className="text-[var(--gold)]">{actionsRemaining}</span>
-                ) : (
-                    `${completedCount}/${totalProposed}`
-                )}
+                <span className={isClanQuest ? "text-[var(--gold)]" : ""}>{displayProgress}</span>
             </div>
         </div>
     );
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, seasonQuests, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, seasonQuests, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission } = useGame();
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -62,7 +66,17 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     const parentAsset = assets.find(a => a.id === arena.assetId);
     const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const isClanQuestArena = normalizedArena.includes('quests - cla');
+    const allActions = getActionsForArena(arena.id);
+    
+    // Improved detection logic: check for name OR if it contains clan quest actions
+    const isClanQuestArena = normalizedArena.includes('quests - cla') || 
+                             allActions.some(action => 
+                                 seasonQuests?.some(q => 
+                                     (q.type === 'clan' && q.actionTemplate.name === action.name) ||
+                                     (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
+                                 )
+                             );
+
     const isSeasonQuestArena = normalizedArena.includes('quests - season');
     const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
 
@@ -78,24 +92,36 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     useEffect(() => {
         if (isClanQuestArena) {
-            const quest = seasonQuests.find(q => q.scope === 'clan' && (q.title === arena.name || q.action?.name === arena.name));
-            if (quest && quest.actionTemplate?.name) {
-                 fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
+            const quest = seasonQuests.find(q => q.type === 'clan' && (
+                q.title === arena.name || 
+                q.actionTemplate.name === arena.name || 
+                allActions.some(a => a.name === q.actionTemplate.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
+            ));
+        
+            if (quest) {
+                 if (quest.actionTemplate?.name) {
+                     fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
+                 }
+                 // Ensure current user is counted as participant if they are viewing/interacting
+                 joinClanMission(quest.id);
             }
         }
-    }, [isClanQuestArena, arena.name, seasonQuests, fetchClanQuestParticipants]);
+    }, [isClanQuestArena, arena.name, seasonQuests, fetchClanQuestParticipants, allActions, joinClanMission]);
 
-    const allActions = getActionsForArena(arena.id);
     const milestoneActions = allActions.filter(a => a.actionType === 'Marco');
     const bronzeActions = allActions.filter(a => a.actionType !== 'Marco');
 
     const clanQuestTotals = allActions.reduce((acc, action) => {
-        const quest = seasonQuests.find(q => q.scope === 'clan' && q.title === action.name);
+        const quest = seasonQuests.find(q => 
+            (q.type === 'clan' && q.actionTemplate.name === action.name) ||
+            (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
+        );
         if (!quest) return acc;
         const progressValue = getClanQuestProgress(quest.id);
+        const goal = quest.requirements?.clanGoal || quest.goal_value || 50;
         return {
             totalProgress: acc.totalProgress + progressValue,
-            totalGoal: acc.totalGoal + (quest.goal_value > 0 ? quest.goal_value : 0)
+            totalGoal: acc.totalGoal + goal
         };
     }, { totalProgress: 0, totalGoal: 0 });
     const allActionInstances = allActions.reduce((acc, action) => acc + action.repetitions, 0);
@@ -150,7 +176,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         }
     };
 
-    const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+    const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
     const availableFriends = friends.filter(f => isUuid(f.id));
 
@@ -186,32 +212,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         }, 1200);
     };
 
-    if (isClanQuestArena) {
-        const quest = seasonQuests.find(q => q.scope === 'clan' && (q.title === arena.name || q.action?.name === arena.name));
-        // Use the action template from the quest, or fallback to the first action in the arena
-        const action = allActions.find(a => a.name === quest?.actionTemplate?.name) || allActions[0];
-
-        if (quest && action) {
-            return (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
-                    <div className="bg-[#121212] border border-[var(--quest-grad-clan)] w-full max-w-md m-4 rounded-2xl flex flex-col h-auto max-h-[90vh] relative overflow-hidden shadow-2xl shadow-[var(--gold)]/10">
-                        <button 
-                            onClick={onClose} 
-                            className="absolute top-3 right-3 text-white/50 hover:text-white z-20 bg-black/40 rounded-full p-1.5 backdrop-blur-sm transition-colors hover:bg-black/60"
-                        >
-                            <XIcon className="w-5 h-5" />
-                        </button>
-                        
-                        <div className="relative z-0 h-full flex flex-col">
-                            {/* Decorative background */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-[var(--quest-grad-clan)]/10 via-transparent to-transparent pointer-events-none" />
-                            <SharedArenaView arena={arena} quest={quest} action={action} />
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-    }
+    // Removed SharedArenaView block to use standard render as requested
     
     return (
         <>
@@ -258,7 +259,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     <UsersIcon className="w-3 h-3" />
                                     <span className="font-mono font-bold">
                                         {(() => {
-                                            const quest = seasonQuests.find(q => q.scope === 'clan' && (q.title === arena.name || q.action?.name === arena.name));
+                                            const quest = seasonQuests.find(q => q.type === 'clan' && (
+                                                q.title === arena.name || 
+                                                q.actionTemplate.name === arena.name || 
+                                                allActions.some(a => a.name === q.actionTemplate.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
+                                            ));
                                             return quest ? (clanQuestParticipants[quest.id] || 0) : 0;
                                         })()}
                                     </span>
@@ -284,7 +289,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     {showDeleteConfirmation && (
                         <ConfirmationModal
                             title={isSpecialArena ? "Sair da Missão" : "Excluir Arena"}
-                            message={isSpecialArena ? "Ao deletar esta arena, você abandonará todas as missões associadas. Tem certeza?" : "Tem certeza que deseja excluir esta arena? Esta ação não pode ser desfeita."}
+                            message={isSpecialArena ? "Ao sair, sua participação é removida, mas a arena e ações ficam salvas." : "Tem certeza que deseja excluir esta arena? Esta ação não pode ser desfeita."}
                             onConfirm={handleDeleteArena}
                             onCancel={() => setShowDeleteConfirmation(false)}
                         />
@@ -374,7 +379,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                         <div className="w-full h-1.5 bg-black/30 rounded-full">
                             <div className="h-full rounded-full bg-white" style={{ width: `${progress}%` }}></div>
                         </div>
-                        <p className="text-sm font-bold text-gray-300 text-center">{progress.toFixed(0)}%</p>
+                        <p className="text-sm font-bold text-gray-300 text-center">
+                            {isClanQuestArena 
+                                ? `${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}` 
+                                : `${progress.toFixed(0)}%`}
+                        </p>
                     </div>
                 </div>
             </div>

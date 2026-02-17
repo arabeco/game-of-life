@@ -1146,6 +1146,10 @@ const MissionsTab: React.FC = () => {
     const clanArena = getArenas().find(a => a.name === 'Quests - Clã');
     const clanActions = clanArena ? getActionsForArena(clanArena.id) : [];
 
+    const handleAcceptClanMission = (quest: any) => {
+        joinClanMission(quest.id);
+    };
+
     useEffect(() => {
         quests.forEach(q => {
             if (q.type === 'clan') {

@@ -1,9 +1,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks } from '../types';
-import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG } from '../constants';
-import { SEASONS, ACTIVE_SEASON_ID, SeasonQuest as ConfigSeasonQuest } from '../constants/GameContent';
-import { buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
+import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, SeasonQuest as ConfigSeasonQuest, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
@@ -1407,6 +1405,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const getSanctuaryPositionsForClan = async (clanId: string) => {
     try {
+      const currentTime = new Date().toISOString();
       // Buscar posições do Supabase
       const { data, error } = await supabase
         .from('sanctuary_positions')
@@ -2261,7 +2260,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const moveArenaToFolder = async (arenaId: string, folderId: string | null) => {
-      updateArena(arenaId, { folderId: folderId || undefined });
+      updateArena(arenaId, { folderId: folderId || null }); // Use null explicitly for DB update
   };
 
   const reorderArena = (arenaId: string, newIndex: number) => {

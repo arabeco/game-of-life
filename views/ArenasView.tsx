@@ -61,8 +61,10 @@ export const ArenasView: React.FC = () => {
         setDragOverId(id);
     };
 
-    const handleDragLeave = () => {
-         setDragOverId(null);
+    const handleDragLeave = (e: React.DragEvent) => {
+        // Prevent flickering when dragging over children
+        if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+        setDragOverId(null);
     };
 
     const handleDrop = async (e: React.DragEvent, targetId: string, targetType: 'arena' | 'folder') => {
@@ -89,10 +91,13 @@ export const ArenasView: React.FC = () => {
              // Cria nova pasta automaticamente
              const folderName = "Nova Pasta";
              const newFolder = await createArenaFolder(folderName, '📁', targetArena.assetId);
-             if (newFolder) {
-                 await moveArenaToFolder(targetId, newFolder.id);
-                 await moveArenaToFolder(draggedId, newFolder.id);
-             }
+            if (newFolder) {
+                await moveArenaToFolder(targetId, newFolder.id);
+                await moveArenaToFolder(draggedId, newFolder.id);
+            } else {
+                console.error("Failed to create folder");
+                // Fallback: just try to move without creating folder? No, that doesn't make sense.
+            }
         }
     };
 

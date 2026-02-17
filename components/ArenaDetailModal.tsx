@@ -59,6 +59,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const [linkStatus, setLinkStatus] = useState<string | null>(null);
     const newActionRef = useRef<HTMLButtonElement>(null);
 
+    const parentAsset = assets.find(a => a.id === arena.assetId);
     const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const isClanQuestArena = normalizedArena.includes('quests - cla');
     const isSeasonQuestArena = normalizedArena.includes('quests - season');
@@ -84,6 +85,8 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     }, [isClanQuestArena, arena.name, seasonQuests, fetchClanQuestParticipants]);
 
     const allActions = getActionsForArena(arena.id);
+    const milestoneActions = allActions.filter(a => a.actionType === 'Marco');
+    const bronzeActions = allActions.filter(a => a.actionType !== 'Marco');
 
     const clanQuestTotals = allActions.reduce((acc, action) => {
         const quest = seasonQuests.find(q => q.scope === 'clan' && q.title === action.name);

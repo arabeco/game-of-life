@@ -32,13 +32,9 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
     const getAssetUrl = (category: keyof typeof SOVEREIGN_ASSETS, id: string | null) => {
         if (!id || id === 'none') return null;
-        const assets = SOVEREIGN_ASSETS[category];
-        if (Array.isArray(assets) && assets.length > 0 && typeof assets[0] === 'string') {
-            return null; // Color arrays don't have URLs
-        }
         // @ts-ignore
-        const asset = assets.find(a => a.id === id);
-        return asset ? (asset as any).url : null;
+        const asset = SOVEREIGN_ASSETS[category].find(a => a.id === id);
+        return asset ? asset.url : null;
     };
 
     useEffect(() => {

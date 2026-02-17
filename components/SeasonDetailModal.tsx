@@ -119,7 +119,7 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
     const [questArena, setQuestArena] = useState<Arena | null>(null);
     const [shimmerMissionId, setShimmerMissionId] = useState<string | null>(null);
     const missionsForSeason = seasonMissions.filter(m => m.season_id === season.id);
-    const questsForSeason = season.id === 'season-genesis-0' ? seasonQuests.filter(q => q.type === 'individual') : [];
+    const questsForSeason = seasonQuests.filter(q => q.season_id === season.id && q.scope === 'season');
     const completedMissions = new Set(userProfile.completedSeasonMissions || []);
     const completedTasksInSeason = tasks.filter(task => task.completed && task.date >= season.start_date && task.date <= season.end_date).length;
     const getMissionProgress = (mission: SeasonMission) => {
@@ -148,25 +148,24 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
     const getQuestProgress = (quest: SeasonQuest) => {
         const arena = getArenas().find(arena => arena.name === questArenaName);
         if (!arena) return 0;
-        const action = getActionsForArena(arena.id).find(a => a.name === quest.actionTemplate.name);
+        const action = getActionsForArena(arena.id).find(a => a.name === quest.title);
         if (!action) return 0;
         const completed = tasks.filter(task => task.completed && task.actionId === action.id).length;
-        const goalValue = quest.requirements?.totalReps || 1;
-        return goalValue > 0 ? Math.min(100, Math.round((completed / goalValue) * 100)) : 0;
+        return quest.goal_value > 0 ? Math.min(100, Math.round((completed / quest.goal_value) * 100)) : 0;
     };
 
     const handleTakeQuest = (quest: SeasonQuest) => {
         const arena = ensureQuestArena();
-        const exists = getActionsForArena(arena.id).some(action => action.name === quest.actionTemplate.name);
+        const exists = getActionsForArena(arena.id).some(action => action.name === quest.title);
         if (!exists) {
             addAction({
                 arenaId: arena.id,
-                name: quest.actionTemplate.name,
-                description: quest.actionTemplate.description,
-                icon: quest.actionTemplate.icon,
-                duration: quest.actionTemplate.duration,
-                repetitions: Math.max(1, quest.requirements?.totalReps || 1),
-                actionType: quest.requirements?.milestone ? 'Marco' : 'Ação Recorrente',
+                name: quest.title,
+                description: quest.description,
+                icon: '🎯',
+                duration: 30,
+                repetitions: Math.max(1, quest.goal_value || 1),
+                actionType: quest.goal_type === 'milestones_completed' ? 'Marco' : 'Ação Recorrente',
                 difficulty: 3
             });
         }

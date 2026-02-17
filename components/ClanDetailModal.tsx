@@ -262,8 +262,8 @@ const MissionCard: React.FC<{ title: string; progress: number; }> = ({ title, pr
 // --- Main Modal ---
 
 // Verificar se o usuário tem posição válida (não expirou há 6 horas)
-const hasValidPosition = (userId: string, positions: Map<string, any>): boolean => {
-    const position = positions.get(userId);
+const hasValidPosition = (userId: string): boolean => {
+    const position = userPositions.get(userId);
     if (!position) return false;
     
     const sixHoursAgo = new Date();
@@ -418,7 +418,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 
                 // Verificar posição do usuário atual
                 const userPosition = currentPositions.get(userProfile.id);
-                if (userPosition && hasValidPosition(userProfile.id, currentPositions)) {
+                if (userPosition && hasValidPosition(userProfile.id)) {
                     const area = getSanctuaryArea(userPosition.row, userPosition.col);
                     occupancy[area] += 1;
                 }
@@ -427,7 +427,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 const cachedMembers = enrichedClanMembers;
                 cachedMembers.forEach(member => {
                     const memberPosition = currentPositions.get(member.id);
-                    if (memberPosition && hasValidPosition(member.id, currentPositions)) {
+                    if (memberPosition && hasValidPosition(member.id)) {
                         const area = getSanctuaryArea(memberPosition.row, memberPosition.col);
                         occupancy[area] += 1;
                     }
@@ -476,7 +476,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             
             // Posicionar usuário atual apenas se tiver posição válida
             const userPosition = userPositions.get(userProfile.id);
-            if (userPosition && hasValidPosition(userProfile.id, userPositions)) {
+            if (userPosition && hasValidPosition(userProfile.id)) {
                 const { state } = getZoneAndState(userPosition.row, userPosition.col);
                 const finalState = state || { name: "Trabalhando", icon: "🛠️", lore: "A terra fértil recompensa o esforço." };
                 setUserPlacement({ member: userProfile, gridPos: userPosition, state: finalState });
@@ -489,7 +489,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             const otherMembers = enrichedClanMembersRef.current.filter(m => m.id !== userProfile.id);
             otherMembers.forEach(member => {
                 const memberPosition = userPositions.get(member.id);
-                if (memberPosition && hasValidPosition(member.id, userPositions)) {
+                if (memberPosition && hasValidPosition(member.id)) {
                     const posKey = `${memberPosition.row},${memberPosition.col}`;
                     if (!allOccupied.has(posKey)) {
                         const { state } = getZoneAndState(memberPosition.row, memberPosition.col);
@@ -629,13 +629,13 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         setIsBackgroundModalOpen(false);
     };
     
-    const clanQuests = activeSeason ? seasonQuests.filter(q => q.type === 'clan') : [];
+    const clanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
     const questArenaName = activeSeason ? `Quests - Clã ${activeSeason.id}` : 'Quests - Clã';
 
     const isQuestActive = (quest: SeasonQuest) => {
         const arena = getArenas().find(arena => arena.name === questArenaName);
         if (!arena) return false;
-        return getActionsForArena(arena.id).some(action => action.name === quest.title || action.name === quest.actionTemplate.name);
+        return getActionsForArena(arena.id).some(action => action.name === quest.title || action.name === quest.action?.name);
     };
 
     const getQuestRawProgress = (quest: SeasonQuest) => {
@@ -644,8 +644,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const getQuestProgress = (quest: SeasonQuest) => {
         const completed = getClanQuestProgress(quest.id);
-        const goal = quest.requirements?.clanGoal || quest.requirements?.totalReps || 0;
-        if (goal > 0) return Math.min(100, Math.round((completed / goal) * 100));
+        if (quest.goal_value > 0) return Math.min(100, Math.round((completed / quest.goal_value) * 100));
         return Math.min(100, completed);
     };
 

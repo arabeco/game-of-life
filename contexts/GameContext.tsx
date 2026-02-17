@@ -42,6 +42,7 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
 
 export const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
+export const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 export const PROFILE_FLAG_TUTORIAL_COMPLETED = '__flag_tutorial_completed_v1';
 
 const TUTORIAL_ACTION: Action = {
@@ -958,22 +959,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setUserProfile(prev => ({ ...prev, ...camelProfile }));
         }
 
-        await loadFriendsAndRequests(userId);
-        await loadClanJoinRequestsOutgoing(userId);
+        await Promise.all([
+            loadFriendsAndRequests(userId),
+            loadClanJoinRequestsOutgoing(userId)
+        ]);
 
-        // Load Arena Folders
-        const foldersResult = await rateLimiter.addRequest(() => 
-            supabase.from('arena_folders').select('*').eq('user_id', userId)
-        );
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        const minDate = threeMonthsAgo.toISOString().split('T')[0];
+
+        const [
+            foldersResult,
+            arenasResult,
+            actionsResult,
+            tasksResult,
+            slotsResult,
+            levelsResult,
+            clanMemberResult,
+            reportsResult,
+            cyclesResult
+        ] = await rateLimiter.batchRequests([
+            () => supabase.from('arena_folders').select('*').eq('user_id', userId),
+            () => supabase.from('arenas').select('*').eq('user_id', userId),
+            () => supabase.from('actions').select('*').eq('user_id', userId),
+            () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate),
+            () => supabase.from('asset_slots').select('*').eq('user_id', userId),
+            () => supabase.from('asset_levels').select('*').eq('user_id', userId),
+            () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
+            () => supabase.from('reports').select('*').eq('user_id', userId).order('end_date', { ascending: false }).limit(10),
+            () => supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1)
+        ]) as any[];
+
         const { data: foldersData, error: foldersError } = foldersResult;
         if (!foldersError && foldersData) {
             setArenaFolders(mapToCamelCase(foldersData) as ArenaFolder[]);
         }
 
         let camelArenas: Arena[] | null = null;
-        const arenasResult = await rateLimiter.addRequest(() => 
-            supabase.from('arenas').select('*').eq('user_id', userId)
-        );
         const { data: arenasData, error: arenasError } = arenasResult;
         if (!arenasError && arenasData) {
             camelArenas = (mapToCamelCase(arenasData) as Arena[]).map(arena => ({
@@ -983,39 +1005,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }));
         }
 
-        // 3. Load Actions
-        const actionsResult = await rateLimiter.addRequest(() => 
-            supabase.from('actions').select('*').eq('user_id', userId)
-        );
         const { data: actionsData, error: actionsError } = actionsResult;
         if (!actionsError && actionsData) {
             setActions(mapToCamelCase(actionsData) as Action[]);
         }
 
-        // 4. Load Scheduled Tasks (Paginated: Last 3 months)
-        const threeMonthsAgo = new Date();
-        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        const minDate = threeMonthsAgo.toISOString().split('T')[0];
-
-        const tasksResult = await rateLimiter.addRequest(() => 
-            supabase.from('scheduled_tasks')
-                .select('*')
-                .eq('user_id', userId)
-                .gte('date', minDate) // Load only recent tasks
-        );
         const { data: tasksData, error: tasksError } = tasksResult;
         if (!tasksError && tasksData) {
             setTasks(mapToCamelCase(tasksData) as ScheduledTask[]);
         }
 
-        const slotsResult = await rateLimiter.addRequest(() => 
-            supabase.from('asset_slots').select('*').eq('user_id', userId)
-        );
         const { data: slotsData, error: slotsError } = slotsResult;
-
-        const levelsResult = await rateLimiter.addRequest(() => 
-            supabase.from('asset_levels').select('*').eq('user_id', userId)
-        );
         const { data: levelsData, error: levelsError } = levelsResult;
 
         if ((!arenasError && arenasData) || (!slotsError && slotsData) || (!levelsError && levelsData)) {
@@ -1055,48 +1055,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 return nextAssets;
             });
         }
-        
-        const clanMemberResult = await rateLimiter.addRequest(() => 
-            supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle()
-        );
+
         const { data: clanMemberData, error: clanMemberError } = clanMemberResult;
 
         if (clanMemberError) {
             console.error('Error fetching clan membership:', clanMemberError.message);
-            // Se o erro for "No rows found", significa que não está em clan
             if (clanMemberError.code === 'PGRST116') {
                 setClan(null);
                 setEnrichedClanMembers([]);
                 setClanJoinRequestsIncoming([]);
             }
-            // Não limpar estado em outros erros para evitar piscar
         } else if (!clanMemberData) {
-            // Usuário não está em nenhum clã
             setClan(null);
             setEnrichedClanMembers([]);
             setClanJoinRequestsIncoming([]);
         } else {
-            // Só recarregar se mudou o clan_id
             if (!clan || clan.id !== clanMemberData.clan_id) {
                 loadClanAndMembers(clanMemberData.clan_id, true);
             }
         }
 
-        const reportsResult = await rateLimiter.addRequest(() => 
-            supabase.from('reports')
-                .select('*')
-                .eq('user_id', userId)
-                .order('end_date', { ascending: false })
-                .limit(10) // Limit to last 10 reports
-        );
         const { data: reportsData, error: reportsError } = reportsResult;
         if (!reportsError && reportsData) {
             setReports(mapToCamelCase(reportsData) as Report[]);
         }
 
-        const cyclesResult = await rateLimiter.addRequest(() => 
-            supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1)
-        );
         const { data: cyclesData, error: cyclesError } = cyclesResult;
         if (!cyclesError && cyclesData && cyclesData.length > 0) {
             setActiveCycle(mapToCamelCase(cyclesData[0]) as Cycle);

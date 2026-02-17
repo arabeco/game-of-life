@@ -91,11 +91,13 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                             </button>
                         </div>
 
-                        <div className="bg-black/35 rounded-xl p-2 flex items-center space-x-3 border border-[color:var(--accent-gold-soft)] my-2">
-                            <div className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[color:var(--accent-gold)] bg-black">
+                        <div className="bg-black/35 rounded-xl p-2 flex items-center justify-center border border-[color:var(--accent-gold-soft)] my-2 relative min-h-[3.5rem]">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[color:var(--accent-gold)] bg-black shadow-lg">
                                 {asset.level}
                             </div>
-                            <p className="text-sm text-gray-300">{(asset.levelDescriptions[asset.level] || 'Descrição não disponível.').replace(/^Nível\s+\d+:\s*/, '')}</p>
+                            <p className="px-12 text-sm font-bold text-gray-100 text-center leading-tight m-0 -translate-y-[2px]">
+                                {(asset.levelDescriptions[asset.level] || 'Descrição não disponível.').replace(/^Nível\s+\d+:\s*/, '')}
+                            </p>
                         </div>
                     </div>
                     

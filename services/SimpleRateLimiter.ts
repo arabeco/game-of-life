@@ -2,7 +2,7 @@ export class SimpleRateLimiter {
     private static instance: SimpleRateLimiter;
     private requestQueue: (() => Promise<any>)[] = [];
     private isProcessing = false;
-    private maxConcurrentRequests = 2; // Reduzido para 2
+    private maxConcurrentRequests = 4;
     private currentRequests = 0;
     private retryDelay = 1000;
 

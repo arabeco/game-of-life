@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { useGame } from '../contexts/GameContext';
+import { PROFILE_FLAG_TERMS_PENDING, useGame } from '../contexts/GameContext';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
 import { GM_CONFIG } from '../constants';
-import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from '../components/Icons';
+import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon } from '../components/Icons';
 import { AchievementModal } from '../components/AchievementModal';
 
 export const LoginView: React.FC = () => {
@@ -91,7 +91,7 @@ export const LoginView: React.FC = () => {
                         head_over_items: {},
                         artifacts: {},
                     },
-                    completedSeasonMissions: [],
+                    completedSeasonMissions: [PROFILE_FLAG_TERMS_PENDING],
                     nobility: { exp: 0, rankId: 'vagante' },
                     mood: 50,
                     chests: [{ type: 'Comum', count: 1 }],
@@ -365,12 +365,26 @@ export const LoginView: React.FC = () => {
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black animate-fade-in">
-            <div className="w-full max-w-sm mx-auto text-center border border-yellow-800/50 rounded-2xl p-6 space-y-6">
+            <div className="w-full max-w-sm mx-auto text-center border border-yellow-800/50 rounded-2xl p-6 space-y-6 overflow-hidden">
                 <div className="relative w-40 h-40 mx-auto flex items-center justify-center mb-8">
-                     <GameLogoIcon className="w-full h-full animate-pulse-slow drop-shadow-[0_0_15px_rgba(212,175,55,0.5)]" />
+                    <div className="absolute w-[190%] h-[190%] rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.22)_0%,rgba(212,175,55,0.12)_35%,rgba(212,175,55,0)_72%)] blur-2xl aura-glow"></div>
+                    <div className="absolute w-[210%] h-[210%] rounded-full bg-[conic-gradient(from_0deg,rgba(255,215,130,0.25),rgba(255,160,80,0.12),rgba(130,255,220,0.18),rgba(255,215,130,0.25))] blur-3xl aura-plasma"></div>
+                    <img
+                        src="/logo-diamond.png"
+                        alt="GLYPH"
+                        className="w-full h-full drop-shadow-[0_0_15px_rgba(212,175,55,0.5)]"
+                        style={{ transform: 'scale(1.35)' }}
+                    />
+                    <div className="absolute w-[135%] h-[135%] animate-spin" style={{ animationDuration: '12s' }}>
+                        <img
+                            src="/logo-core.png"
+                            alt="GLYPH Core"
+                            className="w-full h-full rounded-full object-cover"
+                        />
+                    </div>
                 </div>
 
-                <h1 className="text-4xl font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-b from-[var(--gold)] to-yellow-700 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] transform scale-110 mb-8">
+                <h1 className="luxe-title-ornate text-4xl font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-b from-[var(--gold)] to-yellow-700 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] transform scale-110 mb-8">
                     GLYPH
                 </h1>
 

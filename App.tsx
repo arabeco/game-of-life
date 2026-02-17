@@ -7,7 +7,7 @@ import { SettingsView } from './views/SettingsView';
 import { ProfileView } from './views/ProfileView';
 import { ReportsView } from './views/ReportsView';
 import { LoginView } from './views/LoginView';
-import { GameProvider, useGame, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from './contexts/GameContext';
+import { GameProvider, useGame, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING, PROFILE_FLAG_TUTORIAL_COMPLETED } from './contexts/GameContext';
 import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import { TutorialOverlay } from './components/TutorialOverlay';
@@ -170,6 +170,23 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                     100% { opacity: 0.2; transform: scale(1.02); }
                 }
             `}</style>
+        </div>
+    );
+};
+
+const TutorialGateOverlay: React.FC<{ open: boolean; onStart: () => void; onSkip: () => void; }> = ({ open, onStart, onSkip }) => {
+    if (!open) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/80 z-[9998] flex items-center justify-center p-4">
+            <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 space-y-4 max-w-sm text-center animate-fade-in">
+                <h2 className="text-2xl font-bold text-white">Você já viu o tutorial?</h2>
+                <p className="text-gray-300">Se já concluiu, seguimos direto. Se não, te guio pelos primeiros passos.</p>
+                <div className="flex space-x-2">
+                    <button onClick={onSkip} className="w-full py-2 rounded-lg bg-gray-700 text-white">Já vi</button>
+                    <button onClick={onStart} className="w-full py-2 rounded-lg bg-yellow-500 text-black font-bold">Quero ver</button>
+                </div>
+            </div>
         </div>
     );
 };
@@ -387,18 +404,25 @@ const AppWithTutorial: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
-    const { isNewUser, achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag } = useGame();
-    const { isTutorialCompleted, startTutorial, endTutorial } = useTutorial();
+    const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag } = useGame();
+    const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
+    const [showTutorialGate, setShowTutorialGate] = useState(false);
 
     // Online Only: Removed localStorage migration for tutorial completion
     
     useEffect(() => {
-        if (isNewUser && !isTutorialCompleted) {
-            const timer = setTimeout(() => startTutorial(), 500); // Small delay to ensure UI is ready
-            return () => clearTimeout(timer);
+        if (userProfile.id === 'placeholder_user') return;
+        if (isTutorialCompleted) {
+            setShowTutorialGate(false);
+            return;
         }
-    }, [isNewUser, isTutorialCompleted, startTutorial]);
+        if (isTutorialActive) {
+            setShowTutorialGate(false);
+            return;
+        }
+        setShowTutorialGate(true);
+    }, [userProfile.id, isTutorialCompleted, isTutorialActive]);
 
     useEffect(() => {
         // Não mostrar termos para contas privilegiadas
@@ -407,8 +431,10 @@ const MainApp: React.FC = () => {
             return;
         }
 
-        const acceptedByProfile = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TERMS_ACCEPTED);
-        if (acceptedByProfile) {
+        const completed = userProfile.completedSeasonMissions || [];
+        const acceptedByProfile = completed.includes(PROFILE_FLAG_TERMS_ACCEPTED);
+        const pendingByProfile = completed.includes(PROFILE_FLAG_TERMS_PENDING);
+        if (!pendingByProfile || acceptedByProfile) {
             setShowTerms(false);
             return;
         }
@@ -417,9 +443,10 @@ const MainApp: React.FC = () => {
     }, [userProfile.id, userProfile.completedSeasonMissions, userProfile.role]);
 
     const handleAcceptTerms = () => {
-        if (!(userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TERMS_ACCEPTED)) {
-            addProfileFlag(PROFILE_FLAG_TERMS_ACCEPTED);
-        }
+        const completed = userProfile.completedSeasonMissions || [];
+        const nextCompleted = completed.filter(flag => flag !== PROFILE_FLAG_TERMS_PENDING);
+        if (!nextCompleted.includes(PROFILE_FLAG_TERMS_ACCEPTED)) nextCompleted.push(PROFILE_FLAG_TERMS_ACCEPTED);
+        updateUserProfile({ completedSeasonMissions: nextCompleted });
         setShowTerms(false);
     };
 
@@ -433,6 +460,17 @@ const MainApp: React.FC = () => {
     return (
         <>
             <AppWithTutorial />
+            <TutorialGateOverlay
+                open={showTutorialGate && !showTerms}
+                onSkip={() => {
+                    addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
+                    setShowTutorialGate(false);
+                }}
+                onStart={() => {
+                    setShowTutorialGate(false);
+                    startTutorial();
+                }}
+            />
             <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
             {achievementUnlocked && (
                 <AchievementModal 

@@ -1,4 +1,4 @@
-import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType, Season, SeasonMission, SeasonQuest as LegacySeasonQuest } from '../types';
+import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType, Season, SeasonMission, SeasonQuest } from '../types';
 
 // ==========================================
 // CONFIGURAÇÃO DO JOGO (GM BOARD)
@@ -14,31 +14,6 @@ export interface QuestActionTemplate {
   icon: string;
   repetitions?: number; 
   isMilestone?: boolean;
-}
-
-export interface SeasonQuest {
-  id: string;
-  title: string;
-  description: string;
-  type: 'individual' | 'clan';
-  category: 'physical' | 'intellectual' | 'social' | 'creative';
-  actionTemplate: QuestActionTemplate;
-  requirements: {
-    totalReps?: number;
-    milestone?: boolean;
-    clanGoal?: number;
-  };
-  rewards: {
-    xp: number;
-    gold?: number;
-    items?: string[];
-  };
-  clanConfig?: {
-    minParticipants?: number;
-    maxParticipants?: number;
-    collectiveGoal?: number;
-    rewardPerParticipant?: number;
-  };
 }
 
 export interface SeasonConfig {
@@ -236,84 +211,69 @@ export const GM_CONFIG = {
   seasonQuests: [
     {
       id: 'sq_1',
-      season_id: 'season_0',
-      scope: 'season',
       title: 'O Andarilho',
       description: 'Andar 20 km no total.',
-      goal_type: 'actions_completed',
-      goal_value: 20,
-      reward_type: 'item_id',
-      reward_value: 'head_over_items:crown',
-      action: {
+      type: 'individual',
+      category: 'physical',
+      actionTemplate: {
         name: 'Andar 1km',
         description: 'Execução unitária da Quest do Andarilho.',
         icon: '🚶',
         duration: 15,
         repetitions: 20,
-        actionType: 'Ação Recorrente',
-        difficulty: 2,
       },
+      requirements: { totalReps: 20 },
+      rewards: { xp: 0, gold: 0 },
     },
     {
       id: 'sq_2',
-      season_id: 'season_0',
-      scope: 'season',
       title: 'O Leitor',
       description: 'Ler 1 livro inteiro.',
-      goal_type: 'actions_completed',
-      goal_value: 10,
-      reward_type: 'exp',
-      reward_value: 500,
-      action: {
+      type: 'individual',
+      category: 'intellectual',
+      actionTemplate: {
         name: 'Ler (30 min)',
         description: 'Sessão de leitura focada.',
         icon: '📚',
         duration: 30,
         repetitions: 10,
-        actionType: 'Ação Recorrente',
-        difficulty: 2,
       },
+      requirements: { totalReps: 10 },
+      rewards: { xp: 500, gold: 0 },
     },
     {
       id: 'sq_3',
-      season_id: 'season_0',
-      scope: 'season',
       title: 'O Forte',
       description: 'Não perder um dia de academia.',
-      goal_type: 'milestones_completed',
-      goal_value: 1,
-      reward_type: 'exp',
-      reward_value: 800,
-      action: {
+      type: 'individual',
+      category: 'physical',
+      actionTemplate: {
         name: 'Academia (Marco)',
         description: 'Registrar o marco do dia sem falhar.',
         icon: '🏋️',
         duration: 60,
         repetitions: 1,
-        actionType: 'Marco',
-        difficulty: 4,
+        isMilestone: true,
       },
+      requirements: { milestone: true },
+      rewards: { xp: 800, gold: 0 },
     },
     {
       id: 'sq_clan_1',
-      season_id: 'season_0',
-      scope: 'clan',
       title: 'Socializar 50 horas',
       description: 'Somar 50 horas em equipe.',
-      goal_type: 'actions_completed',
-      goal_value: 50,
-      maxParticipants: 10,
-      reward_type: 'exp',
-      reward_value: 1500,
-      action: {
+      type: 'clan',
+      category: 'social',
+      actionTemplate: {
         name: 'Socializar (1h)',
         description: 'Uma hora de presença e vínculo.',
         icon: '🗣️',
         duration: 60,
         repetitions: 50,
-        actionType: 'Ação Recorrente',
-        difficulty: 2,
       },
+      requirements: { clanGoal: 50 },
+      rewards: { xp: 1500, gold: 0 },
+      clanConfig: { collectiveGoal: 50 },
     },
   ] as SeasonQuest[],
   chestDrops: {

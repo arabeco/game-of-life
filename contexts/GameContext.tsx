@@ -1,7 +1,8 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks } from '../types';
-import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, SeasonQuest as ConfigSeasonQuest, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
+import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
+import { SeasonQuest as ConfigSeasonQuest } from '../types';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
@@ -664,27 +665,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const activeSeason = SEASONS[ACTIVE_SEASON_ID];
     if (!activeSeason) return [];
     
-    return activeSeason.quests.map(q => ({
-      id: q.id,
-      season_id: activeSeason.id,
-      scope: q.type === 'clan' ? 'clan' : 'season',
-      title: q.title,
-      description: q.description,
-      goal_type: 'actions_completed',
-      goal_value: q.requirements.clanGoal || q.requirements.totalReps || 0,
-      reward_type: 'exp',
-      reward_value: q.rewards.xp,
-      maxParticipants: q.clanConfig?.maxParticipants,
-      action: {
-        name: q.actionTemplate.name,
-        description: q.actionTemplate.description,
-        icon: q.actionTemplate.icon,
-        duration: q.actionTemplate.duration,
-        repetitions: q.actionTemplate.repetitions,
-        actionType: q.actionTemplate.isMilestone ? 'Marco' : 'Ação Recorrente',
-        difficulty: 1
-      }
-    })) as SeasonQuest[];
+    return activeSeason.quests;
   }, []);
 
   const [levelUnlocks, setLevelUnlocks] = useState<LevelUnlocks>(() => {
@@ -789,10 +770,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     try {
         // Usar rate limiter para controlar número de requisições simultâneas
-        const results = await rateLimiter.batchRequests([
-            () => supabase.from('friends').select('*').eq('user_id', userId),
-            () => supabase.from('friend_requests').select('*').eq('recipient_id', userId),
-            () => supabase.from('friend_requests').select('*').eq('sender_id', userId),
+        const results = await rateLimiter.batchRequests<any>([
+            async () => await supabase.from('friends').select('*').eq('user_id', userId),
+            async () => await supabase.from('friend_requests').select('*').eq('recipient_id', userId),
+            async () => await supabase.from('friend_requests').select('*').eq('sender_id', userId),
         ]);
 
         const [{ data: friendsData, error: friendsError }, { data: incomingData, error: incomingError }, { data: outgoingData, error: outgoingError }] = results;
@@ -854,8 +835,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
     
     try {
-        const result = await rateLimiter.addRequest(() => 
-            supabase.from('clan_join_requests').select('*').eq('user_id', userId)
+        const result = await rateLimiter.addRequest(async () => 
+            await supabase.from('clan_join_requests').select('*').eq('user_id', userId)
         );
         
         const { data, error } = result;
@@ -940,7 +921,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 nobility: { exp: 0, rankId: 'vagante' },
                 mood: 50,
                 role: memberInfo.role as 'leader' | 'member',
-                joinedAt: memberInfo.joined_at,
+                joined_at: memberInfo.joined_at,
             } as EnrichedClanMember;
         }
 
@@ -949,7 +930,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return {
             ...camelCaseProfile,
             role: memberInfo.role as 'leader' | 'member',
-            joinedAt: memberInfo.joined_at,
+            joined_at: memberInfo.joined_at,
         };
     }).filter((m): m is EnrichedClanMember => m !== null);
 
@@ -1072,8 +1053,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         
         // 1. Load Profile
-        const profileResult = await rateLimiter.addRequest(() => 
-            supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle()
+        const profileResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle()
         );
         const { data: profileData, error: profileError } = profileResult;
         if (!profileError && profileData) {
@@ -1085,8 +1066,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await loadClanJoinRequestsOutgoing(userId);
 
         // Load Arena Folders
-        const foldersResult = await rateLimiter.addRequest(() => 
-            supabase.from('arena_folders').select('*').eq('user_id', userId)
+        const foldersResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('arena_folders').select('*').eq('user_id', userId)
         );
         const { data: foldersData, error: foldersError } = foldersResult;
         if (!foldersError && foldersData) {
@@ -1094,8 +1075,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         let camelArenas: Arena[] | null = null;
-        const arenasResult = await rateLimiter.addRequest(() => 
-            supabase.from('arenas').select('*').eq('user_id', userId)
+        const arenasResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('arenas').select('*').eq('user_id', userId)
         );
         const { data: arenasData, error: arenasError } = arenasResult;
         if (!arenasError && arenasData) {
@@ -1107,8 +1088,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 3. Load Actions
-        const actionsResult = await rateLimiter.addRequest(() => 
-            supabase.from('actions').select('*').eq('user_id', userId)
+        const actionsResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('actions').select('*').eq('user_id', userId)
         );
         const { data: actionsData, error: actionsError } = actionsResult;
         if (!actionsError && actionsData) {
@@ -1120,8 +1101,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         const minDate = threeMonthsAgo.toISOString().split('T')[0];
 
-        const tasksResult = await rateLimiter.addRequest(() => 
-            supabase.from('scheduled_tasks')
+        const tasksResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('scheduled_tasks')
                 .select('*')
                 .eq('user_id', userId)
                 .gte('date', minDate) // Load only recent tasks
@@ -1131,13 +1112,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setTasks(mapToCamelCase(tasksData) as ScheduledTask[]);
         }
 
-        const slotsResult = await rateLimiter.addRequest(() => 
-            supabase.from('asset_slots').select('*').eq('user_id', userId)
+        const slotsResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('asset_slots').select('*').eq('user_id', userId)
         );
         const { data: slotsData, error: slotsError } = slotsResult;
 
-        const levelsResult = await rateLimiter.addRequest(() => 
-            supabase.from('asset_levels').select('*').eq('user_id', userId)
+        const levelsResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('asset_levels').select('*').eq('user_id', userId)
         );
         const { data: levelsData, error: levelsError } = levelsResult;
 
@@ -1179,8 +1160,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
         
-        const clanMemberResult = await rateLimiter.addRequest(() => 
-            supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle()
+        const clanMemberResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle()
         );
         const { data: clanMemberData, error: clanMemberError } = clanMemberResult;
 
@@ -1205,8 +1186,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        const reportsResult = await rateLimiter.addRequest(() => 
-            supabase.from('reports')
+        const reportsResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('reports')  
                 .select('*')
                 .eq('user_id', userId)
                 .order('end_date', { ascending: false })
@@ -1217,8 +1198,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setReports(mapToCamelCase(reportsData) as Report[]);
         }
 
-        const cyclesResult = await rateLimiter.addRequest(() => 
-            supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1)
+        const cyclesResult = await rateLimiter.addRequest(async () => 
+            await supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1)
         );
         const { data: cyclesData, error: cyclesError } = cyclesResult;
         if (!cyclesError && cyclesData && cyclesData.length > 0) {

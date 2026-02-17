@@ -363,7 +363,7 @@ const AppWithTutorial: React.FC = () => {
             )}
             <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ? 44 : 0} />
             <main className={`flex-1 ${isBuilderMode ? 'pt-32' : 'pt-20'} pb-16 flex flex-col`}>
-                <div className="max-w-[420px] mx-auto w-full h-full flex flex-col">
+                <div className="max-w-7xl mx-auto w-full h-full flex flex-col">
                     {renderView()}
                 </div>
             </main>
@@ -372,7 +372,7 @@ const AppWithTutorial: React.FC = () => {
             {isReportsVisible && <ReportsView onClose={() => setReportsVisible(false)} />}
             
             <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/50 backdrop-blur-lg border-t border-[var(--glass-border)]">
-                <div className="max-w-[420px] mx-auto">
+                <div className="max-w-7xl mx-auto">
                     <div className="flex justify-around items-center h-16">
                         <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} />
                         <NavItem view="arenas" label="ARENAS" icon={<ArenaIcon />} navRef={arenasNavRef} />
@@ -391,23 +391,8 @@ const MainApp: React.FC = () => {
     const { isTutorialCompleted, startTutorial, endTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
 
-    // Handle tutorial completion flag migration from localStorage to Supabase
-    useEffect(() => {
-        const completedByProfile = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
-        if (completedByProfile) return;
-
-        let completedByStorage = false;
-        try {
-            completedByStorage = localStorage.getItem('tutorialCompleted') === 'true';
-        } catch {
-            completedByStorage = false;
-        }
-
-        if (completedByStorage) {
-            addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
-        }
-    }, [userProfile.id, userProfile.completedSeasonMissions]);
-
+    // Online Only: Removed localStorage migration for tutorial completion
+    
     useEffect(() => {
         if (isNewUser && !isTutorialCompleted) {
             const timer = setTimeout(() => startTutorial(), 500); // Small delay to ensure UI is ready
@@ -428,31 +413,10 @@ const MainApp: React.FC = () => {
             return;
         }
 
-        const safeUserId = userProfile.id && isUuid(userProfile.id) ? userProfile.id : 'guest';
-        const termsKey = `termsAccepted:${safeUserId}`;
-        let acceptedByStorage = false;
-        try {
-            acceptedByStorage = localStorage.getItem(termsKey) === 'true' || localStorage.getItem('termsAccepted') === 'true';
-        } catch {
-            acceptedByStorage = false;
-        }
-
-        if (acceptedByStorage) {
-            addProfileFlag(PROFILE_FLAG_TERMS_ACCEPTED);
-            setShowTerms(false);
-            return;
-        }
-
         setShowTerms(true);
     }, [userProfile.id, userProfile.completedSeasonMissions, userProfile.role]);
 
     const handleAcceptTerms = () => {
-        const safeUserId = userProfile.id && isUuid(userProfile.id) ? userProfile.id : 'guest';
-        const termsKey = `termsAccepted:${safeUserId}`;
-        try {
-            localStorage.setItem(termsKey, 'true');
-        } catch {}
-
         if (!(userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TERMS_ACCEPTED)) {
             addProfileFlag(PROFILE_FLAG_TERMS_ACCEPTED);
         }
@@ -486,9 +450,6 @@ const App: React.FC = () => {
     const [showBootRitual, setShowBootRitual] = useState(false);
     const audioContextRef = useRef<AudioContext | null>(null);
     const lastSoundAtRef = useRef(0);
-    const lastActivityKey = 'gol:last-active';
-    const inactivityWindowMs = 6 * 60 * 60 * 1000;
-
     useEffect(() => {
         // --- Auth Logic ---
         const checkSession = async () => {
@@ -507,35 +468,6 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const now = Date.now();
-        let lastActive = 0;
-        try {
-            lastActive = Number(localStorage.getItem(lastActivityKey) || 0);
-        } catch {}
-
-        if (lastActive && now - lastActive > inactivityWindowMs) {
-            setShowBootRitual(true);
-            if (navigator.vibrate) navigator.vibrate([28, 40, 28]);
-            const timer = window.setTimeout(() => {
-                setShowBootRitual(false);
-                try {
-                    localStorage.setItem(lastActivityKey, String(Date.now()));
-                } catch {}
-            }, 2000);
-            return () => window.clearTimeout(timer);
-        }
-        try {
-            localStorage.setItem(lastActivityKey, String(now));
-        } catch {}
-    }, []);
-
-    useEffect(() => {
-        const updateLastActive = () => {
-            try {
-                localStorage.setItem(lastActivityKey, String(Date.now()));
-            } catch {}
-        };
-
         const playClickSound = () => {
             const now = performance.now();
             if (now - lastSoundAtRef.current < 40) return;
@@ -588,7 +520,6 @@ const App: React.FC = () => {
         };
 
         const handlePointerDown = (event: PointerEvent) => {
-            updateLastActive();
             const target = event.target as HTMLElement | null;
             if (!target) return;
             const interactive = target.closest('button, [role="button"], a, input[type="button"], input[type="submit"], .luxe-button-primary, .luxe-gold-button') as HTMLElement | null;
@@ -598,16 +529,10 @@ const App: React.FC = () => {
             window.setTimeout(() => interactive.classList.remove('click-flash'), 180);
         };
 
-        const handleVisibility = () => updateLastActive();
-
         document.addEventListener('pointerdown', handlePointerDown, { passive: true });
-        document.addEventListener('visibilitychange', handleVisibility);
-        window.addEventListener('beforeunload', updateLastActive);
 
         return () => {
             document.removeEventListener('pointerdown', handlePointerDown);
-            document.removeEventListener('visibilitychange', handleVisibility);
-            window.removeEventListener('beforeunload', updateLastActive);
         };
     }, []);
 

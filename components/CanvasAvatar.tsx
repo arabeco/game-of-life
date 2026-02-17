@@ -34,7 +34,7 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
         if (!id || id === 'none') return null;
         // @ts-ignore
         const asset = SOVEREIGN_ASSETS[category].find(a => a.id === id);
-        return asset ? asset.url : null;
+        return (typeof asset === 'object' && asset) ? asset.url : null;
     };
 
     useEffect(() => {

@@ -331,30 +331,47 @@ export interface SeasonMission {
     reward_value: number | string;
 }
 
+export interface QuestActionTemplate {
+    name: string;
+    description: string;
+    duration: number; // minutos
+    icon: string;
+    repetitions?: number; 
+    isMilestone?: boolean;
+    actionType?: string;
+    difficulty?: number;
+}
+
 export interface SeasonQuest {
     id: string;
-    season_id: string;
-    scope: 'season' | 'clan';
     title: string;
     description: string;
-    goal_type: 'actions_completed' | 'milestones_completed';
-    goal_value: number;
+    type: 'individual' | 'clan';
+    category?: 'physical' | 'intellectual' | 'social' | 'spiritual';
+    actionTemplate: QuestActionTemplate;
+    requirements: {
+        totalReps?: number;
+        milestone?: boolean;
+        clanGoal?: number;
+    };
+    rewards: {
+        xp: number;
+        gold?: number;
+        items?: string[];
+    };
+    clanConfig?: {
+        collectiveGoal: number;
+    };
+    season_id?: string;
+    goal_type?: 'actions_completed' | 'milestones_completed'; // Optional for compatibility if needed
+    goal_value?: number;
     reward_type?: 'exp' | 'item_id' | 'chest';
     reward_value?: number | string;
     maxParticipants?: number;
-    action?: {
-        name?: string;
-        description?: string;
-        icon?: string;
-        duration?: number;
-        repetitions?: number;
-        actionType?: ActionType;
-        difficulty?: number;
-    };
 }
 
 // --- Hall of Fame / Feed Types ---
-export type FeedEventType = 'MILESTONE_COMPLETED' | 'ARENA_COMPLETED' | 'CYCLE_COMPLETED' | 'PLAYER_RANK_UP' | 'CLAN_RANK_UP';
+export type FeedEventType = 'MILESTONE_COMPLETED' | 'ARENA_COMPLETED' | 'CYCLE_COMPLETED' | 'PLAYER_RANK_UP' | 'CLAN_RANK_UP' | 'LEVEL_UP';
 
 export interface FeedEvent {
   id: string;

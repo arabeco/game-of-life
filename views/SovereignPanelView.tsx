@@ -9,56 +9,15 @@ import { GM_CONFIG } from '../constants';
 import { SupabaseService } from '../services/SupabaseService';
 
 const InviteManager: React.FC = () => {
-    const INVITE_STORAGE_KEY = 'goldenInvitesUsed';
-    const isOnline = navigator.onLine;
-    const getUsedCodes = () => {
-        try {
-            const saved = localStorage.getItem(INVITE_STORAGE_KEY);
-            if (saved) return new Set<string>(JSON.parse(saved));
-        } catch {
-            return new Set<string>();
-        }
-        return new Set<string>();
-    };
-    const getBaseCodes = () => GM_CONFIG.goldenInvites.seedCodes.length > 0
-        ? GM_CONFIG.goldenInvites.seedCodes
-        : Array.from({ length: GM_CONFIG.goldenInvites.seedCount }, (_, i) => `${GM_CONFIG.goldenInvites.codePrefix}${new Date().getFullYear()}-${String(i + 1).padStart(3, '0')}`);
-    const buildSeedInvites = () => {
-        const usedCodes = getUsedCodes();
-        const baseCodes = getBaseCodes();
-        return baseCodes.map((code, index) => ({
-            id: `seed_${index + 1}`,
-            code,
-            is_used: usedCodes.has(code),
-            claimed_by_user_id: usedCodes.has(code) ? 'local' : null,
-            claimed_at: usedCodes.has(code) ? new Date().toISOString() : null,
-            created_at: new Date().toISOString(),
-        } as GoldenInvite));
-    };
-
-    const [invites, setInvites] = useState<GoldenInvite[]>(() => (isOnline ? [] : buildSeedInvites()));
+    const [invites, setInvites] = useState<GoldenInvite[]>([]);
 
     useEffect(() => {
-        if (!isOnline) return;
         SupabaseService.getGoldenInvites().then(setInvites);
-    }, [isOnline]);
+    }, []);
 
     const generateInvite = async () => {
-        if (isOnline) {
-            const invite = await SupabaseService.generateGoldenInvite();
-            if (invite) setInvites(prev => [invite, ...prev]);
-            return;
-        }
-        const newCode = `${GM_CONFIG.goldenInvites.codePrefix}${new Date().getFullYear()}${crypto.randomUUID().split('-')[0]}`;
-        const newInvite: GoldenInvite = {
-            id: crypto.randomUUID(),
-            code: newCode,
-            is_used: false,
-            claimed_by_user_id: null,
-            claimed_at: null,
-            created_at: new Date().toISOString()
-        };
-        setInvites(prev => [newInvite, ...prev]);
+        const invite = await SupabaseService.generateGoldenInvite();
+        if (invite) setInvites(prev => [invite, ...prev]);
     };
 
     const copyToClipboard = (code: string) => {
@@ -67,17 +26,12 @@ const InviteManager: React.FC = () => {
     };
 
     const applySeedInvites = async () => {
-        if (isOnline) {
-            const updated = await SupabaseService.seedGoldenInvites(getBaseCodes());
-            setInvites(updated);
-            return;
-        }
-        const seeds = buildSeedInvites();
-        setInvites(prev => {
-            const existingCodes = new Set(prev.map(invite => invite.code));
-            const nextSeeds = seeds.filter(invite => !existingCodes.has(invite.code));
-            return [...nextSeeds, ...prev];
-        });
+        const baseCodes = GM_CONFIG.goldenInvites.seedCodes.length > 0
+            ? GM_CONFIG.goldenInvites.seedCodes
+            : Array.from({ length: GM_CONFIG.goldenInvites.seedCount }, (_, i) => `${GM_CONFIG.goldenInvites.codePrefix}${new Date().getFullYear()}-${String(i + 1).padStart(3, '0')}`);
+            
+        const updated = await SupabaseService.seedGoldenInvites(baseCodes);
+        setInvites(updated);
     };
 
     return (

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { GlassCard } from './GlassCard';
 import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
@@ -24,6 +24,8 @@ type MemberPlacement = {
     gridPos: { row: number, col: number };
     state: ActionState;
 };
+type SanctuaryPositionsMap = Record<string, { row: number; col: number; area: string; action: string; timestamp: string }>;
+type SanctuaryStatsMap = Record<string, { totalSeconds: number; lastUpdated: string }>;
 type ClanDetailTab = 'santuario' | 'membros' | 'missoes';
 
 // --- Sub-components ---
@@ -261,18 +263,6 @@ const MissionCard: React.FC<{ title: string; progress: number; }> = ({ title, pr
 
 // --- Main Modal ---
 
-// Verificar se o usuário tem posição válida (não expirou há 6 horas)
-const hasValidPosition = (userId: string): boolean => {
-    const position = userPositions.get(userId);
-    if (!position) return false;
-    
-    const sixHoursAgo = new Date();
-    sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
-    const lastUpdated = new Date(position.lastUpdated);
-    
-    return lastUpdated > sixHoursAgo;
-};
-
 
 const getZoneAndState = (row: number, col: number): { zone: Zone, state: ActionState | null } => {
     if (row === 5) return { zone: 'Jardim', state: null };
@@ -283,7 +273,7 @@ const getZoneAndState = (row: number, col: number): { zone: Zone, state: ActionS
 };
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, applySanctuaryAreaDecay, loadClanAndMembers, acceptSeasonQuest } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, applySanctuaryAreaDecay, resetSanctuaryDaily, loadClanAndMembers, acceptSeasonQuest } = useGame();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const [userPlacement, setUserPlacement] = useState<MemberPlacement | null>(null);
     const [otherPlacements, setOtherPlacements] = useState<MemberPlacement[]>([]);
@@ -292,6 +282,18 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const userPositionsRef = useRef(userPositions);
     const enrichedClanMembersRef = useRef(enrichedClanMembers);
     
+    // Verificar se o usuário tem posição válida (não expirou há 6 horas)
+    const hasValidPosition = useCallback((userId: string): boolean => {
+        const position = userPositions.get(userId);
+        if (!position) return false;
+        
+        const sixHoursAgo = new Date();
+        sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
+        const lastUpdated = new Date(position.lastUpdated);
+        
+        return lastUpdated > sixHoursAgo;
+    }, [userPositions]);
+
     // Atualizar refs quando mudam
     useEffect(() => {
         userPositionsRef.current = userPositions;
@@ -328,7 +330,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const sanctuaryBackground = clan?.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND;
 
     // Remover posições expiradas
-    const removeExpiredPositions = () => {
+    const removeExpiredPositions = useCallback(() => {
         const sixHoursAgo = new Date();
         sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
         
@@ -342,75 +344,73 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             }
             return newPositions;
         });
-    };
+    }, []);
 
-    // Carregar posições do localStorage ao montar o componente
+    // Carregar posições do Supabase ao montar o componente
     useEffect(() => {
-        const loadPositions = () => {
-            const positions = new Map<string, {row: number, col: number, lastUpdated: string}>();
+        const loadPositions = async () => {
+            if (!clan?.id) return;
             
-            // Carregar posição do usuário atual
-            const userPositionData = localStorage.getItem(`clanPosition_${userProfile.id}`);
-            if (userPositionData) {
-                try {
-                    const position = JSON.parse(userPositionData);
-                    positions.set(userProfile.id, position);
-                } catch (e) {
-                    console.error('Erro ao carregar posição do usuário:', e);
-                }
-            }
+            const positions = await getSanctuaryPositionsForClan(clan.id) as SanctuaryPositionsMap;
+            const posMap = new Map<string, {row: number, col: number, lastUpdated: string}>();
             
-            // Carregar posições de outros membros
-            enrichedClanMembers.forEach(member => {
-                const memberPositionData = localStorage.getItem(`clanPosition_${member.id}`);
-                if (memberPositionData) {
-                    try {
-                        const position = JSON.parse(memberPositionData);
-                        positions.set(member.id, position);
-                    } catch (e) {
-                        console.error(`Erro ao carregar posição do membro ${member.id}:`, e);
-                    }
-                }
+            Object.entries(positions).forEach(([userId, pos]) => {
+                posMap.set(userId, {
+                    row: pos.row,
+                    col: pos.col,
+                    lastUpdated: pos.timestamp
+                });
             });
             
-            setUserPositions(positions);
+            setUserPositions(posMap);
         };
         
         loadPositions();
-    }, [userProfile.id, enrichedClanMembers]);
+    }, [clan?.id, getSanctuaryPositionsForClan]);
 
     // Atualizar estatísticas diariamente (começando em 50%) - com debounce para evitar atualizações frequentes
     const sanctuaryUpdateTimeoutRef = useRef<number | null>(null);
     
-    useEffect(() => {
-        const checkDailyUpdate = () => {
-            removeExpiredPositions();
+    const checkDailyUpdate = useCallback(async () => {
+        if (!clan?.id) return;
+        removeExpiredPositions();
 
+            // Buscar estatísticas atuais do Supabase
+            const stats = await getSanctuaryAreaStats(clan.id) as SanctuaryStatsMap;
+            
             // Verificar se é um novo dia (comparando com meia-noite)
             const now = new Date();
-            const lastUpdate = localStorage.getItem(`lastSanctuaryUpdate_${clan?.id}`);
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             
             let shouldReset = false;
-            if (lastUpdate) {
-                const lastUpdateDate = new Date(lastUpdate);
-                const lastUpdateDay = new Date(lastUpdateDate.getFullYear(), lastUpdateDate.getMonth(), lastUpdateDate.getDate());
-                shouldReset = today.getTime() !== lastUpdateDay.getTime();
+            
+            // Se não houver stats, ou se a data de atualização for anterior a hoje
+            if (Object.keys(stats).length === 0) {
+                shouldReset = true;
             } else {
-                shouldReset = true; // Primeira vez
+                // Verificar a data de atualização de qualquer área (assumindo sincronia)
+                const firstArea = Object.values(stats)[0];
+                if (firstArea) {
+                    const lastUpdateDate = new Date(firstArea.lastUpdated);
+                    const lastUpdateDay = new Date(lastUpdateDate.getFullYear(), lastUpdateDate.getMonth(), lastUpdateDate.getDate());
+                    if (today.getTime() !== lastUpdateDay.getTime()) {
+                        shouldReset = true;
+                    }
+                } else {
+                    shouldReset = true;
+                }
             }
 
             if (shouldReset) {
-                // Resetar para 50% (4 horas = 14400 segundos)
+                // Resetar para 50% (4 horas = 14400 segundos) no Supabase
+                await resetSanctuaryDaily(clan.id);
+                
                 setSanctuaryStats({
                     meditation: 14400,
                     devotion: 14400,
                     rest: 14400,
                     garden: 14400
                 });
-                
-                // Salvar data da última atualização
-                localStorage.setItem(`lastSanctuaryUpdate_${clan?.id}`, now.toISOString());
                 
                 // Aplicar ocupação do dia atual
                 const occupancy = { meditation: 0, devotion: 0, rest: 0, garden: 0 };
@@ -423,9 +423,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     occupancy[area] += 1;
                 }
                 
-                // Verificar posições dos outros membros (usar cached members para evitar atualizações frequentes)
-                const cachedMembers = enrichedClanMembers;
-                cachedMembers.forEach(member => {
+                // Verificar posições dos outros membros
+                enrichedClanMembersRef.current.forEach(member => {
                     const memberPosition = currentPositions.get(member.id);
                     if (memberPosition && hasValidPosition(member.id)) {
                         const area = getSanctuaryArea(memberPosition.row, memberPosition.col);
@@ -434,12 +433,18 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 });
 
                 // Aplicar ocupação do dia usando a função do GameContext
-                if (clan?.id) {
-                    applySanctuaryAreaDecay(clan.id, occupancy);
-                }
-            }
-        };
+                applySanctuaryAreaDecay(clan.id, occupancy);
+        } else {
+            setSanctuaryStats({
+                meditation: stats.meditation?.totalSeconds || 14400,
+                devotion: stats.devotion?.totalSeconds || 14400,
+                rest: stats.rest?.totalSeconds || 14400,
+                garden: stats.garden?.totalSeconds || 14400
+            });
+        }
+    }, [clan?.id, getSanctuaryAreaStats, resetSanctuaryDaily, applySanctuaryAreaDecay, removeExpiredPositions, userProfile.id, hasValidPosition]);
 
+    useEffect(() => {
         // Clear existing timeout to prevent multiple calls
         if (sanctuaryUpdateTimeoutRef.current !== null) {
             window.clearTimeout(sanctuaryUpdateTimeoutRef.current);
@@ -464,45 +469,44 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             }
             clearInterval(interval);
         };
-    }, [userProfile.id, clan?.id, applySanctuaryAreaDecay]); // Remover enrichedClanMembers da dependência
+    }, [checkDailyUpdate]);
 
     // Posicionar membros com debounce para evitar atualizações frequentes
     const positioningTimeoutRef = useRef<number | null>(null);
     
-    useEffect(() => {
-        const updatePositions = () => {
-            const allOccupied = new Set<string>();
-            const newPlacements: MemberPlacement[] = [];
-            
-            // Posicionar usuário atual apenas se tiver posição válida
-            const userPosition = userPositions.get(userProfile.id);
-            if (userPosition && hasValidPosition(userProfile.id)) {
-                const { state } = getZoneAndState(userPosition.row, userPosition.col);
-                const finalState = state || { name: "Trabalhando", icon: "🛠️", lore: "A terra fértil recompensa o esforço." };
-                setUserPlacement({ member: userProfile, gridPos: userPosition, state: finalState });
-                allOccupied.add(`${userPosition.row},${userPosition.col}`);
-            } else {
-                setUserPlacement(null);
-            }
-            
-            // Posicionar outros membros apenas se tiverem posições válidas
-            const otherMembers = enrichedClanMembersRef.current.filter(m => m.id !== userProfile.id);
-            otherMembers.forEach(member => {
-                const memberPosition = userPositions.get(member.id);
-                if (memberPosition && hasValidPosition(member.id)) {
-                    const posKey = `${memberPosition.row},${memberPosition.col}`;
-                    if (!allOccupied.has(posKey)) {
-                        const { state } = getZoneAndState(memberPosition.row, memberPosition.col);
-                        const finalState = state || { name: "Trabalhando", icon: "🛠️", lore: "A terra fértil recompensa o esforço." };
-                        newPlacements.push({ member, gridPos: memberPosition, state: finalState });
-                        allOccupied.add(posKey);
-                    }
+    const updatePositions = useCallback(() => {
+        const allOccupied = new Set<string>();
+        const newPlacements: MemberPlacement[] = [];
+        
+        const userPosition = userPositions.get(userProfile.id);
+        if (userPosition && hasValidPosition(userProfile.id)) {
+            const { state } = getZoneAndState(userPosition.row, userPosition.col);
+            const finalState = state || { name: "Trabalhando", icon: "🛠️", lore: "A terra fértil recompensa o esforço." };
+            setUserPlacement({ member: userProfile, gridPos: userPosition, state: finalState });
+            allOccupied.add(`${userPosition.row},${userPosition.col}`);
+        } else {
+            setUserPlacement(null);
+        }
+        
+        const otherMembers = enrichedClanMembersRef.current.filter(m => m.id !== userProfile.id);
+        otherMembers.forEach(member => {
+            const memberPosition = userPositions.get(member.id);
+            if (memberPosition && hasValidPosition(member.id)) {
+                const posKey = `${memberPosition.row},${memberPosition.col}`;
+                if (!allOccupied.has(posKey)) {
+                    const { state } = getZoneAndState(memberPosition.row, memberPosition.col);
+                    const finalState = state || { name: "Trabalhando", icon: "🛠️", lore: "A terra fértil recompensa o esforço." };
+                    newPlacements.push({ member, gridPos: memberPosition, state: finalState });
+                    allOccupied.add(posKey);
                 }
-            });
-            
-            setOtherPlacements(newPlacements);
-            setOccupiedCells(allOccupied);
-        };
+            }
+        });
+        
+        setOtherPlacements(newPlacements);
+        setOccupiedCells(allOccupied);
+    }, [userPositions, userProfile, hasValidPosition]);
+
+    useEffect(() => {
 
         // Clear existing timeout to prevent multiple calls
         if (positioningTimeoutRef.current !== null) {
@@ -510,14 +514,44 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         }
 
         // Debounce the positioning update
-        positioningTimeoutRef.current = window.setTimeout(updatePositions, 500); // 0.5 segundo de debounce
+        positioningTimeoutRef.current = window.setTimeout(updatePositions, 500);
 
         return () => {
             if (positioningTimeoutRef.current !== null) {
                 window.clearTimeout(positioningTimeoutRef.current);
             }
         };
-    }, [userProfile.id]); // Reduzir dependências para evitar atualizações frequentes
+    }, [updatePositions]);
+
+    const updateUserPosition = (gridPos: {row: number, col: number}, state: ActionState) => {
+        setOccupiedCells(prev => {
+            const newSet = new Set(prev);
+            if (userPlacement) {
+                newSet.delete(`${userPlacement.gridPos.row},${userPlacement.gridPos.col}`);
+            }
+            newSet.add(`${gridPos.row},${gridPos.col}`);
+            return newSet;
+        });
+        
+        // Save position with timestamp
+        const newPosition = { row: gridPos.row, col: gridPos.col, lastUpdated: new Date().toISOString() };
+        setUserPositions(prev => new Map(prev).set(userProfile.id, newPosition));
+        
+        if (clan) {
+            const area = getSanctuaryArea(gridPos.row, gridPos.col);
+            saveSanctuaryPosition({
+                clanId: clan.id,
+                userId: userProfile.id,
+                row: gridPos.row,
+                col: gridPos.col,
+                area,
+                action: state.name,
+                timestamp: newPosition.lastUpdated
+            });
+        }
+        
+        setUserPlacement({ member: userProfile, gridPos, state });
+    };
 
     const handleCellClick = (row: number, col: number) => {
         const posKey = `${row},${col}`;
@@ -537,10 +571,6 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             setShowGardenModal(true);
         } else if (state) {
             updateUserPosition({row, col}, state);
-            // Save position to localStorage with timestamp
-            const newPosition = { row, col, lastUpdated: new Date().toISOString() };
-            setUserPositions(prev => new Map(prev).set(userProfile.id, newPosition));
-            localStorage.setItem(`clanPosition_${userProfile.id}`, JSON.stringify(newPosition));
         }
     };
     
@@ -550,37 +580,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         }
         setShowGardenModal(false);
         setTargetGardenPos(null);
-    }
-
-    const updateUserPosition = (gridPos: {row: number, col: number}, state: ActionState) => {
-        setOccupiedCells(prev => {
-            const newSet = new Set(prev);
-            if (userPlacement) {
-                newSet.delete(`${userPlacement.gridPos.row},${userPlacement.gridPos.col}`);
-            }
-            newSet.add(`${gridPos.row},${gridPos.col}`);
-            return newSet;
-        });
-        
-        // Save position with timestamp
-        const newPosition = { row: gridPos.row, col: gridPos.col, lastUpdated: new Date().toISOString() };
-        setUserPositions(prev => new Map(prev).set(userProfile.id, newPosition));
-        localStorage.setItem(`clanPosition_${userProfile.id}`, JSON.stringify(newPosition));
-        if (clan) {
-            const area = getSanctuaryArea(gridPos.row, gridPos.col);
-            saveSanctuaryPosition({
-                clanId: clan.id,
-                userId: userProfile.id,
-                row: gridPos.row,
-                col: gridPos.col,
-                area,
-                action: state.name,
-                timestamp: newPosition.lastUpdated
-            });
-        }
-        
-        setUserPlacement({ member: userProfile, gridPos, state });
-    }
+    };
 
     const areaStats = sanctuaryStats;
 
@@ -621,7 +621,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             await kickClanMember(memberToKick.id);
             setMemberToKick(null);
         }
-    }
+    };
 
     const handleBackgroundSelect = async (value: string) => {
         if (!clan || !canEditBackground) return;
@@ -635,7 +635,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const isQuestActive = (quest: SeasonQuest) => {
         const arena = getArenas().find(arena => arena.name === questArenaName);
         if (!arena) return false;
-        return getActionsForArena(arena.id).some(action => action.name === quest.title || action.name === quest.action?.name);
+        return getActionsForArena(arena.id).some(action => action.name === quest.title || action.name === quest.actionTemplate?.name);
     };
 
     const getQuestRawProgress = (quest: SeasonQuest) => {

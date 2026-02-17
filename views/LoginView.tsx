@@ -5,6 +5,8 @@ import { useGame } from '../contexts/GameContext';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
 import { GM_CONFIG } from '../constants';
+import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from '../components/Icons';
+import { AchievementModal } from '../components/AchievementModal';
 
 export const LoginView: React.FC = () => {
     const { updateUserProfile } = useGame();
@@ -365,11 +367,7 @@ export const LoginView: React.FC = () => {
         <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black animate-fade-in">
             <div className="w-full max-w-sm mx-auto text-center border border-yellow-800/50 rounded-2xl p-6 space-y-6">
                 <div className="relative w-40 h-40 mx-auto flex items-center justify-center mb-8">
-                    <div className="absolute inset-0 rounded-full border-2 border-[var(--gold)] opacity-20 animate-ping-slow"></div>
-                    <div className="absolute inset-0 rounded-full border border-[var(--gold)] opacity-40 animate-pulse"></div>
-                    <div className="w-32 h-32 rounded-full bg-[radial-gradient(circle,rgba(234,179,8,0.2)_0%,transparent_70%)] flex items-center justify-center shadow-[0_0_30px_rgba(234,179,8,0.3)]">
-                         <div className="w-24 h-24 rounded-full bg-[radial-gradient(circle,rgba(234,179,8,0.4)_0%,transparent_70%)] animate-pulse-slow"></div>
-                    </div>
+                     <GameLogoIcon className="w-full h-full animate-pulse-slow drop-shadow-[0_0_15px_rgba(212,175,55,0.5)]" />
                 </div>
 
                 <h1 className="text-4xl font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-b from-[var(--gold)] to-yellow-700 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] transform scale-110 mb-8">

@@ -3,11 +3,11 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA, BORDERS_DATA, BANNERS_DATA, SKIN_UNLOCKS_BY_RANK, SKIN_SEASON_UNLOCKS } from '../constants';
-import { SEASONS, ACTIVE_SEASON_ID, SeasonQuest as ConfigSeasonQuest } from '../constants/GameContent';
+import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { MasteryView } from './MasteryView';
 import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
-import { SovereignConfig, ChestType, Season, SeasonMission, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile } from '../types';
+import { SovereignConfig, ChestType, Season, SeasonMission, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, SeasonQuest as ConfigSeasonQuest } from '../types';
 import { ChevronRightIcon, CheckIcon, XIcon, LightbulbIcon, ClockIcon, UsersIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -1147,7 +1147,7 @@ const MissionsTab: React.FC = () => {
     const clanActions = clanArena ? getActionsForArena(clanArena.id) : [];
 
     const handleAcceptClanMission = (quest: any) => {
-        joinClanMission(quest.id);
+        acceptSeasonQuest(quest.id);
     };
 
     useEffect(() => {
@@ -1159,17 +1159,18 @@ const MissionsTab: React.FC = () => {
     }, [quests, fetchClanQuestParticipants]);
 
     const calculateQuestProgress = (quest: ConfigSeasonQuest): number => {
-        const targetActions = quest.type === 'clan' ? clanActions : seasonActions;
+        if (quest.type === 'clan') {
+            const clanProgress = getClanQuestProgress(quest.id);
+            return Math.min(100, Math.round((clanProgress / (quest.requirements?.clanGoal || 50)) * 100)); 
+        }
+
+        const targetActions = seasonActions;
         const action = targetActions.find(a => a.name === quest.actionTemplate.name);
         if (!action) return 0;
 
         const matchingTasks = tasks.filter(t => t.actionId === action.id && t.completed);
         const count = matchingTasks.length;
         
-        if (quest.type === 'clan') {
-            const clanProgress = getClanQuestProgress(quest.id);
-            return Math.min(100, Math.round((clanProgress / (quest.requirements?.clanGoal || 50)) * 100)); 
-        }
         const required = quest.requirements?.totalReps || quest.actionTemplate.repetitions || 1;
         return Math.min(100, Math.round((count / required) * 100));
     };

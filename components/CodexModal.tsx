@@ -46,19 +46,12 @@ const encodeUtf8Base64Url = (text: string) => {
 };
 
 const loadDrafts = (): CodexDraft[] => {
-  try {
-    const raw = localStorage.getItem('codexDrafts');
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as CodexDraft[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  return [];
 };
 
 export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { assets, addArena, addAction, scheduleMultipleTasks } = useGame();
-  const [codexes, setCodexes] = useState<CodexDraft[]>(() => loadDrafts());
+  const [codexes, setCodexes] = useState<CodexDraft[]>([]);
   const [activeCodexId, setActiveCodexId] = useState<string | null>(null);
   const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
   const [isCreatingArena, setIsCreatingArena] = useState(false);
@@ -73,9 +66,10 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [actionDraft, setActionDraft] = useState<Partial<Action>>({});
   const [arenaDraft, setArenaDraft] = useState({ name: '', description: '', icon: '🏆', assetId: '' });
 
-  useEffect(() => {
-    localStorage.setItem('codexDrafts', JSON.stringify(codexes));
-  }, [codexes]);
+  // Persistence removed for Online Only mode
+  // useEffect(() => {
+  //   localStorage.setItem('codexDrafts', JSON.stringify(codexes));
+  // }, [codexes]);
 
   const activeCodex = codexes.find(c => c.id === activeCodexId) || null;
   const visibleArenas = useMemo(() => {

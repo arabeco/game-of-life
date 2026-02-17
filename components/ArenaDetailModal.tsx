@@ -193,11 +193,14 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                 >
                     <div className="flex justify-between items-start flex-shrink-0 gap-2">
                         <div className="flex flex-col items-center gap-1">
-                            {!isSpecialArena ? (
-                                <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
+                            {/* Allow editing for all arenas, EXCEPT special ones */}
+                            {!isSpecialArena && (
+                                <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
                                     <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
                                 </button>
-                            ) : (
+                            )}
+                            
+                            {isSpecialArena && !isEditing && (
                                 <button 
                                     onClick={() => setShowDeleteConfirmation(true)}
                                     className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"

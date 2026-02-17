@@ -1,4 +1,4 @@
-import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType, Season, SeasonMission, SeasonQuest } from '../types';
+import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType, Season, SeasonMission, SeasonQuest, QuestActionTemplate } from '../types';
 
 // ==========================================
 // CONFIGURAÇÃO DO JOGO (GM BOARD)
@@ -7,14 +7,6 @@ import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin,
 export const MAX_CLAN_MEMBERS = 10;
 
 // --- DEFINIÇÕES DE TIPOS (SEASON) ---
-export interface QuestActionTemplate {
-  name: string;
-  description: string;
-  duration: number; // minutos
-  icon: string;
-  repetitions?: number; 
-  isMilestone?: boolean;
-}
 
 export interface SeasonConfig {
   id: string;
@@ -72,7 +64,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
         description: 'O Clã deve acumular 50 horas de atividades conjuntas.',
         type: 'clan',
         category: 'social',
-        actionTemplate: { name: 'Atividade de Clã', description: 'Participar de eventos ou ajudar membros.', duration: 60, icon: '🛡️', repetitions: 1 },
+        actionTemplate: { name: 'Socializar (1h)', description: 'Uma hora de presença e vínculo.', duration: 60, icon: '🗣️', repetitions: 50 },
         requirements: { clanGoal: 50 },
         rewards: { xp: 2000, gold: 100 },
         clanConfig: { collectiveGoal: 50 }
@@ -507,9 +499,7 @@ export const ASSETS_DATA: Asset[] = [
     ]
   },
   {
-    id: 'proposito', name: 'PROPÓSITO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.proposito.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [
-        { id: 'arena_proposito_1', assetId: 'proposito', name: 'Carreira com Significado', description: 'Alinhar trabalho com valores pessoais.', icon: '👑', actionIds: ['act1'] }
-    ], slots: [
+    id: 'proposito', name: 'PROPÓSITO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.proposito.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
       { id: 'proposito.missao', label: 'Missão de Vida', type: 1, inputType: 'textarea', value: 'Minha missão...' },
       { id: 'proposito.personalidade1', label: 'MBTI', type: 3, inputType: 'wheelpick', options: ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'], value: 'INTJ' },
       { id: 'proposito.personalidade2', label: 'Signo', type: 3, inputType: 'wheelpick', options: ['Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'], value: 'Áries' },
@@ -529,10 +519,7 @@ export const ASSETS_DATA: Asset[] = [
     ]
   },
   {
-    id: 'financas', name: 'FINANÇAS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.financas.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [
-        { id: 'arena_financas_1', assetId: 'financas', name: 'Liberdade Financeira', description: 'Atingir independência financeira.', icon: '🎯', tags: ['$'], actionIds: ['act2'] },
-        { id: 'arena_financas_2', assetId: 'financas', name: 'Investimentos', description: 'Construir portfólio de ativos.', icon: '📈', tags: ['$'], actionIds: ['act3'] }
-    ], slots: [
+    id: 'financas', name: 'FINANÇAS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.financas.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
       { id: 'financas.renda', label: 'Renda Mensal', type: 3, inputType: 'wheelpick', options: ['R$ 0-2.000', 'R$ 2.000-5.000', 'R$ 5.000-10.000', 'R$ 10.000+'], value: 'R$ 0-2.000' },
       { id: 'financas.gasto', label: 'Gasto Mensal', type: 3, inputType: 'wheelpick', options: ['R$ 0-2.000', 'R$ 2.000-5.000', 'R$ 5.000-10.000', 'R$ 10.000+'], value: 'R$ 0-2.000' },
       { id: 'financas.patrimonio', label: 'Patrimônio', type: 1, inputType: 'wheelpick', options: ['R$ 0-10.000', 'R$ 10.000-25.000', 'R$ 25.000-100.000', 'R$ 100.000-500.000', 'R$ 500k-1M', 'R$ 1M+'], value: 'R$ 0-10.000' },
@@ -563,9 +550,7 @@ export const ASSETS_DATA: Asset[] = [
     ]
   },
   {
-    id: 'fisico', name: 'FÍSICO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.fisico.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [
-        { id: 'arena_fisico_1', assetId: 'fisico', name: 'Maratona', description: 'Completar uma maratona de 42km.', icon: '🎯', tags: ['FIRE'], actionIds: ['act4'] }
-    ], slots: [
+    id: 'fisico', name: 'FÍSICO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.fisico.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
       { id: 'fisico.basico1', label: 'Idade', type: 3, inputType: 'slider', range: { min: 15, max: 99 }, value: 25 },
       { id: 'fisico.basico2', label: 'Gênero', type: 3, inputType: 'wheelpick', options: ['Masculino', 'Feminino', 'Não-binário', 'Outro'], value: 'Masculino' },
       { id: 'fisico.medida1', label: 'Peso (kg)', type: 3, inputType: 'slider', range: { min: 30, max: 200 }, value: 70 },

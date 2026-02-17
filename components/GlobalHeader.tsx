@@ -19,7 +19,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     return (
         <>
             <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-black/40 backdrop-blur-lg border-b border-white/10" style={{ top: topOffsetPx }}>
-                <div className="max-w-[420px] mx-auto flex items-center justify-between h-20 px-4 text-xs font-semibold text-gray-300">
+                <div className="max-w-7xl mx-auto flex items-center justify-between h-20 px-4 text-xs font-semibold text-gray-300">
                     <span className="text-center w-24 flex-shrink-0 text-[10px] uppercase tracking-[0.2em] bg-white/5 border border-white/10 px-3 py-1 rounded-full">{day} • {dateStr}</span>
                     
                     <div className="flex-grow flex items-center justify-center relative mx-2">

@@ -3,12 +3,12 @@ import React, { useState, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { CreateClanModal } from '../components/CreateClanModal';
-import { Clan, UserProfile } from '../types';
+import { Clan, UserProfile, SeasonQuest as ConfigSeasonQuest } from '../types';
 import { ClanDetailModal } from '../components/ClanDetailModal';
 import { SocialCard } from '../components/SocialCard';
 import { PlusIcon, CheckIcon, XIcon } from '../components/Icons';
 import { ClanSearchResultCard } from '../components/ClanSearchResultCard';
-import { SEASONS, ACTIVE_SEASON_ID, SeasonQuest as ConfigSeasonQuest } from '../constants/GameContent';
+import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 import { ExpandableMissionCard } from './SettingsView';
 
 const JoinClanBox: React.FC<{onCreate: () => void}> = ({ onCreate }) => {

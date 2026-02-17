@@ -13,7 +13,7 @@ export class SimpleRateLimiter {
         return SimpleRateLimiter.instance;
     }
 
-    async addRequest<T>(requestFn: () => Promise<T>): Promise<T> {
+    async addRequest<T>(requestFn: () => Promise<T> | PromiseLike<T>): Promise<T> {
         return new Promise((resolve, reject) => {
             this.requestQueue.push(async () => {
                 try {
@@ -55,7 +55,7 @@ export class SimpleRateLimiter {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async batchRequests<T>(requests: (() => Promise<any>)[]): Promise<T[]> {
+    async batchRequests<T>(requests: (() => Promise<any> | PromiseLike<any>)[]): Promise<T[]> {
         const promises = requests.map(request => this.addRequest(request));
         return Promise.all(promises);
     }

@@ -498,8 +498,13 @@ const App: React.FC = () => {
 
         checkSession();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'TOKEN_REFRESH_ERROR') {
+                supabase.auth.signOut();
+                setSession(null);
+            } else {
+                setSession(session);
+            }
         });
 
         return () => subscription.unsubscribe();

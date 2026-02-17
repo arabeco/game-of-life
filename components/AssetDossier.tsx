@@ -95,7 +95,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[color:var(--accent-gold)] bg-black shadow-lg">
                                 {asset.level}
                             </div>
-                            <p className="px-12 text-sm font-bold text-gray-100 text-center leading-tight m-0 -translate-y-[2px]">
+                            <p className="px-12 text-sm font-bold text-gray-100 text-center leading-tight m-0 -translate-y-[1px]">
                                 {(asset.levelDescriptions[asset.level] || 'Descrição não disponível.').replace(/^Nível\s+\d+:\s*/, '')}
                             </p>
                         </div>

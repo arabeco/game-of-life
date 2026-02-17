@@ -3,6 +3,7 @@ import { Arena, Action, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon } from './Icons';
 import { ActionModal } from './ActionModal';
+import { SharedArenaView } from './SharedArenaView';
 import { IconPickerModal } from './IconPickerModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useTutorial } from '../contexts/TutorialContext';
@@ -184,6 +185,33 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             setLinkStatus(null);
         }, 1200);
     };
+
+    if (isClanQuestArena) {
+        const quest = seasonQuests.find(q => q.scope === 'clan' && (q.title === arena.name || q.action?.name === arena.name));
+        // Use the action template from the quest, or fallback to the first action in the arena
+        const action = allActions.find(a => a.name === quest?.actionTemplate?.name) || allActions[0];
+
+        if (quest && action) {
+            return (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
+                    <div className="bg-[#121212] border border-[var(--quest-grad-clan)] w-full max-w-md m-4 rounded-2xl flex flex-col h-auto max-h-[90vh] relative overflow-hidden shadow-2xl shadow-[var(--gold)]/10">
+                        <button 
+                            onClick={onClose} 
+                            className="absolute top-3 right-3 text-white/50 hover:text-white z-20 bg-black/40 rounded-full p-1.5 backdrop-blur-sm transition-colors hover:bg-black/60"
+                        >
+                            <XIcon className="w-5 h-5" />
+                        </button>
+                        
+                        <div className="relative z-0 h-full flex flex-col">
+                            {/* Decorative background */}
+                            <div className="absolute inset-0 bg-gradient-to-b from-[var(--quest-grad-clan)]/10 via-transparent to-transparent pointer-events-none" />
+                            <SharedArenaView arena={arena} quest={quest} action={action} />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+    }
     
     return (
         <>

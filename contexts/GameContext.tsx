@@ -1007,7 +1007,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const { data: actionsData, error: actionsError } = actionsResult;
         if (!actionsError && actionsData) {
-            setActions(mapToCamelCase(actionsData) as Action[]);
+            const rawActions = mapToCamelCase(actionsData) as Action[];
+            // Filter actions to ensure they belong to existing arenas
+            if (camelArenas) {
+                const validArenaIds = new Set(camelArenas.map(a => a.id));
+                const validActions = rawActions.filter(a => validArenaIds.has(a.arenaId));
+                setActions(validActions);
+            } else {
+                 setActions(rawActions);
+            }
         }
 
         const { data: tasksData, error: tasksError } = tasksResult;
@@ -2257,25 +2265,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       // and the user has a participation, maybe we should just remove them from the active clan quest?
       if (!clanQuestFound && clan) {
           const normalized = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-          if (normalized === '1' || normalized.includes('quests - cla')) {
+          if (normalized === '1' || normalized.includes('quests - cla') || normalized.includes('socializar') || normalized.includes('unidade')) {
                const activeSeason = SEASONS[ACTIVE_SEASON_ID];
                const defaultClanQuest = activeSeason?.quests.find(q => q.type === 'clan');
                if (defaultClanQuest) {
                    // Try to leave this one as a last resort
-                   console.log("Attempting to leave default clan quest due to suspicious arena deletion");
+                   console.log("Attempting to leave default clan quest due to suspicious arena deletion (fallback)");
                    const userId = getSupabaseUserId();
                    if (userId) {
-                        await supabase.from('clan_mission_participants')
-                           .delete()
-                           .eq('clan_id', clan.id)
-                           .eq('mission_id', defaultClanQuest.id)
-                           .eq('user_id', userId);
-                        
+                        // Optimistic update first
                         setUserMissionParticipations(prev => {
                            const newState = { ...prev };
                            delete newState[defaultClanQuest.id];
                            return newState;
                        });
+                       setClanQuestParticipants(prev => ({
+                           ...prev,
+                           [defaultClanQuest.id]: Math.max(0, (prev[defaultClanQuest.id] || 1) - 1)
+                       }));
+
+                        await supabase.from('clan_mission_participants')
+                           .delete()
+                           .eq('clan_id', clan.id)
+                           .eq('mission_id', defaultClanQuest.id)
+                           .eq('user_id', userId);
                    }
                }
           }
@@ -2364,10 +2377,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
     }
   };
-  const deleteAction = (actionId: string) => {
+  const deleteAction = async (actionId: string) => {
     // Check if we need to remove the arena (if it becomes empty and is a special quest arena)
     const action = actions.find(a => a.id === actionId);
     const arenaId = action?.arenaId;
+
+    // Remove clan mission participation if applicable
+    if (action && clan) {
+        const activeSeason = SEASONS[ACTIVE_SEASON_ID];
+        let quest = activeSeason?.quests.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
+        
+        if (!quest && activeSeason) {
+             // Fallback logic matches deleteArena
+             if (action.name.includes('Leitura') || action.name.includes('Ler')) {
+                 quest = activeSeason.quests.find(q => q.id === 'quest-clan-unity');
+             }
+        }
+
+        if (quest) {
+            console.log("Leaving clan mission via deleteAction:", quest.title);
+            const userId = getSupabaseUserId();
+            if (userId) {
+                 // Optimistic update
+                 setUserMissionParticipations(prev => {
+                    const newState = { ...prev };
+                    delete newState[quest.id];
+                    return newState;
+                });
+                setClanQuestParticipants(prev => ({
+                    ...prev,
+                    [quest.id]: Math.max(0, (prev[quest.id] || 1) - 1)
+                }));
+
+                 const { error } = await supabase.from('clan_mission_participants')
+                    .delete()
+                    .eq('clan_id', clan.id)
+                    .eq('mission_id', quest.id)
+                    .eq('user_id', userId);
+                 
+                 if (error) console.error("Error deleting clan mission participation:", error.message);
+            }
+        }
+    }
     
     setActions(prev => prev.filter(a => a.id !== actionId));
     setTasks(prev => prev.filter(t => t.actionId !== actionId));
@@ -2429,21 +2480,34 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const quest = activeSeason.quests.find(q => q.id === questId);
     if (!quest) return;
 
-    // 1. Global Check: Does this action already exist anywhere?
+    // 1. Global Check: Does this action already exist anywhere AND is the arena valid?
     // This prevents duplicate actions even if arenas are duplicated.
-    const globalActionExists = actions.some(a => a.name === quest.actionTemplate.name);
-    if (globalActionExists) {
-        // If the action exists locally, we assume the user is already "in" the quest.
-        // But maybe they are not in the clan participation list remotely (ghost state).
-        // Let's ensure they are joined if it's a clan quest.
+    const arenas = getArenas();
+    const existingAction = actions.find(a => a.name === quest.actionTemplate.name);
+    const isActionValid = existingAction && arenas.some(ar => ar.id === existingAction.arenaId);
+
+    if (isActionValid) {
+        // If the action exists locally AND belongs to a valid arena, we assume the user is already "in" the quest.
+        
+        // Special handling for Clan Quests: Ensure remote participation matches local state
         if (quest.type === 'clan' && clan) {
-             await joinClanMission(quest.id);
-             alert("Sincronizando participação na missão de clã...");
-             return;
+             const isParticipating = userMissionParticipations[quest.id];
+             if (!isParticipating) {
+                 console.log("User has valid action but not participating in clan quest. Re-joining...");
+                 await joinClanMission(quest.id);
+                 alert("Sincronizando participação na missão de clã...");
+                 return;
+             }
         }
 
         alert("Você já aceitou esta missão!");
         return;
+    } else if (existingAction) {
+        // Action exists but arena is missing (Orphaned/Ghost action).
+        // We should clean it up locally and proceed with creating a new one.
+        console.warn("Found orphaned action (arena missing). Cleaning up and recreating.", existingAction);
+        setActions(prev => prev.filter(a => a.id !== existingAction.id));
+        // Proceed to create...
     }
 
     const isClanQuest = quest.type === 'clan';

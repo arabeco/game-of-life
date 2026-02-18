@@ -34,7 +34,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center flex-shrink-0">
                         <h2 className="text-lg font-bold uppercase tracking-wider">Gerenciar Clã</h2>

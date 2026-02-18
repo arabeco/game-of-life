@@ -34,8 +34,9 @@ export const CompactSanctuaryStats = React.memo<CompactSanctuaryStatsProps>(({ c
 
   // Função para calcular porcentagem baseada no tempo máximo (8 horas = 28800 segundos)
   const getPercentage = (seconds: number): number => {
-    const maxSeconds = 28800; // 8 horas
-    return Math.min(100, (seconds / maxSeconds) * 100);
+    const maxSeconds = 28800; // 8 horas (Base 100%)
+    const pct = (seconds / maxSeconds) * 100;
+    return Math.floor(Math.max(0, Math.min(100, pct)));
   };
 
   // Buscar estatísticas apenas uma vez ao montar

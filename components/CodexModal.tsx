@@ -66,6 +66,9 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [actionDraft, setActionDraft] = useState<Partial<Action>>({});
   const [arenaDraft, setArenaDraft] = useState({ name: '', description: '', icon: '🏆', assetId: '' });
 
+  const [actionTab, setActionTab] = useState<'basic' | 'advanced'>('basic');
+  const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'notes' | 'checklist' | 'context'>('media');
+
   // Persistence removed for Online Only mode
   // useEffect(() => {
   //   localStorage.setItem('codexDrafts', JSON.stringify(codexes));
@@ -204,6 +207,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setEditingActionId(action?.id || null);
     setActionDraft(action || { arenaId, icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 });
     setIsActionModalOpen(true);
+    setActionTab('basic');
   };
 
   const saveAction = () => {
@@ -449,46 +453,184 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
       {isActionModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setIsActionModalOpen(false)}>
-          <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[90vh] p-3 space-y-3" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center">
-              <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Nova Ação</div>
+          <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[90vh] p-0 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-3 border-b border-white/10 bg-black/20">
+              <div className="flex space-x-4">
+                  <button onClick={() => setActionTab('basic')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${actionTab === 'basic' ? 'text-[var(--gold)] border-b-2 border-[var(--gold)]' : 'text-gray-400 hover:text-white'}`}>Básico</button>
+                  <button onClick={() => setActionTab('advanced')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${actionTab === 'advanced' ? 'text-[var(--gold)] border-b-2 border-[var(--gold)]' : 'text-gray-400 hover:text-white'}`}>Avançado</button>
+              </div>
               <button onClick={() => setIsActionModalOpen(false)} className="px-4 py-2 text-sm font-bold rounded-xl luxe-gold-button">OK</button>
             </div>
-            <button onClick={() => { setIconTarget('action'); setIsIconPickerOpen(true); }} className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--accent-bronze)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center self-center">
-              <span className="text-5xl">{actionDraft.icon || '📝'}</span>
-            </button>
-            <input type="text" placeholder="Nome da Ação" value={actionDraft.name || ''} onChange={e => setActionDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-1" />
-            <textarea placeholder="Descrição (opcional)" value={actionDraft.description || ''} onChange={e => setActionDraft(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50" />
-            <div className="space-y-2">
-              <div>
-                <label className="text-xs font-bold text-gray-400">Arena</label>
-                <button
-                  onClick={() => setIsArenaPickerOpen(true)}
-                  className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
-                >
-                  <span>{actionArena ? `${actionArena.icon} ${actionArena.name}` : 'Selecionar Arena'}</span>
-                  <ChevronRightIcon className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-400">Tipo de Ação</label>
-                <button
-                  onClick={() => setIsActionTypePickerOpen(true)}
-                  className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
-                >
-                  <span>{actionDraft.actionType || 'Ação Recorrente'}</span>
-                  <ChevronRightIcon className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
-              <div className="space-y-2">
-                <StyledRangeInput label="Duração" value={actionDraft.duration ?? 60} min={15} max={240} step={15} unit="min" onChange={val => setActionDraft(prev => ({ ...prev, duration: val }))} />
-                {actionDraft.actionType === 'Ação Recorrente' && (
-                  <StyledRangeInput label="Repetições" value={actionDraft.repetitions ?? 1} min={1} max={50} step={1} unit="x" onChange={val => setActionDraft(prev => ({ ...prev, repetitions: val }))} />
-                )}
-                <StyledRangeInput label="Dificuldade" value={actionDraft.difficulty ?? 3} min={1} max={5} step={1} unit={difficultyLabels[(actionDraft.difficulty ?? 3) - 1]} onChange={val => setActionDraft(prev => ({ ...prev, difficulty: val }))} />
-              </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+              {actionTab === 'basic' ? (
+                <>
+                  <button onClick={() => { setIconTarget('action'); setIsIconPickerOpen(true); }} className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--accent-bronze)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center self-center mx-auto mb-4">
+                    <span className="text-5xl">{actionDraft.icon || '📝'}</span>
+                  </button>
+                  <input type="text" placeholder="Nome da Ação" value={actionDraft.name || ''} onChange={e => setActionDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-1 mb-2" />
+                  <textarea placeholder="Descrição (opcional)" value={actionDraft.description || ''} onChange={e => setActionDraft(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50" />
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs font-bold text-gray-400">Arena</label>
+                      <button
+                        onClick={() => setIsArenaPickerOpen(true)}
+                        className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
+                      >
+                        <span>{actionArena ? `${actionArena.icon} ${actionArena.name}` : 'Selecionar Arena'}</span>
+                        <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                      </button>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-400">Tipo de Ação</label>
+                      <button
+                        onClick={() => setIsActionTypePickerOpen(true)}
+                        className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
+                      >
+                        <span>{actionDraft.actionType || 'Ação Recorrente'}</span>
+                        <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      <StyledRangeInput label="Duração" value={actionDraft.duration ?? 60} min={15} max={240} step={15} unit="min" onChange={val => setActionDraft(prev => ({ ...prev, duration: val }))} />
+                      {actionDraft.actionType === 'Ação Recorrente' && (
+                        <StyledRangeInput label="Repetições" value={actionDraft.repetitions ?? 1} min={1} max={50} step={1} unit="x" onChange={val => setActionDraft(prev => ({ ...prev, repetitions: val }))} />
+                      )}
+                      <StyledRangeInput label="Dificuldade" value={actionDraft.difficulty ?? 3} min={1} max={5} step={1} unit={difficultyLabels[(actionDraft.difficulty ?? 3) - 1]} onChange={val => setActionDraft(prev => ({ ...prev, difficulty: val }))} />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-around bg-black/20 rounded-xl p-1">
+                      {(['media', 'notes', 'checklist', 'context'] as const).map(tab => (
+                          <button 
+                              key={tab}
+                              onClick={() => setAdvancedSubTab(tab)}
+                              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${advancedSubTab === tab ? 'bg-white/10 text-[var(--gold)] shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                          >
+                              {tab === 'media' && 'Mídia'}
+                              {tab === 'notes' && 'Notas'}
+                              {tab === 'checklist' && 'Check'}
+                              {tab === 'context' && 'Ctx'}
+                          </button>
+                      ))}
+                  </div>
+
+                  {advancedSubTab === 'media' && (
+                      <div className="space-y-3">
+                          <div className="text-xs text-gray-400 uppercase font-bold">Anexos (Imagens/Vídeos)</div>
+                          {(actionDraft.assets || []).map((asset, idx) => (
+                              <div key={idx} className="flex gap-2 items-center bg-black/20 p-2 rounded-lg">
+                                  <div className="flex-1 overflow-hidden">
+                                      <div className="text-xs font-bold truncate text-white">{asset.title || 'Sem título'}</div>
+                                      <div className="text-[10px] text-gray-500 truncate">{asset.url}</div>
+                                  </div>
+                                  <button onClick={() => {
+                                      const newAssets = [...(actionDraft.assets || [])];
+                                      newAssets.splice(idx, 1);
+                                      setActionDraft(prev => ({ ...prev, assets: newAssets }));
+                                  }} className="p-1 text-red-400 hover:bg-red-900/20 rounded"><Trash2Icon className="w-4 h-4" /></button>
+                              </div>
+                          ))}
+                          <button onClick={() => {
+                              const url = prompt("URL da imagem/vídeo:");
+                              if (url) {
+                                  const title = prompt("Título (opcional):") || 'Mídia';
+                                  const type = url.match(/\.(mp4|webm)$/i) ? 'video' : 'image';
+                                  setActionDraft(prev => ({ ...prev, assets: [...(prev.assets || []), { type, url, title } as any] }));
+                              }
+                          }} className="w-full py-2 border border-dashed border-white/20 rounded-xl text-xs text-gray-400 hover:text-[var(--gold)] hover:border-[var(--gold)] transition-colors flex items-center justify-center gap-2">
+                              <PlusIcon className="w-4 h-4" /> Adicionar Mídia
+                          </button>
+                      </div>
+                  )}
+
+                  {advancedSubTab === 'notes' && (
+                      <div className="space-y-3">
+                          <div className="text-xs text-gray-400 uppercase font-bold">Briefing / Notas Técnicas</div>
+                          <textarea 
+                              value={actionDraft.briefing || ''}
+                              onChange={e => setActionDraft(prev => ({ ...prev, briefing: e.target.value }))}
+                              className="w-full h-40 bg-black/20 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[var(--gold)]"
+                              placeholder="Instruções detalhadas, observações técnicas ou briefing da missão..."
+                          />
+                      </div>
+                  )}
+
+                  {advancedSubTab === 'checklist' && (
+                      <div className="space-y-3">
+                          <div className="text-xs text-gray-400 uppercase font-bold">Checklist Pré-Voo</div>
+                          {(actionDraft.preFlight || []).map((item, idx) => (
+                              <div key={idx} className="flex gap-2 items-center bg-black/20 p-2 rounded-lg">
+                                  <div className="w-4 h-4 border border-white/30 rounded flex items-center justify-center">
+                                      <div className="w-2 h-2 bg-white/50 rounded-sm" />
+                                  </div>
+                                  <input 
+                                      value={item}
+                                      onChange={e => {
+                                          const newChecklist = [...(actionDraft.preFlight || [])];
+                                          newChecklist[idx] = e.target.value;
+                                          setActionDraft(prev => ({ ...prev, preFlight: newChecklist }));
+                                      }}
+                                      className="flex-1 bg-transparent text-sm focus:outline-none"
+                                      placeholder="Item do checklist..."
+                                  />
+                                  <button onClick={() => {
+                                      const newChecklist = [...(actionDraft.preFlight || [])];
+                                      newChecklist.splice(idx, 1);
+                                      setActionDraft(prev => ({ ...prev, preFlight: newChecklist }));
+                                  }} className="p-1 text-red-400 hover:bg-red-900/20 rounded"><Trash2Icon className="w-4 h-4" /></button>
+                              </div>
+                          ))}
+                          <button onClick={() => {
+                              setActionDraft(prev => ({ ...prev, preFlight: [...(prev.preFlight || []), ''] }));
+                          }} className="w-full py-2 border border-dashed border-white/20 rounded-xl text-xs text-gray-400 hover:text-[var(--gold)] hover:border-[var(--gold)] transition-colors flex items-center justify-center gap-2">
+                              <PlusIcon className="w-4 h-4" /> Adicionar Item
+                          </button>
+                      </div>
+                  )}
+
+                  {advancedSubTab === 'context' && (
+                      <div className="space-y-4">
+                          <div className="text-xs text-gray-400 uppercase font-bold">Contexto da Ação</div>
+                          
+                          <div className="space-y-2">
+                              <label className="text-xs font-semibold text-gray-500">Nível de Energia Requerido</label>
+                              <div className="grid grid-cols-3 gap-2">
+                                  {['low', 'medium', 'high'].map(level => (
+                                      <button
+                                          key={level}
+                                          onClick={() => setActionDraft(prev => ({ ...prev, context: { ...prev.context, energyLevel: level as any } }))}
+                                          className={`py-2 rounded-lg text-xs font-bold uppercase border ${actionDraft.context?.energyLevel === level ? 'bg-[var(--gold)] text-black border-[var(--gold)]' : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'}`}
+                                      >
+                                          {level === 'low' ? 'Baixo' : level === 'medium' ? 'Médio' : 'Alto'}
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+
+                          <div className="space-y-2">
+                              <label className="text-xs font-semibold text-gray-500">Período Ideal</label>
+                              <div className="grid grid-cols-2 gap-2">
+                                  {['morning', 'afternoon', 'evening', 'night'].map(time => (
+                                      <button
+                                          key={time}
+                                          onClick={() => setActionDraft(prev => ({ ...prev, context: { ...prev.context, timeOfDay: time as any } }))}
+                                          className={`py-2 rounded-lg text-xs font-bold uppercase border ${actionDraft.context?.timeOfDay === time ? 'bg-[var(--gold)] text-black border-[var(--gold)]' : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'}`}
+                                      >
+                                          {time === 'morning' ? 'Manhã' : time === 'afternoon' ? 'Tarde' : time === 'evening' ? 'Noite' : 'Madrugada'}
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+                      </div>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex space-x-2 pt-2">
+
+            <div className="flex space-x-2 p-3 bg-black/20 border-t border-white/10 mt-auto">
               <button onClick={() => setIsActionModalOpen(false)} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
               <button onClick={saveAction} className="w-full py-2 rounded-xl luxe-button-primary">SALVAR AÇÃO</button>
             </div>

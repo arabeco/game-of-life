@@ -280,8 +280,7 @@ export interface GameContextType {
   getSanctuaryPositionsForClan: (clanId: string) => Promise<Record<string, { row: number; col: number; area: string; action: string; timestamp: string }>>;
   getSanctuaryAreaStats: (clanId: string) => Promise<Record<string, { totalSeconds: number; lastUpdated: string }>>;
   updateSanctuaryAreaTime: (clanId: string, area: string, seconds: number) => Promise<void>;
-  resetSanctuaryDaily: (clanId: string) => Promise<void>;
-  applySanctuaryAreaDecay: (clanId: string, occupancy: Record<string, number>) => Promise<void>;
+  applySanctuaryAreaDecay: (clanId: string, occupancy: Record<string, number>, totalMembers?: number) => Promise<void>;
   loadClanAndMembers: (clanId: string, force?: boolean) => Promise<void>;
 }
 
@@ -1422,72 +1421,97 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
   };
 
-  const resetSanctuaryDaily = async (clanId: string) => {
-    try {
-      const areas = ['meditation', 'devotion', 'rest', 'garden'];
-      const currentTime = new Date().toISOString();
-      
-      const updates = areas.map(area => ({
-        clan_id: clanId,
-        area: area,
-        total_seconds: 14400, // Reset to 50% (4 hours)
-        last_updated: currentTime
-      }));
 
-      const { error } = await supabase
+
+  // Função para atualizar estatísticas do santuário baseada em tempo (Crescimento/Decaimento suave)
+  const applySanctuaryAreaDecay = async (clanId: string, occupancy: Record<string, number>, totalMembers: number = 1) => {
+    try {
+      const currentTime = new Date();
+      const areas = ['meditation', 'devotion', 'rest', 'garden'];
+      
+      // Constantes de Balanceamento (Baseado em 28800s = 100%)
+      const MAX_POINTS = 28800; 
+      // Ganho de 10% (2880s) por dia (86400s) -> ~0.0333s por segundo real
+      const MAX_DAILY_GROWTH = MAX_POINTS * 0.10;
+      const GROWTH_RATE_PER_SECOND = MAX_DAILY_GROWTH / 86400; 
+      
+      // Perda de 5% (1440s) por dia (86400s) -> ~0.0166s por segundo real
+      const DECAY_RATE_PER_SECOND = (MAX_POINTS * 0.05) / 86400;
+
+      // Intervalo mínimo de atualização (12 horas) para evitar writes excessivos
+      // e manter as "barrinhas" estáveis como solicitado (2x ao dia)
+      const MIN_UPDATE_INTERVAL = 43200;
+
+      // OTIMIZAÇÃO: Buscar todos de uma vez para reduzir reads
+      const { data: allStats, error: fetchError } = await supabase
         .from('sanctuary_area_stats')
-        .upsert(updates, { onConflict: 'clan_id,area' });
-
-      if (error) {
-        console.error('Failed to reset sanctuary daily stats:', error);
+        .select('area, total_seconds, last_updated')
+        .eq('clan_id', clanId);
+      
+      if (fetchError) {
+          console.error('Failed to fetch sanctuary stats:', fetchError);
+          return;
       }
-    } catch (e) {
-      console.error('Failed to reset sanctuary daily:', e);
-    }
-  };
 
-  // Função para aplicar decaimento nas barrinhas douradas quando áreas estão vazias
-  const applySanctuaryAreaDecay = async (clanId: string, occupancy: Record<string, number>) => {
-    try {
-      const decayRatePerMinute = 30; // 30 segundos de decaimento por minuto quando vazio
-      const currentTime = new Date().toISOString();
-      
-      // Áreas do santuário
-      const areas = ['meditation', 'devotion', 'rest', 'garden'];
-      
+      const statsMap = new Map();
+      if (allStats) {
+          allStats.forEach((s: any) => statsMap.set(s.area, s));
+      }
+
       for (const area of areas) {
-        // Se a área estiver vazia (0 ocupantes), aplicar decaimento
-        if (occupancy[area] === 0) {
-          // Atualizar no Supabase - decrementar o tempo total
-          const { data: currentStats, error: fetchError } = await supabase
+        const currentStats = statsMap.get(area);
+
+        const lastUpdated = currentStats?.last_updated ? new Date(currentStats.last_updated) : currentTime;
+        // Se não existir, assume 50%
+        let totalSeconds = currentStats ? Number(currentStats.total_seconds) : 14400;
+        
+        // Calcular tempo passado em segundos
+        const secondsPassed = (currentTime.getTime() - lastUpdated.getTime()) / 1000;
+        
+        // Ignorar atualizações muito frequentes para economizar writes
+        if (secondsPassed < MIN_UPDATE_INTERVAL && currentStats) continue;
+
+        let change = 0;
+        const activeUsers = occupancy[area] || 0;
+
+        if (activeUsers > 0) {
+           // Se ocupado: Cresce proporcionalmente à participação do clã
+           // Meta: 10% ao dia se 100% do clã estiver participando
+           const participationRatio = Math.min(1, activeUsers / Math.max(1, totalMembers));
+           change = secondsPassed * GROWTH_RATE_PER_SECOND * participationRatio;
+        } else {
+           // Se vazio: Decai 5% ao dia
+           change = -(secondsPassed * DECAY_RATE_PER_SECOND);
+        }
+
+        let nextTotalSeconds = totalSeconds + change;
+        // Clamp entre 0 e Max
+        nextTotalSeconds = Math.max(0, Math.min(MAX_POINTS, nextTotalSeconds));
+        
+        // Arredondar para inteiro para evitar "dígitos quebrados"
+        const finalSeconds = Math.floor(nextTotalSeconds);
+        
+        // Se não mudou nada (devido ao arredondamento), ignora
+        if (finalSeconds === Math.floor(totalSeconds) && currentStats) continue;
+
+        // Atualizar no banco
+        const { error: updateError } = await supabase
             .from('sanctuary_area_stats')
-            .select('total_seconds')
-            .eq('clan_id', clanId)
-            .eq('area', area)
-            .maybeSingle();
-          
-          if (!fetchError && currentStats && currentStats.total_seconds > 0) {
-            const newTotalSeconds = Math.max(0, currentStats.total_seconds - decayRatePerMinute);
-            
-            const { error: updateError } = await supabase
-              .from('sanctuary_area_stats')
-              .upsert({
-                clan_id: clanId,
-                area: area,
-                total_seconds: newTotalSeconds,
-                last_updated: currentTime
-              }, {
-                onConflict: 'clan_id,area'
-              });
-            
-            if (updateError) {
-              console.error(`Failed to apply decay to area ${area}:`, updateError);
-            }
-          }
+            .upsert({
+            clan_id: clanId,
+            area: area,
+            total_seconds: finalSeconds,
+            last_updated: currentTime.toISOString()
+            }, {
+            onConflict: 'clan_id,area'
+            });
+        
+        if (updateError) {
+            console.error(`Failed to update sanctuary stats for ${area}:`, updateError);
         }
       }
     } catch (e) {
-      console.error('Failed to apply sanctuary area decay:', e);
+      console.error('Failed to update sanctuary stats:', e);
     }
   };
 
@@ -2383,9 +2407,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
      // CHECK FOR HISTORY: If any action has completed tasks, we must ARCHIVE instead of DELETE
      // This preserves the "color" (mastery/heatmap) of the user's history
-     const actionsWithHistory = arenaActions.filter(action => 
-         tasks.some(t => t.actionId === action.id && t.completed)
-     );
+     // We check BOTH local state (for speed/offline) and Supabase (for full history > 3 months)
+     let actionsWithHistoryIds = new Set<string>();
+     
+     // 1. Local Check
+     arenaActions.forEach(action => {
+         if (tasks.some(t => t.actionId === action.id && t.completed)) {
+             actionsWithHistoryIds.add(action.id);
+         }
+     });
+
+     // 2. Remote Check (if user is online)
+     const userId = getSupabaseUserId();
+     if (userId && arenaActions.length > 0) {
+         const actionIds = arenaActions.map(a => a.id);
+         const { data: remoteHistory } = await supabase
+             .from('scheduled_tasks')
+             .select('action_id')
+             .in('action_id', actionIds)
+             .eq('completed', true)
+             .limit(1000); // Limit to avoid massive payload, we just need existence
+         
+         remoteHistory?.forEach((h: any) => actionsWithHistoryIds.add(h.action_id));
+     }
+
+     const actionsWithHistory = arenaActions.filter(action => actionsWithHistoryIds.has(action.id));
 
      if (actionsWithHistory.length > 0) {
          console.log(`Arena ${arenaId} has history (${actionsWithHistory.length} actions). Archiving instead of deleting.`);
@@ -2394,12 +2440,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          updateArena(arenaId, { isArchived: true });
          
          // 2. Delete ONLY the actions that have NO history
-         const actionsToDelete = arenaActions.filter(a => !actionsWithHistory.some(h => h.id === a.id));
+         const actionsToDelete = arenaActions.filter(a => !actionsWithHistoryIds.has(a.id));
          
          if (actionsToDelete.length > 0) {
              setActions(prev => prev.filter(a => !actionsToDelete.some(del => del.id === a.id)));
              
-             const userId = getSupabaseUserId();
              if (userId) {
                  const idsToDelete = actionsToDelete.map(a => a.id);
                  supabase.from('actions').delete().in('id', idsToDelete).then(({ error }) => {
@@ -2427,7 +2472,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     }
 
-    const userId = getSupabaseUserId();
     if (userId) {
         supabase.from('arenas').delete().eq('id', arenaId).then(({error}) => { 
             if (error) console.error("Supabase delete arena error:", error.message);
@@ -2476,8 +2520,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const userId = getSupabaseUserId();
     if (userId) {
-        const snakeCaseData = { ...mapToSnakeCase(newAction), user_id: userId };
-        supabase.from('actions').insert(snakeCaseData).then(({error}) => { 
+        // Explicit payload construction to ensure compatibility with Supabase schema
+        const actionPayload = {
+            id: newAction.id,
+            user_id: userId,
+            arena_id: newAction.arenaId,
+            name: newAction.name,
+            description: newAction.description || null,
+            icon: newAction.icon,
+            duration: newAction.duration,
+            repetitions: newAction.repetitions,
+            action_type: newAction.actionType,
+            difficulty: newAction.difficulty || null,
+            scheduled_days: newAction.scheduledDays || null,
+            scheduled_start_time: newAction.scheduledStartTime || null,
+            briefing: newAction.briefing || null,
+            assets: newAction.assets || [],
+            pre_flight: newAction.preFlight || [],
+            context: newAction.context || {},
+            origin_codex_id: newAction.originCodexId || null
+        };
+        
+        supabase.from('actions').insert(actionPayload).then(({error}) => { 
             if (error) console.error("Supabase add action error:", error.message);
         });
     }
@@ -2488,10 +2552,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setActions(prev => prev.map(a => a.id === actionId ? { ...a, ...actionData } : a));
     const userId = getSupabaseUserId();
     if (userId) {
-        const snakeCaseData = mapToSnakeCase(actionData);
-        supabase.from('actions').update(snakeCaseData).eq('id', actionId).then(({error}) => { 
-            if (error) console.error("Supabase update action error:", error.message);
-        });
+        // Explicit payload construction for updates
+        const updatePayload: any = {};
+        if (actionData.name !== undefined) updatePayload.name = actionData.name;
+        if (actionData.description !== undefined) updatePayload.description = actionData.description;
+        if (actionData.icon !== undefined) updatePayload.icon = actionData.icon;
+        if (actionData.duration !== undefined) updatePayload.duration = actionData.duration;
+        if (actionData.repetitions !== undefined) updatePayload.repetitions = actionData.repetitions;
+        if (actionData.actionType !== undefined) updatePayload.action_type = actionData.actionType;
+        if (actionData.difficulty !== undefined) updatePayload.difficulty = actionData.difficulty;
+        if (actionData.scheduledDays !== undefined) updatePayload.scheduled_days = actionData.scheduledDays;
+        if (actionData.scheduledStartTime !== undefined) updatePayload.scheduled_start_time = actionData.scheduledStartTime;
+        if (actionData.briefing !== undefined) updatePayload.briefing = actionData.briefing;
+        if (actionData.assets !== undefined) updatePayload.assets = actionData.assets;
+        if (actionData.preFlight !== undefined) updatePayload.pre_flight = actionData.preFlight;
+        if (actionData.context !== undefined) updatePayload.context = actionData.context;
+        
+        if (Object.keys(updatePayload).length > 0) {
+            supabase.from('actions').update(updatePayload).eq('id', actionId).then(({error}) => { 
+                if (error) console.error("Supabase update action error:", error.message);
+            });
+        }
     }
   };
   const deleteAction = async (actionId: string) => {
@@ -2677,8 +2758,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     // Ensure action is persisted to DB immediately to avoid "disappearing" on reload if sync is slow
     const userId = getSupabaseUserId();
     if (userId) {
-        const snakeCaseAction = { ...mapToSnakeCase(newAction), user_id: userId };
-        const { error } = await supabase.from('actions').upsert(snakeCaseAction, { onConflict: 'id' });
+        // Explicit payload construction
+        const questPayload = {
+             id: newAction.id,
+             user_id: userId,
+             arena_id: newAction.arenaId,
+             name: newAction.name,
+             description: newAction.description || null,
+             icon: newAction.icon,
+             duration: newAction.duration,
+             repetitions: newAction.repetitions,
+             action_type: newAction.actionType,
+             difficulty: newAction.difficulty || null,
+             scheduled_days: newAction.scheduledDays || null,
+             scheduled_start_time: newAction.scheduledStartTime || null,
+             briefing: newAction.briefing || null,
+             assets: newAction.assets || [],
+             pre_flight: newAction.preFlight || [],
+             context: newAction.context || {},
+             origin_codex_id: newAction.originCodexId || null
+        };
+
+        const { error } = await supabase.from('actions').upsert(questPayload, { onConflict: 'id' });
         if (error) {
              console.error("Supabase add action manual persist error:", error.message);
         }
@@ -3283,7 +3384,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, resetSanctuaryDaily, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena }}>
       {children}
     </GameContext.Provider>
   );

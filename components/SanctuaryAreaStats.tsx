@@ -58,7 +58,8 @@ export const SanctuaryAreaStats: React.FC<SanctuaryAreaStatsProps> = ({ clanId }
   // Função para calcular porcentagem baseada no tempo máximo (8 horas = 28800 segundos)
   const getPercentage = (seconds: number): number => {
     const maxSeconds = 28800; // 8 horas
-    return Math.min(100, (seconds / maxSeconds) * 100);
+    const pct = (seconds / maxSeconds) * 100;
+    return Math.floor(Math.max(0, Math.min(100, pct)));
   };
 
   if (isLoading) {

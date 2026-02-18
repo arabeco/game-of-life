@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { GlassCard } from './GlassCard';
 import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
@@ -15,6 +16,84 @@ import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../c
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { CompactSanctuaryStats } from './CompactSanctuaryStats';
 import { getSanctuaryArea } from '../utils/sanctuaryUtils';
+
+// --- Visual Effects ---
+const Sparkles: React.FC = () => (
+    <div className="absolute inset-0 pointer-events-none z-0">
+        {[...Array(15)].map((_, i) => (
+            <div
+                key={i}
+                className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+                style={{
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    opacity: Math.random() * 0.5 + 0.2,
+                    animationDuration: `${1 + Math.random() * 2}s`,
+                    animationDelay: `${Math.random() * 2}s`,
+                }}
+            />
+        ))}
+        {[...Array(5)].map((_, i) => (
+            <div
+                key={`gold-${i}`}
+                className="absolute w-1.5 h-1.5 bg-[var(--gold)] rounded-full animate-ping"
+                style={{
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    opacity: Math.random() * 0.4,
+                    animationDuration: `${2 + Math.random() * 3}s`,
+                    animationDelay: `${Math.random() * 5}s`,
+                }}
+            />
+        ))}
+    </div>
+);
+
+const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () => void }> = ({ member, onClose }) => {
+    if (!member.sovereign) return null;
+    return (
+        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            <GlassCard variant="gold" className="w-full max-w-sm m-4 p-6 relative flex flex-col items-center space-y-4" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/20 text-gray-400 hover:text-white transition-colors">
+                    <XIcon className="w-5 h-5" />
+                </button>
+                
+                <div className="w-32 h-32 relative">
+                     <div className="absolute inset-0 bg-[var(--gold)]/20 blur-2xl rounded-full animate-pulse" />
+                     <div className="relative w-full h-full filter drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+                        <Sovereign sovereignConfig={member.sovereign!} />
+                     </div>
+                </div>
+
+                <div className="text-center space-y-1">
+                    <h2 className="text-2xl font-black text-white luxe-title-shadow uppercase tracking-wider">{member.nickname}</h2>
+                    <div className="flex items-center justify-center space-x-2">
+                        <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] border border-[var(--gold)]/30">
+                            {member.role === 'leader' ? 'Líder' : 'Membro'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-gray-300 border border-white/10">
+                            Nível {member.level}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="w-full bg-black/20 rounded-xl p-4 border border-white/5 space-y-3">
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-400 font-bold uppercase">Humor Atual</span>
+                        <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: member.mood >= 80 ? '#4ade80' : member.mood >= 40 ? '#facc15' : '#f87171' }} />
+                            <span className="font-mono text-white">{member.mood}%</span>
+                        </div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-400 font-bold uppercase">Contribuição</span>
+                        <span className="font-mono text-[var(--gold)]">{member.contributionPoints} pts</span>
+                    </div>
+                </div>
+            </GlassCard>
+        </div>
+    );
+};
 
 // --- Types ---
 type Zone = 'Árvore' | 'Cristal' | 'Descanso' | 'Jardim' | 'Indefinida';
@@ -48,7 +127,8 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     const expForNextRank = nextRank?.expRequired || expForCurrentRank;
     const progressInRank = clan.exp - expForCurrentRank;
     const expToNextRank = expForNextRank - expForCurrentRank;
-    const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
+    const rawPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
+    const progressPercentage = Math.floor(Math.max(0, Math.min(100, rawPercentage)));
 
     const handleSaveDescription = async () => {
         if (!clan) return;
@@ -57,7 +137,7 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     };
 
     return (
-        <div className="absolute top-0 left-0 right-0 p-4 z-30">
+        <div className="relative w-full p-4 z-30">
             <GlassCard variant="neutral" className="p-2 space-y-1">
                 <div className="text-center">
                     <h2 className="text-lg font-black text-white luxe-title-shadow">{clan.name}</h2>
@@ -117,7 +197,7 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
     const actionsRemaining = Math.max(0, quest.goal_value - currentValue);
     
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[230] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl p-4" onClick={e => e.stopPropagation()}>
                 <div className="text-center space-y-1">
                     <h3 className="text-lg font-black uppercase tracking-widest">{quest.title}</h3>
@@ -189,34 +269,35 @@ const GoldenTimeBar: React.FC<{ area: string; totalTime: number; maxTime: number
     );
 };
 
-const ClanMember: React.FC<{ placement: MemberPlacement }> = ({ placement }) => {
+const ClanMember: React.FC<{ placement: MemberPlacement; onClick?: () => void }> = ({ placement, onClick }) => {
     return (
         <div
-            className="absolute transition-all duration-500"
+            className="absolute transition-all duration-500 z-20 hover:z-50"
             style={{
                 gridRowStart: placement.gridPos.row + 1,
                 gridColumnStart: placement.gridPos.col + 1,
             }}
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick?.();
+            }}
         >
-            <div className="relative group w-20 h-32 flex flex-col items-center justify-end">
+            <div className="relative group w-20 h-32 flex flex-col items-center justify-end cursor-pointer">
                 {/* Tooltip */}
-                <div className="absolute bottom-full mb-2 w-max max-w-xs bg-black/90 text-white text-xs rounded-lg py-1 px-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    "{placement.state.lore}"
+                <div className="absolute bottom-full mb-2 w-max max-w-xs bg-black/90 text-white text-xs rounded-lg py-1 px-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 border border-white/10 shadow-xl">
+                    <div className="font-bold text-[var(--gold)] mb-0.5">{placement.member.nickname}</div>
+                    <div className="italic text-gray-400">"{placement.state.lore}"</div>
                 </div>
                 
                 {/* Avatar */}
-                <div className="w-20 h-32 cursor-pointer filter hover:drop-shadow-lg">
+                <div className="w-20 h-32 filter hover:brightness-125 transition-all hover:scale-105 hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                      <Sovereign sovereignConfig={placement.member.sovereign!} />
                 </div>
                 
                 {/* Nametag Pill */}
-                <div className="absolute bottom-0 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 text-xs flex items-center space-x-1.5 border border-white/10">
+                <div className="absolute bottom-0 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 text-[10px] flex items-center space-x-1.5 border border-white/10 shadow-lg group-hover:border-[var(--gold)]/50 transition-colors">
+                    <div className={`w-1.5 h-1.5 rounded-full ${placement.member.isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
                     <span className="font-bold text-white truncate max-w-[50px]">{placement.member.nickname}</span>
-                    <div className="w-px h-3 bg-white/20"></div>
-                    <span className="text-gray-300 flex items-center space-x-1">
-                        <span>{placement.state.icon}</span>
-                        <span>{placement.state.name}</span>
-                    </span>
                 </div>
             </div>
         </div>
@@ -230,7 +311,7 @@ const GardenActionModal: React.FC<{ onSelect: (state: ActionState) => void, onCl
         { name: "Passeando", icon: "🚶", lore: "Contemplando o crescimento, encontro minha paz." },
     ];
     return (
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-xs m-4 space-y-2" onClick={e => e.stopPropagation()}>
                 <h3 className="text-center font-bold">Ação no Jardim</h3>
                 {gardenActions.map(action => (
@@ -273,7 +354,7 @@ const getZoneAndState = (row: number, col: number): { zone: Zone, state: ActionS
 };
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, applySanctuaryAreaDecay, resetSanctuaryDaily, loadClanAndMembers, acceptSeasonQuest } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, applySanctuaryAreaDecay, loadClanAndMembers, acceptSeasonQuest } = useGame();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const [userPlacement, setUserPlacement] = useState<MemberPlacement | null>(null);
     const [otherPlacements, setOtherPlacements] = useState<MemberPlacement[]>([]);
@@ -317,6 +398,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
     const [memberToKick, setMemberToKick] = useState<EnrichedClanMember | null>(null);
     const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
+    const [selectedMember, setSelectedMember] = useState<EnrichedClanMember | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
     const [expandDescription, setExpandDescription] = useState(false);
     
@@ -375,74 +457,39 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         if (!clan?.id) return;
         removeExpiredPositions();
 
-            // Buscar estatísticas atuais do Supabase
-            const stats = await getSanctuaryAreaStats(clan.id) as SanctuaryStatsMap;
-            
-            // Verificar se é um novo dia (comparando com meia-noite)
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            let shouldReset = false;
-            
-            // Se não houver stats, ou se a data de atualização for anterior a hoje
-            if (Object.keys(stats).length === 0) {
-                shouldReset = true;
-            } else {
-                // Verificar a data de atualização de qualquer área (assumindo sincronia)
-                const firstArea = Object.values(stats)[0];
-                if (firstArea) {
-                    const lastUpdateDate = new Date(firstArea.lastUpdated);
-                    const lastUpdateDay = new Date(lastUpdateDate.getFullYear(), lastUpdateDate.getMonth(), lastUpdateDate.getDate());
-                    if (today.getTime() !== lastUpdateDay.getTime()) {
-                        shouldReset = true;
-                    }
-                } else {
-                    shouldReset = true;
-                }
-            }
-
-            if (shouldReset) {
-                // Resetar para 50% (4 horas = 14400 segundos) no Supabase
-                await resetSanctuaryDaily(clan.id);
-                
-                setSanctuaryStats({
-                    meditation: 14400,
-                    devotion: 14400,
-                    rest: 14400,
-                    garden: 14400
-                });
-                
-                // Aplicar ocupação do dia atual
-                const occupancy = { meditation: 0, devotion: 0, rest: 0, garden: 0 };
-                const currentPositions = userPositionsRef.current;
-                
-                // Verificar posição do usuário atual
-                const userPosition = currentPositions.get(userProfile.id);
-                if (userPosition && hasValidPosition(userProfile.id)) {
-                    const area = getSanctuaryArea(userPosition.row, userPosition.col);
+        // Buscar estatísticas atuais do Supabase
+        const stats = await getSanctuaryAreaStats(clan.id) as SanctuaryStatsMap;
+        
+        // Calcular ocupação atual
+        const occupancy = { meditation: 0, devotion: 0, rest: 0, garden: 0 };
+        const currentPositions = userPositionsRef.current;
+        
+        // Verificar posições de todos os membros (incluindo o usuário atual se estiver na lista)
+        enrichedClanMembersRef.current.forEach(member => {
+            const memberPosition = currentPositions.get(member.id);
+            if (memberPosition && hasValidPosition(member.id)) {
+                const area = getSanctuaryArea(memberPosition.row, memberPosition.col);
+                if (occupancy[area] !== undefined) {
                     occupancy[area] += 1;
                 }
-                
-                // Verificar posições dos outros membros
-                enrichedClanMembersRef.current.forEach(member => {
-                    const memberPosition = currentPositions.get(member.id);
-                    if (memberPosition && hasValidPosition(member.id)) {
-                        const area = getSanctuaryArea(memberPosition.row, memberPosition.col);
-                        occupancy[area] += 1;
-                    }
-                });
+            }
+        });
 
-                // Aplicar ocupação do dia usando a função do GameContext
-                applySanctuaryAreaDecay(clan.id, occupancy);
-        } else {
+        // Aplicar atualização baseada em tempo (sem reset diário forçado)
+        const totalMembers = enrichedClanMembersRef.current.length || 1;
+        await applySanctuaryAreaDecay(clan.id, occupancy, totalMembers);
+        
+        // Atualizar estado local
+        const updatedStats = await getSanctuaryAreaStats(clan.id) as SanctuaryStatsMap;
+        if (updatedStats) {
             setSanctuaryStats({
-                meditation: stats.meditation?.totalSeconds || 14400,
-                devotion: stats.devotion?.totalSeconds || 14400,
-                rest: stats.rest?.totalSeconds || 14400,
-                garden: stats.garden?.totalSeconds || 14400
+                meditation: updatedStats.meditation?.totalSeconds || 14400,
+                devotion: updatedStats.devotion?.totalSeconds || 14400,
+                rest: updatedStats.rest?.totalSeconds || 14400,
+                garden: updatedStats.garden?.totalSeconds || 14400
             });
         }
-    }, [clan?.id, getSanctuaryAreaStats, resetSanctuaryDaily, applySanctuaryAreaDecay, removeExpiredPositions, userProfile.id, hasValidPosition]);
+    }, [clan?.id, getSanctuaryAreaStats, applySanctuaryAreaDecay, removeExpiredPositions, userProfile.id, hasValidPosition]);
 
     useEffect(() => {
         // Clear existing timeout to prevent multiple calls
@@ -644,7 +691,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const getQuestProgress = (quest: SeasonQuest) => {
         const completed = getClanQuestProgress(quest.id);
-        if (quest.goal_value > 0) return Math.min(100, Math.round((completed / quest.goal_value) * 100));
+        if (quest.goal_value > 0) return Math.floor(Math.min(100, Math.max(0, (completed / quest.goal_value) * 100)));
         return Math.min(100, completed);
     };
 
@@ -653,150 +700,158 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         setSelectedQuest(null);
     };
 
-    return (
+    return createPortal(
         <>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <div className="relative w-full max-w-sm m-4 aspect-[9/16] rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <div className="relative w-full h-full rounded-3xl overflow-hidden bg-cover bg-center border border-white/10" style={{ backgroundImage: `url('${sanctuaryBackground}')` }}>
-                        <ClanHeader userClanRole={userClanRole} expandDescription={expandDescription} />
+                    <div className="relative w-full h-full rounded-3xl overflow-hidden bg-cover bg-center border border-white/10 flex flex-col" style={{ backgroundImage: `url('${sanctuaryBackground}')` }}>
                         
-                        {/* Removido overlay das barrinhas para evitar piscar */}
-                        
-                        <button onClick={onClose} className="absolute top-4 right-4 z-40 p-1 rounded-full bg-black/50 hover:bg-black/80"><XIcon className="w-5 h-5"/></button>
-                        {userClanRole === 'leader' && (
-                            <button
-                                onClick={() => canEditBackground && setIsBackgroundModalOpen(true)}
-                                disabled={!canEditBackground}
-                                className={`absolute top-4 left-4 z-40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${canEditBackground ? 'bg-black/50 text-white hover:bg-black/80' : 'bg-black/30 text-gray-400 cursor-not-allowed'}`}
-                            >
-                                {canEditBackground ? 'Editar Fundo' : 'Fundo Bloqueado'}
-                            </button>
-                        )}
+                        {/* Header Section */}
+                        <div className="flex-none relative">
+                            <ClanHeader userClanRole={userClanRole} expandDescription={expandDescription} />
+                            
+                            {/* Header Actions */}
+                            <button onClick={onClose} className="absolute top-4 right-4 z-40 p-1 rounded-full bg-black/50 hover:bg-black/80"><XIcon className="w-5 h-5"/></button>
+                            {userClanRole === 'leader' && (
+                                <button
+                                    onClick={() => canEditBackground && setIsBackgroundModalOpen(true)}
+                                    disabled={!canEditBackground}
+                                    className={`absolute top-4 left-4 z-40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${canEditBackground ? 'bg-black/50 text-white hover:bg-black/80' : 'bg-black/30 text-gray-400 cursor-not-allowed'}`}
+                                >
+                                    {canEditBackground ? 'Editar Fundo' : 'Fundo Bloqueado'}
+                                </button>
+                            )}
+                        </div>
 
-                        {activeTab === 'santuario' && (
-                            <>
-                                <div className="absolute top-64 left-4 right-4 bottom-4">
-                                    <div className="grid grid-cols-6 grid-rows-6 h-full">
-                                        {[...Array(36)].map((_, i) => {
-                                            const row = Math.floor(i / 6);
-                                            const col = i % 6;
-                                            return (
-                                                <div
-                                                    key={i}
-                                                    id={`cell-${row}-${col}`}
-                                                    className="border border-white/5 cursor-pointer hover:bg-white/10 transition-colors"
-                                                    onClick={() => handleCellClick(row, col)}
-                                                />
-                                            );
-                                        })}
-                                        {allMembers.map(placement => <ClanMember key={placement.member.id} placement={placement} />)}
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                        
-                        {activeTab === 'membros' && (
-                            <div className="absolute top-28 bottom-24 left-4 right-4 overflow-y-auto space-y-2 hide-scrollbar">
-                                {userClanRole === 'leader' && (
-                                    <div className="flex space-x-2 mb-4 p-2 bg-black/20 rounded-xl sticky top-0 z-10 backdrop-blur-sm">
-                                        <button onClick={() => setSubModal('manage')} className="w-full py-2 text-sm rounded-lg luxe-button-secondary">Editar Clã</button>
-                                        <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 text-sm rounded-lg luxe-button-secondary">Convidar</button>
-                                    </div>
-                                )}
-                                {userClanRole === 'leader' && clanJoinRequestsIncoming.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between px-2 text-xs text-gray-300">
-                                            <span className="font-bold uppercase tracking-wider">Pedidos</span>
-                                            <span>{clanJoinRequestsIncoming.length} pendentes</span>
+                        {/* Content Section */}
+                        <div className="flex-1 relative min-h-0">
+                            {activeTab === 'santuario' && (
+                                <>
+                                    <Sparkles />
+                                    <div className="absolute inset-0 p-4">
+                                        <div className="grid grid-cols-6 grid-rows-6 h-full gap-1">
+                                            {[...Array(36)].map((_, i) => {
+                                                const row = Math.floor(i / 6);
+                                                const col = i % 6;
+                                                return (
+                                                    <div
+                                                        key={i}
+                                                        id={`cell-${row}-${col}`}
+                                                        className="border border-white/5 cursor-pointer hover:bg-white/10 transition-colors rounded-lg bg-black/10 backdrop-blur-[2px]"
+                                                        onClick={() => handleCellClick(row, col)}
+                                                    />
+                                                );
+                                            })}
+                                            {allMembers.map(placement => <ClanMember key={placement.member.id} placement={placement} onClick={() => setSelectedMember(placement.member)} />)}
                                         </div>
-                                        {clanJoinRequestsIncoming.map(request => {
-                                            const nickname = request.requesterProfile?.nickname || 'Soberano';
-                                            const initial = nickname.charAt(0).toUpperCase();
-                                            return (
-                                                <div key={request.id} className="bg-black/20 p-3 rounded-2xl flex items-center space-x-3 border border-white/10">
-                                                    <div className="w-12 h-12 rounded-full border-2 border-white/20 bg-gray-800 flex items-center justify-center text-sm font-bold">
-                                                        {initial}
-                                                    </div>
-                                                    <div className="flex-grow">
-                                                        <div className="flex items-center space-x-2">
-                                                            <h4 className="font-bold text-white">{nickname}</h4>
-                                                        </div>
-                                                        <p className="text-xs text-gray-400">Solicitou entrada no clã</p>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <button onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-full bg-green-500/20 text-green-300 hover:bg-green-500/30">
-                                                            <CheckIcon className="w-4 h-4" />
-                                                        </button>
-                                                        <button onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30">
-                                                            <XIcon className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
                                     </div>
-                                )}
-                                <div className="flex items-center justify-between px-2 text-xs text-gray-300">
-                                    <span className="font-bold uppercase tracking-wider">Membros</span>
-                                    <span>{enrichedClanMembers.length} total</span>
-                                </div>
-                                {enrichedClanMembers.map(member => (
-                                    <ClanMemberCard 
-                                        key={member.id}
-                                        member={member}
-                                        isLeaderView={userClanRole === 'leader'}
-                                        onKick={setMemberToKick}
-                                    />
-                                ))}
-                                 <div className="mt-6 flex flex-col items-center space-y-2 text-center">
-                                    <button onClick={handleLeaveRequest} className="text-sm font-bold text-red-400 hover:text-red-300">Sair do Clã</button>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'missoes' && (
-                            <div className="absolute top-28 bottom-24 left-4 right-4 overflow-y-auto hide-scrollbar">
-                                <div className="space-y-3">
-                                    {clan && (
-                <CompactSanctuaryStats clanId={clan.id} />
+                                </>
+                            )}
+                            
+                            {activeTab === 'membros' && (
+                                <div className="absolute inset-0 px-4 overflow-y-auto space-y-2 hide-scrollbar pt-4">
+                                    {userClanRole === 'leader' && (
+                                        <div className="flex space-x-2 mb-4 p-2 bg-black/20 rounded-xl sticky top-0 z-10 backdrop-blur-sm">
+                                            <button onClick={() => setSubModal('manage')} className="w-full py-2 text-sm rounded-lg luxe-button-secondary">Editar Clã</button>
+                                            <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 text-sm rounded-lg luxe-button-secondary">Convidar</button>
+                                        </div>
                                     )}
-                                    <div className="text-center text-xs font-bold uppercase tracking-wider text-gray-300">
-                                        Quests do Clã
-                                    </div>
-                                </div>
-                                {clanQuests.length === 0 && (
-                                    <GlassCard variant="neutral" className="p-4 text-center text-sm text-gray-300">
-                                        Nenhuma quest de clã ativa nesta season.
-                                    </GlassCard>
-                                )}
-                                {clanQuests.map(quest => {
-                                    const progress = getQuestProgress(quest);
-                                    const isCompleted = progress >= 100;
-
-                                    return (
-                                        <GlassCard key={quest.id} variant={isCompleted ? 'gold' : 'neutral'} className={`p-4 transition-all duration-300 cursor-pointer ${isCompleted ? 'border-[var(--gold)] shadow-[0_0_15px_rgba(212,175,55,0.3)]' : ''}`} onClick={() => setSelectedQuest(quest)}>
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-bold text-sm w-2/3">{quest.title}</span>
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="text-xs font-mono">{progress}%</span>
-                                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--gold)] bg-[var(--gold)] text-black' : 'border-gray-500'}`}>
-                                                            {isCompleted && <CheckIcon className="w-4 h-4" />}
+                                    {userClanRole === 'leader' && clanJoinRequestsIncoming.length > 0 && (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between px-2 text-xs text-gray-300">
+                                                <span className="font-bold uppercase tracking-wider">Pedidos</span>
+                                                <span>{clanJoinRequestsIncoming.length} pendentes</span>
+                                            </div>
+                                            {clanJoinRequestsIncoming.map(request => {
+                                                const nickname = request.requesterProfile?.nickname || 'Soberano';
+                                                const initial = nickname.charAt(0).toUpperCase();
+                                                return (
+                                                    <div key={request.id} className="bg-black/20 p-3 rounded-2xl flex items-center space-x-3 border border-white/10">
+                                                        <div className="w-12 h-12 rounded-full border-2 border-white/20 bg-gray-800 flex items-center justify-center text-sm font-bold">
+                                                            {initial}
+                                                        </div>
+                                                        <div className="flex-grow">
+                                                            <div className="flex items-center space-x-2">
+                                                                <h4 className="font-bold text-white">{nickname}</h4>
+                                                            </div>
+                                                            <p className="text-xs text-gray-400">Solicitou entrada no clã</p>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <button onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-full bg-green-500/20 text-green-300 hover:bg-green-500/30">
+                                                                <CheckIcon className="w-4 h-4" />
+                                                            </button>
+                                                            <button onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30">
+                                                                <XIcon className="w-4 h-4" />
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                
-                                                <div className="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
-                                                    <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--gold)]' : 'bg-gray-500'}`} style={{width: `${progress}%`}}></div>
-                                                </div>
-                                            </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                    <div className="flex items-center justify-between px-2 text-xs text-gray-300">
+                                        <span className="font-bold uppercase tracking-wider">Membros</span>
+                                        <span>{enrichedClanMembers.length} total</span>
+                                    </div>
+                                    {enrichedClanMembers.map(member => (
+                                        <ClanMemberCard 
+                                            key={member.id}
+                                            member={member}
+                                            isLeaderView={userClanRole === 'leader'}
+                                            onKick={setMemberToKick}
+                                        />
+                                    ))}
+                                     <div className="mt-6 flex flex-col items-center space-y-2 text-center">
+                                        <button onClick={handleLeaveRequest} className="text-sm font-bold text-red-400 hover:text-red-300">Sair do Clã</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'missoes' && (
+                                <div className="absolute inset-0 px-4 overflow-y-auto hide-scrollbar pt-4">
+                                    <div className="space-y-3">
+                                        {clan && (
+                    <CompactSanctuaryStats clanId={clan.id} />
+                                        )}
+                                        <div className="text-center text-xs font-bold uppercase tracking-wider text-gray-300">
+                                            Quests do Clã
+                                        </div>
+                                    </div>
+                                    {clanQuests.length === 0 && (
+                                        <GlassCard variant="neutral" className="p-4 text-center text-sm text-gray-300">
+                                            Nenhuma quest de clã ativa nesta season.
                                         </GlassCard>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                    )}
+                                    {clanQuests.map(quest => {
+                                        const progress = getQuestProgress(quest);
+                                        const isCompleted = progress >= 100;
+
+                                        return (
+                                            <GlassCard key={quest.id} variant={isCompleted ? 'gold' : 'neutral'} className={`p-4 transition-all duration-300 cursor-pointer ${isCompleted ? 'border-[var(--gold)] shadow-[0_0_15px_rgba(212,175,55,0.3)]' : ''}`} onClick={() => setSelectedQuest(quest)}>
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-bold text-sm w-2/3">{quest.title}</span>
+                                                        <div className="flex items-center space-x-2">
+                                                            <span className="text-xs font-mono">{progress}%</span>
+                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--gold)] bg-[var(--gold)] text-black' : 'border-gray-500'}`}>
+                                                                {isCompleted && <CheckIcon className="w-4 h-4" />}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
+                                                        <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--gold)]' : 'bg-gray-500'}`} style={{width: `${progress}%`}}></div>
+                                                    </div>
+                                                </div>
+                                            </GlassCard>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                         
-                        <div className="absolute bottom-4 left-4 right-4 z-30">
+                        {/* Footer Navigation */}
+                        <div className="flex-none p-4 z-30 bg-gradient-to-t from-black/80 to-transparent">
                             <GlassCard variant="neutral" className="p-1">
                                 <div className="flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
                                     <button onClick={() => setActiveTab('santuario')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'santuario' ? 'bg-white/10' : 'text-gray-400'}`}>Santuário</button>
@@ -848,6 +903,13 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     onClose={() => setSubModal(null)}
                 />
             )}
-        </>
+            {selectedMember && (
+                <SovereignDetailModal 
+                    member={selectedMember} 
+                    onClose={() => setSelectedMember(null)} 
+                />
+            )}
+        </>,
+        document.body
     );
 }

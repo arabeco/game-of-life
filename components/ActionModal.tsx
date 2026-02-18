@@ -57,7 +57,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const [formStep, setFormStep] = useState(0);
     // New View Mode State
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
-    const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'note' | 'summary'>('media');
+    const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'note' | 'checklist' | 'context'>('media');
 
     const nameInputRef = useRef<HTMLInputElement>(null);
     const durationInputRef = useRef<HTMLDivElement>(null);
@@ -220,11 +220,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
                 <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col h-[85vh] p-0 relative overflow-hidden border-yellow-500/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
                     
                     {/* Header Fixed */}
-                    <div className="flex-none p-4 bg-black/40 backdrop-blur-md flex justify-between items-center z-10">
+                    <div className="flex-none p-4 bg-black/40 backdrop-blur-md flex justify-between items-center z-30 relative">
                         <div className="flex items-center gap-3">
                             <button 
                                 onClick={mode === 'view' ? () => setMode('edit') : handleCancel} 
@@ -242,7 +242,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                     </div>
 
                     {/* Tabs Fixed */}
-                    <div className="flex-none px-4 pb-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-10">
+                    <div className="flex-none px-4 pb-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-20 relative">
                         <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5">
                             <button 
                                 onClick={() => setActiveTab('basic')}
@@ -443,8 +443,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                             <div className="flex flex-col h-full animate-fade-in pb-20">
                                 {/* Sub-Tabs */}
                                 <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5 mx-4 mt-4 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
-                                    {(['MÍDIA', 'ANOTAÇÃO', 'RESUMO'] as const).map((tab) => {
-                                        const tabKey = tab === 'MÍDIA' ? 'media' : tab === 'ANOTAÇÃO' ? 'note' : 'summary';
+                                    {(['MÍDIA', 'ANOTAÇÃO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
+                                        const tabKey = tab === 'MÍDIA' ? 'media' : tab === 'ANOTAÇÃO' ? 'note' : tab === 'CHECKLIST' ? 'checklist' : 'context';
                                         const isActive = advancedSubTab === tabKey;
                                         return (
                                             <button
@@ -533,7 +533,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                         </div>
                                     )}
 
-                                    {advancedSubTab === 'summary' && (
+                                    {advancedSubTab === 'checklist' && (
                                         <div className="p-4 space-y-3">
                                             {/* Checklist Items */}
                                             {(displayAction?.preFlight || []).length > 0 ? (
@@ -587,6 +587,60 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                                     </button>
                                                 </div>
                                             )}
+                                        </div>
+                                    )}
+
+                                    {advancedSubTab === 'context' && (
+                                        <div className="p-4 space-y-6">
+                                            {/* Energy Level */}
+                                            <div className="space-y-3">
+                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Nível de Energia</label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {(['low', 'medium', 'high'] as const).map(level => {
+                                                        const isSelected = displayAction?.context?.energyLevel === level;
+                                                        const isEditable = mode === 'edit';
+                                                        return (
+                                                            <button
+                                                                key={level}
+                                                                disabled={!isEditable}
+                                                                onClick={() => isEditable && setEditableAction(prev => ({ ...prev, context: { ...prev.context, energyLevel: level } }))}
+                                                                className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                                                                    isSelected 
+                                                                    ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                                                                    : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
+                                                                }`}
+                                                            >
+                                                                {level === 'low' ? 'Baixo' : level === 'medium' ? 'Médio' : 'Alto'}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Time of Day */}
+                                            <div className="space-y-3">
+                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Período Ideal</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {(['morning', 'afternoon', 'evening', 'night'] as const).map(time => {
+                                                        const isSelected = displayAction?.context?.timeOfDay === time;
+                                                        const isEditable = mode === 'edit';
+                                                        return (
+                                                            <button
+                                                                key={time}
+                                                                disabled={!isEditable}
+                                                                onClick={() => isEditable && setEditableAction(prev => ({ ...prev, context: { ...prev.context, timeOfDay: time } }))}
+                                                                className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                                                                    isSelected 
+                                                                    ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                                                                    : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
+                                                                }`}
+                                                            >
+                                                                {time === 'morning' ? 'Manhã' : time === 'afternoon' ? 'Tarde' : time === 'evening' ? 'Noite' : 'Madrugada'}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

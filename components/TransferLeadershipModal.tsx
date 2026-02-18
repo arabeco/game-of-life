@@ -16,7 +16,7 @@ export const TransferLeadershipModal: React.FC<TransferLeadershipModalProps> = (
     const otherMembers = enrichedClanMembers.filter(member => member.id !== userProfile.id);
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
                     <h2 className="text-lg font-bold uppercase tracking-wider">Transferir Liderança</h2>

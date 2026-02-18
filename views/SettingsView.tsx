@@ -14,12 +14,11 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { ChestOpeningModal } from '../components/ChestOpeningModal';
 import { ItemDetailModal } from '../components/ItemDetailModal';
 import { SovereignPanelView } from './SovereignPanelView';
-import { HallOfFameView } from './HallOfFameView';
 import { supabase } from '../supabaseClient';
 import { SeasonDetailModal } from '../components/SeasonDetailModal';
 import { CodexModal } from '../components/CodexModal';
 
-type SettingsTab = 'Geral' | 'Arsenal' | 'Maestria' | 'Missões' | 'Hall da Fama';
+type SettingsTab = 'Geral' | 'Arsenal' | 'Missões' | 'Configurações';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type PrivacyMode = 'Todos' | 'Amigos' | 'Personalizado' | 'Ninguém';
 type ItemType = 'Artefato' | 'Skin' | 'Borda' | 'Banner' | 'Consumível' | 'Baú';
@@ -683,19 +682,16 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 const GeralTab: React.FC = () => {
-    const { userProfile, updateUserProfile, nobilityRanks } = useGame();
-    // Inicializar nickname apenas uma vez para evitar loop infinito
+    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets } = useGame();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
-    const [notificationMode, setNotificationMode] = useState<NotificationMode>('Militar');
-    const [privacyMode, setPrivacyMode] = useState<PrivacyMode>('Amigos');
-    const [modal, setModal] = useState<'notification' | 'privacy' | 'delete' | 'tutorial' | null>(null);
-    const [isCodexOpen, setCodexOpen] = useState(false);
-    const [isLinksOpen, setLinksOpen] = useState(false);
-    const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showStartCycle, setShowStartCycle] = useState(false);
+    const [showMastery, setShowMastery] = useState(false);
+    const [cycleName, setCycleName] = useState('');
+    const [cycleEndDate, setCycleEndDate] = useState('');
 
     const handleSave = () => { updateUserProfile({ nickname }); alert("Perfil salvo!"); };
-    const handleNotificationSave = (mode: NotificationMode) => { setNotificationMode(mode); };
     
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut();
@@ -704,9 +700,6 @@ const GeralTab: React.FC = () => {
         }
         // The onAuthStateChange listener in App.tsx will handle redirecting to LoginView
     };
-
-    const currentNotificationName = notificationModes.find(m => m.id === notificationMode)?.name || 'N/A';
-    const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
 
     // Nobility logic
     const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);
@@ -717,6 +710,23 @@ const GeralTab: React.FC = () => {
     const progressInRank = userProfile.nobility.exp - expForCurrentRank;
     const expToNextRank = expForNextRank - expForCurrentRank;
     const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
+
+    const masteryTotalLevel = assets
+        .filter(a => a.id !== 'geral')
+        .reduce((sum, a) => sum + (a.level === 0 ? 1 : (a.level || 1)), 0);
+
+    useEffect(() => {
+        const today = new Date();
+        const defaultEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+        if (!cycleEndDate) setCycleEndDate(formatDate(defaultEnd));
+        if (!cycleName) {
+            const month = today.toLocaleString('pt-BR', { month: 'long' });
+            setCycleName(`Ciclo de ${month}`);
+        }
+    }, [cycleEndDate, cycleName]);
 
     if (isHierarchyVisible) return (<div><button onClick={() => setIsHierarchyVisible(false)} className="mb-4 text-sm font-bold text-gray-400 hover:text-white">&larr; Voltar</button><NobrezaHierarchyView /></div>);
 
@@ -740,6 +750,58 @@ const GeralTab: React.FC = () => {
                 </div>
             </GlassCard>
 
+            <GlassCard variant="neutral" className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Ciclo atual</div>
+                        {activeCycle ? (
+                            <>
+                                <div className="text-lg font-bold text-white truncate">{activeCycle.name}</div>
+                                <div className="text-xs text-gray-500 mt-1 font-mono">{activeCycle.startDate} → {activeCycle.endDate}</div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-lg font-bold text-white">Sem ciclo ativo</div>
+                                <div className="text-xs text-gray-500 mt-1">Crie um ciclo para registrar sua história.</div>
+                            </>
+                        )}
+                    </div>
+                    {!activeCycle && (
+                        <button
+                            onClick={() => setShowStartCycle(true)}
+                            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold"
+                        >
+                            Criar
+                        </button>
+                    )}
+                </div>
+            </GlassCard>
+
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold tracking-wider">Maestria</h2>
+                    <button
+                        onClick={() => setShowMastery(true)}
+                        className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold"
+                    >
+                        Abrir sliders
+                    </button>
+                </div>
+
+                <GlassCard variant="neutral" className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Seu nível</div>
+                            <div className="text-2xl font-black text-white">{masteryTotalLevel}</div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-xs text-gray-500">Legado / Soberano</div>
+                            <div className="text-xs text-gray-400">Editar por área ao abrir</div>
+                        </div>
+                    </div>
+                </GlassCard>
+            </div>
+
             <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl">
                     <label className="text-sm font-semibold">Nickname</label>
@@ -751,55 +813,209 @@ const GeralTab: React.FC = () => {
                 </div>
             </div>
 
-            <div className="space-y-4">
-                 <h2 className="text-lg font-bold tracking-wider">CONFIGURAÇÕES</h2>
-                 <SettingSelector label="Tutoriais" value="Revisar" onClick={() => setModal('tutorial')} />
-                 <SettingSelector label="Privacidade" value={privacyMode} onClick={() => setModal('privacy')} />
-                 <SettingSelector label="Notificações" value={currentNotificationName} onClick={() => setModal('notification')} />
+             <div className="text-center pt-4">
+                 <button onClick={() => setShowDeleteConfirm(true)} className="text-red-500 hover:text-red-400 text-sm font-semibold">Deletar Conta</button>
+            </div>
+
+            {showDeleteConfirm && (
+                <ConfirmationModal
+                    title="Deletar Conta"
+                    message="Tem certeza? Esta ação é irreversível."
+                    onConfirm={() => alert('Conta deletada!')}
+                    onCancel={() => setShowDeleteConfirm(false)}
+                />
+            )}
+
+            {showStartCycle && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowStartCycle(false)}>
+                    <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                        <h2 className="text-lg font-bold uppercase tracking-wider text-center">Criar Ciclo</h2>
+                        <div className="space-y-2">
+                            <input
+                                type="text"
+                                value={cycleName}
+                                onChange={(e) => setCycleName(e.target.value)}
+                                placeholder="Nome do ciclo"
+                                className="w-full p-2 bg-black/30 rounded-lg border border-white/20"
+                            />
+                            <input
+                                type="date"
+                                value={cycleEndDate}
+                                onChange={(e) => setCycleEndDate(e.target.value)}
+                                className="w-full p-2 bg-black/30 rounded-lg border border-white/20"
+                            />
+                        </div>
+                        <div className="flex space-x-2">
+                            <button onClick={() => setShowStartCycle(false)} className="w-1/2 py-2 rounded-xl luxe-button-secondary">Cancelar</button>
+                            <button
+                                onClick={() => {
+                                    if (!cycleName.trim() || !cycleEndDate) return;
+                                    startCycle(cycleName.trim(), cycleEndDate);
+                                    setShowStartCycle(false);
+                                }}
+                                className="w-1/2 py-2 rounded-xl luxe-button-primary"
+                            >
+                                Criar
+                            </button>
+                        </div>
+                    </GlassCard>
+                </div>
+            )}
+
+            {showMastery && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowMastery(false)}>
+                    <GlassCard variant="neutral" className="w-full max-w-sm m-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 flex items-center justify-between">
+                            <h2 className="text-lg font-bold tracking-wider">Maestria</h2>
+                            <button onClick={() => setShowMastery(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50">
+                                <XIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="px-4 pb-4 max-h-[75vh] overflow-y-auto">
+                            <MasteryView />
+                        </div>
+                    </GlassCard>
+                </div>
+            )}
+        </div>
+    );
+};
+
+type AssistantMode = 1 | 2 | 3;
+
+const AssistantModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const [mode, setMode] = useState<AssistantMode>(1);
+    const options: { id: AssistantMode; title: string; subtitle: string }[] = [
+        { id: 1, title: 'Opção 1', subtitle: 'Curta e objetiva' },
+        { id: 2, title: 'Opção 2', subtitle: 'Orientadora (passo a passo)' },
+        { id: 3, title: 'Opção 3', subtitle: 'Ritual / narrativa' },
+    ];
+
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center">
+                    <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">Assistente IA</div>
+                    <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
+                </div>
+                <div className="space-y-2">
+                    {options.map(o => (
+                        <button
+                            key={o.id}
+                            onClick={() => setMode(o.id)}
+                            className={`w-full text-left p-3 rounded-2xl border border-white/10 ${mode === o.id ? 'bg-white/10' : 'bg-black/20 hover:bg-black/30'}`}
+                        >
+                            <div className="font-bold">{o.title}</div>
+                            <div className="text-xs text-gray-500">{o.subtitle}</div>
+                        </button>
+                    ))}
+                </div>
+                <div className="text-xs text-gray-500">Mock: conversa não implementada.</div>
+                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">OK</button>
+            </GlassCard>
+        </div>
+    );
+};
+
+const ConfigTab: React.FC = () => {
+    const { userProfile } = useGame();
+    const [notificationMode, setNotificationMode] = useState<NotificationMode>('Militar');
+    const [privacyMode, setPrivacyMode] = useState<PrivacyMode>('Amigos');
+    const [modal, setModal] = useState<'notification' | 'privacy' | 'tutorial' | null>(null);
+    const [isCodexOpen, setCodexOpen] = useState(false);
+    const [isLinksOpen, setLinksOpen] = useState(false);
+    const [isFeedbackOpen, setFeedbackOpen] = useState(false);
+    const [isAssistantOpen, setAssistantOpen] = useState(false);
+
+    const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
+    const currentNotificationName = notificationModes.find(m => m.id === notificationMode)?.name || 'N/A';
+
+    return (
+        <div className="space-y-8 animate-fade-in pb-10">
+            {/* Grupo Geral */}
+            <section className="space-y-4">
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Geral</h2>
+                <div className="space-y-2">
+                    <SettingSelector label="Tutoriais" value="Revisar" onClick={() => setModal('tutorial')} />
+                    <SettingSelector label="Privacidade" value={privacyMode} onClick={() => setModal('privacy')} />
+                    <SettingSelector label="Notificações" value={currentNotificationName} onClick={() => setModal('notification')} />
+                </div>
+            </section>
+
+            {/* Grupo Feedback */}
+            <section className="space-y-4">
+                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Suporte</h2>
                  <button
                     onClick={() => setFeedbackOpen(true)}
-                    className="w-full py-3 rounded-2xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest text-[var(--gold)]"
-                 >
-                    📊 FEEDBACK BETA
-                 </button>
-                <button
-                    onClick={() => {
-                        if (!isPremium) return;
-                        setCodexOpen(true);
-                    }}
-                    disabled={!isPremium}
-                    className={`w-full py-3 rounded-2xl border border-white/10 bg-black/20 font-bold text-xs tracking-widest ${isPremium ? 'text-[var(--gold)] hover:bg-black/30' : 'opacity-60 cursor-not-allowed'}`}
+                    className="w-full py-4 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest text-[var(--gold)] flex items-center justify-center gap-2 transition-all"
                 >
-                    📚 CODEXES
+                    <span>📊</span> ENVIAR FEEDBACK BETA
                 </button>
-                <button
-                    onClick={() => {
-                        if (!isPremium) return;
-                        setLinksOpen(true);
-                    }}
-                    disabled={!isPremium}
-                    className={`w-full py-3 rounded-2xl border border-white/10 bg-black/20 font-bold text-xs tracking-widest ${isPremium ? 'text-[var(--gold)] hover:bg-black/30' : 'opacity-60 cursor-not-allowed'}`}
-                >
-                    🔗 VÍNCULOS
-                </button>
-            </div>
-             <div className="text-center pt-4">
-                 <button onClick={() => setModal('delete')} className="text-red-500 hover:text-red-400 text-sm font-semibold">Deletar Conta</button>
-            </div>
-            
+            </section>
+
+            {/* Grupo Premium (Opaque) */}
+            <section className="space-y-4">
+                <div className="flex items-center justify-between px-1 border-b border-yellow-500/20 pb-2">
+                    <h2 className="text-sm font-bold text-yellow-500 uppercase tracking-widest">Soberania (Premium)</h2>
+                    {!isPremium && <span className="text-[10px] font-bold text-gray-500 bg-white/5 px-2 py-1 rounded">BLOQUEADO</span>}
+                </div>
+                
+                <GlassCard variant="neutral" className={`p-4 space-y-3 ${!isPremium ? 'opacity-50 grayscale' : ''}`}>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => { if (isPremium) setCodexOpen(true); }}
+                            disabled={!isPremium}
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center gap-2 text-center group"
+                        >
+                            <span className="text-2xl group-hover:scale-110 transition-transform">📚</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Codexes</span>
+                        </button>
+                        <button
+                            onClick={() => { if (isPremium) setLinksOpen(true); }}
+                            disabled={!isPremium}
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center gap-2 text-center group"
+                        >
+                            <span className="text-2xl group-hover:scale-110 transition-transform">🔗</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
+                        </button>
+                        <button
+                            onClick={() => alert('Mock: campanhas não implementadas.')}
+                            disabled={!isPremium}
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center gap-2 text-center group"
+                        >
+                            <span className="text-2xl group-hover:scale-110 transition-transform">🎯</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>
+                        </button>
+                        <button
+                            onClick={() => { if (isPremium) setAssistantOpen(true); }}
+                            disabled={!isPremium}
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center gap-2 text-center group"
+                        >
+                            <span className="text-2xl group-hover:scale-110 transition-transform">🤖</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Assistente</span>
+                        </button>
+                    </div>
+                    {!isPremium && (
+                        <div className="text-center pt-2">
+                            <p className="text-xs text-gray-400">Torne-se um Soberano para desbloquear.</p>
+                        </div>
+                    )}
+                </GlassCard>
+            </section>
+
             {(userProfile.role === 'admin' || userProfile.role === 'gm') && (
                 <div className="pt-6 mt-6 border-t border-yellow-800/50">
                     <SovereignPanelView />
                 </div>
             )}
 
-            {modal === 'notification' && <NotificationSettingsModal currentMode={notificationMode} onSave={handleNotificationSave} onClose={() => setModal(null)} />}
+            {modal === 'notification' && <NotificationSettingsModal currentMode={notificationMode} onSave={setNotificationMode} onClose={() => setModal(null)} />}
             {modal === 'privacy' && <ConfirmationModal title="Modo de Privacidade" message="Função ainda não implementada." onConfirm={() => setModal(null)} onCancel={() => setModal(null)} />}
-            {modal === 'delete' && <ConfirmationModal title="Deletar Conta" message="Tem certeza? Esta ação é irreversível." onConfirm={() => alert("Conta deletada!")} onCancel={() => setModal(null)} />}
             {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}
             {isPremium && isCodexOpen && <CodexModal onClose={() => setCodexOpen(false)} />}
             {isPremium && isLinksOpen && <LinksModal onClose={() => setLinksOpen(false)} />}
             {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
+            {isAssistantOpen && <AssistantModal onClose={() => setAssistantOpen(false)} />}
         </div>
     );
 };
@@ -1315,14 +1531,13 @@ export const SettingsView: React.FC = () => {
         switch(activeTab) {
             case 'Geral': return <GeralTab />;
             case 'Arsenal': return <ArsenalTab onOpenSovereignEditor={() => setSovereignEditorOpen(true)} />;
-            case 'Maestria': return <MasteryView />;
             case 'Missões': return <MissionsTab />;
-            case 'Hall da Fama': return <HallOfFameView />;
+            case 'Configurações': return <ConfigTab />;
             default: return null;
         }
     }
     
-    let tabs: SettingsTab[] = ['Geral', 'Arsenal', 'Maestria', 'Missões', 'Hall da Fama'];
+    let tabs: SettingsTab[] = ['Geral', 'Arsenal', 'Missões', 'Configurações'];
 
     return (
         <>

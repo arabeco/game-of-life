@@ -128,6 +128,10 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         repetitions: a.repetitions,
         difficulty: a.difficulty,
         actionType: a.actionType === 'Compromisso' ? 'Compromisso' : 'Ação Recorrente',
+        briefing: a.briefing,
+        assets: a.assets,
+        preFlight: a.preFlight,
+        context: a.context
       }));
     const milestones = draft.actions
       .filter(a => a.actionType === 'Marco')
@@ -138,6 +142,10 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         icon: a.icon || undefined,
         duration: a.duration,
         difficulty: a.difficulty,
+        briefing: a.briefing,
+        assets: a.assets,
+        preFlight: a.preFlight,
+        context: a.context
       }));
     return JSON.stringify({
       schemaVersion: 1,
@@ -213,6 +221,10 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       repetitions,
       actionType,
       difficulty: actionDraft.difficulty || 3,
+      briefing: actionDraft.briefing,
+      assets: actionDraft.assets,
+      preFlight: actionDraft.preFlight,
+      context: actionDraft.context
     };
     updateCodex(activeCodex.id, draft => {
       const without = draft.actions.filter(a => a.id !== actionId);
@@ -262,7 +274,12 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 actionType: action.actionType,
                 difficulty: action.difficulty,
                 scheduledDays: action.scheduledDays,
-                scheduledStartTime: action.scheduledStartTime
+                scheduledStartTime: action.scheduledStartTime,
+                briefing: action.briefing,
+                assets: action.assets,
+                preFlight: action.preFlight,
+                context: action.context,
+                originCodexId: activeCodex.id
             });
 
             if (newAction.actionType === 'Ação Recorrente' && newAction.scheduledDays && newAction.scheduledDays.length > 0 && newAction.scheduledStartTime !== undefined) {

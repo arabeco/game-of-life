@@ -215,7 +215,7 @@ export interface GameContextType {
   updateAssetSlotValue: (assetId: string, slotId: string, value: SlotValue) => void;
   getArenas: () => Arena[];
   addArena: (assetId: string, arenaData: Pick<Arena, 'name' | 'description' | 'icon'>, skipDb?: boolean) => Arena;
-  updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId'>>) => void;
+  updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived'>>) => void;
   deleteArena: (arenaId: string) => void;
   createArenaFolder: (name: string, icon: string, assetId?: string) => Promise<ArenaFolder | null>;
   updateArenaFolder: (folderId: string, data: Partial<ArenaFolder>) => Promise<void>;
@@ -2176,7 +2176,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return newArena;
   };
   
-  const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId'>>) => {
+  const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived'>>) => {
     setAssets(prevAssets => prevAssets.map(asset => ({
         ...asset,
         arenas: asset.arenas.map(arena => arena.id === arenaId ? { ...arena, ...arenaData } : arena)
@@ -2379,6 +2379,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             updateArena(arenaId, { isArchived: true });
         }
         return;
+     }
+
+     // CHECK FOR HISTORY: If any action has completed tasks, we must ARCHIVE instead of DELETE
+     // This preserves the "color" (mastery/heatmap) of the user's history
+     const actionsWithHistory = arenaActions.filter(action => 
+         tasks.some(t => t.actionId === action.id && t.completed)
+     );
+
+     if (actionsWithHistory.length > 0) {
+         console.log(`Arena ${arenaId} has history (${actionsWithHistory.length} actions). Archiving instead of deleting.`);
+         
+         // 1. Archive the Arena (updates Supabase via updateArena)
+         updateArena(arenaId, { isArchived: true });
+         
+         // 2. Delete ONLY the actions that have NO history
+         const actionsToDelete = arenaActions.filter(a => !actionsWithHistory.some(h => h.id === a.id));
+         
+         if (actionsToDelete.length > 0) {
+             setActions(prev => prev.filter(a => !actionsToDelete.some(del => del.id === a.id)));
+             
+             const userId = getSupabaseUserId();
+             if (userId) {
+                 const idsToDelete = actionsToDelete.map(a => a.id);
+                 supabase.from('actions').delete().in('id', idsToDelete).then(({ error }) => {
+                     if (error) console.error("Supabase delete unused actions error:", error.message);
+                 });
+             }
+         }
+         
+         return; // Exit, do not fully delete the arena
      }
 
      setAssets(prevAssets => prevAssets.map(asset => ({

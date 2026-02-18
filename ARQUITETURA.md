@@ -1,84 +1,159 @@
-# 🏛️ Codex da Cidadela: Arquitetura de Dados
+## MISSÃO 1 — AUDITORIA COMPLETA (7 abas) — Checklist global numerado
+### 1) Perfil
+Funcionalidades existentes
 
-Este documento serve como a fonte da verdade para todas as entidades de dados e suas relações no Life OS.
+- 1. Modal de Perfil em overlay, fecha ao clicar fora e por botão de fechar.
+- 2. Cartão “compartilhável” do perfil renderizado offscreen + fluxo de share.
+- 3. Modo editar/salvar/cancelar para dados do perfil (patch parcial via contexto).
+- 4. Troca de avatar via modal (upload/seleção).
+- 5. Troca de borda via modal (com gates de unlock/role).
+- 6. Troca de background (imagem/gradiente) via modal, com overlay de edição.
+- 7. Troca de banner via modal + render condicional.
+- 8. Exibição do clã + rank do clã com abertura do modal do clã.
+- 9. Sistema de widgets (lista visibleWidgets ) renderizados em grid.
+- 10. Resolução de widget por slotId → Asset/Slot (parse assetId.slotKey ).
+- 11. Skin aplicada como identidade visual (accent derivado de userProfile.skin ).
+- 12. Sync/persistência do perfil via Supabase (upsert de user_profiles com jsonb de unlocks etc).
+Nota (0–10): 7.5
 
-## I. O Soberano (Dados Centrais do Usuário)
+Falta para chegar no 10 (gaps reais, sem inflar)
 
-Estes dados definem o estado e a identidade do usuário.
+- UI do Perfil não é o “hub” de equipar (hoje fica muito em Configurações/Arsenal).
+- Widgets hoje são “display”; faltam ações diretas (eles não editam o slot por toque).
+- Consistência de “identidade”: o Perfil mostra muita estética, mas pouca alavanca prática (atalhos de equipar/editar).
+Dicas (somente as que você aprovou)
 
--   **`profiles`**: O Trono do Soberano.
-    -   **Propósito:** Armazena todas as informações do perfil público e privado.
-    -   **Relações:** Ligado diretamente ao `auth.users` pelo `id`.
-    -   **Variáveis:** `id`, `nickname`, `level`, `avatar_url`, `background_url`, `banner_url`, `sovereign` (config do avatar `jsonb`), `nobility` (`jsonb`), `chests` (`jsonb`), `skin`, `border`, etc.
+- “Hub de identidade” enxuto: equipar Skin/Borda/Banner/Artefato no Perfil (atalho), sem inventário gigante duplicado. (talvez — para discutir)
+- Widget com ação: tocar no widget abre o editor do slot correspondente (zero navegação extra). (difícil, mas não é impossível: é wiring de navegação + abrir InputModal com o slot resolvido)
+### 2) Ativos
+Funcionalidades existentes
 
--   **`user_assets`**: Os Níveis de Maestria dos 10 Ativos.
-    -   **Propósito:** Rastreia o progresso do usuário em cada área da vida.
-    -   **Relações:** Pertence a um `user_id`. Cada registro corresponde a um `asset_id` (ex: 'consciencia').
-    -   **Variáveis:** `user_id`, `asset_id`, `level`.
+- 13. Tela Sephirot em layout fixo (10 ativos) com grid 3x7.
+- 14. Shader/névoa no fundo alimentado por nível dos ativos.
+- 15. Clique no ativo abre o Dossiê do Ativo (troca de estado local).
+- 16. Dossiê com slots editáveis (valores por slot).
+- 17. Edição de slot via InputModal (suporta tipos/layouts diferentes).
+- 18. Acesso a arenas do ativo e abertura do modal de arena.
+- 19. Criação de arena a partir do contexto do ativo (com seleção de ativo “geral/sidequest” disponível no app).
+Nota (0–10): 8.0
 
--   **`asset_slots`**: A Memória dos Ativos.
-    -   **Propósito:** Armazena os valores customizáveis (lemas, imagens, escolhas) de cada Ativo.
-    -   **Relações:** Pertence a um `user_id`. Cada registro corresponde a um `slot_id` (ex: 'consciencia.lema').
-    -   **Variáveis:** `user_id`, `slot_id`, `value`.
+Falta para chegar no 10 (gaps reais, sem inflar)
 
-## II. O Reino (Entidades Criadas pelo Usuário)
+- A transição “Sephirot → Dossiê” é funcional, mas ainda parece “troca de tela”, não “zoom/mergulho”.
+- O Dossiê poderia reforçar mais a sensação de estar “dentro” daquele ativo (ambientação visual coerente).
+Dica (nova, aprovada por você)
 
-Estas são as estruturas que o usuário constrói para organizar sua vida.
+- Zoom Sephirot : ao clicar num ativo, parecer que você deu zoom e “entrou na esfera” — por exemplo:
+  - transição animada (scale + fade) da esfera para o Dossiê, ou
+  - o modal/dossiê renderizar uma Sephirot ampliada/desfocada no fundo, como se o usuário estivesse dentro do ativo.
+### 3) Arenas
+Funcionalidades existentes
 
--   **`arenas`**: Os Contextos e Projetos.
-    -   **Propósito:** Representam os grandes projetos ou áreas de foco.
-    -   **Relações:** Pertencem a um `user_id` e a um `asset_id`.
-    -   **Variáveis:** `id`, `user_id`, `asset_id`, `name`, `description`, `icon`, `is_archived`.
+- 20. Listagem de arenas com toggle de “mostrar arquivadas”.
+- 21. Pastas de arenas (criar/editar/excluir).
+- 22. Modal de pasta com lista de arenas e ações de organização.
+- 23. Reordenação/drag de arenas (suporte no estado/handler).
+- 24. Criar arena via modal (nome/descrição/ativo).
+- 25. Abrir ArenaDetailModal ao selecionar uma arena.
+- 26. Editar arena (nome/descrição/ícone) com IconPicker.
+- 27. Excluir arena com confirmação.
+- 28. Listar ações por tipo (Marco vs não-Marco).
+- 29. Abrir ActionModal em modo view ao tocar numa ação.
+- 30. Criar ação pela arena (bloqueado em arenas especiais de quests).
+- 31. Modo Arquiteto (sandbox) dentro da aba Arenas (criar arena + ações sem afetar jogo atual).
+Nota (0–10): 7.8
 
--   **`actions`**: As Missões e Tarefas.
-    -   **Propósito:** As tarefas individuais que o usuário executa.
-    -   **Relações:** Pertencem a um `user_id` e a uma `arena_id`.
-    -   **Variáveis:** `id`, `user_id`, `arena_id`, `name`, `icon`, `duration`, `repetitions`, `action_type`, `difficulty`.
+Falta para chegar no 10 (gaps reais, sem inflar)
 
--   **`scheduled_tasks`**: O Planner.
-    -   **Propósito:** Uma `action` agendada em um dia e horário específico. É a instância de uma `action` no grid.
-    -   **Relações:** Pertence a um `user_id` e a uma `action_id`.
-    -   **Variáveis:** `id`, `user_id`, `action_id`, `date`, `start_time`, `completed`.
+- Regras de tipos (Marco/Compromisso/Recorrente) existem, mas ainda são mais “UI” do que comportamento forte no sistema.
+- Integração do “Modo Arquiteto/Codex” com o jogo real ainda é parcial (sandbox isolado).
+Dicas
 
-## III. O Mundo (Dados Sociais e de Sistema)
+- (nenhuma — você pediu para remover as outras)
+### 4) Planner
+Funcionalidades existentes
 
-Estas entidades governam as interações e o progresso macro.
+- 32. Alternância Dia/Semana com navegação temporal.
+- 33. Grid com indicador de tempo atual + auto-scroll pro “agora”.
+- 34. Zoom do grid (níveis).
+- 35. Bay Area (task pool) agrupada e renderizada por contexto.
+- 36. Drag & drop completo (ghost, offset, targets, drop indicators).
+- 37. Auto-scroll durante drag.
+- 38. Reagendar tarefa por drag (mudar dia/horário).
+- 39. Soltar na Bay Area retorna ao pool (ou remove se for Marco).
+- 40. Agendar ação nova do pool no grid via drop.
+- 41. Milestone pool separado (ações Marco não executadas).
+- 42. Long press para completar + toggle de conclusão.
+- 43. Abrir ActionModal a partir do Planner.
+- 44. Checklist modal (itens do checklist via contexto).
+- 45. SITREP modal: compromisso do dia, ajuste tático, gerar score final.
+- 46. Oráculo: parsing pt-BR (hora, dias da semana, aspas) e criação/agendamento.
+Nota (0–10): 8.4
 
--   **`clans`**: (A ser implementado no DB) A Guilda do Soberano.
-    -   **Propósito:** Armazena informações do Clã como nome, XP total e rank.
-    -   **Variáveis:** `id`, `name`, `exp`, `rank_id`.
+Falta para chegar no 10 (gaps reais, sem inflar)
 
--   **`clan_members`**: (A ser implementado no DB) A Távola Redonda.
-    -   **Propósito:** Tabela de junção que liga `user_id` a `clan_id`.
-    -   **Variáveis:** `user_id`, `clan_id`, `role` (ex: 'membro', 'líder').
+- O loop diário ainda tem atrito em recorrência: ações com dias+horário não “nascem” automaticamente no grid.
+Dicas (somente a que você aprovou)
 
--   **`clan_member_states`**: (A ser implementado no DB) **Ação no Santuário do Clã.**
-    -   **Propósito:** Exatamente o que você mencionou. Armazena o estado dinâmico de cada membro no Santuário (ex: 'Meditando na Árvore', 'Trabalhando no Jardim'). Isso adiciona uma camada de imersão fantástica.
-    -   **Variáveis:** `user_id`, `state_name`, `state_icon`, `state_lore`, `updated_at`.
+- “Poder real” sem barulho: auto-instanciar ações recorrentes no grid (se tem dias+hora). Isso reduz atrito sem alertar ninguém.
+### 5) Social
+Funcionalidades existentes
 
--   **`reports`**: (A ser implementado no DB) O Historiador.
-    -   **Propósito:** Salva os resultados de cada Ciclo concluído.
-    -   **Relações:** Pertence a um `user_id`.
-    -   **Variáveis:** `id`, `user_id`, `start_date`, `end_date`, `performance_score`, `metrics` (`jsonb`).
+- 47. Estado “sem clã” com CTA para fundar clã.
+- 48. Busca social (players/clãs) com cards de resultado.
+- 49. Enviar solicitação de amizade.
+- 50. Aceitar/recusar solicitações + contagem de pendências.
+- 51. Entrar em clã (joinClan).
+- 52. Modal do clã com tabs (santuário/membros/missões).
+- 53. Santuário do clã (grid 6x6) com posicionamento/ocupação.
+- 54. Membros: lista + ações administrativas (kick/transfer/leave) quando permitido.
+- 55. Missões do clã: cards com progresso, participantes e participação (joinClanMission / progress).
+Nota (0–10): 7.6
 
-## IV. A Chancelaria (Governança do Soberano)
+Falta para chegar no 10 (gaps reais, sem inflar)
 
-Estas entidades são controladas pelo Painel do Soberano para gerenciar o acesso e o conteúdo dinâmico do reino.
+- Confiabilidade/consistência do multiplayer (participantes/progresso) precisa ser impecável para o social “parecer real”.
+- “Procurar Clã” no estado sem clã ainda está fraco (fluxo de descoberta incompleto).
+Dicas
 
--   **`golden_invites`**: (A ser implementado no DB) O Arsenal de Convites.
-    -   **Propósito:** Gerencia os códigos de convite únicos para o registro de novos Soberanos.
-    -   **Variáveis:** `id`, `code`, `is_used`, `claimed_by_user_id`, `claimed_at`, `created_at`.
+- (nenhuma — você pediu para remover as outras)
+### 6) Configurações
+Funcionalidades existentes
 
--   **`seasons`**: (A ser implementado no DB) O Oráculo das Estações.
-    -   **Propósito:** Define os parâmetros de uma temporada de conteúdo, como tema, duração e lore.
-    -   **Variáveis:** `id`, `name`, `start_date`, `end_date`, `background_png_url`, `lore_text`, `is_active`.
+- 56. Tabs internas: Geral, Arsenal, Maestria, Missões, Hall da Fama.
+- 57. Geral: sliders/avaliação (questionário com labels e frases).
+- 58. Arsenal: inventário por categorias (baús, artefatos, skins, bordas, banners).
+- 59. Arsenal: gates de unlock por role/rank/season.
+- 60. Baús: abrir e gerar recompensa (com unlock de item/skin).
+- 61. Equipar Skin/Borda/Banner/Artefato via ItemDetailModal (updateUserProfile).
+- 62. Maestria: view dedicada.
+- 63. Missões: quests da season (aceitar/claim reward).
+- 64. Missões: quests do clã com participantes e progresso.
+- 65. Missões: missões principais e introdutórias.
+- 66. Hall da Fama: view dedicada.
+Nota (0–10): 8.1
 
--   **`season_missions`**: (A ser implementado no DB) Os Decretos Sazonais.
-    -   **Propósito:** Detalha as missões específicas disponíveis durante uma `season`.
-    -   **Relações:** Ligada a uma `season_id`.
-    -   **Variáveis:** `id`, `season_id`, `title`, `description`, `goal_type`, `goal_value`, `reward_type`, `reward_value`.
+Falta para chegar no 10 (gaps reais, sem inflar)
 
--   **`missions`**: (A ser implementado no DB) Os Feitos e Conquistas.
-    -   **Propósito:** Rastreia o progresso do usuário em missões definidas pelo sistema (ex: 'Complete seu primeiro Ciclo', 'Alcance Nível 10 em FÍSICO').
-    -   **Relações:** Pertence a um `user_id`.
-    -   **Variáveis:** `user_id`, `mission_id`, `progress`, `completed_at`.
+- Missões/Seasons têm risco de fonte dupla (constantes vs DB) — precisa clareza de “fonte da verdade”.
+- Inventário existe, mas a navegação de equipar poderia ser mais direta (por isso seu “talvez” de hub no Perfil).
+Dicas
+
+- (nenhuma — você pediu para remover as outras)
+### 7) Funções Avançadas
+Funcionalidades existentes
+
+- 67. Painel do Soberano (tela separada).
+- 68. Convites dourados: listar/gerar/copiar + seed inicial.
+- 69. Seasons: listar ativa/futuras/passadas e iniciar criação/edição.
+- 70. Missões de season (admin): listar e adicionar SeasonMission.
+- 71. Estrutura de “Modo Arquiteto/Codex Builder” existe como sandbox dentro de Arenas (separado do jogo real).
+Nota (0–10): 6.9
+
+Falta para chegar no 10 (gaps reais, sem inflar)
+
+- Falta um Assistente de IA formal (feature real, não conceito) e com função clara.
+- Falta um caminho “codex/template → aplicar no jogo real” sem fricção.
+Dicas (somente a que você aprovou)
+
+- Assistente de IA (quando entrar) no papel certo: reduzir atrito (criar arena/ação, sugerir rotina), não “monitorar”.

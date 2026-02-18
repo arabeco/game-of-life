@@ -37,6 +37,20 @@ export interface Action {
   difficulty?: number; // 1 to 5
   scheduledDays?: DayOfWeek[]; // Days to automatically schedule
   scheduledStartTime?: number; // Time in minutes to automatically schedule
+  
+  // Codex / Rich Content Fields
+  originCodexId?: string; // If injected from a Codex
+  briefing?: string; // The "Why"
+  assets?: {
+    type: 'video' | 'image' | 'pdf' | 'audio' | 'link';
+    url: string;
+    title: string;
+  }[];
+  preFlight?: string[]; // Checklist before starting
+  context?: {
+    energyLevel?: 'low' | 'medium' | 'high';
+    timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+  };
 }
 
 export interface Arena {
@@ -49,6 +63,10 @@ export interface Arena {
   actionIds: string[];
   isArchived?: boolean;
   folderId?: string; // New: Arena grouping
+  
+  // Codex Fields
+  originCodexId?: string;
+  codexLevel?: number; // 1, 2, 3...
 }
 
 export interface ArenaFolder {

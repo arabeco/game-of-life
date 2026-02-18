@@ -57,3 +57,17 @@ O produto prioriza peso visual, clareza e ritual. Cada ação deve parecer decis
 ## 9. Roadmap (ideias futuras)
 
 O Oráculo deve permitir entrada por texto/voz com interpretação automática. A Transferência de Codex permitirá mentores distribuírem templates via link/QR para onboarding instantâneo.
+
+## 10. Estrutura Societária (interna)
+
+Usar **codinomes como identificadores internos**.
+
+Cargo | Codinome | Equity
+---|---|---
+CEO | FORJA | — (fundador)
+Co-founder | PROTOCOLO | 7%
+Legal / Tributário | TESOURO | 5%
+Marketing / Ideias | SINAL | 5%
+Assistente | MANUTENCAO | 3%
+
+- Cada cargo possui **salário separado do equity** (mensal), definido internamente.

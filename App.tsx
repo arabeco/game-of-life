@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AssetsView } from './views/AssetsView';
 import { ArenasView } from './views/ArenasView';
 import { PlannerView } from './views/PlannerView';
-import { SocialView } from './views/SocialView';
+import MundoView from './views/MundoView';
 import { SettingsView } from './views/SettingsView';
 import { ProfileView } from './views/ProfileView';
 import { ReportsView } from './views/ReportsView';
@@ -330,7 +330,7 @@ const AppWithTutorial: React.FC = () => {
             case 'assets': return <AssetsView />;
             case 'arenas': return <ArenasView />;
             case 'planner': return <PlannerView onReportsClick={() => setReportsVisible(true)} />;
-            case 'social': return <SocialView />;
+            case 'social': return <MundoView />;
             case 'settings': return <SettingsView />;
             default: return <AssetsView />;
         }
@@ -394,7 +394,7 @@ const AppWithTutorial: React.FC = () => {
                         <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} />
                         <NavItem view="arenas" label="ARENAS" icon={<ArenaIcon />} navRef={arenasNavRef} />
                         <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} navRef={plannerNavRef} />
-                        <NavItem view="social" label="SOCIAL" icon={<SocialIcon />} />
+                        <NavItem view="social" label="MUNDO" icon={<SocialIcon />} />
                         <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} />
                     </div>
                 </div>
@@ -499,7 +499,7 @@ const App: React.FC = () => {
         checkSession();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'TOKEN_REFRESH_ERROR') {
+            if ((event as unknown as string) === 'TOKEN_REFRESH_ERROR') {
                 supabase.auth.signOut();
                 setSession(null);
             } else {

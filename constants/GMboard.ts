@@ -14,6 +14,8 @@ export interface SeasonConfig {
   startDate: string;
   endDate: string;
   theme: string;
+  description?: string;
+  backgroundUrl?: string;
   quests: SeasonQuest[];
 }
 
@@ -24,6 +26,8 @@ export const SEASONS: Record<string, SeasonConfig> = {
   'season-genesis-0': {
     id: 'season-genesis-0',
     name: 'Gênesis',
+    description: 'O início de uma nova era. Desperte seu potencial.',
+    backgroundUrl: 'https://images.unsplash.com/photo-1519681393784-d120267933ba',
     startDate: '2025-12-21',
     endDate: '2026-03-20',
     theme: 'genesis',

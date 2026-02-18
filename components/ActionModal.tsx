@@ -55,10 +55,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     );
     // Tutorial state
     const [formStep, setFormStep] = useState(0);
+    // New View Mode State
+    const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
+    const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'note' | 'summary'>('media');
+
     const nameInputRef = useRef<HTMLInputElement>(null);
     const durationInputRef = useRef<HTMLDivElement>(null);
     const repsInputRef = useRef<HTMLDivElement>(null);
     const saveButtonRef = useRef<HTMLButtonElement>(null);
+
+    // State for checklist inputs in edit mode
+    const [newChecklistItem, setNewChecklistItem] = useState('');
+    const [newAssetUrl, setNewAssetUrl] = useState('');
 
     useEffect(() => {
         if (isTutorialActive && currentStep === 5) {
@@ -138,7 +146,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
             actionType: editableAction.actionType || 'Ação Recorrente',
             difficulty: editableAction.difficulty || 3,
             scheduledDays: editableAction.actionType === 'Ação Recorrente' ? selectedDays : undefined,
-            scheduledStartTime
+            scheduledStartTime,
+            briefing: editableAction.briefing?.trim() || undefined,
+            assets: editableAction.assets || [],
+            preFlight: editableAction.preFlight || [],
+            context: editableAction.context || {}
         };
         
         const scheduleTasks = (actionIdToSchedule: string) => {
@@ -174,6 +186,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
         onClose();
     };
     
+    const handleStartMission = () => {
+        if (!action) return;
+        const today = new Date().toISOString().split('T')[0];
+        // Schedule for "now" (0 minutes from start of day usually implies no specific time or "today")
+        scheduleTask(action.id, today, 0); 
+        onClose();
+    };
+
     const handleDelete = () => { if (action) setConfirmDeleteOpen(true); };
     const confirmDelete = () => { if(action) { deleteAction(action.id); onClose(); } }
 
@@ -196,145 +216,404 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco'];
 
+    if (!displayAction && mode === 'view') return null;
+
     return (
         <>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
-                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[90vh] p-0">
-                    <div className="dossier-bg overflow-y-auto p-3 space-y-3 rounded-2xl">
-                        <div className="flex justify-between items-center">
-                            <button onClick={mode === 'view' ? () => setMode('edit') : handleCancel} className={`p-2 rounded-full transition-colors border ${mode === 'edit' ? 'border-red-500/50 bg-red-500/20' : 'border-white/20'}`}>
-                                {mode === 'view' ? <EditIcon className="w-5 h-5 text-gray-300" /> : <XIcon className="w-5 h-5 text-red-300" />}
+                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col h-[85vh] p-0 relative overflow-hidden border-yellow-500/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+                    
+                    {/* Header Fixed */}
+                    <div className="flex-none p-4 bg-black/40 backdrop-blur-md flex justify-between items-center z-10">
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={mode === 'view' ? () => setMode('edit') : handleCancel} 
+                                className={`p-2 rounded-lg transition-all ${mode === 'edit' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'hover:bg-white/5 text-yellow-500/50 hover:text-yellow-500'}`}
+                            >
+                                {mode === 'view' ? <EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
                             </button>
-                            <p className="text-xs font-bold text-gray-400 uppercase">{currentArena?.name || 'Nova Ação'}</p>
-                            <button ref={saveButtonRef} onClick={mode === 'view' ? onClose : handleSave} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
-                                {mode === 'view' ? 'OK' : 'SALVAR'}
+                            <span className="text-xs font-black uppercase tracking-[0.2em] text-yellow-500/80">
+                                {mode === 'edit' ? (isNew ? 'Nova Quest' : 'Editando') : 'Quests • Clã'}
+                            </span>
+                        </div>
+                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition-all group">
+                            <XIcon className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                        </button>
+                    </div>
+
+                    {/* Tabs Fixed */}
+                    <div className="flex-none px-4 pb-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-10">
+                        <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5">
+                            <button 
+                                onClick={() => setActiveTab('basic')}
+                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-lg transition-all duration-300 ${
+                                    activeTab === 'basic' 
+                                    ? 'bg-white/10 text-white shadow-lg border border-white/5' 
+                                    : 'text-gray-600 hover:text-gray-400'
+                                }`}
+                            >
+                                [ Básico ]
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('advanced')}
+                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-lg transition-all duration-300 ${
+                                    activeTab === 'advanced' 
+                                    ? 'bg-white/10 text-white shadow-lg border border-white/5' 
+                                    : 'text-gray-600 hover:text-gray-400'
+                                }`}
+                            >
+                                [ Avançado ]
                             </button>
                         </div>
-                        <div className="flex flex-col items-center space-y-2">
-                             <button onClick={() => mode === 'edit' && setIsIconPickerOpen(true)} disabled={mode !== 'edit'} className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--accent-bronze)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center">
-                                <span className="text-5xl">{displayAction?.icon}</span>
-                            </button>
-                            {mode === 'edit' ? (
-                                <>
-                                    <input ref={nameInputRef} type="text" placeholder="Nome da Ação" value={editableAction.name || ''} onBlur={handleTutorialNextFormStep} onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))} className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-1" />
-                                    <textarea
-                                        placeholder="Descrição (opcional)"
-                                        value={editableAction.description || ''}
-                                        onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
-                                        rows={2}
-                                        className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50"
-                                    />
-                                </>
-                            ) : (
-                                <>
-                                    <h2 className="text-xl font-bold text-white text-center">{displayAction?.name}</h2>
-                                    {!!displayAction?.description && (
-                                        <p className="text-sm text-white/80 text-center leading-snug">{displayAction.description}</p>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                    </div>
+
+                    {/* Content Scrollable */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-gradient-to-b from-black/40 to-transparent">
                         
-                        <div className="space-y-2">
-                            {mode === 'edit' ? (
-                                <>
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-400">Arena</label>
-                                        <button
-                                            onClick={() => setIsArenaPickerOpen(true)}
-                                            className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
-                                        >
-                                            <span>{currentArena?.icon} {currentArena?.name || 'Selecionar Arena'}</span>
-                                            <ChevronRightIcon className="w-5 h-5 text-gray-400" />
-                                        </button>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-400">Tipo de Ação</label>
-                                        <button
-                                            onClick={() => setIsActionTypePickerOpen(true)}
-                                            className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
-                                        >
-                                            <span>{editableAction.actionType || 'Ação Recorrente'}</span>
-                                            <ChevronRightIcon className="w-5 h-5 text-gray-400" />
-                                        </button>
-                                    </div>
-                                    <StyledRangeInput inputRef={durationInputRef} label="Duração" value={editableAction.duration || 60} min={15} max={240} step={15} unit="min" onChange={val => { setEditableAction(p => ({...p, duration: val})); handleTutorialNextFormStep(); }} />
-                                    {editableAction.actionType === 'Ação Recorrente' && <StyledRangeInput inputRef={repsInputRef} label="Repetições" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({...p, repetitions: val})); handleTutorialNextFormStep(); }} />}
-                                    <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3)-1]} onChange={val => setEditableAction(p => ({...p, difficulty: val}))} />
-                                </>
-                            ) : (
-                                <>
-                                    <div className="flex justify-between p-2 bg-black/20 rounded-lg text-sm"><span>Tipo:</span> <span className="font-bold">{displayAction?.actionType}</span></div>
-                                    <div className="flex justify-between p-2 bg-black/20 rounded-lg text-sm"><span>Duração:</span> <span className="font-bold">{displayAction?.duration} min</span></div>
-                                    {displayAction?.actionType === 'Ação Recorrente' && <div className="flex justify-between p-2 bg-black/20 rounded-lg text-sm"><span>Repetições no pool:</span> <span className="font-bold">{displayAction?.repetitions}</span></div>}
-                                    <div className="flex justify-between p-2 bg-black/20 rounded-lg text-sm"><span>Dificuldade:</span> <span className="font-bold">{difficultyLabels[(displayAction?.difficulty || 3) - 1]}</span></div>
-                                </>
-                            )}
-                        </div>
-                        
-                        {/* Scheduling Section - só para Ação Recorrente e Compromisso */}
-                        {mode === 'edit' && (editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
-                            <div className="p-3 bg-black/20 rounded-xl space-y-2">
-                                
-                                {/* Dias da Semana - só para Ação Recorrente */}
-                                {editableAction.actionType === 'Ação Recorrente' && (
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-400">Dias da Semana</label>
-                                        <div className="grid grid-cols-7 gap-1 mt-1">
-                                            {week.map(day => <DayToggle key={day} day={day} selected={selectedDays.includes(day)} onClick={() => handleDayToggle(day)} />)}
+                        {/* BASIC TAB */}
+                        {activeTab === 'basic' && (
+                            <div className="p-6 space-y-6 flex flex-col items-center animate-fade-in pb-20">
+                                {mode === 'view' && displayAction ? (
+                                    // VIEW MODE CONTENT
+                                    <>
+                                        {/* Icon */}
+                                        <div className="relative group">
+                                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full group-hover:bg-yellow-500/30 transition-all duration-500" />
+                                            <div className="relative w-28 h-28 rounded-3xl bg-gradient-to-br from-[#2a211c] to-black border border-yellow-500/30 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-all duration-500">
+                                                <span className="text-6xl drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">{displayAction.icon}</span>
+                                            </div>
                                         </div>
+                                        
+                                        {/* Title & Desc */}
+                                        <div className="space-y-3 w-full text-center">
+                                            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-600 leading-none tracking-tight">
+                                                {displayAction.name}
+                                            </h2>
+                                            <p className="text-sm text-gray-400 leading-relaxed font-medium max-w-[280px] mx-auto border-t border-white/5 pt-3 mt-1">
+                                                {displayAction.description || "Sem descrição definida."}
+                                            </p>
+                                        </div>
+
+                                        {/* Metadata Grid */}
+                                        <div className="grid grid-cols-2 gap-3 w-full">
+                                            <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
+                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Tipo</div>
+                                                <div className="text-xs font-bold text-yellow-500 truncate">{displayAction.actionType}</div>
+                                            </div>
+                                            <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
+                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Duração</div>
+                                                <div className="text-xs font-bold text-white">{displayAction.duration} min</div>
+                                            </div>
+                                            {displayAction.actionType === 'Ação Recorrente' && (
+                                            <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
+                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Repetições</div>
+                                                <div className="text-xs font-bold text-white">{displayAction.repetitions}x pool</div>
+                                            </div>
+                                            )}
+                                            <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
+                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Dificuldade</div>
+                                                <div className={`text-xs font-bold ${
+                                                    (displayAction.difficulty || 3) >= 4 ? 'text-red-400' : 
+                                                    (displayAction.difficulty || 3) <= 2 ? 'text-green-400' : 'text-yellow-200'
+                                                }`}>
+                                                    {difficultyLabels[(displayAction.difficulty || 3) - 1]}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    // EDIT MODE CONTENT (Form)
+                                    <div className="w-full space-y-4">
+                                        {/* Icon Picker */}
+                                        <div className="flex justify-center">
+                                            <button 
+                                                onClick={() => setIsIconPickerOpen(true)} 
+                                                className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--accent-bronze)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center relative group"
+                                            >
+                                                <span className="text-5xl">{editableAction.icon}</span>
+                                                <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <EditIcon className="w-6 h-6 text-white" />
+                                                </div>
+                                            </button>
+                                        </div>
+
+                                        {/* Name */}
+                                        <input 
+                                            ref={nameInputRef} 
+                                            type="text" 
+                                            placeholder="Nome da Ação" 
+                                            value={editableAction.name || ''} 
+                                            onBlur={handleTutorialNextFormStep} 
+                                            onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))} 
+                                            className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-2 placeholder:text-gray-600" 
+                                        />
+
+                                        {/* Description */}
+                                        <textarea
+                                            placeholder="Descrição (opcional)"
+                                            value={editableAction.description || ''}
+                                            onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
+                                            rows={3}
+                                            className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50 placeholder:text-gray-600 resize-none"
+                                        />
+
+                                        {/* Pickers */}
+                                        <div className="space-y-3 pt-2">
+                                            {/* Arena */}
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Arena</label>
+                                                <button onClick={() => setIsArenaPickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                    <span className="text-sm">{currentArena?.icon} {currentArena?.name || 'Selecionar Arena'}</span>
+                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                                                </button>
+                                            </div>
+
+                                            {/* Type */}
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de Ação</label>
+                                                <button onClick={() => setIsActionTypePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                    <span className="text-sm">{editableAction.actionType || 'Ação Recorrente'}</span>
+                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                                                </button>
+                                            </div>
+
+                                            {/* Sliders */}
+                                            <StyledRangeInput inputRef={durationInputRef} label="Duração" value={editableAction.duration || 60} min={15} max={240} step={15} unit="min" onChange={val => { setEditableAction(p => ({...p, duration: val})); handleTutorialNextFormStep(); }} />
+                                            
+                                            {editableAction.actionType === 'Ação Recorrente' && (
+                                                <StyledRangeInput inputRef={repsInputRef} label="Repetições" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({...p, repetitions: val})); handleTutorialNextFormStep(); }} />
+                                            )}
+                                            
+                                            <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3)-1]} onChange={val => setEditableAction(p => ({...p, difficulty: val}))} />
+                                        </div>
+
+                                        {/* Scheduling */}
+                                        {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
+                                            <div className="p-3 bg-black/20 rounded-xl space-y-3 border border-white/5">
+                                                {editableAction.actionType === 'Ação Recorrente' && (
+                                                    <div>
+                                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da Semana</label>
+                                                        <div className="grid grid-cols-7 gap-1 mt-1">
+                                                            {week.map(day => <DayToggle key={day} day={day} selected={selectedDays.includes(day)} onClick={() => handleDayToggle(day)} />)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {editableAction.actionType === 'Compromisso' && (
+                                                    <div>
+                                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
+                                                        <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                            <div className="flex items-center gap-2">
+                                                                <CalendarIcon className="w-4 h-4 text-yellow-500" />
+                                                                <span className="text-sm">{selectedDate ? selectedDate.toLocaleDateString('pt-BR') : 'Selecionar Data'}</span>
+                                                            </div>
+                                                            <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
+                                                    <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                        <span className="text-sm">{startTime || 'Sem Horário'}</span>
+                                                        <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
+                                                    </button>
+                                                    {isTimePickerOpen && (
+                                                        <div className="mt-2 h-32 relative">
+                                                            <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Delete Button */}
+                                        {!isNew && (
+                                            <button onClick={handleDelete} className="w-full py-3 rounded-xl bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/30 text-xs font-bold uppercase tracking-wider transition-all mt-4">
+                                                Excluir Ação
+                                            </button>
+                                        )}
                                     </div>
                                 )}
-                                
-                                {/* Data Específica - só para Compromisso */}
-                                {editableAction.actionType === 'Compromisso' && (
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-400">Data do Compromisso</label>
-                                        <button
-                                            onClick={() => setIsDatePickerOpen(true)}
-                                            className="w-full p-4 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 hover:border-yellow-600/80 transition-all cursor-pointer"
-                                        >
-                                            <span className="flex items-center space-x-3">
-                                                <CalendarIcon className="w-5 h-5 text-yellow-500" />
-                                                <span className="text-sm font-medium">
-                                                    {selectedDate 
-                                                        ? selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                                                        : 'Selecionar Data'
-                                                    }
-                                                </span>
-                                            </span>
-                                            <ChevronRightIcon className="w-5 h-5 text-yellow-600" />
-                                        </button>
-                                    </div>
-                                )}
-                                
-                                {/* Horário de Início */}
-                                <div>
-                                    <label className="text-xs font-semibold text-gray-400">Horário de Início</label>
-                                    <button
-                                        onClick={() => setIsTimePickerOpen(!isTimePickerOpen)}
-                                        className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left"
-                                    >
-                                        <span>{startTime || 'Sem Horário'}</span>
-                                        <ChevronRightIcon className={`w-5 h-5 text-gray-400 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
-                                    </button>
-                                    {isTimePickerOpen && (
-                                        <div className="mt-2">
-                                            <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
+                            </div>
+                        )}
+
+                        {/* ADVANCED TAB */}
+                        {activeTab === 'advanced' && (
+                            <div className="flex flex-col h-full animate-fade-in pb-20">
+                                {/* Sub-Tabs */}
+                                <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5 mx-4 mt-4 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
+                                    {(['MÍDIA', 'ANOTAÇÃO', 'RESUMO'] as const).map((tab) => {
+                                        const tabKey = tab === 'MÍDIA' ? 'media' : tab === 'ANOTAÇÃO' ? 'note' : 'summary';
+                                        const isActive = advancedSubTab === tabKey;
+                                        return (
+                                            <button
+                                                key={tab}
+                                                onClick={() => setAdvancedSubTab(tabKey)}
+                                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all duration-300 ${
+                                                    isActive 
+                                                    ? 'bg-white/10 text-white shadow-lg border border-white/5' 
+                                                    : 'text-gray-600 hover:text-gray-400'
+                                                }`}
+                                            >
+                                                {tab}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Content */}
+                                <div className="flex-1 p-0">
+                                    {advancedSubTab === 'media' && (
+                                        <div className="h-full flex flex-col p-4">
+                                            {/* Media Content Logic (View/Edit) */}
+                                            {(displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video') || (mode === 'edit' && newAssetUrl)) ? (
+                                                 <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden border border-white/10 relative group mb-4">
+                                                    <img 
+                                                        src={mode === 'edit' && newAssetUrl ? newAssetUrl : displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url} 
+                                                        className="w-full h-full object-cover"
+                                                        alt="Mídia"
+                                                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                                                    />
+                                                    {mode === 'edit' && (
+                                                        <button 
+                                                            onClick={() => { setNewAssetUrl(''); setEditableAction(p => ({ ...p, assets: [] })); }}
+                                                            className="absolute top-2 right-2 p-1.5 bg-red-500/80 rounded-full text-white hover:bg-red-500 transition-colors"
+                                                        >
+                                                            <XIcon className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                 </div>
+                                            ) : (
+                                                <div className="w-full aspect-video bg-white/5 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 mb-4">
+                                                    <span className="text-4xl opacity-20">📷</span>
+                                                    <span className="text-xs text-gray-500 font-medium">Sem mídia vinculada</span>
+                                                </div>
+                                            )}
+
+                                            {mode === 'edit' && (
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/Vídeo</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
+                                                        onChange={(e) => {
+                                                            const url = e.target.value;
+                                                            setNewAssetUrl(url);
+                                                            if (url) {
+                                                                setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title: 'Mídia Principal' }] }));
+                                                            } else {
+                                                                setEditableAction(prev => ({ ...prev, assets: [] }));
+                                                            }
+                                                        }}
+                                                        placeholder="https://..."
+                                                        className="w-full p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--gold)] text-gray-300 placeholder:text-gray-600"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {advancedSubTab === 'note' && (
+                                        <div className="p-4 h-full flex flex-col">
+                                            {mode === 'edit' ? (
+                                                <textarea
+                                                    value={editableAction.briefing || ''}
+                                                    onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
+                                                    className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--gold)] text-gray-200 resize-none min-h-[300px]"
+                                                    placeholder="Digite suas anotações aqui..."
+                                                />
+                                            ) : (
+                                                <div className="bg-[#1a1512] rounded-xl p-6 border border-white/5 shadow-inner min-h-[300px]">
+                                                    <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
+                                                        {displayAction?.briefing || "Nenhuma anotação disponível."}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {advancedSubTab === 'summary' && (
+                                        <div className="p-4 space-y-3">
+                                            {/* Checklist Items */}
+                                            {(displayAction?.preFlight || []).length > 0 ? (
+                                                displayAction?.preFlight?.map((item, i) => (
+                                                    <div key={i} className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors group">
+                                                        <div className="mt-1 w-2 h-2 rounded-full bg-yellow-500/50 group-hover:bg-yellow-500 group-hover:shadow-[0_0_8px_rgba(234,179,8,0.8)] transition-all" />
+                                                        <span className="text-sm text-gray-300 font-medium leading-snug flex-1">{item}</span>
+                                                        {mode === 'edit' && (
+                                                            <button 
+                                                                onClick={() => setEditableAction(prev => ({ ...prev, preFlight: prev.preFlight?.filter((_, idx) => idx !== i) }))}
+                                                                className="text-gray-500 hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <XIcon className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center py-10 opacity-30 space-y-2 border border-dashed border-white/5 rounded-xl">
+                                                    <span className="text-4xl">📝</span>
+                                                    <span className="text-[10px] uppercase font-black tracking-widest">Lista Vazia</span>
+                                                </div>
+                                            )}
+
+                                            {/* Add Item Input (Edit Mode) */}
+                                            {mode === 'edit' && (
+                                                <div className="flex gap-2 mt-4">
+                                                    <input 
+                                                        type="text"
+                                                        value={newChecklistItem}
+                                                        onChange={(e) => setNewChecklistItem(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && newChecklistItem.trim()) {
+                                                                setEditableAction(prev => ({ ...prev, preFlight: [...(prev.preFlight || []), newChecklistItem.trim()] }));
+                                                                setNewChecklistItem('');
+                                                            }
+                                                        }}
+                                                        placeholder="Adicionar item..."
+                                                        className="flex-1 p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--gold)]"
+                                                    />
+                                                    <button 
+                                                        onClick={() => {
+                                                            if (newChecklistItem.trim()) {
+                                                                setEditableAction(prev => ({ ...prev, preFlight: [...(prev.preFlight || []), newChecklistItem.trim()] }));
+                                                                setNewChecklistItem('');
+                                                            }
+                                                        }}
+                                                        className="p-3 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-colors"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
-                        
-                        {mode === 'edit' && !isNew && (
-                            <div className="pt-2">
-                                <button onClick={handleDelete} className="w-full py-2 rounded-xl bg-red-800/50 text-red-300 hover:bg-red-800/80"> EXCLUIR AÇÃO </button>
-                            </div>
-                        )}
+
                     </div>
+
+                    {/* 3. FOOTER (Fixed) */}
+                    <div className="flex-none p-4 bg-[#120f0d]/90 backdrop-blur-xl border-t border-white/10 space-y-3 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                        {/* Main Button */}
+                        <button 
+                            ref={saveButtonRef}
+                            onClick={mode === 'view' ? handleStartMission : handleSave} // View mode: Start Mission, Edit mode: Save
+                            className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(234,179,8,0.15)] hover:shadow-[0_0_30px_rgba(234,179,8,0.3)] transition-all transform active:scale-[0.98] border border-yellow-400/20 group relative overflow-hidden ${mode === 'view' ? 'luxe-gold-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
+                        >
+                            <span className="relative z-10 group-hover:text-black transition-colors">
+                                {mode === 'view' ? '[ INICIAR MISSÃO ]' : '[ SALVAR ALTERAÇÕES ]'}
+                            </span>
+                            <div className={`absolute inset-0 transition-colors ${mode === 'view' ? 'bg-yellow-400/0 group-hover:bg-yellow-400/10' : ''}`} />
+                        </button>
+                    </div>
+
                 </GlassCard>
             </div>
+
+            {/* Pickers */}
             {isIconPickerOpen && <IconPickerModal onSelect={handleIconSelect} onClose={() => setIsIconPickerOpen(false)} />}
             {isActionTypePickerOpen && (
                 <SelectionModal<ActionType>
@@ -359,7 +638,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                     selectedDate={selectedDate}
                     onSelect={handleDateSelect}
                     onClose={() => setIsDatePickerOpen(false)}
-                    minDate={new Date()} // Não permitir datas passadas
+                    minDate={new Date()}
                 />
             )}
             {isConfirmDeleteOpen && (<ConfirmationModal title="Confirmar Exclusão" message={`Tem certeza que deseja excluir a ação "${action?.name}"?`} onConfirm={confirmDelete} onCancel={() => setConfirmDeleteOpen(false)}/>)}

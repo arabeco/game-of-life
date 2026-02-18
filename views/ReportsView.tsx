@@ -1,7 +1,7 @@
 
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { useGame } from '../contexts/GameContext';
 import { Report, Cycle, ChestType, FeedEvent } from '../types';
@@ -11,7 +11,8 @@ import { CycleComparator } from '../components/CycleComparator';
 import { handleShare } from '../components/Share';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { NewCycleSetupView } from './NewCycleSetupView';
-import { ChestOpeningModal } from '../components/ChestOpeningModal';
+import { ReportResultCarousel } from '../components/ReportResultCarousel';
+import { getScoreGrade } from '../utils/scoreUtils';
 
 // --- Helper Functions ---
 export const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
@@ -20,19 +21,36 @@ const parseDate = (value: string) => {
     return new Date(Date.UTC(year, month - 1, day));
 };
 export const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-
-const getScoreGrade = (score: number) => {
-    if (score >= 95) return { grade: 'S', color: 'text-cyan-400' };
-    if (score >= 85) return { grade: 'A', color: 'text-green-400' };
-    if (score >= 75) return { grade: 'B', color: 'text-yellow-400' };
-    if (score >= 60) return { grade: 'C', color: 'text-orange-400' };
-    if (score >= 40) return { grade: 'D', color: 'text-red-400' };
-    return { grade: 'E', color: 'text-red-600' };
+const toRoman = (num: number) => {
+    const map = [
+        { value: 1000, symbol: 'M' },
+        { value: 900, symbol: 'CM' },
+        { value: 500, symbol: 'D' },
+        { value: 400, symbol: 'CD' },
+        { value: 100, symbol: 'C' },
+        { value: 90, symbol: 'XC' },
+        { value: 50, symbol: 'L' },
+        { value: 40, symbol: 'XL' },
+        { value: 10, symbol: 'X' },
+        { value: 9, symbol: 'IX' },
+        { value: 5, symbol: 'V' },
+        { value: 4, symbol: 'IV' },
+        { value: 1, symbol: 'I' }
+    ];
+    let result = '';
+    let remaining = num;
+    for (const item of map) {
+        while (remaining >= item.value) {
+            result += item.symbol;
+            remaining -= item.value;
+        }
+    }
+    return result;
 };
 
 // --- Sub-components for Active Cycle HUD ---
 const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
-    const { tasks, assets, actions, userProfile, session } = useGame();
+    const { tasks, assets, actions, userProfile, session, seasons } = useGame();
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
     const today = new Date().toISOString().split('T')[0];
@@ -59,24 +77,42 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && !isClanQuestActionId(t.actionId));
     const completedTasks = cycleTasks.filter(t => t.completed);
 
+    // Quest Tasks
+    const questTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && isClanQuestActionId(t.actionId));
+    const completedQuests = questTasks.filter(t => t.completed);
+
+    // 1. Fidelity
+    const fidelity = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
+
+    // 2. Bonuses
+    // Milestones
+    const milestonesCompleted = completedTasks.filter(t => {
+        const action = actions.find(a => a.id === t.actionId);
+        return action?.actionType === 'Marco';
+    }).length;
+    const milestoneBonus = milestonesCompleted * 10;
+
+    // Quests
+    const questsCompletedCount = completedQuests.length;
+    const questBonus = questsCompletedCount * 5;
+
+    // Consistency
+    const uniqueDays = new Set([...completedTasks, ...completedQuests].map(t => t.date)).size;
+    const consistencyBonus = uniqueDays >= 4 ? 5 : 0;
+
+    // Total Fidelity
+    const totalFidelityBonus = (cycleTasks.length > 0 && completedTasks.length === cycleTasks.length) ? 5 : 0;
+
+    // Score
+    const currentScore = Math.round(fidelity + milestoneBonus + questBonus + consistencyBonus + totalFidelityBonus);
+    const scoreInfo = getScoreGrade(currentScore);
+
     // Arenas e Ações envolvidas (seguindo a mesma lógica do endCycle)
     const actionIdsInCycle = new Set(cycleTasks.map(t => t.actionId));
     const involvedActions = actions.filter(a => actionIdsInCycle.has(a.id));
     
     const arenaIdsInCycle = new Set(involvedActions.map(a => a.arenaId));
     const involvedArenas = assets.flatMap(as => as.arenas).filter(ar => arenaIdsInCycle.has(ar.id));
-
-    // Progresso baseado no planejado vs realizado
-    const conquestProgress = cycleTasks.length > 0
-        ? (completedTasks.length / cycleTasks.length) * 100
-        : 0;
-
-    const delta = conquestProgress - timeProgress;
-    let rank: { label: string, color: string };
-    if (delta > 5) rank = { label: 'A', color: 'text-green-400' };
-    else if (delta > -5) rank = { label: 'B', color: 'text-yellow-400' };
-    else if (delta > -15) rank = { label: 'C', color: 'text-orange-400' };
-    else rank = { label: 'D', color: 'text-red-400' };
     
     return (
         <GlassCard variant="gold" className="p-4 space-y-4">
@@ -92,16 +128,19 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                     <div className="w-full bg-red-900/50 rounded-full h-2.5 mt-1 border border-red-500/20"><div className="bg-red-500 h-full rounded-full" style={{ width: `${timeProgress}%` }}></div></div>
                 </div>
                  <div>
-                    <div className="flex justify-between text-xs font-bold text-gray-400"><span>AÇÕES</span><span>{conquestProgress.toFixed(0)}%</span></div>
-                    <div className="w-full bg-green-900/50 rounded-full h-2.5 mt-1 border border-green-500/20"><div className="bg-green-500 h-full rounded-full" style={{ width: `${conquestProgress}%` }}></div></div>
+                    <div className="flex justify-between text-xs font-bold text-gray-400"><span>FIDELIDADE</span><span>{fidelity.toFixed(0)}%</span></div>
+                    <div className="w-full bg-green-900/50 rounded-full h-2.5 mt-1 border border-green-500/20"><div className="bg-green-500 h-full rounded-full" style={{ width: `${fidelity}%` }}></div></div>
                 </div>
             </div>
             <div className='text-center border-t border-yellow-800/50 pt-3'>
-                 <p className="text-xs font-bold text-gray-400">RANK ATUAL</p>
-                 <p className={`text-4xl font-black ${rank.color}`}>{rank.label}</p>
-                 <p className="text-[10px] text-gray-500 mt-1 uppercase">
-                    {completedTasks.length} de {cycleTasks.length} tarefas | {involvedArenas.length} Arenas
-                 </p>
+                 <p className="text-xs font-bold text-gray-400">RANK PROJETADO</p>
+                 <p className={`text-4xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</p>
+                 <p className="text-sm font-bold text-white mt-1">Score: {currentScore}</p>
+                 <div className="flex justify-center space-x-3 mt-2 text-[10px] text-gray-500 uppercase font-mono">
+                    <span>🏆 {milestonesCompleted} Marcos</span>
+                    <span>⚔️ {questsCompletedCount} Quests</span>
+                    <span>🔥 {uniqueDays} Dias</span>
+                 </div>
             </div>
         </GlassCard>
     );
@@ -150,168 +189,77 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
     );
 };
 
-// --- New Post-Cycle Reward Components ---
-const CycleRewardView: React.FC<{ exp: number; chest: ChestType; onContinue: () => void; onClose: () => void; }> = ({ exp, chest, onContinue, onClose }) => {
+// --- Timeline Components ---
 
-    const getChestStyle = (type: ChestType) => {
-        switch (type) {
-            case 'Raro': return { color: '#3b82f6', shadow: 'shadow-blue-500/50' };
-            case 'Épico': return { color: '#a855f7', shadow: 'shadow-purple-500/50' };
-            case 'Lendário': return { color: '#f59e0b', shadow: 'shadow-yellow-500/50' };
-            default: return { color: 'gray', shadow: 'shadow-gray-500/50' };
-        }
-    }
-    const chestStyle = getChestStyle(chest);
-
-    return (
-        <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-fade-in relative overflow-hidden">
-            {/* Background effects */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--gold)_0%,_transparent_70%)] opacity-10 animate-pulse pointer-events-none"></div>
-            
-            <h2 className="text-2xl font-black uppercase tracking-widest text-white drop-shadow-lg">Ciclo Concluído!</h2>
-            
-            <div className="transform transition-all duration-1000 ease-out scale-100 hover:scale-105">
-                <p className="text-7xl font-black text-[var(--gold)] drop-shadow-[0_0_15px_rgba(212,175,55,0.5)]">
-                    +{exp.toLocaleString('pt-BR')}
-                </p>
-                <p className="text-lg font-bold tracking-widest text-white/80 uppercase mt-2">EXP Computada</p>
-            </div>
-
-            <div className="py-4">
-                <p className="text-sm text-gray-400 mb-4 uppercase tracking-wider">Recompensa Obtida</p>
-                <div className={`w-40 h-40 mx-auto bg-gray-900/80 rounded-2xl flex items-center justify-center border-4 ${chestStyle.shadow} animate-bounce relative`} style={{borderColor: chestStyle.color}}>
-                    <div className="absolute inset-0 bg-white/5 rounded-xl"></div>
-                    <span className="text-7xl filter drop-shadow-lg">🎁</span>
-                </div>
-                <p className="font-black text-xl mt-4 uppercase tracking-widest" style={{color: chestStyle.color}}>Baú {chest}</p>
-            </div>
-
-            <p className="text-gray-400 italic text-sm">"Sua disciplina forja seu destino."</p>
-
-            <div className="w-full max-w-xs space-y-3 pt-4 z-10">
-                 <div className="flex space-x-3">
-                    <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-colors font-bold text-sm">FECHAR</button>
-                    <button onClick={onContinue} className="flex-1 py-3 rounded-xl luxe-gold-button font-bold text-sm shadow-lg shadow-[var(--gold)]/20">NOVO CICLO</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
-// --- Report Result Display ---
-const ReportListItem: React.FC<{ report: Report, onClick: () => void }> = ({ report, onClick }) => (
-    <GlassCard variant="silver" className="p-3 cursor-pointer" onClick={onClick}>
-        <div className="flex justify-between items-center">
-            <div>
-                <p className="font-bold text-sm">{formatDate(report.startDate)} - {formatDate(report.endDate)}</p>
-                <p className="text-xs text-gray-400">Score: {report.performanceScore} | {report.metrics.actionsCompleted} Ações | {report.metrics.totalHours.toFixed(1)}h</p>
-            </div>
-            <ChevronRightIcon />
-        </div>
-    </GlassCard>
-);
-
-const ReportResultCarousel: React.FC<{ report: Report; onOk: () => void; onCompare: () => void; onShare: () => void; onPostToFeed: () => void; }> = ({ report, onOk, onCompare, onShare, onPostToFeed }) => {
-    const slides = [
-        <RatingCard report={report} />, <MetricsCard report={report} />, <HighlightCard report={report} />,
-        <ReportSummaryCard report={report} onOk={onOk} onCompare={onCompare} onShare={onShare} onPostToFeed={onPostToFeed} />,
-    ];
-    const [slide, setSlide] = useState(0);
-    const next = () => setSlide(s => (s + 1) % slides.length);
-    const prev = () => setSlide(s => (s - 1 + slides.length) % slides.length);
-    const isLastSlide = slide === slides.length - 1;
-
-    return (
-        <div className="relative h-full flex flex-col justify-center items-center">
-            <div className="w-full flex-grow flex items-center justify-center">{slides[slide]}</div>
-            <div className="flex items-center justify-center space-x-4 p-2">
-                <button onClick={prev} className="p-2 rounded-full bg-white/10 hover:bg-white/20" disabled={slide === 0}><ChevronLeftIcon /></button>
-                <div className="flex space-x-2">{slides.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full ${i === slide ? 'bg-white' : 'bg-white/30'}`} />)}</div>
-                <button onClick={next} className="p-2 rounded-full bg-white/10 hover:bg-white/20" disabled={isLastSlide}><ChevronRightIcon /></button>
-            </div>
-        </div>
-    );
-};
-
-const RatingCard: React.FC<{report: Report}> = ({ report }) => {
+const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean }> = ({ report, isLatest, onClick, seasonName, isEditing }) => {
     const scoreInfo = getScoreGrade(report.performanceScore);
+    const startDate = formatDate(report.startDate);
+    const endDate = formatDate(report.endDate);
+
     return (
-        <GlassCard variant='gold' className='text-center space-y-2 flex flex-col items-center justify-center w-64 h-72'>
-            <p className='text-sm uppercase tracking-widest'>Performance</p>
-            <p className={`text-7xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</p>
-            <p className='text-xs text-gray-400'>Score: {report.performanceScore}</p>
-            
-            <div className="w-full pt-2 mt-2 border-t border-yellow-800/50">
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                        <p className="font-bold text-lg">{report.metrics.actionsCompleted}</p>
-                        <p className="text-gray-400">Cumpridas</p>
+        <div className="relative pl-8">
+            <div className={`absolute left-0 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ? 'bg-black border-[var(--gold)] shadow-[0_0_15px_var(--gold)] scale-110' : 'bg-black border-white/20'}`}>
+                {isLatest && <div className="w-2 h-2 bg-[var(--gold)] rounded-full animate-pulse"></div>}
+            </div>
+            <div 
+                onClick={onClick}
+                className={`
+                    relative overflow-hidden rounded-xl p-4 cursor-pointer transition-all duration-300 group
+                    ${isLatest 
+                        ? 'bg-gradient-to-br from-gray-900 to-black border border-[var(--gold)] shadow-[0_0_20px_rgba(212,175,55,0.1)] transform scale-[1.02]' 
+                        : 'bg-black/40 border border-white/10 hover:bg-white/5 hover:border-white/20'
+                    }
+                    ${isEditing ? 'scale-[0.98]' : ''}
+                `}
+            >
+                {isLatest && (
+                    <div className="absolute top-0 right-0 px-3 py-1 bg-[var(--gold)] text-black text-[10px] font-black uppercase tracking-wider rounded-bl-lg shadow-lg">
+                        Atual
                     </div>
+                )}
+
+                <div className="flex justify-between items-start mb-2">
                     <div>
-                        <p className="font-bold text-lg">{report.metrics.totalPlannedActions}</p>
-                        <p className="text-gray-400">Planejadas</p>
+                        <h4 className={`font-bold text-sm ${isLatest ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                            {report.cycleName || 'Ciclo'}
+                        </h4>
+                        {seasonName && (
+                            <span className="text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500 uppercase tracking-widest border border-white/5 mt-1 inline-block">
+                                {seasonName}
+                            </span>
+                        )}
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-mono mt-0.5">
+                            {startDate} - {endDate}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <span className={`text-2xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</span>
+                        <p className="text-[10px] text-gray-500">Score {report.performanceScore}</p>
                     </div>
                 </div>
-            </div>
 
-            <p className='text-xs text-gray-400 mt-2'>{formatDate(report.startDate)} - {formatDate(report.endDate)}</p>
-        </GlassCard>
+                <div className={`space-y-1 mt-3 pt-3 border-t ${isLatest ? 'border-[var(--gold)]/20' : 'border-white/5'}`}>
+                    {report.highlight?.mostFocusedArena && (
+                        <div className="flex items-center space-x-2 text-xs">
+                            <span className="text-[var(--gold)]">🎯</span>
+                            <span className="text-gray-400">Foco: <span className="text-gray-300">{report.highlight.mostFocusedArena}</span></span>
+                        </div>
+                    )}
+                    {report.highlight?.mostRepeatedAction && (
+                        <div className="flex items-center space-x-2 text-xs">
+                            <span className="text-blue-400">⚡</span>
+                            <span className="text-gray-400">Hábito: <span className="text-gray-300">{report.highlight.mostRepeatedAction}</span></span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 };
-
-const MetricsCard: React.FC<{report: Report}> = ({ report }) => (
-     <GlassCard variant='neutral' className='w-full max-w-xs p-4 space-y-3'>
-        <h3 className='text-center font-bold uppercase'>Métricas</h3>
-        <div className='grid grid-cols-2 gap-3 text-center'>
-            <div><p className='text-3xl font-bold'>{report.metrics.actionsCompleted}</p><p className='text-xs text-gray-400'>Ações Cumpridas</p></div>
-            <div><p className='text-3xl font-bold'>{report.metrics.arenasInvolved}</p><p className='text-xs text-gray-400'>Arenas Envolvidas</p></div>
-            <div><p className='text-3xl font-bold'>{report.metrics.goalsMet}</p><p className='text-xs text-gray-400'>Metas Batidas</p></div>
-            <div><p className='text-3xl font-bold'>{report.metrics.totalHours.toFixed(1)}</p><p className='text-xs text-gray-400'>Horas Totais</p></div>
-        </div>
-     </GlassCard>
-);
-
-const HighlightCard: React.FC<{report: Report}> = ({ report }) => (
-     <GlassCard variant='neutral' className='w-full max-w-xs p-4 space-y-3 text-center'>
-         <h3 className='font-bold uppercase'>Destaques</h3>
-        <div>
-            <p className='text-xs text-gray-400'>Arena mais focada</p>
-            <p className='text-lg font-bold text-[var(--gold)]'>{report.highlight.mostFocusedArena}</p>
-        </div>
-        <div>
-            <p className='text-xs text-gray-400'>Ação mais repetida</p>
-            <p className='text-lg font-bold text-[var(--gold)]'>{report.highlight.mostRepeatedAction}</p>
-        </div>
-     </GlassCard>
-);
-
-const ReportSummaryCard: React.FC<{report: Report; onOk: () => void; onCompare: () => void; onShare: () => void; onPostToFeed: () => void;}> = ({ report, onOk, onCompare, onShare, onPostToFeed }) => (
-     <GlassCard variant='neutral' className='w-full max-w-xs p-2' id="report-summary-card-capture">
-        <h3 className='text-center font-bold uppercase text-sm mb-2'>Resumo do Ciclo</h3>
-        <ResponsiveContainer width="100%" height={200}>
-            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={report.assetProgress}>
-                <PolarGrid stroke="rgba(255, 255, 255, 0.2)" />
-                <PolarAngleAxis dataKey="asset" tick={{ fill: 'white', fontSize: 8 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 'dataMax + 1']} tick={false} axisLine={false} />
-                <Radar name="Progress" dataKey="value" stroke="var(--gold)" fill="var(--gold)" fillOpacity={0.6} />
-            </RadarChart>
-        </ResponsiveContainer>
-        <p className="text-xs text-gray-400 my-2 text-center">Seu progresso entre {formatDate(report.startDate)} e {formatDate(report.endDate)} foi analisado.</p>
-        <div className="text-center share-ignore space-y-2">
-             <div className="flex items-center space-x-2">
-                 <button onClick={onShare} className='p-3 rounded-xl luxe-button-secondary flex-shrink-0'><ShareIcon className="w-5 h-5" /></button>
-                 <button onClick={onPostToFeed} className="w-full py-3 rounded-xl luxe-button-secondary">Postar no Feed</button>
-                 <button onClick={onCompare} className="w-full py-3 rounded-xl luxe-button-secondary">Comparar</button>
-            </div>
-             <button onClick={onOk} className="w-full py-3 rounded-xl luxe-gold-button">OK</button>
-        </div>
-     </GlassCard>
-);
 
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent } = useGame();
+    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent, seasons } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
     const [showConfirmEndCycle, setShowConfirmEndCycle] = useState(false);
@@ -323,6 +271,32 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [earnedChest, setEarnedChest] = useState<ChestType | null>(null);
     const [isPostCycleFlow, setIsPostCycleFlow] = useState(false);
     const [cycleShimmer, setCycleShimmer] = useState(false);
+    const [isEditingEras, setIsEditingEras] = useState(false);
+    const [eraBreaks, setEraBreaks] = useState<number[]>([]);
+    const [hasCustomEras, setHasCustomEras] = useState(false);
+    const [draggingBoundary, setDraggingBoundary] = useState<number | null>(null);
+    const sortedReports = useMemo(() => [...reports].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()), [reports]);
+    const defaultEraBreaks = useMemo(() => {
+        const breaks: number[] = [];
+        for (let i = 0; i < sortedReports.length - 1; i += 1) {
+            if (sortedReports[i].seasonId !== sortedReports[i + 1].seasonId) {
+                breaks.push(i + 1);
+            }
+        }
+        return breaks;
+    }, [sortedReports]);
+
+    useEffect(() => {
+        if (!hasCustomEras) {
+            setEraBreaks(defaultEraBreaks);
+        }
+    }, [defaultEraBreaks, hasCustomEras]);
+
+    useEffect(() => {
+        if (hasCustomEras) {
+            setEraBreaks(prev => prev.filter(b => b > 0 && b < sortedReports.length));
+        }
+    }, [sortedReports.length, hasCustomEras]);
     
     useEffect(() => {
         if (view === 'scanning') {
@@ -335,6 +309,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 if (expGained > 5000) chestType = 'Lendário';
                 else if (expGained > 2000) chestType = 'Épico';
                 else if (expGained > 800) chestType = 'Raro';
+                else if (expGained > 300) chestType = 'Incomum';
                 setEarnedChest(chestType);
 
                 setIsPostCycleFlow(true);
@@ -399,38 +374,221 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             addChest(earnedChest);
         }
         setIsPostCycleFlow(false);
-        setView('reward');
+        setView('hub');
     };
+
+    const getSeasonById = (seasonId?: string) => seasons.find(s => s.id === seasonId);
+    const getSeasonByDate = (date: string) => seasons.find(s => date >= s.start_date && date <= s.end_date);
+    const getEraTone = (grade: string) => {
+        if (grade === 'S' || grade === 'A') return '#D4AF37';
+        if (grade === 'B') return '#C0C0C0';
+        if (grade === 'C') return '#CD7F32';
+        return '#6B7280';
+    };
+    const getEraLabel = (index: number) => `ERA ${toRoman(index + 1)}`;
+
+    const handleStartEraEdit = () => setIsEditingEras(true);
+    const handleConfirmEraEdit = () => {
+        setIsEditingEras(false);
+        setHasCustomEras(true);
+    };
+    const handleDragStart = (boundaryIndex: number) => (e: React.DragEvent<HTMLDivElement>) => {
+        e.dataTransfer.setData('text/plain', String(boundaryIndex));
+        setDraggingBoundary(boundaryIndex);
+    };
+    const handleDragEnd = () => setDraggingBoundary(null);
+    const handleDropBoundary = (targetIndex: number) => (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const source = Number(e.dataTransfer.getData('text/plain'));
+        if (!source || source === targetIndex) return;
+        setEraBreaks(prev => {
+            const next = prev.filter(b => b !== source);
+            if (!next.includes(targetIndex)) next.push(targetIndex);
+            return next.sort((a, b) => a - b);
+        });
+        setDraggingBoundary(null);
+    };
+    const allowDrop = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
     
     const renderContent = () => {
         switch (view) {
-            case 'hub':
+            case 'hub': {
+                const items: Array<
+                    | { type: 'active'; cycle: Cycle }
+                    | { type: 'report'; report: Report; reportIndex: number; seasonName?: string }
+                    | { type: 'boundary'; boundaryIndex: number; seasonDate?: string }
+                > = [];
+                const reportRowIndexMap = new Map<number, number>();
+
+                if (activeCycle) {
+                    items.push({ type: 'active', cycle: activeCycle });
+                }
+
+                sortedReports.forEach((report, index) => {
+                    const season = getSeasonById(report.seasonId) || getSeasonByDate(report.endDate);
+                    items.push({ type: 'report', report, reportIndex: index, seasonName: season?.name });
+                    reportRowIndexMap.set(index, items.length - 1);
+
+                    if (index < sortedReports.length - 1) {
+                        const nextReport = sortedReports[index + 1];
+                        const seasonChanged = report.seasonId !== nextReport.seasonId;
+                        const seasonDate = seasonChanged ? (season?.end_date || report.endDate) : undefined;
+                        items.push({ type: 'boundary', boundaryIndex: index + 1, seasonDate });
+                    }
+                });
+
+                const uniqueBreaks = Array.from(new Set(eraBreaks.filter(b => b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
+                const eraSegments = sortedReports.length > 0 ? (() => {
+                    const segments: Array<{ start: number; end: number }> = [];
+                    let start = 0;
+                    uniqueBreaks.forEach(b => {
+                        segments.push({ start, end: b - 1 });
+                        start = b;
+                    });
+                    segments.push({ start, end: sortedReports.length - 1 });
+                    return segments;
+                })() : [];
+
                 return (
-                    <div className="space-y-4">
+                    <div className="pb-12">
                         {reportForComparison && (
-                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
+                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
+                        
                         {activeCycle ? (
-                            <>
-                                <SimplifiedCycleHUD cycle={activeCycle} />
-                                <button onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-gold-button">ENCERRAR CICLO</button>
-                            </>
+                            <div className="relative z-20 space-y-2">
+                                <button onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-gold-button shadow-lg shadow-[var(--gold)]/20">ENCERRAR CICLO ATUAL</button>
+                                <button onClick={handleStartEraEdit} disabled={isEditingEras || sortedReports.length < 2} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">SETAR ERAS</button>
+                            </div>
                         ) : (
-                            <>
-                                <button onClick={() => setIsStartingCycle(true)} className="w-full py-3 rounded-xl luxe-gold-button">INICIAR CICLO</button>
-                                {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4">Sem ciclo ativo. Inicie um para começar.</div>}
-                            </>
+                            <div className="relative z-20 space-y-2">
+                                <button onClick={() => setIsStartingCycle(true)} className="w-full py-3 rounded-xl luxe-gold-button mb-4 shadow-lg shadow-[var(--gold)]/20">INICIAR NOVO CICLO</button>
+                                {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem histórico. Inicie sua jornada.</div>}
+                                <button onClick={handleStartEraEdit} disabled={isEditingEras || sortedReports.length < 2} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">SETAR ERAS</button>
+                            </div>
                         )}
-                        {reports.length > 0 && (
-                            <>
-                                {reports.length >= 2 && !activeCycle && !reportForComparison && <button onClick={handleStartCompare} className="w-full mt-4 py-2 rounded-xl luxe-button-secondary">COMPARAR ÚLTIMOS 2 CICLOS</button>}
-                                <hr className="border-white/10 my-4" />
-                                <h3 className='text-center text-xs font-bold uppercase tracking-wider text-gray-400'>Ciclos Anteriores</h3>
-                                {reports.map(report => <ReportListItem key={report.id} report={report} onClick={() => handleViewReport(report)} />)}
-                            </>
+                        
+                        {sortedReports.length > 0 && (
+                            <div className="relative mt-6">
+                                {isEditingEras && (
+                                    <div className="mb-3">
+                                        <button onClick={handleConfirmEraEdit} className="w-full py-2 rounded-xl luxe-gold-button text-xs">CONFIRMAR</button>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-[72px_1fr_36px] gap-x-2">
+                                    {items.map((item, rowIndex) => {
+                                        if (item.type === 'active') {
+                                            return (
+                                                <React.Fragment key={`active-${item.cycle.id}`}> 
+                                                    <div className="relative py-3"></div>
+                                                    <div className="relative py-3">
+                                                        <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
+                                                        <div className="relative pl-8">
+                                                            <div className="absolute left-0 top-4 w-6 h-6 rounded-full border-2 border-[var(--gold)] bg-black shadow-[0_0_15px_var(--gold)] flex items-center justify-center">
+                                                                <div className="w-2 h-2 bg-[var(--gold)] rounded-full animate-pulse"></div>
+                                                            </div>
+                                                            <div className={isEditingEras ? 'scale-[0.98]' : ''}>
+                                                                <SimplifiedCycleHUD cycle={item.cycle} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="relative py-3"></div>
+                                                </React.Fragment>
+                                            );
+                                        }
+
+                                        if (item.type === 'report') {
+                                            return (
+                                                <React.Fragment key={item.report.id}>
+                                                    <div className="relative py-3"></div>
+                                                    <div className="relative py-3">
+                                                        <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
+                                                        <TimelineCard 
+                                                            report={item.report} 
+                                                            isLatest={item.reportIndex === 0 && !activeCycle} 
+                                                            onClick={() => handleViewReport(item.report)}
+                                                            seasonName={item.seasonName}
+                                                            isEditing={isEditingEras}
+                                                        />
+                                                    </div>
+                                                    <div className="relative py-3"></div>
+                                                </React.Fragment>
+                                            );
+                                        }
+
+                                        const isBoundarySet = eraBreaks.includes(item.boundaryIndex);
+                                        return (
+                                            <React.Fragment key={`boundary-${item.boundaryIndex}-${rowIndex}`}>
+                                                <div className="relative py-2 flex items-center justify-end">
+                                                    {item.seasonDate && (
+                                                        <div className="flex items-center justify-end w-full">
+                                                            <span className="text-[10px] text-gray-400 font-mono">{formatDate(item.seasonDate)}</span>
+                                                            <div className="ml-2 h-px w-4 bg-white/20"></div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="relative py-2">
+                                                    <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
+                                                    {item.seasonDate && (
+                                                        <>
+                                                            <div className="absolute left-[11px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white/20"></div>
+                                                            <div className="absolute left-[11px] right-0 top-1/2 h-px bg-white/10"></div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <div className="relative py-2 flex items-center justify-center">
+                                                    {isEditingEras && (
+                                                        <div
+                                                            onDragOver={allowDrop}
+                                                            onDrop={handleDropBoundary(item.boundaryIndex)}
+                                                            className={`w-6 h-6 rounded-full border flex items-center justify-center ${isBoundarySet ? 'border-[var(--gold)]' : 'border-white/10'} ${draggingBoundary !== null ? 'bg-white/5' : ''}`}
+                                                        >
+                                                            {isBoundarySet && (
+                                                                <div
+                                                                    draggable
+                                                                    onDragStart={handleDragStart(item.boundaryIndex)}
+                                                                    onDragEnd={handleDragEnd}
+                                                                    className="w-3 h-3 rounded-full bg-[var(--gold)] cursor-grab"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                    {eraSegments.map((segment, index) => {
+                                        const rowStart = reportRowIndexMap.get(segment.start);
+                                        const rowEnd = reportRowIndexMap.get(segment.end);
+                                        if (rowStart === undefined || rowEnd === undefined) return null;
+                                        const segmentReports = sortedReports.slice(segment.start, segment.end + 1);
+                                        const avgScore = segmentReports.reduce((sum, report) => sum + report.performanceScore, 0) / Math.max(segmentReports.length, 1);
+                                        const grade = getScoreGrade(Math.round(avgScore)).grade;
+                                        const eraColor = getEraTone(grade);
+
+                                        return (
+                                            <div
+                                                key={`era-${segment.start}-${segment.end}`}
+                                                className="col-start-3 flex justify-center pointer-events-none"
+                                                style={{ gridRow: `${rowStart + 1} / ${rowEnd + 2}`, marginTop: index === 0 ? 0 : 8, marginBottom: index === eraSegments.length - 1 ? 0 : 8 }}
+                                            >
+                                                <div className="w-8 h-full rounded-sm flex items-center justify-center" style={{ backgroundColor: eraColor, opacity: 0.25 }}>
+                                                    <span className="text-[9px] tracking-[0.3em] text-gray-400 uppercase rotate-90">{getEraLabel(index)}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                {reports.length >= 2 && !activeCycle && !reportForComparison && (
+                                    <div className="mt-4">
+                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÚLTIMOS 2 CICLOS</button>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
                 );
+            }
             case 'scanning':
                 return (
                     <div className="flex flex-col items-center justify-center h-full">
@@ -438,15 +596,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <p className="mt-4 text-lg font-bold tracking-widest animate-pulse">ANALISANDO CICLO...</p>
                     </div>
                 );
-            case 'reward':
-                return earnedChest ? (
-                    <CycleRewardView 
-                        exp={expGained}
-                        chest={earnedChest}
-                        onContinue={() => setShowNewCycleSetup(true)}
-                        onClose={onClose}
-                    />
-                ) : <p>Erro ao carregar recompensa.</p>;
             case 'results':
                 return selectedReport ? (
                     <ReportResultCarousel 
@@ -455,6 +604,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onCompare={() => { setReportForComparison(selectedReport); setView('hub'); }}
                         onShare={() => handleShare('report-summary-card-capture', `Relatório de Ciclo ${formatDate(selectedReport.startDate)} - Life OS`)} 
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
+                        onStartNewCycle={() => {
+                             handlePostCycleResultsOk();
+                             setShowNewCycleSetup(true);
+                        }}
+                        chest={isPostCycleFlow ? earnedChest : null}
+                        expGained={isPostCycleFlow ? expGained : undefined}
                     />
                 ) : <p>Erro ao carregar relatório.</p>;
             case 'comparing':

@@ -2,11 +2,12 @@
 
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
 export type SlotLayoutType = 1 | 2 | 3; // 1: wide, 2: square, 3: rect
-export type ChestType = 'Comum' | 'Raro' | 'Épico' | 'Lendário';
+export type ChestType = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário';
 
 export interface SlotValueImage {
   imageUrl: string;
   caption: string;
+  rarity?: ItemRarity;
 }
 
 export type SlotValue = string | number | SlotValueImage;
@@ -20,6 +21,7 @@ export interface Slot {
   range?: { min: number; max: number };
   placeholder?: string;
   value: SlotValue;
+  rarity?: ItemRarity;
 }
 
 export type DayOfWeek = 'DOM' | 'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB';
@@ -90,6 +92,7 @@ export interface Skin {
   name: string;
   color: string;
   imageUrl?: string;
+  rarity?: ItemRarity;
 }
 
 export interface Nobility {
@@ -199,11 +202,19 @@ export interface Report {
         arenasInvolved: number;
         goalsMet: number; // Assuming milestones are goals
         totalHours: number;
+        questsCompleted?: number;
+        consistencyDays?: number;
+        expGained?: number;
     };
     highlight: {
         mostFocusedArena: string;
+        mostFocusedArenaId?: string;
         mostRepeatedAction: string;
+        mostRepeatedActionCount?: number;
     };
+    cycleName?: string;
+    seasonId?: string;
+    clanPoints?: number;
     assetProgress: { asset: string; value: number }[];
 }
 

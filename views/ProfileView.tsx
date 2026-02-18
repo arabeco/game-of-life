@@ -22,6 +22,24 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
         }
     }
 
+    const rarity = slot.rarity || (typeof slot.value === 'object' && 'rarity' in slot.value ? slot.value.rarity : undefined);
+    
+    const getRarityColor = (r?: string) => {
+        if (!r) return null;
+        const lower = r.toLowerCase();
+        if (lower === 'uncommon' || lower === 'incomum') return { bg: 'bg-white', color: '#FFFFFF' };
+        if (lower === 'rare' || lower === 'raro') return { bg: 'bg-[#CD7F32]', color: '#CD7F32' };
+        if (lower === 'epic' || lower === 'épico' || lower === 'epico') return { bg: 'bg-[#C0C0C0]', color: '#C0C0C0' };
+        if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return { bg: 'bg-[#F0C843]', color: '#F0C843' };
+        return null;
+    };
+    
+    const rarityStyle = getRarityColor(rarity);
+    
+    // Glow for Epic/Legendary
+    const hasGlow = rarityStyle && (rarity?.toLowerCase().includes('epic') || rarity?.toLowerCase().includes('épico') || rarity?.toLowerCase().includes('legendary') || rarity?.toLowerCase().includes('lendário'));
+    const glowStyle = hasGlow ? { boxShadow: `0 0 10px ${rarityStyle.color}40` } : {};
+
     const valueDisplay = typeof slot.value === 'object' && slot.value.imageUrl ? (
          <img src={slot.value.imageUrl} alt={slot.value.caption} className="w-full h-full object-cover rounded-xl" crossOrigin="anonymous" />
     ) : (
@@ -33,8 +51,11 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
         return (
             <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
                 <h3 className="text-[10px] font-semibold text-yellow-400/70 uppercase tracking-wider">{slot.label}</h3>
-                <div className="w-full flex-grow mx-auto px-4 py-3 rounded-2xl flex items-center justify-center bg-gradient-to-b from-yellow-500 to-amber-700 text-black shadow-inner shadow-white/20">
+                <div className="relative w-full flex-grow mx-auto px-4 py-3 rounded-2xl flex items-center justify-center bg-gradient-to-b from-yellow-500 to-amber-700 text-black shadow-inner shadow-white/20">
                     {valueDisplay}
+                    {rarityStyle && (
+                        <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${rarityStyle.bg} shadow-sm z-10`} />
+                    )}
                 </div>
             </div>
         );
@@ -44,8 +65,14 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
     return (
         <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
             <h3 className="text-[10px] font-semibold gold-text uppercase tracking-wider">{slot.label}</h3>
-            <div className="w-full flex-grow mx-auto p-2 rounded-2xl flex items-center justify-center bg-black/50 gradient-border gradient-border-gold text-white">
+            <div 
+                className="relative w-full flex-grow mx-auto p-2 rounded-2xl flex items-center justify-center bg-black/50 gradient-border gradient-border-gold text-white"
+                style={glowStyle}
+            >
                 {valueDisplay}
+                {rarityStyle && (
+                    <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${rarityStyle.bg} shadow-sm z-10`} />
+                )}
             </div>
         </div>
     );

@@ -1027,13 +1027,29 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
     
     const InventoryPlaceholder: React.FC = () => <div className="w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-dashed border-white/10 rounded-lg" />;
     
-    const InventoryItem: React.FC<{ item: any; onClick: () => void; count?: number; }> = ({ item, onClick, count }) => {
+    const InventoryItem: React.FC<{ item: any; onClick: () => void; count?: number; isEquipped?: boolean; }> = ({ item, onClick, count, isEquipped }) => {
         const imageUrl = item.url || item.imageUrl;
+        const rarity = item.rarity || 'common';
+        const rarityColor = {
+            'common': null,
+            'uncommon': '#FFFFFF',
+            'rare': '#CD7F32',
+            'epic': '#C0C0C0',
+            'legendary': '#F0C843'
+        }[rarity as string];
+
+        const glowStyle = (isEquipped && (rarity === 'epic' || rarity === 'legendary')) ? {
+            boxShadow: `0 0 10px ${rarityColor}, 0 0 2px ${rarityColor} inset`
+        } : {};
+
         return (
-            <button onClick={onClick} className="relative w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-white/10 rounded-lg flex flex-col items-center justify-center p-1 text-center hover:border-[var(--gold)] transition-colors group">
+            <button onClick={onClick} className="relative w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-white/10 rounded-lg flex flex-col items-center justify-center p-1 text-center hover:border-[var(--gold)] transition-all duration-300 group" style={glowStyle}>
                 <div className="w-full h-full flex items-center justify-center">{imageUrl ? (<img src={imageUrl} alt={item.name} className="max-w-full max-h-full object-contain" />) : item.color ? (<div className="w-10 h-10 rounded-full" style={{ backgroundColor: item.color }} />) : (<span className="text-2xl">?</span>)}</div>
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] font-bold p-0.5 truncate group-hover:bg-black/80">{item.name}</div>
                 {count && count > 1 && <div className="absolute top-0 right-0 bg-black text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">x{count}</div>}
+                {rarityColor && (
+                    <div className="absolute top-1 right-1 w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: rarityColor }}></div>
+                )}
             </button>
         );
     };
@@ -1043,6 +1059,7 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
     );
     
     const chestColors: Record<ChestType, string> = { 'Comum': 'gray', 'Raro': '#3b82f6', 'Épico': '#a855f7', 'Lendário': '#f59e0b' };
+    const chestRarityMap: Record<ChestType, string> = { 'Comum': 'common', 'Raro': 'rare', 'Épico': 'epic', 'Lendário': 'legendary' };
     const unlockedSkins = userProfile.unlockedSkins || {};
     const completedSeasonMissions = userProfile.completedSeasonMissions || [];
     const currentRankIndex = nobilityRanks.findIndex(rank => rank.id === userProfile.nobility.rankId);
@@ -1087,7 +1104,7 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
                             userProfile.chests.map(({ type, count }) => (
                                 <InventoryItem
                                     key={type}
-                                    item={{ name: `Baú ${type}`, color: chestColors[type] }}
+                                    item={{ name: `Baú ${type}`, color: chestColors[type], rarity: chestRarityMap[type] }}
                                     count={count}
                                     onClick={() => {
                                         if (openChest(type)) {
@@ -1098,21 +1115,21 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
                             ))
                         ) : <InventoryPlaceholder />}
                     </InventoryRow>
-                    <InventoryRow title="ARTEFATOS">{SOVEREIGN_ASSETS.artifacts.filter(a => a.id !== 'none').filter(item => isItemUnlocked('artifacts', item.id)).map(item => <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Artefato'})} />)}</InventoryRow>
+                    <InventoryRow title="ARTEFATOS">{SOVEREIGN_ASSETS.artifacts.filter(a => a.id !== 'none').filter(item => isItemUnlocked('artifacts', item.id)).map(item => <InventoryItem key={item.id} item={item} isEquipped={userProfile.sovereign?.artifact === item.id} onClick={() => setSelectedItem({item, type: 'Artefato'})} />)}</InventoryRow>
                     <InventoryRow title="CONSUMÍVEIS"><InventoryPlaceholder /><InventoryPlaceholder /><InventoryPlaceholder /></InventoryRow>
                     <InventoryRow title="SKINS">
                         {SKINS_DATA.filter(item => isSkinUnlocked(item.id)).map(item => (
-                            <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Skin'})} />
+                            <InventoryItem key={item.id} item={item} isEquipped={userProfile.skin === item.id} onClick={() => setSelectedItem({item, type: 'Skin'})} />
                         ))}
                     </InventoryRow>
                     <InventoryRow title="BORDAS">
                         {BORDERS_DATA.filter(item => isBorderUnlocked(item.id)).map(item => (
-                            <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Borda'})} />
+                            <InventoryItem key={item.id} item={item} isEquipped={userProfile.border === item.id} onClick={() => setSelectedItem({item, type: 'Borda'})} />
                         ))}
                     </InventoryRow>
                     <InventoryRow title="BANNERS">
                         {BANNERS_DATA.filter(item => isBannerUnlocked(item.url)).map(item => (
-                            <InventoryItem key={item.id} item={item} onClick={() => setSelectedItem({item, type: 'Banner'})} />
+                            <InventoryItem key={item.id} item={item} isEquipped={userProfile.bannerUrl === item.url} onClick={() => setSelectedItem({item, type: 'Banner'})} />
                         ))}
                     </InventoryRow>
                 </div>

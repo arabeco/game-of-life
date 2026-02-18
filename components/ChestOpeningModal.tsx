@@ -13,10 +13,10 @@ interface ChestOpeningModalProps {
 
 const getChestStyle = (type: ChestType) => {
     switch (type) {
-        case 'Raro': return { color: '#3b82f6', shadow: 'shadow-blue-500/50' };
-        case 'Épico': return { color: '#a855f7', shadow: 'shadow-purple-500/50' };
-        case 'Lendário': return { color: '#f59e0b', shadow: 'shadow-yellow-500/50' };
-        default: return { color: 'gray', shadow: 'shadow-gray-500/50' };
+        case 'Raro': return { color: '#CD7F32', shadow: 'shadow-orange-700/50' }; // Bronze
+        case 'Épico': return { color: '#C0C0C0', shadow: 'shadow-gray-400/50' };   // Silver
+        case 'Lendário': return { color: '#F0C843', shadow: 'shadow-yellow-500/50' }; // Gold
+        default: return { color: '#9ca3af', shadow: 'shadow-gray-600/50' }; // Gray
     }
 }
 
@@ -73,28 +73,44 @@ const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: U
     return { ...randomReward, rarity };
 };
 
+const RARITY_COLORS: Record<string, string> = {
+    'Comum': '#9ca3af',
+    'Incomum': '#FFFFFF',
+    'Raro': '#CD7F32',
+    'Épico': '#C0C0C0',
+    'Lendário': '#F0C843'
+};
+
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose }) => {
-    const [stage, setStage] = useState<'opening' | 'revealing' | 'revealed'>('opening');
+    const [stage, setStage] = useState<'shaking' | 'exploding' | 'revealed'>('shaking');
     const [reward, setReward] = useState<Reward | null>(null);
     const { grantUserUnlock, updateUserProfile, userProfile } = useGame();
 
     const chestStyle = getChestStyle(chestType);
+    const rarityColor = RARITY_COLORS[chestType] || RARITY_COLORS['Comum'];
 
     useEffect(() => {
-        if (stage === 'opening') {
-            const timer = setTimeout(() => {
-                setStage('revealing');
-            }, 2000); // 2s shaking animation
-            return () => clearTimeout(timer);
-        }
-        if (stage === 'revealing') {
-            setReward(getRandomReward(chestType));
-            const timer = setTimeout(() => {
-                setStage('revealed');
-            }, 1000); // 1s flash animation
-            return () => clearTimeout(timer);
-        }
-    }, [stage, chestType]);
+        // Calculate reward immediately
+        setReward(getRandomReward(chestType));
+
+        // Sequence:
+        // 0-800ms: Shaking (controlled by initial state)
+        // 800ms: Explode
+        // 1300ms: Reveal
+        
+        const timer1 = setTimeout(() => {
+            setStage('exploding');
+        }, 1500);
+
+        const timer2 = setTimeout(() => {
+            setStage('revealed');
+        }, 2000);
+
+        return () => {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+        };
+    }, [chestType]);
 
     const handleCollect = () => {
         const rewardValue = reward as (Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string }) | null;
@@ -110,36 +126,77 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
 
     const renderContent = () => {
         switch (stage) {
-            case 'opening':
+            case 'shaking':
                 return (
-                    <div className="flex flex-col items-center justify-center h-48">
+                    <div className="flex flex-col items-center justify-center h-64 relative">
                          <div className={`w-32 h-32 bg-gray-800 rounded-lg flex items-center justify-center animate-shake border-4 ${chestStyle.shadow}`} style={{borderColor: chestStyle.color}}>
                             <span className="text-6xl">?</span>
                         </div>
-                        <p className="mt-4 animate-pulse">Abrindo baú {chestType}...</p>
-                        <style>{`
-                            @keyframes shake {
-                                0%, 100% { transform: translateX(0); }
-                                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                                20%, 40%, 60%, 80% { transform: translateX(5px); }
-                            }
-                            .animate-shake { animation: shake 1s infinite; }
-                        `}</style>
+                        <p className="mt-8 text-gray-400 font-medium">Abrindo...</p>
                     </div>
                 );
-            case 'revealing':
+            case 'exploding':
                 return (
-                    <div className="flex items-center justify-center h-48">
-                        <div className="w-48 h-48 bg-white rounded-full animate-ping" style={{ backgroundColor: chestStyle.color }} />
+                    <div className="flex items-center justify-center h-64 relative overflow-hidden">
+                        <div 
+                            className="absolute inset-0 animate-pulse-fast" 
+                            style={{ 
+                                background: `radial-gradient(circle, ${rarityColor}40 0%, transparent 70%)` 
+                            }} 
+                        />
+                        <div 
+                            className="w-4 h-4 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping"
+                            style={{ backgroundColor: rarityColor, boxShadow: `0 0 40px ${rarityColor}` }}
+                        />
+                        {/* Particles */}
+                        {[...Array(8)].map((_, i) => (
+                            <div 
+                                key={i}
+                                className="absolute w-2 h-2 rounded-full"
+                                style={{
+                                    backgroundColor: rarityColor,
+                                    top: '50%',
+                                    left: '50%',
+                                    '--rot': `${i * 45}deg`,
+                                    animation: `particle-explode 0.5s ease-out forwards`
+                                } as React.CSSProperties}
+                            />
+                        ))}
                     </div>
                 );
             case 'revealed':
                 if (!reward) return null;
                 return (
-                    <div className="flex flex-col items-center justify-center text-center h-48 space-y-2">
-                        <p className="text-xs font-bold" style={{color: chestStyle.color}}>{reward.rarity.toUpperCase()}</p>
-                        <h3 className="text-2xl font-bold">{reward.type}</h3>
-                        <p className="text-gray-300">{reward.value}</p>
+                    <div className="flex flex-col items-center justify-center text-center h-64 space-y-4 animate-fade-in-up">
+                        {/* Rarity Glow Behind */}
+                        <div 
+                            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-3xl opacity-20 -z-10"
+                            style={{ backgroundColor: rarityColor }}
+                        />
+                        
+                        <div className="relative">
+                            <h3 className="text-3xl font-bold tracking-wider" style={{ color: rarityColor }}>
+                                {reward.value}
+                            </h3>
+                             {/* Rarity Dot with Pulse */}
+                             <div 
+                                className="absolute -top-3 -right-3 w-3 h-3 rounded-full animate-pulse"
+                                style={{ 
+                                    backgroundColor: rarityColor,
+                                    boxShadow: `0 0 10px ${rarityColor}`
+                                }} 
+                            />
+                        </div>
+                        
+                        <div className="flex flex-col items-center space-y-1">
+                            <span 
+                                className="text-xs font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/10"
+                                style={{ color: rarityColor, borderColor: `${rarityColor}40` }}
+                            >
+                                {reward.rarity}
+                            </span>
+                            <span className="text-sm text-gray-400">{reward.type}</span>
+                        </div>
                     </div>
                 );
         }

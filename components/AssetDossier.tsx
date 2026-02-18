@@ -21,6 +21,18 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
         }
     }
 
+    const rarity = slot.rarity || (typeof slot.value === 'object' && 'rarity' in slot.value ? slot.value.rarity : undefined);
+    const getRarityDotColor = (r?: string) => {
+        if (!r) return null;
+        const lower = r.toLowerCase();
+        if (lower === 'uncommon' || lower === 'incomum') return 'bg-white';
+        if (lower === 'rare' || lower === 'raro') return 'bg-[#CD7F32]';
+        if (lower === 'epic' || lower === 'épico' || lower === 'epico') return 'bg-[#C0C0C0]';
+        if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return 'bg-[#F0C843]';
+        return null;
+    };
+    const rarityDotColor = getRarityDotColor(rarity);
+
     const valueDisplay = typeof slot.value === 'object' && slot.value.imageUrl ? (
          <div className="relative w-full h-full rounded-xl overflow-hidden group">
              <img src={slot.value.imageUrl} alt={slot.value.caption} className="w-full h-full object-cover" />
@@ -33,13 +45,16 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
     );
 
     return (
-                <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
+        <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
             <h3 className="text-[10px] font-semibold text-white uppercase tracking-wider">{slot.label}</h3>
             <button
                 onClick={isEditing ? onClick : undefined}
-                        className={`w-full flex-grow mx-auto p-2 rounded-xl bg-black/40 border border-[color:var(--accent-gold-soft)] transition-colors flex items-center justify-center ${editableClasses}`}
+                className={`relative w-full flex-grow mx-auto p-2 rounded-xl bg-black/40 border border-[color:var(--accent-gold-soft)] transition-colors flex items-center justify-center ${editableClasses}`}
             >
                 {valueDisplay}
+                {rarityDotColor && (
+                    <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${rarityDotColor} shadow-sm z-10`} />
+                )}
             </button>
         </div>
     );

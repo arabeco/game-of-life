@@ -1196,13 +1196,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   
 
 
-  const isClanQuestActionId = (actionId: string) => {
+  const isQuestActionId = (actionId: string) => {
     const action = actions.find(a => a.id === actionId);
     if (!action) return false;
     const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
     if (!arena?.name) return false;
     const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    return normalized.includes('quests - cla');
+    return normalized.includes('quests');
   };
 
   const resetDailyCommitment = () => {
@@ -1227,7 +1227,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
   
   const endDailyBattle = () => {
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date && !isClanQuestActionId(t.actionId));
+    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date && !isQuestActionId(t.actionId));
     const committedCounts = committedTasks.reduce((acc, task) => {
         acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
@@ -1235,7 +1235,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const completedCounts = tasks.reduce((acc, task) => {
         if (task.date !== dailyCommitment.date) return acc;
         if (!committedCounts[task.actionId]) return acc;
-        if (isClanQuestActionId(task.actionId)) return acc;
+        if (isQuestActionId(task.actionId)) return acc;
         if (task.completed) acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
@@ -1596,7 +1596,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const poolableActions = activeActions.filter(action => action.actionType !== 'Marco');
 
     const pool = poolableActions.flatMap(action => {
-        if (isClanQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
+        if (isQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
         const scheduledCount = scheduledCounts[action.id] || 0;
         // Always allow at least one instance to be draggable (for unplanned/extra actions)
         const poolCount = Math.max(1, action.repetitions - scheduledCount);
@@ -1857,9 +1857,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const startDate = cycle?.startDate || '2000-01-01'; // Fallback para o primeiro ciclo sem data
     const endDate = new Date().toISOString().split('T')[0];
 
-    // Filtrar tarefas apenas do usuário atual e dentro do período do ciclo
-    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && !isClanQuestActionId(t.actionId));
+    // 1. Filter Tasks
+    // Standard Tasks (Planned) - Exclude Quests
+    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && !isQuestActionId(t.actionId));
     const completedTasks = cycleTasks.filter(t => t.completed);
+    
+    // Quest Tasks
+    const questTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && isQuestActionId(t.actionId));
+    const completedQuests = questTasks.filter(t => t.completed);
+
+    // 2. Calculate Fidelity (Base Score)
+    // fidelidade = (ações realizadas / ações planejadas) × 100
+    const fidelity = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
+
+    // 3. Calculate Bonuses
+    // +10 per milestone (Marco)
+    const getMilestones = (taskList: ScheduledTask[]) => taskList.filter(t => {
+        const action = currentActions.find(a => a.id === t.actionId);
+        return action?.actionType === 'Marco';
+    }).length;
+
+    const milestonesCompleted = getMilestones(completedTasks) + getMilestones(completedQuests);
+    const milestoneBonus = milestonesCompleted * 10;
+
+    // +5 per quest
+    const questsCompletedCount = completedQuests.length;
+    const questBonus = questsCompletedCount * 5;
+
+    // +5 consistency (4+ unique days with completed actions)
+    const uniqueDays = new Set([...completedTasks, ...completedQuests].map(t => t.date)).size;
+    const consistencyBonus = uniqueDays >= 4 ? 5 : 0;
+
+    // +5 total fidelity (zero abandoned actions)
+    // Only if there were planned actions
+    const totalFidelityBonus = (cycleTasks.length > 0 && completedTasks.length === cycleTasks.length) ? 5 : 0;
+
+    // Final Performance Score
+    let performanceScore = Math.round(fidelity + milestoneBonus + questBonus + consistencyBonus + totalFidelityBonus);
 
     // Arenas e Ações envolvidas (baseado nas tarefas do ciclo)
     const actionIdsInCycle = new Set(cycleTasks.map(t => t.actionId));
@@ -1867,9 +1901,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     
     const arenaIdsInCycle = new Set(involvedActions.map(a => a.arenaId));
     const involvedArenas = currentAssets.flatMap(as => as.arenas).filter(ar => arenaIdsInCycle.has(ar.id));
-
-    // Performance Score baseado nas tarefas planejadas do ciclo
-    const performanceScore = cycleTasks.length > 0 ? Math.round((completedTasks.length / cycleTasks.length) * 100) : 100;
 
     // Highlights
     const arenaCompletionCounts = completedTasks.reduce((acc, task) => {
@@ -1902,23 +1933,57 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     });
     const mostRepeatedAction = currentActions.find(a => a.id === mostRepeatedActionId)?.name || 'Nenhuma';
+    
+    // Calculate Exp Gained
+    const expFromActions = completedTasks.reduce((sum, task) => {
+        const duration = Number.isFinite(task.duration) ? task.duration : 0;
+        if (duration > 0) return sum + duration;
+        const action = currentActions.find(a => a.id === task.actionId);
+        return sum + (action?.duration || 0);
+    }, 0);
+    const missionBonusExp = completedTasks.reduce((sum, task) => {
+        const action = currentActions.find(a => a.id === task.actionId);
+        if (action?.actionType !== 'Marco') return sum;
+        const duration = Number.isFinite(task.duration) ? task.duration : (action?.duration || 0);
+        return sum + duration;
+    }, 0);
+    const expGained = expFromActions + missionBonusExp + cycleExpBonus;
+
+    // Calculate Clan Points (XP from completed clan quests)
+    const clanPoints = completedQuests.reduce((sum, task) => {
+        const action = currentActions.find(a => a.id === task.actionId);
+        if (!action) return sum;
+        const quest = activeSeason?.quests.find(q => 
+            q.type === 'clan' && 
+            (q.title === action.name || q.actionTemplate.name === action.name)
+        );
+        return sum + (quest?.rewards.xp || 0);
+    }, 0);
 
     const newReport: Report = { 
         id: crypto.randomUUID(), 
         startDate, 
         endDate, 
         performanceScore, 
+        cycleName: cycle?.name,
+        seasonId: ACTIVE_SEASON_ID,
         metrics: { 
             actionsCompleted: completedTasks.length, 
             totalPlannedActions: cycleTasks.length, 
             arenasInvolved: involvedArenas.length, 
-            goalsMet: involvedActions.filter(a => a.actionType === 'Marco').length, 
-            totalHours: Math.round(completedTasks.reduce((sum, t) => sum + (t.duration / 60), 0)) 
+            goalsMet: milestonesCompleted, 
+            totalHours: Math.round(completedTasks.reduce((sum, t) => sum + (t.duration / 60), 0)),
+            questsCompleted: questsCompletedCount,
+            consistencyDays: uniqueDays,
+            expGained
         }, 
         highlight: { 
             mostFocusedArena, 
-            mostRepeatedAction 
+            mostFocusedArenaId,
+            mostRepeatedAction,
+            mostRepeatedActionCount: maxActionCompletions
         }, 
+        clanPoints,
         assetProgress: currentAssets.map(asset => {
             // Se o asset não for 'geral', calcular o progresso se necessário
             return {
@@ -1942,7 +2007,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             performance_score: newReport.performanceScore,
             metrics: newReport.metrics,
             highlight: newReport.highlight,
-            asset_progress: newReport.assetProgress
+            asset_progress: newReport.assetProgress,
+            cycle_name: newReport.cycleName,
+            season_id: newReport.seasonId,
+            clan_points: newReport.clanPoints
         };
         
         // 1. Insert Report
@@ -1957,20 +2025,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
     }
-
-    const expFromActions = completedTasks.reduce((sum, task) => {
-        const duration = Number.isFinite(task.duration) ? task.duration : 0;
-        if (duration > 0) return sum + duration;
-        const action = currentActions.find(a => a.id === task.actionId);
-        return sum + (action?.duration || 0);
-    }, 0);
-    const missionBonusExp = completedTasks.reduce((sum, task) => {
-        const action = currentActions.find(a => a.id === task.actionId);
-        if (action?.actionType !== 'Marco') return sum;
-        const duration = Number.isFinite(task.duration) ? task.duration : (action?.duration || 0);
-        return sum + duration;
-    }, 0);
-    const expGained = expFromActions + missionBonusExp + cycleExpBonus;
     
     // Encerrar ciclo ativo
     setActiveCycle(null);

@@ -13,6 +13,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { NewCycleSetupView } from './NewCycleSetupView';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { getScoreGrade } from '../utils/scoreUtils';
+import { supabase } from '../supabaseClient';
 
 // --- Helper Functions ---
 export const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
@@ -47,6 +48,7 @@ const toRoman = (num: number) => {
     }
     return result;
 };
+const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 // --- Sub-components for Active Cycle HUD ---
 const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
@@ -259,7 +261,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent, seasons } = useGame();
+    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent, seasons, userProfile } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
     const [showConfirmEndCycle, setShowConfirmEndCycle] = useState(false);
@@ -286,6 +288,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return breaks;
     }, [sortedReports]);
 
+    const getUserId = () => (isUuid(userProfile.id) ? userProfile.id : null);
+
     useEffect(() => {
         if (!hasCustomEras) {
             setEraBreaks(defaultEraBreaks);
@@ -297,6 +301,44 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setEraBreaks(prev => prev.filter(b => b > 0 && b < sortedReports.length));
         }
     }, [sortedReports.length, hasCustomEras]);
+
+    useEffect(() => {
+        const loadEraBoundaries = async () => {
+            const userId = getUserId();
+            if (!userId) {
+                setHasCustomEras(false);
+                return;
+            }
+            const { data, error } = await supabase
+                .from('era_boundaries')
+                .select('after_report_id')
+                .eq('user_id', userId);
+            if (error) {
+                console.error('Erro ao carregar Eras:', error.message);
+                return;
+            }
+            if (!data || data.length === 0) {
+                setHasCustomEras(false);
+                return;
+            }
+            const nextBreaks = data
+                .map((row: any) => {
+                    const index = sortedReports.findIndex(r => r.id === row.after_report_id);
+                    return index >= 0 ? index + 1 : null;
+                })
+                .filter((value: number | null): value is number => value !== null);
+            if (nextBreaks.length === 0) {
+                setHasCustomEras(false);
+                return;
+            }
+            const uniqueBreaks = Array.from(new Set(nextBreaks)).sort((a, b) => a - b);
+            setEraBreaks(uniqueBreaks);
+            setHasCustomEras(true);
+        };
+        if (!isEditingEras) {
+            loadEraBoundaries();
+        }
+    }, [sortedReports, userProfile.id, isEditingEras]);
     
     useEffect(() => {
         if (view === 'scanning') {
@@ -388,9 +430,23 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const getEraLabel = (index: number) => `ERA ${toRoman(index + 1)}`;
 
     const handleStartEraEdit = () => setIsEditingEras(true);
-    const handleConfirmEraEdit = () => {
+    const handleConfirmEraEdit = async () => {
         setIsEditingEras(false);
+        const normalized = Array.from(new Set(eraBreaks.filter(b => b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
+        setEraBreaks(normalized);
         setHasCustomEras(true);
+
+        const userId = getUserId();
+        if (!userId) return;
+        await supabase.from('era_boundaries').delete().eq('user_id', userId);
+        const payload = normalized
+            .map(b => sortedReports[b - 1]?.id)
+            .filter(Boolean)
+            .map(afterReportId => ({ user_id: userId, after_report_id: afterReportId }));
+        if (payload.length > 0) {
+            const { error } = await supabase.from('era_boundaries').insert(payload);
+            if (error) console.error('Erro ao salvar Eras:', error.message);
+        }
     };
     const handleDragStart = (boundaryIndex: number) => (e: React.DragEvent<HTMLDivElement>) => {
         e.dataTransfer.setData('text/plain', String(boundaryIndex));

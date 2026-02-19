@@ -33,7 +33,7 @@ const StyledRangeInput: React.FC<{label: string, value: number, min: number, max
       step={step}
       value={value}
       onChange={e => onChange(Number(e.target.value))}
-      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-[var(--bronze)]"
+      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-[var(--skin-accent-color)]"
     />
   </div>
 );
@@ -305,7 +305,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-center">
-            <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">CODEXES</div>
+            <div className="text-xs font-bold uppercase tracking-wider accent-text">CODEXES</div>
             <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
           </div>
 
@@ -313,7 +313,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <>
               <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
                 {codexes.map(codex => (
-                  <button key={codex.id} onClick={() => openCodex(codex.id)} className="relative bg-black/30 border border-white/10 rounded-2xl p-3 text-left hover:border-[var(--gold)] transition-colors group">
+                  <button key={codex.id} onClick={() => openCodex(codex.id)} className="relative bg-black/30 border border-white/10 rounded-2xl p-3 text-left hover:border-[var(--skin-accent-color)] transition-colors group">
                     <div className="text-xs font-bold uppercase tracking-wider text-gray-400">{codex.name}</div>
                     <div className="text-[11px] text-gray-500 line-clamp-2 mt-1">{codex.description || 'Sem descrição'}</div>
                     <div className="text-[10px] text-gray-400 mt-2">{codex.arenas.length} arenas • {codex.actions.length} ações</div>
@@ -322,11 +322,11 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
                   </button>
                 ))}
-                <button onClick={createCodex} className="bg-black/30 border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center text-center hover:border-[var(--gold)] transition-colors">
+                <button onClick={createCodex} className="bg-black/30 border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center text-center hover:border-[var(--skin-accent-color)] transition-colors">
                   <div className="w-10 h-10 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-2">
-                    <PlusIcon className="w-5 h-5 text-[var(--gold)]" />
+                    <PlusIcon className="w-5 h-5 accent-text" />
                   </div>
-                  <div className="text-xs font-bold tracking-widest text-[var(--gold)]">NOVO CODEX</div>
+                  <div className="text-xs font-bold tracking-widest accent-text">NOVO CODEX</div>
                 </button>
               </div>
             </>
@@ -341,7 +341,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <input
                   value={activeCodex.name}
                   onChange={e => updateCodex(activeCodex.id, draft => ({ ...draft, name: e.target.value, updatedAt: new Date().toISOString() }))}
-                  className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]"
+                  className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]"
                 />
               </div>
               <div>
@@ -350,7 +350,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   rows={2}
                   value={activeCodex.description}
                   onChange={e => updateCodex(activeCodex.id, draft => ({ ...draft, description: e.target.value, updatedAt: new Date().toISOString() }))}
-                  className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]"
+                  className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]"
                 />
               </div>
 
@@ -361,7 +361,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <button onClick={() => setShowArchived(s => !s)} className={`p-2 rounded-full transition-colors ${showArchived ? 'bg-white/20 text-white' : 'text-gray-500'}`}>
                       <EyeIcon className="w-4 h-4" />
                     </button>
-                    <button onClick={openNewArena} className="px-3 py-2 rounded-xl luxe-gold-button text-xs">Adicionar arena</button>
+                    <button onClick={openNewArena} className="px-3 py-2 rounded-xl luxe-skin-button text-xs">Adicionar arena</button>
                   </div>
                 </div>
 
@@ -383,7 +383,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </div>
 
               <div className="grid grid-cols-2 gap-2 mt-4">
-                <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-button-primary col-span-2 font-bold tracking-wider">IMPORTAR PARA O JOGO</button>
+                <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">IMPORTAR PARA O JOGO</button>
                 <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR CÓDIGO</button>
                 <button onClick={handleCopyLink} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR LINK</button>
               </div>
@@ -400,18 +400,18 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <h2 className="text-lg font-bold uppercase tracking-wider">Nova Arena</h2>
             </div>
             <div className="space-y-2">
-              <select value={arenaDraft.assetId} onChange={e => setArenaDraft(prev => ({ ...prev, assetId: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]">
+              <select value={arenaDraft.assetId} onChange={e => setArenaDraft(prev => ({ ...prev, assetId: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]">
                 {assets.map(asset => (
                   <option key={asset.id} value={asset.id}>{asset.id === 'geral' ? 'OUTROS / SIDEQUEST' : asset.name}</option>
                 ))}
               </select>
-              <input type="text" placeholder="Nome da Arena" value={arenaDraft.name} onChange={e => setArenaDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />
-              <textarea placeholder="Descrição da Meta..." value={arenaDraft.description} onChange={e => setArenaDraft(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+              <input type="text" placeholder="Nome da Arena" value={arenaDraft.name} onChange={e => setArenaDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
+              <textarea placeholder="Descrição da Meta..." value={arenaDraft.description} onChange={e => setArenaDraft(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
               <button onClick={() => { setIconTarget('arena'); setIsIconPickerOpen(true); }} className="w-full py-2 rounded-xl bg-black/30 border border-white/20 flex items-center justify-center text-2xl">{arenaDraft.icon}</button>
             </div>
             <div className="flex space-x-2 pt-2">
               <button onClick={() => setIsCreatingArena(false)} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
-              <button onClick={saveArena} className="w-full py-2 rounded-xl luxe-button-primary">CRIAR ARENA</button>
+              <button onClick={saveArena} className="w-full py-2 rounded-xl luxe-skin-button">CRIAR ARENA</button>
             </div>
           </GlassCard>
         </div>
@@ -422,7 +422,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div className="dossier-bg border border-[color:var(--accent-silver-soft)] w-full max-w-sm m-4 space-y-3 rounded-2xl p-4 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center">
               <div className="text-xs font-bold uppercase tracking-wider text-gray-400">{selectedArena.name}</div>
-              <button onClick={() => setSelectedArenaId(null)} className="px-4 py-2 text-sm font-bold rounded-xl luxe-gold-button">OK</button>
+              <button onClick={() => setSelectedArenaId(null)} className="px-4 py-2 text-sm font-bold rounded-xl luxe-skin-button">OK</button>
             </div>
             <div className="flex flex-col items-center text-center space-y-1">
               <div className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center">
@@ -432,7 +432,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Ações</div>
-              <button onClick={() => openActionModal(selectedArena.id)} className="px-3 py-2 rounded-xl luxe-gold-button text-xs">Nova ação</button>
+              <button onClick={() => openActionModal(selectedArena.id)} className="px-3 py-2 rounded-xl luxe-skin-button text-xs">Nova ação</button>
             </div>
             {selectedArenaActions.length === 0 ? (
               <div className="text-center text-xs text-gray-500">Nenhuma ação ainda.</div>
@@ -453,23 +453,23 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
       {isActionModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setIsActionModalOpen(false)}>
-          <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[90vh] p-0 overflow-hidden" onClick={e => e.stopPropagation()}>
+          <GlassCard variant="accent" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[90vh] p-0 overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center p-3 border-b border-white/10 bg-black/20">
               <div className="flex space-x-4">
-                  <button onClick={() => setActionTab('basic')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${actionTab === 'basic' ? 'text-[var(--gold)] border-b-2 border-[var(--gold)]' : 'text-gray-400 hover:text-white'}`}>Básico</button>
-                  <button onClick={() => setActionTab('advanced')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${actionTab === 'advanced' ? 'text-[var(--gold)] border-b-2 border-[var(--gold)]' : 'text-gray-400 hover:text-white'}`}>Avançado</button>
+                  <button onClick={() => setActionTab('basic')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${actionTab === 'basic' ? 'text-[var(--skin-accent-color)] border-b-2 border-[var(--skin-accent-color)]' : 'text-gray-400 hover:text-white'}`}>Básico</button>
+                  <button onClick={() => setActionTab('advanced')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${actionTab === 'advanced' ? 'text-[var(--skin-accent-color)] border-b-2 border-[var(--skin-accent-color)]' : 'text-gray-400 hover:text-white'}`}>Avançado</button>
               </div>
-              <button onClick={() => setIsActionModalOpen(false)} className="px-4 py-2 text-sm font-bold rounded-xl luxe-gold-button">OK</button>
+              <button onClick={() => setIsActionModalOpen(false)} className="px-4 py-2 text-sm font-bold rounded-xl luxe-skin-button">OK</button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
               {actionTab === 'basic' ? (
                 <>
-                  <button onClick={() => { setIconTarget('action'); setIsIconPickerOpen(true); }} className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--accent-bronze)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center self-center mx-auto mb-4">
+                  <button onClick={() => { setIconTarget('action'); setIsIconPickerOpen(true); }} className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--skin-accent-color)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center self-center mx-auto mb-4">
                     <span className="text-5xl">{actionDraft.icon || '📝'}</span>
                   </button>
                   <input type="text" placeholder="Nome da Ação" value={actionDraft.name || ''} onChange={e => setActionDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-1 mb-2" />
-                  <textarea placeholder="Descrição (opcional)" value={actionDraft.description || ''} onChange={e => setActionDraft(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50" />
+                  <textarea placeholder="Descrição (opcional)" value={actionDraft.description || ''} onChange={e => setActionDraft(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--skin-accent-color)]/50" />
                   <div className="space-y-2">
                     <div>
                       <label className="text-xs font-bold text-gray-400">Arena</label>
@@ -507,7 +507,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                           <button 
                               key={tab}
                               onClick={() => setAdvancedSubTab(tab)}
-                              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${advancedSubTab === tab ? 'bg-white/10 text-[var(--gold)] shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${advancedSubTab === tab ? 'bg-white/10 text-[var(--skin-accent-color)] shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                           >
                               {tab === 'media' && 'Mídia'}
                               {tab === 'notes' && 'Notas'}
@@ -540,7 +540,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                   const type = url.match(/\.(mp4|webm)$/i) ? 'video' : 'image';
                                   setActionDraft(prev => ({ ...prev, assets: [...(prev.assets || []), { type, url, title } as any] }));
                               }
-                          }} className="w-full py-2 border border-dashed border-white/20 rounded-xl text-xs text-gray-400 hover:text-[var(--gold)] hover:border-[var(--gold)] transition-colors flex items-center justify-center gap-2">
+                          }} className="w-full py-2 border border-dashed border-white/20 rounded-xl text-xs text-gray-400 hover:text-[var(--skin-accent-color)] hover:border-[var(--skin-accent-color)] transition-colors flex items-center justify-center gap-2">
                               <PlusIcon className="w-4 h-4" /> Adicionar Mídia
                           </button>
                       </div>
@@ -552,7 +552,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                           <textarea 
                               value={actionDraft.briefing || ''}
                               onChange={e => setActionDraft(prev => ({ ...prev, briefing: e.target.value }))}
-                              className="w-full h-40 bg-black/20 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[var(--gold)]"
+                            className="w-full h-40 bg-black/20 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-[var(--skin-accent-color)]"
                               placeholder="Instruções detalhadas, observações técnicas ou briefing da missão..."
                           />
                       </div>
@@ -585,7 +585,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                           ))}
                           <button onClick={() => {
                               setActionDraft(prev => ({ ...prev, preFlight: [...(prev.preFlight || []), ''] }));
-                          }} className="w-full py-2 border border-dashed border-white/20 rounded-xl text-xs text-gray-400 hover:text-[var(--gold)] hover:border-[var(--gold)] transition-colors flex items-center justify-center gap-2">
+                          }} className="w-full py-2 border border-dashed border-white/20 rounded-xl text-xs text-gray-400 hover:text-[var(--skin-accent-color)] hover:border-[var(--skin-accent-color)] transition-colors flex items-center justify-center gap-2">
                               <PlusIcon className="w-4 h-4" /> Adicionar Item
                           </button>
                       </div>
@@ -602,7 +602,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                       <button
                                           key={level}
                                           onClick={() => setActionDraft(prev => ({ ...prev, context: { ...prev.context, energyLevel: level as any } }))}
-                                          className={`py-2 rounded-lg text-xs font-bold uppercase border ${actionDraft.context?.energyLevel === level ? 'bg-[var(--gold)] text-black border-[var(--gold)]' : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'}`}
+                                          className={`py-2 rounded-lg text-xs font-bold uppercase border ${actionDraft.context?.energyLevel === level ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'}`}
                                       >
                                           {level === 'low' ? 'Baixo' : level === 'medium' ? 'Médio' : 'Alto'}
                                       </button>
@@ -617,7 +617,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                       <button
                                           key={time}
                                           onClick={() => setActionDraft(prev => ({ ...prev, context: { ...prev.context, timeOfDay: time as any } }))}
-                                          className={`py-2 rounded-lg text-xs font-bold uppercase border ${actionDraft.context?.timeOfDay === time ? 'bg-[var(--gold)] text-black border-[var(--gold)]' : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'}`}
+                                          className={`py-2 rounded-lg text-xs font-bold uppercase border ${actionDraft.context?.timeOfDay === time ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'}`}
                                       >
                                           {time === 'morning' ? 'Manhã' : time === 'afternoon' ? 'Tarde' : time === 'evening' ? 'Noite' : 'Madrugada'}
                                       </button>
@@ -632,7 +632,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
             <div className="flex space-x-2 p-3 bg-black/20 border-t border-white/10 mt-auto">
               <button onClick={() => setIsActionModalOpen(false)} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
-              <button onClick={saveAction} className="w-full py-2 rounded-xl luxe-button-primary">SALVAR AÇÃO</button>
+              <button onClick={saveAction} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR AÇÃO</button>
             </div>
           </GlassCard>
         </div>
@@ -673,7 +673,7 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   className={`w-full p-3 rounded-xl text-left flex justify-between items-center transition-colors ${actionDraft.arenaId === arena.id ? 'bg-white/20' : 'bg-black/20 hover:bg-white/10'}`}
                 >
                   <span>{arena.icon} {arena.name}</span>
-                  {actionDraft.arenaId === arena.id && <CheckIcon className="w-5 h-5 text-[var(--gold)]" />}
+                  {actionDraft.arenaId === arena.id && <CheckIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />}
                 </button>
               ))}
             </div>

@@ -1,7 +1,7 @@
 
 
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { useGame } from '../contexts/GameContext';
 import { Report, Cycle, ChestType, FeedEvent } from '../types';
@@ -117,7 +117,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const involvedArenas = assets.flatMap(as => as.arenas).filter(ar => arenaIdsInCycle.has(ar.id));
     
     return (
-        <GlassCard variant="gold" className="p-4 space-y-4">
+        <GlassCard variant="accent" className="p-4 space-y-4">
             <div className="text-center">
                 <p className="font-bold text-lg">"{cycle.name}"</p>
                 <p className="text-xs text-gray-400">{formatDate(cycle.startDate)} - {formatDate(cycle.endDate)}</p>
@@ -134,7 +134,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                     <div className="w-full bg-green-900/50 rounded-full h-2.5 mt-1 border border-green-500/20"><div className="bg-green-500 h-full rounded-full" style={{ width: `${fidelity}%` }}></div></div>
                 </div>
             </div>
-            <div className='text-center border-t border-yellow-800/50 pt-3'>
+            <div className='text-center border-t border-[var(--skin-accent-color)]/20 pt-3'>
                  <p className="text-xs font-bold text-gray-400">RANK PROJETADO</p>
                  <p className={`text-4xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</p>
                  <p className="text-sm font-bold text-white mt-1">Score: {currentScore}</p>
@@ -185,7 +185,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
                         className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1' 
                     />
                 </div>
-                <button onClick={handleStart} disabled={!endDate || !name} className="w-full py-3 rounded-xl luxe-gold-button disabled:opacity-50">INICIAR CICLO</button>
+                <button onClick={handleStart} disabled={!endDate || !name} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR CICLO</button>
             </GlassCard>
         </div>
     );
@@ -200,39 +200,41 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 
     return (
         <div className="relative pl-8">
-            <div className={`absolute left-0 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ? 'bg-black border-[var(--gold)] shadow-[0_0_15px_var(--gold)] scale-110' : 'bg-black border-white/20'}`}>
-                {isLatest && <div className="w-2 h-2 bg-[var(--gold)] rounded-full animate-pulse"></div>}
+            <div className={`absolute left-0 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ? 'bg-black border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)] scale-110' : 'bg-black border-white/20'}`}>
+                {isLatest && <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>}
             </div>
             <div 
                 onClick={onClick}
                 className={`
-                    relative overflow-hidden rounded-xl p-4 cursor-pointer transition-all duration-300 group
+                    relative overflow-hidden rounded-xl p-3 cursor-pointer transition-all duration-300 group
                     ${isLatest 
-                        ? 'bg-gradient-to-br from-gray-900 to-black border border-[var(--gold)] shadow-[0_0_20px_rgba(212,175,55,0.1)] transform scale-[1.02]' 
+                        ? 'bg-gradient-to-br from-gray-900 to-black border border-[var(--skin-accent-color)] shadow-[0_0_20px_rgba(var(--skin-accent-rgb),0.1)] transform scale-[1.02]' 
                         : 'bg-black/40 border border-white/10 hover:bg-white/5 hover:border-white/20'
                     }
                     ${isEditing ? 'scale-[0.98]' : ''}
                 `}
             >
                 {isLatest && (
-                    <div className="absolute top-0 right-0 px-3 py-1 bg-[var(--gold)] text-black text-[10px] font-black uppercase tracking-wider rounded-bl-lg shadow-lg">
+                    <div className="absolute top-0 right-0 px-3 py-1 bg-[var(--skin-accent-color)] text-black text-[10px] font-black uppercase tracking-wider rounded-bl-lg shadow-lg">
                         Atual
                     </div>
                 )}
 
-                <div className="flex justify-between items-start mb-2">
-                    <div>
-                        <h4 className={`font-bold text-sm ${isLatest ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        <h4 className={`font-bold text-sm truncate ${isLatest ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
                             {report.cycleName || 'Ciclo'}
                         </h4>
-                        {seasonName && (
-                            <span className="text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500 uppercase tracking-widest border border-white/5 mt-1 inline-block">
-                                {seasonName}
+                        <div className="flex items-center gap-2 mt-0.5">
+                            {seasonName && (
+                                <span className="text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500 uppercase tracking-widest border border-white/5">
+                                    {seasonName}
+                                </span>
+                            )}
+                            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-mono">
+                                {startDate} - {endDate}
                             </span>
-                        )}
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-mono mt-0.5">
-                            {startDate} - {endDate}
-                        </p>
+                        </div>
                     </div>
                     <div className="text-right">
                         <span className={`text-2xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</span>
@@ -240,17 +242,17 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     </div>
                 </div>
 
-                <div className={`space-y-1 mt-3 pt-3 border-t ${isLatest ? 'border-[var(--gold)]/20' : 'border-white/5'}`}>
+                <div className={`flex items-center flex-wrap gap-3 mt-2 pt-2 border-t ${isLatest ? 'border-[var(--skin-accent-color)]/20' : 'border-white/5'}`}>
                     {report.highlight?.mostFocusedArena && (
-                        <div className="flex items-center space-x-2 text-xs">
-                            <span className="text-[var(--gold)]">🎯</span>
-                            <span className="text-gray-400">Foco: <span className="text-gray-300">{report.highlight.mostFocusedArena}</span></span>
+                        <div className="flex items-center gap-2 text-xs min-w-0">
+                            <span className="text-[var(--skin-accent-color)]">🎯</span>
+                            <span className="text-gray-400 truncate">Foco: <span className="text-gray-300">{report.highlight.mostFocusedArena}</span></span>
                         </div>
                     )}
                     {report.highlight?.mostRepeatedAction && (
-                        <div className="flex items-center space-x-2 text-xs">
+                        <div className="flex items-center gap-2 text-xs min-w-0">
                             <span className="text-blue-400">⚡</span>
-                            <span className="text-gray-400">Hábito: <span className="text-gray-300">{report.highlight.mostRepeatedAction}</span></span>
+                            <span className="text-gray-400 truncate">Hábito: <span className="text-gray-300">{report.highlight.mostRepeatedAction}</span></span>
                         </div>
                     )}
                 </div>
@@ -273,6 +275,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [earnedChest, setEarnedChest] = useState<ChestType | null>(null);
     const [isPostCycleFlow, setIsPostCycleFlow] = useState(false);
     const [cycleShimmer, setCycleShimmer] = useState(false);
+    const [scanError, setScanError] = useState<string | null>(null);
+    const [scanAttempt, setScanAttempt] = useState(0);
+    const assetsRef = useRef(assets);
+    const actionsRef = useRef(actions);
+    const endCycleRef = useRef(endCycle);
     const [isEditingEras, setIsEditingEras] = useState(false);
     const [eraBreaks, setEraBreaks] = useState<number[]>([]);
     const [hasCustomEras, setHasCustomEras] = useState(false);
@@ -341,25 +348,45 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }, [sortedReports, userProfile.id, isEditingEras]);
     
     useEffect(() => {
+        assetsRef.current = assets;
+    }, [assets]);
+
+    useEffect(() => {
+        actionsRef.current = actions;
+    }, [actions]);
+
+    useEffect(() => {
+        endCycleRef.current = endCycle;
+    }, [endCycle]);
+
+    useEffect(() => {
         if (view === 'scanning') {
-            const timer = setTimeout(() => {
-                const { report, expGained } = endCycle(assets, actions);
-                setSelectedReport(report);
-                setExpGained(expGained);
+            setScanError(null);
+            const timer = window.setTimeout(() => {
+                try {
+                    const result = endCycleRef.current(assetsRef.current, actionsRef.current);
+                    if (!result?.report) throw new Error('Relatório inválido');
+                    const { report, expGained } = result;
+                    setSelectedReport(report);
+                    setExpGained(expGained);
 
-                let chestType: ChestType = 'Comum';
-                if (expGained > 5000) chestType = 'Lendário';
-                else if (expGained > 2000) chestType = 'Épico';
-                else if (expGained > 800) chestType = 'Raro';
-                else if (expGained > 300) chestType = 'Incomum';
-                setEarnedChest(chestType);
+                    let chestType: ChestType = 'Comum';
+                    if (expGained > 5000) chestType = 'Lendário';
+                    else if (expGained > 2000) chestType = 'Épico';
+                    else if (expGained > 800) chestType = 'Raro';
+                    else if (expGained > 300) chestType = 'Incomum';
+                    setEarnedChest(chestType);
 
-                setIsPostCycleFlow(true);
-                setView('results');
+                    setIsPostCycleFlow(true);
+                    setView('results');
+                } catch (error) {
+                    console.error('Erro ao analisar ciclo:', error);
+                    setScanError('Não foi possível analisar o ciclo. Tente novamente.');
+                }
             }, 3000);
-            return () => clearTimeout(timer);
+            return () => window.clearTimeout(timer);
         }
-    }, [view, endCycle, assets, actions]);
+    }, [view, scanAttempt]);
 
     useEffect(() => {
         if (view === 'results' && isPostCycleFlow) {
@@ -371,7 +398,17 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }, [view, isPostCycleFlow]);
 
     const handleEndCycle = () => setShowConfirmEndCycle(true);
-    const confirmEndCycle = () => { setShowConfirmEndCycle(false); setView('scanning'); };
+    const confirmEndCycle = () => {
+        setShowConfirmEndCycle(false);
+        if (!activeCycle) {
+            setScanError('Nenhum ciclo ativo para analisar.');
+            setView('scanning');
+            return;
+        }
+        setScanError(null);
+        setScanAttempt(prev => prev + 1);
+        setView('scanning');
+    };
     
     const handleViewReport = (report: Report) => { 
         if (reportForComparison) {
@@ -430,6 +467,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const getEraLabel = (index: number) => `ERA ${toRoman(index + 1)}`;
 
     const handleStartEraEdit = () => setIsEditingEras(true);
+    const handleResetEras = async () => {
+        setIsEditingEras(false);
+        setHasCustomEras(false);
+        setEraBreaks(defaultEraBreaks);
+        const userId = getUserId();
+        if (!userId) return;
+        const { error } = await supabase.from('era_boundaries').delete().eq('user_id', userId);
+        if (error) console.error('Erro ao resetar Eras:', error.message);
+    };
     const handleConfirmEraEdit = async () => {
         setIsEditingEras(false);
         const normalized = Array.from(new Set(eraBreaks.filter(b => b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
@@ -513,22 +559,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         
                         {activeCycle ? (
                             <div className="relative z-20 space-y-2">
-                                <button onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-gold-button shadow-lg shadow-[var(--gold)]/20">ENCERRAR CICLO ATUAL</button>
+                                <button onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
                                 <button onClick={handleStartEraEdit} disabled={isEditingEras || sortedReports.length < 2} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">SETAR ERAS</button>
+                                <button onClick={handleResetEras} disabled={sortedReports.length < 2 || (!hasCustomEras && eraBreaks.length === defaultEraBreaks.length)} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">RESETAR ERAS</button>
                             </div>
                         ) : (
                             <div className="relative z-20 space-y-2">
-                                <button onClick={() => setIsStartingCycle(true)} className="w-full py-3 rounded-xl luxe-gold-button mb-4 shadow-lg shadow-[var(--gold)]/20">INICIAR NOVO CICLO</button>
+                                <button onClick={() => setIsStartingCycle(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
                                 {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem histórico. Inicie sua jornada.</div>}
                                 <button onClick={handleStartEraEdit} disabled={isEditingEras || sortedReports.length < 2} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">SETAR ERAS</button>
+                                <button onClick={handleResetEras} disabled={sortedReports.length < 2 || (!hasCustomEras && eraBreaks.length === defaultEraBreaks.length)} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">RESETAR ERAS</button>
                             </div>
                         )}
                         
-                        {sortedReports.length > 0 && (
+                        {(sortedReports.length > 0 || activeCycle) && (
                             <div className="relative mt-6">
                                 {isEditingEras && (
                                     <div className="mb-3">
-                                        <button onClick={handleConfirmEraEdit} className="w-full py-2 rounded-xl luxe-gold-button text-xs">CONFIRMAR</button>
+                                        <button onClick={handleConfirmEraEdit} className="w-full py-2 rounded-xl luxe-skin-button text-xs">CONFIRMAR</button>
                                     </div>
                                 )}
                                 <div className="grid grid-cols-[72px_1fr_36px] gap-x-2">
@@ -540,8 +588,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     <div className="relative py-3">
                                                         <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
                                                         <div className="relative pl-8">
-                                                            <div className="absolute left-0 top-4 w-6 h-6 rounded-full border-2 border-[var(--gold)] bg-black shadow-[0_0_15px_var(--gold)] flex items-center justify-center">
-                                                                <div className="w-2 h-2 bg-[var(--gold)] rounded-full animate-pulse"></div>
+                                                            <div className="absolute left-0 top-4 w-6 h-6 rounded-full border-2 border-[var(--skin-accent-color)] bg-black shadow-[0_0_15px_var(--sephirot-glow-color)] flex items-center justify-center">
+                                                                <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>
                                                             </div>
                                                             <div className={isEditingEras ? 'scale-[0.98]' : ''}>
                                                                 <SimplifiedCycleHUD cycle={item.cycle} />
@@ -597,14 +645,14 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         <div
                                                             onDragOver={allowDrop}
                                                             onDrop={handleDropBoundary(item.boundaryIndex)}
-                                                            className={`w-6 h-6 rounded-full border flex items-center justify-center ${isBoundarySet ? 'border-[var(--gold)]' : 'border-white/10'} ${draggingBoundary !== null ? 'bg-white/5' : ''}`}
+                                                            className={`w-6 h-6 rounded-full border flex items-center justify-center ${isBoundarySet ? 'border-[var(--skin-accent-color)]' : 'border-white/10'} ${draggingBoundary !== null ? 'bg-white/5' : ''}`}
                                                         >
                                                             {isBoundarySet && (
                                                                 <div
                                                                     draggable
                                                                     onDragStart={handleDragStart(item.boundaryIndex)}
                                                                     onDragEnd={handleDragEnd}
-                                                                    className="w-3 h-3 rounded-full bg-[var(--gold)] cursor-grab"
+                                                                    className="w-3 h-3 rounded-full bg-[var(--skin-accent-color)] cursor-grab"
                                                                 />
                                                             )}
                                                         </div>
@@ -648,8 +696,20 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             case 'scanning':
                 return (
                     <div className="flex flex-col items-center justify-center h-full">
-                        <div className="w-48 h-48 border-4 border-dashed border-[var(--gold)] rounded-full animate-spin"></div>
-                        <p className="mt-4 text-lg font-bold tracking-widest animate-pulse">ANALISANDO CICLO...</p>
+                        {scanError ? (
+                            <>
+                                <p className="text-sm text-gray-300 text-center max-w-[260px]">{scanError}</p>
+                                <div className="mt-4 w-full space-y-2">
+                                    <button onClick={() => { setScanError(null); setScanAttempt(prev => prev + 1); }} className="w-full py-2 rounded-xl luxe-skin-button text-xs">TENTAR NOVAMENTE</button>
+                                    <button onClick={() => { setScanError(null); setView('hub'); }} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">VOLTAR</button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-48 h-48 border-4 border-dashed border-[var(--skin-accent-color)] rounded-full animate-spin"></div>
+                                <p className="mt-4 text-lg font-bold tracking-widest animate-pulse">ANALISANDO CICLO...</p>
+                            </>
+                        )}
                     </div>
                 );
             case 'results':

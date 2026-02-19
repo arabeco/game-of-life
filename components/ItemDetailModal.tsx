@@ -66,14 +66,14 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, type, on
                         <button
                             onClick={handleEquip}
                             disabled={isEquipped}
-                            className={`py-2 rounded-xl text-sm font-semibold ${isEquipped ? 'bg-black/30 text-gray-500 cursor-not-allowed' : 'luxe-gold-button'}`}
+                            className={`py-2 rounded-xl text-sm font-semibold ${isEquipped ? 'bg-black/30 text-gray-500 cursor-not-allowed' : 'luxe-skin-button'}`}
                         >
                             {isEquipped ? 'EQUIPADO' : 'EQUIPAR'}
                         </button>
                     )}
                     <button onClick={() => handleAction('Doar')} className="py-2 rounded-xl luxe-button-secondary text-sm">Doar</button>
                     <button onClick={() => handleAction('Excluir')} className="py-2 rounded-xl bg-red-800/50 text-red-300 hover:bg-red-800/80 text-sm">Excluir</button>
-                    <button onClick={onClose} className="py-2 rounded-xl luxe-button-primary text-sm">OK</button>
+                    <button onClick={onClose} className="py-2 rounded-xl luxe-skin-button text-sm">OK</button>
                 </div>
             </GlassCard>
         </div>

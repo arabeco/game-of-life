@@ -19,7 +19,7 @@ const JoinClanBox: React.FC<{onCreate: () => void}> = ({ onCreate }) => {
             <p className="text-sm text-gray-400">Junte-se a um clã para participar de missões ou funde o seu próprio para começar uma nova dinastia.</p>
             <div className="flex space-x-2">
                 <button className="w-full py-2 rounded-xl luxe-button-secondary disabled:opacity-50" disabled>Procurar Clã</button>
-                <button onClick={onCreate} className="w-full py-2 rounded-xl luxe-button-primary">Fundar Clã</button>
+                <button onClick={onCreate} className="w-full py-2 rounded-xl luxe-skin-button">Fundar Clã</button>
             </div>
         </GlassCard>
     );
@@ -46,7 +46,7 @@ const ClanInfoBox: React.FC<{onClick: () => void}> = ({ onClick }) => {
                     <span className="text-3xl">{clan.icon}</span>
                     <div>
                         <p className="text-sm uppercase tracking-wider">{clan.name}</p>
-                        <h2 className="text-2xl font-black" style={{ color: 'var(--gold)' }}>{currentRank?.name || 'N/A'}</h2>
+                        <h2 className="text-2xl font-black" style={{ color: 'var(--skin-accent-color)' }}>{currentRank?.name || 'N/A'}</h2>
                     </div>
                 </div>
                 <div>
@@ -56,7 +56,7 @@ const ClanInfoBox: React.FC<{onClick: () => void}> = ({ onClick }) => {
                     </div>
                     <div className="w-full bg-black/30 rounded-full h-2 mt-1">
                         <div
-                            className="bg-[var(--gold)] h-2 rounded-full transition-all duration-500"
+                            className="bg-[var(--skin-accent-color)] h-2 rounded-full transition-all duration-500"
                             style={{ width: `${progressPercentage}%` }}
                         ></div>
                     </div>
@@ -104,14 +104,14 @@ const SocialSearch: React.FC<{ onSearchResults: (results: { players: UserProfile
                     value={query}
                     onChange={handleSearch}
                     placeholder="Buscar Soberano ou Clã..."
-                    className="w-full p-3 pl-10 bg-black/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--gold)] transition-colors"
+                    className="w-full p-3 pl-10 bg-black/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors"
                 />
                 <PlusIcon className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
             <button 
                 onClick={handleAdd}
                 disabled={!query.trim()}
-                className="p-3 bg-[var(--gold)]/20 text-[var(--gold)] rounded-xl border border-[var(--gold)]/30 hover:bg-[var(--gold)]/30 disabled:opacity-50 transition-colors"
+                className="p-3 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] rounded-xl border border-[var(--skin-accent-color)]/30 hover:bg-[var(--skin-accent-color)]/30 disabled:opacity-50 transition-colors"
             >
                 <PlusIcon className="w-5 h-5" />
             </button>
@@ -155,13 +155,13 @@ const SocialTab: React.FC = () => {
                 <div className="flex gap-2">
                     <button
                         onClick={() => setActiveTab('aliados')}
-                        className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'aliados' ? 'luxe-button-primary' : 'luxe-button-secondary'}`}
+                        className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'aliados' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                     >
                         Aliados
                     </button>
                     <button
                         onClick={() => setActiveTab('solicitacoes')}
-                        className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'solicitacoes' ? 'luxe-button-primary' : 'luxe-button-secondary'}`}
+                        className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'solicitacoes' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                     >
                         Solicitações {friendRequestsIncoming.length > 0 ? `(${friendRequestsIncoming.length})` : ''}
                     </button>
@@ -365,9 +365,9 @@ const MundoView: React.FC = () => {
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex flex-col items-center gap-1 min-w-[64px] transition-colors ${activeTab === tab.id ? 'text-[var(--gold)]' : 'text-gray-500 hover:text-gray-300'}`}
+                        className={`flex flex-col items-center gap-1 min-w-[64px] transition-colors ${activeTab === tab.id ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                        <div className={`p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--gold)]/10 ring-1 ring-[var(--gold)]/30' : 'bg-transparent'}`}>
+                        <div className={`p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--skin-accent-color)]/10 ring-1 ring-[var(--skin-accent-color)]/30' : 'bg-transparent'}`}>
                             {tab.icon}
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-wider">{tab.label}</span>

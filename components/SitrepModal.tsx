@@ -69,7 +69,7 @@ const BattleTaskItem: React.FC<{ task: ScheduledTask, action: Action | undefined
             style={backgroundStyle}
         >
              <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${isCompleted ? 'opacity-100' : 'opacity-0'}`}></div>
-             <div className={`absolute inset-0 border-2 rounded-xl transition-all ${isCompleted ? 'border-[var(--bronze)]' : 'border-dashed border-gray-600/50'}`}></div>
+             <div className={`absolute inset-0 border-2 rounded-xl transition-all ${isCompleted ? 'border-[var(--skin-accent-color)]' : 'border-dashed border-gray-600/50'}`}></div>
 
              <div className="text-xl z-10">{action.icon}</div>
              <div className={`text-sm font-semibold truncate w-full z-10 ${isCompleted ? 'line-through text-gray-400' : ''}`}>{action.name}</div>
@@ -81,7 +81,7 @@ const BattleTaskItem: React.FC<{ task: ScheduledTask, action: Action | undefined
             )}
             {isCompleted && (
                 <div className="z-10 p-1">
-                     <CheckIcon className="w-5 h-5 text-[var(--gold)]" />
+                     <CheckIcon className="w-5 h-5 accent-text" />
                 </div>
             )}
         </div>
@@ -166,7 +166,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
             </div>
 
-            <button disabled={commitmentStats.committedTasks.length === 0} onClick={lockDailyCommitment} className="w-full py-2 rounded-xl luxe-gold-button disabled:opacity-50">🔒 TRAVAR METAS DE HOJE</button>
+            <button disabled={commitmentStats.committedTasks.length === 0} onClick={lockDailyCommitment} className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50">🔒 TRAVAR METAS DE HOJE</button>
         </>
     );
 
@@ -181,7 +181,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
                 <CycleHeader />
                 <div className='text-center'>
-                    <div className="w-full bg-black/30 rounded-full h-1.5 mt-1"><div className="bg-[var(--gold)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
+                    <div className="w-full bg-black/30 rounded-full h-1.5 mt-1"><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
                     <p className="text-xs text-gray-400 mt-1">Progresso: {progress.toFixed(0)}% • {commitmentStats.completedCount}/{commitmentStats.totalCount} ações</p>
                 </div>
 
@@ -212,7 +212,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </button>
                 </div>
 
-                <button onClick={endDailyBattle} className="w-full py-2 rounded-xl luxe-gold-button">⚡ GERAR SCORE FINAL</button>
+                <button onClick={endDailyBattle} className="w-full py-2 rounded-xl luxe-skin-button">⚡ GERAR SCORE FINAL</button>
             </>
         );
     }
@@ -231,16 +231,16 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <CycleHeader />
                     <div className="text-center space-y-2 py-4">
                         <p className="text-sm uppercase text-gray-400">Score de Hoje</p>
-                        <p className="text-8xl font-black text-[var(--gold)]">{score}</p>
+                        <p className="text-8xl font-black accent-text">{score}</p>
                         <p className="text-sm text-gray-300">"{verdict}"</p>
                         <div className="pt-3">
                             <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
-                            <p className="text-xl font-black text-[var(--gold)]">{expDeposited}</p>
+                            <p className="text-xl font-black accent-text">{expDeposited}</p>
                             {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus SITREP: +{sitrepBonus}</p>}
                         </div>
                         
                         <div className="pt-4 flex items-center justify-center space-x-2 text-gray-400">
-                            <CheckIcon className={`w-5 h-5 ${checklistItems.every(i => i.completed) && checklistItems.length > 0 ? 'text-[var(--gold)]' : ''}`} />
+                            <CheckIcon className={`w-5 h-5 ${checklistItems.every(i => i.completed) && checklistItems.length > 0 ? 'accent-text' : ''}`} />
                             <span className="text-sm uppercase tracking-wider">Checklist: {checklistItems.filter(i => i.completed).length}/{checklistItems.length}</span>
                         </div>
                     </div>
@@ -250,7 +250,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <button onClick={() => handleShare('sitrep-capture-area')} className="p-3 rounded-xl luxe-button-secondary">
                         <ShareIcon className="w-5 h-5"/>
                     </button>
-                    <button onClick={resetDailyCommitment} className="w-full py-2 rounded-xl luxe-button-primary text-sm">🌙 PLANEJAR</button>
+                    <button onClick={resetDailyCommitment} className="w-full py-2 rounded-xl luxe-skin-button text-sm">🌙 PLANEJAR</button>
                 </div>
             </>
         )
@@ -292,9 +292,9 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
 
                 {expFromActions > 0 && (
-                    <div className="bg-[var(--gold)]/10 border border-[var(--gold)]/20 p-4 rounded-xl mx-2 text-center">
-                        <p className="text-[var(--gold)] font-bold text-lg">+{expFromActions} XP Potencial</p>
-                        <p className="text-xs text-[var(--gold)]/70 mt-1">Inicie um ciclo para reivindicar sua evolução.</p>
+                    <div className="bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 p-4 rounded-xl mx-2 text-center">
+                        <p className="text-[var(--skin-accent-color)] font-bold text-lg">+{expFromActions} XP Potencial</p>
+                        <p className="text-xs text-[var(--skin-accent-color)]/70 mt-1">Inicie um ciclo para reivindicar sua evolução.</p>
                     </div>
                 )}
 
@@ -321,8 +321,8 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
     
     const getLightbulbColor = () => {
-        if (!dailyCommitment.isLocked) return 'text-[var(--gold)]';
-        if (commitmentStats.totalCount === 0) return 'text-[var(--gold)]';
+        if (!dailyCommitment.isLocked) return 'accent-text';
+        if (commitmentStats.totalCount === 0) return 'accent-text';
         const ratio = commitmentStats.completedCount / commitmentStats.totalCount;
         if (ratio === 1) return 'text-green-400';
         if (ratio >= 0.5) return 'text-yellow-400';

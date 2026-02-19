@@ -64,9 +64,9 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
     // Original dark style for the live profile view.
     return (
         <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
-            <h3 className="text-[10px] font-semibold gold-text uppercase tracking-wider">{slot.label}</h3>
+            <h3 className="text-[10px] font-semibold accent-text uppercase tracking-wider">{slot.label}</h3>
             <div 
-                className="relative w-full flex-grow mx-auto p-2 rounded-2xl flex items-center justify-center bg-black/50 gradient-border gradient-border-gold text-white"
+                className="relative w-full flex-grow mx-auto p-2 rounded-2xl flex items-center justify-center bg-black/50 gradient-border gradient-border-accent text-white"
                 style={glowStyle}
             >
                 {valueDisplay}
@@ -151,7 +151,7 @@ const ShareableProfileCard: React.FC<{
                     <Sovereign sovereignConfig={userProfile.sovereign} />
                 </div>
             )}
-             <div className="absolute bottom-2 right-3 text-xs text-yellow-800/80 font-semibold z-30">Life OS</div>
+             <div className="absolute bottom-2 right-3 text-xs accent-text opacity-80 font-semibold z-30">Life OS</div>
         </div>
     );
 }
@@ -275,9 +275,9 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         <ShareIcon className="w-5 h-5 text-gray-300" />
                                     </button>
                                 </div>
-                                <button onClick={isEditing ? handleSave : onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
-                                    {isEditing ? 'SALVAR' : 'OK'}
-                                </button>
+                                <button onClick={isEditing ? handleSave : onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
+                                {isEditing ? 'SALVAR' : 'OK'}
+                            </button>
                             </div>
 
                             <div className="pt-8 flex flex-col items-center text-center">

@@ -20,11 +20,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
 
     const handleOracleClick = () => {
-        if (userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm') {
-            setOracleOpen(true);
-        } else {
-            alert("🔒 ACESSO RESTRITO\n\nO Oráculo é um recurso exclusivo para Soberanos Premium.\nEle oferece conselhos estratégicos baseados no seu progresso real.");
-        }
+        setOracleOpen(true);
     };
 
     return (

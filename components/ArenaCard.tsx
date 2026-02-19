@@ -1,7 +1,100 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Arena, Action } from '../types';
 import { DollarSignIcon, FlameIcon, CheckIcon, UsersIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
+
+const ASSET_ACCENT_COLORS: Record<string, string> = {
+    consciencia: '#1a2a4a',
+    'espaco-mental': '#0f2238',
+    espiritualidade: '#1a0a2a',
+    proposito: '#2a0f1a',
+    projetos: '#1a2a2a',
+    conexoes: '#1a2a1a',
+    trabalho: '#2a2a1a',
+    financas: '#2a1a00',
+    hobbies: '#2a0f2a',
+    fisico: '#3a0a0a',
+    geral: '#1f1f1f',
+};
+
+const hexToRgb = (hex: string) => {
+    const trimmed = hex.trim();
+    if (trimmed.startsWith('rgb')) {
+        const values = trimmed.replace(/rgba?\(|\)/g, '').split(',').map(val => Number.parseFloat(val.trim()));
+        return { r: values[0] || 0, g: values[1] || 0, b: values[2] || 0 };
+    }
+    const normalized = trimmed.replace('#', '');
+    const value = normalized.length === 3
+        ? normalized.split('').map(ch => ch + ch).join('')
+        : normalized;
+    const intValue = Number.parseInt(value, 16);
+    return {
+        r: (intValue >> 16) & 255,
+        g: (intValue >> 8) & 255,
+        b: intValue & 255,
+    };
+};
+
+const PlasmaCanvas: React.FC<{ color: string; opacity: number; className?: string; width: number; height: number; }> = ({ color, opacity, className, width, height }) => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const { r, g, b } = hexToRgb(color);
+        let frame = 0;
+        const draw = () => {
+            frame += 0.006;
+            ctx.clearRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'lighter';
+            const pulse = (Math.sin(frame * 0.7) + 1) * 0.5;
+            const blobs = [
+                { x: width * (0.3 + Math.sin(frame * 1.2) * 0.18), y: height * (0.4 + Math.cos(frame * 0.9) * 0.2), radius: width * 0.5 },
+                { x: width * (0.65 + Math.cos(frame * 1.1) * 0.22), y: height * (0.35 + Math.sin(frame * 1.3) * 0.18), radius: width * 0.45 },
+                { x: width * (0.5 + Math.sin(frame * 0.8) * 0.16), y: height * (0.65 + Math.cos(frame * 1.05) * 0.16), radius: width * 0.55 },
+            ];
+            const centerGradient = ctx.createRadialGradient(width * 0.5, height * 0.5, 0, width * 0.5, height * 0.5, width * 0.45);
+            centerGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity * (0.7 + pulse * 0.6)})`);
+            centerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = centerGradient;
+            ctx.fillRect(0, 0, width, height);
+            ctx.save();
+            ctx.translate(width * 0.5, height * 0.5);
+            ctx.rotate(frame * 0.35);
+            const beamGradient = ctx.createLinearGradient(-width * 0.5, 0, width * 0.5, 0);
+            beamGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            beamGradient.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, ${opacity * 0.6})`);
+            beamGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${opacity * 0.9})`);
+            beamGradient.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, ${opacity * 0.6})`);
+            beamGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = beamGradient;
+            ctx.fillRect(-width * 0.75, -height * 0.08, width * 1.5, height * 0.16);
+            ctx.restore();
+            blobs.forEach(blob => {
+                const gradient = ctx.createRadialGradient(blob.x, blob.y, 0, blob.x, blob.y, blob.radius);
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity})`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            });
+            ctx.globalCompositeOperation = 'source-over';
+            requestAnimationFrame(draw);
+        };
+        const id = requestAnimationFrame(draw);
+        return () => cancelAnimationFrame(id);
+    }, [color, opacity, width, height]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            width={width}
+            height={height}
+            className={className}
+        />
+    );
+};
 
 const ActionIcon: React.FC<{ action: Action }> = ({ action }) => {
     const { getActionBackgroundStyle, getArenas, seasonQuests, getClanQuestProgress } = useGame();
@@ -56,6 +149,7 @@ interface ArenaCardProps {
 
 export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, assetName, variant }) => {
     const { tasks, getActionBackgroundStyle, seasonQuests, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
+    const [skinTone, setSkinTone] = useState('#F0C843');
 
     const milestoneActions = actions.filter(a => a.actionType === 'Marco');
     const bronzeActions = actions.filter(a => a.actionType !== 'Marco');
@@ -76,6 +170,11 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
              fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
         }
     }, [isClanQuestArena, quest?.id, quest?.actionTemplate?.name, fetchClanQuestParticipants]);
+
+    useEffect(() => {
+        const value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
+        if (value) setSkinTone(value);
+    }, []);
 
     const participants = quest ? (clanQuestParticipants[quest.id] || 0) : 0;
     const currentProgress = quest ? getClanQuestProgress(quest.id) : 0;
@@ -105,26 +204,45 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
     progress = Math.min(100, Math.max(0, progress));
 
     const getIcon = () => {
-        return <span className="text-2xl">{arena.icon}</span>;
+        return <span className="text-4xl leading-none">{arena.icon}</span>;
     };
 
     const isOverview = variant === 'overview';
-    const baseClasses = `p-3 rounded-xl flex flex-col justify-between cursor-pointer relative overflow-hidden transition-all duration-300`;
+    const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
+    const skinColor = 'var(--skin-accent-color)';
+    const baseClasses = `arena-plate p-4 rounded-lg border flex flex-col justify-between cursor-pointer relative overflow-hidden transition-all duration-300`;
     const styleClasses = isOverview 
-        ? 'bg-[#181818] gradient-border gradient-border-silver h-48' 
-        : 'bg-black/35 border border-[color:var(--accent-silver-soft)] h-40';
+        ? 'h-48' 
+        : 'h-40';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
+    const cardStyle: React.CSSProperties = {
+        borderColor: skinColor,
+        backgroundImage: 'linear-gradient(135deg, rgba(22,22,22,0.95) 0%, rgba(10,10,10,1) 55%, rgba(18,18,18,0.9) 100%)',
+    };
+    const tiltStyle: React.CSSProperties = {
+        transform: 'perspective(900px) rotateX(2.2deg) rotateY(-2deg)',
+    };
     
     return (
-        <div onClick={onClick} className={`${baseClasses} ${styleClasses} ${archivedClasses}`}>
-            <div className="text-center">
-                {getIcon()}
-                <h3 className="luxe-title-ornate font-bold uppercase mt-2 text-xs text-[color:var(--skin-accent-color)] luxe-title-shadow">{arena.name}</h3>
-                {isOverview && assetName && <p className="text-[10px] text-gray-500 uppercase">{assetName}</p>}
+        <div onClick={onClick} className={`${baseClasses} ${styleClasses} ${archivedClasses}`} style={{ ...cardStyle, ...tiltStyle }}>
+            <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: accentColor }} />
+            <div className="arena-plasma">
+                <PlasmaCanvas color={skinTone} opacity={0.189} className="arena-plasma-canvas" width={320} height={220} />
+            </div>
+            <div className="text-center pt-2 relative z-10">
+                <div className="arena-icon-slot">
+                    <span className="arena-icon">
+                        {getIcon()}
+                    </span>
+                </div>
+                <div className="arena-title-wrap">
+                    <h3 className="arena-title arena-title-text text-white luxe-title-shadow">{arena.name}</h3>
+                </div>
+                {isOverview && assetName && <p className="text-[9px] text-gray-600 uppercase tracking-[0.22em]">{assetName}</p>}
                 
                 {isClanQuestArena && (
-                    <div className="flex justify-center gap-2 mt-1">
-                         <div className="flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded text-[10px] text-[var(--gold)]">
+                    <div className="flex justify-center gap-2 mt-2">
+                         <div className="flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded text-[10px]" style={{ color: accentColor }}>
                             <UsersIcon className="w-3 h-3" />
                             <span className="font-mono">{participants}</span>
                         </div>
@@ -132,7 +250,7 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
                 )}
             </div>
             
-            <div className="flex flex-col items-center space-y-2 flex-shrink-0">
+            <div className="flex flex-col items-center space-y-2 flex-shrink-0 relative z-10">
                  {milestoneActions.length > 0 && (
                     <div className="w-full flex items-center justify-center h-8 gap-2">
                         {milestoneActions.map(action => {
@@ -166,12 +284,12 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, a
                 <div className="w-full flex items-center justify-center h-6 overflow-x-auto gap-1.5 hide-scrollbar">
                     {bronzeActions.map(action => <ActionIcon key={action.id} action={action} />)}
                 </div>
-                <div className="w-full h-1 bg-black/30 rounded-full">
-                    <div 
-                        className="h-full rounded-full transition-all duration-500" 
-                        style={{ 
+                <div className="arena-plate-progress">
+                    <div
+                        className="arena-plate-progress-fill"
+                        style={{
                             width: `${progress}%`,
-                            backgroundColor: isGold ? 'var(--gold)' : 'var(--accent-silver)'
+                            backgroundColor: skinColor,
                         }}
                     ></div>
                 </div>

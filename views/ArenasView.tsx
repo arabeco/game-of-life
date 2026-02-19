@@ -117,7 +117,7 @@ export const ArenasView: React.FC = () => {
         const fallback = assets.find(a => a.id !== 'geral')?.id || assets[0]?.id || '';
         if (fallback) setBuilderAssetId(fallback);
     }, [assets, builderAssetId, isBuilderMode]);
-    
+
     const getAssetById = (id: string) => assets.find(a => a.id === id);
     const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
     const assetOptions = assets;
@@ -196,8 +196,8 @@ export const ArenasView: React.FC = () => {
         return (
             <>
                 <div className="p-4 space-y-4 min-h-full">
-                    <div className="bg-black/30 border border-yellow-500/30 rounded-2xl p-3 space-y-1">
-                        <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">Modo Arquiteto</div>
+                    <div className="bg-black/30 border border-[var(--skin-accent-color)]/30 rounded-2xl p-3 space-y-1">
+                        <div className="text-xs font-bold uppercase tracking-wider accent-text">Modo Arquiteto</div>
                         <div className="text-[11px] text-gray-400">Sandbox isolado. Nada do jogo atual é alterado.</div>
                     </div>
 
@@ -205,7 +205,7 @@ export const ArenasView: React.FC = () => {
                         <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Arena</div>
                         <div>
                             <label className="text-xs font-bold text-gray-400">Ativo</label>
-                            <select value={builderAssetId} onChange={e => setBuilderAssetId(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]">
+                            <select value={builderAssetId} onChange={e => setBuilderAssetId(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]">
                                 {assetOptions.map(asset => (
                                     <option key={asset.id} value={asset.id}>{asset.id === 'geral' ? 'OUTROS / SIDEQUEST' : asset.name}</option>
                                 ))}
@@ -213,11 +213,11 @@ export const ArenasView: React.FC = () => {
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-400">Nome da Arena</label>
-                            <input value={arenaName} onChange={e => setArenaName(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                            <input value={arenaName} onChange={e => setArenaName(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-400">Descrição</label>
-                            <textarea value={arenaDescription} onChange={e => setArenaDescription(e.target.value)} rows={2} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                            <textarea value={arenaDescription} onChange={e => setArenaDescription(e.target.value)} rows={2} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div>
@@ -228,7 +228,7 @@ export const ArenasView: React.FC = () => {
                             </div>
                             <div className="flex items-end">
                                 <label className="flex items-center gap-2 text-xs font-bold text-gray-400">
-                                    <input type="checkbox" checked={arenaActive} onChange={e => setArenaActive(e.target.checked)} className="accent-[var(--gold)]" />
+                                    <input type="checkbox" checked={arenaActive} onChange={e => setArenaActive(e.target.checked)} className="accent-[var(--skin-accent-color)]" />
                                     Arena ativa
                                 </label>
                             </div>
@@ -239,11 +239,11 @@ export const ArenasView: React.FC = () => {
                         <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Ações</div>
                         <div>
                             <label className="text-xs font-bold text-gray-400">Nome da Ação</label>
-                            <input value={actionName} onChange={e => setActionName(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                            <input value={actionName} onChange={e => setActionName(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-400">Descrição</label>
-                            <textarea value={actionDescription} onChange={e => setActionDescription(e.target.value)} rows={2} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                            <textarea value={actionDescription} onChange={e => setActionDescription(e.target.value)} rows={2} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div>
@@ -254,7 +254,7 @@ export const ArenasView: React.FC = () => {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-400">Tipo</label>
-                                <select value={actionType} onChange={e => setActionType(e.target.value as ActionType)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]">
+                                <select value={actionType} onChange={e => setActionType(e.target.value as ActionType)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]">
                                     <option value="Ação Recorrente">Ação Recorrente</option>
                                     <option value="Compromisso">Compromisso</option>
                                     <option value="Marco">Marco</option>
@@ -262,14 +262,14 @@ export const ArenasView: React.FC = () => {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-400">Duração (min)</label>
-                                <input type="number" min={5} value={actionDuration} onChange={e => setActionDuration(Number(e.target.value))} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                                <input type="number" min={5} value={actionDuration} onChange={e => setActionDuration(Number(e.target.value))} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-400">Repetições</label>
-                                <input type="number" min={1} value={actionRepetitions} disabled={actionType !== 'Ação Recorrente'} onChange={e => setActionRepetitions(Number(e.target.value))} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)] disabled:opacity-50" />
+                                <input type="number" min={1} value={actionRepetitions} disabled={actionType !== 'Ação Recorrente'} onChange={e => setActionRepetitions(Number(e.target.value))} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] disabled:opacity-50" />
                             </div>
                         </div>
-                        <button onClick={handleAddPendingAction} className="w-full py-2 rounded-xl luxe-button-secondary">Adicionar ação</button>
+                        <button onClick={handleAddPendingAction} className="w-full py-2 rounded-xl luxe-skin-button">Adicionar ação</button>
                         {pendingActions.length === 0 ? (
                             <div className="text-center text-xs text-gray-500">Nenhuma ação adicionada ainda.</div>
                         ) : (
@@ -292,7 +292,7 @@ export const ArenasView: React.FC = () => {
                         )}
                     </div>
 
-                    <button onClick={handleSaveArenaDraft} disabled={!arenaName.trim() || !builderAssetId} className="w-full py-3 rounded-xl luxe-gold-button disabled:opacity-50">Salvar arena</button>
+                    <button onClick={handleSaveArenaDraft} disabled={!arenaName.trim() || !builderAssetId} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">Salvar arena</button>
 
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -317,7 +317,7 @@ export const ArenasView: React.FC = () => {
                                             onDragOver={(e) => handleDragOver(e, arena.id)}
                                             onDragLeave={handleDragLeave}
                                             onDrop={(e) => handleDrop(e, arena.id, 'arena')}
-                                            className={`transition-all duration-200 ${isDragOver ? 'scale-105 z-10 ring-2 ring-[var(--gold)] rounded-xl' : ''}`}
+                                            className={`transition-all duration-200 ${isDragOver ? 'scale-105 z-10 ring-2 ring-[var(--skin-accent-color)] rounded-xl' : ''}`}
                                         >
                                             <ArenaCard
                                                 arena={arena}
@@ -379,7 +379,7 @@ export const ArenasView: React.FC = () => {
                                 onDragLeave={handleDragLeave}
                                 onDrop={(e) => handleDrop(e, folder.id, 'folder')}
                                 onClick={() => setSelectedFolderId(folder.id)}
-                                className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isDragOver ? 'border-[var(--gold)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--gold)] transition-colors group`}
+                                className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
                             >
                                 {/* Stack visual effect */}
                                 <div className="absolute top-1 right-1 w-full h-full bg-gray-700/50 rounded-2xl -z-10 transform translate-x-1 -translate-y-1" />
@@ -423,7 +423,7 @@ export const ArenasView: React.FC = () => {
                  <button 
                     ref={fabRef}
                     onClick={handleOpenCreateArena}
-                    className="fixed bottom-20 right-4 w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"
+                    className="fixed bottom-20 right-4 w-16 h-16 rounded-full bg-[var(--skin-accent-color)] flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"
                 >
                     <PlusIcon className="w-8 h-8 text-black" />
                 </button>

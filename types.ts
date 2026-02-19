@@ -52,6 +52,10 @@ export interface Action {
   context?: {
     energyLevel?: 'low' | 'medium' | 'high';
     timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+    schedule?: {
+      days?: DayOfWeek[];
+      startTime?: number;
+    };
   };
 }
 
@@ -112,7 +116,7 @@ export interface SovereignConfig {
     artifact: string;
 }
 
-export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts';
+export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes';
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 

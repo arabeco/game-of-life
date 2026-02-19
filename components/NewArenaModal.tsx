@@ -83,7 +83,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard ref={ modalCardRef } variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="text-center">
-                        <CrownIcon className="w-8 h-8 mx-auto text-[var(--gold)]" />
+                        <CrownIcon className="w-8 h-8 mx-auto text-[var(--skin-accent-color)]" />
                         <h2 className="text-lg font-bold uppercase tracking-wider mt-2">Nova Arena</h2>
                     </div>
                     
@@ -95,15 +95,15 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                             <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione o Ativo Pai'}</span>
                             <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                         </button>
-                        <input type="text" placeholder="Nome da Arena" value={name} onChange={e => setName(e.target.value)} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />
-                        <textarea placeholder="Descrição da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                        <input type="text" placeholder="Nome da Arena" value={name} onChange={e => setName(e.target.value)} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
+                        <textarea placeholder="Descrição da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                     </div>
                     
                     <div className="flex space-x-2 pt-2">
                         <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
                             CANCELAR
                         </button>
-                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">
+                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
                             CRIAR ARENA
                         </button>
                     </div>

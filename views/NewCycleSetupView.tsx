@@ -96,15 +96,15 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                     
                     <div className="flex-shrink-0 space-y-3 mb-4">
                         {activeSeason && (
-                            <GlassCard variant="gold" className="p-3 bg-gradient-to-r from-orange-900/40 to-yellow-900/40 border-yellow-500/30">
+                            <GlassCard variant="accent" className="p-3 bg-gradient-to-r from-[var(--skin-accent-color)]/10 to-[var(--skin-accent-color)]/5 border-[var(--skin-accent-color)]/30">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">SEASON ATUAL</p>
+                                        <p className="text-[10px] font-bold accent-text uppercase tracking-wider">SEASON ATUAL</p>
                                         <h3 className="text-lg font-black text-white">{activeSeason.name}</h3>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[10px] text-gray-400 uppercase">Termina em</p>
-                                        <p className="text-sm font-bold text-yellow-200">{new Date(activeSeason.endDate).toLocaleDateString('pt-BR')}</p>
+                                        <p className="text-sm font-bold text-[var(--skin-accent-color)] opacity-80">{new Date(activeSeason.endDate).toLocaleDateString('pt-BR')}</p>
                                     </div>
                                 </div>
                             </GlassCard>
@@ -118,14 +118,14 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                     placeholder='Nome do Novo Ciclo'
                                     value={cycleName}
                                     onChange={e => setCycleName(e.target.value)}
-                                    className='w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 focus:border-[var(--gold)] outline-none transition-colors' 
+                                    className='w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 focus:border-[var(--skin-accent-color)] outline-none transition-colors' 
                                 />
                                 <button 
                                     onClick={() => setDatePickerOpen(true)}
                                     className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 flex items-center justify-between hover:bg-black/60 transition-colors"
                                 >
                                     <span className="text-gray-300">{new Date(cycleEndDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                    <CalendarIcon className="w-5 h-5 text-[var(--gold)]" />
+                                    <CalendarIcon className="w-5 h-5 accent-text" />
                                 </button>
                             </div>
                         </GlassCard>
@@ -144,7 +144,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                         ))}
                     </div>
                     <div className="flex-shrink-0 pt-4">
-                        <button onClick={() => setShowConfirm(true)} disabled={!cycleName || !cycleEndDate} className="w-full py-3 rounded-xl luxe-gold-button disabled:opacity-50">INICIAR NOVO CICLO</button>
+                        <button onClick={() => setShowConfirm(true)} disabled={!cycleName || !cycleEndDate} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR NOVO CICLO</button>
                     </div>
                 </div>
             </div>

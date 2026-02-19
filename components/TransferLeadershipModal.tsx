@@ -30,7 +30,7 @@ export const TransferLeadershipModal: React.FC<TransferLeadershipModalProps> = (
                         <button 
                             key={member.id}
                             onClick={() => setSelectedMemberId(member.id)}
-                            className={`w-full p-2 rounded-xl flex items-center space-x-3 text-left transition-colors ${selectedMemberId === member.id ? 'bg-white/20 ring-2 ring-[var(--gold)]' : 'bg-black/20 hover:bg-white/10'}`}
+                            className={`w-full p-2 rounded-xl flex items-center space-x-3 text-left transition-colors ${selectedMemberId === member.id ? 'bg-white/20 ring-2 ring-[var(--skin-accent-color)]' : 'bg-black/20 hover:bg-white/10'}`}
                         >
                             <img src={member.avatarUrl} alt={member.nickname} className="w-10 h-10 rounded-full"/>
                             <div>
@@ -44,7 +44,7 @@ export const TransferLeadershipModal: React.FC<TransferLeadershipModalProps> = (
                 <button 
                     onClick={() => selectedMemberId && onConfirm(selectedMemberId)} 
                     disabled={!selectedMemberId}
-                    className="w-full py-3 rounded-xl luxe-button-primary disabled:opacity-50"
+                    className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50"
                 >
                     Transferir e Sair
                 </button>

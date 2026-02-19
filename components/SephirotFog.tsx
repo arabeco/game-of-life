@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from 'react';
 interface SephirotFogProps {
   points: { x: number; y: number; level: number }[];
   color: string;
+  mode?: 'sephirot' | 'arena';
 }
 
 const vertexShaderSource = `
@@ -22,6 +23,11 @@ const fragmentShaderSource = `
   uniform vec2 uPoints[10];
   uniform float uLevels[10];
   uniform vec3 uColor;
+  uniform float uWindStrength;
+  uniform float uPointDrift;
+  uniform float uFieldDrift;
+  uniform float uAlphaMax;
+  uniform float uCoreBoost;
   
   varying vec2 vUv;
 
@@ -91,6 +97,8 @@ const fragmentShaderSource = `
 
         vec2 pt = uPoints[i];
         pt.y = 1.0 - pt.y; 
+        pt.x += sin(uTime * 0.18 + float(i) * 1.7) * uPointDrift;
+        pt.y += cos(uTime * 0.16 + float(i) * 1.3) * uPointDrift;
         vec2 pt_aspect = vec2(pt.x * aspect, pt.y);
         
         vec2 toPixel = st_aspect - pt_aspect;
@@ -105,7 +113,8 @@ const fragmentShaderSource = `
              // "Nivel 6 muito fraco" -> Boosted mid-range intensity.
              
              // 1. Local Coordinates
-             vec2 localP = toPixel * 3.5;
+             vec2 wind = vec2(sin(uTime * 0.1), cos(uTime * 0.08)) * uWindStrength;
+             vec2 localP = toPixel * 3.5 + vec2(uTime * 0.08, -uTime * 0.06) * uFieldDrift + wind;
 
              // 2. Periodic Flow (Very Slow)
              float cycleSpeed = 0.05 + (level / 10.0) * 0.1; 
@@ -127,10 +136,11 @@ const fragmentShaderSource = `
 
              // 4. Sample Noise Twice
              vec2 offset1 = normalize(toPixel) * (t1 * 1.8); 
-             float n1 = fbm(warpP - offset1);
+             vec2 timeOffset = vec2(cos(uTime * 0.07), sin(uTime * 0.05)) * 0.6;
+             float n1 = fbm(warpP - offset1 + timeOffset);
 
              vec2 offset2 = normalize(toPixel) * ((t2 - 0.5) * 1.8); 
-             float n2 = fbm(warpP - offset2);
+             float n2 = fbm(warpP - offset2 - timeOffset + wind);
 
              float noiseVal = mix(n1, n2, blend);
              
@@ -169,7 +179,10 @@ const fragmentShaderSource = `
 
              // 7. Core Glow
              // Tiny anchor point
-             float core = smoothstep(0.03, 0.0, dist); 
+             float corePulse = 0.5 + 0.5 * sin(uTime * 0.8);
+             float coreBase = smoothstep(0.03, 0.0, dist);
+             float coreBoosted = smoothstep(0.05, 0.0, dist) * (1.2 + corePulse * 0.6);
+             float core = mix(coreBase, coreBoosted, uCoreBoost);
 
              // Combine
              float finalVal = (combinedShape * fade * intensityMult) + core;
@@ -190,13 +203,13 @@ const fragmentShaderSource = `
     // Alpha
     // Max opacity reduced for "efeito discreto"
     float alpha = smoothstep(0.0, 1.0, totalDensity);
-    alpha = clamp(alpha, 0.0, 0.15); 
+    alpha = clamp(alpha, 0.0, uAlphaMax); 
     
     gl_FragColor = vec4(finalColor, alpha);
   }
 `;
 
-export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color }) => {
+export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 'sephirot' }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -206,10 +219,24 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color }) => {
   const uPointsLoc = useRef<WebGLUniformLocation | null>(null);
   const uLevelsLoc = useRef<WebGLUniformLocation | null>(null);
   const uColorLoc = useRef<WebGLUniformLocation | null>(null);
+  const uWindStrengthLoc = useRef<WebGLUniformLocation | null>(null);
+  const uPointDriftLoc = useRef<WebGLUniformLocation | null>(null);
+  const uFieldDriftLoc = useRef<WebGLUniformLocation | null>(null);
+  const uAlphaMaxLoc = useRef<WebGLUniformLocation | null>(null);
+  const uCoreBoostLoc = useRef<WebGLUniformLocation | null>(null);
 
   // Helper to hex to rgb
   const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    const trimmed = hex.trim();
+    if (trimmed.startsWith('rgb')) {
+      const values = trimmed.replace(/rgba?\(|\)/g, '').split(',').map(val => Number.parseFloat(val.trim()));
+      return [
+        (values[0] || 0) / 255,
+        (values[1] || 0) / 255,
+        (values[2] || 0) / 255
+      ];
+    }
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(trimmed);
     return result ? [
       parseInt(result[1], 16) / 255,
       parseInt(result[2], 16) / 255,
@@ -281,6 +308,11 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color }) => {
     uPointsLoc.current = gl.getUniformLocation(program, 'uPoints');
     uLevelsLoc.current = gl.getUniformLocation(program, 'uLevels');
     uColorLoc.current = gl.getUniformLocation(program, 'uColor');
+    uWindStrengthLoc.current = gl.getUniformLocation(program, 'uWindStrength');
+    uPointDriftLoc.current = gl.getUniformLocation(program, 'uPointDrift');
+    uFieldDriftLoc.current = gl.getUniformLocation(program, 'uFieldDrift');
+    uAlphaMaxLoc.current = gl.getUniformLocation(program, 'uAlphaMax');
+    uCoreBoostLoc.current = gl.getUniformLocation(program, 'uCoreBoost');
 
     // Set Resolution once
     if (resolutionLocation) {
@@ -340,7 +372,30 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color }) => {
         gl.uniform3fv(uColorLoc.current, new Float32Array(rgb));
     }
 
-  }, [points, color]);
+    const arenaMode = mode === 'arena';
+    const windStrength = arenaMode ? 0.35 : 0.0;
+    const pointDrift = arenaMode ? 0.03 : 0.0;
+    const fieldDrift = arenaMode ? 1.0 : 0.0;
+    const alphaMax = arenaMode ? 0.28 : 0.15;
+    const coreBoost = arenaMode ? 1.0 : 0.0;
+
+    if (uWindStrengthLoc.current) {
+        gl.uniform1f(uWindStrengthLoc.current, windStrength);
+    }
+    if (uPointDriftLoc.current) {
+        gl.uniform1f(uPointDriftLoc.current, pointDrift);
+    }
+    if (uFieldDriftLoc.current) {
+        gl.uniform1f(uFieldDriftLoc.current, fieldDrift);
+    }
+    if (uAlphaMaxLoc.current) {
+        gl.uniform1f(uAlphaMaxLoc.current, alphaMax);
+    }
+    if (uCoreBoostLoc.current) {
+        gl.uniform1f(uCoreBoostLoc.current, coreBoost);
+    }
+
+  }, [points, color, mode]);
 
   // Handle Resize
   useEffect(() => {
@@ -350,8 +405,13 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color }) => {
         const program = programRef.current;
         if (!canvas || !gl || !program) return;
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const width = Math.max(1, Math.floor(rect.width * dpr));
+        const height = Math.max(1, Math.floor(rect.height * dpr));
+
+        canvas.width = width;
+        canvas.height = height;
         gl.viewport(0, 0, canvas.width, canvas.height);
         
         const resolutionLocation = gl.getUniformLocation(program, 'uResolution');

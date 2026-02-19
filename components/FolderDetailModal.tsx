@@ -38,9 +38,9 @@ export const FolderDetailModal: React.FC<FolderDetailModalProps> = ({ folder, on
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="bg-[#1a1a1a] border border-[var(--gold)] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="bg-[#1a1a1a] border border-[var(--skin-accent-color)] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
                 {/* Header */}
-                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-black to-yellow-900/20">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-black to-[var(--skin-accent-color)]/20">
                      <div className="flex items-center gap-3">
                         <button 
                             onClick={() => isEditing && setIsIconPickerOpen(true)}
@@ -53,10 +53,10 @@ export const FolderDetailModal: React.FC<FolderDetailModalProps> = ({ folder, on
                             <input 
                                 value={name} 
                                 onChange={e => setName(e.target.value)}
-                                className="bg-black/40 border border-white/20 rounded px-2 py-1 text-lg font-bold text-white focus:outline-none focus:border-[var(--gold)]"
+                                className="bg-black/40 border border-white/20 rounded px-2 py-1 text-lg font-bold text-white focus:outline-none focus:border-[var(--skin-accent-color)]"
                             />
                         ) : (
-                            <h2 className="text-xl font-bold text-[var(--gold)] uppercase tracking-wider">{folder.name}</h2>
+                            <h2 className="text-xl font-bold accent-text uppercase tracking-wider">{folder.name}</h2>
                         )}
                     </div>
                     <div className="flex items-center gap-2">

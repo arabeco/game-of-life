@@ -36,7 +36,7 @@ const Sparkles: React.FC = () => (
         {[...Array(5)].map((_, i) => (
             <div
                 key={`gold-${i}`}
-                className="absolute w-1.5 h-1.5 bg-[var(--gold)] rounded-full animate-ping"
+                className="absolute w-1.5 h-1.5 bg-[var(--skin-accent-color)] rounded-full animate-ping"
                 style={{
                     top: `${Math.random() * 100}%`,
                     left: `${Math.random() * 100}%`,
@@ -53,14 +53,14 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
     if (!member.sovereign) return null;
     return (
         <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-            <GlassCard variant="gold" className="w-full max-w-sm m-4 p-6 relative flex flex-col items-center space-y-4" onClick={e => e.stopPropagation()}>
+            <GlassCard variant="accent" className="w-full max-w-sm m-4 p-6 relative flex flex-col items-center space-y-4" onClick={e => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/20 text-gray-400 hover:text-white transition-colors">
                     <XIcon className="w-5 h-5" />
                 </button>
                 
                 <div className="w-32 h-32 relative">
-                     <div className="absolute inset-0 bg-[var(--gold)]/20 blur-2xl rounded-full animate-pulse" />
-                     <div className="relative w-full h-full filter drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+                     <div className="absolute inset-0 bg-[var(--skin-accent-color)]/20 blur-2xl rounded-full animate-pulse" />
+                     <div className="relative w-full h-full filter drop-shadow-[0_0_15px_var(--sephirot-glow-color)]">
                         <Sovereign sovereignConfig={member.sovereign!} />
                      </div>
                 </div>
@@ -68,7 +68,7 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
                 <div className="text-center space-y-1">
                     <h2 className="text-2xl font-black text-white luxe-title-shadow uppercase tracking-wider">{member.nickname}</h2>
                     <div className="flex items-center justify-center space-x-2">
-                        <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] border border-[var(--gold)]/30">
+                        <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider accent-text border border-[var(--skin-accent-color)]/30">
                             {member.role === 'leader' ? 'Líder' : 'Membro'}
                         </span>
                         <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-gray-300 border border-white/10">
@@ -87,7 +87,7 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
                     </div>
                     <div className="flex justify-between items-center text-xs">
                         <span className="text-gray-400 font-bold uppercase">Contribuição</span>
-                        <span className="font-mono text-[var(--gold)]">{member.contributionPoints} pts</span>
+                        <span className="font-mono accent-text">{member.contributionPoints} pts</span>
                     </div>
                 </div>
             </GlassCard>
@@ -144,7 +144,7 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
                     <p className="text-xs text-gray-300 font-bold">{currentRank?.name || 'N/A'}</p>
                 </div>
                 <div className="w-full bg-black/30 rounded-full h-1.5 mt-1">
-                    <div className="bg-[var(--gold)] h-full rounded-full" style={{ width: `${progressPercentage}%` }}></div>
+                    <div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progressPercentage}%` }}></div>
                 </div>
                  <div className="flex items-center justify-center space-x-4 border-t border-white/10 pt-1 mt-1">
                     <button 
@@ -207,7 +207,7 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
                 <div className="grid grid-cols-2 gap-2 text-center">
                     <div className="bg-black/30 rounded-xl p-2">
                         <div className="text-[10px] uppercase text-gray-400 font-bold">Participantes</div>
-                        <div className="text-lg font-mono text-[var(--gold)] flex items-center justify-center gap-1">
+                        <div className="text-lg font-mono accent-text flex items-center justify-center gap-1">
                             <UsersIcon className="w-4 h-4" />
                             {participants}
                         </div>
@@ -226,11 +226,11 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
                         <span className="text-xs font-mono">{progress}%</span>
                     </div>
                     <div className="w-full bg-black/30 rounded-full h-1.5">
-                        <div className="bg-[var(--gold)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                        <div className="bg-[var(--skin-accent-color)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-button-primary'}`}>
+                    <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-skin-button'}`}>
                         {isActive ? 'QUEST ATIVA' : 'PEGAR QUEST'}
                     </button>
                     <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-bold bg-black/30 text-gray-300 hover:bg-black/50">
@@ -260,8 +260,8 @@ const GoldenTimeBar: React.FC<{ area: string; totalTime: number; maxTime: number
             <span className="text-xs">{getAreaIcon(area)}</span>
             <div className="flex-1 bg-black/30 rounded-full h-2">
                 <div 
-                    className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${percentage}%` }}
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${percentage}%`, background: 'var(--metal-gold)' }}
                 />
             </div>
             <span className="text-xs text-gray-300">{Math.floor(totalTime / 60)}m</span>
@@ -285,7 +285,7 @@ const ClanMember: React.FC<{ placement: MemberPlacement; onClick?: () => void }>
             <div className="relative group w-20 h-32 flex flex-col items-center justify-end cursor-pointer">
                 {/* Tooltip */}
                 <div className="absolute bottom-full mb-2 w-max max-w-xs bg-black/90 text-white text-xs rounded-lg py-1 px-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 border border-white/10 shadow-xl">
-                    <div className="font-bold text-[var(--gold)] mb-0.5">{placement.member.nickname}</div>
+                    <div className="font-bold accent-text mb-0.5">{placement.member.nickname}</div>
                     <div className="italic text-gray-400">"{placement.state.lore}"</div>
                 </div>
                 
@@ -295,7 +295,7 @@ const ClanMember: React.FC<{ placement: MemberPlacement; onClick?: () => void }>
                 </div>
                 
                 {/* Nametag Pill */}
-                <div className="absolute bottom-0 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 text-[10px] flex items-center space-x-1.5 border border-white/10 shadow-lg group-hover:border-[var(--gold)]/50 transition-colors">
+                <div className="absolute bottom-0 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 text-[10px] flex items-center space-x-1.5 border border-white/10 shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors">
                     <div className={`w-1.5 h-1.5 rounded-full ${placement.member.isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
                     <span className="font-bold text-white truncate max-w-[50px]">{placement.member.nickname}</span>
                 </div>
@@ -336,7 +336,7 @@ const MissionCard: React.FC<{ title: string; progress: number; }> = ({ title, pr
                     </div>
                 </div>
             </div>
-            <div className="w-full bg-black/30 rounded-full h-1"><div className="bg-[var(--gold)] h-1 rounded-full" style={{width: `${progress}%`}}></div></div>
+            <div className="w-full bg-black/30 rounded-full h-1"><div className="bg-[var(--skin-accent-color)] h-1 rounded-full" style={{width: `${progress}%`}}></div></div>
         </div>
     </GlassCard>
 );
@@ -827,20 +827,20 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         const isCompleted = progress >= 100;
 
                                         return (
-                                            <GlassCard key={quest.id} variant={isCompleted ? 'gold' : 'neutral'} className={`p-4 transition-all duration-300 cursor-pointer ${isCompleted ? 'border-[var(--gold)] shadow-[0_0_15px_rgba(212,175,55,0.3)]' : ''}`} onClick={() => setSelectedQuest(quest)}>
+                                            <GlassCard key={quest.id} variant={isCompleted ? 'accent' : 'neutral'} className={`p-4 transition-all duration-300 cursor-pointer ${isCompleted ? 'border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)]' : ''}`} onClick={() => setSelectedQuest(quest)}>
                                                 <div className="space-y-3">
                                                     <div className="flex items-center justify-between">
                                                         <span className="font-bold text-sm w-2/3">{quest.title}</span>
                                                         <div className="flex items-center space-x-2">
                                                             <span className="text-xs font-mono">{progress}%</span>
-                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--gold)] bg-[var(--gold)] text-black' : 'border-gray-500'}`}>
+                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)] text-black' : 'border-gray-500'}`}>
                                                                 {isCompleted && <CheckIcon className="w-4 h-4" />}
                                                             </div>
                                                         </div>
                                                     </div>
                                                     
                                                     <div className="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
-                                                        <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--gold)]' : 'bg-gray-500'}`} style={{width: `${progress}%`}}></div>
+                                                        <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--skin-accent-color)]' : 'bg-gray-500'}`} style={{width: `${progress}%`}}></div>
                                                     </div>
                                                 </div>
                                             </GlassCard>

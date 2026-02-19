@@ -115,7 +115,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
                     <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
                         CANCELAR
                     </button>
-                    <button onClick={handleSave} disabled={!croppedAvatar || isUploading} className="w-full py-2 rounded-xl luxe-button-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button onClick={handleSave} disabled={!croppedAvatar || isUploading} className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed">
                         {isUploading ? 'ENVIANDO...' : 'SALVAR'}
                     </button>
                 </div>

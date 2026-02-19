@@ -14,7 +14,7 @@ const MissionCard: React.FC<{ title: string; progress: number; }> = ({ title, pr
                     </div>
                 </div>
             </div>
-            <div className="w-full bg-black/30 rounded-full h-1"><div className="bg-[var(--gold)] h-1 rounded-full" style={{width: `${progress}%`}}></div></div>
+            <div className="w-full bg-black/30 rounded-full h-1"><div className="bg-[var(--skin-accent-color)] h-1 rounded-full" style={{width: `${progress}%`}}></div></div>
         </div>
     </GlassCard>
 );
@@ -48,45 +48,45 @@ export const ClanMissionsModal: React.FC<{ onClose: () => void }> = ({ onClose }
                         const isCompleted = mission.progress >= 100;
 
                         return (
-                            <GlassCard key={mission.id} variant={isCompleted ? 'gold' : 'neutral'} className={`p-4 transition-all duration-300 ${isCompleted ? 'border-[var(--gold)] shadow-[0_0_15px_rgba(212,175,55,0.3)]' : ''}`}>
+                            <GlassCard key={mission.id} variant={isCompleted ? 'accent' : 'neutral'} className={`p-4 transition-all duration-300 ${isCompleted ? 'border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)]' : ''}`}>
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="font-bold text-sm w-2/3">{mission.title}</span>
                                         <div className="flex items-center space-x-2">
                                             <span className="text-xs font-mono">{mission.progress}%</span>
-                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--gold)] bg-[var(--gold)] text-black' : 'border-gray-500'}`}>
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)] text-black' : 'border-gray-500'}`}>
                                                 {isCompleted && <CheckIcon className="w-4 h-4" />}
                                             </div>
                                         </div>
                                     </div>
                                     
                                     <div className="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
-                                        <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--gold)]' : 'bg-gray-500'}`} style={{width: `${mission.progress}%`}}></div>
+                                        <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--skin-accent-color)]' : 'bg-gray-500'}`} style={{width: `${mission.progress}%`}}></div>
                                     </div>
 
                                     <div className="flex justify-between items-center pt-2 border-t border-white/5">
                                         <div className="flex items-center space-x-1 text-xs text-gray-400">
-                                            <span className={isFullyPledged ? 'text-[var(--gold)]' : ''}>{mission.totalPledges}/{mission.requiredPledges}</span>
+                                            <span className={isFullyPledged ? 'accent-text' : ''}>{mission.totalPledges}/{mission.requiredPledges}</span>
                                             <span>Pactos</span>
                                         </div>
                                         
                                         {!mission.pledged ? (
                                             <button 
                                                 onClick={() => handlePledge(mission.id)}
-                                                className="px-3 py-1 rounded-lg text-xs font-bold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)] hover:text-black transition-colors"
+                                                className="px-3 py-1 rounded-lg text-xs font-bold border border-[var(--skin-accent-color)] accent-text hover:bg-[var(--skin-accent-color)] hover:text-black transition-colors"
                                             >
                                                 FIRMAR PACTO
                                             </button>
                                         ) : (
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] flex items-center gap-1 bg-[var(--gold)]/10 px-2 py-1 rounded">
-                                                <div className="w-1.5 h-1.5 bg-[var(--gold)] rounded-full animate-pulse"></div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider accent-text flex items-center gap-1 bg-[var(--skin-accent-color)]/10 px-2 py-1 rounded">
+                                                <div className="w-1.5 h-1.5 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>
                                                 Pacto Ativo
                                             </span>
                                         )}
                                     </div>
                                     
                                     {isCompleted && (
-                                        <div className="absolute top-0 right-0 -mt-2 -mr-2 w-12 h-12 flex items-center justify-center bg-[var(--gold)] text-black rounded-full shadow-lg font-black text-xs border-2 border-white transform rotate-12 animate-bounce-slow z-10">
+                                        <div className="absolute top-0 right-0 -mt-2 -mr-2 w-12 h-12 flex items-center justify-center bg-[var(--skin-accent-color)] text-black rounded-full shadow-lg font-black text-xs border-2 border-white transform rotate-12 animate-bounce-slow z-10">
                                             SELO
                                         </div>
                                     )}

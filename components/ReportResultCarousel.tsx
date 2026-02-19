@@ -85,7 +85,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     // Slide 1: Execução
     const renderExecutionSlide = () => (
         <div className="flex flex-col h-full space-y-6 p-4">
-            <h3 className="text-xl font-bold text-[var(--gold)] uppercase tracking-widest text-center">Execução</h3>
+            <h3 className="text-xl font-bold accent-text uppercase tracking-widest text-center">Execução</h3>
             
             <div className="space-y-4">
                 {/* Actions Bar */}
@@ -134,7 +134,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     // Slide 2: Território
     const renderTerritorySlide = () => (
         <div className="flex flex-col h-full space-y-4 p-4">
-            <h3 className="text-xl font-bold text-[var(--gold)] uppercase tracking-widest text-center">Território</h3>
+            <h3 className="text-xl font-bold accent-text uppercase tracking-widest text-center">Território</h3>
             
             <div className="flex-1 min-h-[200px] relative">
                 <ResponsiveContainer width="100%" height="100%">
@@ -142,7 +142,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         <PolarGrid stroke="#333" />
                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#999', fontSize: 10 }} />
                         <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar name="Nível" dataKey="A" stroke="var(--gold)" fill="var(--gold)" fillOpacity={0.3} />
+                        <Radar name="Nível" dataKey="A" stroke="var(--skin-accent-color)" fill="var(--skin-accent-color)" fillOpacity={0.3} />
                     </RadarChart>
                 </ResponsiveContainer>
             </div>
@@ -150,8 +150,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             <div className="space-y-3">
                 <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
                     <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-[var(--gold)]/20 flex items-center justify-center">
-                            <ZapIcon className="w-4 h-4 text-[var(--gold)]" />
+                        <div className="w-8 h-8 rounded-full bg-[var(--skin-accent-color)]/20 flex items-center justify-center">
+                            <ZapIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                         </div>
                         <div>
                             <p className="text-xs text-gray-400 uppercase">Arena Foco</p>
@@ -184,7 +184,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         
         return (
             <div className="flex flex-col h-full space-y-6 p-4">
-                <h3 className="text-xl font-bold text-[var(--gold)] uppercase tracking-widest text-center">Conquistas</h3>
+                <h3 className="text-xl font-bold accent-text uppercase tracking-widest text-center">Conquistas</h3>
                 
                 {hasAchievements ? (
                     <div className="space-y-4">
@@ -214,7 +214,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
                         <div className="text-center mt-4">
                             <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">EXP TOTAL</p>
-                            <p className="text-4xl font-black text-[var(--gold)]">+{report.expGained || expGained || 0}</p>
+                            <p className="text-4xl font-black accent-text">+{report.expGained || expGained || 0}</p>
                         </div>
                     </div>
                 ) : (
@@ -232,7 +232,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     // Slide 4: Veredito
     const renderVerdictSlide = () => (
         <div className="flex flex-col h-full items-center justify-center p-4 text-center space-y-6">
-            <h3 className="text-xl font-bold text-[var(--gold)] uppercase tracking-widest absolute top-4">Veredito</h3>
+            <h3 className="text-xl font-bold accent-text uppercase tracking-widest absolute top-4">Veredito</h3>
             
             <div className="relative">
                 <div className={`text-9xl font-black ${scoreInfo.color} filter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]`}>
@@ -261,9 +261,9 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
         return (
             <div className="flex flex-col h-full items-center justify-center p-4 text-center space-y-6 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--gold)_0%,_transparent_70%)] opacity-5 pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-5 pointer-events-none" />
                 
-                <h3 className="text-xl font-bold text-[var(--gold)] uppercase tracking-widest">Recompensa</h3>
+                <h3 className="text-xl font-bold accent-text uppercase tracking-widest">Recompensa</h3>
                 
                 <div className="transform scale-110 py-4">
                     <ChestVisual type={chestType} />
@@ -277,7 +277,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 </div>
 
                 <div className="bg-black/40 px-6 py-3 rounded-xl border border-white/10">
-                     <p className="text-3xl font-black text-[var(--gold)]">+{displayExp}</p>
+                     <p className="text-3xl font-black text-[var(--skin-accent-color)]">+{displayExp}</p>
                      <p className="text-[10px] uppercase text-gray-500 tracking-wider">EXP Computada</p>
                 </div>
 
@@ -290,7 +290,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         Fechar
                     </button>
                     {onStartNewCycle && (
-                        <button onClick={onStartNewCycle} className="flex-1 py-3 rounded-xl luxe-gold-button font-bold text-xs uppercase tracking-wider shadow-lg shadow-[var(--gold)]/20">
+                        <button onClick={onStartNewCycle} className="flex-1 py-3 rounded-xl luxe-skin-button font-bold text-xs uppercase tracking-wider shadow-lg shadow-[var(--skin-accent-color)]/20">
                             Novo Ciclo
                         </button>
                     )}
@@ -316,7 +316,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         {slides.map((_, idx) => (
                             <div 
                                 key={idx} 
-                                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-[var(--gold)]' : 'w-2 bg-gray-700'}`}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-[var(--skin-accent-color)]' : 'w-2 bg-gray-700'}`}
                             />
                         ))}
                     </div>

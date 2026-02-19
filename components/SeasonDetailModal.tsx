@@ -20,10 +20,10 @@ const MissionCard: React.FC<{ mission: SeasonMission; progress: number; isComple
                     </div>
                 </div>
                 <div className="w-full bg-black/30 rounded-full h-1">
-                    <div className="bg-[var(--gold)] h-1 rounded-full" style={{ width: `${progress}%` }}></div>
+                    <div className="bg-[var(--skin-accent-color)] h-1 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
                 {canClaim && (
-                    <button onClick={(event) => { event.stopPropagation(); onComplete(); }} className="w-full py-2 rounded-xl luxe-button-primary text-xs font-bold">
+                    <button onClick={(event) => { event.stopPropagation(); onComplete(); }} className="w-full py-2 rounded-xl luxe-skin-button text-black text-xs font-bold">
                         CONCLUIR
                     </button>
                 )}
@@ -45,12 +45,12 @@ const MissionDetailModal: React.FC<{ mission: SeasonMission; progress: number; i
                     <span className="text-xs font-mono">{progress}%</span>
                 </div>
                 <div className="w-full bg-black/30 rounded-full h-1.5">
-                    <div className="bg-[var(--gold)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                    <div className="bg-[var(--skin-accent-color)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
             </div>
             <div className="space-y-2">
                 {!isCompleted && progress >= 100 && (
-                    <button onClick={onClaim} className="w-full py-2 rounded-xl text-xs font-bold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)] hover:text-black transition-colors">
+                    <button onClick={onClaim} className="w-full py-2 rounded-xl text-xs font-bold border border-[var(--skin-accent-color)] accent-text hover:bg-[var(--skin-accent-color)] hover:text-black transition-colors">
                         CONCLUIR
                     </button>
                 )}
@@ -96,11 +96,11 @@ const QuestDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActiv
                     <span className="text-xs font-mono">{progress}%</span>
                 </div>
                 <div className="w-full bg-black/30 rounded-full h-1.5">
-                    <div className="bg-[var(--gold)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                    <div className="bg-[var(--skin-accent-color)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
             </div>
             <div className="space-y-2">
-                <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-button-primary'}`}>
+                <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-skin-button text-black'}`}>
                     {isActive ? 'QUEST ATIVA' : 'PEGAR QUEST'}
                 </button>
                 <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-bold bg-black/30 text-gray-300 hover:bg-black/50">

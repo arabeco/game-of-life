@@ -210,7 +210,7 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                 </div>
                 {renderContent()}
                 {stage === 'revealed' && (
-                    <button onClick={handleCollect} className="w-full py-2 rounded-xl luxe-button-primary">
+                    <button onClick={handleCollect} className="w-full py-2 rounded-xl luxe-skin-button">
                         COLETAR
                     </button>
                 )}

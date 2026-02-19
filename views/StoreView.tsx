@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
-import { Action, Arena, DayOfWeek } from '../types';
+import { Action, Arena, DayOfWeek, UnlockCategory } from '../types';
 import { CheckIcon, PlusIcon, XIcon, InfoIcon } from '../components/Icons';
 
 // --- Types for Codex System ---
@@ -28,7 +28,7 @@ interface CodexTemplate {
 // --- Data: Máquina Biológica Codex ---
 
 export const BIOLOGICAL_MACHINE_CODEX: CodexTemplate = {
-  id: 'codex-bio-machine-v1',
+  id: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
   title: 'Máquina Biológica',
   description: 'Reconfigure sua biologia para performance máxima em 28 dias. Protocolos de sono, nutrição e ativação física.',
   author: 'Soberano System',
@@ -205,61 +205,60 @@ export const BIOLOGICAL_MACHINE_CODEX: CodexTemplate = {
 // --- Store Component ---
 
 export const StoreView: React.FC = () => {
-  const { addArena, addAction, getArenas, deleteArena, getAssetIdByName } = useGame();
-  const [activeTab, setActiveTab] = useState<'codex' | 'cosmetics'>('codex');
+  const { addArena, addAction, getArenas, deleteArena, assets, userProfile, grantUserUnlock } = useGame();
+  const [activeTab, setActiveTab] = useState<'codex' | 'cosmetics' | 'inventory'>('codex');
   
   // Check if Codex is installed
-  const installedCodex = getArenas().some(a => a.originCodexId === BIOLOGICAL_MACHINE_CODEX.id && !a.isArchived);
+  const legacyCodexId = 'codex-bio-machine-v1';
+  const installedCodex = getArenas().some(a => (a.originCodexId === BIOLOGICAL_MACHINE_CODEX.id || a.originCodexId === legacyCodexId) && !a.isArchived);
+  const purchasedCodex = userProfile.unlockedItems?.codexes?.[BIOLOGICAL_MACHINE_CODEX.id] || false;
+
   const [installing, setInstalling] = useState(false);
 
-  const handleInstall = async () => {
+  const handlePurchase = async () => {
+    setInstalling(true);
+    // Simulate API call/delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    grantUserUnlock('codexes', BIOLOGICAL_MACHINE_CODEX.id);
+    setInstalling(false);
+    if (confirm("Codex adquirido com sucesso! Deseja ir para sua biblioteca ativar agora?")) {
+        setActiveTab('inventory');
+    }
+  };
+
+  const handleInstallLevel = async (targetLevel: number) => {
     setInstalling(true);
     
     // Simulate API call/delay
     await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
-        // Create an Arena Group (Folder) logic if supported, or just separate Arenas
-        // Since we don't have explicit folders fully exposed in addArena, we create Arenas per level
-        
-        // Find 'Físico' asset or similar to attach these arenas
-        // If not found, attach to first available asset or a default one
-        // For 'Máquina Biológica', 'Físico' (Body) is the most appropriate asset.
-        // We need to find the asset ID for 'Físico'.
-        // Assuming we can find it via name or default to first one.
-        // Since we can't easily query assets here without passing 'assets' prop, 
-        // we'll assume the user has a 'Físico' asset or we use a fallback.
-        // Actually, 'getArenas' doesn't give assets. We need 'assets' from useGame if we want to find ID.
-        // Let's just create a new 'Codex' asset? No, user wants it integrated.
-        // Let's use a hardcoded assumption or try to find it.
-        // Ideally we ask the user where to install, but for "One Click" experience, we guess.
-        
-        const fisicoAssetId = 'asset_fisico'; // Placeholder, might need adjustment
-        
-        // Loop through levels and create Arenas
-        BIOLOGICAL_MACHINE_CODEX.levels.forEach((level, index) => {
-            const newArena = addArena(fisicoAssetId, {
-                name: `${level.title}`,
-                description: level.description,
-                icon: '🧬',
-                originCodexId: BIOLOGICAL_MACHINE_CODEX.id,
-                codexLevel: level.level
-            });
+        const level = BIOLOGICAL_MACHINE_CODEX.levels.find(l => l.level === targetLevel);
+        if (!level) throw new Error("Nível não encontrado");
 
-            // Add Actions to this Arena
-            level.actions.forEach(actionTemplate => {
-                addAction({
-                    ...actionTemplate,
-                    arenaId: newArena.id,
-                    originCodexId: BIOLOGICAL_MACHINE_CODEX.id,
-                });
+        const fisicoAssetId = assets.find(asset => asset.id === 'fisico')?.id || assets[0]?.id || 'geral';
+        
+        const newArena = addArena(fisicoAssetId, {
+            name: `${level.title}`,
+            description: level.description,
+            icon: '🧬',
+            originCodexId: BIOLOGICAL_MACHINE_CODEX.id,
+            codexLevel: level.level
+        });
+
+        // Add Actions to this Arena
+        level.actions.forEach(actionTemplate => {
+            addAction({
+                ...actionTemplate,
+                arenaId: newArena.id,
+                originCodexId: BIOLOGICAL_MACHINE_CODEX.id,
             });
         });
 
-        // Add Notification or Toast here (not implemented yet)
-        console.log("Codex Installed Successfully");
+        console.log(`Level ${targetLevel} Installed Successfully`);
     } catch (error) {
-        console.error("Failed to install Codex", error);
+        console.error("Failed to install Codex Level", error);
     } finally {
         setInstalling(false);
     }
@@ -274,7 +273,7 @@ export const StoreView: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
-        const arenasToDelete = getArenas().filter(a => a.originCodexId === BIOLOGICAL_MACHINE_CODEX.id && !a.isArchived);
+        const arenasToDelete = getArenas().filter(a => (a.originCodexId === BIOLOGICAL_MACHINE_CODEX.id || a.originCodexId === legacyCodexId) && !a.isArchived);
         
         for (const arena of arenasToDelete) {
             await deleteArena(arena.id);
@@ -292,15 +291,21 @@ export const StoreView: React.FC = () => {
     <div className="space-y-6 pb-20 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600">
+        <h1 className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[var(--skin-accent-color)] to-[var(--sephirot-glow-color)]">
           LOJA SOBERANA
         </h1>
         <div className="flex space-x-2 bg-black/30 p-1 rounded-lg">
             <button 
                 onClick={() => setActiveTab('codex')}
-                className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${activeTab === 'codex' ? 'bg-yellow-500/20 text-yellow-300' : 'text-gray-500 hover:text-gray-300'}`}
+                className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${activeTab === 'codex' ? 'bg-[var(--skin-accent-color)]/20 accent-text' : 'text-gray-500 hover:text-gray-300'}`}
             >
-                CODEXES
+                LOJA
+            </button>
+            <button 
+                onClick={() => setActiveTab('inventory')}
+                className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${activeTab === 'inventory' ? 'bg-green-500/20 text-green-300' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+                MEUS CODEXES
             </button>
             <button 
                 onClick={() => setActiveTab('cosmetics')}
@@ -315,7 +320,7 @@ export const StoreView: React.FC = () => {
       {activeTab === 'codex' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Máquina Biológica Card */}
-            <GlassCard variant="neutral" className="relative group overflow-hidden border-yellow-500/30">
+            <GlassCard variant="neutral" className="relative group overflow-hidden border-[var(--skin-accent-color)]/30">
                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-green-900/40 to-transparent pointer-events-none" />
                 
                 <div className="relative z-10 flex flex-col h-full space-y-4">
@@ -328,7 +333,7 @@ export const StoreView: React.FC = () => {
                                 <CheckIcon className="w-3 h-3" /> Instalado
                             </span>
                         ) : (
-                            <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-yellow-500/30">
+                            <span className="px-3 py-1 bg-[var(--skin-accent-color)]/20 accent-text text-[10px] font-black uppercase tracking-widest rounded-full border border-[var(--skin-accent-color)]/30">
                                 Grátis
                             </span>
                         )}
@@ -360,21 +365,20 @@ export const StoreView: React.FC = () => {
                     <div className="flex-1" />
 
                     <div className="pt-4 border-t border-white/5 flex gap-3">
-                        {installedCodex ? (
+                        {purchasedCodex ? (
                             <button 
-                                onClick={handleUninstall}
-                                disabled={installing}
-                                className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-sm hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
+                                onClick={() => setActiveTab('inventory')}
+                                className="flex-1 py-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-bold text-sm hover:bg-green-500/20 transition-all flex items-center justify-center gap-2"
                             >
-                                {installing ? 'Saindo...' : 'ABANDONAR CODEX'}
+                                <CheckIcon className="w-4 h-4" /> NA BIBLIOTECA
                             </button>
                         ) : (
                             <button 
-                                onClick={handleInstall}
+                                onClick={handlePurchase}
                                 disabled={installing}
-                                className="flex-1 py-3 rounded-xl luxe-gold-button text-black font-bold text-sm shadow-[0_0_20px_rgba(234,179,8,0.2)] hover:shadow-[0_0_30px_rgba(234,179,8,0.4)] transition-all flex items-center justify-center gap-2"
+                                className="flex-1 py-3 rounded-xl luxe-skin-button text-black font-bold text-sm shadow-[0_0_20px_var(--sephirot-glow-color)] hover:shadow-[0_0_30px_var(--sephirot-glow-color)] transition-all flex items-center justify-center gap-2"
                             >
-                                {installing ? 'Instalando...' : 'INSTALAR AGORA'}
+                                {installing ? 'Adquirindo...' : 'ADQUIRIR AGORA'}
                             </button>
                         )}
                         <button className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all">
@@ -395,6 +399,106 @@ export const StoreView: React.FC = () => {
                     <p className="text-sm text-gray-500 max-w-[200px]">Protocolos avançados de gestão e criação de negócios.</p>
                 </div>
             </GlassCard>
+        </div>
+      )}
+
+      {activeTab === 'inventory' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {purchasedCodex ? (
+                <GlassCard variant="neutral" className="relative group overflow-hidden border-green-500/30">
+                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-green-900/40 to-transparent pointer-events-none" />
+                    
+                    <div className="relative z-10 flex flex-col h-full space-y-4">
+                        <div className="flex justify-between items-start">
+                            <div className="p-3 bg-black/40 rounded-2xl border border-green-500/20 text-4xl shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                                {BIOLOGICAL_MACHINE_CODEX.coverImage}
+                            </div>
+                            {installedCodex ? (
+                                <span className="px-3 py-1 bg-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-500/30 flex items-center gap-1">
+                                    <CheckIcon className="w-3 h-3" /> Instalado
+                                </span>
+                            ) : (
+                                <span className="px-3 py-1 bg-[var(--skin-accent-color)]/20 accent-text text-[10px] font-black uppercase tracking-widest rounded-full border border-[var(--skin-accent-color)]/30">
+                                    Disponível
+                                </span>
+                            )}
+                        </div>
+
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-100">{BIOLOGICAL_MACHINE_CODEX.title}</h2>
+                            <p className="text-sm text-gray-400 leading-relaxed">{BIOLOGICAL_MACHINE_CODEX.description}</p>
+                        </div>
+                        
+                        <div className="space-y-2 mt-4 overflow-y-auto max-h-[300px] pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                            {BIOLOGICAL_MACHINE_CODEX.levels.map((level, idx) => {
+                                const isInstalled = getArenas().some(a => 
+                                    (a.originCodexId === BIOLOGICAL_MACHINE_CODEX.id || a.originCodexId === legacyCodexId) && 
+                                    (a.codexLevel === level.level || (level.level === 1 && !a.codexLevel)) &&
+                                    !a.isArchived
+                                );
+                                
+                                const prevLevelInstalled = idx === 0 || getArenas().some(a => 
+                                    (a.originCodexId === BIOLOGICAL_MACHINE_CODEX.id || a.originCodexId === legacyCodexId) && 
+                                    (a.codexLevel === level.level - 1 || (level.level - 1 === 1 && !a.codexLevel)) &&
+                                    !a.isArchived
+                                );
+                                
+                                const isLocked = !prevLevelInstalled && !isInstalled;
+                                
+                                return (
+                                    <div key={level.level} className={`p-3 rounded-lg border ${isInstalled ? 'bg-green-500/10 border-green-500/30' : isLocked ? 'bg-gray-800/50 border-gray-700 opacity-50' : 'bg-gray-800 border-gray-600'}`}>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <h3 className={`font-bold text-sm ${isInstalled ? 'text-green-400' : 'text-gray-300'}`}>
+                                                Nível {level.level}: {level.title}
+                                            </h3>
+                                            {isInstalled ? (
+                                                <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/30 font-bold uppercase">Ativo</span>
+                                            ) : isLocked ? (
+                                                <span className="text-[10px] bg-gray-700 text-gray-500 px-2 py-0.5 rounded border border-gray-600 font-bold uppercase">Bloqueado</span>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => handleInstallLevel(level.level)}
+                                                    disabled={installing}
+                                                    className="text-[10px] bg-[var(--skin-accent-color)]/20 accent-text px-3 py-1 rounded border border-[var(--skin-accent-color)]/30 hover:bg-[var(--skin-accent-color)]/30 transition-colors font-bold uppercase"
+                                                >
+                                                    {installing ? '...' : 'Ativar'}
+                                                </button>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500">{level.description}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex-1" />
+
+                        <div className="pt-4 border-t border-white/5 flex gap-3">
+                            {installedCodex && (
+                                <button 
+                                    onClick={handleUninstall}
+                                    disabled={installing}
+                                    className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-sm hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {installing ? 'Saindo...' : 'ABANDONAR CODEX'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </GlassCard>
+            ) : (
+                <div className="col-span-full flex flex-col items-center justify-center py-20 text-center space-y-4">
+                    <div className="text-6xl opacity-30">📚</div>
+                    <h2 className="text-xl font-bold text-gray-500">Sua biblioteca está vazia</h2>
+                    <p className="text-gray-600 max-w-xs">Adquira Codexes na Loja para vê-los aqui.</p>
+                    <button 
+                        onClick={() => setActiveTab('codex')}
+                        className="px-6 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                        Ir para Loja
+                    </button>
+                </div>
+            )}
         </div>
       )}
 

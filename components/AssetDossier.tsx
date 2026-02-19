@@ -49,7 +49,7 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
             <h3 className="text-[10px] font-semibold text-white uppercase tracking-wider">{slot.label}</h3>
             <button
                 onClick={isEditing ? onClick : undefined}
-                className={`relative w-full flex-grow mx-auto p-2 rounded-xl bg-black/40 border border-[color:var(--accent-gold-soft)] transition-colors flex items-center justify-center ${editableClasses}`}
+                className={`relative w-full flex-grow mx-auto p-2 rounded-xl bg-black/40 border border-[color:var(--skin-accent-color)] transition-colors flex items-center justify-center ${editableClasses}`}
             >
                 {valueDisplay}
                 {rarityDotColor && (
@@ -93,7 +93,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
     return (
         <>
             <div className="animate-fade-in h-full">
-                <div className={`dossier-bg border border-[color:var(--accent-gold-soft)] rounded-2xl p-4 h-full flex flex-col shadow-2xl shadow-black/50 relative overflow-hidden ${playShimmer ? 'shimmer-effect' : ''}`}>
+                <div className={`dossier-bg border border-[color:var(--skin-accent-color)] rounded-2xl p-4 h-full flex flex-col shadow-2xl shadow-black/50 relative overflow-hidden ${playShimmer ? 'shimmer-effect' : ''}`}>
                     {/* Fixed Header */}
                     <div className="flex-shrink-0">
                         <div className="flex justify-between items-center">
@@ -101,13 +101,13 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                                 <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
                             </button>
                             <h2 className="luxe-title-ornate text-xl font-black uppercase tracking-widest text-[color:var(--skin-accent-color)] luxe-title-shadow">{asset.name}</h2>
-                            <button onClick={handleMainButton} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
+                            <button onClick={handleMainButton} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
                                 OK
                             </button>
                         </div>
 
-                        <div className="bg-black/35 rounded-xl p-2 flex items-center justify-center border border-[color:var(--accent-gold-soft)] my-2 relative min-h-[3.5rem]">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[color:var(--accent-gold)] bg-black shadow-lg">
+                        <div className="bg-black/35 rounded-xl p-2 flex items-center justify-center border border-[color:var(--skin-accent-color)] my-2 relative min-h-[3.5rem]">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[color:var(--skin-accent-color)] bg-black shadow-lg">
                                 {asset.level}
                             </div>
                             <p className="px-12 text-sm font-bold text-gray-100 text-center leading-tight m-0 -translate-y-[1px]">
@@ -126,7 +126,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                     {/* Fixed Arenas Footer */}
                     <div className="flex-shrink-0 pt-2">
                         <div className='relative text-center mb-2'>
-                                <hr className="border-t border-[color:var(--accent-gold-soft)]" />
+                                <hr className="border-t border-[color:var(--skin-accent-color)]" />
                                 <h3 className="luxe-title-ornate text-sm font-semibold text-[color:var(--skin-accent-color)] uppercase tracking-wider absolute -top-3 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Arenas</h3>
                         </div>
                         <div className="grid grid-cols-3 gap-2">

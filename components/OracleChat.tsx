@@ -3,7 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { XIcon, SendIcon, SparklesIcon } from './Icons';
-import { ORACLE_MODES, OracleMode } from '../constants/oracle';
+import { ORACLE_MODES } from '../constants/oracle';
 
 // API Key from gateway.ts (hardcoded for now as per instructions)
 const API_KEY = "AIzaSyAryjNyDFBRrwfvsHdQWvUTCRm1-yx83zo";
@@ -19,11 +19,10 @@ interface Message {
 }
 
 export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { userProfile, assets, actions, tasks, reports, activeCycle } = useGame();
+  const { userProfile, assets, actions, tasks, reports, activeCycle, oracleMode } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentMode, setCurrentMode] = useState<OracleMode>('STANDARD');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,7 +39,7 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   // Build System Prompt based on Mode
   const systemPrompt = useMemo(() => {
-    const config = ORACLE_MODES[currentMode];
+    const config = ORACLE_MODES[oracleMode];
     return config.systemPromptTemplate({
       userProfile,
       assets,
@@ -49,7 +48,7 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       reports,
       activeCycle
     });
-  }, [currentMode, userProfile, assets, actions, tasks, reports, activeCycle]);
+  }, [oracleMode, userProfile, assets, actions, tasks, reports, activeCycle]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -109,7 +108,7 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <h3 className="text-sm font-bold text-gray-200 tracking-wider">ORÁCULO</h3>
               <div className="flex items-center gap-2">
                   <span className="text-[10px] text-gray-500 uppercase tracking-widest">Conectado</span>
-                  <span className="text-[10px] text-amber-500/50 uppercase tracking-widest">• {ORACLE_MODES[currentMode].name}</span>
+                  <span className="text-[10px] text-amber-500/50 uppercase tracking-widest">• {ORACLE_MODES[oracleMode].name}</span>
               </div>
             </div>
           </div>
@@ -127,7 +126,7 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-50">
               <SparklesIcon className="w-12 h-12 mb-4 text-gray-600" />
               <p className="text-sm text-gray-500">O Oráculo aguarda sua consulta, Soberano.</p>
-              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[currentMode].description}</p>
+              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[oracleMode].description}</p>
             </div>
           )}
           

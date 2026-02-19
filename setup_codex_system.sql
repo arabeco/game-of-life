@@ -13,6 +13,11 @@ ADD COLUMN IF NOT EXISTS assets JSONB, -- Array of { type, url, title }
 ADD COLUMN IF NOT EXISTS pre_flight JSONB, -- Array of strings (checklist)
 ADD COLUMN IF NOT EXISTS context JSONB; -- { energyLevel, timeOfDay }
 
+-- Add Unlocked Items to User Profile
+ALTER TABLE public.user_profiles 
+ADD COLUMN IF NOT EXISTS unlocked_items JSONB DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS unlocked_skins JSONB DEFAULT '{}'::jsonb;
+
 -- 2. Create Codex System Tables
 
 CREATE TABLE IF NOT EXISTS public.codex_catalog (

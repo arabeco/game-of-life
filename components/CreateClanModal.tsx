@@ -43,14 +43,14 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                 placeholder="Nome do Clã"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] text-center font-bold"
+                                className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-center font-bold"
                             />
                              <textarea
                                 placeholder="Lore / Descrição do Clã..."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={2}
-                                className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] text-sm text-center"
+                                className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-sm text-center"
                             />
                             <div>
                                 <label className="text-xs font-bold text-gray-400">Tipo de Clã</label>
@@ -101,7 +101,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                     </div>
                     <div className="flex space-x-2">
                         <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
-                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">FUNDAR</button>
+                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">FUNDAR</button>
                     </div>
                 </GlassCard>
             </div>

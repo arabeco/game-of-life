@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type GlassCardVariant = 'gold' | 'silver' | 'bronze' | 'neutral';
+export type GlassCardVariant = 'gold' | 'silver' | 'bronze' | 'neutral' | 'accent';
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -18,7 +18,8 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(({ chi
     gold: 'gradient-border-gold',
     silver: 'gradient-border-silver',
     bronze: 'gradient-border-bronze',
-    neutral: 'border-white/20',
+    neutral: 'border-[var(--skin-line-color)]',
+    accent: 'gradient-border-accent',
   };
   
   const useGradient = variant !== 'neutral';

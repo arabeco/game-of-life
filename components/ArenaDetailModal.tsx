@@ -8,7 +8,114 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { useTutorial } from '../contexts/TutorialContext';
 import { supabase } from '../supabaseClient';
 
-const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ action, onClick }) => {
+const hexToRgb = (hex: string) => {
+    const trimmed = hex.trim();
+    if (trimmed.startsWith('rgb')) {
+        const values = trimmed.replace(/rgba?\(|\)/g, '').split(',').map(val => Number.parseFloat(val.trim()));
+        return { r: values[0] || 0, g: values[1] || 0, b: values[2] || 0 };
+    }
+    const normalized = trimmed.replace('#', '');
+    const value = normalized.length === 3
+        ? normalized.split('').map(ch => ch + ch).join('')
+        : normalized;
+    const intValue = Number.parseInt(value, 16);
+    return {
+        r: (intValue >> 16) & 255,
+        g: (intValue >> 8) & 255,
+        b: intValue & 255,
+    };
+};
+
+const PlasmaCanvas: React.FC<{ color: string; opacity: number; className?: string; }> = ({ color, opacity, className }) => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const sizeRef = useRef({ width: 0, height: 0 });
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const resize = () => {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const nextWidth = Math.max(1, Math.floor(rect.width * dpr));
+            const nextHeight = Math.max(1, Math.floor(rect.height * dpr));
+            if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+                canvas.width = nextWidth;
+                canvas.height = nextHeight;
+                sizeRef.current = { width: nextWidth, height: nextHeight };
+            }
+        };
+        resize();
+        const observer = new ResizeObserver(resize);
+        observer.observe(canvas);
+        window.addEventListener('resize', resize);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', resize);
+        };
+    }, []);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const { r, g, b } = hexToRgb(color);
+        let frame = 0;
+        const draw = () => {
+            const { width, height } = sizeRef.current;
+            if (!width || !height) {
+                requestAnimationFrame(draw);
+                return;
+            }
+            frame += 0.006;
+            ctx.clearRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'lighter';
+            const pulse = (Math.sin(frame * 0.7) + 1) * 0.5;
+            const blobs = [
+                { x: width * (0.3 + Math.sin(frame * 1.2) * 0.18), y: height * (0.4 + Math.cos(frame * 0.9) * 0.2), radius: width * 0.5 },
+                { x: width * (0.65 + Math.cos(frame * 1.1) * 0.22), y: height * (0.35 + Math.sin(frame * 1.3) * 0.18), radius: width * 0.45 },
+                { x: width * (0.5 + Math.sin(frame * 0.8) * 0.16), y: height * (0.65 + Math.cos(frame * 1.05) * 0.16), radius: width * 0.55 },
+            ];
+            const centerGradient = ctx.createRadialGradient(width * 0.5, height * 0.5, 0, width * 0.5, height * 0.5, width * 0.45);
+            centerGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity * (0.7 + pulse * 0.6)})`);
+            centerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = centerGradient;
+            ctx.fillRect(0, 0, width, height);
+            ctx.save();
+            ctx.translate(width * 0.5, height * 0.5);
+            ctx.rotate(frame * 0.35);
+            const beamGradient = ctx.createLinearGradient(-width * 0.5, 0, width * 0.5, 0);
+            beamGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            beamGradient.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, ${opacity * 0.6})`);
+            beamGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${opacity * 0.9})`);
+            beamGradient.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, ${opacity * 0.6})`);
+            beamGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = beamGradient;
+            ctx.fillRect(-width * 0.75, -height * 0.08, width * 1.5, height * 0.16);
+            ctx.restore();
+            blobs.forEach(blob => {
+                const gradient = ctx.createRadialGradient(blob.x, blob.y, 0, blob.x, blob.y, blob.radius);
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity})`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            });
+            ctx.globalCompositeOperation = 'source-over';
+            requestAnimationFrame(draw);
+        };
+        const id = requestAnimationFrame(draw);
+        return () => cancelAnimationFrame(id);
+    }, [color, opacity]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            className={className}
+        />
+    );
+};
+
+const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: string }> = ({ action, onClick, skinColor }) => {
     const { getActionBackgroundStyle, tasks, getArenas, seasonQuests, getClanQuestProgress } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
     
@@ -40,13 +147,18 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void }> = ({ actio
             <button 
                 onClick={onClick}
                 style={backgroundStyle}
-                className="w-24 h-24 border border-[var(--accent-bronze)] rounded-xl hover:opacity-80 transition-opacity flex flex-col items-center justify-center text-center p-1 space-y-1"
+                className="relative w-24 h-24 border border-[var(--skin-accent-color)] rounded-xl hover:opacity-80 transition-opacity overflow-hidden"
             >
-                <span className="text-3xl">{displayIcon}</span>
-                <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
+                <div className="arena-plasma">
+                    <PlasmaCanvas color={skinColor} opacity={0.189} className="arena-plasma-canvas" />
+                </div>
+                <div className="relative z-10 flex flex-col items-center justify-center text-center p-1 space-y-1">
+                    <span className="text-3xl">{displayIcon}</span>
+                    <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
+                </div>
             </button>
             <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border border-white/10">
-                <span className={isClanQuest ? "text-[var(--gold)]" : ""}>{displayProgress}</span>
+                <span className={isClanQuest ? "accent-text" : ""}>{displayProgress}</span>
             </div>
         </div>
     );
@@ -63,6 +175,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [linkStatus, setLinkStatus] = useState<string | null>(null);
     const newActionRef = useRef<HTMLButtonElement>(null);
+    const [skinColor, setSkinColor] = useState('#F0C843');
 
     const parentAsset = assets.find(a => a.id === arena.assetId);
     const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -89,6 +202,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             });
         }
     }, [isTutorialActive, currentStep, setSpotlight]);
+
+    useEffect(() => {
+        const value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
+        if (value) setSkinColor(value);
+    }, []);
 
     useEffect(() => {
         if (isClanQuestArena) {
@@ -135,7 +253,6 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
             : Math.min(100, clanQuestTotals.totalProgress))
         : (allActionInstances > 0 ? (allCompletedInstances / allActionInstances) * 100 : 0);
-
     const handleEditToggle = () => {
         if (isSpecialArena) return; // Disable editing for special arenas
         if (isEditing) {
@@ -218,9 +335,14 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         <>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
                 <div 
-                    className="dossier-bg border border-[color:var(--accent-silver-soft)] w-full max-w-sm m-4 space-y-3 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
+                    className="dossier-bg arena-plate border w-full max-w-sm m-4 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
+                    style={{ borderColor: 'var(--skin-accent-color)', backgroundImage: 'linear-gradient(135deg, rgba(20,20,20,0.96) 0%, rgba(10,10,10,1) 58%, rgba(18,18,18,0.9) 100%)' }}
                 >
-                    <div className="flex justify-between items-start flex-shrink-0 gap-2">
+                    <div className="arena-plasma" style={{ opacity: 0.45 }}>
+                        <PlasmaCanvas color={skinColor} opacity={0.189} className="arena-plasma-canvas" />
+                    </div>
+                    <div className="relative z-10 flex flex-col space-y-3">
+                    <div className="arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
                         <div className="flex flex-col items-center gap-1">
                             {/* Allow editing for all arenas, EXCEPT special ones */}
                             {!isSpecialArena && (
@@ -243,7 +365,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     onClick={() => setIsLinkingObserver(true)}
                                     className="p-2 rounded-full transition-colors border border-white/15 bg-black/30 hover:bg-black/40"
                                 >
-                                    <LinkIcon className="w-4 h-4 text-[var(--gold)]" />
+                                    <LinkIcon className="w-4 h-4 accent-text" />
                                 </button>
                             )}
                         </div>
@@ -252,10 +374,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 {isEditing ? "EDITAR ARENA" : arena.name}
                             </h2>
                             {parentAsset?.name && (
-                                <p className="text-[10px] font-medium uppercase tracking-wider text-white/70">{parentAsset.name}</p>
+                                <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-300">{parentAsset.name}</p>
                             )}
                             {isClanQuestArena && (
-                                <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full text-[10px] text-[var(--gold)] mt-1 border border-white/10">
+                                <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full text-[10px] accent-text mt-1 border border-white/10">
                                     <UsersIcon className="w-3 h-3" />
                                     <span className="font-mono font-bold">
                                         {(() => {
@@ -280,7 +402,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             </button>
                         )}
                         {!isEditing && (
-                             <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-gold-button">
+                             <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
                                 OK
                             </button>
                         )}
@@ -301,7 +423,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             disabled={!isEditing}
                             className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center cursor-pointer disabled:cursor-default"
                         >
-                           <span className="text-5xl">{editableArena.icon}</span>
+                           <span className="text-5xl arena-icon">{editableArena.icon}</span>
                         </button>
 
                         {isEditing ? (
@@ -310,7 +432,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     type="text" 
                                     value={editableArena.name}
                                     onChange={(e) => setEditableArena(prev => ({...prev, name: e.target.value}))}
-                                    className="luxe-title-ornate w-full text-center bg-transparent text-2xl font-bold uppercase tracking-wider text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/20"
+                                    className="luxe-title-ornate w-full text-center bg-transparent text-2xl font-bold uppercase tracking-widest text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/20"
                                 />
                                 <textarea 
                                     value={editableArena.description}
@@ -329,7 +451,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             <div className="flex-shrink-0">
                                 <div className='relative text-center mb-2'>
                                    <hr className="border-t border-gray-800" />
-                                   <h3 className="text-xs font-semibold text-[var(--accent-bronze)] uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Marcos</h3>
+                                   <h3 className="text-xs font-semibold text-[var(--skin-accent-color)] uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Marcos</h3>
                                 </div>
                                 <div className="flex flex-col items-center space-y-2 py-2">
                                     {milestoneActions.map(action => {
@@ -342,9 +464,12 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                                 <button 
                                                     onClick={() => openActionDetails(action)}
                                                     style={backgroundStyle}
-                                                    className="w-20 h-20 flex-shrink-0 border border-[var(--accent-bronze)] rounded-xl hover:scale-105 transition-transform flex items-center justify-center text-center p-1 transform rotate-45"
+                                                    className="relative w-20 h-20 flex-shrink-0 border border-[var(--skin-accent-color)] rounded-xl hover:scale-105 transition-transform overflow-hidden p-1 transform rotate-45"
                                                 >
-                                                    <div className="transform -rotate-45 flex flex-col items-center justify-center space-y-1">
+                                                    <div className="arena-plasma">
+                                                        <PlasmaCanvas color={skinColor} opacity={0.189} className="arena-plasma-canvas" />
+                                                    </div>
+                                                    <div className="relative z-10 transform -rotate-45 flex flex-col items-center justify-center space-y-1">
                                                         <span className="text-3xl">{action.icon}</span>
                                                         <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
                                                     </div>
@@ -367,8 +492,8 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                        </div>
                        <div className="flex-grow overflow-x-auto overflow-y-hidden py-2">
                            <div className="flex space-x-2 h-full items-center">
-                               {bronzeActions.map(action => <ActionSquare key={action.id} action={action} onClick={() => openActionDetails(action)} />)}
-                               <button ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--accent-bronze)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--gold)] transition-colors text-gray-500 hover:text-white">
+                               {bronzeActions.map(action => <ActionSquare key={action.id} action={action} skinColor={skinColor} onClick={() => openActionDetails(action)} />)}
+                               <button ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
                                    <PlusIcon className="w-8 h-8"/>
                                </button>
                            </div>
@@ -376,14 +501,15 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     </div>
 
                     <div className="flex-shrink-0 space-y-2 pt-2">
-                        <div className="w-full h-1.5 bg-black/30 rounded-full">
-                            <div className="h-full rounded-full bg-white" style={{ width: `${progress}%` }}></div>
+                        <div className="arena-plate-progress">
+                            <div className="arena-plate-progress-fill" style={{ width: `${progress}%`, backgroundColor: 'var(--skin-accent-color)' }}></div>
                         </div>
                         <p className="text-sm font-bold text-gray-300 text-center">
                             {isClanQuestArena 
                                 ? `${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}` 
                                 : `${progress.toFixed(0)}%`}
                         </p>
+                    </div>
                     </div>
                 </div>
             </div>

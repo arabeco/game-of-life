@@ -32,13 +32,13 @@ const StyledRangeInput: React.FC<{label: string, value: number, min: number, max
             step={step}
             value={value} 
             onChange={e => onChange(Number(e.target.value))} 
-            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-[var(--bronze)]"
+            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-[var(--skin-accent-color)]"
         />
     </div>
 );
 
 const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => void}> = ({ day, selected, onClick}) => (
-    <button type="button" onClick={onClick} className={`w-10 h-10 rounded-xl text-sm font-bold transition-colors ${selected ? 'bg-[var(--bronze)] text-white' : 'bg-black/20 hover:bg-black/40'}`}>
+    <button type="button" onClick={onClick} className={`w-10 h-10 rounded-xl text-sm font-bold transition-colors ${selected ? 'bg-[var(--skin-accent-color)] text-white' : 'bg-black/20 hover:bg-black/40'}`}>
         {day.slice(0,3)}
     </button>
 );
@@ -221,18 +221,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     return (
         <>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
-                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col h-[85vh] p-0 relative overflow-hidden border-yellow-500/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col h-[85vh] p-0 relative overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
                     
                     {/* Header Fixed */}
                     <div className="flex-none p-4 bg-black/40 backdrop-blur-md flex justify-between items-center z-30 relative">
                         <div className="flex items-center gap-3">
                             <button 
                                 onClick={mode === 'view' ? () => setMode('edit') : handleCancel} 
-                                className={`p-2 rounded-lg transition-all ${mode === 'edit' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'hover:bg-white/5 text-yellow-500/50 hover:text-yellow-500'}`}
+                                className={`p-2 rounded-lg transition-all ${mode === 'edit' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'hover:bg-white/5 text-[var(--skin-accent-color)]/50 hover:text-[var(--skin-accent-color)]'}`}
                             >
                                 {mode === 'view' ? <EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
                             </button>
-                            <span className="text-xs font-black uppercase tracking-[0.2em] text-yellow-500/80">
+                            <span className="text-xs font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)]/80">
                                 {mode === 'edit' ? (isNew ? 'Nova Quest' : 'Editando') : 'Quests • Clã'}
                             </span>
                         </div>
@@ -278,15 +278,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                     <>
                                         {/* Icon */}
                                         <div className="relative group">
-                                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full group-hover:bg-yellow-500/30 transition-all duration-500" />
-                                            <div className="relative w-28 h-28 rounded-3xl bg-gradient-to-br from-[#2a211c] to-black border border-yellow-500/30 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-all duration-500">
-                                                <span className="text-6xl drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">{displayAction.icon}</span>
+                                            <div className="absolute inset-0 bg-[var(--skin-accent-color)]/20 blur-xl rounded-full group-hover:bg-[var(--skin-accent-color)]/30 transition-all duration-500" />
+                                            <div className="relative w-28 h-28 rounded-3xl bg-gradient-to-br from-[#2a211c] to-black border border-[var(--skin-accent-color)]/30 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-all duration-500">
+                                                <span className="text-6xl drop-shadow-[0_0_15px_var(--sephirot-glow-color)]">{displayAction.icon}</span>
                                             </div>
                                         </div>
                                         
                                         {/* Title & Desc */}
                                         <div className="space-y-3 w-full text-center">
-                                            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-600 leading-none tracking-tight">
+                                            <h2 className="text-3xl font-black accent-text leading-none tracking-tight">
                                                 {displayAction.name}
                                             </h2>
                                             <p className="text-sm text-gray-400 leading-relaxed font-medium max-w-[280px] mx-auto border-t border-white/5 pt-3 mt-1">
@@ -298,7 +298,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                         <div className="grid grid-cols-2 gap-3 w-full">
                                             <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Tipo</div>
-                                                <div className="text-xs font-bold text-yellow-500 truncate">{displayAction.actionType}</div>
+                                                <div className="text-xs font-bold accent-text truncate">{displayAction.actionType}</div>
                                             </div>
                                             <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Duração</div>
@@ -314,7 +314,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Dificuldade</div>
                                                 <div className={`text-xs font-bold ${
                                                     (displayAction.difficulty || 3) >= 4 ? 'text-red-400' : 
-                                                    (displayAction.difficulty || 3) <= 2 ? 'text-green-400' : 'text-yellow-200'
+                                                    (displayAction.difficulty || 3) <= 2 ? 'text-green-400' : 'text-[var(--skin-accent-color)]'
                                                 }`}>
                                                     {difficultyLabels[(displayAction.difficulty || 3) - 1]}
                                                 </div>
@@ -328,7 +328,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                         <div className="flex justify-center">
                                             <button 
                                                 onClick={() => setIsIconPickerOpen(true)} 
-                                                className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--accent-bronze)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center relative group"
+                                                className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--skin-accent-color)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center relative group"
                                             >
                                                 <span className="text-5xl">{editableAction.icon}</span>
                                                 <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -404,7 +404,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                                         <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
                                                         <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
                                                             <div className="flex items-center gap-2">
-                                                                <CalendarIcon className="w-4 h-4 text-yellow-500" />
+                                                                <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                                                 <span className="text-sm">{selectedDate ? selectedDate.toLocaleDateString('pt-BR') : 'Selecionar Data'}</span>
                                                             </div>
                                                             <ChevronRightIcon className="w-4 h-4 text-gray-500" />
@@ -507,7 +507,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                                             }
                                                         }}
                                                         placeholder="https://..."
-                                                        className="w-full p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--gold)] text-gray-300 placeholder:text-gray-600"
+                                                        className="w-full p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-300 placeholder:text-gray-600"
                                                     />
                                                 </div>
                                             )}
@@ -520,7 +520,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                                 <textarea
                                                     value={editableAction.briefing || ''}
                                                     onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
-                                                    className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--gold)] text-gray-200 resize-none min-h-[300px]"
+                                                    className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
                                                     placeholder="Digite suas anotações aqui..."
                                                 />
                                             ) : (
@@ -539,7 +539,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                             {(displayAction?.preFlight || []).length > 0 ? (
                                                 displayAction?.preFlight?.map((item, i) => (
                                                     <div key={i} className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors group">
-                                                        <div className="mt-1 w-2 h-2 rounded-full bg-yellow-500/50 group-hover:bg-yellow-500 group-hover:shadow-[0_0_8px_rgba(234,179,8,0.8)] transition-all" />
+                                                        <div className="mt-1 w-2 h-2 rounded-full bg-[var(--skin-accent-color)]/50 group-hover:bg-[var(--skin-accent-color)] group-hover:shadow-[0_0_8px_var(--sephirot-glow-color)] transition-all" />
                                                         <span className="text-sm text-gray-300 font-medium leading-snug flex-1">{item}</span>
                                                         {mode === 'edit' && (
                                                             <button 
@@ -572,7 +572,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                                             }
                                                         }}
                                                         placeholder="Adicionar item..."
-                                                        className="flex-1 p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--gold)]"
+                                                        className="flex-1 p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)]"
                                                     />
                                                     <button 
                                                         onClick={() => {
@@ -606,7 +606,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                                                 onClick={() => isEditable && setEditableAction(prev => ({ ...prev, context: { ...prev.context, energyLevel: level } }))}
                                                                 className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all ${
                                                                     isSelected 
-                                                                    ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                                                                    ? 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_var(--sephirot-glow-color)]' 
                                                                     : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                 }`}
                                                             >
@@ -631,7 +631,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                                                 onClick={() => isEditable && setEditableAction(prev => ({ ...prev, context: { ...prev.context, timeOfDay: time } }))}
                                                                 className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all ${
                                                                     isSelected 
-                                                                    ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                                                                    ? 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_var(--sephirot-glow-color)]' 
                                                                     : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                 }`}
                                                             >
@@ -652,15 +652,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                     {/* 3. FOOTER (Fixed) */}
                     <div className="flex-none p-4 bg-[#120f0d]/90 backdrop-blur-xl border-t border-white/10 space-y-3 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
                         {/* Main Button */}
-                        <button 
+                        <button
                             ref={saveButtonRef}
                             onClick={mode === 'view' ? handleStartMission : handleSave} // View mode: Start Mission, Edit mode: Save
-                            className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(234,179,8,0.15)] hover:shadow-[0_0_30px_rgba(234,179,8,0.3)] transition-all transform active:scale-[0.98] border border-yellow-400/20 group relative overflow-hidden ${mode === 'view' ? 'luxe-gold-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
+                            className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_20px_var(--sephirot-glow-color)] hover:shadow-[0_0_30px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[var(--skin-accent-color)]/20 group relative overflow-hidden ${mode === 'view' ? 'luxe-skin-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
                         >
                             <span className="relative z-10 group-hover:text-black transition-colors">
                                 {mode === 'view' ? '[ INICIAR MISSÃO ]' : '[ SALVAR ALTERAÇÕES ]'}
                             </span>
-                            <div className={`absolute inset-0 transition-colors ${mode === 'view' ? 'bg-yellow-400/0 group-hover:bg-yellow-400/10' : ''}`} />
+                            <div className={`absolute inset-0 transition-colors ${mode === 'view' ? 'bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10' : ''}`} />
                         </button>
                     </div>
 

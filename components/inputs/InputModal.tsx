@@ -28,9 +28,9 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
     const renderInput = () => {
         switch (slot.inputType) {
             case 'text':
-                return <input type="text" value={currentValue as string} onChange={e => setCurrentValue(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />;
+                return <input type="text" value={currentValue as string} onChange={e => setCurrentValue(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />;
             case 'textarea':
-                return <textarea value={currentValue as string} onChange={e => setCurrentValue(e.target.value)} rows={5} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />;
+                return <textarea value={currentValue as string} onChange={e => setCurrentValue(e.target.value)} rows={5} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />;
             case 'wheelpick':
                 return (
                      <div>
@@ -66,7 +66,7 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
                     <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
                         CANCELAR
                     </button>
-                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">
+                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
                         SALVAR
                     </button>
                 </div>

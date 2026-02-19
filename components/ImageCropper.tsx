@@ -131,7 +131,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({ imageSrc, cropShape,
                 </div>
                 <div className="flex space-x-2">
                     <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
-                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">CONFIRMAR</button>
+                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">CONFIRMAR</button>
                 </div>
             </GlassCard>
         </div>

@@ -71,7 +71,7 @@ export const BorderSelectionModal: React.FC<BorderSelectionModalProps> = ({ curr
                         </div>
                     ))}
                 </div>
-                 <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">
+                 <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">
                     FECHAR
                 </button>
             </GlassCard>

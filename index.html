@@ -7,7 +7,7 @@
     <title>Game of Life</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
       :root {
           --accent-gold: #d4af37;
@@ -65,10 +65,21 @@
           --quest-grad-season: linear-gradient(135deg, #e0e0e0 0%, #909090 100%);
           --quest-grad-clan: linear-gradient(135deg, #4a0e4e 0%, #883dbd 100%);
           --quest-grad-sidequest: linear-gradient(135deg, #2b2b2b 0%, #c0c0c0 100%);
+
+          /* Logo Gradient Stops - Gold Default */
+          --logo-stop-1: #FDF2BF;
+          --logo-stop-2: #F7E29C;
+          --logo-stop-3: #C5A059;
+          --logo-stop-4: #8C6A2F;
+          --logo-edge-1: #5C4A1F;
+          --logo-edge-2: #D4AF37;
+          --logo-edge-3: #FCEFB0;
       }
 
       [data-skin="GOLD"] {
         --skin-accent-color: #C5A059;
+        --skin-line-color: rgba(197, 160, 89, 0.3);
+        --metal-gold: linear-gradient(135deg, #5c4a1f 0%, #d4af37 50%, #5c4a1f 100%);
         --sephirot-bg-gradient: radial-gradient(circle, #2c2314 0%, #141008 100%);
         --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gold.jpg');
         --sephirot-border-color: #C5A059;
@@ -77,6 +88,8 @@
       }
       [data-skin="CYBER"] {
         --skin-accent-color: #00d9ff;
+        --skin-line-color: rgba(0, 217, 255, 0.3);
+        --metal-gold: linear-gradient(135deg, #005f73 0%, #00d9ff 50%, #005f73 100%);
         --sephirot-bg-gradient: radial-gradient(circle, #0a2e3a 0%, #05161a 100%);
         --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/neon.jpg');
         --sephirot-border-color: #00d9ff;
@@ -85,6 +98,8 @@
       }
       [data-skin="FROST"] {
         --skin-accent-color: #92d4f3;
+        --skin-line-color: rgba(146, 212, 243, 0.3);
+        --metal-gold: linear-gradient(135deg, #4a90e2 0%, #92d4f3 50%, #4a90e2 100%);
         --sephirot-bg-gradient: radial-gradient(circle, #d4e8f3 0%, #a3c2d1 100%);
         --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/frost.jpg');
         --sephirot-border-color: #f0f8ff;
@@ -93,6 +108,8 @@
       }
       [data-skin="EMBER"] {
         --skin-accent-color: #ff6a00;
+        --skin-line-color: rgba(255, 106, 0, 0.3);
+        --metal-gold: linear-gradient(135deg, #8a2be2 0%, #ff6a00 50%, #8a2be2 100%);
         --sephirot-bg-gradient: radial-gradient(circle, #4d2000 0%, #2e1300 100%);
         --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/ember.jpg');
         --sephirot-border-color: #ff6a00;
@@ -100,15 +117,28 @@
         --sephirot-text-color: #ffc9a6;
       }
       [data-skin="AURORA"] {
-        --skin-accent-color: #5effa5;
+        --skin-accent-color: #a5f3fc;
+        --skin-line-color: rgba(165, 243, 252, 0.3);
+        --metal-gold: linear-gradient(135deg, #0ea5e9 0%, #a5f3fc 50%, #0ea5e9 100%);
         --sephirot-bg-gradient: radial-gradient(circle, #1a4d3a 0%, #0c2e21 100%);
         --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/aurora.jpg');
-        --sephirot-border-color: #5effa5;
-        --sephirot-glow-color: rgba(94, 255, 165, 0.4);
+        --sephirot-border-color: #a5f3fc;
+        --sephirot-glow-color: rgba(165, 243, 252, 0.4);
         --sephirot-text-color: #c9ffde;
+
+        /* Logo Gradient Stops - Aurora */
+        --logo-stop-1: #e0f2fe;
+        --logo-stop-2: #bae6fd;
+        --logo-stop-3: #0ea5e9;
+        --logo-stop-4: #0369a1;
+        --logo-edge-1: #0c4a6e;
+        --logo-edge-2: #38bdf8;
+        --logo-edge-3: #e0f2fe;
       }
       [data-skin="VOID"] {
         --skin-accent-color: #a95eff;
+        --skin-line-color: rgba(169, 94, 255, 0.3);
+        --metal-gold: linear-gradient(135deg, #4b0082 0%, #a95eff 50%, #4b0082 100%);
         --sephirot-bg-gradient: radial-gradient(circle, #3a1a4d 0%, #210c2e 100%);
         --sephirot-bg-image: none;
         --sephirot-border-color: #a95eff;
@@ -124,6 +154,7 @@
         color: #E5E7EB;
       }
       .gold-text { color: var(--gold); }
+      .accent-text { color: var(--skin-accent-color); }
       
       .gradient-border {
         position: relative;
@@ -152,33 +183,23 @@
       .gradient-border-silver::before {
         background: var(--metal-silver);
       }
-      .gradient-border-bronze::before {
-        background: var(--metal-bronze);
+      .gradient-border-accent::before {
+        background: var(--metal-gold);
       }
       
-      .luxe-button-primary {
-        position: relative;
-        background-color: transparent;
-        border: 1px solid transparent;
-        transition: all 0.3s ease;
-        overflow: hidden;
-        z-index: 1;
+      .luxe-skin-button {
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 38%), var(--metal-gold);
+        color: #1b1408;
+        font-weight: 800;
+        border: 1px solid var(--skin-accent-color);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 24px var(--sephirot-glow-color), 0 2px 6px rgba(0, 0, 0, 0.4);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-image 0.2s ease;
       }
-      .luxe-button-primary::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        border-radius: inherit;
-        padding: 1px;
-        background: linear-gradient(to bottom right, var(--glass-border-light), var(--glass-border));
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: destination-out;
-        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        mask-composite: exclude;
-        z-index: -1;
-      }
-      .luxe-button-primary:hover::before {
-        background: linear-gradient(to bottom right, #FDE047, var(--gold));
+      .luxe-skin-button:hover {
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 36%), var(--metal-gold);
+        filter: brightness(1.2);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 12px 28px var(--sephirot-glow-color), 0 2px 8px rgba(0, 0, 0, 0.5);
       }
       .luxe-button-secondary {
         background-color: var(--glass-bg);
@@ -223,18 +244,116 @@
         mix-blend-mode: screen;
       }
 
-      .luxe-gold-button {
-        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 38%), linear-gradient(135deg, #F7E29C 0%, #C5A059 48%, #8C6A2F 100%);
-        color: #1b1408;
-        font-weight: 800;
-        border: 1px solid rgba(197, 160, 89, 0.9);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 24px rgba(197, 160, 89, 0.25), 0 2px 6px rgba(0, 0, 0, 0.4);
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
-        transition: transform 0.2s ease, box-shadow 0.2s ease, background-image 0.2s ease;
+      .arena-plate {
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.15),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+          0 8px 24px rgba(0, 0, 0, 0.6),
+          0 2px 4px rgba(0, 0, 0, 0.8);
+        transform-style: preserve-3d;
       }
-      .luxe-gold-button:hover {
-        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 36%), linear-gradient(135deg, #FCEFB0 0%, #D0AE6B 48%, #A67B3B 100%);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 12px 28px rgba(197, 160, 89, 0.35), 0 2px 8px rgba(0, 0, 0, 0.5);
+
+      .arena-plate::before {
+        content: '';
+        position: absolute;
+        inset: 1px;
+        border-radius: inherit;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        pointer-events: none;
+      }
+
+      .arena-plate-header {
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+      }
+
+      .arena-icon {
+        display: inline-flex;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+      }
+
+      .arena-icon-slot {
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 2px;
+      }
+
+      .arena-title {
+        font-family: 'Cinzel', 'Inter', sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        line-height: 1.15;
+        text-transform: uppercase;
+      }
+
+      .arena-title-wrap {
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 6px;
+        text-align: center;
+      }
+
+      .arena-title-text {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .arena-plasma {
+        position: absolute;
+        inset: 0;
+        mix-blend-mode: screen;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.35;
+      }
+
+      .arena-plasma-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        filter: blur(0.4px);
+      }
+
+      .arena-plate-progress {
+        width: 100%;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .arena-plate-progress-fill {
+        height: 100%;
+        transition: width 0.4s ease;
+      }
+
+      .arena-particles {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .arena-particle {
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(0.3px);
+        animation-name: arenaParticleFloat;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+      }
+
+      @keyframes arenaParticleFloat {
+        0% { transform: translate3d(0, 0, 0); }
+        50% { transform: translate3d(8px, -12px, 0); }
+        100% { transform: translate3d(-6px, 6px, 0); }
       }
 
       .depth-grid {
@@ -243,7 +362,7 @@
         backdrop-filter: blur(22px);
         box-shadow:
           calc(2px + var(--tilt-x) * 0.2px) calc(18px + var(--tilt-y) * 0.6px) calc(40px + var(--tilt-y) * 0.6px) rgba(0, 0, 0, 0.75),
-          calc(var(--tilt-x) * 0.4px) calc(6px + var(--tilt-y) * 0.2px) calc(14px + var(--tilt-y) * 0.2px) rgba(197, 160, 89, 0.12),
+          calc(var(--tilt-x) * 0.4px) calc(6px + var(--tilt-y) * 0.2px) calc(14px + var(--tilt-y) * 0.2px) var(--sephirot-glow-color),
           inset 0 0 0 1px rgba(255, 255, 255, 0.08);
         transform: translate3d(calc(var(--tilt-x) * 0.25px), calc(var(--tilt-y) * 0.2px), 0);
         transition: box-shadow 0.2s ease, transform 0.2s ease;
@@ -268,7 +387,7 @@
         inset: -10px;
         border-radius: 36px;
         z-index: 0;
-        background: radial-gradient(circle at 30% 20%, rgba(197, 160, 89, 0.12), transparent 55%);
+        background: radial-gradient(circle at 30% 20%, var(--sephirot-glow-color), transparent 55%);
         opacity: 0.7;
         pointer-events: none;
       }
@@ -278,7 +397,7 @@
       }
       @keyframes clickFlash {
         0% { transform: translateY(0); box-shadow: 0 0 0 rgba(197, 160, 89, 0); }
-        40% { transform: translateY(1px); box-shadow: 0 0 16px rgba(197, 160, 89, 0.35); }
+        40% { transform: translateY(1px); box-shadow: 0 0 16px var(--sephirot-glow-color); }
         100% { transform: translateY(0); box-shadow: 0 0 0 rgba(197, 160, 89, 0); }
       }
 
@@ -294,8 +413,8 @@
         transition: all 0.2s ease-in-out;
       }
       .luxe-input:focus {
-        border-color: #A0A0A0;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 2px var(--gold);
+        border-color: var(--skin-accent-color);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 2px var(--skin-accent-color);
       }
       
       .luxe-google-button {

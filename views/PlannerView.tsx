@@ -30,7 +30,7 @@ const Sparkles: React.FC = () => (
         {[...Array(5)].map((_, i) => (
             <div
                 key={i}
-                className="absolute w-2 h-2 bg-[var(--gold)] rounded-full animate-ping"
+                className="absolute w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-ping"
                 style={{
                     top: `${Math.random() * 100}%`,
                     left: `${Math.random() * 100}%`,
@@ -271,7 +271,7 @@ const TacticalHUD: React.FC = () => {
         <div className="px-3 py-2 bg-black/80 border-b border-white/10 flex items-center justify-between text-[10px] uppercase tracking-wider text-gray-400 backdrop-blur-md sticky top-0 z-50 shadow-lg shadow-black/50">
             <div className="flex items-center space-x-3">
                 <div className="flex flex-col">
-                    <span className="text-[var(--gold)] font-black text-xs leading-none">LVL {userProfile.level}</span>
+                    <span className="text-[var(--skin-accent-color)] font-black text-xs leading-none">LVL {userProfile.level}</span>
                     <span className="text-[8px] text-gray-500 leading-none mt-0.5">MAESTRIA</span>
                 </div>
                 
@@ -280,10 +280,10 @@ const TacticalHUD: React.FC = () => {
                 <div className="flex flex-col w-24">
                     <div className="flex justify-between text-[9px] mb-0.5">
                         <span className="text-white font-bold">{currentRank.name}</span>
-                        <span className="text-[var(--gold)]">{Math.round(progress)}%</span>
+                        <span className="text-[var(--skin-accent-color)]">{Math.round(progress)}%</span>
                     </div>
                     <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-[var(--gold)] to-yellow-200 transition-all duration-500 shadow-[0_0_10px_var(--gold)]" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+                        <div className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white/80 transition-all duration-500 shadow-[0_0_10px_var(--skin-accent-color)]" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
                     </div>
                 </div>
             </div>
@@ -1025,7 +1025,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 <div className="flex items-center space-x-2 my-0">
                     <div 
                         data-testid="bay-area" 
-                        className={`flex-grow bg-black/20 border border-white/10 rounded-3xl p-2 h-[60px] transition-all duration-300 ${isOverBayArea ? 'border-[var(--gold)] ring-2 ring-[var(--gold)] shadow-lg shadow-[var(--gold)]/20' : ''}`}
+                        className={`flex-grow bg-black/20 border border-white/10 rounded-3xl p-2 h-[60px] transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-2 ring-[var(--skin-accent-color)] shadow-lg shadow-[var(--skin-accent-color)]/20' : ''}`}
                     >
                         <div className="flex space-x-2 h-full overflow-x-auto">
                             {Object.entries(groupedTaskPool).length > 0 ? (Object.entries(groupedTaskPool) as [string, { count: number; isUnlimited: boolean }][]).map(([actionId, payload]) => {
@@ -1070,9 +1070,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 {/* Oracle Input Panel */}
                 {showOracleInput && (
                     <div className="absolute bottom-full mb-4 right-0 w-72 z-30">
-                        <GlassCard variant="gold" className="p-2 backdrop-blur-xl border border-[var(--gold)]/30 shadow-2xl">
+                        <GlassCard variant="gold" className="p-2 backdrop-blur-xl border border-[var(--skin-accent-color)]/30 shadow-2xl">
                             <div className="flex flex-col space-y-2">
-                                <label className="text-[10px] uppercase font-bold text-[var(--gold)] tracking-wider ml-1">Oráculo</label>
+                                <label className="text-[10px] uppercase font-bold text-[var(--skin-accent-color)] tracking-wider ml-1">Oráculo</label>
                                 <div className="flex items-center space-x-2">
                                     <input
                                         ref={oracleInputRef}
@@ -1081,11 +1081,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                         onChange={(e) => setOracleInput(e.target.value)}
                                         onKeyDown={handleKeyDown}
                                         placeholder="Ação @ Arena..."
-                                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--gold)]/50 placeholder-gray-500"
+                                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 placeholder-gray-500"
                                     />
                                     <button 
                                         onClick={handleOracleSubmit}
-                                        className="p-2 bg-[var(--gold)] text-black rounded-lg hover:bg-yellow-400 transition-colors"
+                                        className="p-2 bg-[var(--skin-accent-color)] text-black rounded-lg hover:brightness-110 transition-colors"
                                     >
                                         <PlusIcon className="w-4 h-4" />
                                     </button>
@@ -1101,7 +1101,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 <div className="flex flex-col items-center bg-black/50 backdrop-blur-lg border border-[var(--glass-border)] rounded-full p-1 space-y-1">
                     <button 
                         onClick={() => setShowOracleInput(!showOracleInput)} 
-                        className={`p-2 rounded-full transition-all ${showOracleInput ? 'bg-[var(--gold)] text-black' : 'text-white hover:bg-white/10'}`}
+                        className={`p-2 rounded-full transition-all ${showOracleInput ? 'bg-[var(--skin-accent-color)] text-black' : 'text-white hover:bg-white/10'}`}
                         title="Adicionar por texto"
                     >
                         <span className="text-lg">📝</span>
@@ -1111,7 +1111,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <span className="font-bold text-xs text-white">{zoomLevel}x</span>
                     <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="p-2 disabled:opacity-50"><MinusIcon className="w-5 h-5" /></button>
                 </div>
-                <button onClick={() => setIsActionModalOpen(true)} className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-8 h-8 text-black" /></button>
+                <button onClick={() => setIsActionModalOpen(true)} className="w-16 h-16 rounded-full bg-[var(--skin-accent-color)] flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-8 h-8 text-black" /></button>
             </div>
             {isChecklistVisible && <ChecklistModal onClose={() => setChecklistVisible(false)} />}
             {isSitrepVisible && <SitrepModal onClose={() => setIsSitrepVisible(false)} />}

@@ -103,14 +103,14 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
             className="fixed inset-0 z-[9999] flex items-center justify-center animate-fade-in"
             style={{ background: 'radial-gradient(circle at center, #0A0A0A 0%, #000000 72%)' }}
         >
-            <div className="absolute inset-4 border border-[rgba(197,160,89,0.2)] rounded-[32px]" />
-            {isSealing && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.35),rgba(0,0,0,0.95))] animate-fade-in" />}
+            <div className="absolute inset-4 border border-[var(--skin-line-color)] rounded-[32px]" />
+            {isSealing && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--sephirot-glow-color),rgba(0,0,0,0.95))] animate-fade-in" />}
             <div className="relative w-full max-w-md mx-auto h-full px-6 py-12 flex flex-col justify-center gap-10">
                 <div className="text-center space-y-3">
                     <p className="text-[11px] uppercase tracking-[0.45em] text-[#8f8f8f]">Pacto de Soberania</p>
                     <h1
                         className="text-2xl uppercase tracking-[0.18em]"
-                        style={{ color: '#C5A059', textShadow: '0 0 16px rgba(197,160,89,0.55)', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
+                        style={{ color: 'var(--skin-accent-color)', textShadow: '0 0 16px var(--sephirot-glow-color)', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
                     >
                         O Despertar do Soberano
                     </h1>
@@ -118,20 +118,20 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
 
                 <div className="relative min-h-[220px] text-base leading-relaxed whitespace-pre-line text-[#E0E0E0] text-center">
                     {typedText}
-                    {isTyping && <span className="inline-block w-2 h-5 bg-[#C5A059] ml-1 animate-pulse" />}
+                    {isTyping && <span className="inline-block w-2 h-5 bg-[var(--skin-accent-color)] ml-1 animate-pulse" />}
                     {isTyping && <div className="absolute inset-0 dust-layer" />}
                 </div>
 
                 <div className="flex flex-col items-center gap-3">
                     <div
-                        className="relative w-32 h-32 rounded-full border border-[rgba(197,160,89,0.6)] flex items-center justify-center text-[#C5A059] font-black tracking-[0.2em] select-none"
+                        className="relative w-32 h-32 rounded-full border border-[var(--skin-accent-color)] flex items-center justify-center text-[var(--skin-accent-color)] font-black tracking-[0.2em] select-none"
                         onMouseDown={handleMouseDown}
                         onTouchStart={handleTouchStart}
                         onContextMenu={longPressEvents.onContextMenu}
                         style={{ touchAction: 'none', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
                     >
                         SELO
-                        <div className="absolute inset-2 rounded-full border border-[rgba(197,160,89,0.25)]" />
+                        <div className="absolute inset-2 rounded-full border border-[var(--skin-line-color)]" />
                         {isHolding && (
                             <div
                                 className="absolute inset-2 rounded-full seal-fill"
@@ -146,17 +146,17 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
             </div>
             <style>{`
                 .seal-fill {
-                    background: radial-gradient(circle at center, rgba(197,160,89,0.5), rgba(197,160,89,0.08));
+                    background: radial-gradient(circle at center, var(--sephirot-glow-color), rgba(197,160,89,0.08));
                     animation: sealFill linear forwards;
-                    box-shadow: 0 0 25px rgba(197,160,89,0.45);
+                    box-shadow: 0 0 25px var(--sephirot-glow-color);
                     clip-path: inset(100% 0 0 0);
                 }
                 .dust-layer {
                     background-image:
-                        radial-gradient(circle at 20% 30%, rgba(197,160,89,0.5) 0 2px, transparent 3px),
-                        radial-gradient(circle at 60% 35%, rgba(197,160,89,0.35) 0 1px, transparent 3px),
-                        radial-gradient(circle at 35% 70%, rgba(197,160,89,0.4) 0 2px, transparent 3px),
-                        radial-gradient(circle at 75% 65%, rgba(197,160,89,0.3) 0 1px, transparent 3px);
+                        radial-gradient(circle at 20% 30%, var(--sephirot-glow-color) 0 2px, transparent 3px),
+                        radial-gradient(circle at 60% 35%, var(--sephirot-glow-color) 0 1px, transparent 3px),
+                        radial-gradient(circle at 35% 70%, var(--sephirot-glow-color) 0 2px, transparent 3px),
+                        radial-gradient(circle at 75% 65%, var(--sephirot-glow-color) 0 1px, transparent 3px);
                     opacity: 0.65;
                     animation: dustFade 1.6s ease-out infinite;
                     pointer-events: none;
@@ -197,7 +197,7 @@ const BootRitualOverlay: React.FC<{ open: boolean }> = ({ open }) => {
     return (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(7,6,4,0.8),rgba(0,0,0,0.98))]" />
-            <div className="absolute inset-8 rounded-[36px] border border-[rgba(197,160,89,0.25)] boot-frame" />
+            <div className="absolute inset-8 rounded-[36px] border border-[var(--skin-line-color)] boot-frame" />
             <div className="relative flex flex-col items-center gap-8">
                 <div className="relative w-48 h-48">
                     <div className="absolute inset-0 boot-orbit" />
@@ -213,15 +213,15 @@ const BootRitualOverlay: React.FC<{ open: boolean }> = ({ open }) => {
                 </div>
                 <div className="text-center space-y-2">
                     <p className="text-[10px] uppercase tracking-[0.5em] text-[#7f7f7f]">Ritual de Boot</p>
-                    <p className="text-sm font-semibold text-[#C5A059] tracking-[0.2em]">Modo Soberano</p>
+                    <p className="text-sm font-semibold text-[var(--skin-accent-color)] tracking-[0.2em]">Modo Soberano</p>
                 </div>
             </div>
             <style>{`
                 .boot-frame { animation: bootFrame 2s ease-out forwards; }
-                .boot-orbit { border: 1px solid rgba(197,160,89,0.35); border-radius: 9999px; box-shadow: 0 0 25px rgba(197,160,89,0.2); animation: bootOrbit 2s ease-out forwards; }
+                .boot-orbit { border: 1px solid var(--skin-line-color); border-radius: 9999px; box-shadow: 0 0 25px var(--sephirot-glow-color); animation: bootOrbit 2s ease-out forwards; }
                 .boot-orbit-delayed { animation-delay: 0.25s; }
-                .boot-line { background: linear-gradient(90deg, transparent, rgba(197,160,89,0.6), transparent); animation: bootLine 2s ease-out forwards; }
-                .boot-logo { color: #C5A059; filter: drop-shadow(0 0 18px rgba(197,160,89,0.55)); transform: scale(0.6); opacity: 0; animation: bootLogo 2s ease-out forwards; }
+                .boot-line { background: linear-gradient(90deg, transparent, var(--skin-accent-color), transparent); animation: bootLine 2s ease-out forwards; }
+                .boot-logo { color: var(--skin-accent-color); filter: drop-shadow(0 0 18px var(--sephirot-glow-color)); transform: scale(0.6); opacity: 0; animation: bootLogo 2s ease-out forwards; }
                 @keyframes bootOrbit { 0% { opacity: 0; transform: scale(0.75); } 45% { opacity: 1; transform: scale(1); } 100% { opacity: 0.9; transform: scale(1.02); } }
                 @keyframes bootLine { 0% { opacity: 0; transform: scaleX(0.6); } 40% { opacity: 0.7; transform: scaleX(1); } 100% { opacity: 0.25; transform: scaleX(1.1); } }
                 @keyframes bootLogo { 0% { opacity: 0; transform: scale(0.4) rotate(-6deg); } 55% { opacity: 1; transform: scale(1) rotate(0deg); } 100% { opacity: 0.85; transform: scale(1.05); } }
@@ -237,6 +237,7 @@ const AppWithTutorial: React.FC = () => {
     const [isReportsVisible, setReportsVisible] = useState(false);
     const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
+    const { userProfile } = useGame();
 
     const arenasNavRef = useRef<HTMLButtonElement>(null);
     const plannerNavRef = useRef<HTMLButtonElement>(null);
@@ -341,7 +342,7 @@ const AppWithTutorial: React.FC = () => {
             ref={navRef}
             onClick={() => handleSetView(view)}
             className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${
-                currentView === view ? 'gold-text' : 'text-gray-500 hover:text-gray-300'
+                currentView === view ? 'accent-text' : 'text-gray-500 hover:text-gray-300'
             }`}
         >
             {icon}
@@ -351,7 +352,10 @@ const AppWithTutorial: React.FC = () => {
     );
 
     return (
-        <div className={`min-h-screen text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''}`}>
+        <div 
+            className={`min-h-screen text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''}`}
+            data-skin={userProfile.skin}
+        >
             <TutorialOverlay />
             {isBuilderMode && (
                 <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/15 backdrop-blur-lg border-b border-yellow-500/40">
@@ -565,7 +569,7 @@ const App: React.FC = () => {
         const handlePointerDown = (event: PointerEvent) => {
             const target = event.target as HTMLElement | null;
             if (!target) return;
-            const interactive = target.closest('button, [role="button"], a, input[type="button"], input[type="submit"], .luxe-button-primary, .luxe-gold-button') as HTMLElement | null;
+            const interactive = target.closest('button, [role="button"], a, input[type="button"], input[type="submit"], .luxe-skin-button') as HTMLElement | null;
             if (!interactive) return;
             playClickSound();
             interactive.classList.add('click-flash');

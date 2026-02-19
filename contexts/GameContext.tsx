@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { supabase } from '../supabaseClient';
+import type { OracleMode } from '../constants/oracle';
 import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
@@ -107,6 +108,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         helmets: {},
         head_over_items: {},
         artifacts: {},
+        codexes: {},
     },
     completedSeasonMissions: []
 };
@@ -282,6 +284,8 @@ export interface GameContextType {
   updateSanctuaryAreaTime: (clanId: string, area: string, seconds: number) => Promise<void>;
   applySanctuaryAreaDecay: (clanId: string, occupancy: Record<string, number>, totalMembers?: number) => Promise<void>;
   loadClanAndMembers: (clanId: string, force?: boolean) => Promise<void>;
+  oracleMode: OracleMode;
+  setOracleMode: (mode: OracleMode) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -313,6 +317,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         id: session?.user.id || DEFAULT_USER_PROFILE.id,
       };
   });
+  const [oracleMode, setOracleMode] = useState<OracleMode>('STANDARD');
 
   // Update profile when session changes and reset state (Online Only Mode)
   useEffect(() => {
@@ -570,6 +575,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const clanQuestProgressTableReadyRef = useRef(enableClanQuestProgress);
   const pendingGuestMigrationRef = useRef<{ fromId: string; toId: string } | null>(null);
   const suspendPersistenceRef = useRef(false);
+  const pendingProfilePatchRef = useRef<Partial<UserProfile> | null>(null);
+  const profileUpdateInFlightRef = useRef<Record<string, boolean>>({});
   const [hasHydratedFromSupabase, setHasHydratedFromSupabase] = useState(false);
 
   const isClanQuestProgressMissing = (error: unknown) => {
@@ -1003,7 +1010,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (!profileError && profileData) {
             const camelProfile = mapToCamelCase(profileData) as UserProfile;
-            setUserProfile(prev => ({ ...prev, ...camelProfile }));
+            setUserProfile(prev => {
+                let next = { ...prev, ...camelProfile } as UserProfile;
+                const pendingPatch = pendingProfilePatchRef.current;
+                if (pendingPatch) {
+                    next = { ...next, ...pendingPatch };
+                }
+                const inflight = profileUpdateInFlightRef.current;
+                const inflightKeys = Object.keys(inflight).filter(key => inflight[key]);
+                if (inflightKeys.length > 0) {
+                    for (const key of inflightKeys) {
+                        (next as any)[key] = (prev as any)[key];
+                    }
+                }
+                return next;
+            });
         }
 
         await Promise.all([
@@ -1033,7 +1054,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             () => supabase.from('asset_slots').select('*').eq('user_id', userId),
             () => supabase.from('asset_levels').select('*').eq('user_id', userId),
             () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
-            () => supabase.from('reports').select('*').eq('user_id', userId).order('end_date', { ascending: false }).limit(10),
+            () => supabase.from('reports').select('*').eq('user_id', userId).order('end_date', { ascending: false }).limit(100),
             () => supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1)
         ]) as any[];
 
@@ -1055,13 +1076,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { data: actionsData, error: actionsError } = actionsResult;
         if (!actionsError && actionsData) {
             const rawActions = mapToCamelCase(actionsData) as Action[];
-            // Filter actions to ensure they belong to existing arenas
+            const normalizedActions = rawActions.map(action => {
+                const schedule = (action.context && typeof action.context === 'object') ? (action.context as Action['context'])?.schedule : undefined;
+                return {
+                    ...action,
+                    scheduledDays: action.scheduledDays ?? schedule?.days,
+                    scheduledStartTime: action.scheduledStartTime ?? schedule?.startTime,
+                };
+            });
             if (camelArenas) {
                 const validArenaIds = new Set(camelArenas.map(a => a.id));
-                const validActions = rawActions.filter(a => validArenaIds.has(a.arenaId));
+                const validActions = normalizedActions.filter(a => validArenaIds.has(a.arenaId));
                 setActions(validActions);
             } else {
-                 setActions(rawActions);
+                 setActions(normalizedActions);
             }
         }
 
@@ -1132,7 +1160,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const { data: reportsData, error: reportsError } = reportsResult;
         if (!reportsError && reportsData) {
-            setReports(mapToCamelCase(reportsData) as Report[]);
+            const nextReports = mapToCamelCase(reportsData) as Report[];
+            if (nextReports.length > 0) {
+                setReports(nextReports);
+            } else {
+                setReports(prev => (prev.length > 0 ? prev : []));
+            }
         }
 
         const { data: cyclesData, error: cyclesError } = cyclesResult;
@@ -1160,6 +1193,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } finally {
             if (hydrated) setHasHydratedFromSupabase(true);
             suspendPersistenceRef.current = false;
+        if (hydrated && pendingProfilePatchRef.current) {
+            const patch = pendingProfilePatchRef.current;
+            pendingProfilePatchRef.current = null;
+            updateUserProfile(patch);
+        }
         }
     };
 
@@ -1636,9 +1674,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const updateUserProfile = (profileData: Partial<UserProfile>) => {
     setUserProfile(prev => ({ ...prev, ...profileData }));
+    if (profileData.skin) {
+        document.body.setAttribute('data-skin', profileData.skin);
+    }
     const supabaseUserId = getSupabaseUserId();
     if (supabaseUserId) {
         if (!hasHydratedFromSupabase || suspendPersistenceRef.current) {
+            pendingProfilePatchRef.current = {
+                ...(pendingProfilePatchRef.current || {}),
+                ...profileData,
+            };
             return;
         }
         if (!isUuid(supabaseUserId)) {
@@ -1674,8 +1719,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return true;
         });
         if (entries.length > 0) {
+            for (const [key] of entries) {
+                profileUpdateInFlightRef.current[key] = true;
+            }
             const snakeCaseData = mapToSnakeCase(Object.fromEntries(entries));
             supabase.from('user_profiles').update(snakeCaseData).eq('id', supabaseUserId).then(({ error }) => {
+                for (const [key] of entries) {
+                    delete profileUpdateInFlightRef.current[key];
+                }
                 if (!error) return;
                 const message = error.message || '';
                 if (message.includes('completed_season_missions')) {
@@ -1709,6 +1760,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         helmets: {},
         head_over_items: {},
         artifacts: {},
+        codexes: {},
     };
     if (unlockedItems[category]?.[itemId]) return;
     const nextUnlockedItems = {
@@ -1750,6 +1802,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         helmets: {},
         head_over_items: {},
         artifacts: {},
+        codexes: {},
     };
     const shouldUnlock = mission.reward_type === 'item_id' && rewardCategory && rewardItemId;
     const nextUnlockedItems = shouldUnlock ? {
@@ -2241,7 +2294,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const getArenas = () => assets.flatMap(asset => asset.arenas);
-  const addArena = (assetId: string, arenaData: Pick<Arena, 'name' | 'description' | 'icon'>, skipDb: boolean = false): Arena => {
+  const addArena = (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Arena => {
     const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
     const userId = getSupabaseUserId();
@@ -2249,6 +2302,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
         delete snakeCaseData.action_ids; // Not a column
         delete snakeCaseData.folder_id;
+        if (snakeCaseData.origin_codex_id && !isUuid(String(snakeCaseData.origin_codex_id))) {
+            delete snakeCaseData.origin_codex_id;
+        }
         supabase.from('arenas').insert(snakeCaseData).then(({error}) => { if (error) console.error("Supabase add arena error:", error.message) });
     }
     return newArena;
@@ -2554,6 +2610,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return { background: `var(--asset-grad-${asset?.id || 'default'})` };
   };
 
+  const mergeScheduleIntoContext = (baseContext: Action['context'] | undefined, scheduledDays?: DayOfWeek[], scheduledStartTime?: number) => {
+    const hasSchedule = scheduledDays !== undefined || scheduledStartTime !== undefined;
+    if (!hasSchedule) return baseContext;
+    const schedule = {
+        ...(baseContext?.schedule || {}),
+        ...(scheduledDays !== undefined ? { days: scheduledDays } : {}),
+        ...(scheduledStartTime !== undefined ? { startTime: scheduledStartTime } : {})
+    };
+    return { ...(baseContext || {}), schedule };
+  };
+
   const addAction = (actionData: Omit<Action, 'id'>): Action => {
     const newAction: Action = { ...actionData, id: crypto.randomUUID() };
     setActions(prev => [...prev, newAction]);
@@ -2574,6 +2641,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const userId = getSupabaseUserId();
     if (userId) {
+        const contextPayload = mergeScheduleIntoContext(newAction.context, newAction.scheduledDays, newAction.scheduledStartTime);
+        const originCodexId = newAction.originCodexId && isUuid(newAction.originCodexId) ? newAction.originCodexId : null;
         // Explicit payload construction to ensure compatibility with Supabase schema
         const actionPayload = {
             id: newAction.id,
@@ -2586,13 +2655,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             repetitions: newAction.repetitions,
             action_type: newAction.actionType,
             difficulty: newAction.difficulty || null,
-            scheduled_days: newAction.scheduledDays || null,
-            scheduled_start_time: newAction.scheduledStartTime || null,
             briefing: newAction.briefing || null,
             assets: newAction.assets || [],
             pre_flight: newAction.preFlight || [],
-            context: newAction.context || {},
-            origin_codex_id: newAction.originCodexId || null
+            context: contextPayload || {},
+            origin_codex_id: originCodexId
         };
         
         supabase.from('actions').insert(actionPayload).then(({error}) => { 
@@ -2615,12 +2682,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (actionData.repetitions !== undefined) updatePayload.repetitions = actionData.repetitions;
         if (actionData.actionType !== undefined) updatePayload.action_type = actionData.actionType;
         if (actionData.difficulty !== undefined) updatePayload.difficulty = actionData.difficulty;
-        if (actionData.scheduledDays !== undefined) updatePayload.scheduled_days = actionData.scheduledDays;
-        if (actionData.scheduledStartTime !== undefined) updatePayload.scheduled_start_time = actionData.scheduledStartTime;
         if (actionData.briefing !== undefined) updatePayload.briefing = actionData.briefing;
         if (actionData.assets !== undefined) updatePayload.assets = actionData.assets;
         if (actionData.preFlight !== undefined) updatePayload.pre_flight = actionData.preFlight;
-        if (actionData.context !== undefined) updatePayload.context = actionData.context;
+        if (actionData.context !== undefined || actionData.scheduledDays !== undefined || actionData.scheduledStartTime !== undefined) {
+            updatePayload.context = mergeScheduleIntoContext(actionData.context, actionData.scheduledDays, actionData.scheduledStartTime);
+        }
         
         if (Object.keys(updatePayload).length > 0) {
             supabase.from('actions').update(updatePayload).eq('id', actionId).then(({error}) => { 
@@ -2824,8 +2891,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
              repetitions: newAction.repetitions,
              action_type: newAction.actionType,
              difficulty: newAction.difficulty || null,
-             scheduled_days: newAction.scheduledDays || null,
-             scheduled_start_time: newAction.scheduledStartTime || null,
              briefing: newAction.briefing || null,
              assets: newAction.assets || [],
              pre_flight: newAction.preFlight || [],
@@ -3438,7 +3503,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, oracleMode, setOracleMode }}>
       {children}
     </GameContext.Provider>
   );

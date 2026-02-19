@@ -38,7 +38,7 @@ const InviteManager: React.FC = () => {
         <div className="space-y-4">
             <h2 className="text-lg font-bold tracking-wider">Gerenciar Convites Dourados</h2>
             <button onClick={applySeedInvites} className="w-full py-2 rounded-xl luxe-button-secondary">Aplicar 5 Iniciais</button>
-            <button onClick={generateInvite} className="w-full py-2 rounded-xl luxe-button-primary">Gerar Novo Convite</button>
+            <button onClick={generateInvite} className="w-full py-2 rounded-xl luxe-skin-button">Gerar Novo Convite</button>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {invites.map(invite => (
                     <GlassCard key={invite.id} variant={invite.is_used ? 'neutral' : 'gold'} className="p-2">
@@ -91,7 +91,7 @@ const SeasonEditorModal: React.FC<{ season: Season | null; onClose: () => void; 
                 <input type="text" placeholder="URL da Imagem de Fundo" value={formData.background_png_url} onChange={e => setFormData(p => ({ ...p, background_png_url: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
                 <textarea placeholder="Lore / Descrição" value={formData.lore_text} onChange={e => setFormData(p => ({ ...p, lore_text: e.target.value }))} rows={3} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
                 <label className="flex items-center space-x-2"><input type="checkbox" checked={formData.is_active} onChange={e => setFormData(p => ({...p, is_active: e.target.checked}))} /> <span>Ativar esta Season?</span></label>
-                <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">SALVAR</button>
+                <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
             </GlassCard>
         </div>
     );
@@ -129,7 +129,7 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
                     <input type="number" placeholder="Valor da Meta" value={formData.goal_value} onChange={e => setFormData(p => ({ ...p, goal_value: Number(e.target.value) }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
                     <select value={formData.reward_type} onChange={e => setFormData(p => ({...p, reward_type: e.target.value as SeasonMission['reward_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="exp">EXP</option><option value="item_id">Item ID</option></select>
                     <input type="text" placeholder="Valor da Recompensa" value={String(formData.reward_value)} onChange={e => setFormData(p => ({ ...p, reward_value: p.reward_type === 'exp' ? Number(e.target.value) : e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                    <button onClick={handleAddMission} className="w-full py-2 rounded-xl luxe-button-primary">Adicionar Missão</button>
+                    <button onClick={handleAddMission} className="w-full py-2 rounded-xl luxe-skin-button">Adicionar Missão</button>
                 </div>
             </GlassCard>
         </div>
@@ -172,7 +172,7 @@ const SeasonManager: React.FC = () => {
     return (
         <div className="space-y-4">
             <h2 className="text-lg font-bold tracking-wider">Gerenciar Seasons</h2>
-            <button onClick={() => setEditorModal({ open: true, season: null })} className="w-full py-2 rounded-xl luxe-button-primary">Criar Nova Era</button>
+            <button onClick={() => setEditorModal({ open: true, season: null })} className="w-full py-2 rounded-xl luxe-skin-button">Criar Nova Era</button>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                 {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({open: true, season: activeSeason})} />}
                 

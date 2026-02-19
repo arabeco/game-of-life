@@ -42,7 +42,7 @@ export const LinkIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const FolderStarIcon: React.FC<{ className?: string }> = ({ className }) => (
     <IconWrapper className={className}>
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-        <path d="M12 10l-1.5 3-3 .5 2.25 2.25-.5 3.25 2.75-1.5 2.75 1.5-.5-3.25L16.5 13.5l-3-.5z" stroke='var(--gold)' fill='var(--gold)'></path>
+        <path d="M12 10l-1.5 3-3 .5 2.25 2.25-.5 3.25 2.75-1.5 2.75 1.5-.5-3.25L16.5 13.5l-3-.5z" stroke='var(--skin-accent-color)' fill='var(--skin-accent-color)'></path>
     </IconWrapper>
 );
 
@@ -50,15 +50,15 @@ export const GameLogoIcon: React.FC<{ className?: string }> = ({ className = "w-
     <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
         <defs>
             <linearGradient id="logo-gold-main" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FDF2BF" />
-                <stop offset="40%" stopColor="#F7E29C" />
-                <stop offset="70%" stopColor="#C5A059" />
-                <stop offset="100%" stopColor="#8C6A2F" />
+                <stop offset="0%" stopColor="var(--logo-stop-1)" />
+                <stop offset="40%" stopColor="var(--logo-stop-2)" />
+                <stop offset="70%" stopColor="var(--logo-stop-3)" />
+                <stop offset="100%" stopColor="var(--logo-stop-4)" />
             </linearGradient>
             <linearGradient id="logo-gold-edge" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#5C4A1F" />
-                <stop offset="50%" stopColor="#D4AF37" />
-                <stop offset="100%" stopColor="#FCEFB0" />
+                <stop offset="0%" stopColor="var(--logo-edge-1)" />
+                <stop offset="50%" stopColor="var(--logo-edge-2)" />
+                <stop offset="100%" stopColor="var(--logo-edge-3)" />
             </linearGradient>
             <radialGradient id="logo-core" cx="50%" cy="45%" r="60%">
                 <stop offset="0%" stopColor="#F9F0FF" />
@@ -77,9 +77,9 @@ export const GameLogoIcon: React.FC<{ className?: string }> = ({ className = "w-
             </radialGradient>
             <filter id="logo-depth" x="-40%" y="-40%" width="180%" height="180%">
                 <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#000000" floodOpacity="0.6" />
-                <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#FCEFB0" floodOpacity="0.6" />
+                <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="var(--logo-edge-3)" floodOpacity="0.6" />
             </filter>
-            <filter id="logo-core-glow" x="-60%" y="-60%" width="220%" height="220%">
+            <filter id="logo-core-glow-filter" x="-60%" y="-60%" width="220%" height="220%">
                 <feGaussianBlur stdDeviation="6" />
             </filter>
         </defs>
@@ -87,7 +87,7 @@ export const GameLogoIcon: React.FC<{ className?: string }> = ({ className = "w-
             <path d="M50 6 L94 50 L50 94 L6 50 Z" fill="url(#logo-gold-main)" stroke="url(#logo-gold-edge)" strokeWidth="1.2" />
             <path d="M50 12 L88 50 L50 88 L12 50 Z" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
             <path d="M50 20 L80 50 L50 80 L20 50 Z" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="0.8" />
-            <circle cx="50" cy="50" r="20" fill="url(#logo-core-glow)" filter="url(#logo-core-glow)" />
+            <circle cx="50" cy="50" r="20" fill="url(#logo-core-glow)" filter="url(#logo-core-glow-filter)" />
             <circle cx="50" cy="50" r="16" fill="url(#logo-core)" />
             <circle cx="50" cy="50" r="11" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1" />
         </g>

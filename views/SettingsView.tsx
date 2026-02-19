@@ -62,13 +62,13 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
     const renderPreview = () => {
         switch(selectedMode) {
             case 'Silencioso': return (<div className="text-center text-gray-400 space-y-2 p-4"><svg viewBox="0 0 100 20" className="w-24 mx-auto"><path d="M 0 10 Q 25 10, 50 10 T 100 10" stroke="currentColor" strokeWidth="2" fill="none"/></svg><p className="text-sm">{notificationModes.find(m => m.id === 'Silencioso')?.description}</p></div>);
-            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-yellow-400" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'" fixedAtTop stackIndex={0} />);
+            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'" fixedAtTop stackIndex={0} />);
             case 'Essencial': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-blue-400" />} title="Alerta de Compromisso" time="12:00" message="Reunião de Alinhamento em 2h." fixedAtTop stackIndex={0} />);
             case 'Militar': return (
                 <>
                     <NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento Tático. Verifique o Grid ou o Sitrep." fixedAtTop stackIndex={0} />
                     <NotificationCard icon={<ClockIcon className="w-5 h-5 text-orange-400" />} title="Radar de Batalha" time="09:00" message="Próxima ação: Treino de Força (11:00). Prepare-se." fixedAtTop stackIndex={1} />
-                    <NotificationCard icon={<ClockIcon className="w-5 h-5 text-yellow-400" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2." fixedAtTop stackIndex={2} />
+                    <NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2." fixedAtTop stackIndex={2} />
                 </>
             );
             default: return null;
@@ -83,7 +83,7 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
                     {notificationModes.map(mode => (<button key={mode.id} onClick={() => setSelectedMode(mode.id)} className={`p-3 rounded-xl transition-colors text-center ${selectedMode === mode.id ? 'bg-white/20 ring-2 ring-white/30' : 'bg-black/20 hover:bg-white/10'}`}><span className="text-2xl">{mode.icon}</span><p className="text-sm font-bold">{mode.name}</p></button>))}
                 </div>
                 <div className="p-3 bg-black/20 rounded-xl min-h-[150px] flex flex-col justify-center">{renderPreview()}</div>
-                <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">SALVAR</button>
+                <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
             </GlassCard>
         </div>
     );
@@ -105,7 +105,7 @@ const TutorialSettings: React.FC = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h4 className="text-sm font-semibold">Nível 1 (Básico)</h4>
-                    <p className={`text-xs ${isTutorialCompleted ? 'text-green-400' : 'text-yellow-400'}`}>{isTutorialCompleted ? 'Concluído' : 'Não concluído'}</p>
+                    <p className={`text-xs ${isTutorialCompleted ? 'text-green-400' : 'accent-text'}`}>{isTutorialCompleted ? 'Concluído' : 'Não concluído'}</p>
                 </div>
                 <button onClick={startTutorial} className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20">REPLAY</button>
             </div>
@@ -126,7 +126,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold uppercase tracking-wider text-center">Tutoriais</h2>
             <TutorialSettings />
-            <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">OK</button>
+            <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button>
         </GlassCard>
     </div>
 );
@@ -349,7 +349,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const sliderColor = (value: number) => {
         if (value <= 33) return 'from-red-500/70 to-red-300/40';
-        if (value <= 66) return 'from-yellow-500/70 to-yellow-300/40';
+        if (value <= 66) return 'from-[var(--skin-accent-color)]/70 to-[var(--skin-accent-color)]/40';
         return 'from-green-500/70 to-green-300/40';
     };
 
@@ -357,12 +357,12 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
-                    <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">VÍNCULOS</div>
+                    <div className="text-xs font-bold uppercase tracking-wider accent-text">VÍNCULOS</div>
                     <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                 </div>
 
                 <div className="flex space-x-2">
-                    <button onClick={() => setActiveTab('mentoria')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'mentoria' ? 'bg-black/30 text-[var(--gold)]' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>MENTORIA</button>
+                    <button onClick={() => setActiveTab('mentoria')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'mentoria' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>MENTORIA</button>
                     <button disabled className="w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 bg-black/10 text-gray-500 cursor-not-allowed">PARCERIAS</button>
                     <button disabled className="w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 bg-black/10 text-gray-500 cursor-not-allowed">DESAFIOS</button>
                 </div>
@@ -398,7 +398,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     </div>
                                                     <div className="flex gap-2">
                                                         <button onClick={() => declineInvite(invite)} className="w-full py-2 rounded-xl luxe-button-secondary">RECUSAR</button>
-                                                        <button onClick={() => acceptInvite(invite)} className="w-full py-2 rounded-xl luxe-gold-button">ACEITAR</button>
+                                                        <button onClick={() => acceptInvite(invite)} className="w-full py-2 rounded-xl luxe-skin-button">ACEITAR</button>
                                                     </div>
                                                 </div>
                                             );
@@ -537,14 +537,14 @@ const getSovereignPhrase = (questionId: number, value: number) => {
 const SovereignSlider: React.FC<{ value: number; onChange: (next: number) => void }> = ({ value, onChange }) => {
     const clamped = Math.max(1, Math.min(5, value));
     const pct = ((clamped - 1) / 4) * 100;
-    const fill = pct < 20 ? 'rgba(239,68,68,0.85)' : pct < 70 ? 'rgba(234,179,8,0.85)' : 'rgba(245,158,11,0.9)';
+    const fill = pct < 20 ? 'rgba(239,68,68,0.85)' : pct < 70 ? 'var(--skin-accent-color)' : 'var(--skin-accent-color)';
     const track = `linear-gradient(90deg, ${fill} 0%, ${fill} ${pct}%, rgba(255,255,255,0.08) ${pct}%, rgba(255,255,255,0.08) 100%)`;
 
     return (
         <div className="relative w-full">
             <div className="h-3 rounded-full border border-white/10" style={{ background: track }} />
             <div
-                className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rotate-45 bg-black/70 border border-yellow-400 shadow-[0_0_12px_rgba(245,158,11,0.35)]"
+                className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rotate-45 bg-black/70 border border-[var(--skin-accent-color)] shadow-[0_0_12px_var(--sephirot-glow-color)]"
                 style={{ left: `calc(${pct}% - 10px)` }}
             />
             <input
@@ -625,7 +625,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
                     <div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">Relatório de Inteligência Beta</div>
+                        <div className="text-xs font-bold uppercase tracking-wider accent-text">Relatório de Inteligência Beta</div>
                         <div className="text-[10px] text-gray-500">ID: {userProfile.nickname}</div>
                     </div>
                     <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
@@ -642,7 +642,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         <div className="text-sm font-bold text-white">{q.id}. {q.label}</div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-black text-[var(--gold)]">{v.toFixed(1)}</div>
+                                        <div className="text-2xl font-black accent-text">{v.toFixed(1)}</div>
                                         <div className="text-[10px] font-bold text-gray-400">{getSovereignLabel(v)}</div>
                                     </div>
                                 </div>
@@ -659,20 +659,20 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={5}
-                            className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl focus:outline-none focus:border-[var(--gold)] text-sm"
+                            className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-sm"
                             placeholder="Descreva o bug, a ideia ou o ajuste que você quer ver no campo."
                         />
                     </div>
                 </div>
 
                 {status && (
-                    <div className={`text-center text-xs ${sending ? 'text-yellow-300 animate-pulse' : 'text-gray-400'}`}>{status}</div>
+                    <div className={`text-center text-xs ${sending ? 'text-[var(--skin-accent-color)] animate-pulse' : 'text-gray-400'}`}>{status}</div>
                 )}
 
                 <button
                     onClick={sendReport}
                     disabled={sending}
-                    className="w-full py-3 rounded-xl luxe-gold-button disabled:opacity-60"
+                    className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-60"
                 >
                     {sending ? 'ENVIANDO DADOS PARA O QG...' : 'ENVIAR RELATÓRIO'}
                 </button>
@@ -732,19 +732,19 @@ const GeralTab: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <GlassCard variant="gold" className="text-center cursor-pointer relative overflow-hidden group" onClick={() => setIsHierarchyVisible(true)}>
-                <div className="absolute inset-0 bg-gradient-to-b from-yellow-900/20 to-black/60 pointer-events-none" />
+            <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group" onClick={() => setIsHierarchyVisible(true)}>
+                <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color)] to-black/60 pointer-events-none" />
                 <div className="relative z-10">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-yellow-500 mb-1">Seu Status</p>
-                    <h2 className="text-3xl font-black text-[var(--gold)] drop-shadow-lg">{currentRank?.name || 'N/A'}</h2>
+                    <p className="text-[10px] uppercase tracking-[0.2em] accent-text mb-1">Seu Status</p>
+                    <h2 className="text-3xl font-black accent-text drop-shadow-lg">{currentRank?.name || 'N/A'}</h2>
                     
                     <div className="mt-6 px-2">
-                        <div className="flex justify-between text-[10px] font-bold tracking-wider text-yellow-500/80 mb-2">
+                        <div className="flex justify-between text-[10px] font-bold tracking-wider accent-text opacity-80 mb-2">
                             <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
                             <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')}` : 'MÁXIMO'}</span>
                         </div>
                         <div className="w-full bg-black/40 rounded-full h-3 p-0.5 border border-white/5">
-                            <div className="bg-gradient-to-r from-yellow-700 to-yellow-400 h-full rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(234,179,8,0.3)]" style={{ width: `${progressPercentage}%`}}></div>
+                            <div className="bg-[var(--skin-accent-color)] h-full rounded-full transition-all duration-700 shadow-[0_0_10px_var(--sephirot-glow-color)]" style={{ width: `${progressPercentage}%`}}></div>
                         </div>
                     </div>
                 </div>
@@ -805,10 +805,10 @@ const GeralTab: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl">
                     <label className="text-sm font-semibold">Nickname</label>
-                    <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="px-3 py-1 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:border-[var(--gold)] transition-colors w-40 text-right"/>
+                    <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="px-3 py-1 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors w-40 text-right"/>
                 </div>
                 <div className="flex space-x-2">
-                    <button onClick={handleSave} className="w-1/2 py-3 rounded-xl luxe-gold-button transition-transform hover:scale-105">SALVAR PERFIL</button>
+                    <button onClick={handleSave} className="w-1/2 py-3 rounded-xl luxe-skin-button transition-transform hover:scale-105">SALVAR PERFIL</button>
                     <button onClick={handleLogout} className="w-1/2 py-3 rounded-xl bg-red-900/50 text-red-300 hover:bg-red-800/80 shadow-[0_0_8px_rgba(255,50,50,0.3)] transition-all">SAIR</button>
                 </div>
             </div>
@@ -853,7 +853,7 @@ const GeralTab: React.FC = () => {
                                     startCycle(cycleName.trim(), cycleEndDate);
                                     setShowStartCycle(false);
                                 }}
-                                className="w-1/2 py-2 rounded-xl luxe-button-primary"
+                                className="w-1/2 py-2 rounded-xl luxe-skin-button"
                             >
                                 Criar
                             </button>
@@ -895,7 +895,7 @@ const AssistantModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
-                    <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">Assistente IA</div>
+                    <div className="text-xs font-bold uppercase tracking-wider accent-text">Assistente IA</div>
                     <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                 </div>
                 <div className="space-y-2">
@@ -911,7 +911,7 @@ const AssistantModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     ))}
                 </div>
                 <div className="text-xs text-gray-500">Mock: conversa não implementada.</div>
-                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">OK</button>
+                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button>
             </GlassCard>
         </div>
     );
@@ -947,7 +947,7 @@ const ConfigTab: React.FC = () => {
                  <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Suporte</h2>
                  <button
                     onClick={() => setFeedbackOpen(true)}
-                    className="w-full py-4 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest text-[var(--gold)] flex items-center justify-center gap-2 transition-all"
+                    className="w-full py-4 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest accent-text flex items-center justify-center gap-2 transition-all"
                 >
                     <span>📊</span> ENVIAR FEEDBACK BETA
                 </button>
@@ -955,8 +955,8 @@ const ConfigTab: React.FC = () => {
 
             {/* Grupo Premium (Opaque) */}
             <section className="space-y-4">
-                <div className="flex items-center justify-between px-1 border-b border-yellow-500/20 pb-2">
-                    <h2 className="text-sm font-bold text-yellow-500 uppercase tracking-widest">Soberania (Premium)</h2>
+                <div className="flex items-center justify-between px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
+                    <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Soberania (Premium)</h2>
                     {!isPremium && <span className="text-[10px] font-bold text-gray-500 bg-white/5 px-2 py-1 rounded">BLOQUEADO</span>}
                 </div>
                 
@@ -965,7 +965,7 @@ const ConfigTab: React.FC = () => {
                         <button
                             onClick={() => { if (isPremium) setCodexOpen(true); }}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center gap-2 text-center group"
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group"
                         >
                             <span className="text-2xl group-hover:scale-110 transition-transform">📚</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Codexes</span>
@@ -973,7 +973,7 @@ const ConfigTab: React.FC = () => {
                         <button
                             onClick={() => { if (isPremium) setLinksOpen(true); }}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center gap-2 text-center group"
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group"
                         >
                             <span className="text-2xl group-hover:scale-110 transition-transform">🔗</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
@@ -981,7 +981,7 @@ const ConfigTab: React.FC = () => {
                         <button
                             onClick={() => alert('Mock: campanhas não implementadas.')}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center gap-2 text-center group"
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group"
                         >
                             <span className="text-2xl group-hover:scale-110 transition-transform">🎯</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>
@@ -989,7 +989,7 @@ const ConfigTab: React.FC = () => {
                         <button
                             onClick={() => { if (isPremium) setAssistantOpen(true); }}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center gap-2 text-center group"
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group"
                         >
                             <span className="text-2xl group-hover:scale-110 transition-transform">🤖</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Assistente</span>
@@ -1004,7 +1004,7 @@ const ConfigTab: React.FC = () => {
             </section>
 
             {(userProfile.role === 'admin' || userProfile.role === 'gm') && (
-                <div className="pt-6 mt-6 border-t border-yellow-800/50">
+                <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
                     <SovereignPanelView />
                 </div>
             )}
@@ -1025,7 +1025,7 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
     const [openingChest, setOpeningChest] = useState<ChestType | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ item: any; type: ItemType } | null>(null);
     
-    const InventoryPlaceholder: React.FC = () => <div className="w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-dashed border-white/10 rounded-lg" />;
+    const InventoryPlaceholder: React.FC = () => <div className="w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-dashed border-[var(--skin-accent-color)]/20 rounded-lg" />;
     
     const InventoryItem: React.FC<{ item: any; onClick: () => void; count?: number; isEquipped?: boolean; }> = ({ item, onClick, count, isEquipped }) => {
         const imageUrl = item.url || item.imageUrl;
@@ -1043,7 +1043,7 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
         } : {};
 
         return (
-            <button onClick={onClick} className="relative w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-white/10 rounded-lg flex flex-col items-center justify-center p-1 text-center hover:border-[var(--gold)] transition-all duration-300 group" style={glowStyle}>
+            <button onClick={onClick} className="relative w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-[var(--skin-accent-color)]/30 rounded-lg flex flex-col items-center justify-center p-1 text-center hover:border-[var(--skin-accent-color)] transition-all duration-300 group" style={glowStyle}>
                 <div className="w-full h-full flex items-center justify-center">{imageUrl ? (<img src={imageUrl} alt={item.name} className="max-w-full max-h-full object-contain" />) : item.color ? (<div className="w-10 h-10 rounded-full" style={{ backgroundColor: item.color }} />) : (<span className="text-2xl">?</span>)}</div>
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] font-bold p-0.5 truncate group-hover:bg-black/80">{item.name}</div>
                 {count && count > 1 && <div className="absolute top-0 right-0 bg-black text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">x{count}</div>}
@@ -1095,7 +1095,7 @@ const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSover
 
     return (
         <div className="space-y-6">
-            <button onClick={onOpenSovereignEditor} className="w-full py-3 rounded-xl luxe-gold-button transition-transform hover:scale-105">EDITAR SOBERANO</button>
+            <button onClick={onOpenSovereignEditor} className="w-full py-3 rounded-xl luxe-skin-button transition-transform hover:scale-105">EDITAR SOBERANO</button>
             <div>
                 <h3 className="text-lg font-bold tracking-wider mb-2">Inventário</h3>
                 <div className="space-y-3">
@@ -1153,16 +1153,16 @@ const NobrezaHierarchyView: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <GlassCard variant="gold" className="text-center">
+            <GlassCard variant="accent" className="text-center">
                 <p className="text-sm uppercase tracking-wider">NOBREZA</p>
-                <h2 className="text-3xl font-black" style={{ color: 'var(--gold)' }}>{currentRank?.name || 'N/A'}</h2>
+                <h2 className="text-3xl font-black accent-text">{currentRank?.name || 'N/A'}</h2>
                 <div className="mt-4">
                     <div className="flex justify-between text-xs font-bold">
                         <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
                         <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
                     </div>
                     <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
-                        <div className="bg-[var(--gold)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div>
+                        <div className="bg-[var(--skin-accent-color)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div>
                     </div>
                     <div className="flex justify-between text-[10px] font-bold text-white/70 mt-2">
                         <span>{currentRank ? `${currentRank.expTotalRequired.toLocaleString('pt-BR')} XP (patente)` : ''}</span>
@@ -1174,7 +1174,7 @@ const NobrezaHierarchyView: React.FC = () => {
                 <h3 className="text-lg font-bold tracking-wider mb-2">Hierarquia da Nobreza</h3>
                 <div className="space-y-2">
                     {nobilityRanks.map(rank => (
-                        <GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--gold)]' : 'opacity-70'}`}>
+                        <GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--skin-accent-color)]' : 'opacity-70'}`}>
                             <div className="flex justify-between items-center">
                                 <span className="font-bold">{rank.name}</span>
                                 <span className="text-sm text-gray-400">{rank.expTotalRequired.toLocaleString('pt-BR')} XP</span>
@@ -1191,12 +1191,12 @@ const NobrezaHierarchyView: React.FC = () => {
 };
 
 const MissionCard: React.FC<{ title: string; progress: number; onClick?: () => void }> = ({ title, progress, onClick }) => (
-    <GlassCard variant="neutral" className={`p-3 ${onClick ? 'cursor-pointer' : ''}`} onClick={onClick}><div className="flex items-center justify-between"><span className="font-semibold text-sm">{title}</span><div className="flex items-center space-x-2"><span className="text-xs font-mono">{progress}%</span><div className="w-5 h-5 rounded-full border-2 border-gray-500 flex items-center justify-center">{progress === 100 && <CheckIcon className="w-3 h-3 text-green-400" />}</div></div></div></GlassCard>
+    <GlassCard variant="neutral" className={`p-3 ${onClick ? 'cursor-pointer' : ''}`} onClick={onClick}><div className="flex items-center justify-between"><span className="font-semibold text-sm">{title}</span><div className="flex items-center space-x-2"><span className="text-xs font-mono">{progress}%</span><div className="w-5 h-5 rounded-full border-2 border-[var(--skin-accent-color)] flex items-center justify-center">{progress === 100 && <CheckIcon className="w-3 h-3 accent-text" />}</div></div></div></GlassCard>
 );
 
 const MissionDetailModal: React.FC<{ mission: { title: string; progress: number }, onClose: () => void }> = ({ mission, onClose }) => {
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}><GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-6 rounded-3xl" onClick={e => e.stopPropagation()}><h2 className="text-lg font-bold uppercase tracking-wider text-center">{mission.title}</h2><div className="space-y-2"><div className="w-full bg-black/30 rounded-full h-2.5"><div className="bg-[var(--gold)] h-2.5 rounded-full" style={{ width: `${mission.progress}%` }}></div></div><p className="text-center text-sm font-bold">{mission.progress}%</p></div><div className="flex space-x-2"><button onClick={() => alert('Arquivado!')} className="w-full py-2 rounded-xl luxe-button-secondary">Arquivar Missão</button><button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">OK</button></div></GlassCard></div>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}><GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-6 rounded-3xl" onClick={e => e.stopPropagation()}><h2 className="text-lg font-bold uppercase tracking-wider text-center">{mission.title}</h2><div className="space-y-2"><div className="w-full bg-black/30 rounded-full h-2.5"><div className="bg-[var(--skin-accent-color)] h-2.5 rounded-full" style={{ width: `${mission.progress}%` }}></div></div><p className="text-center text-sm font-bold">{mission.progress}%</p></div><div className="flex space-x-2"><button onClick={() => alert('Arquivado!')} className="w-full py-2 rounded-xl luxe-button-secondary">Arquivar Missão</button><button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button></div></GlassCard></div>
     );
 };
 
@@ -1206,17 +1206,17 @@ export const ExpandableMissionCard: React.FC<{ quest: ConfigSeasonQuest; isAccep
     const isClan = quest.type === 'clan';
 
     return (
-        <GlassCard variant={isClan ? 'gold' : 'neutral'} className="p-3 relative overflow-hidden group transition-all duration-300">
+        <GlassCard variant={isClan ? 'accent' : 'neutral'} className="p-3 relative overflow-hidden group transition-all duration-300">
             <div onClick={() => setExpanded(!expanded)} className="cursor-pointer flex items-center justify-between">
                 <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                        <span className="text-lg">{quest.actionTemplate.icon}</span>
+                        <span className="text-lg accent-text">{quest.actionTemplate.icon}</span>
                         <h3 className="font-bold text-sm uppercase tracking-wide">{quest.title}</h3>
                     </div>
                     {isAccepted && (
                         <div className="mt-1 flex items-center space-x-2">
                             <div className="flex-grow bg-black/30 rounded-full h-1.5">
-                                <div className={`h-1.5 rounded-full transition-all duration-500 ${isClan ? 'bg-yellow-500' : 'bg-white'}`} style={{ width: `${Math.min(100, progress)}%` }}></div>
+                                <div className={`h-1.5 rounded-full transition-all duration-500 ${isClan ? 'bg-[var(--skin-accent-color)]' : 'bg-white'}`} style={{ width: `${Math.min(100, progress)}%` }}></div>
                             </div>
                             <span className="text-[10px] font-mono font-bold text-gray-400">{progress}%</span>
                         </div>
@@ -1248,7 +1248,7 @@ export const ExpandableMissionCard: React.FC<{ quest: ConfigSeasonQuest; isAccep
 
                     <div className="flex justify-between items-center bg-black/20 rounded-lg p-2">
                         <div className="text-[10px] font-bold text-gray-500 uppercase">Recompensas</div>
-                        <div className="flex space-x-3 text-xs font-bold text-[var(--gold)]">
+                        <div className="flex space-x-3 text-xs font-bold accent-text">
                             <span>+{quest.rewards.xp} XP</span>
                             {quest.rewards.gold && <span>+{quest.rewards.gold} Gold</span>}
                         </div>
@@ -1257,7 +1257,7 @@ export const ExpandableMissionCard: React.FC<{ quest: ConfigSeasonQuest; isAccep
                     {!isAccepted ? (
                         <button 
                             onClick={(e) => { e.stopPropagation(); onAccept(); }} 
-                            className={`w-full py-2 rounded-xl text-xs font-bold tracking-widest transition-colors ${isClan ? 'bg-yellow-600 hover:bg-yellow-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'}`}
+                            className={`w-full py-2 rounded-xl text-xs font-bold tracking-widest transition-colors ${isClan ? 'bg-[var(--skin-accent-color)] hover:brightness-110 text-white' : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'}`}
                         >
                             {isClan ? 'JUNTAR-SE À FESTA' : 'ACEITAR MISSÃO'}
                         </button>
@@ -1328,7 +1328,7 @@ const MissionCreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-lg m-4 p-4 space-y-4 rounded-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-bold uppercase tracking-wider text-[var(--gold)]">Criador de Missões</h2>
+                    <h2 className="text-lg font-bold uppercase tracking-wider accent-text">Criador de Missões</h2>
                     <button onClick={onClose}><XIcon className="w-5 h-5" /></button>
                 </div>
                 
@@ -1341,14 +1341,14 @@ const MissionCreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                     <div className="space-y-1"><label>XP Reward</label><input type="number" className="w-full bg-black/30 p-2 rounded" value={formData.xp} onChange={e => setFormData({...formData, xp: Number(e.target.value)})} /></div>
                     <div className="space-y-1"><label>Gold Reward</label><input type="number" className="w-full bg-black/30 p-2 rounded" value={formData.gold} onChange={e => setFormData({...formData, gold: Number(e.target.value)})} /></div>
                     
-                    <div className="col-span-2 pt-2 font-bold text-[var(--gold)]">Ação Template</div>
+                    <div className="col-span-2 pt-2 font-bold accent-text">Ação Template</div>
                     <div className="space-y-1"><label>Nome da Ação</label><input className="w-full bg-black/30 p-2 rounded" value={formData.actionName} onChange={e => setFormData({...formData, actionName: e.target.value})} /></div>
                     <div className="space-y-1"><label>Ícone</label><input className="w-full bg-black/30 p-2 rounded" value={formData.actionIcon} onChange={e => setFormData({...formData, actionIcon: e.target.value})} /></div>
                     <div className="space-y-1"><label>Duração (min)</label><input type="number" className="w-full bg-black/30 p-2 rounded" value={formData.actionDuration} onChange={e => setFormData({...formData, actionDuration: Number(e.target.value)})} /></div>
                     <div className="space-y-1"><label>Repetições</label><input type="number" className="w-full bg-black/30 p-2 rounded" value={formData.reps} onChange={e => setFormData({...formData, reps: Number(e.target.value)})} /></div>
                 </div>
 
-                <button onClick={generateJSON} className="w-full py-2 rounded-xl luxe-button-primary">Gerar JSON</button>
+                <button onClick={generateJSON} className="w-full py-2 rounded-xl luxe-skin-button">Gerar JSON</button>
 
                 {jsonOutput && (
                     <div className="space-y-2">
@@ -1423,17 +1423,17 @@ const MissionsTab: React.FC = () => {
         <div className="space-y-8 pb-20">
             {activeSeason && (
                 <>
-                    <GlassCard variant="gold" className="relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-r from-yellow-900/40 to-black/60 pointer-events-none" />
+                    <GlassCard variant="accent" className="relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--skin-accent-color)]/40 to-black/60 pointer-events-none" />
                         <div className="relative z-10 flex justify-between items-center p-2">
                             <div>
-                                <div className="text-[10px] uppercase tracking-[0.2em] text-yellow-500 mb-1">TEMPORADA ATUAL</div>
-                                <h2 className="text-2xl font-black text-[var(--gold)] drop-shadow-lg uppercase">{activeSeason.name}</h2>
+                                <div className="text-[10px] uppercase tracking-[0.2em] accent-text mb-1">TEMPORADA ATUAL</div>
+                                <h2 className="text-2xl font-black accent-text drop-shadow-lg uppercase">{activeSeason.name}</h2>
                                 <p className="text-xs text-gray-400 italic mt-1">"{activeSeason.theme}"</p>
                             </div>
                             <div className="text-right">
                                 <div className="text-xs font-bold text-white">Termina em</div>
-                                <div className="text-lg font-mono text-yellow-400">20/03/26</div>
+                                <div className="text-lg font-mono accent-text">20/03/26</div>
                             </div>
                         </div>
                         {isAdmin && (
@@ -1469,7 +1469,7 @@ const MissionsTab: React.FC = () => {
 
                     {clanQuests.length > 0 && (
                         <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-widest px-1 border-b border-yellow-500/20 pb-2">Missões do Clã</h3>
+                            <h3 className="text-sm font-bold accent-text uppercase tracking-widest px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">Missões do Clã</h3>
                             <div className="space-y-2">
                                 {clanQuests.map(quest => {
                                     const isAcceptedLegacy = clanActions.some(a => a.name === quest.actionTemplate.name);

@@ -194,7 +194,7 @@ export const SovereignEditorModal: React.FC<SovereignEditorModalProps> = ({ onCl
                     <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
                         CANCELAR
                     </button>
-                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">
+                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
                         SALVAR
                     </button>
                 </div>

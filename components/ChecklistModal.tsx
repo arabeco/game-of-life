@@ -23,7 +23,7 @@ const ChecklistRow: React.FC<ChecklistRowProps> = ({ item, onToggle, onUpdate, o
 
     return (
         <div className="flex items-center space-x-2 bg-black/20 p-2 rounded-xl">
-            <button onClick={() => onToggle(item.id)} className={`w-6 h-6 flex-shrink-0 rounded-lg border-2 ${item.completed ? 'bg-[var(--gold)] border-[var(--gold)]' : 'border-gray-500'}`}>
+            <button onClick={() => onToggle(item.id)} className={`w-6 h-6 flex-shrink-0 rounded-lg border-2 ${item.completed ? 'bg-[var(--skin-accent-color)] border-[var(--skin-accent-color)]' : 'border-gray-500'}`}>
                 {item.completed && <CheckIcon className="w-5 h-5 text-black" />}
             </button>
             {isEditing ? (
@@ -56,10 +56,10 @@ export const ChecklistModal: React.FC<{onClose: () => void}> = ({ onClose }) => 
                     ))}
                 </div>
                  <div className="flex space-x-2">
-                    <input type="text" placeholder="Nova tarefa... (ex: 2L de água)" value={newItemText} onChange={e => setNewItemText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddItem()} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--gold)]" />
+                    <input type="text" placeholder="Nova tarefa... (ex: 2L de água)" value={newItemText} onChange={e => setNewItemText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddItem()} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                     <button onClick={handleAddItem} className="p-3 rounded-xl bg-black/30 border border-white/20"><PlusIcon className="w-5 h-5" /></button>
                 </div>
-                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-primary">
+                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">
                     FECHAR
                 </button>
             </GlassCard>

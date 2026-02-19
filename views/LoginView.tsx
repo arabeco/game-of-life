@@ -365,14 +365,14 @@ export const LoginView: React.FC = () => {
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black animate-fade-in">
-            <div className="w-full max-w-sm mx-auto text-center border border-yellow-800/50 rounded-2xl p-6 space-y-6 overflow-hidden">
+            <div className="w-full max-w-sm mx-auto text-center border border-[var(--skin-accent-color)]/50 rounded-2xl p-6 space-y-6 overflow-hidden">
                 <div className="relative w-40 h-40 mx-auto flex items-center justify-center mb-8">
-                    <div className="absolute w-[190%] h-[190%] rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.22)_0%,rgba(212,175,55,0.12)_35%,rgba(212,175,55,0)_72%)] blur-2xl aura-glow"></div>
-                    <div className="absolute w-[210%] h-[210%] rounded-full bg-[conic-gradient(from_0deg,rgba(255,215,130,0.25),rgba(255,160,80,0.12),rgba(130,255,220,0.18),rgba(255,215,130,0.25))] blur-3xl aura-plasma"></div>
+                    <div className="absolute w-[190%] h-[190%] rounded-full bg-[radial-gradient(circle,var(--skin-accent-color)_0%,transparent_70%)] opacity-20 blur-2xl aura-glow"></div>
+                    <div className="absolute w-[210%] h-[210%] rounded-full bg-[conic-gradient(from_0deg,var(--skin-accent-color),transparent,var(--skin-accent-color))] opacity-10 blur-3xl aura-plasma"></div>
                     <img
                         src="/logo-diamond.png"
                         alt="GLYPH"
-                        className="w-full h-full drop-shadow-[0_0_15px_rgba(212,175,55,0.5)]"
+                        className="w-full h-full drop-shadow-[0_0_15px_var(--skin-accent-color)]"
                         style={{ transform: 'scale(1.35)' }}
                     />
                     <div className="absolute w-[135%] h-[135%] animate-spin" style={{ animationDuration: '12s' }}>
@@ -384,7 +384,7 @@ export const LoginView: React.FC = () => {
                     </div>
                 </div>
 
-                <h1 className="luxe-title-ornate text-4xl font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-b from-[var(--gold)] to-yellow-700 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] transform scale-110 mb-8">
+                <h1 className="luxe-title-ornate text-4xl font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-b from-[var(--skin-accent-color)] to-white/50 drop-shadow-[0_0_15px_var(--skin-accent-color)] transform scale-110 mb-8">
                     GLYPH
                 </h1>
 
@@ -394,14 +394,14 @@ export const LoginView: React.FC = () => {
                         placeholder="Email" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] transition-colors placeholder-gray-500"
+                        className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                     />
                     <input 
                         type="password" 
                         placeholder="Senha" 
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] transition-colors placeholder-gray-500"
+                        className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                     />
                     {isSigningUp && (
                         <input 
@@ -409,7 +409,7 @@ export const LoginView: React.FC = () => {
                             placeholder="Nickname" 
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
-                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] transition-colors placeholder-gray-500"
+                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                         />
                     )}
                     {isSigningUp && (
@@ -418,7 +418,7 @@ export const LoginView: React.FC = () => {
                             placeholder="Cole aqui seu Convite Dourado..." 
                             value={inviteCode}
                             onChange={(e) => setInviteCode(e.target.value)}
-                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] transition-colors placeholder-gray-500"
+                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                         />
                     )}
                 </div>
@@ -431,7 +431,7 @@ export const LoginView: React.FC = () => {
                         <button 
                             onClick={handleSignUp} 
                             disabled={loading}
-                            className="w-full py-3 rounded-xl luxe-gold-button disabled:opacity-50"
+                            className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50"
                         >
                             {loading ? 'CADASTRANDO...' : 'CADASTRAR'}
                         </button>
@@ -439,7 +439,7 @@ export const LoginView: React.FC = () => {
                         <button 
                             onClick={handleLogin} 
                             disabled={loading}
-                            className="w-full py-3 rounded-xl luxe-gold-button disabled:opacity-50"
+                            className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50"
                         >
                             {loading ? 'ENTRANDO...' : 'ENTRAR'}
                         </button>

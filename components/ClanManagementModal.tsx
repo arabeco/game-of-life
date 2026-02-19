@@ -49,14 +49,14 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] text-center font-bold"
+                            className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-center font-bold"
                         />
                          <textarea
                             placeholder="Lore / Descrição do Clã..."
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={2}
-                            className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--gold)] text-sm text-center"
+                            className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-sm text-center"
                         />
                     </div>
                     
@@ -70,7 +70,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                                     <p className="text-xs text-gray-400">Nível {member.level}</p>
                                 </div>
                                 {member.role === 'leader' ? (
-                                    <CrownIcon className="w-5 h-5 text-yellow-400" />
+                                    <CrownIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />
                                 ) : (
                                     <button onClick={() => setMemberToKick(member.id)} className="p-1">
                                         <XIcon className="w-5 h-5 text-red-500"/>
@@ -82,7 +82,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
 
                     <div className="flex-shrink-0 space-y-2">
                         <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 rounded-xl luxe-button-secondary">Adicionar Membro</button>
-                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-button-primary">SALVAR MUDANÇAS</button>
+                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR MUDANÇAS</button>
                     </div>
                 </GlassCard>
             </div>

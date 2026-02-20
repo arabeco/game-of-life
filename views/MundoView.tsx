@@ -5,12 +5,13 @@ import { CreateClanModal } from '../components/CreateClanModal';
 import { Clan, UserProfile } from '../types';
 import { ClanDetailModal } from '../components/ClanDetailModal';
 import { SocialCard } from '../components/SocialCard';
-import { PlusIcon, CheckIcon, XIcon, TrophyIcon, ShoppingBagIcon, CalendarIcon, UsersIcon } from '../components/Icons';
+import { PlusIcon, CheckIcon, XIcon, TrophyIcon, ShoppingBagIcon, CalendarIcon, UsersIcon, ArchiveBoxIcon } from '../components/Icons';
 import { ClanSearchResultCard } from '../components/ClanSearchResultCard';
 import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
-import { ExpandableMissionCard } from './SettingsView';
 import { HallOfFameView } from './HallOfFameView';
 import { StoreView } from './StoreView';
+import { ArsenalView } from './ArsenalView';
+import { SeasonView } from './SeasonView';
 
 const JoinClanBox: React.FC<{onCreate: () => void}> = ({ onCreate }) => {
     return (
@@ -134,7 +135,7 @@ const SocialTab: React.FC = () => {
 
     // Simple profile builder for fallback
     const buildFallbackProfile = (id: string): UserProfile => ({
-        id, nickname: 'Usuário', level: 1, avatarUrl: '', border: 'default', backgroundUrl: '', isOnline: false, visibleWidgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, role: 'user'
+        id, nickname: 'Usuário', level: 1, avatarUrl: '', border: 'default', backgroundUrl: '', isOnline: false, visibleWidgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, wallet: { gold: 0, fragments: 0 }, inventory: [], role: 'user'
     });
 
     return (
@@ -268,103 +269,27 @@ const SocialTab: React.FC = () => {
     );
 };
 
-const SeasonTab: React.FC = () => {
-    const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-    const { 
-        userProfile, 
-        actions, 
-        getClanQuestProgress, 
-        clanQuestParticipants, 
-        userMissionParticipations,
-        acceptSeasonQuest, 
-        claimSeasonQuestReward 
-    } = useGame();
-
-    if (!activeSeason) return <div className="text-center p-8 text-gray-500">Nenhuma temporada ativa.</div>;
-
-    return (
-        <div className="space-y-6 animate-fade-in pb-20">
-            <GlassCard variant="gold" className="relative overflow-hidden min-h-[160px] flex flex-col justify-end p-6 border-yellow-500/30">
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
-                {activeSeason.backgroundUrl && <img src={activeSeason.backgroundUrl} className="absolute inset-0 w-full h-full object-cover opacity-60" />}
-                
-                <div className="relative z-20 space-y-1">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-1 bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest rounded-md">Temporada 1</span>
-                        <span className="px-2 py-1 bg-black/50 text-white text-[10px] font-bold uppercase tracking-widest rounded-md border border-white/10">Em Andamento</span>
-                    </div>
-                    <h2 className="text-3xl font-black text-white leading-none">{activeSeason.name}</h2>
-                    <p className="text-sm text-gray-300 max-w-md drop-shadow-md">{activeSeason.description}</p>
-                </div>
-            </GlassCard>
-
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Missões da Temporada</h3>
-                    <span className="text-xs text-gray-500">{activeSeason.quests.length} Missões</span>
-                </div>
-                
-                <div className="space-y-3">
-                    {activeSeason.quests.map(quest => {
-                        const isClanQuest = quest.type === 'clan';
-                        
-                        // Determine if accepted
-                        const isAccepted = isClanQuest 
-                            ? (userMissionParticipations[quest.id] || false)
-                            : actions.some(a => a.name === quest.actionTemplate.name);
-
-                        // Determine if claimed
-                        const isClaimed = userProfile.completedSeasonMissions?.includes(quest.id) || false;
-                        
-                        // Determine progress
-                        let progress = 0;
-                        if (isClanQuest) {
-                            progress = getClanQuestProgress(quest.id);
-                        } else {
-                            progress = isClaimed ? (quest.goal_value || 100) : 0;
-                        }
-
-                        const participants = isClanQuest ? (clanQuestParticipants[quest.id] || 0) : undefined;
-
-                        return (
-                            <ExpandableMissionCard 
-                                key={quest.id} 
-                                quest={quest} 
-                                isAccepted={isAccepted}
-                                isClaimed={isClaimed}
-                                progress={progress}
-                                participants={participants}
-                                onAccept={() => acceptSeasonQuest(quest.id)}
-                                onClaim={() => claimSeasonQuestReward(quest.id)}
-                            />
-                        );
-                    })}
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // --- Main View ---
 
 const MundoView: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada'>('social');
+    const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>('social');
 
     const tabs = [
         { id: 'social', label: 'Social', icon: <UsersIcon className="w-5 h-5" /> },
-        { id: 'hall', label: 'Hall da Fama', icon: <TrophyIcon className="w-5 h-5" /> },
         { id: 'loja', label: 'Loja', icon: <ShoppingBagIcon className="w-5 h-5" /> },
+        { id: 'arsenal', label: 'Arsenal', icon: <ArchiveBoxIcon className="w-5 h-5" /> },
+        { id: 'hall', label: 'Hall da Fama', icon: <TrophyIcon className="w-5 h-5" /> },
         { id: 'temporada', label: 'Temporada', icon: <CalendarIcon className="w-5 h-5" /> },
     ] as const;
 
     return (
-        <div className="flex flex-col h-full">
+        <div id="social-container" className="flex flex-col h-full">
             {/* Tab Navigation */}
             <div className="flex justify-between px-4 pt-2 pb-4 border-b border-white/5 bg-black/20 backdrop-blur-sm sticky top-[60px] z-40">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => setActiveTab(tab.id as any)}
                         className={`flex flex-col items-center gap-1 min-w-[64px] transition-colors ${activeTab === tab.id ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
                     >
                         <div className={`p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--skin-accent-color)]/10 ring-1 ring-[var(--skin-accent-color)]/30' : 'bg-transparent'}`}>
@@ -380,7 +305,8 @@ const MundoView: React.FC = () => {
                 {activeTab === 'social' && <SocialTab />}
                 {activeTab === 'hall' && <HallOfFameView />}
                 {activeTab === 'loja' && <StoreView />}
-                {activeTab === 'temporada' && <SeasonTab />}
+                {activeTab === 'temporada' && <SeasonView />}
+                {activeTab === 'arsenal' && <ArsenalView />}
             </div>
         </div>
     );

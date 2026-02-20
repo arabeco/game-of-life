@@ -24,11 +24,11 @@ const buildBaseContext = (data: OracleContextData) => {
     const today = new Date().toISOString().split('T')[0];
     
     // Active Arenas
-    const activeArenas = assets.flatMap(asset => asset.arenas).map((arena: Arena) => ({
+    const activeArenas = assets.flatMap(asset => asset.arenas.map((arena: Arena) => ({
         name: arena.name,
-        level: arena.level,
+        level: asset.level,
         status: 'Active'
-    }));
+    })));
 
     // Completed Actions Today
     const completedTasksToday = tasks.filter(t => t.date === today && t.completed);
@@ -38,7 +38,7 @@ const buildBaseContext = (data: OracleContextData) => {
     });
 
     // Last SITREP
-    const sortedReports = [...reports].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const sortedReports = [...reports].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
     const lastSitrep = sortedReports.length > 0 ? sortedReports[0] : null;
 
     // Mastery per Area (Assets)
@@ -52,7 +52,7 @@ const buildBaseContext = (data: OracleContextData) => {
     - Maestria por Área: ${areaMastery}
     - Arenas Ativas: ${JSON.stringify(activeArenas.map(a => `${a.name} (Lvl ${a.level})`))}
     - Ações Completadas Hoje: ${completedActionNames.length > 0 ? completedActionNames.join(', ') : 'Nenhuma ainda'}
-    - Último SITREP: ${lastSitrep ? `${lastSitrep.date} - Score: ${lastSitrep.score}` : 'Nenhum registrado'}
+    - Último SITREP: ${lastSitrep ? `${lastSitrep.endDate} - Score: ${lastSitrep.performanceScore}` : 'Nenhum registrado'}
     - Ciclo Atual: ${activeCycle ? activeCycle.name : 'Nenhum'}
     `;
 };

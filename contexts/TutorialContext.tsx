@@ -25,8 +25,6 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
     const { userProfile, addProfileFlag } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
-    const [spotlightTarget, setSpotlightTarget] = useState<DOMRect | null>(null);
-    const [tooltipContent, setTooltipContent] = useState<TooltipContent | null>(null);
     
     // Get tutorial completion status from user profile
     const isTutorialCompleted = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
@@ -38,8 +36,6 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     const endTutorial = useCallback((completed = true) => {
         setIsTutorialActive(false);
-        setSpotlightTarget(null);
-        setTooltipContent(null);
         setCurrentStep(0);
         if (completed) {
             // Save tutorial completion to user profile instead of localStorage
@@ -55,9 +51,9 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         setCurrentStep(step);
     }, []);
 
+    // Deprecated: No-op for compatibility during migration
     const setSpotlight = useCallback((rect: DOMRect | null, content: TooltipContent | null) => {
-        setSpotlightTarget(rect);
-        setTooltipContent(content);
+        // No-op
     }, []);
 
     return (
@@ -65,8 +61,8 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             isTutorialActive,
             isTutorialCompleted,
             currentStep,
-            spotlightTarget,
-            tooltipContent,
+            spotlightTarget: null,
+            tooltipContent: null,
             startTutorial,
             endTutorial,
             nextStep,

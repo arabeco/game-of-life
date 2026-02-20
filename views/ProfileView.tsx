@@ -8,9 +8,87 @@ import { BackgroundImageSelectionModal } from '../components/BackgroundImageSele
 import { BannerSelectionModal } from '../components/BannerSelectionModal';
 import { ClanDetailModal } from '../components/ClanDetailModal';
 import { SKINS_DATA, BORDERS_DATA } from '../constants';
+import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { Sovereign } from '../components/Avatar';
+import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { handleShare } from '../components/Share';
+
+const UnifiedSovereignDisplay: React.FC<{ 
+    sovereignConfig: UserProfile['sovereign']; 
+    onClick?: () => void;
+    className?: string;
+}> = ({ sovereignConfig, onClick, className }) => {
+    if (!sovereignConfig) return null;
+    
+    const { primaryDisplay = 'sovereign' } = sovereignConfig;
+    const isInteractive = !!onClick;
+
+    // Helper to get asset URL
+    const getArtifactUrl = () => {
+        try {
+            return SOVEREIGN_ASSETS.artifacts?.find(a => a.id === sovereignConfig.artifact)?.url;
+        } catch (e) { return undefined; }
+    };
+    const getGlyphUrl = () => {
+        try {
+            return SOVEREIGN_ASSETS.glyphs?.find(g => g.id === sovereignConfig.glyph)?.url;
+        } catch (e) { return undefined; }
+    };
+
+    const positionClasses = className || "absolute bottom-4 right-4 w-24 h-32";
+
+    return (
+        <div 
+            className={`${positionClasses} z-30 bg-[#1a1a1a] border-2 rounded-lg overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.8)] group ${isInteractive ? 'cursor-pointer transition-transform hover:scale-105 hover:shadow-[0_0_25px_var(--skin-accent-color)]' : ''}`}
+            onClick={(e) => {
+                if (onClick) {
+                    e.stopPropagation();
+                    onClick();
+                }
+            }}
+            style={{ borderColor: 'var(--skin-accent-color)' }}
+        >
+            {/* Background Gradient/Texture */}
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black z-0 opacity-80" />
+            <div className="absolute inset-0 opacity-20 bg-[url('/assets/noise.png')] z-0 mix-blend-overlay" />
+
+            {/* Content */}
+            <div className="relative z-10 w-full h-full flex items-center justify-center">
+                {primaryDisplay === 'sovereign' && (
+                    <div className="w-full h-full relative">
+                         <Sovereign sovereignConfig={sovereignConfig} className="w-[180%] h-[180%] object-cover absolute top-[-20%] left-[-40%]" />
+                    </div>
+                )}
+                {primaryDisplay === 'item' && (
+                    getArtifactUrl() ? (
+                        <img 
+                            src={getArtifactUrl()} 
+                            alt="Item" 
+                            className="w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
+                        />
+                    ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
+                )}
+                {primaryDisplay === 'glyph' && (
+                     getGlyphUrl() ? (
+                        <img 
+                            src={getGlyphUrl()} 
+                            alt="Glifo" 
+                            className="w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]" 
+                        />
+                     ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
+                )}
+            </div>
+
+            {/* Hover Overlay */}
+            {isInteractive && (
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-sm">
+                    <span className="text-[8px] font-bold uppercase text-center leading-tight tracking-widest border px-1 py-0.5 rounded" style={{ color: 'var(--skin-accent-color)', borderColor: 'var(--skin-accent-color)' }}>Ver<br/>Soberano</span>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ slot, isShareable = false }) => {
     const getGridClasses = (type: number) => {
@@ -102,7 +180,10 @@ const ShareableProfileCard: React.FC<{
             <div className="relative z-10 flex flex-col items-center space-y-4">
                 <div className="pt-8 flex flex-col items-center text-center">
                     <div className="relative w-32 h-32">
-                        <div className="w-full h-full group flex items-center justify-center">
+                                <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap opacity-60">
+                                    Foto de Perfil
+                                </span>
+                                <div className="w-full h-full group flex items-center justify-center">
                             <div className="w-[75%] h-[75%] rounded-full overflow-hidden relative">
                                 <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous"/>
                             </div>
@@ -146,9 +227,9 @@ const ShareableProfileCard: React.FC<{
                 )}
             </div>
 
-             {userProfile.sovereign && (
-                <div className="absolute bottom-[-3.5rem] right-[-1.5rem] h-48 w-48 z-20 drop-shadow-lg pointer-events-none">
-                    <Sovereign sovereignConfig={userProfile.sovereign} />
+            {userProfile.sovereign && (
+                <div className="absolute bottom-4 right-4 z-20 transform scale-125 origin-bottom-right">
+                    <UnifiedSovereignDisplay sovereignConfig={userProfile.sovereign} />
                 </div>
             )}
              <div className="absolute bottom-2 right-3 text-xs accent-text opacity-80 font-semibold z-30">Life OS</div>
@@ -165,12 +246,25 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [isBannerModalOpen, setBannerModalOpen] = useState(false);
     const [isClanModalOpen, setClanModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+    const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
+    
+    // Distinguish between Profile Photo (avatarUrl) and Sovereign Avatar (sovereign config)
+    // The user explicitly requested to avoid confusion between the two.
     
     useEffect(() => {
         if (isEditing) {
+            // We only sync from userProfile when STARTING to edit.
+            // If we are already editing, we don't want external updates to overwrite work,
+            // unless it's the result of our own save (which updates userProfile).
+            // But since we are saving immediately now for widgets, we need to be careful.
+            // Actually, if we save immediately, editableProfile should be kept in sync manually
+            // or we rely on the fact that setEditableProfile was called before save.
+            
+            // For now, let's only reset if we weren't editing before. 
+            // But this effect runs when isEditing changes.
             setEditableProfile(userProfile);
         }
-    }, [isEditing, userProfile]);
+    }, [isEditing]); // Removed userProfile from dependencies to prevent auto-deselect on background updates
 
     const getSlotById = (slotId: string) => {
         const assetId = slotId.split('.')[0];
@@ -212,18 +306,31 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
 
     const handleAvatarSelect = (avatarUrl: string) => {
-        setEditableProfile(prev => ({ ...prev, avatarUrl }));
+        // Immediate update for Avatar URL as per user request
+        setEditableProfile(prev => ({ 
+            ...prev, 
+            avatarUrl,
+            sovereign: prev.sovereign ? { ...prev.sovereign, primaryDisplay: undefined } : prev.sovereign
+        }));
+        
+        // Also trigger immediate persistence to Supabase
+        updateUserProfile({ avatarUrl });
+        
         setIsAvatarModalOpen(false);
     };
     
     const handleWidgetToggle = (slotId: string) => {
-        setEditableProfile(prev => {
-            const currentWidgets = prev.visibleWidgets || [];
-            const newWidgets = currentWidgets.includes(slotId)
-                ? currentWidgets.filter(id => id !== slotId)
-                : [...currentWidgets, slotId];
-            return { ...prev, visibleWidgets: newWidgets };
-        });
+        // Optimistic UI update
+        const currentWidgets = editableProfile.visibleWidgets || [];
+        const newWidgets = currentWidgets.includes(slotId)
+            ? currentWidgets.filter(id => id !== slotId)
+            : [...currentWidgets, slotId];
+        
+        // Update local state
+        setEditableProfile(prev => ({ ...prev, visibleWidgets: newWidgets }));
+        
+        // Immediate persistence as per user request ("SALVANDO COMO ele deixa")
+        updateUserProfile({ visibleWidgets: newWidgets });
     };
 
     const displayProfile = isEditing ? editableProfile : userProfile;
@@ -385,11 +492,14 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </div>
                         </div>
 
+                        {/* Unified Sovereign Display */}
                         {displayProfile.sovereign && (
-                                <div className="absolute bottom-[-3.5rem] right-[-1.5rem] h-48 w-48 z-20 drop-shadow-lg pointer-events-none">
-                                    <Sovereign sovereignConfig={displayProfile.sovereign} />
-                                </div>
-                            )}
+                             <UnifiedSovereignDisplay 
+                                sovereignConfig={displayProfile.sovereign} 
+                                onClick={() => setIsSovereignModalOpen(true)}
+                                className="absolute top-[60px] right-4 w-[70px] h-[95px]"
+                            />
+                        )}
                     </GlassCard>
                  </div>
             </div>
@@ -398,6 +508,15 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             {isBackgroundModalOpen && <BackgroundImageSelectionModal currentBackground={editableProfile.backgroundUrl} onSelect={handleBackgroundSelect} onClose={() => setBackgroundModalOpen(false)} />}
             {isBannerModalOpen && <BannerSelectionModal currentBanner={editableProfile.bannerUrl || ''} onSelect={handleBannerSelect} onClose={() => setBannerModalOpen(false)} />}
             {isClanModalOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanModalOpen(false)} />}
+            {isSovereignModalOpen && (
+                <SovereignEditorModal
+                    onSave={(newConfig) => {
+                        updateUserProfile({ sovereign: newConfig });
+                        setIsSovereignModalOpen(false);
+                    }}
+                    onClose={() => setIsSovereignModalOpen(false)}
+                />
+            )}
         </>
     );
 };

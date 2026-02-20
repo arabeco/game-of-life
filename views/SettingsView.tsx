@@ -1,27 +1,23 @@
-
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
-import { GM_CONFIG, SKINS_DATA, BORDERS_DATA, BANNERS_DATA, SKIN_UNLOCKS_BY_RANK, SKIN_SEASON_UNLOCKS } from '../constants';
-import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
-import { SOVEREIGN_ASSETS } from '../constants/avatar';
-import { MasteryView } from './MasteryView';
-import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
-import { SovereignConfig, ChestType, Season, SeasonMission, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, SeasonQuest as ConfigSeasonQuest } from '../types';
-import { ChevronRightIcon, CheckIcon, XIcon, LightbulbIcon, ClockIcon, UsersIcon } from '../components/Icons';
+import { GM_CONFIG } from '../constants';
+import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, Arena, Action, ScheduledTask } from '../types';
+import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon, SendIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { ChestOpeningModal } from '../components/ChestOpeningModal';
-import { ItemDetailModal } from '../components/ItemDetailModal';
+import { MasteryView } from './MasteryView';
 import { SovereignPanelView } from './SovereignPanelView';
 import { supabase } from '../supabaseClient';
-import { SeasonDetailModal } from '../components/SeasonDetailModal';
+import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
+import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
+import { CODEXES } from '../constants/items';
+
 import { CodexModal } from '../components/CodexModal';
 
-type SettingsTab = 'Geral' | 'Arsenal' | 'Missões' | 'Configurações';
+type SettingsTab = 'Geral' | 'Preferências' | 'Premium';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type PrivacyMode = 'Todos' | 'Amigos' | 'Personalizado' | 'Ninguém';
-type ItemType = 'Artefato' | 'Skin' | 'Borda' | 'Banner' | 'Consumível' | 'Baú';
 
 const notificationModes: { id: NotificationMode, name: string, icon: string, description: string }[] = [
     { id: 'Silencioso', name: 'O Monge', icon: '🧘', description: "Nenhuma notificação será enviada. O sistema aguarda sua busca ativa." },
@@ -29,8 +25,6 @@ const notificationModes: { id: NotificationMode, name: string, icon: string, des
     { id: 'Essencial', name: 'O Executivo', icon: '👔', description: "Apenas alertas para compromissos com horário fixo." },
     { id: 'Militar', name: 'O Soldado', icon: '⚔️', description: "Modo ativo com lembretes para planejar, executar e revisar seu dia." },
 ];
-
-const privacyModes: PrivacyMode[] = ['Todos', 'Amigos', 'Personalizado', 'Ninguém'];
 
 const NotificationCard: React.FC<{ icon: React.ReactNode, title: string, time?: string, message: string, fixedAtTop?: boolean, stackIndex?: number }> = ({ icon, title, time, message, fixedAtTop = true, stackIndex = 0 }) => {
     const topClasses = ['top-[88px]', 'top-[168px]', 'top-[248px]'];
@@ -149,8 +143,23 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => ({
     nobility: row.nobility ?? { exp: 0, rankId: 'vagante' },
     mood: typeof row.mood === 'number' ? row.mood : 50,
     chests: row.chests ?? undefined,
+    wallet: row.wallet ?? { gold: row.gold ?? 0, fragments: row.fragments ?? 0 },
+    inventory: [],
     role: row.role === 'admin' ? 'admin' : 'user',
 });
+
+const mapToCamelCase = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) return obj.map(v => mapToCamelCase(v));
+    if (obj.constructor === Object) {
+        return Object.keys(obj).reduce((result, key) => {
+            const camelKey = key.replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''));
+            result[camelKey] = mapToCamelCase(obj[key]);
+            return result;
+        }, {} as any);
+    }
+    return obj;
+};
 
 const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { userProfile, friends } = useGame();
@@ -163,6 +172,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [savingLinkId, setSavingLinkId] = useState<string | null>(null);
     const [sessionUid, setSessionUid] = useState<string | null>(null);
     const [sliderValues, setSliderValues] = useState<Record<string, number>>({});
+    const [spectatorData, setSpectatorData] = useState<{ arena: Arena, actions: Action[], tasks: ScheduledTask[], pupilName: string } | null>(null);
 
     const sessionReady = useMemo(() => !!sessionUid && isUuid(sessionUid), [sessionUid]);
 
@@ -266,6 +276,30 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         refresh();
     }, []);
 
+    const fetchSpectatorData = async (targetUserId: string, targetArenaId: string, targetName: string) => {
+        setLoading(true);
+        try {
+            const { data: arenaData, error: arenaError } = await supabase.from('arenas').select('*').eq('id', targetArenaId).single();
+            if (arenaError || !arenaData) throw new Error("Arena não encontrada.");
+
+            const { data: actionsData } = await supabase.from('actions').select('*').eq('arena_id', targetArenaId);
+            
+            const today = new Date().toISOString().split('T')[0];
+            const { data: tasksData } = await supabase.from('scheduled_tasks').select('*').in('action_id', (actionsData || []).map((a: any) => a.id)).eq('date', today);
+
+            setSpectatorData({
+                arena: mapToCamelCase(arenaData),
+                actions: mapToCamelCase(actionsData || []),
+                tasks: mapToCamelCase(tasksData || []),
+                pupilName: targetName
+            });
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const acceptInvite = async (invite: RelationshipLinkInvite) => {
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData.session?.user.id;
@@ -344,6 +378,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const myPupils = links.filter(l => l.linkType === 'mentoria' && !!sessionUid && l.mentorId === sessionUid);
     const myMentors = links.filter(l => l.linkType === 'mentoria' && !!sessionUid && l.pupilId === sessionUid);
+    const myPartners = links.filter(l => l.linkType === 'parceria');
 
     const getProfile = (id: string) => profilesById[id];
 
@@ -363,8 +398,8 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                 <div className="flex space-x-2">
                     <button onClick={() => setActiveTab('mentoria')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'mentoria' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>MENTORIA</button>
-                    <button disabled className="w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 bg-black/10 text-gray-500 cursor-not-allowed">PARCERIAS</button>
-                    <button disabled className="w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 bg-black/10 text-gray-500 cursor-not-allowed">DESAFIOS</button>
+                    <button onClick={() => setActiveTab('parcerias')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'parcerias' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>PARCERIAS</button>
+                    <button onClick={() => setActiveTab('desafios')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'desafios' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>DESAFIOS</button>
                 </div>
 
                 {!sessionReady && (
@@ -373,124 +408,200 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
                 )}
 
-                {sessionReady && activeTab === 'mentoria' && (
+                {sessionReady && (
                     <div className="space-y-4">
                         {error && <div className="text-xs text-red-400 bg-black/20 border border-red-500/20 rounded-xl p-2">{error}</div>}
                         {loading ? (
                             <div className="text-center text-sm text-gray-500 py-4">Carregando...</div>
                         ) : (
                             <>
-                                {invites.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="text-[10px] font-black tracking-widest text-gray-400">CONVITES</div>
-                                        {invites.map(invite => {
-                                            const sender = getProfile(invite.senderId);
-                                            return (
-                                                <div key={invite.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
-                                                            {sender?.avatarUrl ? <img src={sender.avatarUrl} alt={sender.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
+                                {activeTab === 'mentoria' && (
+                                    <>
+                                        {invites.length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] font-black tracking-widest text-gray-400">CONVITES</div>
+                                                {invites.map(invite => {
+                                                    const sender = getProfile(invite.senderId);
+                                                    return (
+                                                        <div key={invite.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
+                                                                    {sender?.avatarUrl ? <img src={sender.avatarUrl} alt={sender.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <div className="text-sm font-bold text-white">{sender?.nickname || 'Soberano'}</div>
+                                                                    <div className="text-xs text-gray-400">convoca você para observar {invite.arenaSnapshot?.name || 'uma arena'}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button onClick={() => declineInvite(invite)} className="w-full py-2 rounded-xl luxe-button-secondary">RECUSAR</button>
+                                                                <button onClick={() => acceptInvite(invite)} className="w-full py-2 rounded-xl luxe-skin-button">ACEITAR</button>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <div className="text-sm font-bold text-white">{sender?.nickname || 'Soberano'}</div>
-                                                            <div className="text-xs text-gray-400">convoca você para observar {invite.arenaSnapshot?.name || 'uma arena'}</div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-2">
+                                            <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS PUPILOS</div>
+                                            {myPupils.length === 0 ? (
+                                                <div className="text-center text-sm text-gray-500 py-4">Nenhum vínculo ativo.</div>
+                                            ) : (
+                                                myPupils.map(link => {
+                                                    const pupil = getProfile(link.pupilId);
+                                                    const localValue = typeof sliderValues[link.id] === 'number' ? sliderValues[link.id] : link.satisfactionLevel;
+                                                    return (
+                                                        <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
+                                                            <div className="flex items-center gap-3 cursor-pointer hover:bg-white/5 rounded-xl p-1 transition-colors" onClick={() => fetchSpectatorData(link.pupilId, link.arenaId, pupil?.nickname || 'Pupilo')}>
+                                                                <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
+                                                                    {pupil?.avatarUrl ? <img src={pupil.avatarUrl} alt={pupil.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <div className="text-sm font-bold text-white">{pupil?.nickname || 'Pupilo'}</div>
+                                                                    <div className="text-xs text-gray-400">{link.arenaSnapshot?.icon || '👁️'} {link.arenaSnapshot?.name || 'Arena'}</div>
+                                                                </div>
+                                                                <div className="text-xs font-bold text-gray-400">{Math.round(localValue)}%</div>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <input
+                                                                    type="range"
+                                                                    min={0}
+                                                                    max={100}
+                                                                    value={localValue}
+                                                                    onChange={(e) => {
+                                                                        const next = Number(e.target.value);
+                                                                        setSliderValues(prev => ({ ...prev, [link.id]: next }));
+                                                                    }}
+                                                                    onMouseUp={() => setSatisfaction(link, localValue)}
+                                                                    onTouchEnd={() => setSatisfaction(link, localValue)}
+                                                                    className={`w-full h-2 rounded-full appearance-none bg-gradient-to-r ${sliderColor(localValue)} outline-none`}
+                                                                />
+                                                                {savingLinkId === link.id && <div className="text-[10px] text-gray-500">Salvando...</div>}
+                                                            </div>
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                <button onClick={() => sendSignal(link, 'praise')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">ELOGIO</button>
+                                                                <button onClick={() => sendSignal(link, 'support')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">FORÇA</button>
+                                                                <button onClick={() => sendSignal(link, 'scold')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">BRONCA</button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS MENTORES</div>
+                                            {myMentors.length === 0 ? (
+                                                <div className="text-center text-sm text-gray-500 py-4">Nenhum mentor te observando.</div>
+                                            ) : (
+                                                myMentors.map(link => {
+                                                    const mentor = getProfile(link.mentorId);
+                                                    const value = link.satisfactionLevel;
+                                                    return (
+                                                        <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
+                                                                    {mentor?.avatarUrl ? <img src={mentor.avatarUrl} alt={mentor.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <div className="text-sm font-bold text-white">{mentor?.nickname || 'Mentor'}</div>
+                                                                    <div className="text-xs text-gray-400">observa {link.arenaSnapshot?.icon || '👁️'} {link.arenaSnapshot?.name || 'Arena'}</div>
+                                                                </div>
+                                                                <div className={`text-xs font-bold ${value < 34 ? 'text-red-400' : value < 67 ? 'text-yellow-400' : 'text-green-400'}`}>{value}%</div>
+                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min={0}
+                                                                max={100}
+                                                                value={value}
+                                                                readOnly
+                                                                className={`w-full h-2 rounded-full appearance-none bg-gradient-to-r ${sliderColor(value)} outline-none opacity-80`}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+
+                                {activeTab === 'parcerias' && (
+                                    <div className="space-y-4">
+                                        <div className="text-[10px] font-black tracking-widest text-gray-400">VÍNCULOS DE SANGUE</div>
+                                        {myPartners.length === 0 ? (
+                                            <div className="text-center text-sm text-gray-500 py-4">Nenhuma parceria ativa.</div>
+                                        ) : (
+                                            myPartners.map(link => {
+                                                const isMeMentor = link.mentorId === sessionUid;
+                                                const partnerId = isMeMentor ? link.pupilId : link.mentorId;
+                                                const partner = getProfile(partnerId);
+                                                
+                                                return (
+                                                    <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
+                                                                {partner?.avatarUrl ? <img src={partner.avatarUrl} alt={partner.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <div className="text-sm font-bold text-white">{partner?.nickname || 'Parceiro'}</div>
+                                                                <div className="text-xs text-gray-400">Parceria em {link.arenaSnapshot?.name || 'Arena'}</div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="flex gap-2">
+                                                             <div className="flex-1 bg-black/30 rounded-xl p-2 text-center border border-white/5 cursor-pointer hover:border-white/20" onClick={() => isMeMentor ? null : fetchSpectatorData(partnerId, link.arenaId, partner?.nickname || 'Parceiro')}>
+                                                                 <div className="text-[10px] text-gray-500 uppercase">Eu</div>
+                                                                 <div className="text-sm font-bold text-white">{link.arenaSnapshot?.name}</div>
+                                                                 {/* Sync status would go here */}
+                                                             </div>
+                                                             <div className="flex-1 bg-black/30 rounded-xl p-2 text-center border border-white/5 cursor-pointer hover:border-white/20" onClick={() => !isMeMentor ? null : fetchSpectatorData(partnerId, link.arenaId, partner?.nickname || 'Parceiro')}>
+                                                                 <div className="text-[10px] text-gray-500 uppercase">Parceiro</div>
+                                                                 <div className="text-sm font-bold text-white">{link.arenaSnapshot?.name}</div>
+                                                             </div>
+                                                        </div>
+                                                        
+                                                        <div className="text-center text-[10px] text-gray-500 italic">
+                                                            "Aguardando sincronia..."
                                                         </div>
                                                     </div>
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => declineInvite(invite)} className="w-full py-2 rounded-xl luxe-button-secondary">RECUSAR</button>
-                                                        <button onClick={() => acceptInvite(invite)} className="w-full py-2 rounded-xl luxe-skin-button">ACEITAR</button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            })
+                                        )}
                                     </div>
                                 )}
 
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS PUPILOS</div>
-                                    {myPupils.length === 0 ? (
-                                        <div className="text-center text-sm text-gray-500 py-4">Nenhum vínculo ativo.</div>
-                                    ) : (
-                                        myPupils.map(link => {
-                                            const pupil = getProfile(link.pupilId);
-                                            const localValue = typeof sliderValues[link.id] === 'number' ? sliderValues[link.id] : link.satisfactionLevel;
-                                            return (
-                                                <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
-                                                            {pupil?.avatarUrl ? <img src={pupil.avatarUrl} alt={pupil.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <div className="text-sm font-bold text-white">{pupil?.nickname || 'Pupilo'}</div>
-                                                            <div className="text-xs text-gray-400">{link.arenaSnapshot?.icon || '👁️'} {link.arenaSnapshot?.name || 'Arena'}</div>
-                                                        </div>
-                                                        <div className="text-xs font-bold text-gray-400">{Math.round(localValue)}%</div>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <input
-                                                            type="range"
-                                                            min={0}
-                                                            max={100}
-                                                            value={localValue}
-                                                            onChange={(e) => {
-                                                                const next = Number(e.target.value);
-                                                                setSliderValues(prev => ({ ...prev, [link.id]: next }));
-                                                            }}
-                                                            onMouseUp={() => setSatisfaction(link, localValue)}
-                                                            onTouchEnd={() => setSatisfaction(link, localValue)}
-                                                            className={`w-full h-2 rounded-full appearance-none bg-gradient-to-r ${sliderColor(localValue)} outline-none`}
-                                                        />
-                                                        {savingLinkId === link.id && <div className="text-[10px] text-gray-500">Salvando...</div>}
-                                                    </div>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        <button onClick={() => sendSignal(link, 'praise')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">ELOGIO</button>
-                                                        <button onClick={() => sendSignal(link, 'support')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">FORÇA</button>
-                                                        <button onClick={() => sendSignal(link, 'scold')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">BRONCA</button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS MENTORES</div>
-                                    {myMentors.length === 0 ? (
-                                        <div className="text-center text-sm text-gray-500 py-4">Nenhum mentor te observando.</div>
-                                    ) : (
-                                        myMentors.map(link => {
-                                            const mentor = getProfile(link.mentorId);
-                                            const value = link.satisfactionLevel;
-                                            return (
-                                                <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
-                                                            {mentor?.avatarUrl ? <img src={mentor.avatarUrl} alt={mentor.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <div className="text-sm font-bold text-white">{mentor?.nickname || 'Mentor'}</div>
-                                                            <div className="text-xs text-gray-400">observa {link.arenaSnapshot?.icon || '👁️'} {link.arenaSnapshot?.name || 'Arena'}</div>
-                                                        </div>
-                                                        <div className={`text-xs font-bold ${value < 34 ? 'text-red-400' : value < 67 ? 'text-yellow-400' : 'text-green-400'}`}>{value}%</div>
-                                                    </div>
-                                                    <input
-                                                        type="range"
-                                                        min={0}
-                                                        max={100}
-                                                        value={value}
-                                                        readOnly
-                                                        className={`w-full h-2 rounded-full appearance-none bg-gradient-to-r ${sliderColor(value)} outline-none opacity-80`}
-                                                    />
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
+                                {activeTab === 'desafios' && (
+                                    <div className="space-y-4">
+                                        <div className="text-[10px] font-black tracking-widest text-gray-400">EVENTOS PVP</div>
+                                        <div className="bg-black/20 border border-white/10 rounded-2xl p-4 text-center space-y-2 opacity-70">
+                                            <div className="text-2xl">⚔️</div>
+                                            <div className="text-sm font-bold text-white">Corrida de XP</div>
+                                            <div className="text-xs text-gray-400">Quem faz 1000xp primeiro?</div>
+                                            <div className="w-full bg-black/30 rounded-full h-2 mt-2 overflow-hidden">
+                                                <div className="bg-blue-500 h-full w-1/2"></div>
+                                            </div>
+                                            <div className="text-[10px] text-gray-500">Expira em 2d 4h</div>
+                                        </div>
+                                        <div className="text-center text-xs text-gray-500 py-4">Mais desafios em breve.</div>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
                 )}
             </GlassCard>
+            {spectatorData && (
+                <SpectatorArenaModal
+                    arena={spectatorData.arena}
+                    actions={spectatorData.actions}
+                    tasks={spectatorData.tasks}
+                    pupilName={spectatorData.pupilName}
+                    onClose={() => setSpectatorData(null)}
+                >
+                    {/* Add controls here if needed, like slider for mentor */}
+                </SpectatorArenaModal>
+            )}
         </div>
     );
 };
@@ -681,6 +792,56 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
 };
 
+const NobrezaHierarchyView: React.FC = () => {
+    const { userProfile, nobilityRanks } = useGame();
+    const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);
+    const nextRankIndex = nobilityRanks.findIndex(r => r.id === userProfile.nobility.rankId) + 1;
+    const nextRank = nobilityRanks[nextRankIndex];
+    const expForCurrentRank = currentRank?.expTotalRequired || 0;
+    const expForNextRank = nextRank?.expTotalRequired || expForCurrentRank;
+    const progressInRank = userProfile.nobility.exp - expForCurrentRank;
+    const expToNextRank = expForNextRank - expForCurrentRank;
+    const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
+
+    return (
+        <div className="space-y-6">
+            <GlassCard variant="accent" className="text-center">
+                <p className="text-sm uppercase tracking-wider">NOBREZA</p>
+                <h2 className="text-3xl font-black accent-text">{currentRank?.name || 'N/A'}</h2>
+                <div className="mt-4">
+                    <div className="flex justify-between text-xs font-bold">
+                        <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
+                        <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
+                    </div>
+                    <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
+                        <div className="bg-[var(--skin-accent-color)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold text-white/70 mt-2">
+                        <span>{currentRank ? `${currentRank.expTotalRequired.toLocaleString('pt-BR')} XP (patente)` : ''}</span>
+                        <span>{nextRank ? `${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP (próxima)` : 'Topo'}</span>
+                    </div>
+                </div>
+            </GlassCard>
+            <div>
+                <h3 className="text-lg font-bold tracking-wider mb-2">Hierarquia da Nobreza</h3>
+                <div className="space-y-2">
+                    {nobilityRanks.map(rank => (
+                        <GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--skin-accent-color)]' : 'opacity-70'}`}>
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold">{rank.name}</span>
+                                <span className="text-sm text-gray-400">{rank.expTotalRequired.toLocaleString('pt-BR')} XP</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-bold text-white/60 mt-1">
+                                <span>{rank.expTotalRequired.toLocaleString('pt-BR')} XP total</span>
+                            </div>
+                        </GlassCard>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const GeralTab: React.FC = () => {
     const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets } = useGame();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
@@ -698,10 +859,8 @@ const GeralTab: React.FC = () => {
         if (error) {
             console.error("Error logging out:", error.message);
         }
-        // The onAuthStateChange listener in App.tsx will handle redirecting to LoginView
     };
 
-    // Nobility logic
     const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);
     const nextRankIndex = nobilityRanks.findIndex(r => r.id === userProfile.nobility.rankId) + 1;
     const nextRank = nobilityRanks[nextRankIndex];
@@ -917,24 +1076,22 @@ const AssistantModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
 };
 
-const ConfigTab: React.FC = () => {
+// --- NEW TABS ---
+
+const PreferenciasTab: React.FC = () => {
     const { userProfile } = useGame();
     const [notificationMode, setNotificationMode] = useState<NotificationMode>('Militar');
     const [privacyMode, setPrivacyMode] = useState<PrivacyMode>('Amigos');
     const [modal, setModal] = useState<'notification' | 'privacy' | 'tutorial' | null>(null);
-    const [isCodexOpen, setCodexOpen] = useState(false);
-    const [isLinksOpen, setLinksOpen] = useState(false);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
-    const [isAssistantOpen, setAssistantOpen] = useState(false);
 
-    const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
     const currentNotificationName = notificationModes.find(m => m.id === notificationMode)?.name || 'N/A';
 
     return (
         <div className="space-y-8 animate-fade-in pb-10">
             {/* Grupo Geral */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Geral</h2>
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
                 <div className="space-y-2">
                     <SettingSelector label="Tutoriais" value="Revisar" onClick={() => setModal('tutorial')} />
                     <SettingSelector label="Privacidade" value={privacyMode} onClick={() => setModal('privacy')} />
@@ -953,7 +1110,23 @@ const ConfigTab: React.FC = () => {
                 </button>
             </section>
 
-            {/* Grupo Premium (Opaque) */}
+            {modal === 'notification' && <NotificationSettingsModal currentMode={notificationMode} onSave={setNotificationMode} onClose={() => setModal(null)} />}
+            {modal === 'privacy' && <ConfirmationModal title="Modo de Privacidade" message="Função ainda não implementada." onConfirm={() => setModal(null)} onCancel={() => setModal(null)} />}
+            {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}
+            {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
+        </div>
+    );
+};
+
+const PremiumTab: React.FC = () => {
+    const { userProfile } = useGame();
+    const [isLinksOpen, setLinksOpen] = useState(false);
+    const [isAssistantOpen, setAssistantOpen] = useState(false);
+    const [isCodexOpen, setCodexOpen] = useState(false);
+    const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
+
+    return (
+        <div className="space-y-8 animate-fade-in pb-10">
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
                     <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Soberania (Premium)</h2>
@@ -963,36 +1136,36 @@ const ConfigTab: React.FC = () => {
                 <GlassCard variant="neutral" className={`p-4 space-y-3 ${!isPremium ? 'opacity-50 grayscale' : ''}`}>
                     <div className="grid grid-cols-2 gap-3">
                         <button
-                            onClick={() => { if (isPremium) setCodexOpen(true); }}
-                            disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group"
-                        >
-                            <span className="text-2xl group-hover:scale-110 transition-transform">📚</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Codexes</span>
-                        </button>
-                        <button
                             onClick={() => { if (isPremium) setLinksOpen(true); }}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group"
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
                         >
-                            <span className="text-2xl group-hover:scale-110 transition-transform">🔗</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">🔗</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
                         </button>
                         <button
-                            onClick={() => alert('Mock: campanhas não implementadas.')}
+                            onClick={() => { if (isPremium) setCodexOpen(true); }}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group"
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
                         >
-                            <span className="text-2xl group-hover:scale-110 transition-transform">🎯</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">📜</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Codex</span>
                         </button>
                         <button
                             onClick={() => { if (isPremium) setAssistantOpen(true); }}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group"
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
                         >
-                            <span className="text-2xl group-hover:scale-110 transition-transform">🤖</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">🤖</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Assistente</span>
+                        </button>
+                        <button
+                            onClick={() => alert('Mock: campanhas não implementadas.')}
+                            disabled={!isPremium}
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
+                        >
+                            <span className="text-3xl group-hover:scale-110 transition-transform">🎯</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>
                         </button>
                     </div>
                     {!isPremium && (
@@ -1009,351 +1182,113 @@ const ConfigTab: React.FC = () => {
                 </div>
             )}
 
-            {modal === 'notification' && <NotificationSettingsModal currentMode={notificationMode} onSave={setNotificationMode} onClose={() => setModal(null)} />}
-            {modal === 'privacy' && <ConfirmationModal title="Modo de Privacidade" message="Função ainda não implementada." onConfirm={() => setModal(null)} onCancel={() => setModal(null)} />}
-            {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}
-            {isPremium && isCodexOpen && <CodexModal onClose={() => setCodexOpen(false)} />}
-            {isPremium && isLinksOpen && <LinksModal onClose={() => setLinksOpen(false)} />}
-            {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
+            {isLinksOpen && <LinksModal onClose={() => setLinksOpen(false)} />}
             {isAssistantOpen && <AssistantModal onClose={() => setAssistantOpen(false)} />}
+            {isCodexOpen && <CodexListModal onClose={() => setCodexOpen(false)} />}
         </div>
     );
 };
 
-const ArsenalTab: React.FC<{onOpenSovereignEditor: () => void}> = ({ onOpenSovereignEditor }) => {
-    const { userProfile, openChest, levelUnlocks, nobilityRanks } = useGame();
-    const [openingChest, setOpeningChest] = useState<ChestType | null>(null);
-    const [selectedItem, setSelectedItem] = useState<{ item: any; type: ItemType } | null>(null);
-    
-    const InventoryPlaceholder: React.FC = () => <div className="w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-dashed border-[var(--skin-accent-color)]/20 rounded-lg" />;
-    
-    const InventoryItem: React.FC<{ item: any; onClick: () => void; count?: number; isEquipped?: boolean; }> = ({ item, onClick, count, isEquipped }) => {
-        const imageUrl = item.url || item.imageUrl;
-        const rarity = item.rarity || 'common';
-        const rarityColor = {
-            'common': null,
-            'uncommon': '#FFFFFF',
-            'rare': '#CD7F32',
-            'epic': '#C0C0C0',
-            'legendary': '#F0C843'
-        }[rarity as string];
+interface CodexActionModalProps {
+    codex: typeof CODEXES[0];
+    onClose: () => void;
+    onApply: () => void;
+    onDelete: () => void;
+    onDonate: (friendId: string) => void;
+}
 
-        const glowStyle = (isEquipped && (rarity === 'epic' || rarity === 'legendary')) ? {
-            boxShadow: `0 0 10px ${rarityColor}, 0 0 2px ${rarityColor} inset`
-        } : {};
+const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onApply, onDelete, onDonate }) => {
+    const { friends } = useGame();
+    const [view, setView] = useState<'main' | 'donate'>('main');
+    const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
 
-        return (
-            <button onClick={onClick} className="relative w-20 h-20 flex-shrink-0 bg-black/30 border-2 border-[var(--skin-accent-color)]/30 rounded-lg flex flex-col items-center justify-center p-1 text-center hover:border-[var(--skin-accent-color)] transition-all duration-300 group" style={glowStyle}>
-                <div className="w-full h-full flex items-center justify-center">{imageUrl ? (<img src={imageUrl} alt={item.name} className="max-w-full max-h-full object-contain" />) : item.color ? (<div className="w-10 h-10 rounded-full" style={{ backgroundColor: item.color }} />) : (<span className="text-2xl">?</span>)}</div>
-                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] font-bold p-0.5 truncate group-hover:bg-black/80">{item.name}</div>
-                {count && count > 1 && <div className="absolute top-0 right-0 bg-black text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">x{count}</div>}
-                {rarityColor && (
-                    <div className="absolute top-1 right-1 w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: rarityColor }}></div>
-                )}
-            </button>
-        );
-    };
-
-    const InventoryRow: React.FC<{ title: string; children: React.ReactNode; }> = ({ title, children }) => (
-        <div><h4 className="text-xs font-semibold text-gray-400 mb-1 px-1">{title}</h4><div className="flex space-x-2 overflow-x-auto pb-2 -mx-1 px-1 hide-scrollbar">{children}</div></div>
-    );
-    
-    const chestColors: Record<ChestType, string> = { 'Comum': 'gray', 'Raro': '#3b82f6', 'Épico': '#a855f7', 'Lendário': '#f59e0b' };
-    const chestRarityMap: Record<ChestType, string> = { 'Comum': 'common', 'Raro': 'rare', 'Épico': 'epic', 'Lendário': 'legendary' };
-    const unlockedSkins = userProfile.unlockedSkins || {};
-    const completedSeasonMissions = userProfile.completedSeasonMissions || [];
-    const currentRankIndex = nobilityRanks.findIndex(rank => rank.id === userProfile.nobility.rankId);
-    const rankIndexFor = (rankId: string) => nobilityRanks.findIndex(rank => rank.id === rankId);
-    const isRankAtLeast = (rankId: string) => currentRankIndex >= rankIndexFor(rankId);
-    const isStaff = userProfile.role === 'admin' || userProfile.role === 'gm';
-
-    const itemUnlockBasis = ((GM_CONFIG as any)?.unlocks?.itemUnlockBasis === 'nobility' ? 'nobility' : 'level') as 'level' | 'nobility';
-    const userUnlockValue = itemUnlockBasis === 'nobility' ? Math.max(1, currentRankIndex + 1) : userProfile.level;
-    const isItemUnlocked = (category: 'artifacts', itemId: string) => {
-        const levelRequired = levelUnlocks[category]?.[itemId] ?? 1;
-        return levelRequired <= userUnlockValue || userProfile.unlockedItems?.[category]?.[itemId];
-    };
-    const isSkinUnlocked = (skinId: string) => {
-        if (isStaff) return true;
-        if (userProfile.skin === skinId) return true;
-        if (unlockedSkins[skinId]) return true;
-        if ((SKIN_UNLOCKS_BY_RANK[userProfile.nobility.rankId] || []).includes(skinId)) return true;
-        const seasonMissionIds = SKIN_SEASON_UNLOCKS[skinId] || [];
-        return seasonMissionIds.some(missionId => completedSeasonMissions.includes(missionId));
-    };
-    const isBorderUnlocked = (borderId: string) => {
-        if (isStaff) return true;
-        if (userProfile.border === borderId) return true;
-        if (borderId === 'DISCIPLINADO') return isRankAtLeast('escudeiro');
-        return false;
-    };
-    const isBannerUnlocked = (bannerUrl: string) => {
-        if (isStaff) return true;
-        if (!bannerUrl) return false;
-        return bannerUrl === userProfile.bannerUrl;
+    const handleDonateClick = () => {
+        if (!selectedFriend) return;
+        onDonate(selectedFriend);
+        onClose();
     };
 
     return (
-        <div className="space-y-6">
-            <button onClick={onOpenSovereignEditor} className="w-full py-3 rounded-xl luxe-skin-button transition-transform hover:scale-105">EDITAR SOBERANO</button>
-            <div>
-                <h3 className="text-lg font-bold tracking-wider mb-2">Inventário</h3>
-                <div className="space-y-3">
-                    <InventoryRow title="BAÚS">
-                        {userProfile.chests && userProfile.chests.length > 0 ? (
-                            userProfile.chests.map(({ type, count }) => (
-                                <InventoryItem
-                                    key={type}
-                                    item={{ name: `Baú ${type}`, color: chestColors[type], rarity: chestRarityMap[type] }}
-                                    count={count}
-                                    onClick={() => {
-                                        if (openChest(type)) {
-                                            setOpeningChest(type);
-                                        }
-                                    }}
-                                />
-                            ))
-                        ) : <InventoryPlaceholder />}
-                    </InventoryRow>
-                    <InventoryRow title="ARTEFATOS">{SOVEREIGN_ASSETS.artifacts.filter(a => a.id !== 'none').filter(item => isItemUnlocked('artifacts', item.id)).map(item => <InventoryItem key={item.id} item={item} isEquipped={userProfile.sovereign?.artifact === item.id} onClick={() => setSelectedItem({item, type: 'Artefato'})} />)}</InventoryRow>
-                    <InventoryRow title="CONSUMÍVEIS"><InventoryPlaceholder /><InventoryPlaceholder /><InventoryPlaceholder /></InventoryRow>
-                    <InventoryRow title="SKINS">
-                        {SKINS_DATA.filter(item => isSkinUnlocked(item.id)).map(item => (
-                            <InventoryItem key={item.id} item={item} isEquipped={userProfile.skin === item.id} onClick={() => setSelectedItem({item, type: 'Skin'})} />
-                        ))}
-                    </InventoryRow>
-                    <InventoryRow title="BORDAS">
-                        {BORDERS_DATA.filter(item => isBorderUnlocked(item.id)).map(item => (
-                            <InventoryItem key={item.id} item={item} isEquipped={userProfile.border === item.id} onClick={() => setSelectedItem({item, type: 'Borda'})} />
-                        ))}
-                    </InventoryRow>
-                    <InventoryRow title="BANNERS">
-                        {BANNERS_DATA.filter(item => isBannerUnlocked(item.url)).map(item => (
-                            <InventoryItem key={item.id} item={item} isEquipped={userProfile.bannerUrl === item.url} onClick={() => setSelectedItem({item, type: 'Banner'})} />
-                        ))}
-                    </InventoryRow>
-                </div>
-            </div>
-            {openingChest && <ChestOpeningModal chestType={openingChest} onClose={() => setOpeningChest(null)} />}
-            {selectedItem && <ItemDetailModal item={selectedItem.item} type={selectedItem.type} onClose={() => setSelectedItem(null)} />}
-        </div>
-    );
-};
-
-const NobrezaHierarchyView: React.FC = () => {
-    const { userProfile, nobilityRanks } = useGame();
-    const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);
-    const nextRankIndex = nobilityRanks.findIndex(r => r.id === userProfile.nobility.rankId) + 1;
-    const nextRank = nobilityRanks[nextRankIndex];
-    const expForCurrentRank = currentRank?.expTotalRequired || 0;
-    const expForNextRank = nextRank?.expTotalRequired || expForCurrentRank;
-    const progressInRank = userProfile.nobility.exp - expForCurrentRank;
-    const expToNextRank = expForNextRank - expForCurrentRank;
-    const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
-
-    return (
-        <div className="space-y-6">
-            <GlassCard variant="accent" className="text-center">
-                <p className="text-sm uppercase tracking-wider">NOBREZA</p>
-                <h2 className="text-3xl font-black accent-text">{currentRank?.name || 'N/A'}</h2>
-                <div className="mt-4">
-                    <div className="flex justify-between text-xs font-bold">
-                        <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
-                        <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
-                    </div>
-                    <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
-                        <div className="bg-[var(--skin-accent-color)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%`}}></div>
-                    </div>
-                    <div className="flex justify-between text-[10px] font-bold text-white/70 mt-2">
-                        <span>{currentRank ? `${currentRank.expTotalRequired.toLocaleString('pt-BR')} XP (patente)` : ''}</span>
-                        <span>{nextRank ? `${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP (próxima)` : 'Topo'}</span>
-                    </div>
-                </div>
-            </GlassCard>
-            <div>
-                <h3 className="text-lg font-bold tracking-wider mb-2">Hierarquia da Nobreza</h3>
-                <div className="space-y-2">
-                    {nobilityRanks.map(rank => (
-                        <GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--skin-accent-color)]' : 'opacity-70'}`}>
-                            <div className="flex justify-between items-center">
-                                <span className="font-bold">{rank.name}</span>
-                                <span className="text-sm text-gray-400">{rank.expTotalRequired.toLocaleString('pt-BR')} XP</span>
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] font-bold text-white/60 mt-1">
-                                <span>{rank.expTotalRequired.toLocaleString('pt-BR')} XP total</span>
-                            </div>
-                        </GlassCard>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const MissionCard: React.FC<{ title: string; progress: number; onClick?: () => void }> = ({ title, progress, onClick }) => (
-    <GlassCard variant="neutral" className={`p-3 ${onClick ? 'cursor-pointer' : ''}`} onClick={onClick}><div className="flex items-center justify-between"><span className="font-semibold text-sm">{title}</span><div className="flex items-center space-x-2"><span className="text-xs font-mono">{progress}%</span><div className="w-5 h-5 rounded-full border-2 border-[var(--skin-accent-color)] flex items-center justify-center">{progress === 100 && <CheckIcon className="w-3 h-3 accent-text" />}</div></div></div></GlassCard>
-);
-
-const MissionDetailModal: React.FC<{ mission: { title: string; progress: number }, onClose: () => void }> = ({ mission, onClose }) => {
-    return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}><GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-6 rounded-3xl" onClick={e => e.stopPropagation()}><h2 className="text-lg font-bold uppercase tracking-wider text-center">{mission.title}</h2><div className="space-y-2"><div className="w-full bg-black/30 rounded-full h-2.5"><div className="bg-[var(--skin-accent-color)] h-2.5 rounded-full" style={{ width: `${mission.progress}%` }}></div></div><p className="text-center text-sm font-bold">{mission.progress}%</p></div><div className="flex space-x-2"><button onClick={() => alert('Arquivado!')} className="w-full py-2 rounded-xl luxe-button-secondary">Arquivar Missão</button><button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button></div></GlassCard></div>
-    );
-};
-
-export const ExpandableMissionCard: React.FC<{ quest: ConfigSeasonQuest; isAccepted: boolean; isClaimed: boolean; progress: number; participants?: number; onAccept: () => void; onClaim: () => void }> = ({ quest, isAccepted, isClaimed, progress, participants, onAccept, onClaim }) => {
-    const [expanded, setExpanded] = useState(false);
-    const isCompleted = progress >= 100;
-    const isClan = quest.type === 'clan';
-
-    return (
-        <GlassCard variant={isClan ? 'accent' : 'neutral'} className="p-3 relative overflow-hidden group transition-all duration-300">
-            <div onClick={() => setExpanded(!expanded)} className="cursor-pointer flex items-center justify-between">
-                <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                        <span className="text-lg accent-text">{quest.actionTemplate.icon}</span>
-                        <h3 className="font-bold text-sm uppercase tracking-wide">{quest.title}</h3>
-                    </div>
-                    {isAccepted && (
-                        <div className="mt-1 flex items-center space-x-2">
-                            <div className="flex-grow bg-black/30 rounded-full h-1.5">
-                                <div className={`h-1.5 rounded-full transition-all duration-500 ${isClan ? 'bg-[var(--skin-accent-color)]' : 'bg-white'}`} style={{ width: `${Math.min(100, progress)}%` }}></div>
-                            </div>
-                            <span className="text-[10px] font-mono font-bold text-gray-400">{progress}%</span>
-                        </div>
-                    )}
-                    {isClan && (
-                        <div className="mt-1 flex items-center space-x-1 text-[10px] text-gray-400">
-                            <UsersIcon className="w-3 h-3" />
-                            <span>{participants || 0} guerreiros ativos</span>
-                        </div>
-                    )}
-                </div>
-                <div className={`transform transition-transform duration-300 ${expanded ? 'rotate-90' : ''}`}>
-                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                </div>
-            </div>
-
-            {expanded && (
-                <div className="mt-3 pt-3 border-t border-white/5 space-y-3 animate-fade-in">
-                    <p className="text-xs text-gray-300 italic">"{quest.description}"</p>
-                    
-                    <div className="bg-black/20 rounded-lg p-2 space-y-1">
-                        <h4 className="text-[10px] font-bold text-gray-500 uppercase">Requisitos</h4>
-                        <div className="flex items-center space-x-2 text-xs">
-                            <span>{quest.actionTemplate.icon}</span>
-                            <span>{quest.actionTemplate.name} ({quest.actionTemplate.duration}min)</span>
-                            <span className="text-gray-500">x{quest.requirements.clanGoal || quest.requirements.totalReps || 1}</span>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-black/20 rounded-lg p-2">
-                        <div className="text-[10px] font-bold text-gray-500 uppercase">Recompensas</div>
-                        <div className="flex space-x-3 text-xs font-bold accent-text">
-                            <span>+{quest.rewards.xp} XP</span>
-                            {quest.rewards.gold && <span>+{quest.rewards.gold} Gold</span>}
-                        </div>
-                    </div>
-
-                    {!isAccepted ? (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); onAccept(); }} 
-                            className={`w-full py-2 rounded-xl text-xs font-bold tracking-widest transition-colors ${isClan ? 'bg-[var(--skin-accent-color)] hover:brightness-110 text-white' : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'}`}
-                        >
-                            {isClan ? 'JUNTAR-SE À FESTA' : 'ACEITAR MISSÃO'}
-                        </button>
-                    ) : (
-                        <>
-                            {isCompleted && !isClaimed ? (
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); onClaim(); }} 
-                                    className="w-full py-2 rounded-xl text-xs font-bold tracking-widest bg-green-600 hover:bg-green-500 text-white transition-colors animate-pulse"
-                                >
-                                    RESGATAR RECOMPENSA
-                                </button>
-                            ) : (
-                                <div className="text-center text-[10px] text-gray-500 font-bold uppercase tracking-widest py-1">
-                                    {isClaimed ? 'RECOMPENSA RESGATADA' : 'EM ANDAMENTO'}
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-            )}
-        </GlassCard>
-    );
-};
-
-const MissionCreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const [jsonOutput, setJsonOutput] = useState('');
-    const [formData, setFormData] = useState({
-        id: `quest-${Date.now()}`,
-        title: '',
-        description: '',
-        type: 'individual',
-        category: 'physical',
-        xp: 1000,
-        gold: 50,
-        actionName: '',
-        actionIcon: '⚔️',
-        actionDuration: 15,
-        reps: 1
-    });
-
-    const generateJSON = () => {
-        const quest: ConfigSeasonQuest = {
-            id: formData.id,
-            title: formData.title,
-            description: formData.description,
-            type: formData.type as any,
-            category: formData.category as any,
-            actionTemplate: {
-                name: formData.actionName,
-                description: formData.description,
-                duration: Number(formData.actionDuration),
-                icon: formData.actionIcon,
-                repetitions: Number(formData.reps)
-            },
-            requirements: {
-                totalReps: Number(formData.reps)
-            },
-            rewards: {
-                xp: Number(formData.xp),
-                gold: Number(formData.gold)
-            }
-        };
-        setJsonOutput(JSON.stringify(quest, null, 2));
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-lg m-4 p-4 space-y-4 rounded-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-bold uppercase tracking-wider accent-text">Criador de Missões</h2>
-                    <button onClick={onClose}><XIcon className="w-5 h-5" /></button>
-                </div>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <GlassCard variant="neutral" className="w-full max-w-sm m-4 p-6 space-y-6 rounded-3xl relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                {/* Background Glow */}
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-[var(--skin-accent-color)]/10 blur-[50px] pointer-events-none" />
                 
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="space-y-1"><label>ID</label><input className="w-full bg-black/30 p-2 rounded" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} /></div>
-                    <div className="space-y-1"><label>Tipo</label><select className="w-full bg-black/30 p-2 rounded" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option value="individual">Individual</option><option value="clan">Clã</option></select></div>
-                    <div className="col-span-2 space-y-1"><label>Título</label><input className="w-full bg-black/30 p-2 rounded" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} /></div>
-                    <div className="col-span-2 space-y-1"><label>Descrição</label><textarea className="w-full bg-black/30 p-2 rounded" rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></div>
-                    
-                    <div className="space-y-1"><label>XP Reward</label><input type="number" className="w-full bg-black/30 p-2 rounded" value={formData.xp} onChange={e => setFormData({...formData, xp: Number(e.target.value)})} /></div>
-                    <div className="space-y-1"><label>Gold Reward</label><input type="number" className="w-full bg-black/30 p-2 rounded" value={formData.gold} onChange={e => setFormData({...formData, gold: Number(e.target.value)})} /></div>
-                    
-                    <div className="col-span-2 pt-2 font-bold accent-text">Ação Template</div>
-                    <div className="space-y-1"><label>Nome da Ação</label><input className="w-full bg-black/30 p-2 rounded" value={formData.actionName} onChange={e => setFormData({...formData, actionName: e.target.value})} /></div>
-                    <div className="space-y-1"><label>Ícone</label><input className="w-full bg-black/30 p-2 rounded" value={formData.actionIcon} onChange={e => setFormData({...formData, actionIcon: e.target.value})} /></div>
-                    <div className="space-y-1"><label>Duração (min)</label><input type="number" className="w-full bg-black/30 p-2 rounded" value={formData.actionDuration} onChange={e => setFormData({...formData, actionDuration: Number(e.target.value)})} /></div>
-                    <div className="space-y-1"><label>Repetições</label><input type="number" className="w-full bg-black/30 p-2 rounded" value={formData.reps} onChange={e => setFormData({...formData, reps: Number(e.target.value)})} /></div>
+                <button onClick={onClose} className="absolute top-4 right-4 p-1 rounded-full bg-black/20 hover:bg-black/50 z-10">
+                    <XIcon className="w-6 h-6" />
+                </button>
+
+                <div className="flex flex-col items-center text-center space-y-4 relative z-10">
+                    <div className="w-24 h-24 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center text-6xl shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                        {codex.icon}
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-white">{codex.name}</h2>
+                        <p className="text-sm text-gray-400 mt-1">Codex de Conhecimento</p>
+                    </div>
                 </div>
 
-                <button onClick={generateJSON} className="w-full py-2 rounded-xl luxe-skin-button">Gerar JSON</button>
+                {view === 'main' ? (
+                    <div className="grid grid-cols-3 gap-3 pt-4">
+                        <button 
+                            onClick={onApply}
+                            className="flex flex-col items-center justify-center p-3 rounded-xl bg-black/40 border border-white/10 hover:bg-white/5 hover:border-green-500/50 transition-all group"
+                        >
+                            <CheckIcon className="w-6 h-6 text-green-400 mb-1 group-hover:scale-110 transition-transform" />
+                            <span className="text-[10px] font-bold text-gray-300">APLICAR</span>
+                        </button>
+                        <button 
+                            onClick={() => setView('donate')}
+                            className="flex flex-col items-center justify-center p-3 rounded-xl bg-black/40 border border-white/10 hover:bg-white/5 hover:border-blue-500/50 transition-all group"
+                        >
+                            <SendIcon className="w-6 h-6 text-blue-400 mb-1 group-hover:scale-110 transition-transform" />
+                            <span className="text-[10px] font-bold text-gray-300">DOAR</span>
+                        </button>
+                        <button 
+                            onClick={onDelete}
+                            className="flex flex-col items-center justify-center p-3 rounded-xl bg-black/40 border border-white/10 hover:bg-red-900/20 hover:border-red-500/50 transition-all group"
+                        >
+                            <TrashIcon className="w-6 h-6 text-red-400 mb-1 group-hover:scale-110 transition-transform" />
+                            <span className="text-[10px] font-bold text-gray-300">DELETAR</span>
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4 pt-2">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest text-center">Selecione o Aliado</h3>
+                        
+                        {friends.length === 0 ? (
+                            <div className="text-center text-xs text-gray-500 py-4">
+                                Você não possui aliados conectados.
+                            </div>
+                        ) : (
+                            <div className="max-h-[150px] overflow-y-auto space-y-2 pr-1">
+                                {friends.map(friend => (
+                                    <button
+                                        key={friend.id}
+                                        onClick={() => setSelectedFriend(friend.id)}
+                                        className={`w-full flex items-center p-2 rounded-xl border transition-all ${selectedFriend === friend.id ? 'bg-white/10 border-[var(--skin-accent-color)]' : 'bg-black/30 border-white/5 hover:bg-white/5'}`}
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-black/50 overflow-hidden mr-3">
+                                            {friend.avatarUrl ? <img src={friend.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs">?</div>}
+                                        </div>
+                                        <span className="text-sm font-bold text-gray-200">{friend.nickname}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
-                {jsonOutput && (
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-400">JSON (Copie e adicione ao GameContent.ts ou DB)</label>
-                        <textarea className="w-full bg-black/50 p-2 rounded text-[10px] font-mono h-32" value={jsonOutput} readOnly />
+                        <div className="flex space-x-2 pt-2">
+                            <button onClick={() => setView('main')} className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-400">
+                                Voltar
+                            </button>
+                            <button 
+                                onClick={handleDonateClick}
+                                disabled={!selectedFriend}
+                                className="flex-1 py-2 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Enviar
+                            </button>
+                        </div>
                     </div>
                 )}
             </GlassCard>
@@ -1361,181 +1296,162 @@ const MissionCreatorModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     );
 };
 
-const MissionsTab: React.FC = () => {
-    const { userProfile, tasks, seasons, acceptSeasonQuest, claimSeasonQuestReward, getArenas, getActionsForArena, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, userMissionParticipations, joinClanMission, addAction } = useGame();
-    const [selectedMission, setSelectedMission] = useState<{ id: number; title: string; progress: number } | null>(null);
-    const [openingChest, setOpeningChest] = useState<ChestType | null>(null);
+const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const { userProfile, updateUserProfile, friends } = useGame();
+    const [selectedCodex, setSelectedCodex] = useState<typeof CODEXES[0] | null>(null);
     const [isCreatorOpen, setCreatorOpen] = useState(false);
 
-    const activeSeason = seasons.find(s => s.is_active) || (SEASONS[ACTIVE_SEASON_ID] as any); // Fallback to constant if not in state yet
-    const seasonConfig = activeSeason ? SEASONS[activeSeason.id] : null;
-    const quests = seasonConfig ? seasonConfig.quests : [];
-    
-    const seasonArenaName = activeSeason ? `Quests - ${activeSeason.name}` : '';
-    const seasonArena = getArenas().find(a => a.name === seasonArenaName);
-    const seasonActions = seasonArena ? getActionsForArena(seasonArena.id) : [];
-    
-    // Check for Clan Arena
-    const clanArena = getArenas().find(a => a.name === 'Quests - Clã');
-    const clanActions = clanArena ? getActionsForArena(clanArena.id) : [];
+    // Filter owned codexes
+    const myCodexes = useMemo(() => {
+        const unlockedIds = Object.keys(userProfile.unlockedItems?.codexes || {});
+        // Also check legacy/default unlocked logic if needed, but assuming userProfile has them
+        return CODEXES.filter(c => unlockedIds.includes(c.id));
+    }, [userProfile.unlockedItems]);
 
-    const handleAcceptClanMission = (quest: any) => {
-        acceptSeasonQuest(quest.id);
+    const handleApply = () => {
+        // In the future, this could equip a related border or background
+        alert(`Codex "${selectedCodex?.name}" ativado com sucesso!`);
+        setSelectedCodex(null);
     };
 
-    useEffect(() => {
-        quests.forEach(q => {
-            if (q.type === 'clan') {
-                fetchClanQuestParticipants(q.id, q.actionTemplate.name);
-            }
-        });
-    }, [quests, fetchClanQuestParticipants]);
-
-    const calculateQuestProgress = (quest: ConfigSeasonQuest): number => {
-        if (quest.type === 'clan') {
-            const clanProgress = getClanQuestProgress(quest.id);
-            return Math.min(100, Math.round((clanProgress / (quest.requirements?.clanGoal || 50)) * 100)); 
+    const handleDelete = () => {
+        if (!selectedCodex) return;
+        if (confirm(`Tem certeza que deseja deletar ${selectedCodex.name}? Esta ação não pode ser desfeita.`)) {
+            // Remove from unlockedItems
+            const updatedCodexes = { ...(userProfile.unlockedItems?.codexes || {}) };
+            delete updatedCodexes[selectedCodex.id];
+            
+            updateUserProfile({
+                unlockedItems: {
+                    ...userProfile.unlockedItems,
+                    codexes: updatedCodexes
+                } as any
+            });
+            setSelectedCodex(null);
         }
-
-        const targetActions = seasonActions;
-        const action = targetActions.find(a => a.name === quest.actionTemplate.name);
-        if (!action) return 0;
-
-        const matchingTasks = tasks.filter(t => t.actionId === action.id && t.completed);
-        const count = matchingTasks.length;
-        
-        const required = quest.requirements?.totalReps || quest.actionTemplate.repetitions || 1;
-        return Math.min(100, Math.round((count / required) * 100));
+    };
+    
+    const handleCreateCodex = () => {
+        setCreatorOpen(true);
     };
 
-    // Logic for "Complete 3 Season Quests"
-    const individualQuests = quests.filter(q => q.type === 'individual');
-    const clanQuests = quests.filter(q => q.type === 'clan');
-    const completedQuestsCount = individualQuests.filter(q => calculateQuestProgress(q) >= 100).length;
-    const metaQuestProgress = Math.round((completedQuestsCount / 3) * 100);
+    const handleDonate = async (friendId: string) => {
+        if (!selectedCodex) return;
+        const friend = friends.find(f => f.id === friendId);
+        
+        if (confirm(`Confirmar envio de "${selectedCodex.name}" para ${friend?.nickname || 'Aliado'}? O item será removido do seu inventário.`)) {
+            try {
+                // 1. Get friend's current unlocked items
+                const { data: friendData, error: fetchError } = await supabase
+                    .from('user_profiles')
+                    .select('unlocked_items')
+                    .eq('id', friendId)
+                    .single();
 
-    // Introductory Missions logic
-    const introMissions = [ { id: 1, title: 'Criar seu primeiro Ciclo', progress: userProfile.level > 0 ? 100 : 0 }, { id: 2, title: 'Preencher Perfil de Ativos', progress: 80 }, { id: 3, title: 'Preencher Níveis de Soberano', progress: 50 }, { id: 4, title: 'Criar suas primeiras Arenas', progress: 20 }, { id: 5, title: 'Criar suas primeiras Ações', progress: 10 }, { id: 6, title: 'Completar uma Ação', progress: 0 }, { id: 10, title: 'Compartilhe seu Score', progress: 0 }, ];
+                if (fetchError) throw fetchError;
 
-    const isAdmin = userProfile.role === 'admin' || userProfile.role === 'gm';
+                const friendUnlockedItems = friendData.unlocked_items || {};
+                const friendCodexes = friendUnlockedItems.codexes || {};
+
+                // 2. Add codex to friend (using 1 as boolean/true equivalent)
+                const updatedFriendCodexes = { ...friendCodexes, [selectedCodex.id]: 1 };
+                const updatedFriendUnlockedItems = {
+                    ...friendUnlockedItems,
+                    codexes: updatedFriendCodexes
+                };
+
+                const { error: updateError } = await supabase
+                    .from('user_profiles')
+                    .update({ unlocked_items: updatedFriendUnlockedItems })
+                    .eq('id', friendId);
+
+                if (updateError) throw updateError;
+
+                // 3. Remove from me
+                const myUpdatedCodexes = { ...(userProfile.unlockedItems?.codexes || {}) };
+                delete myUpdatedCodexes[selectedCodex.id];
+                
+                updateUserProfile({
+                    unlockedItems: {
+                        ...userProfile.unlockedItems,
+                        codexes: myUpdatedCodexes
+                    } as any
+                });
+                
+                alert(`Codex enviado com sucesso para ${friend?.nickname}!`);
+                setSelectedCodex(null);
+            } catch (error: any) {
+                console.error("Erro ao doar Codex:", error);
+                alert("Erro ao enviar Codex. Tente novamente.");
+            }
+        }
+    };
 
     return (
-        <div className="space-y-8 pb-20">
-            {activeSeason && (
-                <>
-                    <GlassCard variant="accent" className="relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--skin-accent-color)]/40 to-black/60 pointer-events-none" />
-                        <div className="relative z-10 flex justify-between items-center p-2">
-                            <div>
-                                <div className="text-[10px] uppercase tracking-[0.2em] accent-text mb-1">TEMPORADA ATUAL</div>
-                                <h2 className="text-2xl font-black accent-text drop-shadow-lg uppercase">{activeSeason.name}</h2>
-                                <p className="text-xs text-gray-400 italic mt-1">"{activeSeason.theme}"</p>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-xs font-bold text-white">Termina em</div>
-                                <div className="text-lg font-mono accent-text">20/03/26</div>
-                            </div>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <GlassCard variant="neutral" className="w-full max-w-lg m-4 rounded-3xl h-[80vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
+                <div className="p-4 flex items-center justify-between border-b border-white/10 flex-shrink-0">
+                    <h2 className="text-lg font-bold uppercase tracking-wider">Meus Codex</h2>
+                    <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50">
+                        <XIcon className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-6">
+                    <section className="space-y-4">
+                        <div className="flex items-center justify-end px-1 pb-2">
+                            <button onClick={handleCreateCodex} className="text-[10px] font-bold text-[var(--skin-accent-color)] uppercase hover:underline">Criar Novo</button>
                         </div>
-                        {isAdmin && (
-                            <button onClick={() => setCreatorOpen(true)} className="absolute top-2 right-2 p-1 bg-white/10 rounded hover:bg-white/20">
-                                <span className="text-xs">⚙️</span>
-                            </button>
+
+                        {myCodexes.length === 0 ? (
+                            <GlassCard variant="neutral" className="p-8 text-center opacity-70">
+                                <div className="text-4xl mb-3">📜</div>
+                                <h3 className="text-lg font-bold text-white">Nenhum Codex Encontrado</h3>
+                                <p className="text-sm text-gray-400 mt-2">Adquira novos conhecimentos na Loja ou crie os seus próprios.</p>
+                            </GlassCard>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-3">
+                                {myCodexes.map(codex => (
+                                    <button
+                                        key={codex.id}
+                                        onClick={() => setSelectedCodex(codex)}
+                                        className="aspect-square rounded-xl bg-black/40 border border-white/10 hover:bg-white/5 transition-all flex flex-col items-center justify-center p-2 group relative overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div className="text-3xl mb-2 group-hover:scale-110 transition-transform relative z-10 drop-shadow-lg">{codex.icon}</div>
+                                        <span className="text-[10px] font-bold text-gray-400 text-center truncate w-full relative z-10 group-hover:text-white transition-colors">{codex.name.replace('Codex: ', '')}</span>
+                                        
+                                        {/* Rarity Dot */}
+                                        <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${
+                                            codex.rarity === 'legendary' ? 'bg-yellow-500 shadow-[0_0_5px_#eab308]' :
+                                            codex.rarity === 'epic' ? 'bg-purple-500 shadow-[0_0_5px_#a855f7]' :
+                                            codex.rarity === 'rare' ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' :
+                                            'bg-gray-600'
+                                        }`} />
+                                    </button>
+                                ))}
+                            </div>
                         )}
-                    </GlassCard>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1 border-b border-white/10 pb-2">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Missões da Temporada</h3>
-                        </div>
-                        <div className="space-y-2">
-                            {individualQuests.map(quest => {
-                                const isAccepted = seasonActions.some(a => a.name === quest.actionTemplate.name);
-                                const progress = isAccepted ? calculateQuestProgress(quest) : 0; 
-                                const isClaimed = userProfile.completedSeasonMissions?.includes(quest.id) || false;
-                                return (
-                                    <ExpandableMissionCard 
-                                        key={quest.id} 
-                                        quest={quest} 
-                                        isAccepted={isAccepted}
-                                        isClaimed={isClaimed}
-                                        progress={progress}
-                                        onAccept={() => acceptSeasonQuest(quest.id)}
-                                        onClaim={() => claimSeasonQuestReward(quest.id)}
-                                    />
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {clanQuests.length > 0 && (
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold accent-text uppercase tracking-widest px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">Missões do Clã</h3>
-                            <div className="space-y-2">
-                                {clanQuests.map(quest => {
-                                    const isAcceptedLegacy = clanActions.some(a => a.name === quest.actionTemplate.name);
-                                    const isParticipating = (userMissionParticipations?.[quest.id]) || isAcceptedLegacy;
-                                    
-                                    const progress = isParticipating ? calculateQuestProgress(quest) : 0; 
-                                    const isClaimed = userProfile.completedSeasonMissions?.includes(quest.id) || false;
-                                    const participantsCount = clanQuestParticipants[quest.id] || 0;
-
-                                    return (
-                                        <ExpandableMissionCard 
-                                            key={quest.id} 
-                                            quest={quest} 
-                                            isAccepted={isParticipating}
-                                            isClaimed={isClaimed}
-                                            progress={progress}
-                                            participants={participantsCount}
-                                            onAccept={() => handleAcceptClanMission(quest)}
-                                            onClaim={() => claimSeasonQuestReward(quest.id)}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-                </>
-            )}
-
-            <div className="space-y-4 pt-4">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Missões Principais</h3>
-                <div className="space-y-2">
-                     <MissionCard 
-                        title="Completar as 3 Quests da Season" 
-                        progress={metaQuestProgress} 
-                        onClick={() => metaQuestProgress >= 100 && setOpeningChest('Épico')} 
-                     />
-                     {tasks.find(t => t.actionId === 'action_tutorial_01' && t.completed) && (
-                        <MissionCard
-                          key="tutorial-complete"
-                          title="Concluir Tutorial de Iniciação"
-                          progress={100}
-                          onClick={() => setOpeningChest('Comum')}
-                        />
-                      )}
+                    </section>
                 </div>
-            </div>
-
-            <div className="space-y-4 pt-4">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Missões Introdutórias</h3>
-                <div className="space-y-2">
-                    {introMissions.map(mission => (
-                        <MissionCard key={mission.id} title={mission.title} progress={mission.progress} onClick={() => setSelectedMission(mission)} />
-                    ))}
-                </div>
-            </div>
-
-            {selectedMission && <MissionDetailModal mission={selectedMission} onClose={() => setSelectedMission(null)} />}
-            {openingChest && <ChestOpeningModal chestType={openingChest} onClose={() => setOpeningChest(null)} />}
-            {isCreatorOpen && <MissionCreatorModal onClose={() => setCreatorOpen(false)} />}
+                
+                {selectedCodex && (
+                    <CodexActionModal 
+                        codex={selectedCodex} 
+                        onClose={() => setSelectedCodex(null)} 
+                        onApply={handleApply}
+                        onDelete={handleDelete}
+                        onDonate={handleDonate}
+                    />
+                )}
+            </GlassCard>
+            {isCreatorOpen && <CodexModal onClose={() => setCreatorOpen(false)} />}
         </div>
     );
 };
 
-
 export const SettingsView: React.FC = () => {
-    const { updateUserProfile, userProfile } = useGame();
+    const { updateUserProfile } = useGame();
     const [activeTab, setActiveTab] = useState<SettingsTab>('Geral');
     const [isSovereignEditorOpen, setSovereignEditorOpen] = useState(false);
 
@@ -1547,18 +1463,17 @@ export const SettingsView: React.FC = () => {
     const renderContent = () => {
         switch(activeTab) {
             case 'Geral': return <GeralTab />;
-            case 'Arsenal': return <ArsenalTab onOpenSovereignEditor={() => setSovereignEditorOpen(true)} />;
-            case 'Missões': return <MissionsTab />;
-            case 'Configurações': return <ConfigTab />;
+            case 'Preferências': return <PreferenciasTab />;
+            case 'Premium': return <PremiumTab />;
             default: return null;
         }
     }
     
-    let tabs: SettingsTab[] = ['Geral', 'Arsenal', 'Missões', 'Configurações'];
+    let tabs: SettingsTab[] = ['Geral', 'Preferências', 'Premium'];
 
     return (
         <>
-            <div className="p-4 space-y-6 h-full flex flex-col">
+            <div id="settings-container" className="p-4 space-y-6 h-full flex flex-col">
                 <div className="flex-shrink-0 flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
                     {tabs.map(tab => (
                          <button

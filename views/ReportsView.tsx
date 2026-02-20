@@ -478,7 +478,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
     const handleConfirmEraEdit = async () => {
         setIsEditingEras(false);
-        const normalized = Array.from(new Set(eraBreaks.filter(b => b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
+        const normalized = Array.from<number>(new Set(eraBreaks.filter((b): b is number => typeof b === 'number' && b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
         setEraBreaks(normalized);
         setHasCustomEras(true);
 
@@ -539,7 +539,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     }
                 });
 
-                const uniqueBreaks = Array.from(new Set(eraBreaks.filter(b => b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
+                const uniqueBreaks = Array.from<number>(new Set(eraBreaks.filter((b): b is number => typeof b === 'number' && b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
                 const eraSegments = sortedReports.length > 0 ? (() => {
                     const segments: Array<{ start: number; end: number }> = [];
                     let start = 0;

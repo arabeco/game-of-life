@@ -1,7 +1,8 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
+import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef } from '../constants/items';
 import { supabase } from '../supabaseClient';
 import type { OracleMode } from '../constants/oracle';
 import { SupabaseService } from '../services/SupabaseService';
@@ -41,6 +42,9 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 
 
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
+
+const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
+const STORAGE_KEY_ASSET_LEVELS = 'gol_asset_levels_v2';
 
 export const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
 export const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
@@ -100,6 +104,8 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     isPremium: false,
     skin: 'GOLD',
     unlockedSkins: { GOLD: true },
+    inventory: [],
+    wallet: { gold: 0, fragments: 0 },
     unlockedItems: {
         bodyStyles: {},
         hairStyles: {},
@@ -109,6 +115,10 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         head_over_items: {},
         artifacts: {},
         codexes: {},
+        skins: {},
+        borders: {},
+        glyphs: {},
+        auras: {},
     },
     completedSeasonMissions: []
 };
@@ -256,13 +266,13 @@ export interface GameContextType {
   startCycle: (name: string, endDate: string) => void;
   endCycle: (currentAssets: Asset[], currentActions: Action[]) => EndCycleResult;
   applyExp: (expGained: number) => void;
-  addChest: (chestType: ChestType) => void;
+  addChest: (chestType: ChestType) => Promise<void>;
   startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; endDate: string; }) => void;
   setDailyCommitment: (taskIds: string[]) => void;
   lockDailyCommitment: () => void;
   endDailyBattle: () => void;
   resetDailyCommitment: () => void;
-  openChest: (chestType: ChestType) => boolean;
+  openChest: (chestType: ChestType) => Promise<boolean>;
   createClan: (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => Promise<void>;
   updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => Promise<void>;
   leaveClan: () => Promise<void>;
@@ -286,18 +296,86 @@ export interface GameContextType {
   loadClanAndMembers: (clanId: string, force?: boolean) => Promise<void>;
   oracleMode: OracleMode;
   setOracleMode: (mode: OracleMode) => void;
+  // Forge & Store
+  inventory: InventoryItem[];
+  buyGoldPack: (packId: string) => Promise<void>;
+  buyStoreItem: (itemId: string, type: 'premium' | 'codex' | 'exclusive' | 'boost') => Promise<void>;
+  recycleItem: (instanceId: string) => Promise<void>;
+  craftItem: (tier: number, category?: string, exactItemId?: string) => Promise<InventoryItem | null>;
+  equipItem: (item: InventoryItem) => Promise<void>;
+  toggleEquipItem: (item: InventoryItem) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode, session: Session | null }> = ({ children, session }) => {
-  const isNewUser = true;
   
-  const [assets, setAssets] = useState<Asset[]>(() => createDefaultAssets(true));
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    const userId = session?.user.id;
+    if (userId) {
+        try {
+            const savedProfile = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${userId}`);
+            if (savedProfile) {
+                const parsed = JSON.parse(savedProfile);
+                return {
+                    ...DEFAULT_USER_PROFILE,
+                    ...parsed,
+                    id: userId,
+                    isOnline: true
+                };
+            }
+        } catch (e) {
+            console.error("Failed to load user profile from local storage:", e);
+        }
+    }
+    return { 
+      ...DEFAULT_USER_PROFILE, 
+      id: userId || DEFAULT_USER_PROFILE.id,
+    };
+  });
+
+  const isNewUser = useMemo(() => {
+      return !userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
+  }, [userProfile.completedSeasonMissions]);
+
+  const [assets, setAssets] = useState<Asset[]>(() => {
+    const defaults = createDefaultAssets(true);
+    const userId = session?.user.id;
+    if (userId) {
+        try {
+            const savedLevels = localStorage.getItem(`${STORAGE_KEY_ASSET_LEVELS}_${userId}`);
+            if (savedLevels) {
+                const levels = JSON.parse(savedLevels);
+                return defaults.map(a => ({
+                    ...a,
+                    level: levels[a.id] ?? a.level
+                }));
+            }
+        } catch (e) {
+            console.error("Failed to load assets from local storage:", e);
+        }
+    }
+    return defaults;
+  });
 
   const [arenaFolders, setArenaFolders] = useState<ArenaFolder[]>(() => []);
   
-  const [actions, setActions] = useState<Action[]>(() => createDefaultActions(true));
+  const [actions, setActions] = useState<Action[]>(() => {
+      const userId = session?.user.id;
+      let isTutorialDone = false;
+      if (userId) {
+          try {
+              const savedProfile = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${userId}`);
+              if (savedProfile) {
+                  const profile = JSON.parse(savedProfile);
+                  if (profile.completedSeasonMissions?.includes(PROFILE_FLAG_TUTORIAL_COMPLETED)) {
+                      isTutorialDone = true;
+                  }
+              }
+          } catch (e) {}
+      }
+      return createDefaultActions(!isTutorialDone);
+  });
 
   const [tasks, setTasks] = useState<ScheduledTask[]>(() => []);
   const [taskPool, setTaskPool] = useState<TaskPoolItem[]>([]);
@@ -310,14 +388,250 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const [dailyCommitment, setDailyCommitmentState] = useState<DailyCommitment>(() => createDefaultDailyCommitment());
 
   const [cycleExpBonus, setCycleExpBonus] = useState<number>(0);
-  
-  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-      return { 
-        ...DEFAULT_USER_PROFILE, 
-        id: session?.user.id || DEFAULT_USER_PROFILE.id,
-      };
-  });
+
   const [oracleMode, setOracleMode] = useState<OracleMode>('STANDARD');
+
+  // --- FORGE SYSTEM ---
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+
+  const fetchInventory = useCallback(async (userId: string) => {
+      const { data, error } = await supabase.from('user_inventory').select('*').eq('user_id', userId);
+      if (error) {
+          console.error("Error fetching inventory:", error);
+          return;
+      }
+      const items = data.map((row: any) => ({
+          id: row.item_id,
+          instanceId: row.id,
+          acquiredAt: row.acquired_at,
+          isEquipped: row.is_equipped
+      }));
+      setInventory(items);
+  }, []);
+
+  useEffect(() => {
+      const userId = session?.user.id;
+      if (userId && isUuid(userId)) {
+          fetchInventory(userId);
+      } else {
+          setInventory([]);
+      }
+  }, [session?.user.id, fetchInventory]);
+
+  const buyGoldPack = async (packId: string) => {
+      const pack = GOLD_PACKS.find(p => p.id === packId);
+      if (!pack) return;
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      const { data, error } = await supabase.rpc('buy_gold_pack', {
+          p_pack_id: packId,
+          p_amount_gold: pack.total,
+          p_cost_brl: pack.price
+      });
+
+      if (error) {
+          console.error("Error buying gold pack:", error);
+          alert("Erro ao processar compra.");
+          return;
+      }
+      
+      if (data && data.success) {
+          updateUserProfile({ wallet: { ...userProfile.wallet, gold: data.new_gold } });
+          alert(`Compra de ${pack.name} realizada! +${pack.total} Ouro.`);
+      }
+  };
+
+  const buyStoreItem = async (itemId: string, type: 'premium' | 'codex' | 'exclusive' | 'boost') => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+      
+      let cost = 0;
+      let name = '';
+      
+      if (type === 'codex') {
+          const item = CODEXES.find(c => c.id === itemId);
+          if (!item) return;
+          cost = item.cost;
+          name = item.name;
+      } else if (type === 'exclusive') {
+          const item = ITEMS_DB.find(i => i.id === itemId);
+          if (!item || !item.costGold) return;
+          cost = item.costGold;
+          name = item.name;
+      } else if (type === 'boost') {
+          const item = XP_BOOSTS.find(b => b.id === itemId);
+          if (!item) return;
+          cost = item.cost;
+          name = item.name;
+      } else if (type === 'premium') {
+          cost = 200;
+          name = 'Premium Mensal';
+      }
+
+      if ((userProfile.wallet?.gold || 0) < cost) {
+          alert("Ouro insuficiente!");
+          return;
+      }
+
+      const { data, error } = await supabase.rpc('buy_store_item', {
+          p_item_id: itemId,
+          p_cost_gold: cost,
+          p_type: type
+      });
+
+      if (error) {
+          console.error("Error buying store item:", error);
+          alert("Erro ao comprar item.");
+          return;
+      }
+
+      // Update Local State Optimistically or Refetch
+      const newGold = (userProfile.wallet?.gold || 0) - cost;
+      updateUserProfile({ wallet: { ...userProfile.wallet, gold: newGold } });
+
+      if (type === 'exclusive') {
+          // Re-fetch inventory to get the new item
+          fetchInventory(userId);
+      } else if (type === 'codex') {
+          grantUserUnlock('codexes', itemId);
+      } else if (type === 'premium') {
+          updateUserProfile({ isPremium: true });
+      }
+      
+      alert(`Compra de ${name} realizada com sucesso!`);
+  };
+
+  const recycleItem = async (instanceId: string) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+      
+      const { data, error } = await supabase.rpc('recycle_item', {
+          p_item_instance_id: instanceId
+      });
+
+      if (error) {
+          console.error("Error recycling:", error);
+          alert("Erro ao reciclar item.");
+          return;
+      }
+
+      if (data && data.success) {
+          // Update Local Inventory
+          setInventory(prev => prev.filter(i => i.instanceId !== instanceId));
+          // Update Fragments
+          const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
+          updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
+      }
+  };
+
+  const craftItem = async (tier: number, category?: string, exactItemId?: string) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return null;
+
+      const { data, error } = await supabase.rpc('craft_item', {
+          p_tier: tier,
+          p_category: category,
+          p_exact_item_id: exactItemId
+      });
+
+      if (error) {
+          console.error("Error crafting:", error);
+          alert("Erro ao forjar item: " + error.message);
+          return null;
+      }
+
+      if (data && data.success) {
+           // Update Fragments (we could optimize this by returning new balance from RPC)
+           // For now, we estimate or refetch. Let's refetch profile to be safe or calc locally.
+           // Since we don't have cost in response, we use local cost consts to update UI optimistically
+           let cost = 0;
+           if (tier === 1) cost = 40;
+           else if (tier === 2) cost = 120;
+           else if (tier === 3) cost = 400;
+           else if (tier === 4) cost = 1200;
+           else if (tier === 5) cost = 4000;
+           
+           const newFragments = (userProfile.wallet?.fragments || 0) - cost;
+           updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
+
+           const newItem: InventoryItem = { 
+               id: data.item_id, 
+               instanceId: data.instance_id, 
+               acquiredAt: new Date().toISOString(), 
+               isEquipped: false 
+            };
+           setInventory(prev => [...prev, newItem]);
+           return newItem;
+      }
+      return null;
+  };
+
+  const equipItem = async (item: InventoryItem) => {
+      // Unequip Logic
+      if (item.id === 'none') {
+          // Find what category the original item belonged to, or pass it explicitly.
+          // Since we passed { ...item, id: 'none' }, 'item' here has the instanceId but 'none' id.
+          // This is tricky because we need the category to know what slot to clear.
+          // Let's refactor: pass the *original* item to equipItem, and a separate 'unequip' flag or let equipItem toggle.
+          // BUT, to keep signature simple, let's assume if we are un-equipping, we handle it by checking current state against item.id
+          return; 
+      }
+
+      // Re-implementing with Toggle logic support in mind
+      // The caller (Inventory.tsx) is now calling equipItem({ ...item, id: 'none' }) for unequip.
+      // But we need the category.
+      // Let's change the strategy: Inventory.tsx calls unequipItem() instead.
+  };
+
+  const toggleEquipItem = async (item: InventoryItem) => {
+      const itemDef = ITEMS_DB.find(d => d.id === item.id);
+      if (!itemDef) return;
+
+      const isCurrentlyEquipped = (
+          (itemDef.category === 'border' && userProfile.border === item.id) ||
+          (itemDef.category === 'ui_skin' && userProfile.skin === item.id) ||
+          (itemDef.category === 'skin' && userProfile.sovereign.outfit === item.id) ||
+          (itemDef.category === 'hair' && userProfile.sovereign.hairStyle === item.id) ||
+          (itemDef.category === 'glyph' && userProfile.sovereign.glyph === item.id) ||
+          (itemDef.category === 'aura' && userProfile.sovereign.aura === item.id)
+      );
+
+      if (isCurrentlyEquipped) {
+          // Unequip
+          if (itemDef.category === 'border') {
+              updateUserProfile({ border: 'default' });
+          } else if (itemDef.category === 'ui_skin') {
+              updateUserProfile({ skin: 'GOLD' }); // Default skin
+              alert('Skin de Interface removida. Tema padrão restaurado.');
+          } else {
+              const newSovereign = { ...userProfile.sovereign };
+              if (itemDef.category === 'skin') newSovereign.outfit = 'none';
+              if (itemDef.category === 'hair') newSovereign.hairStyle = 'none';
+              if (itemDef.category === 'glyph') newSovereign.glyph = 'none';
+              if (itemDef.category === 'aura') newSovereign.aura = 'none';
+              updateUserProfile({ sovereign: newSovereign });
+          }
+      } else {
+          // Equip (Auto-unequip logic is implicit because we overwrite the single slot)
+          
+          if (itemDef.category === 'border') {
+              updateUserProfile({ border: itemDef.id });
+          } else if (itemDef.category === 'ui_skin') {
+              updateUserProfile({ skin: itemDef.id });
+              alert(`Tema de Interface alterado para: ${itemDef.name}`);
+          } else {
+              const newSovereign = { ...userProfile.sovereign };
+              // Since these are single-slot fields in SovereignConfig, assigning a new ID 
+              // automatically "unequips" the previous one by overwriting it.
+              if (itemDef.category === 'skin') newSovereign.outfit = itemDef.id;
+              if (itemDef.category === 'hair') newSovereign.hairStyle = itemDef.id;
+              if (itemDef.category === 'glyph') newSovereign.glyph = itemDef.id;
+              if (itemDef.category === 'aura') newSovereign.aura = itemDef.id;
+              updateUserProfile({ sovereign: newSovereign });
+          }
+      }
+  };
 
   // Update profile when session changes and reset state (Online Only Mode)
   useEffect(() => {
@@ -327,7 +641,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         clanCacheRef.current = null;
         setHasHydratedFromSupabase(false);
 
-        setAssets(createDefaultAssets(true));
+        // Assets with Local Storage
+        let loadedAssets = createDefaultAssets(true);
+        try {
+            const savedLevels = localStorage.getItem(`${STORAGE_KEY_ASSET_LEVELS}_${currentUserId}`);
+            if (savedLevels) {
+                const levels = JSON.parse(savedLevels);
+                loadedAssets = loadedAssets.map(a => ({
+                    ...a,
+                    level: levels[a.id] ?? a.level
+                }));
+            }
+        } catch (e) { console.error("Failed to load cached assets:", e); }
+        setAssets(loadedAssets);
+
         setArenaFolders([]);
         setActions(createDefaultActions(true));
         setTasks([]);
@@ -344,7 +671,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setClanQuestParticipants({});
         setUserMissionParticipations({});
         
-        setUserProfile({ ...DEFAULT_USER_PROFILE, id: currentUserId, isOnline: true });
+        // Profile with Local Storage
+        let nextProfile = { ...DEFAULT_USER_PROFILE, id: currentUserId, isOnline: true };
+        try {
+             const savedProfile = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${currentUserId}`);
+             if (savedProfile) {
+                 const parsed = JSON.parse(savedProfile);
+                 nextProfile = { ...nextProfile, ...parsed, id: currentUserId, isOnline: true };
+             }
+        } catch (e) { console.error("Failed to load cached profile:", e); }
+        setUserProfile(nextProfile);
     }
   }, [session?.user.id]);
 
@@ -443,12 +779,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           // Already participating, just update local state
           setUserMissionParticipations(prev => ({ ...prev, [questId]: true }));
           // Don't increment if already exists, just rely on fetchClanQuestParticipants
-          
-           // Ensure clan mission state exists (idempotent)
-          await supabase.from('clan_mission_states').upsert({
-              clan_id: clan.id,
-              mission_id: questId
-          }, { onConflict: 'clan_id,mission_id' });
           return;
       }
 
@@ -473,13 +803,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setClanQuestParticipants(prev => ({ ...prev, [questId]: (prev[questId] || 0) + 1 }));
       }
       
-      // Garantir que o estado da missão existe para o clã
-      await supabase.from('clan_mission_states').upsert({
-          clan_id: clan.id,
-          mission_id: questId
-      }, { onConflict: 'clan_id,mission_id' });
-
-      // FIX: Garantir que o progresso da missão existe (caso tenha sido deletado manualmente)
+      // Garantir que o progresso da missão existe (caso tenha sido deletado manualmente)
       const quest = SEASONS[ACTIVE_SEASON_ID]?.quests.find(q => q.id === questId);
       const targetValue = quest?.requirements?.clanGoal || 50;
       
@@ -609,18 +933,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     uniqueIds = uniqueIds.filter(id => isUuid(id));
     if (uniqueIds.length === 0) return {} as Record<string, UserProfile>;
 
-    const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', uniqueIds);
-    if (profilesError || !profilesData) {
-        console.error('Error fetching profiles:', profilesError?.message);
-        return {} as Record<string, UserProfile>;
-    }
+        const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', uniqueIds);
+        if (profilesError || !profilesData) {
+            console.error('Error fetching profiles:', profilesError?.message);
+            return {} as Record<string, UserProfile>;
+        }
 
-    const mapped = mapToCamelCase(profilesData) as UserProfile[];
-    return mapped.reduce((acc, profile) => {
-        acc[profile.id] = profile;
-        return acc;
-    }, {} as Record<string, UserProfile>);
-  }, []);
+        const mapped = mapToCamelCase(profilesData) as any[];
+        return mapped.reduce((acc, profileData) => {
+            // Ensure wallet and inventory exist in profile
+            const profile = {
+                ...profileData,
+                wallet: { gold: profileData.gold || 0, fragments: profileData.fragments || 0 },
+                inventory: [] // We don't fetch inventory for others usually, saves bandwidth
+            } as UserProfile;
+            
+            acc[profile.id] = profile;
+            return acc;
+        }, {} as Record<string, UserProfile>);
+    }, []);
 
   const loadFriendsAndRequests = useCallback(async (userId: string) => {
     if (!isUuid(userId)) {
@@ -942,6 +1273,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [assets, actions, tasks, reports, activeCycle, userProfile, arenaFolders]);
 
 
+  // --- Local Storage Persistence ---
+  useEffect(() => {
+    if (userProfile.id && userProfile.id !== DEFAULT_USER_PROFILE.id) {
+        try {
+            localStorage.setItem(`${STORAGE_KEY_PROFILE}_${userProfile.id}`, JSON.stringify(userProfile));
+        } catch (e) {
+            console.error("Failed to save user profile to local storage:", e);
+        }
+    }
+  }, [userProfile]);
+
+  useEffect(() => {
+    const userId = session?.user.id;
+    if (userId) {
+        try {
+            const levels = assets.reduce((acc, asset) => {
+                acc[asset.id] = asset.level;
+                return acc;
+            }, {} as Record<string, number>);
+            localStorage.setItem(`${STORAGE_KEY_ASSET_LEVELS}_${userId}`, JSON.stringify(levels));
+        } catch (e) {
+            console.error("Failed to save asset levels to local storage:", e);
+        }
+    }
+  }, [assets, session?.user.id]);
+
   // --- Supabase Data Sync ---
   useEffect(() => {
     const today = getTodayString();
@@ -1215,21 +1572,50 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setFeed(prev => [newEvent, ...prev]);
   };
 
-  const openChest = (chestType: ChestType): boolean => {
-    let success = false;
-    setUserProfile(prev => {
-      const existingChests = prev.chests || [];
-      const chestIndex = existingChests.findIndex(c => c.type === chestType);
+  const openChest = async (chestType: ChestType): Promise<boolean> => {
+    const userId = getSupabaseUserId();
+    if (!userId) return false;
 
-      if (chestIndex === -1 || existingChests[chestIndex].count === 0) return prev;
-      success = true;
-      const newChests = existingChests.map((chest, index) => 
-        index === chestIndex ? { ...chest, count: chest.count - 1 } : chest
-      ).filter(chest => chest.count > 0);
-
-      return { ...prev, chests: newChests };
+    const { data, error } = await supabase.rpc('open_chest', {
+        p_chest_type: chestType
     });
-    return success;
+
+    if (error) {
+        console.error("Error opening chest:", error);
+        alert(error.message);
+        return false;
+    }
+
+    if (data && data.success) {
+        // Show reward (item + fragments)
+        const rewardMsg = `You got ${data.item_name} (Tier ${data.tier}) + ${data.fragments_gained} Fragments!`;
+        alert(rewardMsg);
+
+        // Update local state
+        const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
+        updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
+        
+        if (!data.is_duplicate) {
+             fetchInventory(userId);
+        }
+        
+        // Update chest count locally
+        setUserProfile(prev => {
+            const existingChests = prev.chests || [];
+            const chestIndex = existingChests.findIndex(c => c.type === chestType);
+      
+            if (chestIndex === -1 || existingChests[chestIndex].count === 0) return prev;
+            
+            const newChests = existingChests.map((chest, index) => 
+              index === chestIndex ? { ...chest, count: chest.count - 1 } : chest
+            ).filter(chest => chest.count > 0);
+      
+            return { ...prev, chests: newChests };
+        });
+
+        return true;
+    }
+    return false;
   };
   
 
@@ -1673,6 +2059,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const missingProfileColumnsRef = useRef<{ completedSeasonMissions: boolean }>({ completedSeasonMissions: false });
 
   const updateUserProfile = (profileData: Partial<UserProfile>) => {
+    if (profileData.avatarUrl) {
+        console.log("Updating profile avatarUrl:", profileData.avatarUrl);
+    }
     setUserProfile(prev => ({ ...prev, ...profileData }));
     if (profileData.skin) {
         document.body.setAttribute('data-skin', profileData.skin);
@@ -2003,6 +2392,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const expGained = expFromActions + missionBonusExp + cycleExpBonus;
 
     // Calculate Clan Points (XP from completed clan quests)
+    const activeSeason = SEASONS[ACTIVE_SEASON_ID];
     const clanPoints = completedQuests.reduce((sum, task) => {
         const action = currentActions.find(a => a.id === task.actionId);
         if (!action) return sum;
@@ -2094,8 +2484,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + expGained } });
   };
 
-  const addChest = (chestType: ChestType) => {
-    // ... (rest of the function is correct)
+  const addChest = async (chestType: ChestType) => {
+    const userId = getSupabaseUserId();
+    if (!userId) return;
+
+    // Use RPC or direct insert
+    const { error } = await supabase.rpc('grant_chest', {
+        p_user_id: userId,
+        p_chest_type: chestType
+    });
+
+    if (error) {
+        console.error("Error adding chest:", error);
+        return;
+    }
+
+    // Optimistically update or refetch profile
+    setUserProfile(prev => {
+      const existingChests = prev.chests || [];
+      const chestIndex = existingChests.findIndex(c => c.type === chestType);
+      
+      let newChests;
+      if (chestIndex >= 0) {
+        newChests = existingChests.map((chest, index) => 
+          index === chestIndex ? { ...chest, count: chest.count + 1 } : chest
+        );
+      } else {
+        newChests = [...existingChests, { type: chestType, count: 1 }];
+      }
+      
+      return { ...prev, chests: newChests };
+    });
   };
   
   const startNewCycle = (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; endDate: string; }) => {
@@ -2940,14 +3359,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const nextExp = currentExp + addedExp;
 
     // Add Gold (if applicable)
-    const currentGold = userProfile.gold || 0;
+    const currentGold = userProfile.wallet.gold || 0;
     const addedGold = quest.rewards.gold || 0;
     const nextGold = currentGold + addedGold;
 
     // Update Profile
     updateUserProfile({
         nobility: { ...userProfile.nobility, exp: nextExp },
-        gold: nextGold,
+        wallet: { ...userProfile.wallet, gold: nextGold },
         completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), questId]
     });
 
@@ -3027,6 +3446,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
       return newTask;
   };
+
+  const getClanQuestForAction = (action: Action | undefined) => {
+    if (!action) return null;
+    
+    const activeSeasonConfig = SEASONS[ACTIVE_SEASON_ID];
+    if (!activeSeasonConfig) return null;
+
+    // Try to match strictly by template name or loose "Socializar" check
+    // We do NOT restrict by arena name anymore, so actions in any arena count
+    return activeSeasonConfig.quests.find(q => 
+        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
+        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
+    ) || null;
+  };
+
+  const isClanQuestActionId = (actionId: string) => {
+      const action = getActionById(actionId);
+      return !!getClanQuestForAction(action);
+  };
+
   const scheduleAndCompleteNow = (actionId: string) => {
     const action = getActionById(actionId);
     if (!action || action.actionType === 'Marco') return;
@@ -3175,19 +3614,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (error) console.error("Supabase reschedule task error:", error.message);
             });
     }
-  };
-  const getClanQuestForAction = (action: Action | undefined) => {
-    if (!action) return null;
-    
-    const activeSeasonConfig = SEASONS[ACTIVE_SEASON_ID];
-    if (!activeSeasonConfig) return null;
-
-    // Try to match strictly by template name or loose "Socializar" check
-    // We do NOT restrict by arena name anymore, so actions in any arena count
-    return activeSeasonConfig.quests.find(q => 
-        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
-        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
-    ) || null;
   };
   const toggleTaskCompletion = (taskId: string) => {
     setTasks(prevTasks => {
@@ -3503,7 +3929,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, oracleMode, setOracleMode }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, oracleMode, setOracleMode, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem }}>
       {children}
     </GameContext.Provider>
   );

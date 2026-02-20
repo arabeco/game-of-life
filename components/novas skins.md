@@ -1,0 +1,235 @@
+CORPOS BASE (2 assets)
+MASCULINO_BASE_BRANCO.png
+
+FEMININO_BASE_BRANCO.png
+
+👕 SKINS - TRAJES (13 assets)
+T1 - COMUM
+
+SKIN_T1_NAUFRAGO.png
+
+SKIN_T1_CASUAL.png
+
+SKIN_T1_GYM_RAT.png
+
+SKIN_T1_STREET.png
+
+T2 - INCOMUM
+
+SKIN_T2_EXECUTIVO.png
+
+SKIN_T2_TATICO.png
+
+SKIN_T2_ACADEMICO.png
+
+T3 - RARO
+
+SKIN_T3_NOMADE.png
+
+SKIN_T3_ALQUIMISTA.png
+
+SKIN_T3_HIBRIDO.png
+
+T4 - ÉPICO
+
+SKIN_T4_ARMADURA_PLACA.png
+
+SKIN_T4_MAGO_CIRCULO.png
+
+T5 - LENDÁRIO
+
+SKIN_T5_ENTIDADE_LUZ.png
+
+SEASON - LIMITADO
+
+SKIN_SEASON_CRIADOR.png
+
+### **Estrutura dos Artefatos:**
+
+**COMPANIONS (Pets):**
+- T1: Gato Laranja + Cachorro Beagle (pets comuns fofos)
+- T2: Gato Siamês + Cachorro Husky (pets nobres), 
+- T3: cachorro jack russel
+- T4: Dragão Bebê (mítico)
+- T5: Fênix Cósmico (divino)
+
+**FERRAMENTAS (Tools):**
+- T1: Trio Café (básico diário)
+- T2: Setup Produtividade (upgrade tech)
+- T3: Caixa Mágica (espiritual), coroa Prata, Divine Scepter
+- T4: Grimório Arcano (conhecimento supremo)
+- T5: Infinity Gauntlet (poder absoluto)
+
+**ARMAS (Weapons):**
+- T1: Adaga Aprendiz
+- T3: Espada Runas
+
+**RELÍQUIAS (Relics):**
+- T1: Halteres (físico)
+- T2: Medalhão Sorte (espiritual simples)
+- T4: Coroa de Espinhos (sacrifício nobre)
+
+---
+💇 CABELOS (10 assets)
+T1 - COMUM
+
+CABELO_T1_RECRUTA.png
+
+CABELO_T1_CACHOS.png
+
+CABELO_T1_MULLET.png
+
+CABELO_T1_RABO_CAVALO.png
+
+T2 - INCOMUM
+
+CABELO_T2_DREADS.png
+
+CABELO_T2_COQUE.png
+
+CABELO_T2_CURTO_FEMININO.png
+
+T3 - RARO
+
+CABELO_T3_PRINCESA.png
+
+CABELO_T3_GOKU.png
+
+T4 - ÉPICO
+
+CABELO_T4_FLUXO_ESPIRITUAL.png
+
+🖼️ BORDAS - MOLDURAS (11 assets)
+T1 - COMUM
+
+BORDA_T1_PUPILO_BETA.png
+
+BORDA_T1_DISCIPLINADO.png
+
+BORDA_T1_VANGUARDISTA.png
+
+BORDA_T1_RUSTICO.png
+
+T2 - INCOMUM
+
+BORDA_T2_POPULAR.png
+
+BORDA_T2_PROTETOR.png
+
+T3 - RARO
+
+BORDA_T3_IMPARAVEL.png
+
+BORDA_T3_ARQUETIPO.png
+
+T4 - ÉPICO
+
+BORDA_T4_LENDA_VIVA.png
+
+BORDA_T4_SOBERANO.png
+
+T5 - LENDÁRIO
+
+BORDA_T5_GM.png
+
+🎀 BANNERS - FAIXAS (11 assets)
+T1 - COMUM
+
+BANNER_T1_PUPILO_BETA.png
+
+BANNER_T1_DISCIPLINADO.png
+
+BANNER_T1_VANGUARDISTA.png
+
+BANNER_T1_RUSTICO.png
+
+T2 - INCOMUM
+
+BANNER_T2_POPULAR.png
+
+BANNER_T2_PROTETOR.png
+
+T3 - RARO
+
+BANNER_T3_IMPARAVEL.png
+
+BANNER_T3_ARQUETIPO.png
+
+T4 - ÉPICO
+
+BANNER_T4_LENDA_VIVA.png
+
+BANNER_T4_SOBERANO.png
+
+T5 - LENDÁRIO
+
+BANNER_T5_GM.png
+
+🗿 MOLDES DE GLIFO - BASES DE PEDRA (7 assets)
+T1 - COMUM
+
+GLIFO_T1_TABUA_APRENDIZ.png
+
+GLIFO_T1_MANUSCRITO_HOD.png
+
+GLIFO_T1_LAJOTA_CALCARIO.png
+
+T2 - INCOMUM
+
+GLIFO_T2_TOTEM_OBELISCO.png
+
+GLIFO_T2_GRANITO_RUNICO.png
+
+T3 - RARO
+
+GLIFO_T3_MONOLITO_ACO.png
+
+T5 - LENDÁRIO
+
+GLIFO_T5_A_FORJA.png
+
+💫 AURAS - EFEITOS DE CHÃO (7 assets)
+T1 - COMUM
+
+AURA_T1_BRUMA_NATURAL.png
+
+AURA_T1_SAFIRA.png
+
+AURA_T1_RUBI.png
+
+T2 - INCOMUM
+
+AURA_T2_ESMERALDA.png
+
+AURA_T2_PRATA.png
+
+T3 - RARO
+
+AURA_T3_OURO.png
+
+T5 - LENDÁRIO
+
+AURA_T5_PEDRA_LUA.png
+
+⚡ ORBES - NÚCLEOS DE ENERGIA (7 assets)
+T1 - COMUM
+
+ORBE_T1_VIDRO.png
+
+ORBE_T1_COBRE.png
+
+ORBE_T1_AQUATICO.png
+
+T2 - INCOMUM
+
+ORBE_T2_SOLAR.png
+
+ORBE_T2_SOMBRIO.png
+
+T3 - RARO
+
+ORBE_T3_MERCURIO.png
+
+T5 - LENDÁRIO
+
+ORBE_T5_GENESE.png

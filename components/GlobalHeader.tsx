@@ -5,6 +5,8 @@ import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { MoodModal } from './MoodModal';
 import { OracleChat } from './OracleChat';
 import { SparklesIcon } from './Icons';
+import { CanvasAvatar } from './CanvasAvatar';
+import { SOVEREIGN_ASSETS } from '../constants/avatar';
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
     const { userProfile } = useGame();
@@ -19,15 +21,73 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const currentMood = MOODS_DATA.find(m => userProfile.mood >= m.min && userProfile.mood < m.max) || MOODS_DATA[MOODS_DATA.length - 1];
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
 
+    // Determine what to display as avatar
+    const primaryDisplay = userProfile.sovereign?.primaryDisplay;
+    
+    const renderAvatarContent = () => {
+        if (primaryDisplay === 'sovereign' && userProfile.sovereign) {
+             return (
+                <div className="w-full h-full rounded-full overflow-hidden bg-gray-900">
+                     <CanvasAvatar 
+                        sovereignConfig={userProfile.sovereign} 
+                        width={100} 
+                        height={100} 
+                        className="w-[180%] h-[180%] object-cover object-top -mt-2 -ml-3" 
+                    />
+                </div>
+             );
+        }
+        
+        if (primaryDisplay === 'item' && userProfile.sovereign?.artifact) {
+            const artifact = SOVEREIGN_ASSETS.artifacts?.find(a => a.id === userProfile.sovereign?.artifact);
+            if (artifact?.url) {
+                return <img src={artifact.url} alt="Artifact" className="w-full h-full object-contain p-2" />;
+            }
+        }
+
+        if (primaryDisplay === 'glyph' && userProfile.sovereign?.glyph) {
+            const glyph = SOVEREIGN_ASSETS.glyphs?.find(g => g.id === userProfile.sovereign?.glyph);
+            if (glyph?.url) {
+                return <img src={glyph.url} alt="Glyph" className="w-full h-full object-contain p-2" />;
+            }
+        }
+
+        // Default to uploaded avatar or fallback
+        if (avatarUrl) {
+            return (
+                <img 
+                    src={avatarUrl} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover rounded-full"
+                    style={{
+                        width: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
+                        height: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
+                    }}
+                />
+            );
+        }
+
+        // Fallback placeholder
+        return (
+            <div
+                className="w-full h-full rounded-full bg-black/40"
+                style={{
+                    width: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
+                    height: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
+                }}
+            />
+        );
+    };
+
     const handleOracleClick = () => {
         setOracleOpen(true);
     };
 
     return (
         <>
-            <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-black/40 backdrop-blur-lg border-b border-white/10" style={{ top: topOffsetPx }}>
+            <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-black/40 backdrop-blur-lg border-b" style={{ top: topOffsetPx, borderColor: 'var(--skin-accent-color)' }}>
                 <div className="max-w-7xl mx-auto relative flex items-center justify-between h-20 px-4 text-xs font-semibold text-gray-300">
-                    <span className="text-center w-24 flex-shrink-0 text-[10px] uppercase tracking-[0.2em] bg-white/5 border border-white/10 px-3 py-1 rounded-full">{day} • {dateStr}</span>
+                    <span className="text-center w-24 flex-shrink-0 text-[10px] uppercase tracking-[0.2em] bg-white/5 border px-3 py-1 rounded-full" style={{ borderColor: 'var(--skin-accent-color)' }}>{day} • {dateStr}</span>
                     
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[calc(100%-14rem)] flex items-center justify-center pointer-events-none">
                         <div className="relative w-full flex items-center justify-center pointer-events-auto">
@@ -56,25 +116,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                     <div className="relative w-16 h-16 group-hover:scale-105 transition-transform">
                                         {/* Avatar Image */}
                                         <div className="w-full h-full flex items-center justify-center">
-                                            {avatarUrl ? (
-                                                <img 
-                                                    src={avatarUrl} 
-                                                    alt="Profile" 
-                                                    className="w-full h-full object-cover rounded-full"
-                                                    style={{
-                                                        width: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
-                                                        height: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div
-                                                    className="w-full h-full rounded-full bg-black/40"
-                                                    style={{
-                                                        width: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
-                                                        height: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
-                                                    }}
-                                                />
-                                            )}
+                                            {renderAvatarContent()}
                                         </div>
 
                                         {/* Border as Overlay */}
@@ -102,6 +144,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
                                 {/* Oracle Button */}
                                 <button
+                                    id="header-oracle"
                                     onClick={handleOracleClick}
                                     className="absolute left-full ml-4 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-amber-500/50 transition-all group shadow-lg backdrop-blur-sm"
                                     aria-label="Oracle Assistant"
@@ -112,7 +155,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                         </div>
                     </div>
 
-                    <span className="text-center w-20 flex-shrink-0 text-[11px] tracking-[0.2em] bg-white/5 border border-white/10 px-3 py-1 rounded-full">{timeStr}</span>
+                    <span className="text-center w-20 flex-shrink-0 text-[11px] tracking-[0.2em] bg-white/5 border px-3 py-1 rounded-full" style={{ borderColor: 'var(--skin-accent-color)' }}>{timeStr}</span>
                 </div>
             </header>
             {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}

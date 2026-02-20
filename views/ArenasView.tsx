@@ -5,7 +5,6 @@ import { PlusIcon, EyeIcon, XIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';
-import { useTutorial } from '../contexts/TutorialContext';
 import { useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { IconPickerModal } from '../components/IconPickerModal';
 import { FolderDetailModal } from '../components/FolderDetailModal';
@@ -23,7 +22,6 @@ type PendingAction = {
 
 export const ArenasView: React.FC = () => {
     const { getArenas, assets, actions, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena } = useGame();
-    const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -32,7 +30,8 @@ export const ArenasView: React.FC = () => {
     const fabRef = useRef<HTMLButtonElement>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
 
-    const [builderAssetId, setBuilderAssetId] = useState('');
+    // Builder State
+    const [builderAssetId, setBuilderAssetId] = useState<string>('');
     const [arenaName, setArenaName] = useState('');
     const [arenaDescription, setArenaDescription] = useState('');
     const [arenaIcon, setArenaIcon] = useState('🏟️');
@@ -102,16 +101,6 @@ export const ArenasView: React.FC = () => {
     };
 
     useEffect(() => {
-        if (isTutorialActive && currentStep === 2 && fabRef.current) {
-            const rect = fabRef.current.getBoundingClientRect();
-            setSpotlight(rect, {
-                title: "Passo 2: Crie uma Arena",
-                text: "Toque aqui para criar sua primeira Arena. Ela representará um contexto da sua vida, como 'Trabalho' ou 'Saúde'.",
-            });
-        }
-    }, [isTutorialActive, currentStep, setSpotlight]);
-
-    useEffect(() => {
         if (!isBuilderMode) return;
         if (builderAssetId) return;
         const fallback = assets.find(a => a.id !== 'geral')?.id || assets[0]?.id || '';
@@ -177,19 +166,11 @@ export const ArenasView: React.FC = () => {
     };
 
     const handleOpenCreateArena = () => {
-        if (isTutorialActive && currentStep === 2) {
-            setSpotlight(null, null);
-            nextStep();
-        }
         setIsCreatingArena(true);
     };
 
     const handleArenaCreated = (newArena: Arena) => {
         setIsCreatingArena(false);
-        if (isTutorialActive && currentStep === 4) {
-            // Automatically open the new arena to continue the tutorial
-            setSelectedArenaId(newArena.id);
-        }
     };
 
     if (isBuilderMode) {
@@ -366,7 +347,7 @@ export const ArenasView: React.FC = () => {
                         <EyeIcon className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="grid grid-cols-3 gap-3 pt-8">
+                <div id="arenas-container" className="grid grid-cols-3 gap-3 pt-8">
                     {/* Render Folders */}
                     {arenaFolders.map(folder => {
                         const arenasInFolder = getArenas().filter(a => a.folderId === folder.id); // Use getArenas to include all including archived if needed

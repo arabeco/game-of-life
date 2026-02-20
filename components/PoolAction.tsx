@@ -18,7 +18,6 @@ interface PoolActionProps {
 
 export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimited, onComplete, onCustomDragStart, onActionClick }) => {
     const { getActionBackgroundStyle, getArenas, seasonQuests, getClanQuestProgress } = useGame();
-    const { isTutorialActive, currentStep, setSpotlight } = useTutorial();
     const [isHolding, setIsHolding] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const poolActionRef = useRef<HTMLDivElement>(null);
@@ -56,16 +55,6 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
         clanProgressDisplay = `${remaining}`; // Show remaining count
         isCompleted = current >= target;
     }
-
-    useEffect(() => {
-        if (isTutorialActive && currentStep === 7 && poolActionRef.current) {
-             const rect = poolActionRef.current.getBoundingClientRect();
-             setSpotlight(rect, {
-                title: "Passo 7: Agende sua Ação",
-                text: "Arraste esta ação para a sua linha do tempo para agendá-la em um horário específico.",
-            });
-        }
-    }, [isTutorialActive, currentStep, setSpotlight]);
 
     useEffect(() => {
         const el = poolActionRef.current;

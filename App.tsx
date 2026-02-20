@@ -10,7 +10,8 @@ import { LoginView } from './views/LoginView';
 import { GameProvider, useGame, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING, PROFILE_FLAG_TUTORIAL_COMPLETED } from './contexts/GameContext';
 import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
-import { TutorialOverlay } from './components/TutorialOverlay';
+import { OracleTutorialOverlay } from './components/OracleTutorialOverlay';
+import { TUTORIAL_STEPS } from './constants/tutorialSteps';
 import { GlobalHeader } from './components/GlobalHeader';
 import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from './components/Icons';
 import { AchievementModal } from './components/AchievementModal';
@@ -235,51 +236,24 @@ const AppWithTutorial: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('assets');
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
-    const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile } = useGame();
-
-    const arenasNavRef = useRef<HTMLButtonElement>(null);
-    const plannerNavRef = useRef<HTMLButtonElement>(null);
+    const { isTutorialActive, currentStep } = useTutorial();
 
     useEffect(() => {
-        if (!isTutorialActive) return;
-
-        // Step 1: Go to Arenas
-        if (currentStep === 1 && arenasNavRef.current) {
-            const rect = arenasNavRef.current.getBoundingClientRect();
-            setSpotlight(rect, {
-                title: "Passo 1: Arenas",
-                text: "Acesse suas Arenas. Elas representam os grandes contextos da sua vida, como 'Trabalho' ou 'Saúde'.",
-            });
+        if (isTutorialActive) {
+            const step = TUTORIAL_STEPS[currentStep];
+            if (step) {
+                setCurrentView(step.view);
+            }
         }
-        // Step 6: Go to Planner
-        else if (currentStep === 6 && plannerNavRef.current) {
-            const rect = plannerNavRef.current.getBoundingClientRect();
-             setSpotlight(rect, {
-                title: "Passo 6: O Planner",
-                text: "Excelente. Agora vamos organizar sua execução. Volte ao Planner.",
-            });
-        }
-
-    }, [isTutorialActive, currentStep, setSpotlight]);
+    }, [isTutorialActive, currentStep]);
 
     useEffect(() => {
         if (isBuilderMode) setCurrentView('arenas');
     }, [isBuilderMode]);
 
     const handleSetView = (view: View) => {
-        if (isTutorialActive) {
-            if (currentStep === 1 && view === 'arenas') {
-                setSpotlight(null, null);
-                nextStep();
-            } else if (currentStep === 6 && view === 'planner') {
-                setSpotlight(null, null);
-                nextStep();
-            } else {
-                return; // Block navigation during other tutorial steps
-            }
-        }
         if (isBuilderMode && view !== 'arenas') return;
         setCurrentView(view);
     };
@@ -356,7 +330,7 @@ const AppWithTutorial: React.FC = () => {
             className={`min-h-screen text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''}`}
             data-skin={userProfile.skin}
         >
-            <TutorialOverlay />
+            <OracleTutorialOverlay />
             {isBuilderMode && (
                 <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/15 backdrop-blur-lg border-b border-yellow-500/40">
                     <div className="max-w-[420px] mx-auto px-4 h-11 flex items-center gap-2">
@@ -396,8 +370,8 @@ const AppWithTutorial: React.FC = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="flex justify-around items-center h-16">
                         <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} />
-                        <NavItem view="arenas" label="ARENAS" icon={<ArenaIcon />} navRef={arenasNavRef} />
-                        <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} navRef={plannerNavRef} />
+                        <NavItem view="arenas" label="ARENAS" icon={<ArenaIcon />} />
+                        <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} />
                         <NavItem view="social" label="MUNDO" icon={<SocialIcon />} />
                         <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} />
                     </div>
@@ -411,22 +385,15 @@ const MainApp: React.FC = () => {
     const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag } = useGame();
     const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
-    const [showTutorialGate, setShowTutorialGate] = useState(false);
 
     // Online Only: Removed localStorage migration for tutorial completion
     
     useEffect(() => {
         if (userProfile.id === 'placeholder_user') return;
-        if (isTutorialCompleted) {
-            setShowTutorialGate(false);
-            return;
+        if (!isTutorialCompleted && !isTutorialActive) {
+            startTutorial();
         }
-        if (isTutorialActive) {
-            setShowTutorialGate(false);
-            return;
-        }
-        setShowTutorialGate(true);
-    }, [userProfile.id, isTutorialCompleted, isTutorialActive]);
+    }, [userProfile.id, isTutorialCompleted, isTutorialActive, startTutorial]);
 
     useEffect(() => {
         // Não mostrar termos para contas privilegiadas
@@ -464,17 +431,6 @@ const MainApp: React.FC = () => {
     return (
         <>
             <AppWithTutorial />
-            <TutorialGateOverlay
-                open={showTutorialGate && !showTerms}
-                onSkip={() => {
-                    addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
-                    setShowTutorialGate(false);
-                }}
-                onStart={() => {
-                    setShowTutorialGate(false);
-                    startTutorial();
-                }}
-            />
             <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
             {achievementUnlocked && (
                 <AchievementModal 
@@ -633,14 +589,14 @@ const App: React.FC = () => {
     };
 
     return (
-        <GameProvider session={session}>
-          <CodexBuilderProvider>
+        <CodexBuilderProvider>
+          <GameProvider session={session}>
             <TutorialProvider>
               {renderContent()}
               <BootRitualOverlay open={showBootRitual} />
             </TutorialProvider>
-          </CodexBuilderProvider>
-        </GameProvider>
+          </GameProvider>
+        </CodexBuilderProvider>
     );
 };
 

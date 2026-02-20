@@ -72,7 +72,7 @@ export const AssetsView: React.FC = () => {
         </div>
         
         <div className="relative w-full aspect-[9/16] z-10">
-            <div className="grid grid-cols-3 grid-rows-7 w-full h-full">
+            <div id="assets-grid" className="grid grid-cols-3 grid-rows-7 w-full h-full">
                 {assets.map(asset => {
                     const pos = assetPositions[asset.id];
                     if (!pos) return null;

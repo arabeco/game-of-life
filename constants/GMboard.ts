@@ -1,4 +1,5 @@
 import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType, Season, SeasonMission, SeasonQuest, QuestActionTemplate } from '../types';
+import { ITEMS_DB } from './items';
 
 // ==========================================
 // CONFIGURAÇÃO DO JOGO (GM BOARD)
@@ -78,17 +79,18 @@ export const SEASONS: Record<string, SeasonConfig> = {
 };
 
 // --- COSMÉTICOS (SOVEREIGN ASSETS) ---
+// Atualizado com o link do Supabase fornecido
 const AVATAR_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
 
 export const SKIN_TONES = ['#FBE5D5', '#F3C7AC', '#E2A984', '#C68642', '#8D5524', '#613817'] as const;
 export const HAIR_COLORS = ['#2C1608', '#583317', '#A76936', '#B8860B', '#F8DE7E', '#FFFFFF', '#6F6F6F', '#E54339', '#2E6A8A', '#7D2E8A'] as const;
 
 export const BODY_STYLES = [
-  { id: 'male_base', name: 'Masculino Padrão', url: `${AVATAR_BASE_URL}/body-male.png` },
-  { id: 'female_base', name: 'Feminino Padrão', url: `${AVATAR_BASE_URL}/body-fem.png` },
+  { id: 'male_base', name: 'Masculino Padrão', url: `${AVATAR_BASE_URL}/MASCULINO_BASE_BRANCO.png.png` },
+  { id: 'female_base', name: 'Feminino Padrão', url: `${AVATAR_BASE_URL}/FEMININO_BASE_BRANCO.png.png` },
 ];
 
-export const FACE_FEATURES_URL = `${AVATAR_BASE_URL}/face-eyemouth.png`;
+export const FACE_FEATURES_URL = ``;
 
 export const SOVEREIGN_ASSETS = {
   bodyStyles: BODY_STYLES,
@@ -96,78 +98,42 @@ export const SOVEREIGN_ASSETS = {
   hairColors: HAIR_COLORS,
   hairStyles: [
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-    { id: 'anime', name: 'Anime', url: `${AVATAR_BASE_URL}/hair-bangsmale.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'mullet', name: 'Mullet', url: `${AVATAR_BASE_URL}/hair-mullet (2).png`, rarity: 'rare' as ItemRarity },
-    { id: 'parted', name: 'Dividido', url: `${AVATAR_BASE_URL}/hair-bangs.png`, rarity: 'common' as ItemRarity },
-    { id: 'blunt_bangs', name: 'Franja Reta', url: `${AVATAR_BASE_URL}/hair-bangs.png`, rarity: 'common' as ItemRarity },
-    { id: 'short_dreads', name: 'Dread Curto', url: `${AVATAR_BASE_URL}/hair-dreads.png`, rarity: 'common' as ItemRarity },
-    { id: 'princess', name: 'Princesa', url: `${AVATAR_BASE_URL}/hair-princess.png`, rarity: 'epic' as ItemRarity },
-    { id: 'ponytail', name: 'Rabo de Cavalo', url: `${AVATAR_BASE_URL}/hair-ponytail.png`, rarity: 'common' as ItemRarity },
-    { id: 'long_wavy', name: 'Longo Ondulado', url: `${AVATAR_BASE_URL}/hair-longwavy.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'curly_top', name: 'Topo Cacheado', url: `${AVATAR_BASE_URL}/hair-curlytop.png`, rarity: 'common' as ItemRarity },
-    { id: 'braids', name: 'Tranças', url: `${AVATAR_BASE_URL}/hair-braids.png`, rarity: 'rare' as ItemRarity },
-    { id: 'mohawk', name: 'Moicano', url: `${AVATAR_BASE_URL}/hair-mohawk.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'bald', name: 'Careca', url: `${AVATAR_BASE_URL}/hair-bald.png`, rarity: 'common' as ItemRarity },
-    { id: 'afro', name: 'Black Power', url: `${AVATAR_BASE_URL}/hair-afro.png`, rarity: 'rare' as ItemRarity },
-    { id: 'side_shave', name: 'Raspado Lateral', url: `${AVATAR_BASE_URL}/hair-sideshave.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'bob_cut', name: 'Corte Chanel', url: `${AVATAR_BASE_URL}/hair-bob.png`, rarity: 'common' as ItemRarity },
-    { id: 'spiky', name: 'Espetado', url: `${AVATAR_BASE_URL}/hair-spiky.png`, rarity: 'common' as ItemRarity },
+    ...ITEMS_DB.filter(i => i.category === 'hair').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
   ],
   outfits: [
     { id: 'none', name: 'Nenhuma', url: '', rarity: 'common' as ItemRarity },
-    { id: 'gray_tunic', name: 'Túnica Cinza', url: `${AVATAR_BASE_URL}/clothe-graytunic.png`, rarity: 'common' as ItemRarity },
-    { id: 'training_pants', name: 'Calça de Treino', url: `${AVATAR_BASE_URL}/clothe-trainingpants.png`, rarity: 'common' as ItemRarity },
-    { id: 'leather_vest', name: 'Colete de Couro', url: `${AVATAR_BASE_URL}/clothe-leathervest.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'simple_robe', name: 'Robe Simples', url: `${AVATAR_BASE_URL}/clothe-simplerobe.png`, rarity: 'common' as ItemRarity },
-    { id: 'soccer', name: 'Futebol', url: `${AVATAR_BASE_URL}/clothe-soccerkit1.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'jeans_hoodie', name: 'Jeans e Moletom', url: `${AVATAR_BASE_URL}/clothe-jeanshoodie.png`, rarity: 'common' as ItemRarity },
-    { id: 'social', name: 'Social', url: `${AVATAR_BASE_URL}/clothe-executive.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'cyberpunk', name: 'Cyberpunk', url: `${AVATAR_BASE_URL}/clothe-cyber.png`, rarity: 'epic' as ItemRarity },
-    { id: 'school', name: 'Escolar', url: `${AVATAR_BASE_URL}/clothe-japan.png`, rarity: 'common' as ItemRarity },
-    { id: 'lab_coat', name: 'Jaleco', url: `${AVATAR_BASE_URL}/clothe-lab.png`, rarity: 'rare' as ItemRarity },
-    { id: 'gym', name: 'Academia', url: `${AVATAR_BASE_URL}/clothe-gymfem.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'silver_armor', name: 'Armadura de Prata', url: `${AVATAR_BASE_URL}/clothe-silverarmor.png`, rarity: 'rare' as ItemRarity },
-    { id: 'gold_armor', name: 'Armadura de Ouro', url: `${AVATAR_BASE_URL}/clothe-goldarmor.png`, rarity: 'epic' as ItemRarity },
+    ...ITEMS_DB.filter(i => i.category === 'skin').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
   ],
   head_under_items: [
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-    { id: 'scarf', name: 'Cachecol', url: `${AVATAR_BASE_URL}/acce-scarf.png`, rarity: 'common' as ItemRarity },
-    { id: 'bandana', name: 'Bandana', url: `${AVATAR_BASE_URL}/acce-bandana.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'glasses', name: 'Óculos de Grau', url: `${AVATAR_BASE_URL}/acces-glass1.png`, rarity: 'common' as ItemRarity },
-    { id: 'aviators', name: 'Óculos Aviador', url: `${AVATAR_BASE_URL}/acce-glassaviator.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'mask', name: 'Máscara', url: `${AVATAR_BASE_URL}/acce-mask.png`, rarity: 'rare' as ItemRarity },
-    { id: 'eyepatch', name: 'Tapa-olho', url: `${AVATAR_BASE_URL}/image-removebg-preview (27).png`, rarity: 'rare' as ItemRarity },
+    // Adicione itens aqui se houver no ITEMS_DB com categoria 'head_under_item'
   ],
   helmets: [
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-    { id: 'gold_helm', name: 'Elmo de Ouro', url: `${AVATAR_BASE_URL}/head-goldhelm.png`, rarity: 'epic' as ItemRarity },
-    { id: 'silver_helm', name: 'Elmo de Prata', url: `${AVATAR_BASE_URL}/head-silverhelm.png`, rarity: 'rare' as ItemRarity },
+     // Adicione itens aqui se houver no ITEMS_DB com categoria 'helmet'
   ],
   head_over_items: [
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-    { id: 'straw_hat', name: 'Chapéu de Palha', url: `${AVATAR_BASE_URL}/head-strawhat.png`, rarity: 'common' as ItemRarity },
-    { id: 'beanie', name: 'Touca', url: `${AVATAR_BASE_URL}/head-beanie.png`, rarity: 'common' as ItemRarity },
-    { id: 'headband', name: 'Faixa de Cabeça', url: `${AVATAR_BASE_URL}/head-headband.png`, rarity: 'uncommon' as ItemRarity },
-    { id: 'wizard_hat', name: 'Chapéu de Mago', url: `${AVATAR_BASE_URL}/head-hatwizard.png`, rarity: 'epic' as ItemRarity },
-    { id: 'cap', name: 'Boné', url: `${AVATAR_BASE_URL}/head-cap.png`, rarity: 'common' as ItemRarity },
-    { id: 'crown', name: 'Coroa', url: `${AVATAR_BASE_URL}/head-goldcrown.png`, rarity: 'legendary' as ItemRarity },
+     // Adicione itens aqui se houver no ITEMS_DB com categoria 'head_over_item'
   ],
   artifacts: [
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-    { id: 'wooden_sword', name: 'Espada de Madeira', url: `${AVATAR_BASE_URL}/item-woodensword.png`, rarity: 'common' as ItemRarity },
-    { id: 'walking_stick', name: 'Bastão de Caminhada', url: `${AVATAR_BASE_URL}/item-walkingstick.png`, rarity: 'common' as ItemRarity },
-    { id: 'old_book', name: 'Livro Velho', url: `${AVATAR_BASE_URL}/item-oldbook.png`, rarity: 'common' as ItemRarity },
-    { id: 'silver_bow', name: 'Arco de Prata', url: `${AVATAR_BASE_URL}/item-silverbow.png`, rarity: 'rare' as ItemRarity },
-    { id: 'silver_staff', name: 'Cajado de Prata', url: `${AVATAR_BASE_URL}/item-silverscepter.png`, rarity: 'rare' as ItemRarity },
-    { id: 'magic_book', name: 'Livro de Magia', url: `${AVATAR_BASE_URL}/item-bookofmagic.png`, rarity: 'epic' as ItemRarity },
-    { id: 'katana', name: 'Katana', url: `${AVATAR_BASE_URL}/item-swordkatana.png`, rarity: 'rare' as ItemRarity },
-    { id: 'iron_shield', name: 'Escudo de Ferro', url: `${AVATAR_BASE_URL}/item-silvershield.png`, rarity: 'uncommon' as ItemRarity },
+    ...ITEMS_DB.filter(i => i.category === 'artifact').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
+  ],
+  glyphs: [
+    { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
+    ...ITEMS_DB.filter(i => i.category === 'glyph').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
+  ],
+  auras: [
+    { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
+    ...ITEMS_DB.filter(i => i.category === 'aura').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
   ],
 };
 
 export const DEFAULT_SOVEREIGN_CONFIG: SovereignConfig = {
     body: 'male_base', skinTone: '#E2A984', hairStyle: 'none', hairColor: '#2C1608',
-    outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none'
+    outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none',
+    glyph: 'none', aura: 'none'
 };
 
 export const getItemCategory = (itemId: string): UnlockCategory | null => {
@@ -178,6 +144,7 @@ export const getItemCategory = (itemId: string): UnlockCategory | null => {
   if (SOVEREIGN_ASSETS.helmets.some(i => i.id === itemId)) return 'helmets';
   if (SOVEREIGN_ASSETS.head_over_items.some(i => i.id === itemId)) return 'head_over_items';
   if (SOVEREIGN_ASSETS.artifacts.some(i => i.id === itemId)) return 'artifacts';
+  if (SOVEREIGN_ASSETS.glyphs.some(i => i.id === itemId)) return 'glyphs';
   return null;
 };
 
@@ -191,6 +158,11 @@ export const buildDefaultLevelUnlocks = (): LevelUnlocks => ({
   helmets: buildUnlockMap(SOVEREIGN_ASSETS.helmets),
   head_over_items: buildUnlockMap(SOVEREIGN_ASSETS.head_over_items),
   artifacts: buildUnlockMap(SOVEREIGN_ASSETS.artifacts),
+  glyphs: buildUnlockMap(SOVEREIGN_ASSETS.glyphs),
+  codexes: {},
+  skins: {},
+  borders: {},
+  auras: {},
 });
 
 // --- GM CONFIG & MASTERY ---
@@ -279,26 +251,17 @@ export const GM_CONFIG = {
   },
   cosmetics: {
     skins: [
-      { id: 'GOLD', name: 'GOLD', color: '#d4af37', rarity: 'legendary' },
-      { id: 'CYBER', name: 'CYBER', color: '#00d9ff', rarity: 'epic' },
-      { id: 'FROST', name: 'FROST', color: '#92d4f3', rarity: 'rare' },
-      { id: 'EMBER', name: 'EMBER', color: '#ff6a00', rarity: 'rare' },
-      { id: 'AURORA', name: 'AURORA', color: '#5effa5', rarity: 'epic' },
-      { id: 'VOID', name: 'VOID', color: '#a95eff', rarity: 'legendary' },
+      ...ITEMS_DB.filter(i => i.category === 'ui_skin').map(i => ({ id: i.id, name: i.name, color: '#ffffff', rarity: i.rarity })),
     ] as Skin[],
     borders: [
-      { id: 'DISCIPLINADO', name: 'Pupilo', color: '#c0c0c0', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borada_disciplinado.png', rarity: 'uncommon' },
-      { id: 'GRAO_MESTRE', name: 'Grão Mestre', color: '#b3b3b3', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_gm.png', rarity: 'legendary' },
-      { id: 'IMPARAVEL', name: 'Imparável', color: '#d4af37', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_imparavel.png', rarity: 'epic' },
-      { id: 'LENDA_VIVA', name: 'Lenda Viva', color: '#8fd0ff', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_lendaviva.png', rarity: 'epic' },
-      { id: 'POPULAR', name: 'Popular', color: '#ff8fd4', imageUrl: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/borda_popular.png', rarity: 'rare' },
+      ...ITEMS_DB.filter(i => i.category === 'border').map(i => ({ id: i.id, name: i.name, color: '#ffffff', imageUrl: i.imageUrl || '', rarity: i.rarity })),
     ] as Skin[],
     banners: [
       { id: 'grao_mestre', name: 'Grão Mestre', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_gm.png', rarity: 'legendary' },
       { id: 'disciplinado', name: 'Disciplinado', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_disciplinado.png', rarity: 'uncommon' },
       { id: 'imparavel', name: 'Imparável', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_imparavel.png', rarity: 'epic' },
       { id: 'lendaviva', name: 'Lenda Viva', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_lendaviva.png', rarity: 'epic' },
-      { id: 'popular', name: 'Popular', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_poopular.png' },
+      { id: 'popular', name: 'Popular', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_poopular.png', rarity: 'epic' },
     ],
   },
   unlocks: {

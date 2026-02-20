@@ -44,26 +44,11 @@ const Sparkles: React.FC = () => (
 
 const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, onTaskClick: (task: ScheduledTask) => void }> = ({ task, action, scaleFactor, onCustomDragStart, onTaskClick }) => {
     const { getActionBackgroundStyle, toggleTaskCompletion } = useGame();
-    const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [isHolding, setIsHolding] = useState(false);
     const [showSparkles, setShowSparkles] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const taskRef = useRef<HTMLDivElement>(null);
     const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => {
-        const handleDragMove = (e: MouseEvent | TouchEvent) => {
-            // A small delay to ensure the element is positioned after drop
-            setTimeout(() => {
-                if (taskRef.current) {
-                     setSpotlight(taskRef.current.getBoundingClientRect(), {
-                        title: "Passo 8: Complete a Ação",
-                        text: "Segure o card (Long Press) para marcar a ação como concluída e ganhar XP.",
-                    });
-                }
-            }, 300);
-        }
-    }, [isTutorialActive, currentStep, setSpotlight, task.id]);
 
     useEffect(() => {
         // Cleanup timeout on unmount
@@ -98,9 +83,6 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 setTimeout(() => setShowSparkles(false), 1000);
             }
             toggleTaskCompletion(task.id);
-            if (isTutorialActive && currentStep === 8) {
-                nextStep();
-            }
             setIsHolding(false);
             setIsTransitioning(false);
         }, 1000); // Reduced to 1s for better UX
@@ -327,7 +309,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         userProfile,
         getActionBackgroundStyle
     } = useGame();
-    const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
+    const { isTutorialActive, currentStep, nextStep } = useTutorial();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
     const [isChecklistVisible, setChecklistVisible] = useState(false);
@@ -704,7 +686,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const pos = isTouchEvent ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : { x: event.clientX, y: event.clientY };
         const elemRect = draggedElementRef.current?.getBoundingClientRect();
         const offset = elemRect ? { x: pos.x - elemRect.left, y: pos.y - elemRect.top } : { x: 0, y: 0 };
-        if (isTutorialActive && (currentStep === 7 || currentStep === 8)) setSpotlight(null, null);
         setIsMilestonePoolOpen(false);
         refreshDragTargets();
         if (scrollContainerRef.current) {
@@ -1009,7 +990,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const isToday = currentDate.toDateString() === new Date().toDateString();
 
     return (
-        <div className="p-2 flex flex-col flex-1 min-h-0 relative">
+        <div id="planner-container" className="p-2 flex flex-col flex-1 min-h-0 relative">
             {dragState.isDragging && (
                 <div style={{ position: 'fixed', top: dragState.currentPosition.y, left: dragState.currentPosition.x, transform: `translate(-${dragState.pointerOffset.x}px, -${dragState.pointerOffset.y}px)`, pointerEvents: 'none', zIndex: 1000 }}>
                     {dragState.ghostElement}

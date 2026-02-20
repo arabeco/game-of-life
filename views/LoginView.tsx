@@ -90,11 +90,18 @@ export const LoginView: React.FC = () => {
                         helmets: {},
                         head_over_items: {},
                         artifacts: {},
+                        codexes: {},
+                        skins: {},
+                        borders: {},
+                        glyphs: {},
+                        auras: {},
                     },
                     completedSeasonMissions: [PROFILE_FLAG_TERMS_PENDING],
                     nobility: { exp: 0, rankId: 'vagante' },
+                    wallet: { gold: 0, fragments: 0 },
                     mood: 50,
                     chests: [{ type: 'Comum', count: 1 }],
+                    inventory: [],
                     role: 'user',
                     isPremium: false
                 };
@@ -180,6 +187,8 @@ export const LoginView: React.FC = () => {
                         nobility: profile.nobility,
                         mood: profile.mood,
                         chests: profile.chests,
+                        wallet: profile.wallet ?? { gold: 0, fragments: 0 },
+                        inventory: [],
                         role: profile.role,
                         isPremium: profile.is_premium ?? false,
                     };
@@ -235,7 +244,9 @@ export const LoginView: React.FC = () => {
                             head_under: 'none',
                             helmet: 'none',
                             head_over: 'crown',
-                            artifact: 'none'
+                            artifact: 'none',
+                            glyph: 'none',
+                            aura: 'none'
                         },
                         avatarUrl: 'https://picsum.photos/seed/admin/100/100',
                         border: 'GOLD',
@@ -253,6 +264,11 @@ export const LoginView: React.FC = () => {
                             helmets: {},
                             head_over_items: {},
                             artifacts: {},
+                            codexes: {},
+                            skins: {},
+                            borders: {},
+                            glyphs: {},
+                            auras: {},
                         },
                         completedSeasonMissions: [],
                         nobility: { exp: 999999, rankId: 'soberano' },
@@ -263,6 +279,8 @@ export const LoginView: React.FC = () => {
                             { type: 'Épico', count: 25 },
                             { type: 'Lendário', count: 10 }
                         ],
+                        wallet: { gold: 99999, fragments: 99999 },
+                        inventory: [],
                         role: 'admin',
                         isPremium: true
                     };
@@ -334,6 +352,8 @@ export const LoginView: React.FC = () => {
                         nobility: profile.nobility,
                         mood: profile.mood,
                         chests: profile.chests,
+                        wallet: profile.wallet ?? { gold: 0, fragments: 0 },
+                        inventory: [],
                         role: profile.role,
                         isPremium: profile.is_premium ?? false,
                     };

@@ -9,7 +9,6 @@ import { SelectionModal } from './SelectionModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
-import { useTutorial } from '../contexts/TutorialContext';
 
 interface ActionModalProps {
     arenaId: string;
@@ -45,7 +44,6 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
 
 export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initialMode, onClose }) => {
     const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask } = useGame();
-    const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     
     const isNew = !action;
     
@@ -53,8 +51,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
         action || { arenaId: arenaId, name: '', description: '', icon: '🏆', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 }
     );
-    // Tutorial state
-    const [formStep, setFormStep] = useState(0);
     // New View Mode State
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
     const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'note' | 'checklist' | 'context'>('media');
@@ -68,42 +64,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const [newChecklistItem, setNewChecklistItem] = useState('');
     const [newAssetUrl, setNewAssetUrl] = useState('');
 
-    useEffect(() => {
-        if (isTutorialActive && currentStep === 5) {
-            const handleFormStep = (step: number) => {
-                switch (step) {
-                    case 0: // Title
-                        if (nameInputRef.current) {
-                            setSpotlight(nameInputRef.current.getBoundingClientRect(), { title: "Nome da Ação", text: "Dê um nome claro e objetivo para sua ação." });
-                        }
-                        break;
-                    case 1: // Duration
-                        if (durationInputRef.current) {
-                             setSpotlight(durationInputRef.current.getBoundingClientRect(), { title: "Duração", text: "Estime quanto tempo esta ação levará." });
-                        }
-                        break;
-                    case 2: // Repetitions
-                         if (repsInputRef.current) {
-                             setSpotlight(repsInputRef.current.getBoundingClientRect(), { title: "Repetições", text: "Quantas vezes você pretende fazer isso? Cada repetição pode ser agendada no Planner." });
-                         }
-                        break;
-                    case 3: // Save
-                        if (saveButtonRef.current) {
-                             setSpotlight(saveButtonRef.current.getBoundingClientRect(), { title: "Salvar", text: "Ótimo! Agora salve para criar a ação." });
-                        }
-                        break;
-                    default:
-                        setSpotlight(null, null);
-                }
-            };
-            handleFormStep(formStep);
-        }
-    }, [isTutorialActive, currentStep, formStep, setSpotlight]);
-
     const handleTutorialNextFormStep = () => {
-        if (isTutorialActive && currentStep === 5) {
-            setFormStep(prev => prev + 1);
-        }
+        // No-op
     }
 
 
@@ -180,9 +142,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
             scheduleTasks(action.id);
         }
 
-        if (isTutorialActive && currentStep === 5) {
-            nextStep();
-        }
         onClose();
     };
     

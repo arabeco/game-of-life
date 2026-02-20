@@ -47,3 +47,7 @@ CREATE POLICY "Entrar na missão" ON public.clan_mission_participants
 CREATE POLICY "Atualizar contribuição" ON public.clan_mission_participants
     FOR UPDATE USING (auth.uid() = user_id);
 
+-- Exclusão: Usuário pode sair da missão (remover sua participação)
+CREATE POLICY "delete_own_clan_mission_participation" ON public.clan_mission_participants
+    FOR DELETE USING (auth.uid() = user_id);
+

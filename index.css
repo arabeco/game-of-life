@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+:root {
+  --tier-1-comum:     #9CA3AF;
+  --tier-2-incomum:   #10B981;
+  --tier-3-raro:      #3B82F6;
+  --tier-4-epico:     #8B5CF6;
+  --tier-5-lendario:  #F59E0B;
+  --tier-season-gradient: linear-gradient(45deg, #FF0080, #7928CA, #00DFD8);
+}
+
+
 @keyframes particle-explode {
   0% {
     transform: rotate(var(--rot)) translateY(0) scale(0.5);
@@ -26,4 +36,84 @@
 
 .animate-shake {
   animation: shake 0.5s ease-in-out infinite;
+}
+
+/* Plasma / Smoke Effect for Item Cards */
+.plasma-card {
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.plasma-bg::before,
+.plasma-bg::after {
+    content: '';
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background: radial-gradient(circle at 50% 50%, var(--plasma-color-1, rgba(255,255,255,0.1)), transparent 60%),
+                radial-gradient(circle at 20% 80%, var(--plasma-color-2, rgba(255,255,255,0.05)), transparent 50%);
+    filter: blur(60px);
+    opacity: 0.6;
+    animation: plasma-rotate 15s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+.plasma-bg::after {
+    background: radial-gradient(circle at 80% 20%, var(--plasma-color-3, rgba(255,255,255,0.1)), transparent 60%);
+    animation: plasma-rotate 20s linear infinite reverse;
+    opacity: 0.4;
+}
+
+@keyframes plasma-rotate {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Rarity Colors for Plasma */
+.plasma-legendary {
+    --plasma-color-1: rgba(245, 158, 11, 0.6);
+    --plasma-color-2: rgba(251, 191, 36, 0.4);
+    --plasma-color-3: rgba(180, 83, 9, 0.5);
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.2), inset 0 0 20px rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.plasma-epic {
+    --plasma-color-1: rgba(139, 92, 246, 0.6);
+    --plasma-color-2: rgba(167, 139, 250, 0.4);
+    --plasma-color-3: rgba(109, 40, 217, 0.5);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.plasma-rare {
+    --plasma-color-1: rgba(59, 130, 246, 0.6);
+    --plasma-color-2: rgba(96, 165, 250, 0.4);
+    --plasma-color-3: rgba(29, 78, 216, 0.5);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.2), inset 0 0 20px rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.plasma-uncommon {
+    --plasma-color-1: rgba(16, 185, 129, 0.6);
+    --plasma-color-2: rgba(52, 211, 153, 0.4);
+    --plasma-color-3: rgba(4, 120, 87, 0.5);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.plasma-common {
+    --plasma-color-1: rgba(156, 163, 175, 0.4);
+    --plasma-color-2: rgba(209, 213, 219, 0.3);
+    --plasma-color-3: rgba(107, 114, 128, 0.3);
+    box-shadow: 0 0 20px rgba(156, 163, 175, 0.1), inset 0 0 10px rgba(156, 163, 175, 0.05);
+    border: 1px solid rgba(156, 163, 175, 0.2);
 }

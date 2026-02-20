@@ -53,24 +53,49 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
             alert('Imagem muito grande. Limite de 2MB.');
             return dataUrl;
         }
-        const extension = blob.type.split('/')[1] || 'png';
-        const filePath = `${pathPrefix}/${crypto.randomUUID()}.${extension}`;
-        const { error } = await supabase.storage.from(bucketName).upload(filePath, blob, { contentType: blob.type, upsert: true });
+        const mimeType = blob.type || 'image/png';
+        const extension = mimeType.split('/')[1] || 'png';
+        
+        const fileName = `${crypto.randomUUID()}.${extension}`;
+        // Standard path structure for RLS: avatars/USER_ID/filename
+        const filePath = `avatars/${userFolder}/${fileName}`;
+        
+        console.log("Uploading to:", bucketName, filePath);
+
+        const { error, data } = await supabase.storage.from(bucketName).upload(filePath, blob, { contentType: mimeType, upsert: true });
+        
         if (error) {
-            alert('Falha ao enviar imagem.');
-            return dataUrl;
+            console.error("Upload error:", error);
+            // Fallback: try root folder
+            const fallbackPath = `${userFolder}/${fileName}`;
+            console.log("Retrying with fallback path:", fallbackPath);
+            
+            const { error: error2 } = await supabase.storage.from(bucketName).upload(fallbackPath, blob, { contentType: mimeType, upsert: true });
+            
+            if (error2) {
+                 console.error("Fallback upload error:", error2);
+                 alert(`Falha ao enviar imagem (RLS): ${error.message} / ${error2.message}`);
+                 return dataUrl;
+            } else {
+                 const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(fallbackPath);
+                 return publicData.publicUrl || dataUrl;
+            }
         }
-        const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
-        return data.publicUrl || dataUrl;
+        
+        const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+        return publicData.publicUrl || dataUrl;
     };
 
     const handleSave = async () => {
         if (!croppedAvatar || isUploading) return;
         setIsUploading(true);
         try {
+            // pathPrefix is largely ignored now in favor of userFolder logic inside uploadDataUrl
             const uploadedUrl = await uploadDataUrl(croppedAvatar, `avatars/${userFolder}`);
+            console.log("Avatar uploaded successfully, URL:", uploadedUrl);
             onSave(uploadedUrl);
-        } catch {
+        } catch (e) {
+            console.error(e);
             alert('Falha ao enviar imagem.');
         } finally {
             setIsUploading(false);

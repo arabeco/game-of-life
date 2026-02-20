@@ -69,10 +69,22 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [actionTab, setActionTab] = useState<'basic' | 'advanced'>('basic');
   const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'notes' | 'checklist' | 'context'>('media');
 
-  // Persistence removed for Online Only mode
-  // useEffect(() => {
-  //   localStorage.setItem('codexDrafts', JSON.stringify(codexes));
-  // }, [codexes]);
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('codexDrafts');
+    if (saved) {
+      try {
+        setCodexes(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to load drafts', e);
+      }
+    }
+  }, []);
+
+  // Save to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('codexDrafts', JSON.stringify(codexes));
+  }, [codexes]);
 
   const activeCodex = codexes.find(c => c.id === activeCodexId) || null;
   const visibleArenas = useMemo(() => {

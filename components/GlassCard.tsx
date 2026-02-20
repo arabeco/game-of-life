@@ -6,14 +6,15 @@ export type GlassCardVariant = 'gold' | 'silver' | 'bronze' | 'neutral' | 'accen
 
 interface GlassCardProps {
   children: React.ReactNode;
-  variant: GlassCardVariant;
+  variant?: GlassCardVariant;
   className?: string;
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
   id?: string;
+  style?: React.CSSProperties;
 }
 
 // FIX: Wrapped the component with React.forwardRef to allow it to receive a ref. The ref is then passed to the underlying div element.
-export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(({ children, variant, className = '', onClick, id }, ref) => {
+export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(({ children, variant = 'neutral', className = '', onClick, id, style }, ref) => {
   const borderClasses: Record<GlassCardVariant, string> = {
     gold: 'gradient-border-gold',
     silver: 'gradient-border-silver',
@@ -28,7 +29,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(({ chi
   const finalClasses = `${baseClasses} ${borderClasses[variant]} ${className}`;
 
   return (
-    <div ref={ref} className={finalClasses} onClick={onClick} id={id}>
+    <div ref={ref} className={finalClasses} onClick={onClick} id={id} style={style}>
       {children}
     </div>
   );

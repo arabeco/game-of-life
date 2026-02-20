@@ -20,7 +20,7 @@ const getChestStyle = (type: ChestType) => {
     }
 }
 
-type Reward = { type: string; value: string | number; rarity: 'Comum' | 'Raro' | 'Épico' | 'Lendário' };
+type Reward = { type: string; value: string | number; rarity: 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' };
 
 const ASSET_POOL: Record<UnlockCategory, { id: string; name: string }[]> = {
     bodyStyles: SOVEREIGN_ASSETS.bodyStyles,
@@ -30,6 +30,11 @@ const ASSET_POOL: Record<UnlockCategory, { id: string; name: string }[]> = {
     helmets: SOVEREIGN_ASSETS.helmets,
     head_over_items: SOVEREIGN_ASSETS.head_over_items,
     artifacts: SOVEREIGN_ASSETS.artifacts,
+    glyphs: SOVEREIGN_ASSETS.glyphs,
+    codexes: [],
+    skins: GM_CONFIG.cosmetics.skins,
+    borders: GM_CONFIG.cosmetics.borders,
+    auras: [],
 };
 
 const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string } => {

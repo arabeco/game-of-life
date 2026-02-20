@@ -4,7 +4,6 @@ import { Arena } from '../types';
 import { CrownIcon, ChevronRightIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { ArenaSelectionModal } from './ArenaSelectionModal'; // Re-using for asset selection
-import { useTutorial } from '../contexts/TutorialContext';
 
 interface NewArenaModalProps {
     assetId: string;
@@ -40,22 +39,11 @@ const AssetSelectionModal: React.FC<{currentAssetId: string, onSelect: (assetId:
 
 export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAssetId, onClose, onArenaCreated }) => {
     const { addArena, assets } = useGame();
-    const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [assetId, setAssetId] = useState(initialAssetId);
     const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
     const modalCardRef = useRef<HTMLDivElement>(null);
-
-     useEffect(() => {
-        if (isTutorialActive && currentStep === 3 && modalCardRef.current) {
-            const rect = modalCardRef.current.getBoundingClientRect();
-            setSpotlight(rect, {
-                title: "Passo 3: Detalhes da Arena",
-                text: "Defina os detalhes da sua nova Arena. Escolha um Ativo pai, dê um nome e descreva seu objetivo.",
-            });
-        }
-    }, [isTutorialActive, currentStep, setSpotlight]);
 
     const handleSave = () => {
         if (!name.trim() || !assetId) {
@@ -63,10 +51,6 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             return;
         };
         const newArena = addArena(assetId, { name, description, icon: '🏆' });
-
-        if (isTutorialActive && currentStep === 3) {
-            nextStep();
-        }
 
         if (onArenaCreated) {
             onArenaCreated(newArena);

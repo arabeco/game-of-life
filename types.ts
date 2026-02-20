@@ -104,6 +104,18 @@ export interface Nobility {
     rankId: string;
 }
 
+export interface InventoryItem {
+    id: string; // References ItemDef.id
+    instanceId: string; // Unique ID for this specific item instance (UUID)
+    acquiredAt: string;
+    isEquipped?: boolean;
+}
+
+export interface UserWallet {
+    gold: number;
+    fragments: number;
+}
+
 export interface SovereignConfig {
     body: string;
     skinTone: string;
@@ -114,9 +126,12 @@ export interface SovereignConfig {
     helmet: string; // elmos
     head_over: string; // coroa, boné, chapéu
     artifact: string;
+    glyph: string; // NEW: Glifo slot
+    aura: string; // NEW: Aura slot
+    primaryDisplay?: 'sovereign' | 'item' | 'glyph'; // Preferred miniature display
 }
 
-export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes';
+export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'glyphs' | 'auras';
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
@@ -149,6 +164,7 @@ export interface UserProfile {
   avatarUrl: string; // The circular profile picture
   border: string; // Corresponds to a Skin ID or 'default'
   nickname: string;
+  title?: string;
   level: number;
   backgroundUrl: string;
   bannerUrl?: string; // Flamula-style banner
@@ -158,10 +174,11 @@ export interface UserProfile {
   lastLevelUpdate?: number; // Timestamp of the last level update
   nobility: Nobility;
   mood: number; // From 0 to 100
-  gold?: number;
+  wallet: UserWallet;
   chests?: { type: ChestType; count: number }[];
-  unlockedItems?: UserUnlocks;
-  unlockedSkins?: Record<string, boolean>;
+  inventory: InventoryItem[]; // NEW: Full inventory list
+  unlockedItems?: UserUnlocks; // Legacy support, maybe migrate later
+  unlockedSkins?: Record<string, boolean>; // Legacy support
   completedSeasonMissions?: string[];
   role: 'admin' | 'gm' | 'user';
   isPremium?: boolean;
@@ -374,6 +391,8 @@ export interface QuestActionTemplate {
     actionType?: string;
     difficulty?: number;
 }
+
+export type ConfigSeasonQuest = SeasonQuest;
 
 export interface SeasonQuest {
     id: string;

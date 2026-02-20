@@ -20,10 +20,12 @@ export class SupabaseService {
         hairStyle: 'short',
         hairColor: '#2C1810',
         outfit: 'royal_robes',
-        head_under: '',
-        helmet: '',
+        head_under: 'none',
+        helmet: 'none',
         head_over: 'crown',
-        artifact: 'scepter'
+        artifact: 'scepter',
+        glyph: 'none',
+        aura: 'none'
       };
 
       const adminProfile = {
@@ -46,6 +48,11 @@ export class SupabaseService {
           helmets: {},
           head_over_items: {},
           artifacts: {},
+          codexes: {},
+          skins: {},
+          borders: {},
+          glyphs: {},
+          auras: {},
         },
         completed_season_missions: [],
         nobility: { exp: 999999, rankId: 'soberano' },
@@ -56,6 +63,8 @@ export class SupabaseService {
           { type: 'Épico', count: 25 },
           { type: 'Lendário', count: 10 }
         ],
+        wallet: { gold: 99999, fragments: 99999 },
+        inventory: [],
         role: 'admin',
         is_premium: true
       };
@@ -97,6 +106,8 @@ export class SupabaseService {
           nobility: profile.nobility,
           mood: profile.mood,
           chests: profile.chests,
+          wallet: profile.wallet,
+          inventory: profile.inventory,
           role: profile.role,
           is_premium: profile.isPremium ?? false
         })

@@ -147,8 +147,9 @@ interface ArenaCardProps {
     variant: 'overview' | 'dossier';
 }
 
-export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, actions, onClick, assetName, variant }) => {
-    const { tasks, getActionBackgroundStyle, seasonQuests, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
+export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ arena, actions, onClick, assetName, variant, tasks: propTasks }) => {
+    const { tasks: contextTasks, getActionBackgroundStyle, seasonQuests, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
+    const tasks = (propTasks || contextTasks) as any[];
     const [skinTone, setSkinTone] = useState('#F0C843');
 
     const milestoneActions = actions.filter(a => a.actionType === 'Marco');

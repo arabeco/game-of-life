@@ -5,7 +5,6 @@ import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIc
 import { ActionModal } from './ActionModal';
 import { IconPickerModal } from './IconPickerModal';
 import { ConfirmationModal } from './ConfirmationModal';
-import { useTutorial } from '../contexts/TutorialContext';
 import { supabase } from '../supabaseClient';
 
 const hexToRgb = (hex: string) => {
@@ -166,7 +165,6 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
     const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, seasonQuests, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission } = useGame();
-    const { isTutorialActive, currentStep, nextStep, setSpotlight } = useTutorial();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ name: arena.name, description: arena.description, icon: arena.icon });
@@ -192,16 +190,6 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     const isSeasonQuestArena = normalizedArena.includes('quests - season');
     const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
-
-    useEffect(() => {
-        if (isTutorialActive && currentStep === 4 && newActionRef.current) {
-             const rect = newActionRef.current.getBoundingClientRect();
-             setSpotlight(rect, {
-                title: "Passo 4: Crie uma Ação",
-                text: "Agora crie uma Ação. A soma das suas ações definirá sua meta para este Ciclo.",
-            });
-        }
-    }, [isTutorialActive, currentStep, setSpotlight]);
 
     useEffect(() => {
         const value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
@@ -279,10 +267,6 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         if (isSpecialArena) {
             alert("Para adicionar novas missões, acesse a aba Missões no Menu de Configurações ou no Clã.");
             return;
-        }
-        if (isTutorialActive && currentStep === 4) {
-            setSpotlight(null, null);
-            nextStep();
         }
         setActionModalState({ action: null, mode: 'edit', key: `new-action-modal-${Date.now()}` });
     };

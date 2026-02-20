@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glyph GM Board - Economy Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #050505; color: #e5e5e5; font-family: monospace; }
+        .card { background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 0.5rem; }
+        input, textarea { background-color: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.25rem 0.5rem; width: 100%; }
+        h1, h2, h3 { color: #F59E0B; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto space-y-8">
+        <header class="flex justify-between items-center border-b border-white/10 pb-4">
+            <h1 class="text-3xl font-black tracking-tighter">GM BOARD <span class="text-xs text-gray-500">v1.0</span></h1>
+            <div class="space-x-4">
+                <button onclick="loadConfig()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-bold">Carregar JSON</button>
+                <button onclick="saveConfig()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-bold">Baixar JSON</button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- JSON Editor -->
+            <div class="card h-[80vh] flex flex-col">
+                <h2 class="text-xl font-bold mb-4">Economy Config (JSON)</h2>
+                <textarea id="jsonInput" class="flex-1 font-mono text-xs p-4 resize-none" spellcheck="false"></textarea>
+                <div id="validationStatus" class="mt-2 text-xs font-bold text-gray-500">Aguardando validação...</div>
+            </div>
+
+            <!-- Visualizers -->
+            <div class="space-y-6 overflow-y-auto h-[80vh] pr-2">
+                <div class="card">
+                    <h3 class="text-lg font-bold mb-2">Simulador de Loot (1000x)</h3>
+                    <div class="flex gap-2 mb-4">
+                        <select id="chestType" class="bg-black/50 border border-white/20 rounded px-2 py-1">
+                            <option value="incomum">Incomum</option>
+                            <option value="ciclo">Ciclo</option>
+                            <option value="radiante">Radiante</option>
+                            <option value="epico">Épico</option>
+                            <option value="season">Season</option>
+                        </select>
+                        <button onclick="simulateLoot()" class="px-3 py-1 bg-white/10 hover:bg-white/20 rounded">Simular</button>
+                    </div>
+                    <div id="simResults" class="text-xs space-y-1 font-mono">
+                        Run simulation to see results.
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="text-lg font-bold mb-2">Exchange Rates</h3>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <label>Gold to BRL</label>
+                            <div id="view_gold_rate" class="font-bold text-yellow-400">-</div>
+                        </div>
+                        <div>
+                            <label>Recycle Values (Avg)</label>
+                            <div id="view_recycle" class="font-bold text-cyan-400">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default Config Structure based on LOJA.MD
+        const DEFAULT_CONFIG = {
+            "version": "1.0.0",
+            "last_updated": new Date().toISOString().split('T')[0],
+            "currency": { "gold_to_brl_rate": 10 },
+            "recycle_values": { "tier_1": 10, "tier_2": 30, "tier_3": 100, "tier_4": 300, "tier_5": 1000 },
+            "craft_costs": { "tier_1": 40, "tier_2": 120, "tier_3": 400, "tier_4": 1200, "tier_5": 4000 },
+            "chest_bonus_fragments": {
+                "incomum": { "min": 5, "max": 15 },
+                "ciclo": { "min": 10, "max": 30 },
+                "radiante": { "min": 30, "max": 80 },
+                "epico": { "min": 80, "max": 200 },
+                "season": { "min": 200, "max": 500 }
+            },
+            "pity_system": { "ciclo": 15, "radiante": 10, "epico": 8, "season": 5 },
+            "loot_tables": {
+                "incomum": { "tier_1": 70, "tier_2": 25, "tier_3": 5 },
+                "ciclo": { "tier_1": 40, "tier_2": 35, "tier_3": 20, "tier_4": 5 },
+                "radiante": { "tier_2": 45, "tier_3": 40, "tier_4": 10, "tier_5": 5 },
+                "epico": { "tier_3": 50, "tier_4": 35, "tier_5": 15 },
+                "season": { "tier_4": 60, "tier_5": 30, "season_exclusive": 10 }
+            },
+            "gold_products": { "premium_monthly": 200, "codex": 150, "boost_24h": 50, "boost_7d": 200 }
+        };
+
+        const textarea = document.getElementById('jsonInput');
+        textarea.value = JSON.stringify(DEFAULT_CONFIG, null, 2);
+
+        function updateViews() {
+            try {
+                const config = JSON.parse(textarea.value);
+                document.getElementById('validationStatus').innerText = "✅ JSON Válido";
+                document.getElementById('validationStatus').className = "mt-2 text-xs font-bold text-green-500";
+                
+                document.getElementById('view_gold_rate').innerText = `1 BRL = ${config.currency.gold_to_brl_rate} Gold`;
+                
+                const rec = config.recycle_values;
+                document.getElementById('view_recycle').innerText = `T1: ${rec.tier_1} | T5: ${rec.tier_5}`;
+
+            } catch (e) {
+                document.getElementById('validationStatus').innerText = "❌ Erro: " + e.message;
+                document.getElementById('validationStatus').className = "mt-2 text-xs font-bold text-red-500";
+            }
+        }
+
+        textarea.addEventListener('input', updateViews);
+        updateViews();
+
+        function saveConfig() {
+            const blob = new Blob([textarea.value], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "economy.json";
+            a.click();
+        }
+
+        function loadConfig() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = event => {
+                    textarea.value = event.target.result;
+                    updateViews();
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function simulateLoot() {
+            try {
+                const config = JSON.parse(textarea.value);
+                const type = document.getElementById('chestType').value;
+                const table = config.loot_tables[type];
+                
+                if (!table) return;
+
+                const results = { tier_1: 0, tier_2: 0, tier_3: 0, tier_4: 0, tier_5: 0, season: 0 };
+                const iterations = 1000;
+
+                for(let i=0; i<iterations; i++) {
+                    const rand = Math.random() * 100;
+                    let cumulative = 0;
+                    
+                    for (const [key, chance] of Object.entries(table)) {
+                        cumulative += chance;
+                        if (rand <= cumulative) {
+                            if (key === 'season_exclusive') results.season++;
+                            else results[key]++;
+                            break;
+                        }
+                    }
+                }
+
+                let html = `<div class="grid grid-cols-2 gap-2">`;
+                for (const [k, v] of Object.entries(results)) {
+                    if (v > 0) {
+                        const pct = ((v/iterations)*100).toFixed(1);
+                        html += `<div class="flex justify-between"><span>${k.toUpperCase()}</span><span>${v} (${pct}%)</span></div>`;
+                    }
+                }
+                html += `</div>`;
+                document.getElementById('simResults').innerHTML = html;
+
+            } catch(e) {
+                alert("Config inválida");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -127,7 +127,10 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
-const mapDbProfileToUserProfile = (row: any): UserProfile => ({
+const mapDbProfileToUserProfile = (row: any): UserProfile => {
+    const normalizedRole = typeof row.role === 'string' ? row.role.toLowerCase() : 'user';
+    const role = normalizedRole === 'admin' || normalizedRole === 'gm' ? normalizedRole : 'user';
+    return {
     id: row.id,
     email: row.email ?? undefined,
     nickname: row.nickname ?? 'Soberano',
@@ -145,8 +148,9 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => ({
     chests: row.chests ?? undefined,
     wallet: row.wallet ?? { gold: row.gold ?? 0, fragments: row.fragments ?? 0 },
     inventory: [],
-    role: row.role === 'admin' ? 'admin' : 'user',
-});
+    role,
+};
+};
 
 const mapToCamelCase = (obj: any): any => {
     if (obj === null || obj === undefined) return obj;

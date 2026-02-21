@@ -213,6 +213,8 @@ export interface GameContextType {
   clanQuestProgress: Record<string, Record<string, number>>;
   clanQuestParticipants: Record<string, number>;
   getClanQuestProgress: (questId: string) => number;
+  getClanQuestForActionName: (actionName?: string) => SeasonQuest | null;
+  getClanQuestsForArena: (arena: Arena, arenaActions: Action[]) => SeasonQuest[];
   fetchClanQuestParticipants: (questId: string, actionName: string) => Promise<void>;
   userMissionParticipations: Record<string, boolean>;
   joinClanMission: (questId: string) => Promise<void>;
@@ -1393,8 +1395,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (!profileError && profileData) {
             const camelProfile = mapToCamelCase(profileData) as UserProfile;
+            const normalizedRole = typeof camelProfile.role === 'string' ? camelProfile.role.toLowerCase() : undefined;
+            const role = normalizedRole === 'admin' || normalizedRole === 'gm' ? normalizedRole : (normalizedRole || 'user');
             setUserProfile(prev => {
-                let next = { ...prev, ...camelProfile } as UserProfile;
+                let next = { ...prev, ...camelProfile, role } as UserProfile;
                 const pendingPatch = pendingProfilePatchRef.current;
                 if (pendingPatch) {
                     next = { ...next, ...pendingPatch };
@@ -3487,18 +3491,38 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       return newTask;
   };
 
+  const normalizeQuestLabel = (value?: string) => {
+    if (!value) return '';
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  };
+
+  const getClanQuestForActionName = (actionName?: string): SeasonQuest | null => {
+    if (!actionName) return null;
+    const normalized = normalizeQuestLabel(actionName);
+    const direct = seasonQuests.find(q => q.type === 'clan' && normalizeQuestLabel(q.actionTemplate?.name) === normalized);
+    if (direct) return direct;
+    const byTitle = seasonQuests.find(q => q.type === 'clan' && normalizeQuestLabel(q.title) === normalized);
+    if (byTitle) return byTitle;
+    if (normalized.includes('socializar')) {
+        return seasonQuests.find(q => q.id === 'quest-clan-unity') || null;
+    }
+    return null;
+  };
+
+  const getClanQuestsForArena = (arena: Arena, arenaActions: Action[]) => {
+    const map = new Map<string, SeasonQuest>();
+    const byArenaName = seasonQuests.find(q => q.type === 'clan' && normalizeQuestLabel(q.title) === normalizeQuestLabel(arena.name));
+    if (byArenaName) map.set(byArenaName.id, byArenaName);
+    arenaActions.forEach(action => {
+        const quest = getClanQuestForActionName(action.name);
+        if (quest) map.set(quest.id, quest);
+    });
+    return Array.from(map.values());
+  };
+
   const getClanQuestForAction = (action: Action | undefined) => {
     if (!action) return null;
-    
-    const activeSeasonConfig = SEASONS[ACTIVE_SEASON_ID];
-    if (!activeSeasonConfig) return null;
-
-    // Try to match strictly by template name or loose "Socializar" check
-    // We do NOT restrict by arena name anymore, so actions in any arena count
-    return activeSeasonConfig.quests.find(q => 
-        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
-        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
-    ) || null;
+    return getClanQuestForActionName(action.name);
   };
 
   const isClanQuestActionId = (actionId: string) => {
@@ -3529,11 +3553,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Handle Clan Quest Progress
     // Check if this action corresponds to a clan quest, regardless of arena
-    const activeSeasonConfig = SEASONS[ACTIVE_SEASON_ID];
-    const clanQuest = activeSeasonConfig?.quests.find(q => 
-        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
-        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
-    );
+    const clanQuest = getClanQuestForAction(action);
     
     if (clanQuest) {
         updateClanMissionProgress(clanQuest.id, 1);
@@ -3969,7 +3989,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, oracleMode, setOracleMode, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, oracleMode, setOracleMode, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem }}>
       {children}
     </GameContext.Provider>
   );

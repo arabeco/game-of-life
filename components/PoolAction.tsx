@@ -5,7 +5,6 @@ import { Action } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { useLongPress } from '../hooks/useLongPress';
-import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GMboard';
 
 interface PoolActionProps {
     action: Action;
@@ -17,40 +16,21 @@ interface PoolActionProps {
 }
 
 export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimited, onComplete, onCustomDragStart, onActionClick }) => {
-    const { getActionBackgroundStyle, getArenas, seasonQuests, getClanQuestProgress } = useGame();
+    const { getActionBackgroundStyle, getClanQuestProgress, getClanQuestForActionName } = useGame();
     const [isHolding, setIsHolding] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const poolActionRef = useRef<HTMLDivElement>(null);
     const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const arenas = getArenas() || [];
-    const arena = arenas.find(a => a.id === action.arenaId);
     
-    const quests = (Array.isArray(seasonQuests) ? seasonQuests : []) || [];
-    
-    // Improved detection: Check if action matches a clan quest template
-    // Also check if the arena itself is a Clan Quest arena as a fallback
-    let clanQuest = quests.length > 0 ? quests.find(q => 
-        (q.type === 'clan' && q.actionTemplate?.name === action.name) ||
-        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
-    ) : undefined;
-    
-    if (!clanQuest && arena) {
-        const normalizedArenaName = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        if (normalizedArenaName.includes('quests - cla')) {
-             // If we are in a clan arena, try to find the quest by other means or assume it's the clan unity quest if name is similar
-             if (action.name.includes('Socializar') || action.name.includes('socializar')) {
-                 clanQuest = quests.find(q => q.id === 'quest-clan-unity');
-             }
-        }
-    }
+    const clanQuest = getClanQuestForActionName(action.name);
 
     let clanProgressDisplay = null;
     let isCompleted = false;
 
     if (clanQuest) {
         const current = getClanQuestProgress(clanQuest.id);
-        const target = clanQuest.requirements?.clanGoal || 50;
+        const target = clanQuest.requirements?.clanGoal || clanQuest.goal_value || 50;
         const remaining = Math.max(0, target - current);
         clanProgressDisplay = `${remaining}`; // Show remaining count
         isCompleted = current >= target;

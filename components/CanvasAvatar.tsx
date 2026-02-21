@@ -22,6 +22,7 @@ const hexToCssFilter = (hex: string): string => {
 };
 
 const globalImageCache = new Map<string, HTMLImageElement>();
+const failedImageCache = new Set<string>();
 
 export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({ 
     sovereignConfig, 
@@ -70,13 +71,13 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                     filter?: string; 
                     compositeOperation?: GlobalCompositeOperation;
                     maskMode?: boolean; 
-                } = {}): Promise<void> => {
-                    if (!url) return Promise.resolve();
+                } = {}): Promise<boolean> => {
+                    if (!url) return Promise.resolve(false);
 
                     return new Promise((resolve) => {
                         const draw = (img: HTMLImageElement) => {
                              if (!isMounted) {
-                                resolve();
+                                resolve(false);
                                 return;
                             }
 
@@ -102,12 +103,17 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                             }
                             
                             offscreenCtx.restore();
-                            resolve();
+                            resolve(true);
                         };
 
                         // Check cache first
                         if (globalImageCache.has(url)) {
                             draw(globalImageCache.get(url)!);
+                            return;
+                        }
+
+                        if (failedImageCache.has(url)) {
+                            resolve(false);
                             return;
                         }
 
@@ -119,8 +125,12 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                             draw(img);
                         };
                         img.onerror = (err) => {
-                            console.error(`CanvasAvatar: Failed to load image ${url}`, err);
-                            resolve(); 
+                            const wasFailed = failedImageCache.has(url);
+                            failedImageCache.add(url);
+                            if (!wasFailed) {
+                                console.warn(`CanvasAvatar: Failed to load image ${url}`, err);
+                            }
+                            resolve(false); 
                         };
                     });
                 };
@@ -154,9 +164,8 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                 // 0. Aura (Background)
                 // @ts-ignore
                 const auraUrl = getAssetUrl('auras', aura);
-                if (auraUrl) {
-                    await loadAndDrawImage(auraUrl, { filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))' });
-                } else {
+                const auraLoaded = await loadAndDrawImage(auraUrl, { filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))' });
+                if (!auraLoaded) {
                     const auraIcon = getItemIcon(aura);
                     if (auraIcon) {
                         drawEmoji(auraIcon, width / 2, height / 2, 200, '#FFD700'); // Big aura behind
@@ -275,9 +284,8 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 // 10. Glyph (Foreground - at feet/side)
                 const glyphUrl = getAssetUrl('glyphs', glyph);
-                if (glyphUrl) {
-                    await loadAndDrawImage(glyphUrl);
-                } else {
+                const glyphLoaded = await loadAndDrawImage(glyphUrl);
+                if (!glyphLoaded) {
                     const glyphIcon = getItemIcon(glyph);
                     if (glyphIcon) {
                         drawEmoji(glyphIcon, width * 0.8, height * 0.9, 80, '#FFFFFF');

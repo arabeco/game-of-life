@@ -49,6 +49,17 @@ const UnifiedSovereignDisplay: React.FC<{
     };
 
     const positionClasses = className || "absolute bottom-4 right-4 w-24 h-32";
+    const displayConfig = primaryDisplay === 'sovereign'
+        ? {
+            ...sovereignConfig,
+            artifact: 'none',
+            glyph: 'none',
+            aura: 'none',
+            orb: 'none',
+            artifactPlate: 'none',
+            glyphPlate: 'none'
+        }
+        : sovereignConfig;
 
     return (
         <div 
@@ -69,14 +80,14 @@ const UnifiedSovereignDisplay: React.FC<{
             <div className="relative z-10 w-full h-full flex items-center justify-center">
                 {primaryDisplay === 'sovereign' && (
                     <div className="w-full h-full relative">
-                         <Sovereign sovereignConfig={sovereignConfig} className="w-[180%] h-[180%] object-cover absolute top-[-20%] left-[-40%]" />
+                         <Sovereign sovereignConfig={displayConfig} className="w-[180%] h-[180%] object-cover absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                     </div>
                 )}
                 {primaryDisplay === 'item' && (
                     getArtifactUrl() ? (
-                        <div className="relative w-full h-full">
+                        <div className="relative w-full h-full flex items-center justify-center">
                             {getPlateUrl() && (
-                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-contain opacity-90" />
+                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-cover opacity-90" />
                             )}
                             <img 
                                 src={getArtifactUrl()} 
@@ -88,9 +99,9 @@ const UnifiedSovereignDisplay: React.FC<{
                 )}
                 {primaryDisplay === 'glyph' && (
                     getGlyphUrl() ? (
-                        <div className="relative w-full h-full">
+                        <div className="relative w-full h-full flex items-center justify-center">
                             {getPlateUrl() && (
-                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-contain opacity-90" />
+                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-cover opacity-90" />
                             )}
                             <img 
                                 src={getGlyphUrl()} 

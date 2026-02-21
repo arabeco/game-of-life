@@ -115,7 +115,7 @@ const PlasmaCanvas: React.FC<{ color: string; opacity: number; className?: strin
 };
 
 const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: string }> = ({ action, onClick, skinColor }) => {
-    const { getActionBackgroundStyle, tasks, getArenas, seasonQuests, getClanQuestProgress } = useGame();
+    const { getActionBackgroundStyle, tasks, getArenas, getClanQuestProgress, getClanQuestForActionName } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
     
     const completedCount = tasks.filter(t => t.actionId === action.id && t.completed).length;
@@ -124,16 +124,11 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
     const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
     const isSeasonQuest = normalizedArena.includes('quests - season');
     
-    // Check if it's a clan quest by looking at the action name matching a clan quest template
-    // OR if it's the specific Socialize action for the Clan Unity quest
-    const clanQuest = seasonQuests?.find(q => 
-        (q.type === 'clan' && q.actionTemplate.name === action.name) ||
-        (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
-    );
+    const clanQuest = getClanQuestForActionName(action.name);
     const isClanQuest = !!clanQuest;
     
     const clanProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
-    const target = clanQuest?.requirements?.clanGoal || 50;
+    const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
     // Show progress like "1/50" instead of remaining
     const displayProgress = clanQuest ? `${clanProgress}/${target}` : `${completedCount}/${totalProposed}`;
 
@@ -164,7 +159,7 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, seasonQuests, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ name: arena.name, description: arena.description, icon: arena.icon });
@@ -178,15 +173,8 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const parentAsset = assets.find(a => a.id === arena.assetId);
     const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const allActions = getActionsForArena(arena.id);
-    
-    // Improved detection logic: check for name OR if it contains clan quest actions
-    const isClanQuestArena = normalizedArena.includes('quests - cla') || 
-                             allActions.some(action => 
-                                 seasonQuests?.some(q => 
-                                     (q.type === 'clan' && q.actionTemplate.name === action.name) ||
-                                     (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
-                                 )
-                             );
+    const clanQuests = getClanQuestsForArena(arena, allActions);
+    const isClanQuestArena = clanQuests.length > 0 || normalizedArena.includes('quests - cla');
 
     const isSeasonQuestArena = normalizedArena.includes('quests - season');
     const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
@@ -197,32 +185,19 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     }, []);
 
     useEffect(() => {
-        if (isClanQuestArena) {
-            const quest = seasonQuests.find(q => q.type === 'clan' && (
-                q.title === arena.name || 
-                q.actionTemplate.name === arena.name || 
-                allActions.some(a => a.name === q.actionTemplate.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
-            ));
-        
-            if (quest) {
-                 if (quest.actionTemplate?.name) {
-                     fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
-                 }
-                 // Ensure current user is counted as participant if they are viewing/interacting
-                 joinClanMission(quest.id);
+        if (!isClanQuestArena || clanQuests.length === 0) return;
+        clanQuests.forEach(quest => {
+            if (quest.actionTemplate?.name) {
+                fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
             }
-        }
-    }, [isClanQuestArena, arena.name, seasonQuests, fetchClanQuestParticipants, allActions, joinClanMission]);
+            joinClanMission(quest.id);
+        });
+    }, [isClanQuestArena, clanQuests, fetchClanQuestParticipants, joinClanMission]);
 
     const milestoneActions = allActions.filter(a => a.actionType === 'Marco');
     const bronzeActions = allActions.filter(a => a.actionType !== 'Marco');
 
-    const clanQuestTotals = allActions.reduce((acc, action) => {
-        const quest = seasonQuests.find(q => 
-            (q.type === 'clan' && q.actionTemplate.name === action.name) ||
-            (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
-        );
-        if (!quest) return acc;
+    const clanQuestTotals = clanQuests.reduce((acc, quest) => {
         const progressValue = getClanQuestProgress(quest.id);
         const goal = quest.requirements?.clanGoal || quest.goal_value || 50;
         return {

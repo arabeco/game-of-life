@@ -97,18 +97,19 @@ const PlasmaCanvas: React.FC<{ color: string; opacity: number; className?: strin
 };
 
 const ActionIcon: React.FC<{ action: Action }> = ({ action }) => {
-    const { getActionBackgroundStyle, getArenas, seasonQuests, getClanQuestProgress } = useGame();
+    const { getActionBackgroundStyle, getArenas, getClanQuestProgress, getClanQuestForActionName } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
     
     const arena = getArenas().find(ar => ar.id === action.arenaId);
     const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-    const isClanQuest = normalizedArena.includes('quests - cla');
+    const clanQuest = getClanQuestForActionName(action.name);
+    const isClanQuest = !!clanQuest;
     const isSeasonQuest = normalizedArena.includes('quests - season');
     const displayIcon = isClanQuest ? '🛡️' : (isSeasonQuest ? '🌟' : action.icon);
 
-    const quest = isClanQuest ? seasonQuests.find(q => q.scope === 'clan' && (q.title === action.name || q.action?.name === action.name)) : null;
-    const currentProgress = quest ? getClanQuestProgress(quest.id) : 0;
-    const actionsRemaining = quest ? Math.max(0, quest.goal_value - currentProgress) : 0;
+    const currentProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
+    const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
+    const actionsRemaining = clanQuest ? Math.max(0, target - currentProgress) : 0;
 
     const renderIcon = () => {
         // Override for special quests
@@ -148,7 +149,7 @@ interface ArenaCardProps {
 }
 
 export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ arena, actions, onClick, assetName, variant, tasks: propTasks }) => {
-    const { tasks: contextTasks, getActionBackgroundStyle, seasonQuests, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
+    const { tasks: contextTasks, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const [skinTone, setSkinTone] = useState('#F0C843');
 
@@ -157,44 +158,43 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ arena,
 
     // Check if it's a clan arena
     const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const isClanQuestArena = normalizedArena.includes('quests - cla');
+    const clanQuests = getClanQuestsForArena(arena, actions);
+    const isClanQuestArena = clanQuests.length > 0 || normalizedArena.includes('quests - cla');
     const isSeasonQuestArena = normalizedArena.includes('quests - season');
     
     let progress = 0;
     const isGold = isClanQuestArena; // Default to gold if clan arena
     
     // Clan Quest Data
-    const quest = isClanQuestArena ? seasonQuests.find(q => q.scope === 'clan' && (q.title === arena.name || q.action?.name === arena.name)) : null;
-    
     useEffect(() => {
-        if (isClanQuestArena && quest && quest.actionTemplate?.name) {
-             fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
-        }
-    }, [isClanQuestArena, quest?.id, quest?.actionTemplate?.name, fetchClanQuestParticipants]);
+        if (!isClanQuestArena) return;
+        clanQuests.forEach(quest => {
+            if (quest.actionTemplate?.name) {
+                fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
+            }
+        });
+    }, [isClanQuestArena, clanQuests, fetchClanQuestParticipants]);
 
     useEffect(() => {
         const value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
         if (value) setSkinTone(value);
     }, []);
 
-    const participants = quest ? (clanQuestParticipants[quest.id] || 0) : 0;
-    const currentProgress = quest ? getClanQuestProgress(quest.id) : 0;
-    const actionsRemaining = quest ? Math.max(0, quest.goal_value - currentProgress) : 0;
+    const participants = clanQuests.reduce((acc, quest) => acc + (clanQuestParticipants[quest.id] || 0), 0);
 
-    if (isClanQuestArena) {
-        // Calculate clan progress
-        const clanQuestTotals = actions.reduce((acc, action) => {
-            if (!quest) return acc;
+    if (isClanQuestArena && clanQuests.length > 0) {
+        const clanQuestTotals = clanQuests.reduce((acc, quest) => {
+            const goal = quest.requirements?.clanGoal || quest.goal_value || 50;
+            const progressValue = getClanQuestProgress(quest.id);
             return {
-                totalProgress: acc.totalProgress + currentProgress,
-                totalGoal: acc.totalGoal + (quest.goal_value > 0 ? quest.goal_value : 0)
+                totalProgress: acc.totalProgress + progressValue,
+                totalGoal: acc.totalGoal + goal
             };
         }, { totalProgress: 0, totalGoal: 0 });
-        
-        progress = clanQuestTotals.totalGoal > 0 
+
+        progress = clanQuestTotals.totalGoal > 0
             ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
             : (clanQuestTotals.totalProgress > 0 ? 100 : 0);
-            
     } else {
         // Standard progress: Completed vs Planned (Repetitions)
         const totalPlanned = actions.reduce((acc, a) => acc + (a.repetitions || 0), 0);

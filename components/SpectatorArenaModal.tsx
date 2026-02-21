@@ -122,7 +122,7 @@ interface SpectatorArenaModalProps {
 }
 
 export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({ arena, actions, tasks, pupilName, onClose, children }) => {
-    const { getActionBackgroundStyle } = useGame();
+    const { getActionBackgroundStyle, getClanQuestsForArena, getClanQuestProgress } = useGame();
     const [skinColor, setSkinColor] = useState('#F0C843');
 
     useEffect(() => {
@@ -133,9 +133,26 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({ arena,
     const milestoneActions = actions.filter(a => a.actionType === 'Marco');
     const bronzeActions = actions.filter(a => a.actionType !== 'Marco');
 
+    const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const clanQuests = getClanQuestsForArena(arena, actions);
+    const isClanQuestArena = clanQuests.length > 0 || normalizedArena.includes('quests - cla');
+
     const totalPlanned = actions.reduce((acc, a) => acc + (a.repetitions || 0), 0);
     const totalCompleted = tasks.filter(t => actions.some(a => a.id === t.actionId) && t.completed).length;
-    const progress = totalPlanned > 0 ? (totalCompleted / totalPlanned) * 100 : 0;
+    const clanQuestTotals = clanQuests.reduce((acc, quest) => {
+        const progressValue = getClanQuestProgress(quest.id);
+        const goal = quest.requirements?.clanGoal || quest.goal_value || 50;
+        return {
+            totalProgress: acc.totalProgress + progressValue,
+            totalGoal: acc.totalGoal + goal
+        };
+    }, { totalProgress: 0, totalGoal: 0 });
+
+    const progress = isClanQuestArena && clanQuests.length > 0
+        ? (clanQuestTotals.totalGoal > 0
+            ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
+            : Math.min(100, clanQuestTotals.totalProgress))
+        : (totalPlanned > 0 ? (totalCompleted / totalPlanned) * 100 : 0);
 
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) {

@@ -104,7 +104,7 @@ export const SharedArenaView: React.FC<SharedArenaViewProps> = ({ arena, quest, 
         }
     };
 
-    const target = quest.requirements?.clanGoal || 50; 
+    const target = quest.requirements?.clanGoal || quest.goal_value || 50; 
     const remaining = Math.max(0, target - localProgress);
     
     // We display 50 blocks.

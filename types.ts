@@ -230,6 +230,7 @@ export interface Report {
         questsCompleted?: number;
         consistencyDays?: number;
         expGained?: number;
+        plannedEndDate?: string;
     };
     highlight: {
         mostFocusedArena: string;

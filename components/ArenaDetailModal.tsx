@@ -129,11 +129,7 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
     
     const clanProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
-    // Show progress like "1/50" instead of remaining
     const displayProgress = clanQuest ? `${clanProgress}/${target}` : `${completedCount}/${totalProposed}`;
-
-    // Override icon for special quests if desired, or just use what's in the action
-    // User requested "cool logos". We can use specific emojis for now to ensure consistency.
     const displayIcon = action.icon || '🏆';
 
     return (

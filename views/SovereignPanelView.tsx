@@ -4,6 +4,7 @@ import { GlassCard } from '../components/GlassCard';
 import { GoldenInvite, LevelUnlocks, Season, SeasonMission } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { CheckIcon } from '../components/Icons';
+import { SeasonDetailModal } from '../components/SeasonDetailModal';
 import { buildDefaultLevelUnlocks, SOVEREIGN_ASSETS } from '../constants/avatar';
 import { GM_CONFIG } from '../constants';
 import { SupabaseService } from '../services/SupabaseService';
@@ -137,7 +138,7 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
 };
 
 
-const SeasonCard: React.FC<{ season: Season; onEdit: () => void; }> = ({ season, onEdit }) => {
+const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onOpen: () => void; }> = ({ season, onEdit, onOpen }) => {
     const getStatus = () => {
         if (season.is_active) return { text: 'ATIVA', color: 'text-green-400' };
         if (new Date(season.start_date) > new Date()) return { text: 'FUTURA', color: 'text-blue-400' };
@@ -146,14 +147,14 @@ const SeasonCard: React.FC<{ season: Season; onEdit: () => void; }> = ({ season,
     const status = getStatus();
 
     return (
-        <GlassCard variant="neutral" className="p-2">
+        <GlassCard variant="neutral" className="p-2 cursor-pointer" onClick={onOpen}>
             <div className="flex items-center justify-between">
                 <div>
                     <p className="font-bold">{season.name}</p>
                     <p className={`text-xs font-bold ${status.color}`}>{status.text}</p>
                 </div>
                 <div className="flex space-x-1">
-                    <button onClick={onEdit} className="text-xs font-bold p-2 bg-black/20 rounded-lg">Editar</button>
+                    <button onClick={(event) => { event.stopPropagation(); onEdit(); }} className="text-xs font-bold p-2 bg-black/20 rounded-lg">Editar</button>
                 </div>
             </div>
         </GlassCard>
@@ -163,6 +164,7 @@ const SeasonCard: React.FC<{ season: Season; onEdit: () => void; }> = ({ season,
 const SeasonManager: React.FC = () => {
     const { seasons } = useGame();
     const [editorModal, setEditorModal] = useState<{ open: boolean, season: Season | null }>({ open: false, season: null });
+    const [detailSeason, setDetailSeason] = useState<Season | null>(null);
 
     const sortedSeasons = [...seasons].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
     const activeSeason = sortedSeasons.find(s => s.is_active);
@@ -174,16 +176,17 @@ const SeasonManager: React.FC = () => {
             <h2 className="text-lg font-bold tracking-wider">Gerenciar Seasons</h2>
             <button onClick={() => setEditorModal({ open: true, season: null })} className="w-full py-2 rounded-xl luxe-skin-button">Criar Nova Era</button>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({open: true, season: activeSeason})} />}
+                {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({open: true, season: activeSeason})} onOpen={() => setDetailSeason(activeSeason)} />}
                 
                 {futureSeasons.length > 0 && <h3 className="text-xs font-bold text-gray-400 pt-2">FUTURAS</h3>}
-                {futureSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} />)}
+                {futureSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onOpen={() => setDetailSeason(s)} />)}
                 
                 {pastSeasons.length > 0 && <h3 className="text-xs font-bold text-gray-400 pt-2">ENCERRADAS</h3>}
-                {pastSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} />)}
+                {pastSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onOpen={() => setDetailSeason(s)} />)}
             </div>
             
             {editorModal.open && <SeasonEditorModal season={editorModal.season} onClose={() => setEditorModal({open: false, season: null})} />}
+            {detailSeason && <SeasonDetailModal season={detailSeason} onClose={() => setDetailSeason(null)} />}
         </div>
     );
 }

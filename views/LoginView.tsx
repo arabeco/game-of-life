@@ -399,7 +399,7 @@ export const LoginView: React.FC = () => {
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black animate-fade-in">
-            <div className="w-full max-w-sm mx-auto text-center border border-[var(--skin-accent-color)]/50 rounded-2xl p-6 space-y-6 overflow-hidden">
+            <div className="w-full max-w-sm mx-auto text-center border border-[var(--skin-accent-color)]/50 rounded-2xl p-6 space-y-6 overflow-hidden bg-black/50 backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.6)]">
                 <div className="relative w-40 h-40 mx-auto flex items-center justify-center mb-8">
                     <div className="absolute w-[190%] h-[190%] rounded-full bg-[radial-gradient(circle,var(--skin-accent-color)_0%,transparent_70%)] opacity-20 blur-2xl aura-glow"></div>
                     <div className="absolute w-[210%] h-[210%] rounded-full bg-[conic-gradient(from_0deg,var(--skin-accent-color),transparent,var(--skin-accent-color))] opacity-10 blur-3xl aura-plasma"></div>
@@ -465,7 +465,7 @@ export const LoginView: React.FC = () => {
                         <button 
                             onClick={handleSignUp} 
                             disabled={loading}
-                            className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50"
+                            className="w-full py-3 rounded-xl luxe-skin-button border border-[var(--skin-accent-color)]/50 shadow-[0_0_18px_rgba(0,0,0,0.4)] disabled:opacity-50"
                         >
                             {loading ? 'CADASTRANDO...' : 'CADASTRAR'}
                         </button>
@@ -473,7 +473,7 @@ export const LoginView: React.FC = () => {
                         <button 
                             onClick={handleLogin} 
                             disabled={loading}
-                            className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50"
+                            className="w-full py-3 rounded-xl luxe-skin-button border border-[var(--skin-accent-color)]/50 shadow-[0_0_18px_rgba(0,0,0,0.4)] disabled:opacity-50"
                         >
                             {loading ? 'ENTRANDO...' : 'ENTRAR'}
                         </button>

@@ -74,6 +74,11 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const { metrics, highlight, assetProgress } = report;
     const scoreInfo = getScoreGrade(report.performanceScore);
     const duration = daysBetween(new Date(report.startDate), new Date(report.endDate));
+    
+    // Calculate Time Progress
+    const plannedEndDate = metrics.plannedEndDate ? new Date(metrics.plannedEndDate) : new Date(report.endDate);
+    const plannedDuration = Math.max(1, daysBetween(new Date(report.startDate), plannedEndDate));
+    const timePercentage = Math.min(100, (duration / plannedDuration) * 100);
 
     // Prepare data for Radar Chart
     const radarData = assetProgress.map(ap => ({
@@ -106,13 +111,12 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 <div>
                     <div className="flex justify-between text-xs text-gray-400 mb-1">
                         <span>TEMPO</span>
-                        <span>{duration} dias</span>
+                        <span>{duration} / {plannedDuration} dias</span>
                     </div>
                     <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                         {/* Assuming max cycle length is roughly 30 days for visual scale, or just full width for duration passed */}
                          <div 
                             className="h-full bg-red-500 transition-all duration-1000" 
-                            style={{ width: '100%' }} // Time passed is always 100% of the cycle duration in retrospect
+                            style={{ width: `${timePercentage}%` }}
                         />
                     </div>
                 </div>

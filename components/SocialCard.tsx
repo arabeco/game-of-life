@@ -2,13 +2,14 @@ import React from 'react';
 import { UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
 
-export const SocialCard: React.FC<{ profile: UserProfile; subtitle?: string; actions?: React.ReactNode }> = ({ profile, subtitle, actions }) => {
+export const SocialCard: React.FC<{ profile: UserProfile; subtitle?: string; actions?: React.ReactNode; onClick?: () => void }> = ({ profile, subtitle, actions, onClick }) => {
     const { clan } = useGame();
     
     return (
         <div 
-            className="h-24 rounded-3xl bg-cover bg-center relative p-3 flex items-center space-x-4 overflow-hidden border border-[var(--glass-border)]" 
+            className={`h-24 rounded-3xl bg-cover bg-center relative p-3 flex items-center space-x-4 overflow-hidden border border-[var(--glass-border)] ${onClick ? 'cursor-pointer hover:border-white/30 transition-colors' : ''}`}
             style={{ backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 100%), url(${profile.backgroundUrl})` }}
+            onClick={onClick}
         >
             <div className="relative w-16 h-16 rounded-full border-4 bg-gray-800 flex-shrink-0" style={{ borderColor: 'var(--skin-accent-color)'}}>
                 <div className="w-full h-full object-cover rounded-full overflow-hidden">
@@ -23,7 +24,7 @@ export const SocialCard: React.FC<{ profile: UserProfile; subtitle?: string; act
                 </div>
                 <p className="text-sm text-gray-300">{subtitle ?? `Level ${profile.level} - ${clan?.name || 'Sem Clã'}`}</p>
             </div>
-            {actions && <div className="flex items-center gap-2">{actions}</div>}
+            {actions && <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>{actions}</div>}
         </div>
     );
 };

@@ -1659,6 +1659,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return normalized.includes('quests');
   };
 
+  const isClanQuestActionId = (actionId: string) => {
+    const action = actions.find(a => a.id === actionId);
+    if (!action) return false;
+    const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
+    if (!arena?.name) return false;
+    const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return normalized.includes('quests - cla');
+  };
+
   const resetDailyCommitment = () => {
     setDailyCommitmentState({ date: getTodayString(), taskIds: [], stage: 'planning', score: null, expDeposited: null, sitrepBonus: null });
     setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
@@ -2050,7 +2059,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const poolableActions = activeActions.filter(action => action.actionType !== 'Marco');
 
     const pool = poolableActions.flatMap(action => {
-        if (isQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
+        if (isClanQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
         const scheduledCount = scheduledCounts[action.id] || 0;
         const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
         const poolCount = Math.max(0, repetitions - scheduledCount);
@@ -2342,6 +2351,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const supabaseUserId = getSupabaseUserId();
     const startDate = cycle?.startDate || '2000-01-01'; // Fallback para o primeiro ciclo sem data
     const endDate = new Date().toISOString().split('T')[0];
+    const plannedEndDate = cycle?.endDate;
 
     // 1. Filter Tasks
     // Standard Tasks (Planned) - Exclude Quests
@@ -2462,7 +2472,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             totalHours: Math.round(completedTasks.reduce((sum, t) => sum + (t.duration / 60), 0)),
             questsCompleted: questsCompletedCount,
             consistencyDays: uniqueDays,
-            expGained
+            expGained,
+            plannedEndDate
         }, 
         highlight: { 
             mostFocusedArena, 
@@ -2472,16 +2483,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }, 
         clanPoints,
         assetProgress: currentAssets.map(asset => {
-            // Se o asset não for 'geral', calcular o progresso se necessário
+            if (asset.id === 'geral') return null;
+
+            // Compute value as percentage of total actions dedicated to this asset
+            const assetArenaIds = asset.arenas.map(a => a.id);
+            const assetActionIds = currentActions.filter(a => assetArenaIds.includes(a.arenaId)).map(a => a.id);
+            const assetCompletedCount = completedTasks.filter(t => assetActionIds.includes(t.actionId)).length;
+            const totalCompleted = completedTasks.length;
+            const value = totalCompleted > 0 ? (assetCompletedCount / totalCompleted) * 100 : 0;
+
             return {
-                asset: asset.name, // ReportsView usa .asset para RadarChart
-                value: asset.level, // ReportsView usa .value para RadarChart
+                asset: asset.name,
+                value: Math.round(value),
                 assetId: asset.id,
                 startLevel: asset.level,
                 endLevel: asset.level,
                 expGained: 0
             };
-        }).filter(a => a.assetId !== 'geral')
+        }).filter(Boolean) as { asset: string; value: number }[]
     };
 
     // Salvar relatório e atualizar ciclo no Supabase se logado

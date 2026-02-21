@@ -5,6 +5,7 @@ import { GlassCard } from './GlassCard';
 import { ChevronRightIcon, EditIcon, XIcon, CalendarIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
 import { WheelPicker } from './inputs/WheelPicker';
+import { ImageUploadSlot } from './inputs/ImageUploadSlot';
 import { SelectionModal } from './SelectionModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
@@ -63,6 +64,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     // State for checklist inputs in edit mode
     const [newChecklistItem, setNewChecklistItem] = useState('');
     const [newAssetUrl, setNewAssetUrl] = useState('');
+    const [mediaSlot, setMediaSlot] = useState({ imageUrl: '', caption: '' });
 
     const handleTutorialNextFormStep = () => {
         // No-op
@@ -98,13 +100,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
              scheduledStartTime = h * 60 + m;
         }
 
+        const nextRepetitions = editableAction.actionType === 'Ação Recorrente'
+            ? Math.min(50, Math.max(1, Math.floor(editableAction.repetitions || 1)))
+            : 1;
+
         const actionData: Omit<Action, 'id'> = {
             arenaId: editableAction.arenaId || '', // Será tratado no context
             name: editableAction.name,
             description: editableAction.description?.trim() || undefined,
             icon: editableAction.icon || '🏆',
             duration: editableAction.duration || 60,
-            repetitions: editableAction.actionType === 'Ação Recorrente' ? (editableAction.repetitions || 1) : 1,
+            repetitions: nextRepetitions,
             actionType: editableAction.actionType || 'Ação Recorrente',
             difficulty: editableAction.difficulty || 3,
             scheduledDays: editableAction.actionType === 'Ação Recorrente' ? selectedDays : undefined,
@@ -158,16 +164,48 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
 
     const handleCancel = () => {
         if (isNew) onClose();
-        else { setEditableAction(action || {}); setMode('view'); setSelectedDays([]); setStartTime(null); setSelectedDate(null); setIsTimePickerOpen(false); setIsDatePickerOpen(false); }
+        else {
+            resetFromAction(action);
+            setMode('view');
+            setIsTimePickerOpen(false);
+            setIsDatePickerOpen(false);
+        }
     };
 
     const handleIconSelect = (icon: string) => { setEditableAction(p => ({ ...p, icon })); setIsIconPickerOpen(false); };
     const handleDayToggle = (day: DayOfWeek) => setSelectedDays(p => p.includes(day) ? p.filter(d => d !== day) : [...p, day]);
     const handleActionTypeChange = (type: ActionType) => { setEditableAction(p => ({...p, actionType: type, repetitions: type === 'Ação Recorrente' ? (p.repetitions || 1) : 1 })); setIsActionTypePickerOpen(false); }
     const handleArenaSelect = (id: string) => { setEditableAction(p => ({ ...p, arenaId: id })); setIsArenaPickerOpen(false); };
-    const handleTimeSelect = (time: string) => { setStartTime(time); setIsTimePickerOpen(false); };
+    const handleTimeSelect = (time: string) => { setStartTime(time); };
     const handleDateSelect = (date: Date) => { setSelectedDate(date); setIsDatePickerOpen(false); };
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) onClose(); };
+
+    const getStartTimeLabel = (value?: number | null) => {
+        if (value === undefined || value === null) return null;
+        const h = Math.floor(value / 60);
+        const m = value % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    const resetFromAction = (nextAction: Action | null) => {
+        const baseAction = nextAction || { arenaId: arenaId, name: '', description: '', icon: '🏆', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 };
+        setEditableAction(baseAction);
+        setSelectedDays(nextAction?.scheduledDays || []);
+        setStartTime(getStartTimeLabel(nextAction?.scheduledStartTime) || null);
+        setSelectedDate(null);
+        const asset = nextAction?.assets?.find(a => a.type === 'image' || a.type === 'video');
+        const imageUrl = asset?.url || '';
+        const caption = asset?.title || '';
+        setNewAssetUrl(imageUrl);
+        setMediaSlot({ imageUrl, caption });
+        setActiveTab('basic');
+        setAdvancedSubTab('media');
+    };
+
+    useEffect(() => {
+        setMode(isNew ? 'edit' : initialMode);
+        resetFromAction(action);
+    }, [action?.id, arenaId, initialMode]);
 
     const displayAction = mode === 'view' ? action : editableAction;
     const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÍCIL', 'EXTREMO'];
@@ -425,18 +463,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                 <div className="flex-1 p-0">
                                     {advancedSubTab === 'media' && (
                                         <div className="h-full flex flex-col p-4">
-                                            {/* Media Content Logic (View/Edit) */}
-                                            {(displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video') || (mode === 'edit' && newAssetUrl)) ? (
+                                            {(displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video') || (mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl))) ? (
                                                  <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden border border-white/10 relative group mb-4">
                                                     <img 
-                                                        src={mode === 'edit' && newAssetUrl ? newAssetUrl : displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url} 
+                                                        src={mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl) ? (newAssetUrl || mediaSlot.imageUrl) : displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url} 
                                                         className="w-full h-full object-cover"
                                                         alt="Mídia"
                                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                                     />
                                                     {mode === 'edit' && (
                                                         <button 
-                                                            onClick={() => { setNewAssetUrl(''); setEditableAction(p => ({ ...p, assets: [] })); }}
+                                                            onClick={() => { setNewAssetUrl(''); setMediaSlot({ imageUrl: '', caption: '' }); setEditableAction(p => ({ ...p, assets: [] })); }}
                                                             className="absolute top-2 right-2 p-1.5 bg-red-500/80 rounded-full text-white hover:bg-red-500 transition-colors"
                                                         >
                                                             <XIcon className="w-3 h-3" />
@@ -451,23 +488,42 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                             )}
 
                                             {mode === 'edit' && (
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/Vídeo</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
-                                                        onChange={(e) => {
-                                                            const url = e.target.value;
-                                                            setNewAssetUrl(url);
-                                                            if (url) {
-                                                                setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title: 'Mídia Principal' }] }));
+                                                <div className="space-y-4">
+                                                    <div className="text-xs font-bold text-gray-400 uppercase">Upload de Foto (Anexo)</div>
+                                                    <ImageUploadSlot
+                                                        value={mediaSlot}
+                                                        onChange={(value) => {
+                                                            setMediaSlot(value);
+                                                            if (value.imageUrl) {
+                                                                const title = value.caption?.trim() || 'Mídia Principal';
+                                                                setNewAssetUrl(value.imageUrl);
+                                                                setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url: value.imageUrl, title }] }));
                                                             } else {
+                                                                setNewAssetUrl('');
                                                                 setEditableAction(prev => ({ ...prev, assets: [] }));
                                                             }
                                                         }}
-                                                        placeholder="https://..."
-                                                        className="w-full p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-300 placeholder:text-gray-600"
                                                     />
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/Vídeo</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
+                                                            onChange={(e) => {
+                                                                const url = e.target.value;
+                                                                setNewAssetUrl(url);
+                                                                if (url) {
+                                                                    setMediaSlot(prev => ({ ...prev, imageUrl: url }));
+                                                                    const title = mediaSlot.caption?.trim() || 'Mídia Principal';
+                                                                    setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title }] }));
+                                                                } else {
+                                                                    setEditableAction(prev => ({ ...prev, assets: [] }));
+                                                                }
+                                                            }}
+                                                            placeholder="https://..."
+                                                            className="w-full p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-300 placeholder:text-gray-600"
+                                                        />
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -494,6 +550,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
 
                                     {advancedSubTab === 'checklist' && (
                                         <div className="p-4 space-y-3">
+                                            <div className="text-xs font-bold text-gray-400 uppercase">Preparar Ações</div>
                                             {/* Checklist Items */}
                                             {(displayAction?.preFlight || []).length > 0 ? (
                                                 displayAction?.preFlight?.map((item, i) => (

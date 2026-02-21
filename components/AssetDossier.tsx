@@ -10,7 +10,7 @@ import { NewArenaModal } from './NewArenaModal';
 import { ArenaCard } from './ArenaCard';
 
 const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void }> = ({ slot, isEditing, onClick }) => {
-    const editableClasses = isEditing ? "hover:bg-black/80 cursor-pointer" : "cursor-default";
+    const editableClasses = isEditing ? "hover:bg-black/80 cursor-pointer ring-1 ring-[var(--skin-accent-color)]/50 bg-[var(--skin-accent-color)]/5" : "cursor-default";
 
     const getGridClasses = (type: SlotLayoutType) => {
         switch(type) {
@@ -93,11 +93,11 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
     return (
         <>
             <div className="animate-fade-in h-full">
-                <div className={`dossier-bg border border-[color:var(--skin-accent-color)] rounded-2xl p-4 h-full flex flex-col shadow-2xl shadow-black/50 relative overflow-hidden ${playShimmer ? 'shimmer-effect' : ''}`}>
+                <div className={`dossier-bg border border-[color:var(--skin-accent-color)] rounded-2xl p-4 h-full flex flex-col shadow-2xl shadow-black/50 relative overflow-hidden ${playShimmer ? 'shimmer-effect' : ''} ${isEditing ? 'ring-2 ring-[var(--skin-accent-color)]/40 shadow-[0_0_25px_rgba(212,175,55,0.25)]' : ''}`}>
                     {/* Fixed Header */}
                     <div className="flex-shrink-0">
                         <div className="flex justify-between items-center">
-                            <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
+                            <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)]/40' : 'bg-transparent'}`}>
                                 <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
                             </button>
                             <h2 className="luxe-title-ornate text-xl font-black uppercase tracking-widest text-[color:var(--skin-accent-color)] luxe-title-shadow">{asset.name}</h2>

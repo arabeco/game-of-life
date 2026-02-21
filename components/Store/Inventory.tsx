@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { ITEMS_DB, ItemDef } from '../../constants/items';
+import { ITEMS_DB, ItemDef, resolveItemDef } from '../../constants/items';
 import { CheckIcon, SovereignIcon, GlyphIcon } from '../Icons';
-import { SovereignEditorModal } from '../AvatarCustomizerModal';
+import { SovereignCustomizer } from '../SovereignCustomizer';
 import { ItemDetailModal } from '../ItemDetailModal';
 
 type InventoryTab = 'all' | 'skins' | 'character' | 'ui';
@@ -12,7 +12,7 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'all', label: 'Tudo', categories: [] },
     { id: 'skins', label: 'Skins', categories: ['skin', 'hair', 'ui_skin'] },
     { id: 'character', label: 'Personagem', categories: ['skin', 'hair'] },
-    { id: 'ui', label: 'Interface', categories: ['border', 'glyph', 'aura', 'ui_skin'] },
+    { id: 'ui', label: 'Interface', categories: ['border', 'glyph', 'aura', 'orb', 'plate', 'ui_skin', 'banner'] },
 ];
 
 export const Inventory: React.FC = () => {
@@ -24,7 +24,8 @@ export const Inventory: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<{ def: ItemDef, instanceId: string } | null>(null);
     const [showGlyphEditor, setShowGlyphEditor] = useState(false);
 
-    const isGM = userProfile?.role === 'admin' || userProfile?.role === 'gm';
+    const normalizedRole = userProfile?.role?.toLowerCase?.() || '';
+    const isGM = normalizedRole === 'admin' || normalizedRole === 'gm';
 
     const sourceItems = useMemo(() => {
         if (isGM) {
@@ -39,8 +40,9 @@ export const Inventory: React.FC = () => {
         } else {
             // Normal user sees their inventory
             return inventory.map(inst => {
-                const def = ITEMS_DB.find(d => d.id === inst.id);
-                return { ...inst, def };
+                const def = resolveItemDef(inst.id);
+                const resolvedId = def?.id || inst.id;
+                return { ...inst, id: resolvedId, def };
             }).filter(i => i.def); // Filter out items with missing definitions
         }
     }, [inventory, isGM]);
@@ -58,6 +60,8 @@ export const Inventory: React.FC = () => {
         if (category === 'hair') return userProfile.sovereign.hairStyle === itemId;
         if (category === 'glyph') return userProfile.sovereign.glyph === itemId;
         if (category === 'aura') return userProfile.sovereign.aura === itemId;
+        if (category === 'orb') return userProfile.sovereign.orb === itemId;
+        if (category === 'plate') return [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate, userProfile.sovereign.glyphPlate].includes(itemId);
         if (category === 'border') return userProfile.border === itemId;
         if (category === 'ui_skin') return userProfile.skin === itemId;
         return false;
@@ -156,29 +160,20 @@ export const Inventory: React.FC = () => {
             {selectedItem && (
                 <ItemDetailModal 
                     item={selectedItem.def} 
+                    instanceId={selectedItem.instanceId}
                     type="inventory" 
                     onClose={() => setSelectedItem(null)} 
                 />
             )}
             {showSovereignEditor && (
-                <SovereignEditorModal 
+                <SovereignCustomizer
+                    initialConfig={userProfile.sovereign}
                     onClose={() => setShowSovereignEditor(false)} 
                     onSave={async (newConfig) => {
                         await updateUserProfile({ sovereign: newConfig });
                         setShowSovereignEditor(false);
                     }} 
                 />
-            )}
-            
-            {/* Placeholder for Glyph Editor - To be implemented or reused */}
-            {showGlyphEditor && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowGlyphEditor(false)}>
-                     <div className="bg-gray-800 p-8 rounded text-center">
-                         <h2 className="text-xl font-bold mb-4">Forja de Glifos</h2>
-                         <p className="mb-4">Em breve...</p>
-                         <button onClick={() => setShowGlyphEditor(false)} className="px-4 py-2 bg-gray-600 rounded">Fechar</button>
-                     </div>
-                </div>
             )}
         </div>
     );

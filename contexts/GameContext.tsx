@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
-import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef } from '../constants/items';
+import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef } from '../constants/items';
 import { supabase } from '../supabaseClient';
 import type { OracleMode } from '../constants/oracle';
 import { SupabaseService } from '../services/SupabaseService';
@@ -117,8 +117,11 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         codexes: {},
         skins: {},
         borders: {},
+        banners: {},
         glyphs: {},
         auras: {},
+        orbs: {},
+        plates: {},
     },
     completedSeasonMissions: []
 };
@@ -126,7 +129,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
 const defaultChecklistItems: ChecklistItem[] = [];
 
 const DEFAULT_FRIENDS: UserProfile[] = [
-    { ...DEFAULT_USER_PROFILE, id: 'friend_01', nickname: 'Nexus', avatarUrl: 'https://picsum.photos/seed/friend01/100/100', sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, body: 'female_base', hairStyle: 'parted', hairColor: '#B8860B', outfit: 'lab_coat', head_under: 'glasses' }, isOnline: true, role: 'user' },
+    { ...DEFAULT_USER_PROFILE, id: 'friend_01', nickname: 'Nexus', avatarUrl: 'https://picsum.photos/seed/friend01/100/100', sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, body: 'body_fem_1', hairStyle: 'parted', hairColor: '#B8860B', outfit: 'lab_coat', head_under: 'glasses' }, isOnline: true, role: 'user' },
     { ...DEFAULT_USER_PROFILE, id: 'friend_02', nickname: 'Zypher', avatarUrl: 'https://picsum.photos/seed/friend02/100/100', sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, hairStyle: 'mullet', hairColor: '#FFFFFF', skinTone: '#C68642', outfit: 'silver_armor', helmet: 'silver_helm' }, isOnline: false, role: 'user' },
 ]
 
@@ -400,12 +403,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           console.error("Error fetching inventory:", error);
           return;
       }
-      const items = data.map((row: any) => ({
-          id: row.item_id,
-          instanceId: row.id,
-          acquiredAt: row.acquired_at,
-          isEquipped: row.is_equipped
-      }));
+      const items = data.map((row: any) => {
+          const resolvedDef = resolveItemDef(row.item_id);
+          const resolvedId = resolvedDef?.id || row.item_id;
+          return {
+              id: resolvedId,
+              instanceId: row.id,
+              acquiredAt: row.acquired_at,
+              isEquipped: row.is_equipped
+          };
+      });
       setInventory(items);
   }, []);
 
@@ -555,8 +562,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
            const newFragments = (userProfile.wallet?.fragments || 0) - cost;
            updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
 
+           const craftedDef = resolveItemDef(data.item_id);
+           const craftedId = craftedDef?.id || data.item_id;
            const newItem: InventoryItem = { 
-               id: data.item_id, 
+               id: craftedId, 
                instanceId: data.instance_id, 
                acquiredAt: new Date().toISOString(), 
                isEquipped: false 
@@ -594,7 +603,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           (itemDef.category === 'skin' && userProfile.sovereign.outfit === item.id) ||
           (itemDef.category === 'hair' && userProfile.sovereign.hairStyle === item.id) ||
           (itemDef.category === 'glyph' && userProfile.sovereign.glyph === item.id) ||
-          (itemDef.category === 'aura' && userProfile.sovereign.aura === item.id)
+          (itemDef.category === 'aura' && userProfile.sovereign.aura === item.id) ||
+          (itemDef.category === 'orb' && userProfile.sovereign.orb === item.id) ||
+          (itemDef.category === 'plate' && [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate, userProfile.sovereign.glyphPlate].includes(item.id)) ||
+          (itemDef.category === 'banner' && userProfile.bannerUrl === itemDef.imageUrl)
       );
 
       if (isCurrentlyEquipped) {
@@ -604,12 +616,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           } else if (itemDef.category === 'ui_skin') {
               updateUserProfile({ skin: 'GOLD' }); // Default skin
               alert('Skin de Interface removida. Tema padrão restaurado.');
+          } else if (itemDef.category === 'banner') {
+              updateUserProfile({ bannerUrl: '' });
           } else {
               const newSovereign = { ...userProfile.sovereign };
               if (itemDef.category === 'skin') newSovereign.outfit = 'none';
               if (itemDef.category === 'hair') newSovereign.hairStyle = 'none';
               if (itemDef.category === 'glyph') newSovereign.glyph = 'none';
               if (itemDef.category === 'aura') newSovereign.aura = 'none';
+              if (itemDef.category === 'orb') newSovereign.orb = 'none';
+              if (itemDef.category === 'plate') {
+                  if (userProfile.sovereign.primaryDisplay === 'item') newSovereign.artifactPlate = 'none';
+                  else if (userProfile.sovereign.primaryDisplay === 'glyph') newSovereign.glyphPlate = 'none';
+                  else newSovereign.sovereignPlate = 'none';
+              }
               updateUserProfile({ sovereign: newSovereign });
           }
       } else {
@@ -619,15 +639,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
               updateUserProfile({ border: itemDef.id });
           } else if (itemDef.category === 'ui_skin') {
               updateUserProfile({ skin: itemDef.id });
-              alert(`Tema de Interface alterado para: ${itemDef.name}`);
+              alert(`Skin de Interface "${itemDef.name}" aplicada!`);
+          } else if (itemDef.category === 'banner') {
+              updateUserProfile({ bannerUrl: itemDef.imageUrl || '' });
           } else {
               const newSovereign = { ...userProfile.sovereign };
-              // Since these are single-slot fields in SovereignConfig, assigning a new ID 
-              // automatically "unequips" the previous one by overwriting it.
               if (itemDef.category === 'skin') newSovereign.outfit = itemDef.id;
               if (itemDef.category === 'hair') newSovereign.hairStyle = itemDef.id;
               if (itemDef.category === 'glyph') newSovereign.glyph = itemDef.id;
               if (itemDef.category === 'aura') newSovereign.aura = itemDef.id;
+              if (itemDef.category === 'orb') newSovereign.orb = itemDef.id;
+              if (itemDef.category === 'plate') {
+                  if (userProfile.sovereign.primaryDisplay === 'item') newSovereign.artifactPlate = itemDef.id;
+                  else if (userProfile.sovereign.primaryDisplay === 'glyph') newSovereign.glyphPlate = itemDef.id;
+                  else newSovereign.sovereignPlate = itemDef.id;
+              }
               updateUserProfile({ sovereign: newSovereign });
           }
       }
@@ -2150,6 +2176,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         head_over_items: {},
         artifacts: {},
         codexes: {},
+        skins: {},
+        borders: {},
+        banners: {},
+        glyphs: {},
+        auras: {},
+        orbs: {},
+        plates: {},
     };
     if (unlockedItems[category]?.[itemId]) return;
     const nextUnlockedItems = {
@@ -2192,6 +2225,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         head_over_items: {},
         artifacts: {},
         codexes: {},
+        skins: {},
+        borders: {},
+        banners: {},
+        glyphs: {},
+        auras: {},
+        orbs: {},
+        plates: {},
     };
     const shouldUnlock = mission.reward_type === 'item_id' && rewardCategory && rewardItemId;
     const nextUnlockedItems = shouldUnlock ? {
@@ -2524,7 +2564,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const setCurrentSkin = (skinId: string) => updateUserProfile({ skin: skinId });
   const addFriend = (nickname: string) => {
     if(nickname.trim() && !friends.find(f => f.nickname === nickname)) {
-        const newFriend: UserProfile = { ...DEFAULT_USER_PROFILE, id: `friend_${Date.now()}`, nickname, sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, body: 'female_base', hairStyle: 'ponytail', hairColor: '#B8860B' }, isOnline: Math.random() > 0.5 };
+        const newFriend: UserProfile = { ...DEFAULT_USER_PROFILE, id: `friend_${Date.now()}`, nickname, sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, body: 'body_fem_1', hairStyle: 'parted', hairColor: '#B8860B' }, isOnline: Math.random() > 0.5 };
         setFriends(prev => [newFriend, ...prev]);
     }
   };

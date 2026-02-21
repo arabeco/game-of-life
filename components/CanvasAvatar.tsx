@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { SovereignConfig } from '../types';
 import { SOVEREIGN_ASSETS, FACE_FEATURES_URL, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { ITEMS_DB } from '../constants/items';
+import { getBodyUrl, getHairUrl, BODY_DB, HAIR_DB } from '../constants/skins';
 
 interface CanvasAvatarProps {
     sovereignConfig?: SovereignConfig;
@@ -13,18 +14,14 @@ interface CanvasAvatarProps {
 
 const hexToCssFilter = (hex: string): string => {
     // Helper to approximate hex color using CSS filters (brightness, sepia, saturate, hue-rotate)
-    // This is a complex approximation. A simpler approach is usually canvas globalCompositeOperation 'source-in' or 'multiply'
-    // but here we are using filter.
-    // For simplicity in this example, we return a basic filter or rely on the caller to handle tinting via maskMode.
-    // However, the original code had a specific implementation. We'll try to keep it simple or reuse if possible.
-    // The original code:
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
 
-    // This approximation logic mimics the one in Avatar.tsx
     return `brightness(0) saturate(100%) invert(${r/255}) sepia(${g/255}) saturate(${b*20}%) hue-rotate(${(Math.atan2(Math.sqrt(3)*(g-b), 2*r-g-b)*180/Math.PI)+180}deg)`;
 };
+
+const globalImageCache = new Map<string, HTMLImageElement>();
 
 export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({ 
     sovereignConfig, 
@@ -35,13 +32,13 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const config = { ...DEFAULT_SOVEREIGN_CONFIG, ...sovereignConfig };
-    const { body, skinTone, hairStyle, hairColor, outfit, head_under, helmet, head_over, artifact, glyph, aura } = config;
+    const { body, skinTone, hairStyle, hairColor, outfit, head_under, helmet, head_over, artifact, glyph, aura, orb, sovereignPlate, artifactPlate, glyphPlate } = config;
 
-    const getAssetUrl = (category: keyof typeof SOVEREIGN_ASSETS, id: string | null) => {
+    const getAssetUrl = (category: keyof typeof SOVEREIGN_ASSETS | 'orbs' | 'plates', id: string | null) => {
         if (!id || id === 'none') return null;
         // @ts-ignore
         const asset = SOVEREIGN_ASSETS[category]?.find(a => a.id === id);
-        return (typeof asset === 'object' && asset) ? asset.url : null;
+        return (asset && typeof asset === 'object' && 'url' in asset) ? (asset as { url?: string }).url || null : null;
     };
 
     const getItemIcon = (itemId: string | undefined) => {
@@ -59,76 +56,99 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
         
         let isMounted = true;
 
-        // Clear canvas
-        ctx.clearRect(0, 0, width, height);
-
-        const loadAndDrawImage = (url: string | null, options: { 
-            tintColor?: string; 
-            filter?: string; 
-            compositeOperation?: GlobalCompositeOperation;
-            maskMode?: boolean; 
-        } = {}): Promise<void> => {
-            if (!url) return Promise.resolve();
-
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.src = url;
-                img.onload = () => {
-                    if (!isMounted) {
-                        resolve();
-                        return;
-                    }
-
-                    ctx.save();
-                    
-                    if (options.maskMode && options.tintColor) {
-                        // Create a temporary canvas for masking
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = width;
-                        tempCanvas.height = height;
-                        const tempCtx = tempCanvas.getContext('2d');
-                        if (tempCtx) {
-                            tempCtx.fillStyle = options.tintColor;
-                            tempCtx.fillRect(0, 0, width, height);
-                            tempCtx.globalCompositeOperation = 'destination-in';
-                            tempCtx.drawImage(img, 0, 0, width, height);
-                            ctx.drawImage(tempCanvas, 0, 0, width, height);
-                        }
-                    } else {
-                        if (options.filter) ctx.filter = options.filter;
-                        if (options.compositeOperation) ctx.globalCompositeOperation = options.compositeOperation;
-                        ctx.drawImage(img, 0, 0, width, height);
-                    }
-                    
-                    ctx.restore();
-                    resolve();
-                };
-                img.onerror = (err) => {
-                    console.error(`CanvasAvatar: Failed to load image ${url}`, err);
-                    resolve(); 
-                };
-            });
-        };
-
-        const drawEmoji = (emoji: string, x: number, y: number, fontSize: number, glowColor?: string) => {
-            if (!isMounted) return;
-            ctx.save();
-            ctx.font = `${fontSize}px serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            if (glowColor) {
-                ctx.shadowColor = glowColor;
-                ctx.shadowBlur = 20;
-            }
-
-            ctx.fillText(emoji, x, y);
-            ctx.restore();
-        };
-
         const render = async () => {
             try {
+                // Create offscreen canvas for double buffering to prevent flickering
+                const offscreenCanvas = document.createElement('canvas');
+                offscreenCanvas.width = width;
+                offscreenCanvas.height = height;
+                const offscreenCtx = offscreenCanvas.getContext('2d');
+                if (!offscreenCtx) return;
+
+                const loadAndDrawImage = (url: string | null, options: { 
+                    tintColor?: string; 
+                    filter?: string; 
+                    compositeOperation?: GlobalCompositeOperation;
+                    maskMode?: boolean; 
+                } = {}): Promise<void> => {
+                    if (!url) return Promise.resolve();
+
+                    return new Promise((resolve) => {
+                        const draw = (img: HTMLImageElement) => {
+                             if (!isMounted) {
+                                resolve();
+                                return;
+                            }
+
+                            offscreenCtx.save();
+                            
+                            if (options.maskMode && options.tintColor) {
+                                // Create a temporary canvas for masking
+                                const tempCanvas = document.createElement('canvas');
+                                tempCanvas.width = width;
+                                tempCanvas.height = height;
+                                const tempCtx = tempCanvas.getContext('2d');
+                                if (tempCtx) {
+                                    tempCtx.fillStyle = options.tintColor;
+                                    tempCtx.fillRect(0, 0, width, height);
+                                    tempCtx.globalCompositeOperation = 'destination-in';
+                                    tempCtx.drawImage(img, 0, 0, width, height);
+                                    offscreenCtx.drawImage(tempCanvas, 0, 0, width, height);
+                                }
+                            } else {
+                                if (options.filter) offscreenCtx.filter = options.filter;
+                                if (options.compositeOperation) offscreenCtx.globalCompositeOperation = options.compositeOperation;
+                                offscreenCtx.drawImage(img, 0, 0, width, height);
+                            }
+                            
+                            offscreenCtx.restore();
+                            resolve();
+                        };
+
+                        // Check cache first
+                        if (globalImageCache.has(url)) {
+                            draw(globalImageCache.get(url)!);
+                            return;
+                        }
+
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.src = url;
+                        img.onload = () => {
+                            globalImageCache.set(url, img);
+                            draw(img);
+                        };
+                        img.onerror = (err) => {
+                            console.error(`CanvasAvatar: Failed to load image ${url}`, err);
+                            resolve(); 
+                        };
+                    });
+                };
+
+                const drawEmoji = (emoji: string, x: number, y: number, fontSize: number, glowColor?: string) => {
+                    if (!isMounted) return;
+                    offscreenCtx.save();
+                    offscreenCtx.font = `${fontSize}px serif`;
+                    offscreenCtx.textAlign = 'center';
+                    offscreenCtx.textBaseline = 'middle';
+                    
+                    if (glowColor) {
+                        offscreenCtx.shadowColor = glowColor;
+                        offscreenCtx.shadowBlur = 20;
+                    }
+
+                    offscreenCtx.fillText(emoji, x, y);
+                    offscreenCtx.restore();
+                };
+
+                if (!isMounted) return;
+
+                // -1. Sovereign Plate (Background behind everything)
+                const sovereignPlateUrl = getAssetUrl('plates', sovereignPlate);
+                if (sovereignPlateUrl) {
+                    await loadAndDrawImage(sovereignPlateUrl);
+                }
+
                 if (!isMounted) return;
 
                 // 0. Aura (Background)
@@ -146,9 +166,19 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                 if (!isMounted) return;
 
                 // 1. Body (Masked with Skin Tone)
-                const bodyUrl = getAssetUrl('bodyStyles', body);
-                if (bodyUrl) {
-                    await loadAndDrawImage(bodyUrl, { tintColor: skinTone, maskMode: true });
+                const newBodyDef = BODY_DB.find(b => b.id === body);
+                let bodyUrl: string | null = null;
+
+                if (newBodyDef) {
+                    // New system: Pre-tinted body
+                    bodyUrl = getBodyUrl(newBodyDef.gender, newBodyDef.toneId);
+                    await loadAndDrawImage(bodyUrl); // No tint, no mask
+                } else {
+                    // Old system fallback
+                    bodyUrl = getAssetUrl('bodyStyles', body);
+                    if (bodyUrl) {
+                        await loadAndDrawImage(bodyUrl, { tintColor: skinTone, maskMode: true });
+                    }
                 }
 
                 if (!isMounted) return;
@@ -175,12 +205,29 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
-                // 5. Hair (Tinted)
-                const hairUrl = getAssetUrl('hairStyles', hairStyle);
+                // 5. Hair (Tinted or Pre-colored)
                 const showHair = (!helmet || helmet === 'none');
-                if (showHair && hairUrl) {
-                    const filter = hexToCssFilter(hairColor);
-                    await loadAndDrawImage(hairUrl, { filter });
+                if (showHair) {
+                    const newHairDef = HAIR_DB.find(h => h.id === hairStyle);
+                    if (newHairDef) {
+                         // New system
+                         const url = getHairUrl(hairStyle, hairColor);
+                         
+                         // Se tiver filename fixo, aplicamos filtro de cor
+                         if (newHairDef.filename) {
+                             const filter = hexToCssFilter(hairColor);
+                             await loadAndDrawImage(url, { filter });
+                         } else {
+                             // Se for URL dinâmica (pré-colorida), carregamos direto
+                             await loadAndDrawImage(url);
+                         }
+                    } else {
+                        const hairUrl = getAssetUrl('hairStyles', hairStyle);
+                        if (hairUrl) {
+                            const filter = hexToCssFilter(hairColor);
+                            await loadAndDrawImage(hairUrl, { filter });
+                        }
+                    }
                 }
 
                 if (!isMounted) return;
@@ -204,40 +251,57 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
+                // 8.5. Artifact Plate
+                const artifactPlateUrl = getAssetUrl('plates', artifactPlate);
+                if (artifactPlateUrl) {
+                    await loadAndDrawImage(artifactPlateUrl);
+                }
+
+                if (!isMounted) return;
+
                 // 9. Artifact
                 const artifactUrl = getAssetUrl('artifacts', artifact);
                 await loadAndDrawImage(artifactUrl);
 
                 if (!isMounted) return;
 
+                // 9.5. Glyph Plate
+                const glyphPlateUrl = getAssetUrl('plates', glyphPlate);
+                if (glyphPlateUrl) {
+                    await loadAndDrawImage(glyphPlateUrl);
+                }
+
+                if (!isMounted) return;
+
                 // 10. Glyph (Foreground - at feet/side)
                 const glyphUrl = getAssetUrl('glyphs', glyph);
                 if (glyphUrl) {
-                    // Draw at bottom right, smaller
-                    // You might need to adjust positioning for image vs emoji
-                    // Assuming glyph images are square and centered, we draw them full size or scaled
-                    // Original emoji was at 0.8w, 0.9h
-                    // Let's try to draw image similarly
-                    // If image is full frame, just draw it. If it's an icon, draw it small.
-                    // The glyphs seem to be "Moldes de Glifo - Bases de Pedra" or icons.
-                    // Assuming they are full-frame overlays or icons.
-                    // If they are icons, we should scale and position.
-                    // If they are full-frame effects (like aura), we draw full.
-                    // Based on "Moldes de Glifo", they sound like base stones.
-                    // Let's draw them full size for now, assuming they are positioned correctly in the PNG.
                     await loadAndDrawImage(glyphUrl);
                 } else {
                     const glyphIcon = getItemIcon(glyph);
                     if (glyphIcon) {
-                        // Draw at bottom right or left
                         drawEmoji(glyphIcon, width * 0.8, height * 0.9, 80, '#FFFFFF');
                     }
                 }
 
-                // Generate Data URL
-                if (onImageGenerated && isMounted) {
-                    const dataUrl = canvas.toDataURL('image/png');
-                    onImageGenerated(dataUrl);
+                if (!isMounted) return;
+
+                // 11. Orb
+                const orbUrl = getAssetUrl('orbs', orb);
+                if (orbUrl) {
+                    await loadAndDrawImage(orbUrl);
+                }
+
+                // Final Step: Draw everything to main canvas
+                if (isMounted) {
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(offscreenCanvas, 0, 0);
+
+                    // Generate Data URL
+                    if (onImageGenerated) {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        onImageGenerated(dataUrl);
+                    }
                 }
             } catch (error) {
                 console.error("CanvasAvatar: Render error", error);

@@ -15,7 +15,7 @@ export class SupabaseService {
       if (existingAdmin) return existingAdmin as UserProfile;
 
       const sovereignConfig: SovereignConfig = {
-        body: 'male_base',
+        body: 'body_masc_1',
         skinTone: '#FDBCB4',
         hairStyle: 'short',
         hairColor: '#2C1810',
@@ -25,7 +25,8 @@ export class SupabaseService {
         head_over: 'crown',
         artifact: 'scepter',
         glyph: 'none',
-        aura: 'none'
+        aura: 'none',
+        orb: 'none'
       };
 
       const adminProfile = {

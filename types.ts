@@ -128,10 +128,14 @@ export interface SovereignConfig {
     artifact: string;
     glyph: string; // NEW: Glifo slot
     aura: string; // NEW: Aura slot
+    orb?: string; // NEW: Orbe slot
+    sovereignPlate?: string; // NEW: Placa slot for Sovereign
+    artifactPlate?: string; // NEW: Placa slot for Artifact
+    glyphPlate?: string; // NEW: Placa slot for Glyph
     primaryDisplay?: 'sovereign' | 'item' | 'glyph'; // Preferred miniature display
 }
 
-export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'glyphs' | 'auras';
+export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates';
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 

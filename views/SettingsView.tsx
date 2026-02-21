@@ -9,7 +9,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { MasteryView } from './MasteryView';
 import { SovereignPanelView } from './SovereignPanelView';
 import { supabase } from '../supabaseClient';
-import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
+import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { CODEXES } from '../constants/items';
 
@@ -1451,7 +1451,7 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 export const SettingsView: React.FC = () => {
-    const { updateUserProfile } = useGame();
+    const { updateUserProfile, userProfile } = useGame();
     const [activeTab, setActiveTab] = useState<SettingsTab>('Geral');
     const [isSovereignEditorOpen, setSovereignEditorOpen] = useState(false);
 
@@ -1492,7 +1492,13 @@ export const SettingsView: React.FC = () => {
                    {renderContent()}
                 </div>
             </div>
-            {isSovereignEditorOpen && <SovereignEditorModal onClose={() => setSovereignEditorOpen(false)} onSave={handleSovereignSave} />}
+            {isSovereignEditorOpen && (
+                <SovereignCustomizer 
+                    initialConfig={userProfile?.sovereign}
+                    onClose={() => setSovereignEditorOpen(false)} 
+                    onSave={handleSovereignSave} 
+                />
+            )}
         </>
     );
 };

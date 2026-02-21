@@ -1,6 +1,6 @@
 import { ItemRarity } from '../types';
 
-export type ItemCategory = 'skin' | 'hair' | 'border' | 'glyph' | 'aura' | 'ui_skin' | 'artifact';
+export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate';
 
 export interface ItemDef {
     id: string;
@@ -17,6 +17,8 @@ export interface ItemDef {
 }
 
 const BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
+const GLYPHS_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars/glyphs';
+const INTERFACE_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/interface';
 
 export const ITEMS_DB: ItemDef[] = [
     // --- SKINS ---
@@ -69,65 +71,134 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_artifact_5_002', name: 'Tesseract', category: 'artifact', tier: 5, rarity: 'legendary', icon: '🧊', imageUrl: `${BASE_URL}/ARTEFATO_T5_tessaract.png.png` },
 
     // --- CABELOS ---
-    // T1
-    { id: 'item_hair_1_001', name: 'Recruta', category: 'hair', tier: 1, rarity: 'common', icon: '💇' },
-    { id: 'item_hair_1_002', name: 'Cachos', category: 'hair', tier: 1, rarity: 'common', icon: '➰' },
-    { id: 'item_hair_1_003', name: 'Mullet', category: 'hair', tier: 1, rarity: 'common', icon: '🎸' },
-    { id: 'item_hair_1_004', name: 'Rabo de Cavalo', category: 'hair', tier: 1, rarity: 'common', icon: '👱‍♀️' },
-    // T2
-    { id: 'item_hair_2_001', name: 'Dreads', category: 'hair', tier: 2, rarity: 'uncommon', icon: '🧶' },
-    { id: 'item_hair_2_002', name: 'Coque', category: 'hair', tier: 2, rarity: 'uncommon', icon: '🥯' },
-    { id: 'item_hair_2_003', name: 'Curto Fem', category: 'hair', tier: 2, rarity: 'uncommon', icon: '👩' },
-    // T3
-    { id: 'item_hair_3_001', name: 'Princesa', category: 'hair', tier: 3, rarity: 'rare', icon: '👸' },
-    { id: 'item_hair_3_002', name: 'Goku', category: 'hair', tier: 3, rarity: 'rare', icon: '🔥' },
-    // T4
-    { id: 'item_hair_4_001', name: 'Fluxo Espiritual Anime', category: 'hair', tier: 4, rarity: 'epic', icon: '🌬️' },
+    // TIER 1 - Common
+    { id: 'cachos', name: 'Cachos', category: 'hair', tier: 1, rarity: 'common', icon: '➰' },
+    { id: 'medio_reto', name: 'Médio Reto', category: 'hair', tier: 1, rarity: 'common', icon: '💇' },
+    
+    // TIER 2 - Uncommon
+    { id: 'grunge_longo', name: 'Grunge Longo', category: 'hair', tier: 2, rarity: 'uncommon', icon: '🎸' },
+    { id: 'textured_crop', name: 'Texturizado', category: 'hair', tier: 2, rarity: 'uncommon', icon: '✂️' },
+    
+    // TIER 3 - Rare
+    { id: 'dreads', name: 'Dreads', category: 'hair', tier: 3, rarity: 'rare', icon: '🧶' },
+    { id: 'mullet_topete', name: 'Mullet Top', category: 'hair', tier: 3, rarity: 'rare', icon: '🔥' },
+    
+    // TIER 4 - Epic
+    { id: 'anime_spikes', name: 'Anime Spiky', category: 'hair', tier: 4, rarity: 'epic', icon: '⚡' },
+    { id: 'princesa', name: 'Princesa', category: 'hair', tier: 4, rarity: 'epic', icon: '👸' },
+    
+    // TIER 5 - Legendary
+    { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', category: 'hair', tier: 5, rarity: 'legendary', icon: '✨' },
 
     // --- BORDAS ---
     // T1
     { id: 'item_border_1_001', name: 'Pupilo (Beta)', category: 'border', tier: 1, rarity: 'common', icon: '🔰' },
-    { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 1, rarity: 'common', icon: '📏' },
+    { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 1, rarity: 'common', icon: '📏', imageUrl: `${INTERFACE_BASE_URL}/borda_disciplinado.png` },
     { id: 'item_border_1_003', name: 'Vanguardista', category: 'border', tier: 1, rarity: 'common', icon: '🚩' },
     { id: 'item_border_1_004', name: 'Rústico', category: 'border', tier: 1, rarity: 'common', icon: '🪵' },
+    // Novos T1
+    { id: 'item_border_t1_aprendiz', name: 'Aprendiz', category: 'border', tier: 1, rarity: 'common', icon: '🎓', imageUrl: `${INTERFACE_BASE_URL}/borda_t1_aprendiz.png` },
+
     // T2
-    { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, rarity: 'uncommon', icon: '🌟' },
+    { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/borda_popular.png` },
     { id: 'item_border_2_002', name: 'Protetor', category: 'border', tier: 2, rarity: 'uncommon', icon: '🛡️' },
+    // Novos T2
+    { id: 'item_border_t2_veterano', name: 'Veterano', category: 'border', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_veterano.png` },
+
     // T3
-    { id: 'item_border_3_001', name: 'Imparável', category: 'border', tier: 3, rarity: 'rare', icon: '🚀' },
+    { id: 'item_border_3_001', name: 'Imparável', category: 'border', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/borda_imparavel.png` },
     { id: 'item_border_3_002', name: 'Arquétipo', category: 'border', tier: 3, rarity: 'rare', icon: '🎭' },
+    // Novos T3
+    { id: 'item_border_t3_mistico', name: 'Místico', category: 'border', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_mistico.png` },
+    { id: 'item_border_t3_transcendente', name: 'Transcendente', category: 'border', tier: 3, rarity: 'rare', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_transcendente.png` },
+
     // T4
-    { id: 'item_border_4_001', name: 'Lenda Viva', category: 'border', tier: 4, rarity: 'epic', icon: '🦁' },
+    { id: 'item_border_4_001', name: 'Lenda Viva', category: 'border', tier: 4, rarity: 'epic', icon: '🦁', imageUrl: `${INTERFACE_BASE_URL}/borda_lendaviva.png` },
     { id: 'item_border_4_002', name: 'Soberano', category: 'border', tier: 4, rarity: 'epic', icon: '👑' },
+    // Novos T4
+    { id: 'item_border_t4_celestial', name: 'Celestial', category: 'border', tier: 4, rarity: 'epic', icon: '👼', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_celestial.png` },
+    { id: 'item_border_t4_guardia', name: 'Guardiã', category: 'border', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_guardia.png` },
+    { id: 'item_border_t4_oraculo', name: 'Oráculo', category: 'border', tier: 4, rarity: 'epic', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_oraculo.png` },
+
     // T5
-    { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🐲' },
+    { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🐲', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png` },
+    // Novos T5
+    { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 5, rarity: 'legendary', icon: '🌋', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
+
+    // --- BANNERS ---
+    // T1
+    { id: 'item_banner_disciplinado', name: 'Disciplinado', category: 'banner', tier: 1, rarity: 'common', icon: '📏', imageUrl: `${INTERFACE_BASE_URL}/banner_disciplinado.png` },
+    { id: 'item_banner_t1_aprendiz', name: 'Aprendiz', category: 'banner', tier: 1, rarity: 'common', icon: '🎓', imageUrl: `${INTERFACE_BASE_URL}/banner_t1_aprendiz.png` },
+    
+    // T2
+    { id: 'item_banner_popular', name: 'Popular', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/banner_popular.png` },
+    { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_veterano.png` },
+
+    // T3
+    { id: 'item_banner_imparavel', name: 'Imparável', category: 'banner', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_imparavel.png` },
+    { id: 'item_banner_t3_mistico', name: 'Místico', category: 'banner', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/banner_t3_mistico.png` },
+
+    // T4
+    { id: 'item_banner_lendaviva', name: 'Lenda Viva', category: 'banner', tier: 4, rarity: 'epic', icon: '🦁', imageUrl: `${INTERFACE_BASE_URL}/banner_lendaviva.png` },
+    { id: 'item_banner_t4_celestial', name: 'Celestial', category: 'banner', tier: 4, rarity: 'epic', icon: '👼', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_celestial.png` },
+    { id: 'item_banner_t4_guardia', name: 'Guardiã', category: 'banner', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_guardia.png` },
+    { id: 'item_banner_t4_oraculo', name: 'Oráculo', category: 'banner', tier: 4, rarity: 'epic', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_oraculo.png` },
+    { id: 'item_banner_t4_transcendente', name: 'Transcendente', category: 'banner', tier: 4, rarity: 'epic', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_transcendente.png` },
+
+    // T5
+    { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🐲', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png` },
+    { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 5, rarity: 'legendary', icon: '🌋', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
 
     // --- GLIFOS ---
     // T1
-    { id: 'item_glyph_1_001', name: 'Tábua Aprendiz', category: 'glyph', tier: 1, rarity: 'common', icon: '🪵' },
-    { id: 'item_glyph_1_002', name: 'Manuscrito', category: 'glyph', tier: 1, rarity: 'common', icon: '📜' },
-    { id: 'item_glyph_1_003', name: 'Lajota', category: 'glyph', tier: 1, rarity: 'common', icon: '🧱' },
+    { id: 'item_glyph_1_001', name: 'Tábua Aprendiz', category: 'glyph', tier: 1, rarity: 'common', icon: '🪵', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_TABUA_APRENDIZ.png` },
+    { id: 'item_glyph_1_002', name: 'Manuscrito', category: 'glyph', tier: 1, rarity: 'common', icon: '📜', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_MANUSCRITO_HOD.png` },
+    { id: 'item_glyph_1_003', name: 'Lajota', category: 'glyph', tier: 1, rarity: 'common', icon: '🧱', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_LAJOTA_CALCARIO.png` },
     // T2
-    { id: 'item_glyph_2_001', name: 'Totem Obelisco', category: 'glyph', tier: 2, rarity: 'uncommon', icon: '🗿' },
-    { id: 'item_glyph_2_002', name: 'Granito Rúnico', category: 'glyph', tier: 2, rarity: 'uncommon', icon: '🪨' },
+    { id: 'item_glyph_2_002', name: 'Granito Rúnico', category: 'glyph', tier: 2, rarity: 'uncommon', icon: '🪨', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T2_GRANITO_RUNICO.png` },
     // T3
-    { id: 'item_glyph_3_001', name: 'Monólito Aço', category: 'glyph', tier: 3, rarity: 'rare', icon: '🔩' },
+    { id: 'item_glyph_3_002', name: 'Mecanismo Bronze', category: 'glyph', tier: 3, rarity: 'rare', icon: '⚙️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_BRONZE.png` },
+    { id: 'item_glyph_3_003', name: 'Mecanismo Rúnico', category: 'glyph', tier: 3, rarity: 'rare', icon: '⚙️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_RUNICO.png` },
     // T5
-    { id: 'item_glyph_5_001', name: 'A FORJA - Losango 3D', category: 'glyph', tier: 5, rarity: 'legendary', icon: '💠' },
+    { id: 'item_glyph_4_001', name: 'Crisol Geomântico', category: 'glyph', tier: 4, rarity: 'epic', icon: '🔷', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISOL_GEOMANTICO.png` },
+    { id: 'item_glyph_4_002', name: 'Cristal Branco', category: 'glyph', tier: 4, rarity: 'epic', icon: '💎', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISTAL_BRANCO.png` },
+    { id: 'item_glyph_5_001', name: 'A FORJA - Losango 3D', category: 'glyph', tier: 5, rarity: 'legendary', icon: '💠', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_A_FORJA.png` },
+    { id: 'item_glyph_5_002', name: 'Artefato Sombrio', category: 'glyph', tier: 5, rarity: 'legendary', icon: '🕳️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_ARTEFATO_SOMBRIO.png` },
 
     // --- AURAS ---
     // T1
-    { id: 'item_aura_1_001', name: 'Bruma', category: 'aura', tier: 1, rarity: 'common', icon: '🌫️' },
-    { id: 'item_aura_1_002', name: 'Safira', category: 'aura', tier: 1, rarity: 'common', icon: '🔹' },
-    { id: 'item_aura_1_003', name: 'Rubi', category: 'aura', tier: 1, rarity: 'common', icon: '🔻' },
+    { id: 'item_aura_1_001', name: 'Bruma', category: 'aura', tier: 1, rarity: 'common', icon: '🌫️', imageUrl: `${GLYPHS_BASE_URL}/AURA_T1_BRUMA_NATURAL.png` },
+    { id: 'item_aura_1_002', name: 'Safira', category: 'aura', tier: 1, rarity: 'common', icon: '🔹', imageUrl: `${GLYPHS_BASE_URL}/AURA_T1_SAFIRA.png` },
+    { id: 'item_aura_1_003', name: 'Rubi', category: 'aura', tier: 1, rarity: 'common', icon: '🔻', imageUrl: `${GLYPHS_BASE_URL}/AURA_T1_RUBI.png` },
     // T2
-    { id: 'item_aura_2_001', name: 'Esmeralda', category: 'aura', tier: 2, rarity: 'uncommon', icon: '❇️' },
-    { id: 'item_aura_2_002', name: 'Prata', category: 'aura', tier: 2, rarity: 'uncommon', icon: '⚪' },
+    { id: 'item_aura_2_001', name: 'Esmeralda', category: 'aura', tier: 2, rarity: 'uncommon', icon: '❇️', imageUrl: `${GLYPHS_BASE_URL}/AURA_T2_ESMERALDA.png` },
+    { id: 'item_aura_2_002', name: 'Prata', category: 'aura', tier: 2, rarity: 'uncommon', icon: '⚪', imageUrl: `${GLYPHS_BASE_URL}/AURA_T2_PRATA.png` },
     // T3
-    { id: 'item_aura_3_001', name: 'Ouro', category: 'aura', tier: 3, rarity: 'rare', icon: '🟡' },
+    { id: 'item_aura_3_001', name: 'Ouro', category: 'aura', tier: 3, rarity: 'rare', icon: '🟡', imageUrl: `${GLYPHS_BASE_URL}/AURA_T3_OURO.png` },
     // T5
-    { id: 'item_aura_5_001', name: 'Pedra da Lua', category: 'aura', tier: 5, rarity: 'legendary', icon: '🌙' },
-    { id: 'item_aura_5_002', name: 'Multiverso', category: 'aura', tier: 5, rarity: 'legendary', icon: '🌌' },
+    { id: 'item_aura_5_001', name: 'Pedra da Lua', category: 'aura', tier: 5, rarity: 'legendary', icon: '🌙', imageUrl: `${GLYPHS_BASE_URL}/AURA_T5_PEDRA_LUA.png` },
+    { id: 'item_aura_5_002', name: 'Multiverso', category: 'aura', tier: 5, rarity: 'legendary', icon: '🌌', imageUrl: `${GLYPHS_BASE_URL}/AURA_T5_MULTIVERSO.png` },
+
+    // --- ORBES ---
+    // T1
+    { id: 'item_orb_1_002', name: 'Orbe de Cobre', category: 'orb', tier: 1, rarity: 'common', icon: '🟤', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T1_COBRE.png` },
+    // T2
+    { id: 'item_orb_2_002', name: 'Orbe Sombrio', category: 'orb', tier: 2, rarity: 'uncommon', icon: '🌑', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T2_SOMBRIO.png` },
+    { id: 'item_orb_2_003', name: 'Orbe Tempestade', category: 'orb', tier: 2, rarity: 'uncommon', icon: '🌩️', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T2_TEMPESTADE.png` },
+    // T3
+    { id: 'item_orb_3_001', name: 'Orbe de Ouro', category: 'orb', tier: 3, rarity: 'rare', icon: '🪙', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T3_OURO.png` },
+    { id: 'item_orb_4_001', name: 'Orbe de Diamante', category: 'orb', tier: 4, rarity: 'epic', icon: '💎', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T4_DIAMANTE.png` },
+    // T5
+    { id: 'item_orb_5_001', name: 'Orbe Gênese', category: 'orb', tier: 5, rarity: 'legendary', icon: '⚛️', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T5_GENESE.png` },
+    { id: 'item_orb_5_002', name: 'Orbe Soberano', category: 'orb', tier: 5, rarity: 'legendary', icon: '👑', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T5_SOBERANO.png` },
+
+    // --- PLACAS ---
+    { id: 'item_plate_1_001', name: 'Placa Madeira', category: 'plate', tier: 1, rarity: 'common', icon: '🪵', imageUrl: `${GLYPHS_BASE_URL}/PLACA_MADEIRA.png` },
+    { id: 'item_plate_2_001', name: 'Placa Pedra', category: 'plate', tier: 2, rarity: 'uncommon', icon: '🪨', imageUrl: `${GLYPHS_BASE_URL}/PLACA_PEDRA.png` },
+    { id: 'item_plate_3_001', name: 'Placa Prata', category: 'plate', tier: 3, rarity: 'rare', icon: '🥈', imageUrl: `${GLYPHS_BASE_URL}/PLACA_PRATA.png` },
+    { id: 'item_plate_4_001', name: 'Placa Roxa', category: 'plate', tier: 4, rarity: 'epic', icon: '🟪', imageUrl: `${GLYPHS_BASE_URL}/PLACA_ROXA.png` },
+    { id: 'item_plate_5_001', name: 'Placa Ouro', category: 'plate', tier: 5, rarity: 'legendary', icon: '🥇', imageUrl: `${GLYPHS_BASE_URL}/PLACA_OURO.png` },
+    { id: 'item_plate_5_002', name: 'Placa Gelo', category: 'plate', tier: 5, rarity: 'legendary', icon: '❄️', imageUrl: `${GLYPHS_BASE_URL}/PLACA_GELO.png` },
 
     // --- UI SKINS (Temas) ---
     // T3
@@ -145,6 +216,17 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_aura_exclusive_001', name: 'Fênix Dourada', category: 'aura', tier: 5, rarity: 'legendary', icon: '🐦', costGold: 800, isGoldExclusive: true },
     { id: 'item_border_exclusive_001', name: 'Fundador', category: 'border', tier: 4, rarity: 'epic', icon: '🏛️', costGold: 400, isGoldExclusive: true },
 ];
+
+export const resolveItemDef = (itemId: string): ItemDef | undefined => {
+    const direct = ITEMS_DB.find(d => d.id === itemId);
+    if (direct) return direct;
+    const normalized = itemId.toLowerCase().replace(/\.(png|jpg|jpeg)$/, '');
+    return ITEMS_DB.find(d => {
+        const url = d.imageUrl?.toLowerCase();
+        if (!url) return false;
+        return url.endsWith(`/${normalized}.png`) || url.endsWith(`/${normalized}.jpg`) || url.endsWith(`/${normalized}.jpeg`);
+    });
+};
 
 export const GOLD_PACKS = [
     { id: 'pack_gold_1', name: "Pepita", price: 5.00, gold: 50, bonus: 0, total: 50, icon: '🪙' },

@@ -10,7 +10,7 @@ import { ClanDetailModal } from '../components/ClanDetailModal';
 import { SKINS_DATA, BORDERS_DATA } from '../constants';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { Sovereign } from '../components/Avatar';
-import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
+import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { handleShare } from '../components/Share';
 
@@ -33,6 +33,18 @@ const UnifiedSovereignDisplay: React.FC<{
     const getGlyphUrl = () => {
         try {
             return SOVEREIGN_ASSETS.glyphs?.find(g => g.id === sovereignConfig.glyph)?.url;
+        } catch (e) { return undefined; }
+    };
+    const getOrbUrl = () => {
+        try {
+            return SOVEREIGN_ASSETS.orbs?.find(o => o.id === sovereignConfig.orb)?.url;
+        } catch (e) { return undefined; }
+    };
+    const getPlateUrl = () => {
+        try {
+            if (primaryDisplay === 'item') return SOVEREIGN_ASSETS.plates?.find(p => p.id === sovereignConfig.artifactPlate)?.url;
+            if (primaryDisplay === 'glyph') return SOVEREIGN_ASSETS.plates?.find(p => p.id === sovereignConfig.glyphPlate)?.url;
+            return SOVEREIGN_ASSETS.plates?.find(p => p.id === sovereignConfig.sovereignPlate)?.url;
         } catch (e) { return undefined; }
     };
 
@@ -62,21 +74,34 @@ const UnifiedSovereignDisplay: React.FC<{
                 )}
                 {primaryDisplay === 'item' && (
                     getArtifactUrl() ? (
-                        <img 
-                            src={getArtifactUrl()} 
-                            alt="Item" 
-                            className="w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
-                        />
+                        <div className="relative w-full h-full">
+                            {getPlateUrl() && (
+                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-contain opacity-90" />
+                            )}
+                            <img 
+                                src={getArtifactUrl()} 
+                                alt="Item" 
+                                className="relative z-10 w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
+                            />
+                        </div>
                     ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
                 )}
                 {primaryDisplay === 'glyph' && (
-                     getGlyphUrl() ? (
-                        <img 
-                            src={getGlyphUrl()} 
-                            alt="Glifo" 
-                            className="w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]" 
-                        />
-                     ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
+                    getGlyphUrl() ? (
+                        <div className="relative w-full h-full">
+                            {getPlateUrl() && (
+                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-contain opacity-90" />
+                            )}
+                            <img 
+                                src={getGlyphUrl()} 
+                                alt="Glifo" 
+                                className="relative z-10 w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]" 
+                            />
+                            {getOrbUrl() && (
+                                <img src={getOrbUrl()} alt="Orbe" className="absolute inset-0 w-full h-full object-contain z-20 scale-75 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
+                            )}
+                        </div>
+                    ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
                 )}
             </div>
 
@@ -509,7 +534,8 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             {isBannerModalOpen && <BannerSelectionModal currentBanner={editableProfile.bannerUrl || ''} onSelect={handleBannerSelect} onClose={() => setBannerModalOpen(false)} />}
             {isClanModalOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanModalOpen(false)} />}
             {isSovereignModalOpen && (
-                <SovereignEditorModal
+                <SovereignCustomizer
+                    initialConfig={userProfile.sovereign}
                     onSave={(newConfig) => {
                         updateUserProfile({ sovereign: newConfig });
                         setIsSovereignModalOpen(false);

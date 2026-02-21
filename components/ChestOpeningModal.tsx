@@ -20,7 +20,7 @@ const getChestStyle = (type: ChestType) => {
     }
 }
 
-type Reward = { type: string; value: string | number; rarity: 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' };
+type Reward = { type: string; value: string | number; rarity: 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário'; itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string };
 
 const ASSET_POOL: Record<UnlockCategory, { id: string; name: string }[]> = {
     bodyStyles: SOVEREIGN_ASSETS.bodyStyles,
@@ -31,13 +31,16 @@ const ASSET_POOL: Record<UnlockCategory, { id: string; name: string }[]> = {
     head_over_items: SOVEREIGN_ASSETS.head_over_items,
     artifacts: SOVEREIGN_ASSETS.artifacts,
     glyphs: SOVEREIGN_ASSETS.glyphs,
+    plates: SOVEREIGN_ASSETS.plates,
     codexes: [],
     skins: GM_CONFIG.cosmetics.skins,
     borders: GM_CONFIG.cosmetics.borders,
-    auras: [],
+    banners: GM_CONFIG.cosmetics.banners,
+    auras: SOVEREIGN_ASSETS.auras,
+    orbs: SOVEREIGN_ASSETS.orbs,
 };
 
-const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string } => {
+const getRandomReward = (type: ChestType): Reward => {
     const poolConfig = GM_CONFIG.chestDrops.itemPool;
     const pool = poolConfig.categories.flatMap(category =>
         ASSET_POOL[category].filter(item => !poolConfig.excludeIds?.includes(item.id))
@@ -65,10 +68,21 @@ const getRandomReward = (type: ChestType): Reward & { itemUnlock?: { category: U
     }
     if (type === 'Épico' || type === 'Lendário') {
         rewards.push({ type: 'EXP', value: 2000 });
-        rewards.push({ type: 'Borda', value: 'Borda Estelar' });
+        
+        // Random Epic/Legendary Border
+        const availableBorders = GM_CONFIG.cosmetics.borders.filter(b => b.rarity === 'epic' || b.rarity === 'legendary');
+        if (availableBorders.length > 0) {
+            const randomBorder = availableBorders[Math.floor(Math.random() * availableBorders.length)];
+            rewards.push({ type: 'Borda', value: randomBorder.name, itemUnlock: { category: 'borders', itemId: randomBorder.id } });
+        }
     }
     if (type === 'Lendário') {
-        rewards.push({ type: 'Banner', value: 'Estandarte do Soberano' });
+        // Random Legendary Banner
+        const availableBanners = GM_CONFIG.cosmetics.banners.filter(b => b.rarity === 'legendary');
+        if (availableBanners.length > 0) {
+            const randomBanner = availableBanners[Math.floor(Math.random() * availableBanners.length)];
+            rewards.push({ type: 'Banner', value: randomBanner.name, itemUnlock: { category: 'banners', itemId: randomBanner.id } });
+        }
         rewards.push({ type: 'Artefato', value: 'Lâmina do Infinito' });
     }
     

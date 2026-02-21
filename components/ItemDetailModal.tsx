@@ -6,12 +6,13 @@ import { ItemDef } from '../constants/items';
 
 interface ItemDetailModalProps {
     item: ItemDef;
+    instanceId?: string;
     type: string;
     onClose: () => void;
 }
 
-export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, type, onClose }) => {
-    const { userProfile, updateUserProfile } = useGame();
+export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, instanceId, type, onClose }) => {
+    const { userProfile, updateUserProfile, toggleEquipItem } = useGame();
     const imageUrl = item.imageUrl || item.icon;
     
     // Determine rarity styles
@@ -29,6 +30,30 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, type, on
                         item.rarity === 'epic' ? 'Épico' : 
                         item.rarity === 'rare' ? 'Raro' : 
                         item.rarity === 'uncommon' ? 'Incomum' : 'Comum';
+
+    const isEquipped = (
+        (item.category === 'border' && userProfile.border === item.id) ||
+        (item.category === 'ui_skin' && userProfile.skin === item.id) ||
+        (item.category === 'skin' && userProfile.sovereign?.outfit === item.id) ||
+        (item.category === 'hair' && userProfile.sovereign?.hairStyle === item.id) ||
+        (item.category === 'glyph' && userProfile.sovereign?.glyph === item.id) ||
+        (item.category === 'aura' && userProfile.sovereign?.aura === item.id) ||
+        (item.category === 'orb' && userProfile.sovereign?.orb === item.id) ||
+        (item.category === 'plate' && [userProfile.sovereign?.sovereignPlate, userProfile.sovereign?.artifactPlate, userProfile.sovereign?.glyphPlate].includes(item.id)) ||
+        (item.category === 'banner' && userProfile.bannerUrl === item.imageUrl)
+    );
+
+    const handleEquip = async () => {
+        if (!instanceId) return;
+        
+        await toggleEquipItem({
+            id: item.id,
+            instanceId: instanceId,
+            acquiredAt: new Date().toISOString(), // Dummy date, not used for logic
+            isEquipped: isEquipped
+        });
+        onClose();
+    };
 
     const handleDonate = () => {
         alert(`Você doou ${item.name}! (Simulação)`);
@@ -82,6 +107,19 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, type, on
 
                 {/* Actions */}
                 <div className="flex gap-4 w-full mt-2 z-10">
+                    {instanceId && (
+                        <button 
+                            onClick={handleEquip}
+                            className={`flex-1 py-3 rounded-xl border transition-all duration-300 text-xs font-bold flex flex-col items-center gap-1 group ${
+                                isEquipped 
+                                ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/40' 
+                                : 'bg-green-500/20 border-green-500/50 text-green-300 hover:bg-green-500/40'
+                            }`}
+                        >
+                            <span className="text-lg">{isEquipped ? '✕' : '✓'}</span>
+                            <span className="tracking-wider">{isEquipped ? 'DESEQUIPAR' : 'EQUIPAR'}</span>
+                        </button>
+                    )}
                     <button 
                         onClick={handleRecycle}
                         className="flex-1 py-3 rounded-xl bg-black/40 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/80 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all duration-300 text-xs font-bold flex flex-col items-center gap-1 group"

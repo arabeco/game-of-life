@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
-import { SovereignEditorModal } from '../components/AvatarCustomizerModal';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { Inventory } from '../components/Store/Inventory';
 
 export const ArsenalView: React.FC = () => {
     const { updateUserProfile } = useGame();
     const [activeTab, setActiveTab] = useState<'inventory' | 'library'>('inventory');
-    const [isSovereignEditorOpen, setSovereignEditorOpen] = useState(false);
-
-    const handleSovereignSave = (newSovereignConfig: any) => {
-        updateUserProfile({ sovereign: newSovereignConfig });
-        setSovereignEditorOpen(false);
-    };
 
     return (
         <div className="space-y-6 pb-20">
@@ -41,8 +34,6 @@ export const ArsenalView: React.FC = () => {
                 </div>
             )}
             {activeTab === 'library' && <CodexLibrary />}
-
-            {isSovereignEditorOpen && <SovereignEditorModal onClose={() => setSovereignEditorOpen(false)} onSave={handleSovereignSave} />}
         </div>
     );
 };

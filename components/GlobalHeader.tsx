@@ -5,8 +5,6 @@ import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { MoodModal } from './MoodModal';
 import { OracleChat } from './OracleChat';
 import { SparklesIcon } from './Icons';
-import { CanvasAvatar } from './CanvasAvatar';
-import { SOVEREIGN_ASSETS } from '../constants/avatar';
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
     const { userProfile } = useGame();
@@ -21,38 +19,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const currentMood = MOODS_DATA.find(m => userProfile.mood >= m.min && userProfile.mood < m.max) || MOODS_DATA[MOODS_DATA.length - 1];
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
 
-    // Determine what to display as avatar
-    const primaryDisplay = userProfile.sovereign?.primaryDisplay;
-    
     const renderAvatarContent = () => {
-        if (primaryDisplay === 'sovereign' && userProfile.sovereign) {
-             return (
-                <div className="w-full h-full rounded-full overflow-hidden bg-gray-900">
-                     <CanvasAvatar 
-                        sovereignConfig={userProfile.sovereign} 
-                        width={100} 
-                        height={100} 
-                        className="w-[180%] h-[180%] object-cover object-top -mt-2 -ml-3" 
-                    />
-                </div>
-             );
-        }
-        
-        if (primaryDisplay === 'item' && userProfile.sovereign?.artifact) {
-            const artifact = SOVEREIGN_ASSETS.artifacts?.find(a => a.id === userProfile.sovereign?.artifact);
-            if (artifact?.url) {
-                return <img src={artifact.url} alt="Artifact" className="w-full h-full object-contain p-2" />;
-            }
-        }
-
-        if (primaryDisplay === 'glyph' && userProfile.sovereign?.glyph) {
-            const glyph = SOVEREIGN_ASSETS.glyphs?.find(g => g.id === userProfile.sovereign?.glyph);
-            if (glyph?.url) {
-                return <img src={glyph.url} alt="Glyph" className="w-full h-full object-contain p-2" />;
-            }
-        }
-
-        // Default to uploaded avatar or fallback
         if (avatarUrl) {
             return (
                 <img 
@@ -111,7 +78,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                             </button>
 
                             {/* Avatar and Level Button (on top of the bar) */}
-                            <div className="relative z-10 flex items-center justify-center">
+                            <div className="relative z-30 flex items-center justify-center">
                                 <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0">
                                     <div className="relative w-16 h-16 group-hover:scale-105 transition-transform">
                                         {/* Avatar Image */}
@@ -121,7 +88,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
                                         {/* Border as Overlay */}
                                         <div 
-                                            className="absolute inset-0 w-full h-full pointer-events-none"
+                                            className="absolute inset-0 w-full h-full pointer-events-none z-40"
                                             style={
                                                 selectedBorder?.imageUrl
                                                 ? {

@@ -83,11 +83,23 @@ export const SEASONS: Record<string, SeasonConfig> = {
 const AVATAR_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
 
 export const SKIN_TONES = ['#FBE5D5', '#F3C7AC', '#E2A984', '#C68642', '#8D5524', '#613817'] as const;
-export const HAIR_COLORS = ['#2C1608', '#583317', '#A76936', '#B8860B', '#F8DE7E', '#FFFFFF', '#6F6F6F', '#E54339', '#2E6A8A', '#7D2E8A'] as const;
+
+export const HAIR_COLORS = [
+    { id: '1', label: 'Tipo 1', hex: '#2C1608' },
+    { id: '2', label: 'Tipo 2', hex: '#000000' },
+    { id: '3', label: 'Tipo 3', hex: '#E6BE8A' },
+    { id: '4', label: 'Tipo 4', hex: '#8D4004' },
+    { id: '5', label: 'Tipo 5', hex: '#FFFFFF' },
+    { id: '6', label: 'Tipo 6', hex: '#FFC0CB' },
+];
 
 export const BODY_STYLES = [
-  { id: 'male_base', name: 'Masculino Padrão', url: `${AVATAR_BASE_URL}/MASCULINO_BASE_BRANCO.png.png` },
-  { id: 'female_base', name: 'Feminino Padrão', url: `${AVATAR_BASE_URL}/FEMININO_BASE_BRANCO.png.png` },
+  { id: 'body_masc_1', name: 'Masculino 1', url: `${AVATAR_BASE_URL}/body_masc_1.png.png` },
+  { id: 'body_masc_2', name: 'Masculino 2', url: `${AVATAR_BASE_URL}/body_masc_2.png.png` },
+  { id: 'body_masc_3', name: 'Masculino 3', url: `${AVATAR_BASE_URL}/body_masc_3.png.png` },
+  { id: 'body_fem_1', name: 'Feminino 1', url: `${AVATAR_BASE_URL}/body_fem_1.png.png` },
+  { id: 'body_fem_2', name: 'Feminino 2', url: `${AVATAR_BASE_URL}/body_fem_2.png.png` },
+  { id: 'body_fem_3', name: 'Feminino 3', url: `${AVATAR_BASE_URL}/body_fem_3.png.png` },
 ];
 
 export const FACE_FEATURES_URL = ``;
@@ -124,16 +136,25 @@ export const SOVEREIGN_ASSETS = {
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
     ...ITEMS_DB.filter(i => i.category === 'glyph').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
   ],
+  plates: [
+    { id: 'none', name: 'Nenhuma', url: '', rarity: 'common' as ItemRarity },
+    ...ITEMS_DB.filter(i => i.category === 'plate').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
+  ],
   auras: [
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
     ...ITEMS_DB.filter(i => i.category === 'aura').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
   ],
+  orbs: [
+    { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
+    ...ITEMS_DB.filter(i => i.category === 'orb').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
+  ],
 };
 
 export const DEFAULT_SOVEREIGN_CONFIG: SovereignConfig = {
-    body: 'male_base', skinTone: '#E2A984', hairStyle: 'none', hairColor: '#2C1608',
+    body: 'body_masc_1', skinTone: '#FBE5D5', hairStyle: 'none', hairColor: '#2C1608',
     outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none',
-    glyph: 'none', aura: 'none'
+    glyph: 'none', aura: 'none', orb: 'none',
+    sovereignPlate: 'none', artifactPlate: 'none', glyphPlate: 'none'
 };
 
 export const getItemCategory = (itemId: string): UnlockCategory | null => {
@@ -145,6 +166,9 @@ export const getItemCategory = (itemId: string): UnlockCategory | null => {
   if (SOVEREIGN_ASSETS.head_over_items.some(i => i.id === itemId)) return 'head_over_items';
   if (SOVEREIGN_ASSETS.artifacts.some(i => i.id === itemId)) return 'artifacts';
   if (SOVEREIGN_ASSETS.glyphs.some(i => i.id === itemId)) return 'glyphs';
+  if (SOVEREIGN_ASSETS.plates.some(i => i.id === itemId)) return 'plates';
+  if (SOVEREIGN_ASSETS.auras.some(i => i.id === itemId)) return 'auras';
+  if (SOVEREIGN_ASSETS.orbs.some(i => i.id === itemId)) return 'orbs';
   return null;
 };
 
@@ -162,7 +186,10 @@ export const buildDefaultLevelUnlocks = (): LevelUnlocks => ({
   codexes: {},
   skins: {},
   borders: {},
-  auras: {},
+  banners: {},
+  auras: buildUnlockMap(SOVEREIGN_ASSETS.auras),
+  orbs: buildUnlockMap(SOVEREIGN_ASSETS.orbs),
+  plates: buildUnlockMap(SOVEREIGN_ASSETS.plates),
 });
 
 // --- GM CONFIG & MASTERY ---
@@ -247,7 +274,7 @@ export const GM_CONFIG = {
   chestDrops: {
     itemDropChanceByChest: { Comum: 0.005, Raro: 0.01, Épico: 0.02, Lendário: 0.03 } as Record<ChestType, number>,
     skinDropChanceByChest: { Comum: 0.005, Raro: 0.02, Épico: 0.05, Lendário: 0.1 } as Record<ChestType, number>,
-    itemPool: { categories: ['bodyStyles', 'hairStyles', 'outfits', 'head_under_items', 'helmets', 'head_over_items', 'artifacts'] as UnlockCategory[], excludeIds: ['none'] },
+    itemPool: { categories: ['bodyStyles', 'hairStyles', 'outfits', 'head_under_items', 'helmets', 'head_over_items', 'artifacts', 'glyphs', 'auras', 'orbs'] as UnlockCategory[], excludeIds: ['none'] },
   },
   cosmetics: {
     skins: [
@@ -257,11 +284,7 @@ export const GM_CONFIG = {
       ...ITEMS_DB.filter(i => i.category === 'border').map(i => ({ id: i.id, name: i.name, color: '#ffffff', imageUrl: i.imageUrl || '', rarity: i.rarity })),
     ] as Skin[],
     banners: [
-      { id: 'grao_mestre', name: 'Grão Mestre', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_gm.png', rarity: 'legendary' },
-      { id: 'disciplinado', name: 'Disciplinado', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_disciplinado.png', rarity: 'uncommon' },
-      { id: 'imparavel', name: 'Imparável', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_imparavel.png', rarity: 'epic' },
-      { id: 'lendaviva', name: 'Lenda Viva', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_lendaviva.png', rarity: 'epic' },
-      { id: 'popular', name: 'Popular', url: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/banner_poopular.png', rarity: 'epic' },
+      ...ITEMS_DB.filter(i => i.category === 'banner').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
     ],
   },
   unlocks: {
@@ -275,6 +298,20 @@ export const BORDERS_DATA: Skin[] = GM_CONFIG.cosmetics.borders;
 export const BANNERS_DATA = GM_CONFIG.cosmetics.banners;
 
 export const SKIN_UNLOCKS_BY_RANK: Record<string, string[]> = { vagante: ['FROST'], escudeiro: ['CYBER'], cavaleiro: ['EMBER'], lorde: ['AURORA'] };
+export const BORDER_UNLOCKS_BY_RANK: Record<string, string[]> = { 
+    escudeiro: ITEMS_DB.filter(i => i.category === 'border' && i.tier === 1).map(i => i.id),
+    cavaleiro: ITEMS_DB.filter(i => i.category === 'border' && i.tier === 2).map(i => i.id),
+    lorde: ITEMS_DB.filter(i => i.category === 'border' && i.tier === 3).map(i => i.id),
+    barao: ITEMS_DB.filter(i => i.category === 'border' && i.tier === 4).map(i => i.id),
+    soberano: ITEMS_DB.filter(i => i.category === 'border' && i.tier === 5).map(i => i.id)
+};
+export const BANNER_UNLOCKS_BY_RANK: Record<string, string[]> = { 
+    escudeiro: ITEMS_DB.filter(i => i.category === 'banner' && i.tier === 1).map(i => i.id),
+    cavaleiro: ITEMS_DB.filter(i => i.category === 'banner' && i.tier === 2).map(i => i.id),
+    lorde: ITEMS_DB.filter(i => i.category === 'banner' && i.tier === 3).map(i => i.id),
+    barao: ITEMS_DB.filter(i => i.category === 'banner' && i.tier === 4).map(i => i.id),
+    soberano: ITEMS_DB.filter(i => i.category === 'banner' && i.tier === 5).map(i => i.id)
+};
 export const SKIN_SEASON_UNLOCKS: Record<string, string[]> = { GOLD: ['sm_3'] };
 export const SKIN_CHEST_POOL = ['VOID'];
 

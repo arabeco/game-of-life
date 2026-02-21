@@ -1,6 +1,6 @@
 import React from 'react';
 import { GlassCard } from './GlassCard';
-import { SKINS_DATA, BORDERS_DATA, SKIN_UNLOCKS_BY_RANK, SKIN_SEASON_UNLOCKS } from '../constants';
+import { SKINS_DATA, BORDERS_DATA, SKIN_UNLOCKS_BY_RANK, SKIN_SEASON_UNLOCKS, BORDER_UNLOCKS_BY_RANK } from '../constants';
 import { useGame } from '../contexts/GameContext';
 import { Skin } from '../types';
 
@@ -13,23 +13,38 @@ interface BorderSelectionModalProps {
 export const BorderSelectionModal: React.FC<BorderSelectionModalProps> = ({ currentBorder, onClose, onSelect }) => {
     const { userProfile, nobilityRanks } = useGame();
     const unlockedSkins = userProfile.unlockedSkins || {};
+    const unlockedItems = userProfile.unlockedItems || {};
     const completedSeasonMissions = userProfile.completedSeasonMissions || [];
     const currentRankIndex = nobilityRanks.findIndex(rank => rank.id === userProfile.nobility.rankId);
     const rankIndexFor = (rankId: string) => nobilityRanks.findIndex(rank => rank.id === rankId);
     const isRankAtLeast = (rankId: string) => currentRankIndex >= rankIndexFor(rankId);
     const isStaff = userProfile.role === 'admin' || userProfile.role === 'gm';
+
+    const isUnlockedByRank = (itemId: string, unlocksByRank: Record<string, string[]>) => {
+        if (currentRankIndex === -1) return false;
+        for (let i = 0; i <= currentRankIndex; i++) {
+            const rankId = nobilityRanks[i].id;
+            const items = unlocksByRank[rankId];
+            if (items && items.includes(itemId)) return true;
+        }
+        return false;
+    };
+
     const isSkinUnlocked = (skinId: string) => {
         if (isStaff) return true;
         if (userProfile.skin === skinId) return true;
         if (unlockedSkins[skinId]) return true;
-        if ((SKIN_UNLOCKS_BY_RANK[userProfile.nobility.rankId] || []).includes(skinId)) return true;
+        if (unlockedItems.skins?.[skinId]) return true;
+        if (isUnlockedByRank(skinId, SKIN_UNLOCKS_BY_RANK)) return true;
         const seasonMissionIds = SKIN_SEASON_UNLOCKS[skinId] || [];
         return seasonMissionIds.some(missionId => completedSeasonMissions.includes(missionId));
     };
+
     const isBorderUnlocked = (borderId: string) => {
         if (isStaff) return true;
         if (userProfile.border === borderId) return true;
-        if (borderId === 'DISCIPLINADO') return isRankAtLeast('escudeiro');
+        if (unlockedItems.borders?.[borderId]) return true;
+        if (isUnlockedByRank(borderId, BORDER_UNLOCKS_BY_RANK)) return true;
         return false;
     };
     const availableSkins = SKINS_DATA.filter(skin => isSkinUnlocked(skin.id));

@@ -134,7 +134,7 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
 
     // Override icon for special quests if desired, or just use what's in the action
     // User requested "cool logos". We can use specific emojis for now to ensure consistency.
-    const displayIcon = isClanQuest ? '🛡️' : (isSeasonQuest ? '🌟' : action.icon);
+    const displayIcon = action.icon || '🏆';
 
     return (
         <div className="relative flex-shrink-0">

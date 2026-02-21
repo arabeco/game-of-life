@@ -105,7 +105,7 @@ const ActionIcon: React.FC<{ action: Action }> = ({ action }) => {
     const clanQuest = getClanQuestForActionName(action.name);
     const isClanQuest = !!clanQuest;
     const isSeasonQuest = normalizedArena.includes('quests - season');
-    const displayIcon = isClanQuest ? '🛡️' : (isSeasonQuest ? '🌟' : action.icon);
+    const displayIcon = action.icon || '🏆';
 
     const currentProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
@@ -127,7 +127,7 @@ const ActionIcon: React.FC<{ action: Action }> = ({ action }) => {
         }
         if (isSeasonQuest) return <span className="text-sm text-white">{displayIcon}</span>;
 
-        switch (action.icon) {
+        switch (displayIcon) {
             case '$': return <DollarSignIcon className="w-4 h-4 text-white/80" />;
             case '🔥': return <FlameIcon className="w-4 h-4 text-white/80" />;
             default: return <span className="text-sm text-white">{displayIcon}</span>;

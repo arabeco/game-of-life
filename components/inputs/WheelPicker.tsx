@@ -8,6 +8,7 @@ interface WheelPickerProps {
 
 export const WheelPicker: React.FC<WheelPickerProps> = ({ options, value, onSelect }) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollRafRef = useRef<number | null>(null);
 
     useEffect(() => {
         const selectedIndex = options.indexOf(value);
@@ -17,9 +18,27 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ options, value, onSele
         }
     }, [value, options]);
 
+    useEffect(() => () => {
+        if (scrollRafRef.current !== null) cancelAnimationFrame(scrollRafRef.current);
+    }, []);
+
+    const handleScroll = () => {
+        if (scrollRafRef.current !== null) return;
+        scrollRafRef.current = requestAnimationFrame(() => {
+            scrollRafRef.current = null;
+            const container = containerRef.current;
+            if (!container) return;
+            const itemHeight = 40;
+            const rawIndex = Math.round(container.scrollTop / itemHeight);
+            const clampedIndex = Math.min(options.length - 1, Math.max(0, rawIndex));
+            const nextValue = options[clampedIndex];
+            if (nextValue && nextValue !== value) onSelect(nextValue);
+        });
+    };
+
     return (
         <div className="relative h-48 w-full bg-black/20 rounded-xl overflow-hidden">
-            <div ref={containerRef} className="h-full overflow-y-scroll snap-y snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+            <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-scroll snap-y snap-mandatory" style={{ scrollbarWidth: 'none' }}>
                 <div className="h-[68px]"></div> {/* Padding top */}
                 {options.map((option, index) => (
                     <div

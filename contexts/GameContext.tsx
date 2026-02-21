@@ -2052,8 +2052,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const pool = poolableActions.flatMap(action => {
         if (isQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
         const scheduledCount = scheduledCounts[action.id] || 0;
-        // Always allow at least one instance to be draggable (for unplanned/extra actions)
-        const poolCount = Math.max(1, action.repetitions - scheduledCount);
+        const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
+        const poolCount = Math.max(0, repetitions - scheduledCount);
         return Array.from({ length: poolCount }, () => ({ actionId: action.id }));
     });
     

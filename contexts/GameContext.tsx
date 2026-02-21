@@ -3544,11 +3544,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return getClanQuestForActionName(action.name);
   };
 
-  const isClanQuestActionId = (actionId: string) => {
-      const action = getActionById(actionId);
-      return !!getClanQuestForAction(action);
-  };
-
   const scheduleAndCompleteNow = (actionId: string) => {
     const action = getActionById(actionId);
     if (!action || action.actionType === 'Marco') return;

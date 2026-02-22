@@ -45,8 +45,8 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
 
-const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
-const STORAGE_KEY_ASSET_LEVELS = 'gol_asset_levels_v2';
+export const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
+export const STORAGE_KEY_ASSET_LEVELS = 'gol_asset_levels_v2';
 
 export const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
 export const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';

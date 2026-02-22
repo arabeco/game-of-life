@@ -5,7 +5,7 @@ import { PROFILE_FLAG_TERMS_PENDING, useGame } from '../contexts/GameContext';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
 import { GM_CONFIG } from '../constants';
-import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon } from '../components/Icons';
+import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GoogleIcon } from '../components/Icons';
 import { AchievementModal } from '../components/AchievementModal';
 
 export const LoginView: React.FC = () => {
@@ -478,8 +478,21 @@ export const LoginView: React.FC = () => {
                             {loading ? 'ENTRANDO...' : 'ENTRAR'}
                         </button>
                     )}
-                    <button onClick={toggleMode} className="text-xs text-gray-400 hover:text-white">
-                        {isSigningUp ? 'Já tem uma conta? Entrar.' : 'Não tem conta? Cadastre-se com um convite.'}
+
+                    {/* Google Auth Button */}
+                    <button 
+                        disabled={loading}
+                        className="w-full py-3 rounded-xl bg-white text-black font-bold flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.2)] disabled:opacity-50"
+                    >
+                        <GoogleIcon className="w-5 h-5" />
+                        <span className="uppercase tracking-wider text-xs">{isSigningUp ? 'CADASTRAR COM GOOGLE' : 'LOGIN COM GOOGLE'}</span>
+                    </button>
+
+                    <button 
+                        onClick={toggleMode} 
+                        className="w-full py-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 font-bold hover:bg-white/10 hover:text-white transition-all uppercase tracking-wider text-xs"
+                    >
+                        {isSigningUp ? 'JÁ TENHO CONTA' : 'CRIAR CONTA'}
                     </button>
                 </div>
 

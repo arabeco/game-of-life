@@ -79,6 +79,31 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     return config.systemPromptTemplate(contextData);
   }, [activeMode, userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences]);
 
+  const handleCommand = (cmd: string): string | null => {
+    const lowerCmd = cmd.toLowerCase().trim();
+    
+    // Help Command
+    if (lowerCmd === '?ajuda' || lowerCmd === '?help') {
+        return "🤖 **Comandos do Oráculo**\n\nUse **?** para saber o que é algo.\nUse **!** para ver seus dados.\n\nExemplos:\n• **?arenas** - O que são Arenas?\n• **!arenas** - Ver minhas Arenas\n\nExperimente também conversar naturalmente comigo!";
+    }
+
+    // Explanation Commands (?)
+    if (lowerCmd === '?arenas') {
+        return "🏛️ **Sobre as Arenas**\n\nAs Arenas são os domínios da sua vida onde você busca maestria (ex: Saúde, Trabalho, Finanças). Cada Arena contém suas Ações e Missões.\n\nElas representam as áreas que você deseja evoluir no GLYPH. Você pode criar novas Arenas no Inventário.";
+    }
+
+    // List Commands (!)
+    if (lowerCmd === '!arenas') {
+        const arenaList = assets.flatMap(a => a.arenas.map(ar => ar.name));
+        if (arenaList.length === 0) {
+            return "📜 **Suas Arenas**\n\nVocê ainda não possui Arenas ativas. Vá até o Inventário para criar sua primeira Arena.";
+        }
+        return `📜 **Suas Arenas Ativas**\n\n${arenaList.map(name => `• ${name}`).join('\n')}`;
+    }
+
+    return null;
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -86,6 +111,19 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+
+    // Check for commands
+    if (input.startsWith('?') || input.startsWith('!')) {
+        const commandResponse = handleCommand(input);
+        if (commandResponse) {
+             // Simulate small delay for natural feel
+             setTimeout(() => {
+                 setMessages(prev => [...prev, { role: 'assistant', content: commandResponse, timestamp: new Date() }]);
+                 setIsLoading(false);
+             }, 600);
+             return;
+        }
+    }
 
     try {
       const result = await streamText({

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useGame } from '../contexts/GameContext';
+import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG } from '../constants';
 import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, Arena, Action, ScheduledTask } from '../types';
@@ -862,10 +862,19 @@ const GeralTab: React.FC = () => {
     const handleSave = () => { updateUserProfile({ nickname }); alert("Perfil salvo!"); };
     
     const handleLogout = async () => {
+        // Clear user-specific local storage
+        if (userProfile.id) {
+            localStorage.removeItem(`${STORAGE_KEY_PROFILE}_${userProfile.id}`);
+            localStorage.removeItem(`${STORAGE_KEY_ASSET_LEVELS}_${userProfile.id}`);
+        }
+
         const { error } = await supabase.auth.signOut();
         if (error) {
             console.error("Error logging out:", error.message);
         }
+        
+        // Force reload to clear in-memory state and reset context
+        window.location.reload();
     };
 
     const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);

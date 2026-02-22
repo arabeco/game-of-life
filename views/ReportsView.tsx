@@ -265,7 +265,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent, seasons, userProfile, oraclePreferences } = useGame();
+    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent, seasons, userProfile, oraclePreferences, showToast } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
     const [showConfirmEndCycle, setShowConfirmEndCycle] = useState(false);

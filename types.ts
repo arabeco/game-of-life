@@ -384,6 +384,10 @@ export interface SeasonMission {
     goal_value: number;
     reward_type: 'exp' | 'item_id';
     reward_value: number | string;
+    type?: 'individual' | 'clan';
+    action_name?: string;
+    icon?: string;
+    requirements?: any;
 }
 
 export interface QuestActionTemplate {
@@ -525,12 +529,28 @@ export interface OracleMessage {
 }
 
 export interface OracleContext {
-    userProfile: UserProfile;
-    activeCycle: Cycle | null;
-    dailyCommitment: DailyCommitment | null;
-    recentActions: ScheduledTask[];
-    clan: Clan | null;
-    report?: Report | null;
+    currentTime: string;
+    timeOfDay: "madrugada" | "manhã" | "tarde" | "noite";
+    hasCycle: boolean;
+    cycleDayNumber: number | null;
+    cycleTotalDays: number | null;
+    cycleCompletionPercent: number | null;
+    hasArenas: boolean;
+    totalArenas: number;
+    arenaNames: string[];
+    staleArenas: string[];
+    completedActionsInCycle: number;
+    pendingActionsToday: number;
+    overdueActions: number;
+    activeMode: OracleMode;
+    customModeInstructions: string | null;
+    enabledCategories: OracleCategory[];
+    username: string;
+    level: number;
+    sephirotLevels: Record<string, number>;
+    clanName: string | null;
+    seasonName: string | null;
+    pendingChests: number;
 }
 
 export interface Notification {

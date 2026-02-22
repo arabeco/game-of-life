@@ -3487,6 +3487,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const deleteArena = async (arenaId: string) => {
+     const userId = getSupabaseUserId();
      const arena = getArenas().find(a => a.id === arenaId);
      const folderId = arena?.folderId;
      const normalizedArenaName = arena?.name
@@ -3517,7 +3518,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
           if (quest && clan) {
                clanQuestFound = true;
-               const userId = getSupabaseUserId();
                if (userId) {
                    // Remove from clan_mission_participants
                    const { error } = await supabase.from('clan_mission_participants')
@@ -3661,7 +3661,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      });
 
      // 2. Remote Check (if user is online)
-     const userId = getSupabaseUserId();
      if (userId && arenaActions.length > 0) {
          const actionIds = arenaActions.map(a => a.id);
          const { data: remoteHistory } = await supabase

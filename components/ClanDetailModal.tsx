@@ -378,7 +378,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const activeSeason = seasons.find(s => s.is_active);
     const todayString = new Date().toISOString().split('T')[0];
-    // const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
+    const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
     // const sanctuaryBackground = clan?.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND;
     const sanctuaryBackground = getClanBackgroundUrl(rankIndex !== -1 ? rankIndex : 0);
 

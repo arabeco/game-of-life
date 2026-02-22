@@ -16,11 +16,11 @@ import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../c
 
 const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; x: number; y: number }[] = [
   { id: 'fogueira', label: 'Fogueira', x: 50, y: 55 },
-  { id: 'forja',    label: 'Forja',    x: 20, y: 40 },
-  { id: 'torre',    label: 'Torre',    x: 80, y: 25 },
-  { id: 'horta',    label: 'Horta',    x: 75, y: 70 },
-  { id: 'altar',    label: 'Altar',    x: 25, y: 70 },
-  { id: 'trono',    label: 'Trono',    x: 50, y: 20 },
+  { id: 'torre',    label: 'Torre',    x: 20, y: 40 },
+  { id: 'altar',    label: 'Altar',    x: 80, y: 40 },
+  { id: 'forja',    label: 'Forja',    x: 75, y: 70 },
+  { id: 'horta',    label: 'Horta',    x: 25, y: 70 },
+  { id: 'trono',    label: 'Trono',    x: 50, y: 28 },
 ];
 
 const getTierInfo = (rankIndex: number) => {
@@ -28,6 +28,22 @@ const getTierInfo = (rankIndex: number) => {
     if (rankIndex >= 6) return { name: 'Fortaleza', tier: 3, description: 'Muralhas de pedra protegem o legado do clã.' };
     if (rankIndex >= 3) return { name: 'Aldeia', tier: 2, description: 'Uma comunidade próspera com estruturas permanentes.' };
     return { name: 'Acampamento', tier: 1, description: 'Um refúgio temporário para guerreiros em jornada.' };
+};
+
+const getClanBackgroundUrl = (rankIndex: number) => {
+    const baseUrl = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/';
+    // Map rank index (0-based) to background images
+    // 0, 1 (Lvl 1-2) -> land01
+    // 2, 3 (Lvl 3-4) -> land02
+    // 4, 5 (Lvl 5-6) -> land03
+    // 6, 7 (Lvl 7-8) -> land04
+    // 8, 9 (Lvl 9-10) -> land05
+    
+    if (rankIndex >= 8) return `${baseUrl}land05.jpg`;
+    if (rankIndex >= 6) return `${baseUrl}land04.jpg`;
+    if (rankIndex >= 4) return `${baseUrl}land03.jpg`;
+    if (rankIndex >= 2) return `${baseUrl}land02.jpg`;
+    return `${baseUrl}land01.jpg`;
 };
 
 
@@ -362,8 +378,9 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const activeSeason = seasons.find(s => s.is_active);
     const todayString = new Date().toISOString().split('T')[0];
-    const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
-    const sanctuaryBackground = clan?.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND;
+    // const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
+    // const sanctuaryBackground = clan?.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND;
+    const sanctuaryBackground = getClanBackgroundUrl(rankIndex !== -1 ? rankIndex : 0);
 
     const handleLeaveRequest = () => {
         if (userClanRole === 'leader' && enrichedClanMembers.length > 1) {
@@ -452,7 +469,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                             
                             {/* Header Actions */}
                             <button onClick={onClose} className="absolute top-4 right-4 z-40 p-1 rounded-full bg-black/50 hover:bg-black/80"><XIcon className="w-5 h-5"/></button>
-                            {userClanRole === 'leader' && (
+                            {/* {userClanRole === 'leader' && (
                                 <button
                                     onClick={() => canEditBackground && setIsBackgroundModalOpen(true)}
                                     disabled={!canEditBackground}
@@ -460,7 +477,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                 >
                                     {canEditBackground ? 'Editar Fundo' : 'Fundo Bloqueado'}
                                 </button>
-                            )}
+                            )} */}
                         </div>
 
                         {/* Content Section */}
@@ -724,7 +741,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             )}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
             {subModal === 'manage' && <ClanManagementModal onClose={() => setSubModal(null)} />}
-            {isBackgroundModalOpen && (
+            {/* {isBackgroundModalOpen && (
                 <BackgroundImageSelectionModal
                     currentBackground={sanctuaryBackground}
                     onSelect={handleBackgroundSelect}
@@ -733,7 +750,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     title="Fundo do Santuário"
                     showUpload={false}
                 />
-            )}
+            )} */}
             {memberToKick && <ConfirmationModal title="Expulsar Membro" message={`Tem certeza que deseja expulsar ${memberToKick.nickname} do clã?`} onConfirm={handleKickMember} onCancel={() => setMemberToKick(null)} />}
             {subModal === 'leave' && (
                 <ConfirmationModal 

@@ -16,6 +16,8 @@ interface ActionModalProps {
     action: Action | null;
     initialMode: 'view' | 'edit';
     onClose: () => void;
+    isPreview?: boolean;
+    customThemeColor?: string;
 }
 
 const StyledRangeInput: React.FC<{label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>}> = 
@@ -43,12 +45,12 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
     </button>
 );
 
-export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initialMode, onClose }) => {
+export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initialMode, onClose, isPreview, customThemeColor }) => {
     const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask } = useGame();
     
     const isNew = !action;
     
-    const [mode, setMode] = useState(isNew ? 'edit' : initialMode);
+    const [mode, setMode] = useState(isNew && !isPreview ? 'edit' : initialMode);
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
         action || { arenaId: arenaId, name: '', description: '', icon: '🏆', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 }
     );
@@ -219,22 +221,26 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
 
     if (!displayAction && mode === 'view') return null;
 
+    const modalStyle = customThemeColor ? { '--skin-accent-color': customThemeColor, '--accent-bronze': customThemeColor } as React.CSSProperties : undefined;
+
     return (
         <>
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick} style={modalStyle}>
                 <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col h-[85vh] p-0 relative overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
                     
                     {/* Header Fixed */}
                     <div className="flex-none p-4 bg-black/40 backdrop-blur-md flex justify-between items-center z-30 relative">
                         <div className="flex items-center gap-3">
-                            <button 
-                                onClick={mode === 'view' ? () => setMode('edit') : handleCancel} 
-                                className={`p-2 rounded-lg transition-all ${mode === 'edit' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'hover:bg-white/5 text-[var(--skin-accent-color)]/50 hover:text-[var(--skin-accent-color)]'}`}
-                            >
-                                {mode === 'view' ? <EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
-                            </button>
+                            {!isPreview && (
+                                <button 
+                                    onClick={mode === 'view' ? () => setMode('edit') : handleCancel} 
+                                    className={`p-2 rounded-lg transition-all ${mode === 'edit' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'hover:bg-white/5 text-[var(--skin-accent-color)]/50 hover:text-[var(--skin-accent-color)]'}`}
+                                >
+                                    {mode === 'view' ? <EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
+                                </button>
+                            )}
                             <span className="text-xs font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)]/80">
-                                {mode === 'edit' ? (isNew ? 'Nova Quest' : 'Editando') : 'Quests • Clã'}
+                                {mode === 'edit' ? (isNew ? 'Nova Quest' : 'Editando') : (isPreview ? 'Preview • Codex' : 'Quests • Clã')}
                             </span>
                         </div>
                         <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition-all group">
@@ -674,11 +680,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                         {/* Main Button */}
                         <button
                             ref={saveButtonRef}
-                            onClick={mode === 'view' ? handleStartMission : handleSave} // View mode: Start Mission, Edit mode: Save
+                            onClick={isPreview ? onClose : (mode === 'view' ? handleStartMission : handleSave)}
                             className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_20px_var(--sephirot-glow-color)] hover:shadow-[0_0_30px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[var(--skin-accent-color)]/20 group relative overflow-hidden ${mode === 'view' ? 'luxe-skin-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
                         >
                             <span className="relative z-10 group-hover:text-black transition-colors">
-                                {mode === 'view' ? '[ INICIAR MISSÃO ]' : '[ SALVAR ALTERAÇÕES ]'}
+                                {isPreview ? '[ FECHAR ]' : (mode === 'view' ? '[ INICIAR MISSÃO ]' : '[ SALVAR ALTERAÇÕES ]')}
                             </span>
                             <div className={`absolute inset-0 transition-colors ${mode === 'view' ? 'bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10' : ''}`} />
                         </button>

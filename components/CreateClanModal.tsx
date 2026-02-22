@@ -68,7 +68,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     ))}
                                 </div>
                             </div>
-                            <div>
+                            {/* <div>
                                 <label className="text-xs font-bold text-gray-400">Fundo do Santuário</label>
                                 <div className="mt-2 rounded-xl overflow-hidden border border-white/10">
                                     <div
@@ -96,7 +96,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                         );
                                     })}
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                     <div className="flex space-x-2">

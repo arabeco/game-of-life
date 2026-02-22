@@ -237,6 +237,7 @@ export const GOLD_PACKS = [
 ];
 
 export const CODEXES = [
+    { id: 'd290f1ee-6c54-4b01-90e6-d701748f0851', name: "Máquina Biológica", cost: 0, icon: '🧬' },
     { id: "codex_financas", name: "Codex: Finanças Pessoais", cost: 150, icon: '💰' },
     { id: "codex_produtividade", name: "Codex: Produtividade Extrema", cost: 150, icon: '⚡' },
     { id: "codex_saude", name: "Codex: Saúde & Fitness", cost: 150, icon: '🏋️' },

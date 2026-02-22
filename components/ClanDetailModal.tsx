@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { GlassCard } from './GlassCard';
 import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
-import { Arena, UserProfile, EnrichedClanMember, SeasonQuest } from '../types';
+import { Arena, UserProfile, EnrichedClanMember, SeasonQuest, AldeiaSlot, AldeiaPresence, AldeiaSlotId } from '../types';
 import { Sovereign } from './Avatar';
 import { ClanManagementModal } from './ClanManagementModal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -13,9 +13,23 @@ import { ClanMemberCard } from './ClanMemberCard';
 import { AddClanMemberModal } from './AddClanMemberModal';
 import { BackgroundImageSelectionModal } from './BackgroundImageSelectionModal';
 import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
-import { ArenaDetailModal } from './ArenaDetailModal';
-import { CompactSanctuaryStats } from './CompactSanctuaryStats';
-import { getSanctuaryArea } from '../utils/sanctuaryUtils';
+
+const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; x: number; y: number }[] = [
+  { id: 'fogueira', label: 'Fogueira', x: 50, y: 55 },
+  { id: 'forja',    label: 'Forja',    x: 20, y: 40 },
+  { id: 'torre',    label: 'Torre',    x: 80, y: 25 },
+  { id: 'horta',    label: 'Horta',    x: 75, y: 70 },
+  { id: 'altar',    label: 'Altar',    x: 25, y: 70 },
+  { id: 'trono',    label: 'Trono',    x: 50, y: 20 },
+];
+
+const getTierInfo = (rankIndex: number) => {
+    if (rankIndex >= 9) return { name: 'Cidadela', tier: 4, description: 'Uma fortaleza impenetrável onde o poder divino toca a terra.' };
+    if (rankIndex >= 6) return { name: 'Fortaleza', tier: 3, description: 'Muralhas de pedra protegem o legado do clã.' };
+    if (rankIndex >= 3) return { name: 'Aldeia', tier: 2, description: 'Uma comunidade próspera com estruturas permanentes.' };
+    return { name: 'Acampamento', tier: 1, description: 'Um refúgio temporário para guerreiros em jornada.' };
+};
+
 
 // --- Visual Effects ---
 const Sparkles: React.FC = () => (
@@ -96,15 +110,6 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
 };
 
 // --- Types ---
-type Zone = 'Árvore' | 'Cristal' | 'Descanso' | 'Jardim' | 'Indefinida';
-type ActionState = { name: string, icon: string, lore: string };
-type MemberPlacement = {
-    member: UserProfile | EnrichedClanMember;
-    gridPos: { row: number, col: number };
-    state: ActionState;
-};
-type SanctuaryPositionsMap = Record<string, { row: number; col: number; area: string; action: string; timestamp: string }>;
-type SanctuaryStatsMap = Record<string, { totalSeconds: number; lastUpdated: string }>;
 type ClanDetailTab = 'santuario' | 'membros' | 'missoes';
 
 // --- Sub-components ---
@@ -137,7 +142,7 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     };
 
     return (
-        <div className="relative w-full p-4 z-30">
+        <div className="relative w-full px-4 pt-4 pb-0 z-30">
             <GlassCard variant="neutral" className="p-2 space-y-1">
                 <div className="text-center">
                     <h2 className="text-lg font-black text-white luxe-title-shadow">{clan.name}</h2>
@@ -248,158 +253,101 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
     );
 };
 
-// Componente para barrinhas douradas de tempo
-const GoldenTimeBar: React.FC<{ area: string; totalTime: number; maxTime: number }> = ({ area, totalTime, maxTime }) => {
-    const percentage = Math.min(100, (totalTime / maxTime) * 100);
-    const getAreaIcon = (area: string) => {
-        switch (area) {
-            case 'meditation': return '🧘';
-            case 'devotion': return '🙏';
-            case 'rest': return '🍵';
-            case 'garden': return '🌱';
-            default: return '⏱️';
-        }
-    };
+const AldeiaStats: React.FC<{ slots: AldeiaSlot[] }> = ({ slots }) => {
+    const mainSlots = slots.filter(s => s.slotId !== 'trono');
+    // const order = mainSlots.length > 0 ? Math.floor(mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length) : 0;
     
     return (
-        <div className="flex items-center space-x-2 mb-1">
-            <span className="text-xs">{getAreaIcon(area)}</span>
-            <div className="flex-1 bg-black/30 rounded-full h-2">
-                <div 
-                    className="h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${percentage}%`, background: 'var(--metal-gold)' }}
-                />
-            </div>
-            <span className="text-xs text-gray-300">{Math.floor(totalTime / 60)}m</span>
-        </div>
-    );
-};
-
-const ClanMember: React.FC<{ placement: MemberPlacement; onClick?: () => void }> = ({ placement, onClick }) => {
-    return (
-        <div
-            className="absolute transition-all duration-500 z-20 hover:z-50"
-            style={{
-                gridRowStart: placement.gridPos.row + 1,
-                gridColumnStart: placement.gridPos.col + 1,
-            }}
-            onClick={(e) => {
-                e.stopPropagation();
-                onClick?.();
-            }}
-        >
-            <div className="relative group w-20 h-32 flex flex-col items-center justify-end cursor-pointer">
-                {/* Tooltip */}
-                <div className="absolute bottom-full mb-2 w-max max-w-xs bg-black/90 text-white text-xs rounded-lg py-1 px-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 border border-white/10 shadow-xl">
-                    <div className="font-bold accent-text mb-0.5">{placement.member.nickname}</div>
-                    <div className="italic text-gray-400">"{placement.state.lore}"</div>
-                </div>
-                
-                {/* Avatar */}
-                <div className="w-20 h-32 filter hover:brightness-125 transition-all hover:scale-105 hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                     <Sovereign sovereignConfig={placement.member.sovereign!} />
-                </div>
-                
-                {/* Nametag Pill */}
-                <div className="absolute bottom-0 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 text-[10px] flex items-center space-x-1.5 border border-white/10 shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors">
-                    <div className={`w-1.5 h-1.5 rounded-full ${placement.member.isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
-                    <span className="font-bold text-white truncate max-w-[50px]">{placement.member.nickname}</span>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const GardenActionModal: React.FC<{ onSelect: (state: ActionState) => void, onClose: () => void }> = ({ onSelect, onClose }) => {
-    const gardenActions: ActionState[] = [
-        { name: "Trabalhando", icon: "🛠️", lore: "A terra fértil recompensa o esforço." },
-        { name: "Regando", icon: "💧", lore: "Cada gota de água é um ato de fé no futuro." },
-        { name: "Passeando", icon: "🚶", lore: "Contemplando o crescimento, encontro minha paz." },
-    ];
-    return (
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-xs m-4 space-y-2" onClick={e => e.stopPropagation()}>
-                <h3 className="text-center font-bold">Ação no Jardim</h3>
-                {gardenActions.map(action => (
-                    <button key={action.name} onClick={() => onSelect(action)} className="w-full p-3 bg-black/20 rounded-xl hover:bg-white/10 text-left">
-                        {action.icon} {action.name}
-                    </button>
-                ))}
-            </GlassCard>
-        </div>
-    );
-};
-
-const MissionCard: React.FC<{ title: string; progress: number; }> = ({ title, progress }) => (
-    <GlassCard variant="neutral" className="p-3 cursor-pointer">
-        <div className="space-y-2">
-            <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm">{title}</span>
-                <div className="flex items-center space-x-2">
-                    <span className="text-xs font-mono">{progress}%</span>
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-500 flex items-center justify-center">
-                        {progress === 100 && <CheckIcon className="w-3 h-3 text-green-400" />}
+        <GlassCard variant="neutral" className="p-3 space-y-2">
+            {/* Order Bar moved to Sanctuary Tab */}
+            <div className="text-center text-xs text-gray-400 mb-2">Saúde Individual dos Slots</div>
+            <div className="grid grid-cols-5 gap-1 pt-1">
+                {mainSlots.map(slot => (
+                    <div key={slot.slotId} className="flex flex-col items-center space-y-1">
+                        <div className="text-[8px] uppercase text-gray-500">{slot.slotId.substring(0, 3)}</div>
+                        <div className="w-full bg-black/30 rounded-full h-1">
+                            <div 
+                                className={`h-full rounded-full ${slot.health >= 70 ? 'bg-green-500' : 'bg-red-500'}`} 
+                                style={{ width: `${slot.health}%` }}
+                            />
+                        </div>
                     </div>
-                </div>
+                ))}
             </div>
-            <div className="w-full bg-black/30 rounded-full h-1"><div className="bg-[var(--skin-accent-color)] h-1 rounded-full" style={{width: `${progress}%`}}></div></div>
-        </div>
-    </GlassCard>
-);
-
+        </GlassCard>
+    );
+};
 
 // --- Main Modal ---
 
-
-const getZoneAndState = (row: number, col: number): { zone: Zone, state: ActionState | null } => {
-    if (row === 5) return { zone: 'Jardim', state: null };
-    if (col <= 1) return { zone: 'Árvore', state: { name: 'Meditando', icon: '🧘', lore: 'O conhecimento flui através das raízes.' } };
-    if (col <= 3) return { zone: 'Cristal', state: { name: 'Rezando', icon: '🙏', lore: 'A energia do universo se concentra aqui.' } };
-    if (col <= 5) return { zone: 'Descanso', state: { name: 'Descansando', icon: '🍵', lore: 'A sabedoria requer pausa. Estou recuperando mana.' } };
-    return { zone: 'Indefinida', state: { name: 'Ocioso', icon: '...', lore: 'Observando o santuário.' } };
-};
-
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, applySanctuaryAreaDecay, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate } = useGame();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
-    const [userPlacement, setUserPlacement] = useState<MemberPlacement | null>(null);
-    const [otherPlacements, setOtherPlacements] = useState<MemberPlacement[]>([]);
-    const [occupiedCells, setOccupiedCells] = useState<Set<string>>(new Set());
-    const [userPositions, setUserPositions] = useState<Map<string, {row: number, col: number, lastUpdated: string}>>(new Map());
-    const userPositionsRef = useRef(userPositions);
     const enrichedClanMembersRef = useRef(enrichedClanMembers);
     
-    // Verificar se o usuário tem posição válida (não expirou há 6 horas)
-    const hasValidPosition = useCallback((userId: string): boolean => {
-        const position = userPositions.get(userId);
-        if (!position) return false;
-        
-        const sixHoursAgo = new Date();
-        sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
-        const lastUpdated = new Date(position.lastUpdated);
-        
-        return lastUpdated > sixHoursAgo;
-    }, [userPositions]);
+    // Aldeia State
+    const [aldeiaSlots, setAldeiaSlots] = useState<AldeiaSlot[]>([]);
+    const [aldeiaPresence, setAldeiaPresence] = useState<AldeiaPresence[]>([]);
 
-    // Atualizar refs quando mudam
     useEffect(() => {
-        userPositionsRef.current = userPositions;
-    }, [userPositions]);
-    
-    useEffect(() => {
-        enrichedClanMembersRef.current = enrichedClanMembers;
-    }, [enrichedClanMembers]);
+        if (!clan?.id) return;
+        
+        // Perform daily update logic on mount
+        performAldeiaDailyUpdate(clan.id);
 
-    // Force refresh members when opening modal
-    useEffect(() => {
-        if (clan?.id) {
-            loadClanAndMembers(clan.id, true);
+        const loadAldeiaData = async () => {
+            const slots = await getAldeiaSlots(clan.id);
+            setAldeiaSlots(slots);
+            const presence = await getAldeiaPresence(clan.id);
+            setAldeiaPresence(presence);
+        };
+
+        loadAldeiaData();
+        const interval = setInterval(loadAldeiaData, 5000);
+        return () => clearInterval(interval);
+    }, [clan?.id, performAldeiaDailyUpdate, getAldeiaSlots, getAldeiaPresence]);
+
+    // Calculate Rank and Tier
+    const currentRank = clanRanks.find(r => r.id === clan?.rankId);
+    const rankIndex = clanRanks.findIndex(r => r.id === clan?.rankId);
+    const tierInfo = getTierInfo(rankIndex !== -1 ? rankIndex : 0);
+
+    // Calculate Aldeia Order (Average Health of 5 main slots)
+    const aldeiaOrder = useMemo(() => {
+        if (aldeiaSlots.length === 0) return 0;
+        const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
+        if (mainSlots.length === 0) return 0;
+        const totalHealth = mainSlots.reduce((acc, s) => acc + s.health, 0);
+        return Math.floor(totalHealth / mainSlots.length);
+    }, [aldeiaSlots]);
+
+    // Handle Slot Click
+    const handleSlotClick = async (slotId: AldeiaSlotId) => {
+        if (!clan?.id) return;
+        
+        // If it's the Throne, check if user is leader and Order is 100%
+        if (slotId === 'trono') {
+            const isLeader = enrichedClanMembers.find(m => m.id === userProfile.id)?.role === 'leader';
+            
+            if (!isLeader) {
+                showToast("Apenas o líder pode sentar no trono.");
+                return;
+            }
+            if (aldeiaOrder < 90) {
+                showToast("O trono só está disponível quando a Ordem da Aldeia é maior que 90%.");
+                return;
+            }
         }
-    }, [clan?.id, loadClanAndMembers]);
-    
-    const [sanctuaryStats, setSanctuaryStats] = useState<{ meditation: number; devotion: number; rest: number; garden: number }>({ meditation: 14400, devotion: 14400, rest: 14400, garden: 14400 }); // Começar em 50% (4 horas = 14400 segundos)
-    const [showGardenModal, setShowGardenModal] = useState(false);
-    const [targetGardenPos, setTargetGardenPos] = useState<{row: number, col: number} | null>(null);
+
+        await enterAldeiaSlot(clan.id, slotId);
+        // Refresh data immediately
+        const presence = await getAldeiaPresence(clan.id);
+        setAldeiaPresence(presence);
+        const slots = await getAldeiaSlots(clan.id);
+        setAldeiaSlots(slots);
+        showToast(`Você entrou em: ${ALDEIA_SLOTS.find(s => s.id === slotId)?.label}`);
+    };
+
     const [subModal, setSubModal] = useState<'manage' | 'leave' | 'transfer' | null>(null);
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
     const [memberToKick, setMemberToKick] = useState<EnrichedClanMember | null>(null);
@@ -416,234 +364,6 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const todayString = new Date().toISOString().split('T')[0];
     const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
     const sanctuaryBackground = clan?.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND;
-
-    // Remover posições expiradas
-    const removeExpiredPositions = useCallback(() => {
-        const sixHoursAgo = new Date();
-        sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
-        
-        setUserPositions(prev => {
-            const newPositions = new Map(prev);
-            for (const [userId, position] of prev.entries()) {
-                const lastUpdated = new Date(position.lastUpdated);
-                if (lastUpdated <= sixHoursAgo) {
-                    newPositions.delete(userId);
-                }
-            }
-            return newPositions;
-        });
-    }, []);
-
-    // Carregar posições do Supabase ao montar o componente
-    useEffect(() => {
-        const loadPositions = async () => {
-            if (!clan?.id) return;
-            
-            const positions = await getSanctuaryPositionsForClan(clan.id) as SanctuaryPositionsMap;
-            const posMap = new Map<string, {row: number, col: number, lastUpdated: string}>();
-            
-            Object.entries(positions).forEach(([userId, pos]) => {
-                posMap.set(userId, {
-                    row: pos.row,
-                    col: pos.col,
-                    lastUpdated: pos.timestamp
-                });
-            });
-            
-            setUserPositions(posMap);
-        };
-        
-        loadPositions();
-    }, [clan?.id, getSanctuaryPositionsForClan]);
-
-    // Atualizar estatísticas diariamente (começando em 50%) - com debounce para evitar atualizações frequentes
-    const sanctuaryUpdateTimeoutRef = useRef<number | null>(null);
-    
-    const checkDailyUpdate = useCallback(async () => {
-        if (!clan?.id) return;
-        removeExpiredPositions();
-
-        // Buscar estatísticas atuais do Supabase
-        const stats = await getSanctuaryAreaStats(clan.id) as SanctuaryStatsMap;
-        
-        // Calcular ocupação atual
-        const occupancy = { meditation: 0, devotion: 0, rest: 0, garden: 0 };
-        const currentPositions = userPositionsRef.current;
-        
-        // Verificar posições de todos os membros (incluindo o usuário atual se estiver na lista)
-        enrichedClanMembersRef.current.forEach(member => {
-            const memberPosition = currentPositions.get(member.id);
-            if (memberPosition && hasValidPosition(member.id)) {
-                const area = getSanctuaryArea(memberPosition.row, memberPosition.col);
-                if (occupancy[area] !== undefined) {
-                    occupancy[area] += 1;
-                }
-            }
-        });
-
-        // Aplicar atualização baseada em tempo (sem reset diário forçado)
-        const totalMembers = enrichedClanMembersRef.current.length || 1;
-        await applySanctuaryAreaDecay(clan.id, occupancy, totalMembers);
-        
-        // Atualizar estado local
-        const updatedStats = await getSanctuaryAreaStats(clan.id) as SanctuaryStatsMap;
-        if (updatedStats) {
-            setSanctuaryStats({
-                meditation: updatedStats.meditation?.totalSeconds || 14400,
-                devotion: updatedStats.devotion?.totalSeconds || 14400,
-                rest: updatedStats.rest?.totalSeconds || 14400,
-                garden: updatedStats.garden?.totalSeconds || 14400
-            });
-        }
-    }, [clan?.id, getSanctuaryAreaStats, applySanctuaryAreaDecay, removeExpiredPositions, userProfile.id, hasValidPosition]);
-
-    useEffect(() => {
-        // Clear existing timeout to prevent multiple calls
-        if (sanctuaryUpdateTimeoutRef.current !== null) {
-            window.clearTimeout(sanctuaryUpdateTimeoutRef.current);
-        }
-
-        // Debounce the update to prevent frequent re-renders
-        sanctuaryUpdateTimeoutRef.current = window.setTimeout(() => {
-            checkDailyUpdate();
-        }, 1000); // 1 segundo de debounce
-
-        // Executar imediatamente e depois verificar a cada hora (para garantir que não perca o reset diário)
-        const interval = setInterval(() => {
-            if (sanctuaryUpdateTimeoutRef.current !== null) {
-                window.clearTimeout(sanctuaryUpdateTimeoutRef.current);
-            }
-            sanctuaryUpdateTimeoutRef.current = window.setTimeout(checkDailyUpdate, 1000);
-        }, 3600000); // Verificar a cada hora
-
-        return () => {
-            if (sanctuaryUpdateTimeoutRef.current !== null) {
-                window.clearTimeout(sanctuaryUpdateTimeoutRef.current);
-            }
-            clearInterval(interval);
-        };
-    }, [checkDailyUpdate]);
-
-    // Posicionar membros com debounce para evitar atualizações frequentes
-    const positioningTimeoutRef = useRef<number | null>(null);
-    
-    const updatePositions = useCallback(() => {
-        const allOccupied = new Set<string>();
-        const newPlacements: MemberPlacement[] = [];
-        
-        const userPosition = userPositions.get(userProfile.id);
-        if (userPosition && hasValidPosition(userProfile.id)) {
-            const { state } = getZoneAndState(userPosition.row, userPosition.col);
-            const finalState = state || { name: "Trabalhando", icon: "🛠️", lore: "A terra fértil recompensa o esforço." };
-            setUserPlacement({ member: userProfile, gridPos: userPosition, state: finalState });
-            allOccupied.add(`${userPosition.row},${userPosition.col}`);
-        } else {
-            setUserPlacement(null);
-        }
-        
-        const otherMembers = enrichedClanMembersRef.current.filter(m => m.id !== userProfile.id);
-        otherMembers.forEach(member => {
-            const memberPosition = userPositions.get(member.id);
-            if (memberPosition && hasValidPosition(member.id)) {
-                const posKey = `${memberPosition.row},${memberPosition.col}`;
-                if (!allOccupied.has(posKey)) {
-                    const { state } = getZoneAndState(memberPosition.row, memberPosition.col);
-                    const finalState = state || { name: "Trabalhando", icon: "🛠️", lore: "A terra fértil recompensa o esforço." };
-                    newPlacements.push({ member, gridPos: memberPosition, state: finalState });
-                    allOccupied.add(posKey);
-                }
-            }
-        });
-        
-        setOtherPlacements(newPlacements);
-        setOccupiedCells(allOccupied);
-    }, [userPositions, userProfile, hasValidPosition]);
-
-    useEffect(() => {
-
-        // Clear existing timeout to prevent multiple calls
-        if (positioningTimeoutRef.current !== null) {
-            window.clearTimeout(positioningTimeoutRef.current);
-        }
-
-        // Debounce the positioning update
-        positioningTimeoutRef.current = window.setTimeout(updatePositions, 500);
-
-        return () => {
-            if (positioningTimeoutRef.current !== null) {
-                window.clearTimeout(positioningTimeoutRef.current);
-            }
-        };
-    }, [updatePositions]);
-
-    const updateUserPosition = (gridPos: {row: number, col: number}, state: ActionState) => {
-        setOccupiedCells(prev => {
-            const newSet = new Set(prev);
-            if (userPlacement) {
-                newSet.delete(`${userPlacement.gridPos.row},${userPlacement.gridPos.col}`);
-            }
-            newSet.add(`${gridPos.row},${gridPos.col}`);
-            return newSet;
-        });
-        
-        // Save position with timestamp
-        const newPosition = { row: gridPos.row, col: gridPos.col, lastUpdated: new Date().toISOString() };
-        setUserPositions(prev => new Map(prev).set(userProfile.id, newPosition));
-        
-        if (clan) {
-            const area = getSanctuaryArea(gridPos.row, gridPos.col);
-            saveSanctuaryPosition({
-                clanId: clan.id,
-                userId: userProfile.id,
-                row: gridPos.row,
-                col: gridPos.col,
-                area,
-                action: state.name,
-                timestamp: newPosition.lastUpdated
-            });
-        }
-        
-        setUserPlacement({ member: userProfile, gridPos, state });
-    };
-
-    const handleCellClick = (row: number, col: number) => {
-        const posKey = `${row},${col}`;
-        if (occupiedCells.has(posKey)) {
-            const cell = document.getElementById(`cell-${row}-${col}`);
-            if(cell) {
-                cell.classList.add('animate-pulse', 'bg-red-500/50');
-                setTimeout(() => cell.classList.remove('animate-pulse', 'bg-red-500/50'), 500);
-            }
-            return;
-        }
-
-        const { zone, state } = getZoneAndState(row, col);
-
-        if (zone === 'Jardim') {
-            setTargetGardenPos({row, col});
-            setShowGardenModal(true);
-        } else if (state) {
-            updateUserPosition({row, col}, state);
-        }
-    };
-    
-    const handleGardenActionSelect = (state: ActionState) => {
-        if(targetGardenPos) {
-            updateUserPosition(targetGardenPos, state);
-        }
-        setShowGardenModal(false);
-        setTargetGardenPos(null);
-    };
-
-    const areaStats = sanctuaryStats;
-
-    const allMembers = useMemo(() => {
-        const members = [...otherPlacements];
-        if (userPlacement) {
-            members.unshift(userPlacement);
-        }
-        return members;
-    }, [userPlacement, otherPlacements]);
 
     const handleLeaveRequest = () => {
         if (userClanRole === 'leader' && enrichedClanMembers.length > 1) {
@@ -746,26 +466,133 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                         {/* Content Section */}
                         <div className="flex-1 relative min-h-0">
                             {activeTab === 'santuario' && (
-                                <>
+                                <div className="absolute inset-0 overflow-hidden">
                                     <Sparkles />
-                                    <div className="absolute inset-0 p-4">
-                                        <div className="grid grid-cols-6 grid-rows-6 h-full gap-1">
-                                            {[...Array(36)].map((_, i) => {
-                                                const row = Math.floor(i / 6);
-                                                const col = i % 6;
-                                                return (
-                                                    <div
-                                                        key={i}
-                                                        id={`cell-${row}-${col}`}
-                                                        className="border border-white/5 cursor-pointer hover:bg-white/10 transition-colors rounded-lg bg-black/10 backdrop-blur-[2px]"
-                                                        onClick={() => handleCellClick(row, col)}
-                                                    />
-                                                );
-                                            })}
-                                            {allMembers.map(placement => <ClanMember key={placement.member.id} placement={placement} onClick={() => setSelectedMember(placement.member)} />)}
+                                    {/* Background Placeholder - To be replaced by Tier Image */}
+                                    {/* <div className="absolute inset-0 bg-gradient-to-b from-slate-900 to-slate-800" /> */}
+                                    <div className={`absolute inset-0 transition-colors duration-1000 ${tierInfo.tier === 1 ? 'bg-amber-900/10' : tierInfo.tier === 2 ? 'bg-emerald-900/10' : tierInfo.tier === 3 ? 'bg-slate-900/20' : 'bg-purple-900/10'}`} />
+                                    
+                                    {/* Tier Label */}
+                                    {/* <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-center z-10">
+                                        <div className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Nível da Aldeia</div>
+                                        <div className="text-sm font-black text-white luxe-title-shadow">{tierInfo.name}</div>
+                                    </div> */}
+
+                                    {/* Slots */}
+                                    {ALDEIA_SLOTS.map(slot => {
+                                        const slotData = aldeiaSlots.find(s => s.slotId === slot.id);
+                                        const health = slotData?.health ?? 100;
+                                        const occupants = aldeiaPresence.filter(p => p.slotId === slot.id);
+                                        
+                                        // Visual health (brightness/opacity)
+                                        // 80-100: 1, 50-79: 0.8, 20-49: 0.6, 0-19: 0.4, 0: 0.2
+                                        let opacity = 0.2;
+                                        if (health >= 80) opacity = 1;
+                                        else if (health >= 50) opacity = 0.8;
+                                        else if (health >= 20) opacity = 0.6;
+                                        else if (health > 0) opacity = 0.4;
+
+                                        // Hide Throne if Order is not 100
+                                        // if (slot.id === 'trono' && aldeiaOrder < 100) return null;
+                                        const isThroneDisabled = slot.id === 'trono' && aldeiaOrder < 90;
+
+                                        return (
+                                            <div
+                                                key={slot.id}
+                                                className={`absolute w-24 h-24 -ml-12 -mt-12 flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-110 z-10 ${isThroneDisabled ? 'opacity-50 grayscale cursor-not-allowed hover:scale-100' : ''}`}
+                                                style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+                                                onClick={() => !isThroneDisabled && handleSlotClick(slot.id)}
+                                            >
+                                                {/* Occupants Avatars - MOVED TO TOP */}
+                                                <div className="relative h-16 w-full flex justify-center items-end -mb-2 z-20">
+                                                    {occupants.map((presence, idx) => {
+                                                        const member = enrichedClanMembers.find(m => m.id === presence.userId);
+                                                        if (!member) return null;
+                                                        
+                                                        // Force "Boneco" Config
+                                                        const forceBodyConfig = member.sovereign ? {
+                                                            ...member.sovereign,
+                                                            glyph: 'none',
+                                                            artifact: 'none',
+                                                            glyphPlate: 'none',
+                                                            artifactPlate: 'none',
+                                                            aura: 'none',
+                                                            sovereignPlate: 'none',
+                                                            orb: 'none',
+                                                            primaryDisplay: 'sovereign' as const
+                                                        } : undefined;
+
+                                                        // Stagger multiple occupants
+                                                        const offset = (idx - (occupants.length - 1) / 2) * 20;
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={presence.userId}
+                                                                className="absolute bottom-0 transition-all duration-500 hover:z-50 hover:scale-110 flex flex-col items-center"
+                                                                style={{ transform: `translateX(${offset}px)` }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedMember(member);
+                                                                }}
+                                                            >
+                                                                {/* Circular Base (Subtle) */}
+                                                                <div className="absolute bottom-1 w-10 h-3 bg-white/10 rounded-[100%] blur-[2px] shadow-[0_0_10px_rgba(255,255,255,0.1)] pointer-events-none" />
+
+                                                                <div className="w-12 h-16 filter drop-shadow-lg pointer-events-none relative z-10">
+                                                                    {/* FORCE SOVEREIGN DISPLAY ALWAYS */}
+                                                                    {forceBodyConfig ? (
+                                                                        <Sovereign sovereignConfig={forceBodyConfig} />
+                                                                    ) : (
+                                                                        <div className="w-full h-full bg-gray-500 rounded-full flex items-center justify-center text-xs">
+                                                                            {member.nickname.substring(0, 2)}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                {/* Nametag */}
+                                                                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/70 px-1.5 py-0.5 rounded text-[8px] whitespace-nowrap text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                                                                    {member.nickname}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* Slot Label (Transparent) */}
+                                                <div className="mb-0.5 z-10 flex flex-col items-center">
+                                                    <span className="text-xs font-bold uppercase tracking-widest text-white shadow-black drop-shadow-md">
+                                                        {slot.label}
+                                                    </span>
+                                                    
+                                                    {/* Health Bar - Fixed below text, discrete */}
+                                                    {slot.id !== 'trono' && (
+                                                        <div className="w-12 h-1 bg-black/50 rounded-full overflow-hidden mt-0.5 backdrop-blur-[1px]">
+                                                            <div 
+                                                                className={`h-full transition-all duration-500 ${health < 30 ? 'bg-red-500' : 'bg-[var(--metal-gold)]'}`}
+                                                                style={{ width: `${health}%`, opacity: 0.8 }}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {/* Aldeia Order Bar - Moved to Bottom */}
+                                    <div className="absolute bottom-4 left-4 right-4 z-20">
+                                        <div className="p-1">
+                                            <div className="flex items-center justify-between mb-1 px-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-white shadow-black drop-shadow-md">Ordem da Aldeia</span>
+                                                <span className={`text-xs font-mono font-bold shadow-black drop-shadow-md ${aldeiaOrder >= 70 ? 'text-[var(--metal-gold)]' : aldeiaOrder >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>{aldeiaOrder}%</span>
+                                            </div>
+                                            <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden backdrop-blur-sm">
+                                                <div 
+                                                    className={`h-full rounded-full transition-all duration-500 ${aldeiaOrder >= 70 ? 'bg-[var(--metal-gold)]' : aldeiaOrder >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                                                    style={{ width: `${aldeiaOrder}%` }}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                </>
+                                </div>
                             )}
                             
                             {activeTab === 'membros' && (
@@ -830,9 +657,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                             {activeTab === 'missoes' && (
                                 <div className="absolute inset-0 px-4 overflow-y-auto hide-scrollbar pt-4">
                                     <div className="space-y-3">
-                                        {clan && (
-                    <CompactSanctuaryStats clanId={clan.id} />
-                                        )}
+                                        {/* <AldeiaStats slots={aldeiaSlots} /> */}
                                         <div className="text-center text-xs font-bold uppercase tracking-wider text-gray-300">
                                             Quests do Clã
                                         </div>
@@ -897,7 +722,6 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     canClaim={!userProfile.completedSeasonMissions?.includes(selectedQuest.id) && getQuestProgress(selectedQuest) >= 100}
                 />
             )}
-            {showGardenModal && <GardenActionModal onSelect={handleGardenActionSelect} onClose={() => setShowGardenModal(false)} />}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
             {subModal === 'manage' && <ClanManagementModal onClose={() => setSubModal(null)} />}
             {isBackgroundModalOpen && (

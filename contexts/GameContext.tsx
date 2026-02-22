@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef } from '../constants/items';
 import { supabase } from '../supabaseClient';
@@ -314,6 +314,13 @@ export interface GameContextType {
   markNotificationRead: (id: string) => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
   fetchNotifications: () => Promise<void>;
+
+  // Aldeia
+  getAldeiaSlots: (clanId: string) => Promise<AldeiaSlot[]>;
+  updateAldeiaSlot: (clanId: string, slotId: AldeiaSlotId, updates: Partial<AldeiaSlot>) => Promise<void>;
+  getAldeiaPresence: (clanId: string) => Promise<AldeiaPresence[]>;
+  enterAldeiaSlot: (clanId: string, slotId: AldeiaSlotId) => Promise<void>;
+  performAldeiaDailyUpdate: (clanId: string) => Promise<void>;
 
   showToast: (message: string) => void;
   toast: { message: string; visible: boolean };
@@ -1529,7 +1536,120 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       )
       .subscribe();
 
-    return () => {
+
+
+
+  // --- Aldeia System Implementation ---
+  const getAldeiaSlots = async (clanId: string): Promise<AldeiaSlot[]> => {
+      const { data, error } = await supabase.from('clan_aldeia_slots').select('*').eq('clan_id', clanId);
+      if (error) { console.error("Error fetching aldeia slots:", error.message); return []; }
+      return mapToCamelCase(data) as AldeiaSlot[];
+  };
+
+  const updateAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId, updates: Partial<AldeiaSlot>) => {
+      const snakeUpdates = mapToSnakeCase(updates);
+      const { error } = await supabase.from('clan_aldeia_slots').update(snakeUpdates).eq('clan_id', clanId).eq('slot_id', slotId);
+      if (error) console.error("Error updating aldeia slot:", error.message);
+  };
+
+  const getAldeiaPresence = async (clanId: string): Promise<AldeiaPresence[]> => {
+      const { data, error } = await supabase.from('clan_aldeia_presence').select('*').eq('clan_id', clanId);
+      if (error) { console.error("Error fetching aldeia presence:", error.message); return []; }
+      return mapToCamelCase(data) as AldeiaPresence[];
+  };
+
+  const enterAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      // 1. Remove old presence
+      await supabase.from('clan_aldeia_presence').delete().eq('clan_id', clanId).eq('user_id', userId);
+
+      // 2. Insert new presence
+      const { error: insertError } = await supabase.from('clan_aldeia_presence').insert({
+          clan_id: clanId,
+          user_id: userId,
+          slot_id: slotId
+      });
+      if (insertError) console.error("Error entering aldeia slot:", insertError.message);
+
+      // 3. Mark slot as visited today
+      const { error: updateError } = await supabase.from('clan_aldeia_slots').update({
+          last_visited_at: new Date().toISOString()
+      }).eq('clan_id', clanId).eq('slot_id', slotId);
+       if (updateError) console.error("Error updating slot visited time:", updateError.message);
+  };
+
+  const performAldeiaDailyUpdate = async (clanId: string) => {
+      let slots = await getAldeiaSlots(clanId);
+      const today = new Date().toISOString().split('T')[0];
+
+      // Initialize slots if missing
+      const REQUIRED_SLOTS: AldeiaSlotId[] = ['fogueira', 'forja', 'torre', 'horta', 'altar', 'trono'];
+      const missingSlots = REQUIRED_SLOTS.filter(id => !slots.some(s => s.slotId === id));
+      
+      if (missingSlots.length > 0) {
+          const newSlots = missingSlots.map(id => ({
+              clan_id: clanId,
+              slot_id: id,
+              health: 100,
+              streak_good: 0,
+              streak_bad: 0,
+              last_visited_at: null,
+              last_decay_calculation: null
+          }));
+          
+          const { error } = await supabase.from('clan_aldeia_slots').insert(newSlots);
+          if (error) console.error("Error initializing aldeia slots:", error.message);
+          else {
+              slots = await getAldeiaSlots(clanId);
+          }
+      }
+
+      for (const slot of slots) {
+          // If already updated today, skip
+          if (slot.lastDecayCalculation === today) continue;
+
+          // Calculate days passed since last visited
+          const lastVisit = slot.lastVisitedAt ? new Date(slot.lastVisitedAt) : null;
+          let daysSinceVisit = 100; // Default large number if never visited
+          if (lastVisit) {
+              const now = new Date();
+              const diffTime = Math.abs(now.getTime() - lastVisit.getTime());
+              daysSinceVisit = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+          }
+
+          // Apply logic
+          let newHealth = slot.health;
+          let newStreakGood = slot.streakGood;
+          let newStreakBad = slot.streakBad;
+
+          // If visited today (0 days ago), it's a gain.
+          if (daysSinceVisit === 0) {
+               newStreakGood += 1;
+               newStreakBad = 0;
+               const gain = Math.min(2 + (newStreakGood * 0.5), 10);
+               newHealth = Math.min(newHealth + gain, 100);
+          } else {
+               // Missed days - Decay
+               newStreakBad += 1; // Increment bad streak
+               newStreakGood = 0;
+               
+               const loss = Math.min(2 + (newStreakBad * 0.8), 15);
+               newHealth = Math.max(newHealth - loss, 0);
+          }
+
+          // Update DB
+          await updateAldeiaSlot(clanId, slot.slotId, {
+              health: newHealth,
+              streakGood: newStreakGood,
+              streakBad: newStreakBad,
+              lastDecayCalculation: today
+          });
+      }
+  };
+
+  return () => {
       supabase.removeChannel(channel);
     };
   }, [clan?.id, seasonQuests, fetchClanQuestParticipants]);
@@ -3477,10 +3597,55 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       }
 
      if (isQuestArena) {
+        // If it's a season/clan quest arena, deleting it implies leaving/abandoning all quests within it
+        if (userId && arenaActions.length > 0) {
+            const activeSeason = SEASONS[ACTIVE_SEASON_ID];
+            
+            for (const action of arenaActions) {
+                // Check for clan mission participation
+                if (clan && normalizedArenaName.includes('quests - cla')) {
+                    // Try to match action to quest
+                    let quest = activeSeason?.quests?.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
+                    
+                    // Fallback for hardcoded quests
+                    if (!quest && activeSeason && (action.name.includes('Socializar') || action.name.includes('socializar'))) {
+                        quest = activeSeason.quests.find(q => q.id === 'quest-clan-unity');
+                    }
+
+                    if (quest) {
+                        console.log("Leaving clan mission via Arena Delete:", quest.title);
+                        // Optimistic update
+                        setUserMissionParticipations(prev => {
+                            const newState = { ...prev };
+                            delete newState[quest.id];
+                            return newState;
+                        });
+                        setClanQuestParticipants(prev => ({
+                            ...prev,
+                            [quest.id]: Math.max(0, (prev[quest.id] || 1) - 1)
+                        }));
+
+                        // DB Update
+                        supabase.from('clan_mission_participants')
+                            .delete()
+                            .eq('clan_id', clan.id)
+                            .eq('mission_id', quest.id)
+                            .eq('user_id', userId)
+                            .then(({ error }) => {
+                                if (error) console.error("Error deleting clan mission participation:", error.message);
+                            });
+                    }
+                }
+            }
+        }
+
         if (arenaActions.length === 0) {
             updateArena(arenaId, { isArchived: true });
+        } else {
+             // If not empty, we proceed to delete the arena and its actions below, 
+             // effectively "quitting" the quests.
         }
-        return;
+        // return; // REMOVED RETURN to allow deletion logic below to proceed
      }
 
      // CHECK FOR HISTORY: If any action has completed tasks, we must ARCHIVE instead of DELETE
@@ -3551,6 +3716,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
 
     if (userId) {
+        // Delete actions first to avoid orphans if no CASCADE is set
+        await supabase.from('actions').delete().eq('arena_id', arenaId);
+        
         supabase.from('arenas').delete().eq('id', arenaId).then(({error}) => { 
             if (error) console.error("Supabase delete arena error:", error.message);
         });
@@ -4488,8 +4656,96 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       }
   };
 
+  // --- Aldeia System Implementation ---
+  const getAldeiaSlots = async (clanId: string): Promise<AldeiaSlot[]> => {
+      const { data, error } = await supabase.from('clan_aldeia_slots').select('*').eq('clan_id', clanId);
+      if (error) { console.error("Error fetching aldeia slots:", error.message); return []; }
+      return mapToCamelCase(data) as AldeiaSlot[];
+  };
+
+  const updateAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId, updates: Partial<AldeiaSlot>) => {
+      const snakeUpdates = mapToSnakeCase(updates);
+      const { error } = await supabase.from('clan_aldeia_slots').update(snakeUpdates).eq('clan_id', clanId).eq('slot_id', slotId);
+      if (error) console.error("Error updating aldeia slot:", error.message);
+  };
+
+  const getAldeiaPresence = async (clanId: string): Promise<AldeiaPresence[]> => {
+      const { data, error } = await supabase.from('clan_aldeia_presence').select('*').eq('clan_id', clanId);
+      if (error) { console.error("Error fetching aldeia presence:", error.message); return []; }
+      return mapToCamelCase(data) as AldeiaPresence[];
+  };
+
+  const enterAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      // 1. Remove old presence
+      await supabase.from('clan_aldeia_presence').delete().eq('clan_id', clanId).eq('user_id', userId);
+
+      // 2. Insert new presence
+      const { error: insertError } = await supabase.from('clan_aldeia_presence').insert({
+          clan_id: clanId,
+          user_id: userId,
+          slot_id: slotId
+      });
+      if (insertError) console.error("Error entering aldeia slot:", insertError.message);
+
+      // 3. Mark slot as visited today
+      const { error: updateError } = await supabase.from('clan_aldeia_slots').update({
+          last_visited_at: new Date().toISOString()
+      }).eq('clan_id', clanId).eq('slot_id', slotId);
+       if (updateError) console.error("Error updating slot visited time:", updateError.message);
+  };
+
+  const performAldeiaDailyUpdate = async (clanId: string) => {
+      const slots = await getAldeiaSlots(clanId);
+      const today = new Date().toISOString().split('T')[0];
+
+      for (const slot of slots) {
+          // If already updated today, skip
+          if (slot.lastDecayCalculation === today) continue;
+
+          // Calculate days passed since last visited
+          const lastVisit = slot.lastVisitedAt ? new Date(slot.lastVisitedAt) : null;
+          let daysSinceVisit = 100; // Default large number if never visited
+          if (lastVisit) {
+              const now = new Date();
+              const diffTime = Math.abs(now.getTime() - lastVisit.getTime());
+              daysSinceVisit = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+          }
+
+          // Apply logic
+          let newHealth = slot.health;
+          let newStreakGood = slot.streakGood;
+          let newStreakBad = slot.streakBad;
+
+          // If visited today (0 days ago), it's a gain.
+          if (daysSinceVisit === 0) {
+               newStreakGood += 1;
+               newStreakBad = 0;
+               const gain = Math.min(2 + (newStreakGood * 0.5), 10);
+               newHealth = Math.min(newHealth + gain, 100);
+          } else {
+               // Missed days - Decay
+               newStreakBad += 1; // Increment bad streak
+               newStreakGood = 0;
+               
+               const loss = Math.min(2 + (newStreakBad * 0.8), 15);
+               newHealth = Math.max(newHealth - loss, 0);
+          }
+
+          // Update DB
+          await updateAldeiaSlot(clanId, slot.slotId, {
+              health: newHealth,
+              streakGood: newStreakGood,
+              streakBad: newStreakBad,
+              lastDecayCalculation: today
+          });
+      }
+  };
+
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate }}>
       {children}
     </GameContext.Provider>
   );

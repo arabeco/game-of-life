@@ -541,3 +541,27 @@ export interface Notification {
     read: boolean;
     createdAt: string;
 }
+
+// --- Aldeia System ---
+export type AldeiaSlotId = 'fogueira' | 'forja' | 'torre' | 'horta' | 'altar' | 'trono';
+
+export interface AldeiaSlot {
+    id: string;
+    clanId: string;
+    slotId: AldeiaSlotId;
+    health: number;
+    streakGood: number;
+    streakBad: number;
+    lastVisitedAt: string | null;
+    lastDecayCalculation: string | null;
+    updatedAt: string;
+}
+
+export interface AldeiaPresence {
+    id: string;
+    clanId: string;
+    userId: string;
+    slotId: AldeiaSlotId;
+    startedAt: string;
+    hoursCounted: number;
+}

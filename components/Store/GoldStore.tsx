@@ -58,7 +58,7 @@ export const GoldStore: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col items-center gap-2 min-w-[150px]">
-                        {userProfile.isPremium ? (
+                        {(userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm') ? (
                             <button disabled className="w-full py-3 bg-green-500/20 border border-green-500/50 text-green-400 font-black uppercase tracking-wider rounded-xl cursor-default">
                                 ATIVO
                             </button>

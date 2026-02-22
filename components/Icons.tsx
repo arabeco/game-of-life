@@ -115,3 +115,4 @@ export const InfoIcon: React.FC<{ className?: string }> = ({ className }) => (<I
 // --- Added for Inventory ---
 export const SovereignIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></IconWrapper>);
 export const GlyphIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></IconWrapper>);
+export const MessageIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></IconWrapper>);

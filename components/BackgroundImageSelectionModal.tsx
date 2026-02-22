@@ -29,7 +29,7 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
     }
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">{modalTitle}</h2>
                 <div className="grid grid-cols-2 gap-2 p-2 max-h-64 overflow-y-auto">

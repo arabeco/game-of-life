@@ -184,7 +184,7 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     );
 };
 
-const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; onClose: () => void; onTake: () => void; currentValue: number }> = ({ quest, progress, isActive, onClose, onTake, currentValue }) => {
+const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; onClose: () => void; onTake: () => void; onClaim?: () => void; canClaim?: boolean; currentValue: number }> = ({ quest, progress, isActive, onClose, onTake, onClaim, canClaim, currentValue }) => {
     const { fetchClanQuestParticipants, clanQuestParticipants } = useGame();
     
     useEffect(() => {
@@ -230,9 +230,15 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-skin-button'}`}>
-                        {isActive ? 'QUEST ATIVA' : 'PEGAR QUEST'}
-                    </button>
+                    {canClaim ? (
+                        <button onClick={onClaim} className="w-full py-2 rounded-xl text-xs font-bold bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)] animate-pulse">
+                            RESGATAR RECOMPENSA
+                        </button>
+                    ) : (
+                        <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-skin-button'}`}>
+                            {isActive ? 'QUEST ATIVA' : 'PEGAR QUEST'}
+                        </button>
+                    )}
                     <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-bold bg-black/30 text-gray-300 hover:bg-black/50">
                         FECHAR
                     </button>
@@ -354,7 +360,7 @@ const getZoneAndState = (row: number, col: number): { zone: Zone, state: ActionS
 };
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, applySanctuaryAreaDecay, loadClanAndMembers, acceptSeasonQuest } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, applySanctuaryAreaDecay, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast } = useGame();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const [userPlacement, setUserPlacement] = useState<MemberPlacement | null>(null);
     const [otherPlacements, setOtherPlacements] = useState<MemberPlacement[]>([]);
@@ -700,9 +706,23 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         setSelectedQuest(null);
     };
 
+    const handleClaimQuest = (quest: SeasonQuest) => {
+        if (userProfile.completedSeasonMissions?.includes(quest.id)) return;
+        claimSeasonQuestReward(quest.id);
+
+        const xp = quest.rewards.xp;
+        const items = quest.rewards.items || [];
+        let msg = `✦ +${xp} XP computados`;
+        if (items.length > 0) {
+            msg = `✦ ${items.join(', ')} adicionado ao inventário · +${xp} XP computados`;
+        }
+        showToast(msg);
+        setSelectedQuest(null);
+    };
+
     return createPortal(
         <>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <div className="relative w-full max-w-sm m-4 aspect-[9/16] rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="relative w-full h-full rounded-3xl overflow-hidden bg-cover bg-center border border-white/10 flex flex-col" style={{ backgroundImage: `url('${sanctuaryBackground}')` }}>
                         
@@ -873,6 +893,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     isActive={isQuestActive(selectedQuest)}
                     onClose={() => setSelectedQuest(null)}
                     onTake={() => handleTakeQuest(selectedQuest)}
+                    onClaim={() => handleClaimQuest(selectedQuest)}
+                    canClaim={!userProfile.completedSeasonMissions?.includes(selectedQuest.id) && getQuestProgress(selectedQuest) >= 100}
                 />
             )}
             {showGardenModal && <GardenActionModal onSelect={handleGardenActionSelect} onClose={() => setShowGardenModal(false)} />}

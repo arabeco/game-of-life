@@ -32,6 +32,17 @@ export const BannerSelectionModal: React.FC<BannerSelectionModalProps> = ({ curr
         if (banner.url === currentBanner) return true;
         if (unlockedSkins[banner.id]) return true;
         if (unlockedItems.banners?.[banner.id]) return true;
+        
+        // Also check if unlocked by ID directly in unlockedItems root or other categories if needed,
+        // but 'banners' category is the standard.
+        // Some items might be stored just by ID in unlockedItems (legacy or simplified)
+        // Let's check all categories just in case, or if the structure is flattened in some contexts.
+        const isUnlockedAnywhere = Object.values(unlockedItems).some(categoryItems => categoryItems && categoryItems[banner.id]);
+        if (isUnlockedAnywhere) return true;
+
+        // Check inventory (New Forge System)
+        if (userProfile.inventory?.some(item => item.id === banner.id)) return true;
+
         if (isUnlockedByRank(banner.id, BANNER_UNLOCKS_BY_RANK)) return true;
         return false;
     };
@@ -39,7 +50,7 @@ export const BannerSelectionModal: React.FC<BannerSelectionModalProps> = ({ curr
     const availableBanners = BANNERS_DATA.filter(isBannerUnlocked);
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Banner</h2>
                 <div className="grid grid-cols-1 gap-2 p-2 max-h-64 overflow-y-auto">

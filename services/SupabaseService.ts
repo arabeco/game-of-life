@@ -1,8 +1,54 @@
 import { supabase } from '../supabaseClient';
-import { UserProfile, GoldenInvite, SovereignConfig } from '../types';
+import { UserProfile, GoldenInvite, SovereignConfig, Notification } from '../types';
 
 // Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
+  // --- Notifications System ---
+
+  static async getNotifications(userId: string): Promise<Notification[]> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching notifications:', error);
+      return [];
+    }
+
+    return (data || []).map(n => ({
+      id: n.id,
+      userId: n.user_id,
+      type: n.type,
+      content: n.content,
+      read: n.read,
+      createdAt: n.created_at
+    }));
+  }
+
+  static async markNotificationRead(notificationId: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId);
+
+    if (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  }
+
+  static async deleteNotification(notificationId: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+    }
+  }
+
   // Garantir conta admin soberana
   static async ensureAdminAccount(): Promise<UserProfile | null> {
     try {

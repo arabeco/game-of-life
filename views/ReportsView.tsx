@@ -14,6 +14,8 @@ import { NewCycleSetupView } from './NewCycleSetupView';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { getScoreGrade } from '../utils/scoreUtils';
 import { supabase } from '../supabaseClient';
+import { ReportGenerationModal } from '../components/ReportGenerationModal';
+import { ChestOpeningModal } from '../components/ChestOpeningModal';
 
 // --- Helper Functions ---
 export const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
@@ -263,7 +265,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent, seasons, userProfile } = useGame();
+    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent, seasons, userProfile, oraclePreferences } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
     const [showConfirmEndCycle, setShowConfirmEndCycle] = useState(false);
@@ -277,6 +279,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [cycleShimmer, setCycleShimmer] = useState(false);
     const [scanError, setScanError] = useState<string | null>(null);
     const [scanAttempt, setScanAttempt] = useState(0);
+    const [showChestModal, setShowChestModal] = useState(false);
     const assetsRef = useRef(assets);
     const actionsRef = useRef(actions);
     const endCycleRef = useRef(endCycle);
@@ -359,34 +362,49 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         endCycleRef.current = endCycle;
     }, [endCycle]);
 
+    const performEndOfCycle = () => {
+        try {
+            const result = endCycleRef.current(assetsRef.current, actionsRef.current);
+            if (!result?.report) throw new Error('Relatório inválido');
+            const { report, expGained } = result;
+            setSelectedReport(report);
+            setExpGained(expGained);
+
+            let chestType: ChestType = 'Comum';
+            if (expGained > 5000) chestType = 'Lendário';
+            else if (expGained > 2000) chestType = 'Épico';
+            else if (expGained > 800) chestType = 'Raro';
+            else if (expGained > 300) chestType = 'Incomum';
+            setEarnedChest(chestType);
+
+            setIsPostCycleFlow(true);
+            return chestType;
+        } catch (error) {
+            console.error('Erro ao analisar ciclo:', error);
+            setScanError('Não foi possível analisar o ciclo. Tente novamente.');
+            // Do not switch to hub, let the user see the error in scanning view
+            return null;
+        }
+    };
+
     useEffect(() => {
         if (view === 'scanning') {
             setScanError(null);
+            
+            // Check preferences for animation
+            if (oraclePreferences?.animationsEnabled) {
+                // Do nothing, ReportGenerationModal handles calling performEndOfCycle
+                return;
+            }
+
+            // Fallback for NO animations (Legacy behavior)
             const timer = window.setTimeout(() => {
-                try {
-                    const result = endCycleRef.current(assetsRef.current, actionsRef.current);
-                    if (!result?.report) throw new Error('Relatório inválido');
-                    const { report, expGained } = result;
-                    setSelectedReport(report);
-                    setExpGained(expGained);
-
-                    let chestType: ChestType = 'Comum';
-                    if (expGained > 5000) chestType = 'Lendário';
-                    else if (expGained > 2000) chestType = 'Épico';
-                    else if (expGained > 800) chestType = 'Raro';
-                    else if (expGained > 300) chestType = 'Incomum';
-                    setEarnedChest(chestType);
-
-                    setIsPostCycleFlow(true);
-                    setView('results');
-                } catch (error) {
-                    console.error('Erro ao analisar ciclo:', error);
-                    setScanError('Não foi possível analisar o ciclo. Tente novamente.');
-                }
+                const chest = performEndOfCycle();
+                if (chest) setView('results');
             }, 3000);
             return () => window.clearTimeout(timer);
         }
-    }, [view, scanAttempt]);
+    }, [view, scanAttempt, oraclePreferences?.animationsEnabled]);
 
     useEffect(() => {
         if (view === 'results' && isPostCycleFlow) {
@@ -451,6 +469,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         applyExp(expGained);
         if (earnedChest) {
             addChest(earnedChest);
+            showToast(`✦ Baú ${earnedChest} adicionado ao inventário · +${expGained} XP computados`);
+        } else {
+            showToast(`✦ +${expGained} XP foram computados ao seu perfil`);
         }
         setIsPostCycleFlow(false);
         setView('hub');
@@ -514,6 +535,43 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     
     const renderContent = () => {
         switch (view) {
+            case 'scanning':
+                // Show ReportGenerationModal only if animations enabled AND no error
+                if (oraclePreferences?.animationsEnabled && !scanError) {
+                     return (
+                        <ReportGenerationModal
+                            onComplete={() => {
+                                performEndOfCycle();
+                            }}
+                            onOpen={() => {
+                                setShowChestModal(true);
+                            }}
+                            onClose={() => {
+                                setView('hub');
+                            }}
+                        />
+                     );
+                }
+                
+                // Legacy/Error View
+                return (
+                    <div className="flex flex-col items-center justify-center h-full">
+                        {scanError ? (
+                            <>
+                                <p className="text-sm text-gray-300 text-center max-w-[260px]">{scanError}</p>
+                                <div className="mt-4 w-full space-y-2">
+                                    <button onClick={() => { setScanError(null); setScanAttempt(prev => prev + 1); }} className="w-full py-2 rounded-xl luxe-skin-button text-xs">TENTAR NOVAMENTE</button>
+                                    <button onClick={() => { setScanError(null); setView('hub'); }} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">VOLTAR</button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20">
+                                <div className="w-16 h-16 border-4 border-[var(--skin-accent-color)] border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-gray-400 font-mono animate-pulse">Gerando Relatório...</p>
+                            </div>
+                        )}
+                    </div>
+                );
             case 'hub': {
                 const items: Array<
                     | { type: 'active'; cycle: Cycle }
@@ -693,25 +751,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
                 );
             }
-            case 'scanning':
-                return (
-                    <div className="flex flex-col items-center justify-center h-full">
-                        {scanError ? (
-                            <>
-                                <p className="text-sm text-gray-300 text-center max-w-[260px]">{scanError}</p>
-                                <div className="mt-4 w-full space-y-2">
-                                    <button onClick={() => { setScanError(null); setScanAttempt(prev => prev + 1); }} className="w-full py-2 rounded-xl luxe-skin-button text-xs">TENTAR NOVAMENTE</button>
-                                    <button onClick={() => { setScanError(null); setView('hub'); }} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">VOLTAR</button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="w-48 h-48 border-4 border-dashed border-[var(--skin-accent-color)] rounded-full animate-spin"></div>
-                                <p className="mt-4 text-lg font-bold tracking-widest animate-pulse">ANALISANDO CICLO...</p>
-                            </>
-                        )}
-                    </div>
-                );
             case 'results':
                 return selectedReport ? (
                     <ReportResultCarousel 
@@ -721,7 +760,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onShare={() => handleShare('report-summary-card-capture', `Relatório de Ciclo ${formatDate(selectedReport.startDate)} - Life OS`)} 
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onStartNewCycle={() => {
-                             handlePostCycleResultsOk();
+                             applyExp(expGained);
+                             if (earnedChest) addChest(earnedChest);
+                             setIsPostCycleFlow(false);
                              setShowNewCycleSetup(true);
                         }}
                         chest={isPostCycleFlow ? earnedChest : null}
@@ -778,6 +819,17 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onConfirm={confirmEndCycle}
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
+            )}
+            {showChestModal && earnedChest && (
+                <div className="fixed inset-0 z-[300]">
+                    <ChestOpeningModal 
+                        chestType={earnedChest} 
+                        onClose={() => {
+                            setShowChestModal(false);
+                            setView('results');
+                        }} 
+                    />
+                </div>
             )}
         </>
     );

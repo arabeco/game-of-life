@@ -1,14 +1,16 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef } from '../constants/items';
 import { supabase } from '../supabaseClient';
-import type { OracleMode } from '../constants/oracle';
+import { ORACLE_MODES } from '../constants/oracle';
 import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
 import { useCodexBuilder } from './CodexBuilderContext';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -219,6 +221,7 @@ export interface GameContextType {
   userMissionParticipations: Record<string, boolean>;
   joinClanMission: (questId: string) => Promise<void>;
   updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
+  getUserPublicData: (userId: string) => Promise<{ profile: UserProfile | null, clan: Clan | null, clanRank: ClanRank | undefined, slots: Slot[] }>;
   levelUnlocks: LevelUnlocks;
   setAchievementUnlocked: (achievement: { type: FeedEventType; data: any; } | null) => void;
   updateLevelUnlocks: (next: LevelUnlocks) => void;
@@ -267,6 +270,7 @@ export interface GameContextType {
   sendFriendRequest: (recipientId: string) => Promise<void>;
   acceptFriendRequest: (requestId: string) => Promise<void>;
   declineFriendRequest: (requestId: string) => Promise<void>;
+  cancelFriendRequest: (requestId: string) => Promise<void>;
   updateAllAssetLevels: (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>) => boolean;
   startCycle: (name: string, endDate: string) => void;
   endCycle: (currentAssets: Asset[], currentActions: Action[]) => EndCycleResult;
@@ -299,8 +303,21 @@ export interface GameContextType {
   updateSanctuaryAreaTime: (clanId: string, area: string, seconds: number) => Promise<void>;
   applySanctuaryAreaDecay: (clanId: string, occupancy: Record<string, number>, totalMembers?: number) => Promise<void>;
   loadClanAndMembers: (clanId: string, force?: boolean) => Promise<void>;
-  oracleMode: OracleMode;
-  setOracleMode: (mode: OracleMode) => void;
+  oraclePreferences: OraclePreferences | null;
+  updateOraclePreferences: (prefs: Partial<OraclePreferences>) => Promise<void>;
+  oracleMessages: OracleMessage[];
+  markOracleMessageAsRead: (messageId: string) => Promise<void>;
+  triggerOracle: (triggerType?: 'app_open' | 'cron' | 'manual') => Promise<void>;
+  
+  // Notifications
+  notifications: Notification[];
+  markNotificationRead: (id: string) => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  fetchNotifications: () => Promise<void>;
+
+  showToast: (message: string) => void;
+  toast: { message: string; visible: boolean };
+  hideToast: () => void;
   // Forge & Store
   inventory: InventoryItem[];
   buyGoldPack: (packId: string) => Promise<void>;
@@ -394,7 +411,290 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const [cycleExpBonus, setCycleExpBonus] = useState<number>(0);
 
-  const [oracleMode, setOracleMode] = useState<OracleMode>('STANDARD');
+  const [oraclePreferences, setOraclePreferences] = useState<OraclePreferences | null>(null);
+  const [oracleMessages, setOracleMessages] = useState<OracleMessage[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+
+  const showToast = useCallback((message: string) => {
+      setToast({ message, visible: true });
+  }, []);
+
+  const hideToast = useCallback(() => {
+      setToast(prev => ({ ...prev, visible: false }));
+  }, []);
+
+  const fetchOraclePreferences = useCallback(async (userId: string) => {
+      const { data, error } = await supabase
+          .from('oracle_preferences')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+          console.error("Error fetching oracle preferences:", error);
+          return;
+      }
+
+      if (data) {
+          setOraclePreferences(mapToCamelCase(data));
+      } else {
+          // Default preferences
+          const defaultPrefs: OraclePreferences = {
+              userId,
+              iaEnabled: true,
+              notificationsEnabled: true,
+              animationsEnabled: true,
+              soundsEnabled: true,
+              hapticsEnabled: true,
+              enabledCategories: ['frases_inspiradoras', 'reflexoes_filosoficas', 'fragmentos_sabedoria', 'dicas_produtividade', 'rituais_lifestyle', 'provocacoes'],
+              activeMode: 'neutro',
+              quietHoursStart: '22:00',
+              quietHoursEnd: '07:00',
+              updatedAt: new Date().toISOString()
+          };
+          
+          // Insert default
+          const { error: insertError } = await supabase.from('oracle_preferences').insert(mapToSnakeCase(defaultPrefs));
+          if (!insertError) {
+              setOraclePreferences(defaultPrefs);
+          }
+      }
+  }, []);
+
+  const updateOraclePreferences = async (prefs: Partial<OraclePreferences>) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      const newPrefs = { ...oraclePreferences, ...prefs, updatedAt: new Date().toISOString() };
+      // Optimistic update
+      setOraclePreferences(newPrefs as OraclePreferences);
+
+      const { error } = await supabase
+          .from('oracle_preferences')
+          .upsert(mapToSnakeCase({ ...newPrefs, userId }));
+
+      if (error) {
+          console.error("Error updating oracle preferences:", error);
+          // Revert? For now, we assume it works or user refreshes.
+      }
+  };
+
+  const fetchOracleMessages = useCallback(async (userId: string) => {
+      const { data, error } = await supabase
+          .from('oracle_messages')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+      if (error) {
+          console.error("Error fetching oracle messages:", error);
+          return;
+      }
+
+      if (data) {
+          setOracleMessages(mapToCamelCase(data));
+      }
+  }, []);
+
+  const markOracleMessageAsRead = async (messageId: string) => {
+      setOracleMessages(prev => prev.map(m => m.id === messageId ? { ...m, read: true } : m));
+      
+      const { error } = await supabase
+          .from('oracle_messages')
+          .update({ read: true })
+          .eq('id', messageId);
+          
+      if (error) {
+          console.error("Error marking message as read:", error);
+      }
+  };
+
+  const triggerOracle = async (triggerType: 'app_open' | 'cron' | 'manual' = 'app_open') => {
+      const userId = getSupabaseUserId();
+      if (!userId || !oraclePreferences?.iaEnabled) return;
+
+      // API Key (Hardcoded as per instructions found in codebase)
+      const API_KEY = "AIzaSyAryjNyDFBRrwfvsHdQWvUTCRm1-yx83zo";
+
+      // 1. Check Quiet Hours (if not manual)
+      if (triggerType !== 'manual') {
+          const now = new Date();
+          const currentTime = now.getHours() * 60 + now.getMinutes();
+          const [startH, startM] = (oraclePreferences.quietHoursStart || '22:00').split(':').map(Number);
+          const [endH, endM] = (oraclePreferences.quietHoursEnd || '07:00').split(':').map(Number);
+          
+          const start = startH * 60 + startM;
+          const end = endH * 60 + endM;
+          
+          let isQuiet = false;
+          if (start > end) { // Spans midnight (e.g. 22:00 to 07:00)
+              isQuiet = currentTime >= start || currentTime < end;
+          } else {
+              isQuiet = currentTime >= start && currentTime < end;
+          }
+          
+          if (isQuiet) {
+              console.log("Oracle is in quiet hours.");
+              return;
+          }
+      }
+
+      // 2. Check Daily Limits
+      const today = new Date().toISOString().split('T')[0];
+      const todayMessages = oracleMessages.filter(m => m.createdAt.startsWith(today) && m.deliveryType === 'feed');
+      const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
+      const limit = isPremium ? 6 : 3;
+      
+      if (todayMessages.length >= limit && triggerType !== 'manual') {
+          console.log("Oracle daily limit reached.");
+          return;
+      }
+      
+      // 3. Minimum Time Between Messages (2 hours)
+      if (todayMessages.length > 0 && triggerType !== 'manual') {
+          const lastMsg = new Date(todayMessages[0].createdAt).getTime();
+          const now = new Date().getTime();
+          const hoursSinceLast = (now - lastMsg) / (1000 * 60 * 60);
+          if (hoursSinceLast < 2) {
+              console.log("Oracle resting (min 2h).");
+              return;
+          }
+      }
+
+      // 4. Select Category (Greeting Logic)
+      let category: string = 'frases_inspiradoras';
+      const now = new Date();
+      const hour = now.getHours();
+      
+      const totalChests = userProfile.chests?.reduce((acc: any, c: any) => acc + c.count, 0) || 0;
+      
+      if (totalChests > 0) {
+          category = 'dicas_produtividade'; // Context will show chests, AI should pick it up
+      } else if (!activeCycle) {
+          category = 'dicas_produtividade'; // Suggest cycle
+      } else if (assets.every(a => a.arenas.length === 0)) {
+          category = 'dicas_produtividade'; // Suggest arena
+      } else {
+          if (hour >= 6 && hour < 12) category = 'frases_inspiradoras';
+          else if (hour >= 12 && hour < 18) category = 'dicas_produtividade';
+          else if (hour >= 18 && hour < 22) category = 'reflexoes_filosoficas'; // Reflexão
+          else category = 'fragmentos_sabedoria'; // Madrugada
+      }
+      
+      // Ensure category is enabled
+      const enabled = oraclePreferences.enabledCategories || [];
+      if (enabled.length > 0 && !enabled.includes(category as any)) {
+          category = enabled[Math.floor(Math.random() * enabled.length)];
+      }
+
+      // 5. Build Context
+      let timeOfDay: "madrugada" | "manhã" | "tarde" | "noite" = "manhã";
+      if (hour >= 0 && hour < 6) timeOfDay = "madrugada";
+      else if (hour >= 6 && hour < 12) timeOfDay = "manhã";
+      else if (hour >= 12 && hour < 18) timeOfDay = "tarde";
+      else timeOfDay = "noite";
+
+      const contextData: OracleContext = {
+          currentTime: now.toISOString(),
+          timeOfDay,
+          hasCycle: !!activeCycle,
+          cycleDayNumber: activeCycle ? Math.floor((now.getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
+          cycleTotalDays: activeCycle ? Math.floor((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
+          cycleCompletionPercent: null,
+          hasArenas: assets.some(a => a.arenas.length > 0),
+          totalArenas: assets.reduce((acc, a) => acc + a.arenas.length, 0),
+          arenaNames: assets.flatMap(a => a.arenas.map(ar => ar.name)),
+          staleArenas: [],
+          completedActionsInCycle: 0,
+          pendingActionsToday: tasks.filter(t => t.date === now.toISOString().split('T')[0] && !t.completed).length,
+          overdueActions: 0,
+          activeMode: oraclePreferences.activeMode,
+          customModeInstructions: oraclePreferences.customModeInstructions || null,
+          enabledCategories: oraclePreferences.enabledCategories || [],
+          username: userProfile.nickname,
+          level: userProfile.level,
+          sephirotLevels: assets.reduce((acc, a) => ({ ...acc, [a.name]: a.level }), {}),
+          clanName: clan?.name || null,
+          seasonName: null,
+          pendingChests: totalChests
+      };
+
+      // 6. Generate Prompt
+      const modeConfig = ORACLE_MODES[oraclePreferences.activeMode] || ORACLE_MODES['neutro'];
+      const systemPrompt = modeConfig.systemPromptTemplate(contextData);
+      
+      const userPrompt = `Gere uma mensagem curta (máximo 3 frases) para o feed do usuário.
+      Categoria solicitada: ${category}
+      Contexto atual: ${JSON.stringify(contextData)}
+      `;
+
+      // 7. Call AI
+      try {
+          const google = createGoogleGenerativeAI({
+              apiKey: API_KEY
+          });
+          
+          const { text } = await generateText({
+              model: google('models/gemini-3-flash-preview'),
+              system: systemPrompt,
+              prompt: userPrompt,
+          });
+
+          // 8. Save and Update
+          const newMessage: OracleMessage = {
+              id: crypto.randomUUID(),
+              userId,
+              category: category as any,
+              content: text,
+              mode: oraclePreferences.activeMode,
+              deliveryType: 'feed',
+              read: false,
+              createdAt: new Date().toISOString()
+          };
+          
+          setOracleMessages(prev => [newMessage, ...prev]);
+          await supabase.from('oracle_messages').insert(mapToSnakeCase(newMessage));
+          
+          console.log("Oracle generated message:", text);
+
+      } catch (error) {
+          console.error("Oracle AI generation failed:", error);
+      }
+  };
+
+  // --- Notifications Implementation ---
+  const fetchNotifications = useCallback(async () => {
+      const userId = session?.user.id;
+      if (userId) {
+          const data = await SupabaseService.getNotifications(userId);
+          setNotifications(data);
+      }
+  }, [session?.user.id]);
+
+  const markNotificationRead = async (id: string) => {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      await SupabaseService.markNotificationRead(id);
+  };
+
+  const deleteNotification = async (id: string) => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      await SupabaseService.deleteNotification(id);
+  };
+
+  useEffect(() => {
+      const userId = session?.user.id;
+      if (userId && isUuid(userId)) {
+          fetchOraclePreferences(userId);
+          fetchOracleMessages(userId);
+          fetchNotifications();
+      } else {
+          setOraclePreferences(null);
+          setOracleMessages([]);
+          setNotifications([]);
+      }
+  }, [session?.user.id, fetchOraclePreferences, fetchOracleMessages, fetchNotifications]);
 
   // --- FORGE SYSTEM ---
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -405,7 +705,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           console.error("Error fetching inventory:", error);
           return;
       }
-      const items = data.map((row: any) => {
+
+      // Auto-grant Starter Pack (T1 Items) if inventory is empty
+      if ((!data || data.length === 0)) {
+          console.log("Inventory empty. Granting Starter Pack...");
+          const starterItems = ITEMS_DB.filter(i => i.tier === 1);
+          
+          if (starterItems.length > 0) {
+              const toInsert = starterItems.map(i => ({
+                  user_id: userId,
+                  item_id: i.id
+              }));
+              
+              const { error: insertError } = await supabase.from('user_inventory').insert(toInsert);
+              
+              if (!insertError) {
+                   const newItems = starterItems.map(i => ({
+                       id: i.id,
+                       instanceId: 'temp_' + i.id, 
+                       acquiredAt: new Date().toISOString(),
+                       isEquipped: false
+                   }));
+                   setInventory(newItems);
+                   return; 
+              } else {
+                  console.error("Error granting starter pack:", insertError);
+              }
+          }
+      }
+
+      const items = data ? data.map((row: any) => {
           const resolvedDef = resolveItemDef(row.item_id);
           const resolvedId = resolvedDef?.id || row.item_id;
           return {
@@ -414,9 +743,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
               acquiredAt: row.acquired_at,
               isEquipped: row.is_equipped
           };
-      });
+      }) : [];
       setInventory(items);
   }, []);
+
+  // Sync inventory state to userProfile to ensure consistency
+  useEffect(() => {
+      if (session?.user.id && userProfile.id === session.user.id) {
+          setUserProfile(prev => {
+              // Deep comparison to avoid infinite loops
+              if (JSON.stringify(prev.inventory) !== JSON.stringify(inventory)) {
+                  return { ...prev, inventory: [...inventory] };
+              }
+              return prev;
+          });
+      }
+  }, [inventory, session?.user.id, userProfile.id]);
 
   useEffect(() => {
       const userId = session?.user.id;
@@ -903,19 +1245,77 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const [seasonMissions, setSeasonMissions] = useState<SeasonMission[]>([]);
   
   const seasonQuests = useMemo(() => {
-    const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-    if (!activeSeason) return [];
+    const activeSeason = seasons.find(s => s.is_active);
     
-    return activeSeason.quests.map(q => ({
-      id: q.id,
-      title: q.title,
-      description: q.description,
-      type: q.type,
-      category: q.category,
-      actionTemplate: q.actionTemplate,
-      requirements: q.requirements,
-      rewards: q.rewards
-    })) as SeasonQuest[];
+    // Default quests from constant
+    let quests: SeasonQuest[] = [];
+    if (activeSeason && SEASONS[activeSeason.id]) {
+         quests = SEASONS[activeSeason.id].quests.map(q => ({
+             id: q.id,
+             title: q.title,
+             description: q.description,
+             type: q.type,
+             category: q.category,
+             actionTemplate: q.actionTemplate,
+             requirements: q.requirements,
+             rewards: q.rewards
+         })) as SeasonQuest[];
+    } else if (!activeSeason) {
+        quests = SEASONS[ACTIVE_SEASON_ID].quests.map(q => ({ ...q })) as SeasonQuest[];
+    }
+
+    const targetSeasonId = activeSeason?.id || ACTIVE_SEASON_ID;
+    const dbMissions = seasonMissions.filter(m => m.season_id === targetSeasonId);
+    
+    // If we have DB missions for this season, prioritize them (override static config)
+    if (dbMissions.length > 0) {
+        quests = [];
+    }
+
+    const mappedMissions: SeasonQuest[] = dbMissions.map(m => ({
+        id: m.id,
+        title: m.title,
+        description: m.description,
+        type: m.type || 'individual',
+        category: 'physical',
+        actionTemplate: {
+            name: m.action_name || m.title,
+            description: m.description,
+            duration: 15,
+            icon: m.icon || '📜',
+            repetitions: m.goal_value || 1,
+            isMilestone: m.requirements?.milestone || false
+        },
+        requirements: m.requirements || {
+            totalReps: m.goal_value || 1,
+            clanGoal: m.type === 'clan' ? (m.goal_value || 50) : undefined,
+            milestone: m.requirements?.milestone || false
+        },
+        rewards: {
+            xp: m.reward_type === 'exp' ? Number(m.reward_value) : 0,
+            items: m.reward_type === 'item_id' ? [String(m.reward_value)] : []
+        },
+        season_id: m.season_id
+    }));
+
+    return [...quests, ...mappedMissions];
+  }, [seasons, seasonMissions]);
+
+  // Load Global Game Content (Seasons, Missions)
+  useEffect(() => {
+    const loadGlobalContent = async () => {
+        const { data: seasonsData, error: seasonsError } = await supabase.from('seasons').select('*');
+        if (!seasonsError && seasonsData) {
+            setSeasons(seasonsData as Season[]);
+        }
+
+        const { data: missionsData, error: missionsError } = await supabase.from('season_missions').select('*');
+        if (!missionsError && missionsData) {
+            setSeasonMissions(missionsData as SeasonMission[]);
+        }
+    };
+    
+    loadGlobalContent();
   }, []);
 
   const [levelUnlocks, setLevelUnlocks] = useState<LevelUnlocks>(() => buildDefaultLevelUnlocks());
@@ -1327,6 +1727,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
   }, [assets, session?.user.id]);
 
+  // Ref to hold the latest migration function
+  const migrateGuestDataToSupabaseRef = useRef(migrateGuestDataToSupabase);
+  useEffect(() => {
+      migrateGuestDataToSupabaseRef.current = migrateGuestDataToSupabase;
+  }, [migrateGuestDataToSupabase]);
+
   // --- Supabase Data Sync ---
   useEffect(() => {
     const today = getTodayString();
@@ -1389,7 +1795,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 await supabase.from('user_profiles').insert(newProfile);
                 setUserProfile(newProfile);
             } else {
-                await migrateGuestDataToSupabase(userId);
+                // Use the ref to access the latest version of migrateGuestDataToSupabase without triggering effect
+                await migrateGuestDataToSupabaseRef.current(userId);
             }
         }
 
@@ -1568,7 +1975,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             suspendPersistenceRef.current = true;
             const pendingMigration = pendingGuestMigrationRef.current;
             if (pendingMigration?.toId === userId) {
-                const ok = await migrateGuestDataToSupabase(userId);
+                // Use the ref to access the latest version of migrateGuestDataToSupabase without triggering effect
+                const ok = await migrateGuestDataToSupabaseRef.current(userId);
                 if (ok) {
                     pendingGuestMigrationRef.current = null;
                     hydrated = true;
@@ -1589,7 +1997,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     run();
-  }, [session, userProfile.id, loadClanAndMembers, loadFriendsAndRequests, loadClanJoinRequestsOutgoing, migrateGuestDataToSupabase, getSupabaseUserId]);
+  }, [session?.user.id, userProfile.id]);
 
   const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
     const newEvent: FeedEvent = {
@@ -2596,13 +3004,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const normalized = query.trim();
     if (!normalized) return [];
 
+    // Remove numbers from end of string (like #1234) if present, though we search by nickname mostly
     const baseQuery = normalized.replace(/\d+$/g, '').trim();
     const searchTerms = [normalized];
     if (baseQuery && baseQuery !== normalized) searchTerms.push(baseQuery);
 
+    // Parallel search by nickname and email
     const responses = await Promise.all(
         searchTerms.flatMap(term => ([
             supabase.from('user_profiles').select('*').ilike('nickname', `%${term}%`).limit(20),
+            // Also search by email just in case
             supabase.from('user_profiles').select('*').ilike('email', `%${term}%`).limit(20),
         ]))
     );
@@ -2614,10 +3025,68 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
 
     const merged = responses.flatMap(r => r.data || []);
+    // Deduplicate by ID
     const mapped = mapToCamelCase(merged) as UserProfile[];
     const unique = Array.from(new Map(mapped.map(profile => [profile.id, profile])).values());
+
+    // Filter out self and return top 20
     return unique.filter(profile => profile.id !== userProfile.id).slice(0, 20);
   };
+
+  const getUserPublicData = useCallback(async (userId: string) => {
+    if (!isUuid(userId)) return { profile: null, clan: null, clanRank: undefined, slots: [], levels: {} as Record<string, number> };
+
+    const [clanRes, slotsRes, levelsRes, profileRes] = await Promise.all([
+      supabase
+        .from('clan_members')
+        .select('clan_id, role, clans(*)')
+        .eq('user_id', userId)
+        .maybeSingle(),
+      supabase
+        .from('asset_slots')
+        .select('*')
+        .eq('user_id', userId),
+      supabase
+        .from('asset_levels')
+        .select('*')
+        .eq('user_id', userId),
+      supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+    ]);
+
+    const clanData = clanRes.data?.clans ? mapToCamelCase(clanRes.data.clans) as Clan : null;
+    const clanRank = clanData ? CLAN_RANKS.find(r => r.id === (clanData as any).rankId) : undefined;
+    
+    let publicProfile: UserProfile | null = null;
+    if (profileRes.data) {
+        publicProfile = mapToCamelCase(profileRes.data) as UserProfile;
+    }
+
+    // Merge slots with defaults to ensure all widgets are available even if not in DB
+    const defaultAssets = createDefaultAssets(true);
+    const allBaseSlots = defaultAssets.flatMap(a => a.slots);
+    const userSlots: Slot[] = allBaseSlots.map(baseSlot => {
+        const dbSlot = slotsRes.data?.find((s: any) => s.slot_id === baseSlot.id);
+        if (dbSlot) {
+            let val = dbSlot.value;
+            try { val = JSON.parse(dbSlot.value); } catch {}
+            return { ...baseSlot, value: val };
+        }
+        return baseSlot;
+    });
+
+    const userLevels: Record<string, number> = {};
+    if (levelsRes.data) {
+        levelsRes.data.forEach((l: any) => {
+            userLevels[l.asset_id] = l.level;
+        });
+    }
+
+    return { profile: publicProfile, clan: clanData, clanRank, slots: userSlots, levels: userLevels };
+  }, []);
 
   const sendFriendRequest = async (recipientId: string): Promise<void> => {
     const senderId = getSupabaseUserId();
@@ -2682,6 +3151,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         .eq('id', requestId);
     if (error) {
         console.error('Error declining friend request:', error.message);
+        return;
+    }
+    await loadFriendsAndRequests(userId);
+  };
+
+  const cancelFriendRequest = async (requestId: string): Promise<void> => {
+    const userId = getSupabaseUserId();
+    if (!userId) return;
+    // We delete pending requests that we sent
+    const { error } = await supabase.from('friend_requests')
+        .delete()
+        .eq('id', requestId)
+        .eq('sender_id', userId)
+        .eq('status', 'pending'); // Safety check
+        
+    if (error) {
+        console.error('Error canceling friend request:', error.message);
         return;
     }
     await loadFriendsAndRequests(userId);
@@ -4003,7 +4489,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, oracleMode, setOracleMode, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications }}>
       {children}
     </GameContext.Provider>
   );

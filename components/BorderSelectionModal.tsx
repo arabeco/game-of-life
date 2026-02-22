@@ -44,6 +44,14 @@ export const BorderSelectionModal: React.FC<BorderSelectionModalProps> = ({ curr
         if (isStaff) return true;
         if (userProfile.border === borderId) return true;
         if (unlockedItems.borders?.[borderId]) return true;
+        
+        // Also check generalized unlock
+        const isUnlockedAnywhere = Object.values(unlockedItems).some(categoryItems => categoryItems && categoryItems[borderId]);
+        if (isUnlockedAnywhere) return true;
+
+        // Check inventory (New Forge System)
+        if (userProfile.inventory?.some(item => item.id === borderId)) return true;
+
         if (isUnlockedByRank(borderId, BORDER_UNLOCKS_BY_RANK)) return true;
         return false;
     };
@@ -56,7 +64,7 @@ export const BorderSelectionModal: React.FC<BorderSelectionModalProps> = ({ curr
     ];
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Borda</h2>
                 <div className="grid grid-cols-3 gap-4 p-4">

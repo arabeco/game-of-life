@@ -91,7 +91,7 @@ const BattleTaskItem: React.FC<{ task: ScheduledTask, action: Action | undefined
 // --- Main Modal ---
 
 export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas, checklistItems } = useGame();
+    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas, checklistItems, showToast } = useGame();
 
     const [isAdjusting, setIsAdjusting] = useState(false);
 
@@ -246,11 +246,27 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
                 </div>
                  <div className="flex items-center space-x-2">
-                    <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary text-sm">🛌 DESCANSAR</button>
+                    <button 
+                        onClick={() => {
+                            if (expDeposited > 0) showToast(`✦ +${expDeposited} XP foram adicionados ao seu ciclo`);
+                            onClose();
+                        }} 
+                        className="w-full py-2 rounded-xl luxe-button-secondary text-sm"
+                    >
+                        🛌 DESCANSAR
+                    </button>
                     <button onClick={() => handleShare('sitrep-capture-area')} className="p-3 rounded-xl luxe-button-secondary">
                         <ShareIcon className="w-5 h-5"/>
                     </button>
-                    <button onClick={resetDailyCommitment} className="w-full py-2 rounded-xl luxe-skin-button text-sm">🌙 PLANEJAR</button>
+                    <button 
+                        onClick={() => {
+                            if (expDeposited > 0) showToast(`✦ +${expDeposited} XP foram adicionados ao seu ciclo`);
+                            resetDailyCommitment();
+                        }} 
+                        className="w-full py-2 rounded-xl luxe-skin-button text-sm"
+                    >
+                        🌙 PLANEJAR
+                    </button>
                 </div>
             </>
         )

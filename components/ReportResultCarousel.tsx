@@ -258,40 +258,23 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </div>
     );
 
-    // Slide 5: Recompensa
+    // Slide 5: Conclusão (Recompensa oculta)
     const renderRewardSlide = () => {
-        const chestType = chest || 'Comum';
-        const displayExp = expGained || metrics.expGained || 0;
-
         return (
             <div className="flex flex-col h-full items-center justify-center p-4 text-center space-y-6 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-5 pointer-events-none" />
                 
-                <h3 className="text-xl font-bold accent-text uppercase tracking-widest">Recompensa</h3>
+                <h3 className="text-xl font-bold accent-text uppercase tracking-widest">Ciclo Finalizado</h3>
                 
-                <div className="transform scale-110 py-4">
-                    <ChestVisual type={chestType} />
-                </div>
-
-                <div className="space-y-1">
-                    <p className={`text-lg font-black uppercase tracking-widest`} style={{ color: chestType === 'Lendário' ? '#F0C843' : chestType === 'Épico' ? '#C0C0C0' : chestType === 'Raro' ? '#CD7F32' : chestType === 'Incomum' ? '#FFFFFF' : '#9ca3af' }}>
-                        Baú {chestType}
+                <div className="flex-1 flex flex-col items-center justify-center">
+                    <p className="text-gray-400 italic text-sm max-w-[250px]">
+                        "Sua disciplina forja seu destino."
                     </p>
-                    <p className="text-xs text-gray-500 uppercase">Recompensa Obtida</p>
                 </div>
-
-                <div className="bg-black/40 px-6 py-3 rounded-xl border border-white/10">
-                     <p className="text-3xl font-black text-[var(--skin-accent-color)]">+{displayExp}</p>
-                     <p className="text-[10px] uppercase text-gray-500 tracking-wider">EXP Computada</p>
-                </div>
-
-                <p className="text-gray-400 italic text-xs max-w-[250px]">
-                    "Sua disciplina forja seu destino."
-                </p>
 
                 <div className="w-full flex space-x-3 pt-4">
                     <button onClick={onOk} className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-colors font-bold text-xs uppercase tracking-wider">
-                        Fechar
+                        Descansar
                     </button>
                     {onStartNewCycle && (
                         <button onClick={onStartNewCycle} className="flex-1 py-3 rounded-xl luxe-skin-button font-bold text-xs uppercase tracking-wider shadow-lg shadow-[var(--skin-accent-color)]/20">

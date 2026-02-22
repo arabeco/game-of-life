@@ -5,11 +5,21 @@ import { ChestType, UnlockCategory } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { GM_CONFIG, SKINS_DATA, SKIN_CHEST_POOL } from '../constants';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
+import { VideoPlayer } from './VideoPlayer';
 
 interface ChestOpeningModalProps {
     chestType: ChestType;
     onClose: () => void;
+    predefinedReward?: Reward; // Optional predefined reward
 }
+
+const CHEST_VIDEOS: Record<ChestType, string> = {
+    'Comum': '/assets/videos/chests/chest_normal.mp4',
+    'Incomum': '/assets/videos/chests/chest_silver.mp4',
+    'Raro': '/assets/videos/chests/chest_gold.mp4',
+    'Épico': '/assets/videos/chests/chest_epic.mp4',
+    'Lendário': '/assets/videos/chests/chest_legendary.mp4',
+};
 
 const getChestStyle = (type: ChestType) => {
     switch (type) {
@@ -100,51 +110,73 @@ const RARITY_COLORS: Record<string, string> = {
     'Lendário': '#F0C843'
 };
 
-export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose }) => {
-    const [stage, setStage] = useState<'shaking' | 'exploding' | 'revealed'>('shaking');
+export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose, predefinedReward }) => {
+    const [stage, setStage] = useState<'video' | 'shaking' | 'exploding' | 'revealed'>('shaking');
     const [reward, setReward] = useState<Reward | null>(null);
-    const { grantUserUnlock, updateUserProfile, userProfile } = useGame();
+    const { grantUserUnlock, updateUserProfile, userProfile, oraclePreferences } = useGame();
 
     const chestStyle = getChestStyle(chestType);
     const rarityColor = RARITY_COLORS[chestType] || RARITY_COLORS['Comum'];
 
     useEffect(() => {
-        // Calculate reward immediately
-        setReward(getRandomReward(chestType));
+        // Use predefined reward or calculate random one
+        setReward(predefinedReward || getRandomReward(chestType));
 
-        // Sequence:
-        // 0-800ms: Shaking (controlled by initial state)
-        // 800ms: Explode
-        // 1300ms: Reveal
-        
-        const timer1 = setTimeout(() => {
-            setStage('exploding');
-        }, 1500);
+        const animationsEnabled = oraclePreferences?.animationsEnabled ?? true;
 
-        const timer2 = setTimeout(() => {
+        if (animationsEnabled) {
+            setStage('video');
+        } else {
+            // Skip directly to revealed if animations are off
             setStage('revealed');
-        }, 2000);
+        }
+    }, [chestType, oraclePreferences?.animationsEnabled, predefinedReward]);
 
-        return () => {
-            clearTimeout(timer1);
-            clearTimeout(timer2);
-        };
-    }, [chestType]);
+    // Handle legacy animation stages if we ever fall back to them or for backup
+    useEffect(() => {
+        if (stage === 'shaking') {
+            const timer1 = setTimeout(() => {
+                setStage('exploding');
+            }, 1500);
+            return () => clearTimeout(timer1);
+        }
+        if (stage === 'exploding') {
+            const timer2 = setTimeout(() => {
+                setStage('revealed');
+            }, 500); // Faster explode
+            return () => clearTimeout(timer2);
+        }
+    }, [stage]);
 
     const handleCollect = () => {
-        const rewardValue = reward as (Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string }) | null;
-        if (rewardValue?.itemUnlock) {
-            grantUserUnlock(rewardValue.itemUnlock.category, rewardValue.itemUnlock.itemId);
-        }
-        if (rewardValue?.skinUnlock) {
-            const nextUnlockedSkins = { ...(userProfile.unlockedSkins || {}), [rewardValue.skinUnlock]: true };
-            updateUserProfile({ unlockedSkins: nextUnlockedSkins });
+        // Only grant if no predefined reward (assuming predefined means already granted or handled elsewhere)
+        if (!predefinedReward) {
+            const rewardValue = reward as (Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string }) | null;
+            if (rewardValue?.itemUnlock) {
+                grantUserUnlock(rewardValue.itemUnlock.category, rewardValue.itemUnlock.itemId);
+            }
+            if (rewardValue?.skinUnlock) {
+                const nextUnlockedSkins = { ...(userProfile.unlockedSkins || {}), [rewardValue.skinUnlock]: true };
+                updateUserProfile({ unlockedSkins: nextUnlockedSkins });
+            }
         }
         onClose();
     };
 
     const renderContent = () => {
         switch (stage) {
+            case 'video':
+                return (
+                    <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
+                        <VideoPlayer 
+                            src={CHEST_VIDEOS[chestType]}
+                            onEnd={() => setStage('revealed')}
+                            className="w-full h-full"
+                            placeholderLabel={`Opening ${chestType} Chest...`}
+                            duration={4000}
+                        />
+                    </div>
+                );
             case 'shaking':
                 return (
                     <div className="flex flex-col items-center justify-center h-64 relative">

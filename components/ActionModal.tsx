@@ -104,12 +104,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
             ? Math.min(50, Math.max(1, Math.floor(editableAction.repetitions || 1)))
             : 1;
 
+        // SAFEGUARD: Ensure duration is within bounds (5-240) and defaults to 60 if invalid
+        const rawDuration = editableAction.duration;
+        const validDuration = (rawDuration && rawDuration >= 5 && rawDuration <= 480) ? rawDuration : 60;
+
         const actionData: Omit<Action, 'id'> = {
             arenaId: editableAction.arenaId || '', // Será tratado no context
             name: editableAction.name,
             description: editableAction.description?.trim() || undefined,
             icon: editableAction.icon || '🏆',
-            duration: editableAction.duration || 60,
+            duration: validDuration,
             repetitions: nextRepetitions,
             actionType: editableAction.actionType || 'Ação Recorrente',
             difficulty: editableAction.difficulty || 3,

@@ -7,15 +7,18 @@ import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon
 import { GlassCard } from '../components/GlassCard';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { MasteryView } from './MasteryView';
-import { SovereignPanelView } from './SovereignPanelView';
+import { OracleSettingsModal } from '../components/OracleSettingsModal';
+import { OracleChat } from '../components/OracleChat';
 import { supabase } from '../supabaseClient';
 import { SovereignCustomizer } from '../components/SovereignCustomizer';
+import { SovereignPanelView } from './SovereignPanelView';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
+import { SeasonDetailModal } from '../components/SeasonDetailModal';
 import { CODEXES } from '../constants/items';
 
 import { CodexModal } from '../components/CodexModal';
 
-type SettingsTab = 'Geral' | 'Preferências' | 'Premium';
+type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type PrivacyMode = 'Todos' | 'Amigos' | 'Personalizado' | 'Ninguém';
 
@@ -70,7 +73,7 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
     };
 
     return (
-         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Configurar Notificações</h2>
                 <div className="grid grid-cols-2 gap-2">
@@ -116,7 +119,7 @@ const TutorialSettings: React.FC = () => {
 };
 
 const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold uppercase tracking-wider text-center">Tutoriais</h2>
             <TutorialSettings />
@@ -736,7 +739,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
                     <div>
@@ -1044,52 +1047,13 @@ const GeralTab: React.FC = () => {
     );
 };
 
-type AssistantMode = 1 | 2 | 3;
-
-const AssistantModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const [mode, setMode] = useState<AssistantMode>(1);
-    const options: { id: AssistantMode; title: string; subtitle: string }[] = [
-        { id: 1, title: 'Opção 1', subtitle: 'Curta e objetiva' },
-        { id: 2, title: 'Opção 2', subtitle: 'Orientadora (passo a passo)' },
-        { id: 3, title: 'Opção 3', subtitle: 'Ritual / narrativa' },
-    ];
-
-    return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center">
-                    <div className="text-xs font-bold uppercase tracking-wider accent-text">Assistente IA</div>
-                    <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
-                </div>
-                <div className="space-y-2">
-                    {options.map(o => (
-                        <button
-                            key={o.id}
-                            onClick={() => setMode(o.id)}
-                            className={`w-full text-left p-3 rounded-2xl border border-white/10 ${mode === o.id ? 'bg-white/10' : 'bg-black/20 hover:bg-black/30'}`}
-                        >
-                            <div className="font-bold">{o.title}</div>
-                            <div className="text-xs text-gray-500">{o.subtitle}</div>
-                        </button>
-                    ))}
-                </div>
-                <div className="text-xs text-gray-500">Mock: conversa não implementada.</div>
-                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button>
-            </GlassCard>
-        </div>
-    );
-};
-
-// --- NEW TABS ---
-
 const PreferenciasTab: React.FC = () => {
-    const { userProfile } = useGame();
-    const [notificationMode, setNotificationMode] = useState<NotificationMode>('Militar');
+    const { userProfile, oraclePreferences } = useGame();
     const [privacyMode, setPrivacyMode] = useState<PrivacyMode>('Amigos');
-    const [modal, setModal] = useState<'notification' | 'privacy' | 'tutorial' | null>(null);
+    const [modal, setModal] = useState<'oracle' | 'privacy' | 'tutorial' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
 
-    const currentNotificationName = notificationModes.find(m => m.id === notificationMode)?.name || 'N/A';
+    const activeModeName = oraclePreferences?.activeMode ? (oraclePreferences.activeMode.charAt(0).toUpperCase() + oraclePreferences.activeMode.slice(1)) : 'Neutro';
 
     return (
         <div className="space-y-8 animate-fade-in pb-10">
@@ -1099,7 +1063,7 @@ const PreferenciasTab: React.FC = () => {
                 <div className="space-y-2">
                     <SettingSelector label="Tutoriais" value="Revisar" onClick={() => setModal('tutorial')} />
                     <SettingSelector label="Privacidade" value={privacyMode} onClick={() => setModal('privacy')} />
-                    <SettingSelector label="Notificações" value={currentNotificationName} onClick={() => setModal('notification')} />
+                    <SettingSelector label="Oráculo & Notificações" value={activeModeName} onClick={() => setModal('oracle')} />
                 </div>
             </section>
 
@@ -1114,8 +1078,9 @@ const PreferenciasTab: React.FC = () => {
                 </button>
             </section>
 
-            {modal === 'notification' && <NotificationSettingsModal currentMode={notificationMode} onSave={setNotificationMode} onClose={() => setModal(null)} />}
+            {modal === 'oracle' && <OracleSettingsModal onClose={() => setModal(null)} variant="preferences" />}
             {modal === 'privacy' && <ConfirmationModal title="Modo de Privacidade" message="Função ainda não implementada." onConfirm={() => setModal(null)} onCancel={() => setModal(null)} />}
+
             {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}
             {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
         </div>
@@ -1123,11 +1088,19 @@ const PreferenciasTab: React.FC = () => {
 };
 
 const PremiumTab: React.FC = () => {
-    const { userProfile } = useGame();
+    const { userProfile, oraclePreferences } = useGame();
     const [isLinksOpen, setLinksOpen] = useState(false);
-    const [isAssistantOpen, setAssistantOpen] = useState(false);
+    const [isOracleSettingsOpen, setOracleSettingsOpen] = useState(false);
+    const [isOracleChatOpen, setOracleChatOpen] = useState(false);
     const [isCodexOpen, setCodexOpen] = useState(false);
     const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
+    const isIAEnabled = oraclePreferences?.iaEnabled ?? true;
+
+    // Debug logs
+    useEffect(() => {
+        if (isOracleSettingsOpen) console.log("PremiumTab: Oracle Settings opened");
+        if (isOracleChatOpen) console.log("PremiumTab: Oracle Chat opened");
+    }, [isOracleSettingsOpen, isOracleChatOpen]);
 
     return (
         <div className="space-y-8 animate-fade-in pb-10">
@@ -1137,12 +1110,12 @@ const PremiumTab: React.FC = () => {
                     {!isPremium && <span className="text-[10px] font-bold text-gray-500 bg-white/5 px-2 py-1 rounded">BLOQUEADO</span>}
                 </div>
                 
-                <GlassCard variant="neutral" className={`p-4 space-y-3 ${!isPremium ? 'opacity-50 grayscale' : ''}`}>
+                <GlassCard variant="neutral" className="p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             onClick={() => { if (isPremium) setLinksOpen(true); }}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
+                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">🔗</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
@@ -1150,23 +1123,28 @@ const PremiumTab: React.FC = () => {
                         <button
                             onClick={() => { if (isPremium) setCodexOpen(true); }}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
+                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">📜</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Codex</span>
                         </button>
                         <button
-                            onClick={() => { if (isPremium) setAssistantOpen(true); }}
-                            disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
+                            onClick={() => { 
+                                // Open Settings/Config for everyone
+                                console.log("PremiumTab: Assistant button clicked -> Opening Settings");
+                                setOracleSettingsOpen(true); 
+                            }}
+                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center`}
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">🤖</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Assistente</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">
+                                Assistente
+                            </span>
                         </button>
                         <button
                             onClick={() => alert('Mock: campanhas não implementadas.')}
                             disabled={!isPremium}
-                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
+                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">🎯</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>
@@ -1187,7 +1165,27 @@ const PremiumTab: React.FC = () => {
             )}
 
             {isLinksOpen && <LinksModal onClose={() => setLinksOpen(false)} />}
-            {isAssistantOpen && <AssistantModal onClose={() => setAssistantOpen(false)} />}
+            
+            {isOracleSettingsOpen && (
+                <OracleSettingsModal 
+                    variant="assistant"
+                    onClose={() => setOracleSettingsOpen(false)} 
+                    onOpenChat={() => {
+                        if (!isIAEnabled) {
+                            alert("Ative a IA na aba Geral para usar o Chat.");
+                            // Re-open settings so they can enable it? 
+                            // Or just let them figure it out. 
+                            // Since the modal closes on button click, we might want to re-open it here if we really wanted to be helpful, 
+                            // but let's stick to simple alert for now.
+                        } else {
+                            setOracleChatOpen(true);
+                        }
+                    }} 
+                />
+            )}
+            
+            {isOracleChatOpen && <OracleChat onClose={() => setOracleChatOpen(false)} />}
+            
             {isCodexOpen && <CodexListModal onClose={() => setCodexOpen(false)} />}
         </div>
     );
@@ -1453,6 +1451,7 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </div>
     );
 };
+
 
 export const SettingsView: React.FC = () => {
     const { updateUserProfile, userProfile } = useGame();

@@ -102,12 +102,16 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
     const { seasonMissions, addSeasonMission } = useGame();
     const missionsForSeason = seasonMissions.filter(m => m.season_id === season.id);
     const [formData, setFormData] = useState<Omit<SeasonMission, 'id'>>({
-        season_id: season.id, title: '', description: '', goal_type: 'actions_completed', goal_value: 10, reward_type: 'exp', reward_value: 100
+        season_id: season.id, title: '', description: '', goal_type: 'actions_completed', goal_value: 10, reward_type: 'exp', reward_value: 100,
+        action_name: '', icon: '🛡️', type: 'individual'
     });
 
     const handleAddMission = async () => {
         await addSeasonMission(formData);
-        setFormData({ season_id: season.id, title: '', description: '', goal_type: 'actions_completed', goal_value: 10, reward_type: 'exp', reward_value: 100 });
+        setFormData({ 
+            season_id: season.id, title: '', description: '', goal_type: 'actions_completed', goal_value: 10, reward_type: 'exp', reward_value: 100,
+            action_name: '', icon: '🛡️', type: 'individual'
+        });
     };
 
     return (
@@ -117,19 +121,39 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
                 <div className='flex-grow space-y-2 overflow-y-auto pr-2'>
                     {missionsForSeason.map(m => (
                         <div key={m.id} className="p-2 bg-black/20 rounded-lg text-xs">
-                            <p className="font-bold">{m.title}</p>
+                            <div className="flex justify-between">
+                                <p className="font-bold">{m.title}</p>
+                                <span className="text-[10px] bg-white/10 px-1 rounded">{m.type}</span>
+                            </div>
                             <p className="text-gray-400">{m.description} ({m.goal_value} {m.goal_type})</p>
+                            {m.action_name && <p className="text-[10px] text-gray-500">Action: {m.action_name}</p>}
                         </div>
                     ))}
                 </div>
                 <div className='flex-shrink-0 border-t border-white/10 pt-3 space-y-2'>
                     <h4 className="text-center font-bold text-sm">Nova Missão</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                         <select value={formData.type} onChange={e => setFormData(p => ({...p, type: e.target.value as any}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="individual">Individual</option><option value="clan">Clã</option></select>
+                         <input type="text" placeholder="Ícone (ex: 🛡️)" value={formData.icon} onChange={e => setFormData(p => ({ ...p, icon: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                    </div>
                     <input type="text" placeholder="Título" value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
                     <input type="text" placeholder="Descrição" value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                    <select value={formData.goal_type} onChange={e => setFormData(p => ({...p, goal_type: e.target.value as SeasonMission['goal_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="actions_completed">Ações Completas</option><option value="km_run">KM Corridos</option><option value="books_read">Livros Lidos</option><option value="meditation_days">Dias de Meditação</option></select>
-                    <input type="number" placeholder="Valor da Meta" value={formData.goal_value} onChange={e => setFormData(p => ({ ...p, goal_value: Number(e.target.value) }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                    <select value={formData.reward_type} onChange={e => setFormData(p => ({...p, reward_type: e.target.value as SeasonMission['reward_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="exp">EXP</option><option value="item_id">Item ID</option></select>
-                    <input type="text" placeholder="Valor da Recompensa" value={String(formData.reward_value)} onChange={e => setFormData(p => ({ ...p, reward_value: p.reward_type === 'exp' ? Number(e.target.value) : e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                    
+                    <div className="space-y-1">
+                        <label className="text-[10px] text-gray-400 ml-1">Vincular a Ação (Nome exato)</label>
+                        <input type="text" placeholder="Nome da Ação (opcional)" value={formData.action_name} onChange={e => setFormData(p => ({ ...p, action_name: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <select value={formData.goal_type} onChange={e => setFormData(p => ({...p, goal_type: e.target.value as SeasonMission['goal_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="actions_completed">Ações Completas</option><option value="km_run">KM Corridos</option><option value="books_read">Livros Lidos</option><option value="meditation_days">Dias de Meditação</option></select>
+                        <input type="number" placeholder="Meta" value={formData.goal_value} onChange={e => setFormData(p => ({ ...p, goal_value: Number(e.target.value) }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                        <select value={formData.reward_type} onChange={e => setFormData(p => ({...p, reward_type: e.target.value as SeasonMission['reward_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="exp">EXP</option><option value="item_id">Item ID</option></select>
+                        <input type="text" placeholder="Recompensa" value={String(formData.reward_value)} onChange={e => setFormData(p => ({ ...p, reward_value: p.reward_type === 'exp' ? Number(e.target.value) : e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                    </div>
+                    
                     <button onClick={handleAddMission} className="w-full py-2 rounded-xl luxe-skin-button">Adicionar Missão</button>
                 </div>
             </GlassCard>
@@ -138,7 +162,7 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
 };
 
 
-const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onOpen: () => void; }> = ({ season, onEdit, onOpen }) => {
+const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onMissions: () => void; onOpen: () => void; }> = ({ season, onEdit, onMissions, onOpen }) => {
     const getStatus = () => {
         if (season.is_active) return { text: 'ATIVA', color: 'text-green-400' };
         if (new Date(season.start_date) > new Date()) return { text: 'FUTURA', color: 'text-blue-400' };
@@ -154,7 +178,8 @@ const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onOpen: () => v
                     <p className={`text-xs font-bold ${status.color}`}>{status.text}</p>
                 </div>
                 <div className="flex space-x-1">
-                    <button onClick={(event) => { event.stopPropagation(); onEdit(); }} className="text-xs font-bold p-2 bg-black/20 rounded-lg">Editar</button>
+                    <button onClick={(event) => { event.stopPropagation(); onMissions(); }} className="text-xs font-bold p-2 bg-black/20 rounded-lg hover:bg-white/10">Missões</button>
+                    <button onClick={(event) => { event.stopPropagation(); onEdit(); }} className="text-xs font-bold p-2 bg-black/20 rounded-lg hover:bg-white/10">Editar</button>
                 </div>
             </div>
         </GlassCard>
@@ -164,6 +189,7 @@ const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onOpen: () => v
 const SeasonManager: React.FC = () => {
     const { seasons } = useGame();
     const [editorModal, setEditorModal] = useState<{ open: boolean, season: Season | null }>({ open: false, season: null });
+    const [missionsModal, setMissionsModal] = useState<{ open: boolean, season: Season | null }>({ open: false, season: null });
     const [detailSeason, setDetailSeason] = useState<Season | null>(null);
 
     const sortedSeasons = [...seasons].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
@@ -176,16 +202,17 @@ const SeasonManager: React.FC = () => {
             <h2 className="text-lg font-bold tracking-wider">Gerenciar Seasons</h2>
             <button onClick={() => setEditorModal({ open: true, season: null })} className="w-full py-2 rounded-xl luxe-skin-button">Criar Nova Era</button>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({open: true, season: activeSeason})} onOpen={() => setDetailSeason(activeSeason)} />}
+                {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({open: true, season: activeSeason})} onMissions={() => setMissionsModal({open: true, season: activeSeason})} onOpen={() => setDetailSeason(activeSeason)} />}
                 
                 {futureSeasons.length > 0 && <h3 className="text-xs font-bold text-gray-400 pt-2">FUTURAS</h3>}
-                {futureSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onOpen={() => setDetailSeason(s)} />)}
+                {futureSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onMissions={() => setMissionsModal({open: true, season: s})} onOpen={() => setDetailSeason(s)} />)}
                 
                 {pastSeasons.length > 0 && <h3 className="text-xs font-bold text-gray-400 pt-2">ENCERRADAS</h3>}
-                {pastSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onOpen={() => setDetailSeason(s)} />)}
+                {pastSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onMissions={() => setMissionsModal({open: true, season: s})} onOpen={() => setDetailSeason(s)} />)}
             </div>
             
             {editorModal.open && <SeasonEditorModal season={editorModal.season} onClose={() => setEditorModal({open: false, season: null})} />}
+            {missionsModal.open && missionsModal.season && <MissionEditorModal season={missionsModal.season} onClose={() => setMissionsModal({open: false, season: null})} />}
             {detailSeason && <SeasonDetailModal season={detailSeason} onClose={() => setDetailSeason(null)} />}
         </div>
     );

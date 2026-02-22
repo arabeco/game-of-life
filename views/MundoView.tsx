@@ -12,6 +12,8 @@ import { HallOfFameView } from './HallOfFameView';
 import { StoreView } from './StoreView';
 import { ArsenalView } from './ArsenalView';
 import { SeasonView } from './SeasonView';
+import { UserAvatar } from '../components/UserAvatar';
+import { ProfileView } from './ProfileView';
 
 const JoinClanBox: React.FC<{onCreate: () => void}> = ({ onCreate }) => {
     return (
@@ -117,56 +119,10 @@ const SocialSearch: React.FC<{ onSearchResults: (results: { players: UserProfile
     );
 };
 
-const FriendProfileModal: React.FC<{ profile: UserProfile; onClose: () => void }> = ({ profile, onClose }) => {
-    const backgroundStyle = profile.backgroundUrl
-        ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.8) 100%), url('${profile.backgroundUrl}')` }
-        : { background: 'var(--asset-grad-default)' };
-
-    return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <div className="w-full max-w-sm m-4 h-[85vh] rounded-3xl" onClick={e => e.stopPropagation()}>
-                <div className="relative w-full h-full p-4 flex flex-col justify-between text-white rounded-3xl border border-white/20 bg-cover bg-center" style={backgroundStyle}>
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="relative w-20 h-20 rounded-full border-4 bg-gray-800 flex-shrink-0" style={{ borderColor: 'var(--skin-accent-color)'}}>
-                                <div className="w-full h-full object-cover rounded-full overflow-hidden">
-                                    <img src={profile.avatarUrl} alt={profile.nickname} className="w-full h-full object-cover" />
-                                </div>
-                                {profile.isOnline && <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800"></div>}
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black uppercase tracking-widest luxe-title-shadow">{profile.nickname}</h2>
-                                <p className="text-xs text-gray-300">{profile.title || 'Soberano'}</p>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="p-2 rounded-full bg-black/30 hover:bg-black/50">
-                            <XIcon className="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    <div className="space-y-3">
-                        <GlassCard variant="neutral" className="p-3 text-center text-sm">
-                            <div className="flex justify-between text-xs font-bold text-gray-300">
-                                <span>Nível</span>
-                                <span>{profile.level}</span>
-                            </div>
-                        </GlassCard>
-                        {profile.bannerUrl && (
-                            <GlassCard variant="neutral" className="p-3 flex items-center justify-center">
-                                <img src={profile.bannerUrl} alt="Banner" className="h-10 object-contain" />
-                            </GlassCard>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // --- Tabs ---
 
 const SocialTab: React.FC = () => {
-    const { clan, friends, friendRequestsIncoming, friendRequestsOutgoing, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, cancelFriendRequest, joinClan } = useGame();
+    const { clan, friends, friendRequestsIncoming, friendRequestsOutgoing, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, joinClan } = useGame();
     const [modal, setModal] = useState<'create' | 'sanctuary' | null>(null);
     const [activeTab, setActiveTab] = useState<'aliados' | 'solicitacoes'>('aliados');
     const [searchResults, setSearchResults] = useState<{ players: UserProfile[], clans: Clan[] }>({ players: [], clans: [] });
@@ -274,7 +230,7 @@ const SocialTab: React.FC = () => {
                                                     actions={
                                                         <div className="flex gap-2">
                                                             <button onClick={() => acceptFriendRequest(request.id)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
-                                                            <button onClick={() => rejectFriendRequest(request.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
+                                                            <button onClick={() => declineFriendRequest(request.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
                                                         </div>
                                                     }
                                                 />
@@ -312,7 +268,7 @@ const SocialTab: React.FC = () => {
                 )}
             </div>
             {modal === 'create' && <CreateClanModal onClose={() => setModal(null)} />}
-            {selectedProfile && <FriendProfileModal profile={selectedProfile} onClose={() => setSelectedProfile(null)} />}
+            {selectedProfile && <ProfileView profile={selectedProfile} onClose={() => setSelectedProfile(null)} />}
         </div>
     );
 };

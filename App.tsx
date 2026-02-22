@@ -16,6 +16,7 @@ import { GlobalHeader } from './components/GlobalHeader';
 import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from './components/Icons';
 import { AchievementModal } from './components/AchievementModal';
 import { supabase } from './supabaseClient';
+import { GoldenToast } from './components/GoldenToast';
 import type { Session } from '@supabase/supabase-js';
 import { useLongPress } from './hooks/useLongPress';
 
@@ -382,7 +383,7 @@ const AppWithTutorial: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
-    const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag } = useGame();
+    const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag, toast, hideToast } = useGame();
     const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
 
@@ -436,6 +437,12 @@ const MainApp: React.FC = () => {
                 <AchievementModal 
                     achievement={achievementUnlocked}
                     onClose={() => setAchievementUnlocked(null)}
+                />
+            )}
+            {toast.visible && (
+                <GoldenToast 
+                    message={toast.message} 
+                    onClose={hideToast}
                 />
             )}
         </>

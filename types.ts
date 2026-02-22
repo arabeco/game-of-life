@@ -482,3 +482,62 @@ export interface LinkNotificationLog {
   notificationType: LinkNotificationType;
   createdAt: string;
 }
+
+// --- Oracle System ---
+
+export type OracleMode = 'calmo' | 'reflexivo' | 'tatico' | 'estrategico' | 'coach' | 'personalizado' | 'neutro';
+
+export type OracleCategory = 
+    | 'frases_inspiradoras' 
+    | 'reflexoes_filosoficas' 
+    | 'fragmentos_sabedoria' 
+    | 'dicas_produtividade' 
+    | 'rituais_lifestyle' 
+    | 'provocacoes' 
+    | 'sussurros_maestria' 
+    | 'analise_padroes';
+
+export interface OraclePreferences {
+    userId: string;
+    iaEnabled: boolean;
+    notificationsEnabled: boolean;
+    animationsEnabled: boolean;
+    soundsEnabled: boolean;
+    hapticsEnabled: boolean;
+    enabledCategories: OracleCategory[];
+    activeMode: OracleMode;
+    customModeInstructions?: string;
+    quietHoursStart: string;
+    quietHoursEnd: string;
+    updatedAt: string;
+}
+
+export interface OracleMessage {
+    id: string;
+    userId: string;
+    category: OracleCategory;
+    content: string;
+    mode: OracleMode;
+    deliveryType: 'feed' | 'push' | 'chat';
+    contextSnapshot?: any;
+    read: boolean;
+    createdAt: string;
+}
+
+export interface OracleContext {
+    userProfile: UserProfile;
+    activeCycle: Cycle | null;
+    dailyCommitment: DailyCommitment | null;
+    recentActions: ScheduledTask[];
+    clan: Clan | null;
+    report?: Report | null;
+}
+
+export interface Notification {
+    id: string;
+    userId: string;
+    type: 'friend_request' | 'friend_accepted' | 'clan_invite' | 'clan_join' | 'clan_mission_update' | 'cycle_ending' | 'season_ending' | 'level_up' | 'title_unlocked' | 'mission_redeemable' | 'system';
+    content: string;
+    read: boolean;
+    createdAt: string;
+}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useGame } from '../contexts/GameContext';
 import { SovereignConfig } from '../types';
 import { SOVEREIGN_ASSETS, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { BODY_DB, HAIR_DB, HAIR_COLORS, Gender } from '../constants/skins';
@@ -48,6 +49,7 @@ const Selector: React.FC<{
 );
 
 export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initialConfig, onSave, onClose }) => {
+    const { userProfile } = useGame();
     const [config, setConfig] = useState<SovereignConfig>({
         ...DEFAULT_SOVEREIGN_CONFIG,
         ...(initialConfig || {}),
@@ -85,9 +87,23 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     }, []);
 
     // Helpers
+    const getOwnedList = (allItems: any[]) => {
+        if (!allItems) return [];
+        return allItems.filter(item => {
+            if (item.id === 'none') return true;
+            // Allow if in inventory
+            if (userProfile.inventory?.some(inv => inv.id === item.id)) return true;
+            // Allow if unlocked via legacy (if needed, but relying on inventory for now)
+            return false;
+        });
+    };
+
     const cycle = (currentId: string | undefined, options: any[], direction: number): string => {
-        if (!options || options.length === 0) return currentId || 'none';
-        const validOptions = options.map(o => o.id);
+        // Filter options by ownership
+        const ownedOptions = getOwnedList(options);
+        
+        if (!ownedOptions || ownedOptions.length === 0) return currentId || 'none';
+        const validOptions = ownedOptions.map(o => o.id);
         const idx = validOptions.indexOf(currentId || 'none');
         // If current not found, start at 0
         const startIdx = idx === -1 ? 0 : idx;
@@ -234,7 +250,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     const primary = config.primaryDisplay || 'sovereign';
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <ImagePreloader />
             <GlassCard variant="neutral" className="w-full max-w-md m-4 rounded-3xl flex flex-col max-h-[90vh] overflow-hidden border-2" onClick={e => e.stopPropagation()} style={{ borderColor: 'var(--skin-accent-color)' }}>
                 

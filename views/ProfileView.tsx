@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon } from '../components/Icons';
@@ -160,25 +161,10 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
         <span className={`truncate font-bold ${isShareable ? 'text-black' : 'text-white'}`}>{String(slot.value)}</span>
     );
 
-    if (isShareable) {
-        // Gold style for sharing, as per the reference image.
-        return (
-            <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
-                <h3 className="text-[10px] font-semibold text-yellow-400/70 uppercase tracking-wider">{slot.label}</h3>
-                <div className="relative w-full flex-grow mx-auto px-4 py-3 rounded-2xl flex items-center justify-center bg-gradient-to-b from-yellow-500 to-amber-700 text-black shadow-inner shadow-white/20">
-                    {valueDisplay}
-                    {rarityStyle && (
-                        <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${rarityStyle.bg} shadow-sm z-10`} />
-                    )}
-                </div>
-            </div>
-        );
-    }
-    
-    // Original dark style for the live profile view.
+    // UNIFIED STYLE: Always use the dark/glass style regardless of isShareable
     return (
         <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
-            <h3 className="text-[10px] font-semibold accent-text uppercase tracking-wider">{slot.label}</h3>
+            <h3 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{slot.label}</h3>
             <div 
                 className="relative w-full flex-grow mx-auto p-2 rounded-2xl flex items-center justify-center bg-black/50 gradient-border gradient-border-accent text-white"
                 style={glowStyle}
@@ -192,7 +178,7 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
     );
 }
 
-const ShareableProfileCard: React.FC<{ 
+export const ShareableProfileCard: React.FC<{ 
     id: string; 
     userProfile: UserProfile;
     clanName: string;
@@ -202,37 +188,60 @@ const ShareableProfileCard: React.FC<{
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
     const isGradientBackground = userProfile.backgroundUrl.startsWith('var(') || userProfile.backgroundUrl.startsWith('linear-gradient');
 
-    return (
-        <div id={id} className="w-[380px] h-auto bg-[#101010] font-sans text-white relative p-4 overflow-hidden">
-            <div className="absolute inset-0 z-0 opacity-80">
-                {isGradientBackground ? (
-                    <div className="w-full h-full" style={{ background: userProfile.backgroundUrl }} />
-                ) : (
-                    <img src={userProfile.backgroundUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous"/>
-                )}
-            </div>
-            <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+    const renderBackground = () => {
+        if (isGradientBackground) {
+            return <div className="w-full h-full" style={{ background: userProfile.backgroundUrl }} />;
+        }
+        return <img src={userProfile.backgroundUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous"/>
+    };
 
-            <div className="relative z-10 flex flex-col items-center space-y-4">
+    return (
+        <GlassCard id={id} variant="neutral" className="w-[380px] min-h-[500px] h-auto p-0 overflow-hidden relative font-sans text-white">
+             {/* Layer 1: Background Image/Gradient */}
+            <div className="absolute inset-0 w-full h-full z-0">
+                {renderBackground()}
+            </div>
+
+            {/* Layer 2: Content */}
+            <div className="relative z-10 p-4 space-y-4">
                 <div className="pt-8 flex flex-col items-center text-center">
                     <div className="relative w-32 h-32">
-                                <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap opacity-60">
-                                    Foto de Perfil
-                                </span>
-                                <div className="w-full h-full group flex items-center justify-center">
-                            <div className="w-[75%] h-[75%] rounded-full overflow-hidden relative">
+                         <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap opacity-60">
+                             Foto de Perfil
+                         </span>
+                        
+                        {/* Avatar */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75%] h-[75%] rounded-full flex items-center justify-center z-30">
+                            <div className="w-full h-full rounded-full overflow-hidden relative">
                                 <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous"/>
                             </div>
                         </div>
-                        <div 
-                            className="absolute inset-0 w-full h-full pointer-events-none"
-                            style={ selectedBorder?.imageUrl ? { backgroundImage: `url(${selectedBorder.imageUrl})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : { border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`, borderRadius: '50%' } }
+
+                        {/* Border */}
+                        <div
+                            className="absolute -inset-1 pointer-events-none z-40"
+                            style={
+                                selectedBorder?.imageUrl
+                                ? {
+                                    backgroundImage: `url(${selectedBorder.imageUrl})`,
+                                    backgroundSize: 'contain',
+                                    backgroundPosition: 'center',
+                                    backgroundRepeat: 'no-repeat',
+                                }
+                                : {
+                                    border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
+                                    borderRadius: '50%',
+                                }
+                            }
                         />
+                        
+                        {/* Level Badge */}
                         <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-10" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
                             <span className="text-lg font-black text-white">{userProfile.level}</span>
                         </div>
                     </div>
                     
+                    {/* Name & Clan */}
                     <div className="relative mt-2 flex flex-col items-center">
                         <div className="bg-black/50 backdrop-blur-sm border rounded-xl py-1 px-4 inline-block" style={{ borderColor: 'var(--skin-accent-color)' }}>
                             <h2 className="text-3xl font-bold text-white luxe-title-shadow">{userProfile.nickname}</h2>
@@ -244,14 +253,16 @@ const ShareableProfileCard: React.FC<{
                     </div>
                 </div>
 
+                {/* Banner */}
                 {userProfile.bannerUrl && (
                     <div className="pt-4 pb-4 text-center flex items-center justify-center">
                         <img src={userProfile.bannerUrl} alt="Banner" className="mx-auto h-16 object-contain" crossOrigin="anonymous" />
                     </div>
                 )}
                 
-                {userProfile.visibleWidgets.length > 0 && (
-                     <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl w-full">
+                {/* Widgets */}
+                <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl">
+                    {userProfile.visibleWidgets.length > 0 ? (
                         <div className="grid grid-cols-6 gap-2">
                         {userProfile.visibleWidgets.map(slotId => {
                             const slot = getSlotById(slotId);
@@ -259,36 +270,60 @@ const ShareableProfileCard: React.FC<{
                             return <ProfileSlotWidget key={slotId} slot={slot} isShareable={true} />
                         })}
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <p className="text-center text-sm text-gray-500 py-4">Nenhum widget visível.</p>
+                    )}
+                </div>
             </div>
 
+            {/* UNIFIED POSITIONING: Match the Live Profile View */}
             {userProfile.sovereign && (
-                <div className="absolute bottom-4 right-4 z-20 transform scale-125 origin-bottom-right">
-                    <UnifiedSovereignDisplay sovereignConfig={userProfile.sovereign} />
-                </div>
+                 <UnifiedSovereignDisplay 
+                    sovereignConfig={userProfile.sovereign} 
+                    className="absolute top-[60px] right-4 w-[70px] h-[95px]"
+                />
             )}
              <div className="absolute bottom-2 right-3 text-xs accent-text opacity-80 font-semibold z-30">Life OS</div>
-        </div>
+        </GlassCard>
     );
 }
 
-export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userProfile, assets, updateUserProfile, clan, clanRanks } = useGame();
+export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
+    const { userProfile, assets, updateUserProfile, clan, clanRanks, getUserPublicData } = useGame();
+    
+    const isOwnProfile = !profile || profile.id === userProfile.id;
+    const baseProfile = profile || userProfile;
+
     const [isEditing, setIsEditing] = useState(false);
-    const [editableProfile, setEditableProfile] = useState<UserProfile>(userProfile);
+    const [editableProfile, setEditableProfile] = useState<UserProfile>(baseProfile);
     const [isBorderModalOpen, setBorderModalOpen] = useState(false);
     const [isBackgroundModalOpen, setBackgroundModalOpen] = useState(false);
     const [isBannerModalOpen, setBannerModalOpen] = useState(false);
     const [isClanModalOpen, setClanModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
+
+    const [viewedClan, setViewedClan] = useState<Clan | null>(null);
+    const [viewedClanRank, setViewedClanRank] = useState<ClanRank | undefined>(undefined);
+    const [viewedSlots, setViewedSlots] = useState<Slot[]>([]);
+    const [fetchedProfile, setFetchedProfile] = useState<UserProfile | null>(null);
+    
+    useEffect(() => {
+        if (!isOwnProfile && profile?.id) {
+            getUserPublicData(profile.id).then(data => {
+                if (data.profile) setFetchedProfile(data.profile);
+                setViewedClan(data.clan);
+                setViewedClanRank(data.clanRank);
+                setViewedSlots(data.slots);
+            });
+        }
+    }, [isOwnProfile, profile?.id, getUserPublicData]);
     
     // Distinguish between Profile Photo (avatarUrl) and Sovereign Avatar (sovereign config)
     // The user explicitly requested to avoid confusion between the two.
     
     useEffect(() => {
-        if (isEditing) {
+        if (isEditing && isOwnProfile) {
             // We only sync from userProfile when STARTING to edit.
             // If we are already editing, we don't want external updates to overwrite work,
             // unless it's the result of our own save (which updates userProfile).
@@ -300,15 +335,20 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             // But this effect runs when isEditing changes.
             setEditableProfile(userProfile);
         }
-    }, [isEditing]); // Removed userProfile from dependencies to prevent auto-deselect on background updates
+    }, [isEditing, isOwnProfile, userProfile]);
 
     const getSlotById = (slotId: string) => {
-        const assetId = slotId.split('.')[0];
-        const asset = assets.find(a => a.id === assetId);
-        return asset?.slots.find(s => s.id === slotId);
+        if (isOwnProfile) {
+            const assetId = slotId.split('.')[0];
+            const asset = assets.find(a => a.id === assetId);
+            return asset?.slots.find(s => s.id === slotId);
+        } else {
+            return viewedSlots.find(s => s.id === slotId);
+        }
     };
 
     const handleSave = () => {
+        if (!isOwnProfile) return;
         const patch: Partial<UserProfile> = {};
         if (editableProfile.avatarUrl !== userProfile.avatarUrl) patch.avatarUrl = editableProfile.avatarUrl;
         if (editableProfile.border !== userProfile.border) patch.border = editableProfile.border;
@@ -327,21 +367,31 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
     
     const handleBorderSelect = (borderId: string) => {
+        if (!isOwnProfile) return;
         setEditableProfile(prev => ({...prev, border: borderId}));
+        // Immediate persistence
+        updateUserProfile({ border: borderId });
         setBorderModalOpen(false);
     }
     
     const handleBackgroundSelect = (backgroundUrl: string) => {
+        if (!isOwnProfile) return;
         setEditableProfile(prev => ({...prev, backgroundUrl: backgroundUrl}));
+        // Immediate persistence
+        updateUserProfile({ backgroundUrl: backgroundUrl });
         setBackgroundModalOpen(false);
     }
 
     const handleBannerSelect = (bannerUrl: string) => {
+        if (!isOwnProfile) return;
         setEditableProfile(prev => ({...prev, bannerUrl: bannerUrl}));
+        // Immediate persistence
+        updateUserProfile({ bannerUrl: bannerUrl });
         setBannerModalOpen(false);
     }
 
     const handleAvatarSelect = (avatarUrl: string) => {
+        if (!isOwnProfile) return;
         // Immediate update for Avatar URL as per user request
         setEditableProfile(prev => ({ 
             ...prev, 
@@ -356,6 +406,7 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
     
     const handleWidgetToggle = (slotId: string) => {
+        if (!isOwnProfile) return;
         // Optimistic UI update
         const currentWidgets = editableProfile.visibleWidgets || [];
         const newWidgets = currentWidgets.includes(slotId)
@@ -369,10 +420,15 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         updateUserProfile({ visibleWidgets: newWidgets });
     };
 
-    const displayProfile = isEditing ? editableProfile : userProfile;
+    const displayProfile = isOwnProfile 
+        ? (isEditing ? editableProfile : baseProfile)
+        : (fetchedProfile || baseProfile);
+        
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === displayProfile.border);
-    const currentClanRank = clan ? clanRanks.find(r => r.id === clan.rankId) : undefined;
-    const clanName = clan?.name || 'Sem Clã';
+    
+    // CRITICAL FIX: Use fetched clan data for other profiles
+    const currentClanRank = isOwnProfile ? (clan ? clanRanks.find(r => r.id === clan.rankId) : undefined) : viewedClanRank;
+    const clanName = isOwnProfile ? (clan ? clan.name : 'Sem Clã') : (viewedClan ? viewedClan.name : 'Sem Clã');
 
     const isGradientBackground = displayProfile.backgroundUrl.startsWith('var(') || displayProfile.backgroundUrl.startsWith('linear-gradient');
 
@@ -383,24 +439,27 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return <img src={displayProfile.backgroundUrl} className="w-full h-full object-cover" alt="Background" />;
     };
 
-    return (
+    // Layout Adjustment: Ensure the card container is centered and scrollable if needed, matching "comprido" (long) description.
+    // Using h-[92vh] md:h-[95vh] ensures it takes up most of the screen vertically.
+    // z-index increased to 9999 and using Portal to overlay everything
+    return createPortal(
         <>
             <div style={{ position: 'fixed', top: 0, left: '-9999px', zIndex: -1 }}>
                 <ShareableProfileCard 
                     id="shareable-profile" 
-                    userProfile={userProfile}
+                    userProfile={displayProfile}
                     clanName={clanName}
                     clanRank={currentClanRank} 
                     getSlotById={getSlotById}
                 />
             </div>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <div className="w-full max-w-[420px] p-4 h-[90vh]" onClick={e => e.stopPropagation()}>
-                    <GlassCard variant="neutral" className="p-0 overflow-hidden relative h-full">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
+                <div className="w-full max-w-[420px] h-[92vh] md:h-[95vh] relative" onClick={e => e.stopPropagation()}>
+                    <GlassCard variant="neutral" className="w-full h-full p-0 overflow-hidden relative shadow-2xl border border-white/10">
                          {/* Layer 1: Background Image/Gradient */}
                         <div className="absolute inset-0 w-full h-full z-0">
                             {renderBackground()}
-                             {isEditing && (
+                             {isEditing && isOwnProfile && (
                                 <button onClick={() => setBackgroundModalOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold opacity-0 hover:opacity-100 transition-opacity z-20">
                                     EDITAR PLANO DE FUNDO
                                 </button>
@@ -411,10 +470,12 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <div className="absolute inset-0 overflow-y-auto z-10 p-4 space-y-4">
                             <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-start">
                                 <div className="flex flex-col space-y-2">
-                                    <button onClick={isEditing ? cancelEdit : () => setIsEditing(true)} className={`p-2 rounded-full transition-colors border ${isEditing ? 'border-red-500/50 bg-red-500/50 backdrop-blur-sm' : 'border-white/20 bg-black/50 backdrop-blur-sm'}`}>
-                                        {isEditing ? <XIcon className="w-5 h-5 text-red-300" /> : <EditIcon className="w-5 h-5 text-gray-300" />}
-                                    </button>
-                                     <button onClick={() => handleShare('shareable-profile', `Perfil de ${userProfile.nickname} - Life OS`)} className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm">
+                                    {isOwnProfile && (
+                                        <button onClick={isEditing ? cancelEdit : () => setIsEditing(true)} className={`p-2 rounded-full transition-colors border ${isEditing ? 'border-red-500/50 bg-red-500/50 backdrop-blur-sm' : 'border-white/20 bg-black/50 backdrop-blur-sm'}`}>
+                                            {isEditing ? <XIcon className="w-5 h-5 text-red-300" /> : <EditIcon className="w-5 h-5 text-gray-300" />}
+                                        </button>
+                                    )}
+                                     <button onClick={() => handleShare('shareable-profile', `Perfil de ${displayProfile.nickname} - Life OS`)} className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm">
                                         <ShareIcon className="w-5 h-5 text-gray-300" />
                                     </button>
                                 </div>
@@ -472,57 +533,67 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     >
                                         <h2 className="text-3xl font-bold text-white luxe-title-shadow">{displayProfile.nickname}</h2>
                                     </div>
-                                    <button onClick={() => clan && setClanModalOpen(true)} disabled={!clan} className="mt-2 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-2 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
+                                    <button onClick={() => isOwnProfile && clan && setClanModalOpen(true)} disabled={!isOwnProfile || !clan} className="mt-2 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-2 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
                                         <span className="text-sm font-bold text-white">{clanName}</span>
                                         <span className="text-xs text-gray-400">{currentClanRank?.name || 'N/A'}</span>
                                     </button>
                                 </div>
                             </div>
                             
-                            <div className="pt-4 pb-4 text-center flex items-center justify-center">
+                            <div className="px-4 pb-8 w-full">
                                 {displayProfile.bannerUrl ? (
-                                    <div className="px-4 relative group">
+                                    <div className="relative group mb-4">
                                         <img src={displayProfile.bannerUrl} alt="Banner" className="mx-auto h-16 object-contain" />
-                                            {isEditing && (
-                                            <button onClick={() => setBannerModalOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                                                EDITAR BANNER
-                                            </button>
+                                        {isEditing && isOwnProfile && (
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer" onClick={() => setBannerModalOpen(true)}>
+                                                <EditIcon className="w-6 h-6 text-white" />
+                                            </div>
                                         )}
                                     </div>
-                                ) : (
-                                    isEditing && (
-                                        <button onClick={() => setBannerModalOpen(true)} className="border-2 border-dashed border-gray-600 rounded-2xl flex flex-col items-center justify-center hover:border-gray-400 transition-colors text-gray-500 hover:text-gray-400 p-4">
-                                            <PlusIcon className="w-8 h-8"/>
-                                            <span className="text-xs font-bold mt-1">ADD BANNER</span>
-                                        </button>
-                                    )
-                                )}
-                            </div>
+                                ) : isEditing && isOwnProfile ? (
+                                    <div className="mb-4 w-full cursor-pointer group" onClick={() => setBannerModalOpen(true)}>
+                                        <div className="border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center p-4 group-hover:bg-white/5 group-hover:border-white/40 transition-all">
+                                            <PlusIcon className="w-6 h-6 text-gray-400 mb-1 group-hover:text-white" />
+                                            <span className="text-xs text-gray-400 font-bold uppercase group-hover:text-white">Adicionar Banner</span>
+                                        </div>
+                                    </div>
+                                ) : null}
 
-                            <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl">
-                                {isEditing ? (
-                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2">
+                                {isEditing && isOwnProfile ? (
+                                    <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-inner w-full">
+                                        <h3 className="text-sm font-bold text-gray-300 mb-3 text-left flex items-center gap-2">
+                                            <PlusIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                                            Gerenciar Widgets
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                                         {assets.flatMap(a => a.slots).map(slot => {
-                                            const isSelected = editableProfile.visibleWidgets.includes(slot.id);
+                                            const isSelected = editableProfile.visibleWidgets?.includes(slot.id);
                                             return (
-                                                <button 
-                                                    key={slot.id} 
-                                                    onClick={() => handleWidgetToggle(slot.id)} 
-                                                    className={`p-2 rounded-xl text-left text-sm transition-all ${isSelected ? 'bg-white/20 ring-2 ring-[var(--gold)]' : 'bg-black/20 hover:bg-white/10'}`}
+                                                <button
+                                                    key={slot.id}
+                                                    onClick={() => handleWidgetToggle(slot.id)}
+                                                    className={`p-2 rounded-xl text-left text-sm transition-all flex items-center justify-between ${isSelected ? 'bg-white/10 ring-1 ring-[var(--skin-accent-color)] text-white' : 'bg-black/20 text-gray-400 hover:bg-white/5'}`}
                                                 >
-                                                    {slot.label}
+                                                    <span className="truncate">{slot.label}</span>
+                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] shadow-[0_0_5px_var(--skin-accent-color)]" />}
                                                 </button>
                                             );
                                         })}
+                                        </div>
                                     </div>
                                 ) : (
-                                        <div className="grid grid-cols-6 gap-2">
-                                        {userProfile.visibleWidgets.map(slotId => {
-                                            const slot = getSlotById(slotId);
-                                            if (!slot) return null;
-                                            return <ProfileSlotWidget key={slotId} slot={slot} />
-                                        })}
-                                            {userProfile.visibleWidgets.length === 0 && <p className="col-span-6 text-center text-sm text-gray-500 py-4">Nenhum widget visível.</p>}
+                                    <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
+                                        {displayProfile.visibleWidgets.length > 0 ? (
+                                            <div className="grid grid-cols-6 gap-2">
+                                            {displayProfile.visibleWidgets.map(slotId => {
+                                                const slot = getSlotById(slotId);
+                                                if (!slot) return null;
+                                                return <ProfileSlotWidget key={slotId} slot={slot} />
+                                            })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-center text-sm text-gray-500 py-4">Nenhum widget visível.</p>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -554,6 +625,7 @@ export const ProfileView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onClose={() => setIsSovereignModalOpen(false)}
                 />
             )}
-        </>
+        </>,
+        document.body
     );
 };

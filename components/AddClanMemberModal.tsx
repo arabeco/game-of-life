@@ -12,7 +12,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
     );
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10002] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
                     <h2 className="text-lg font-bold uppercase tracking-wider">Adicionar Membro</h2>

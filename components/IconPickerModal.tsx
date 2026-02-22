@@ -19,7 +19,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onCl
     const [activeCategory, setActiveCategory] = useState<keyof typeof iconCategories>('Sugeridos');
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10002] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-3 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Ícone</h2>
                 

@@ -4,6 +4,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { XIcon, SendIcon, SparklesIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
+import { OracleContext } from '../types';
 
 // API Key from gateway.ts (hardcoded for now as per instructions)
 const API_KEY = "AIzaSyAryjNyDFBRrwfvsHdQWvUTCRm1-yx83zo";
@@ -18,8 +19,8 @@ interface Message {
   timestamp: Date;
 }
 
-export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { userProfile, assets, actions, tasks, reports, activeCycle, oracleMode } = useGame();
+export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
+  const { userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,10 +28,12 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const activeMode = oraclePreferences?.activeMode || 'neutro';
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isLoading]);
 
   // Focus input on mount
   useEffect(() => {
@@ -39,16 +42,42 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   // Build System Prompt based on Mode
   const systemPrompt = useMemo(() => {
-    const config = ORACLE_MODES[oracleMode];
-    return config.systemPromptTemplate({
-      userProfile,
-      assets,
-      actions,
-      tasks,
-      reports,
-      activeCycle
-    });
-  }, [oracleMode, userProfile, assets, actions, tasks, reports, activeCycle]);
+    const config = ORACLE_MODES[activeMode];
+    const now = new Date();
+    const hour = now.getHours();
+    let timeOfDay: "madrugada" | "manhã" | "tarde" | "noite" = "manhã";
+    if (hour >= 0 && hour < 6) timeOfDay = "madrugada";
+    else if (hour >= 6 && hour < 12) timeOfDay = "manhã";
+    else if (hour >= 12 && hour < 18) timeOfDay = "tarde";
+    else timeOfDay = "noite";
+
+    const contextData: OracleContext = {
+        currentTime: now.toISOString(),
+        timeOfDay,
+        hasCycle: !!activeCycle,
+        cycleDayNumber: activeCycle ? Math.floor((now.getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
+        cycleTotalDays: activeCycle ? Math.floor((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
+        cycleCompletionPercent: null, // Calculate if needed
+        hasArenas: assets.some(a => a.arenas.length > 0),
+        totalArenas: assets.reduce((acc, a) => acc + a.arenas.length, 0),
+        arenaNames: assets.flatMap(a => a.arenas.map(ar => ar.name)),
+        staleArenas: [], // Logic to find stale arenas
+        completedActionsInCycle: 0, // Logic needed
+        pendingActionsToday: tasks.filter(t => t.date === now.toISOString().split('T')[0] && !t.completed).length,
+        overdueActions: 0, // Logic needed
+        activeMode,
+        customModeInstructions: oraclePreferences?.customModeInstructions || null,
+        enabledCategories: oraclePreferences?.enabledCategories || [],
+        username: userProfile.nickname,
+        level: userProfile.level,
+        sephirotLevels: assets.reduce((acc, a) => ({ ...acc, [a.name]: a.level }), {}),
+        clanName: null, // Get from clan state if available
+        seasonName: null,
+        pendingChests: userProfile.chests?.reduce((acc, c) => acc + c.count, 0) || 0
+    };
+
+    return config.systemPromptTemplate(contextData);
+  }, [activeMode, userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -92,13 +121,10 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 pointer-events-none">
-      {/* Backdrop for mobile mostly, but let's keep it clickable through except the chat */}
-      <div className="absolute inset-0 bg-transparent" onClick={onClose} />
-      
-      <div className="pointer-events-auto w-full max-w-sm mt-16 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[80vh] animate-in slide-in-from-top-5 fade-in duration-300">
+  const content = (
+      <>
         {/* Header */}
+        {!hideHeader && (
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-600/20 flex items-center justify-center border border-white/10">
@@ -107,8 +133,15 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <div>
               <h3 className="text-sm font-bold text-gray-200 tracking-wider">ORÁCULO</h3>
               <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-gray-500 uppercase tracking-widest">Conectado</span>
-                  <span className="text-[10px] text-amber-500/50 uppercase tracking-widest">• {ORACLE_MODES[oracleMode].name}</span>
+                  <div className="flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      <span className="text-[10px] text-green-400 font-bold uppercase tracking-widest">Online</span>
+                  </div>
+                  <span className="text-[10px] text-gray-600 uppercase tracking-widest">•</span>
+                  <span className="text-[10px] text-amber-500/50 uppercase tracking-widest">{ORACLE_MODES[activeMode].name}</span>
               </div>
             </div>
           </div>
@@ -119,6 +152,7 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <XIcon className="w-5 h-5" />
           </button>
         </div>
+        )}
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
@@ -126,7 +160,7 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-50">
               <SparklesIcon className="w-12 h-12 mb-4 text-gray-600" />
               <p className="text-sm text-gray-500">O Oráculo aguarda sua consulta, Soberano.</p>
-              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[oracleMode].description}</p>
+              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[activeMode].description}</p>
             </div>
           )}
           
@@ -147,6 +181,21 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </div>
             </div>
           ))}
+          
+          {isLoading && (
+            <div className="flex justify-start">
+                <div className="bg-black/40 text-gray-300 rounded-tl-sm border border-white/5 shadow-inner p-3 rounded-2xl flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                  </div>
+                  <span className="text-xs text-gray-500 animate-pulse ml-1">
+                    {["Consultando os astros...", "Ouvindo os sussurros...", "Decifrando o destino...", "Conectando ao éter..."][Math.floor(Math.random() * 4)]}
+                  </span>
+                </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -172,6 +221,20 @@ export const OracleChat: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </button>
           </div>
         </div>
+      </>
+  );
+
+  if (isEmbedded) {
+      return <div className="flex flex-col h-full w-full">{content}</div>;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 pointer-events-none">
+      {/* Backdrop for mobile mostly, but let's keep it clickable through except the chat */}
+      <div className="absolute inset-0 bg-transparent" onClick={onClose} />
+      
+      <div className="pointer-events-auto w-full max-w-sm mt-16 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[80vh] animate-in slide-in-from-top-5 fade-in duration-300">
+        {content}
       </div>
     </div>
   );

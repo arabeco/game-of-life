@@ -1,159 +1,75 @@
-## MISSÃO 1 — AUDITORIA COMPLETA (7 abas) — Checklist global numerado
-### 1) Perfil
-Funcionalidades existentes
+Vou destrinchar:
+ATIVOS
 
-- 1. Modal de Perfil em overlay, fecha ao clicar fora e por botão de fechar.
-- 2. Cartão “compartilhável” do perfil renderizado offscreen + fluxo de share.
-- 3. Modo editar/salvar/cancelar para dados do perfil (patch parcial via contexto).
-- 4. Troca de avatar via modal (upload/seleção).
-- 5. Troca de borda via modal (com gates de unlock/role).
-- 6. Troca de background (imagem/gradiente) via modal, com overlay de edição.
-- 7. Troca de banner via modal + render condicional.
-- 8. Exibição do clã + rank do clã com abertura do modal do clã.
-- 9. Sistema de widgets (lista visibleWidgets ) renderizados em grid.
-- 10. Resolução de widget por slotId → Asset/Slot (parse assetId.slotKey ).
-- 11. Skin aplicada como identidade visual (accent derivado de userProfile.skin ).
-- 12. Sync/persistência do perfil via Supabase (upsert de user_profiles com jsonb de unlocks etc).
-Nota (0–10): 7.5
+1. Sephirot — árvore 3x7, níveis 1-10, shader/névoa por nível, clique abre dossiê, dossiê com slots editáveis, edição via InputModal (6)
+2. Perfil — avatar, borda, banner, background, skin, widgets em grid, resolução por slotId, modo editar/salvar/cancelar, cartão compartilhável, fluxo de share, exibição clã+rank, sync Supabase (12)
+3. Soberano/Glifo/Artefato — glifo ao lado dos pés, artefato equipável (2)
 
-Falta para chegar no 10 (gaps reais, sem inflar)
+ARENAS
+4. Arenas — criar, editar, excluir com confirmação, IconPicker, pastas, modal de pasta, drag reordenação, toggle arquivadas, acesso pelo ativo, listagem (10)
+5. Ações — criar pela arena, listar por tipo, ActionModal view, editar, completar (5)
+6. Campanhas — juntar arenas numa campanha (1)
+7. Codexes — campanha pronta de mentor, modo Arquiteto sandbox, Codex Builder (premium/admin) (3)
+8. Loja de Codexes — listar, comprar (2)
+PLANNER
+9. Planner — grid dia/semana, alternância D/S, tempo atual + auto-scroll, zoom, Bay Area agrupada, drag & drop, auto-scroll durante drag, reagendar por drag, soltar na Bay retorna ao pool, milestone pool separado (10)
+10. SITREP — modal, preencher, fechar, XP pro ciclo via toast (4)
+11. Checklist diário — modal, itens, completar (3)
+12. Oráculo — chat IA, mensagem plantada em itálico, parsing pt-BR, tutor do app com mapa completo, categorias do checklist (8 tipos), free vs premium (6)
+13. Modos do Oráculo — Calmo, Reflexivo, Tático, Estratégico, Coach, Personalizado, seleção de modo, instruções livres do personalizado (8)
+14. Notificações — feed persistente, tap marca lido (opacidade), swipe deleta, badge no glifo, social (5 tipos), sistema (2 tipos), progresso (3 tipos) (13)
+MUNDO
+15. Social/Amizades — busca, enviar solicitação, aceitar, recusar, listar aliados (5)
+16. Clãs — entrar, modal com tabs, membros, ações admin, missões coletivas com progresso (5)
+17. Santuário de clã — grid 6x6, glifo no chão (2)
+18. Hall da Fama — Reino, Clã, Aliados (3)
+19. Loja — cosméticos, codexes, ouro, economia Pepita/Barra/Espólio/Tesouro (4)
+20. Inventário — listar tudo, filtros (Skins, Personagem, Interface), equipar via ItemDetailModal, aura de raridade WebGL (4)
+21. Abrir baú — vídeo por raridade (5 vídeos), som de vitória, toast dourado (3)
+22. Temporada — season atual, prazo, descrição (3)
+23. Missões — season + clã + principais, progresso, resgatar recompensa via botão, toast (4)
+24. Skins de Era — skins temáticas por era (1)
+CONFIG
+25. Patente/XP/Nível — XP atual, próximo nível, barra, status (Vagante→títulos) (4)
+26. Ciclos e Eras — criar ciclo, timeline, setar eras, resetar eras (4)
+27. Relatórios — 5 slides, vídeo pergaminho, barra com 5 frases, tela final (Novo Ciclo/Descansar), toast (5)
+28. Maestria — nível geral, sliders por área, editar por área ao abrir (3)
+29. Gates de unlock — por role, por rank, por season (3)
+30. Premium gate — R$20/mês ou 1.800 ouro, controle de acesso (2)
+31. Convites dourados — gerenciar, aplicar 5 iniciais (2)
+32. Preferências — IA on/off, notificações on/off, animações on/off, sons on/off, háptico on/off, privacidade, tutoriais (7)
+33. Seasons admin — criar temporada, editar, missões de season, missões admin (4)
 
-- UI do Perfil não é o “hub” de equipar (hoje fica muito em Configurações/Arsenal).
-- Widgets hoje são “display”; faltam ações diretas (eles não editam o slot por toque).
-- Consistência de “identidade”: o Perfil mostra muita estética, mas pouca alavanca prática (atalhos de equipar/editar).
-Dicas (somente as que você aprovou)
+Totais:
+AbaBlocosSub-itensAtivos3 20Arenas5 21Planner6 44Mundo10 34Config934TOTAL33 153
+153 sub-itens. Tu não tem 82 features — tu tem 153. Tava se subestimando.
+PILAR 2 — IDENTIDADE VISUAL
 
-- “Hub de identidade” enxuto: equipar Skin/Borda/Banner/Artefato no Perfil (atalho), sem inventário gigante duplicado. (talvez — para discutir)
-- Widget com ação: tocar no widget abre o editor do slot correspondente (zero navegação extra). (difícil, mas não é impossível: é wiring de navegação + abrir InputModal com o slot resolvido)
-### 2) Ativos
-Funcionalidades existentes
+MÉTRICA                          AGORA    MARCO 1   MARCO 2   NOTA 10
+                                 (base)   1k users  5k users
+Retenção D1                       —        ≥50%      ≥60%      ≥70%
+% usuários que trocam skin/borda  —        ≥25%      ≥40%      ≥60%
+  na primeira semana
+% que personalizam perfil ≥2x     —        ≥15%      ≥30%      ≥50%
+  (editam skin/borda/banner)
+NPS (nota 0-10 dos usuários)      —        ≥6        ≥7.5      ≥9
+Menções espontâneas à estética    —        ≥20%      ≥35%      ≥50%
+  no feedback aberto
 
-- 13. Tela Sephirot em layout fixo (10 ativos) com grid 3x7.
-- 14. Shader/névoa no fundo alimentado por nível dos ativos.
-- 15. Clique no ativo abre o Dossiê do Ativo (troca de estado local).
-- 16. Dossiê com slots editáveis (valores por slot).
-- 17. Edição de slot via InputModal (suporta tipos/layouts diferentes).
-- 18. Acesso a arenas do ativo e abertura do modal de arena.
-- 19. Criação de arena a partir do contexto do ativo (com seleção de ativo “geral/sidequest” disponível no app).
-Nota (0–10): 8.0
 
-Falta para chegar no 10 (gaps reais, sem inflar)
+PILAR 3 — PROGRESSÃO EMOCIONAL
 
-- A transição “Sephirot → Dossiê” é funcional, mas ainda parece “troca de tela”, não “zoom/mergulho”.
-- O Dossiê poderia reforçar mais a sensação de estar “dentro” daquele ativo (ambientação visual coerente).
-Dica (nova, aprovada por você)
+MÉTRICA                          AGORA    MARCO 1   MARCO 2   NOTA 10
+                                 (base)   1k users  5k users
+% usuários que chegam nível 5+    —        ≥15%      ≥30%      ≥50%
+% que editam Maestria ≥2x         —        ≥20%      ≥35%      ≥55%
+% que completam ≥1 quest/season   —        ≥25%      ≥45%      ≥65%
+% que abrem baú em ≤24h           —        ≥50%      ≥65%      ≥80%
+% que aplicam Codex no jogo real  —        ≥10%      ≥25%      ≥45%
+Sessões/semana por usuário ativo  —        ≥3        ≥5        ≥7
 
-- Zoom Sephirot : ao clicar num ativo, parecer que você deu zoom e “entrou na esfera” — por exemplo:
-  - transição animada (scale + fade) da esfera para o Dossiê, ou
-  - o modal/dossiê renderizar uma Sephirot ampliada/desfocada no fundo, como se o usuário estivesse dentro do ativo.
-### 3) Arenas
-Funcionalidades existentes
-
-- 20. Listagem de arenas com toggle de “mostrar arquivadas”.
-- 21. Pastas de arenas (criar/editar/excluir).
-- 22. Modal de pasta com lista de arenas e ações de organização.
-- 23. Reordenação/drag de arenas (suporte no estado/handler).
-- 24. Criar arena via modal (nome/descrição/ativo).
-- 25. Abrir ArenaDetailModal ao selecionar uma arena.
-- 26. Editar arena (nome/descrição/ícone) com IconPicker.
-- 27. Excluir arena com confirmação.
-- 28. Listar ações por tipo (Marco vs não-Marco).
-- 29. Abrir ActionModal em modo view ao tocar numa ação.
-- 30. Criar ação pela arena (bloqueado em arenas especiais de quests).
-- 31. Modo Arquiteto (sandbox) dentro da aba Arenas (criar arena + ações sem afetar jogo atual).
-Nota (0–10): 7.8
-
-Falta para chegar no 10 (gaps reais, sem inflar)
-
-- Regras de tipos (Marco/Compromisso/Recorrente) existem, mas ainda são mais “UI” do que comportamento forte no sistema.
-- Integração do “Modo Arquiteto/Codex” com o jogo real ainda é parcial (sandbox isolado).
-Dicas
-
-- (nenhuma — você pediu para remover as outras)
-### 4) Planner
-Funcionalidades existentes
-
-- 32. Alternância Dia/Semana com navegação temporal.
-- 33. Grid com indicador de tempo atual + auto-scroll pro “agora”.
-- 34. Zoom do grid (níveis).
-- 35. Bay Area (task pool) agrupada e renderizada por contexto.
-- 36. Drag & drop completo (ghost, offset, targets, drop indicators).
-- 37. Auto-scroll durante drag.
-- 38. Reagendar tarefa por drag (mudar dia/horário).
-- 39. Soltar na Bay Area retorna ao pool (ou remove se for Marco).
-- 40. Agendar ação nova do pool no grid via drop.
-- 41. Milestone pool separado (ações Marco não executadas).
-- 42. Long press para completar + toggle de conclusão.
-- 43. Abrir ActionModal a partir do Planner.
-- 44. Checklist modal (itens do checklist via contexto).
-- 45. SITREP modal: compromisso do dia, ajuste tático, gerar score final.
-- 46. Oráculo: parsing pt-BR (hora, dias da semana, aspas) e criação/agendamento.
-Nota (0–10): 8.4
-
-Falta para chegar no 10 (gaps reais, sem inflar)
-
-- O loop diário ainda tem atrito em recorrência: ações com dias+horário não “nascem” automaticamente no grid.
-Dicas (somente a que você aprovou)
-
-- “Poder real” sem barulho: auto-instanciar ações recorrentes no grid (se tem dias+hora). Isso reduz atrito sem alertar ninguém.
-### 5) Social
-Funcionalidades existentes
-
-- 47. Estado “sem clã” com CTA para fundar clã.
-- 48. Busca social (players/clãs) com cards de resultado.
-- 49. Enviar solicitação de amizade.
-- 50. Aceitar/recusar solicitações + contagem de pendências.
-- 51. Entrar em clã (joinClan).
-- 52. Modal do clã com tabs (santuário/membros/missões).
-- 53. Santuário do clã (grid 6x6) com posicionamento/ocupação.
-- 54. Membros: lista + ações administrativas (kick/transfer/leave) quando permitido.
-- 55. Missões do clã: cards com progresso, participantes e participação (joinClanMission / progress).
-Nota (0–10): 7.6
-
-Falta para chegar no 10 (gaps reais, sem inflar)
-
-- Confiabilidade/consistência do multiplayer (participantes/progresso) precisa ser impecável para o social “parecer real”.
-- “Procurar Clã” no estado sem clã ainda está fraco (fluxo de descoberta incompleto).
-Dicas
-
-- (nenhuma — você pediu para remover as outras)
-### 6) Configurações
-Funcionalidades existentes
-
-- 56. Tabs internas: Geral, Arsenal, Maestria, Missões, Hall da Fama.
-- 57. Geral: sliders/avaliação (questionário com labels e frases).
-- 58. Arsenal: inventário por categorias (baús, artefatos, skins, bordas, banners).
-- 59. Arsenal: gates de unlock por role/rank/season.
-- 60. Baús: abrir e gerar recompensa (com unlock de item/skin).
-- 61. Equipar Skin/Borda/Banner/Artefato via ItemDetailModal (updateUserProfile).
-- 62. Maestria: view dedicada.
-- 63. Missões: quests da season (aceitar/claim reward).
-- 64. Missões: quests do clã com participantes e progresso.
-- 65. Missões: missões principais e introdutórias.
-- 66. Hall da Fama: view dedicada.
-Nota (0–10): 8.1
-
-Falta para chegar no 10 (gaps reais, sem inflar)
-
-- Missões/Seasons têm risco de fonte dupla (constantes vs DB) — precisa clareza de “fonte da verdade”.
-- Inventário existe, mas a navegação de equipar poderia ser mais direta (por isso seu “talvez” de hub no Perfil).
-Dicas
-
-- (nenhuma — você pediu para remover as outras)
-### 7) Funções Avançadas
-Funcionalidades existentes
-
-- 67. Painel do Soberano (tela separada).
-- 68. Convites dourados: listar/gerar/copiar + seed inicial.
-- 69. Seasons: listar ativa/futuras/passadas e iniciar criação/edição.
-- 70. Missões de season (admin): listar e adicionar SeasonMission.
-- 71. Estrutura de “Modo Arquiteto/Codex Builder” existe como sandbox dentro de Arenas (separado do jogo real).
-Nota (0–10): 6.9
-
-Falta para chegar no 10 (gaps reais, sem inflar)
-
-- Falta um Assistente de IA formal (feature real, não conceito) e com função clara.
-- Falta um caminho “codex/template → aplicar no jogo real” sem fricção.
-Dicas (somente a que você aprovou)
-
-- Assistente de IA (quando entrar) no papel certo: reduzir atrito (criar arena/ação, sugerir rotina), não “monitorar”.
+Visão geral dos três pilares
+Execução Real            ░░░░░░░░░░░░
+Identidade Visual        ░░░░░░░░░░░░
+Progressão Emocional     ░░░░░░░░░░░░
+Resumo corporativo da auditoria:

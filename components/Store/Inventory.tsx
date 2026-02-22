@@ -6,13 +6,15 @@ import { CheckIcon, SovereignIcon, GlyphIcon } from '../Icons';
 import { SovereignCustomizer } from '../SovereignCustomizer';
 import { ItemDetailModal } from '../ItemDetailModal';
 
-type InventoryTab = 'all' | 'skins' | 'character' | 'ui';
+type InventoryTab = 'all' | 'skins' | 'character' | 'ui' | 'glyphs' | 'chests';
 
 const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'all', label: 'Tudo', categories: [] },
     { id: 'skins', label: 'Skins', categories: ['skin', 'hair', 'ui_skin'] },
     { id: 'character', label: 'Personagem', categories: ['skin', 'hair'] },
-    { id: 'ui', label: 'Interface', categories: ['border', 'glyph', 'aura', 'orb', 'plate', 'ui_skin', 'banner'] },
+    { id: 'ui', label: 'Interface', categories: ['border', 'ui_skin', 'banner', 'aura'] },
+    { id: 'glyphs', label: 'Glifos', categories: ['glyph', 'orb', 'plate'] },
+    { id: 'chests', label: 'Baús', categories: ['chest'] },
 ];
 
 export const Inventory: React.FC = () => {
@@ -28,28 +30,20 @@ export const Inventory: React.FC = () => {
     const isGM = normalizedRole === 'admin' || normalizedRole === 'gm';
 
     const sourceItems = useMemo(() => {
-        if (isGM) {
-            // GM sees ALL items as if they owned them
-            return ITEMS_DB.map(def => ({
-                id: def.id,
-                instanceId: `gm_${def.id}`, // Fake instance ID
-                def,
-                acquiredAt: new Date().toISOString(),
-                isEquipped: false
-            }));
-        } else {
-            // Normal user sees their inventory
-            return inventory.map(inst => {
-                const def = resolveItemDef(inst.id);
-                const resolvedId = def?.id || inst.id;
-                return { ...inst, id: resolvedId, def };
-            }).filter(i => i.def); // Filter out items with missing definitions
-        }
-    }, [inventory, isGM]);
+        // Normal user sees their inventory
+        return inventory.map(inst => {
+            const def = resolveItemDef(inst.id);
+            // Use item_id from DB if resolving fails (though inst.id is usually item_id in local context if mapped)
+            // But let's be robust: inst.id should be the ITEM ID (e.g., 'skin_gold')
+            const resolvedId = def?.id || inst.id;
+            return { ...inst, id: resolvedId, def };
+        }).filter(i => i.def); // Filter out items with missing definitions
+    }, [inventory]);
 
     const filteredItems = useMemo(() => {
         return sourceItems.filter(item => {
             if (activeTab === 'all') return true;
+            if (activeTab === 'chests') return false; // Handled separately
             const tabConfig = TABS.find(t => t.id === activeTab);
             return tabConfig?.categories.includes(item.def?.category || '');
         }).sort((a, b) => (b.def?.tier || 0) - (a.def?.tier || 0)); // Sort by Tier Desc
@@ -82,6 +76,30 @@ export const Inventory: React.FC = () => {
         }
     };
 
+    const userChests = userProfile.chests || [];
+
+    const getChestIcon = (type: string) => {
+        switch(type) {
+            case 'Comum': return '📦';
+            case 'Incomum': return '📤';
+            case 'Raro': return '🎁';
+            case 'Épico': return '🗳️';
+            case 'Lendário': return '👑';
+            default: return '📦';
+        }
+    };
+
+    const getChestColor = (type: string) => {
+        switch(type) {
+            case 'Comum': return 'text-gray-400';
+            case 'Incomum': return 'text-green-400';
+            case 'Raro': return 'text-blue-400';
+            case 'Épico': return 'text-purple-400';
+            case 'Lendário': return 'text-yellow-400';
+            default: return 'text-gray-400';
+        }
+    };
+
     return (
         <div className="space-y-6 animate-fade-in pb-20">
             {/* --- ACTION BUTTONS (Editors) --- */}
@@ -110,49 +128,79 @@ export const Inventory: React.FC = () => {
 
             {/* Items Grid */}
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                {filteredItems.length === 0 ? (
-                    <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
-                        <div className="text-4xl mb-4">🎒</div>
-                        <p>Inventário vazio nesta categoria.</p>
-                    </div>
-                ) : (
-                    filteredItems.map(item => {
-                        const equipped = isEquipped(item.id, item.def?.category || '');
-                        const styles = getRarityStyles(item.def?.tier || 1);
-
-                        return (
+                {activeTab === 'chests' ? (
+                    userChests.length === 0 ? (
+                         <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
+                            <div className="text-4xl mb-4">📭</div>
+                            <p>Nenhum baú disponível.</p>
+                        </div>
+                    ) : (
+                        userChests.map((chest, idx) => (
                             <GlassCard 
-                                key={item.instanceId} 
-                                className={`relative group aspect-square p-2 flex flex-col items-center justify-center transition-all border cursor-pointer hover:border-white/50 ${equipped ? 'bg-white/5 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : styles.shadow}`}
+                                key={`chest-${idx}`}
+                                className="relative group aspect-square p-2 flex flex-col items-center justify-center transition-all border cursor-pointer hover:border-white/50"
                                 style={{ borderColor: 'var(--skin-accent-color)' }}
-                                onClick={() => item.def && setSelectedItem({ def: item.def, instanceId: item.instanceId })}
+                                onClick={() => alert(`Abrir baú: ${chest.type} (Em breve)`)}
                             >
-                                {equipped && (
-                                    <div className="absolute top-1 right-1 bg-green-500/20 text-green-400 rounded-full p-0.5 border border-green-500/30">
-                                        <CheckIcon className="w-3 h-3" />
-                                    </div>
-                                )}
-
                                 <div className="group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg flex items-center justify-center w-full h-full mb-3">
-                                    {item.def?.imageUrl ? (
-                                        <img src={item.def.imageUrl} alt={item.def.name} className="w-3/4 h-3/4 object-contain" />
-                                    ) : (
-                                        <span className="text-2xl">{item.def?.icon}</span>
-                                    )}
+                                    <span className="text-4xl">{getChestIcon(chest.type)}</span>
                                 </div>
-                                
-                                {/* Item Name */}
                                 <div className="absolute bottom-2 left-1 right-1 text-center">
-                                    <span className="text-[9px] font-bold text-white uppercase tracking-wider truncate block w-full drop-shadow-md">
-                                        {item.def?.name}
+                                    <span className={`text-[9px] font-bold uppercase tracking-wider truncate block w-full drop-shadow-md ${getChestColor(chest.type)}`}>
+                                        {chest.type}
                                     </span>
                                 </div>
-                                
-                                {/* Rarity Indicator - Discrete Dot */}
-                                <div className={`absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full ${styles.bg} ${item.def?.tier === 5 ? 'animate-pulse shadow-[0_0_4px_rgba(250,204,21,0.6)]' : ''}`} title={`Tier ${item.def?.tier}`} />
+                                <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold shadow-lg">
+                                    {chest.count}
+                                </div>
                             </GlassCard>
-                        );
-                    })
+                        ))
+                    )
+                ) : (
+                    filteredItems.length === 0 ? (
+                        <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
+                            <div className="text-4xl mb-4">🎒</div>
+                            <p>Inventário vazio nesta categoria.</p>
+                        </div>
+                    ) : (
+                        filteredItems.map(item => {
+                            const equipped = isEquipped(item.id, item.def?.category || '');
+                            const styles = getRarityStyles(item.def?.tier || 1);
+
+                            return (
+                                <GlassCard 
+                                    key={item.instanceId} 
+                                    className={`relative group aspect-square p-2 flex flex-col items-center justify-center transition-all border cursor-pointer hover:border-white/50 ${equipped ? 'bg-white/5 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : styles.shadow}`}
+                                    style={{ borderColor: 'var(--skin-accent-color)' }}
+                                    onClick={() => item.def && setSelectedItem({ def: item.def, instanceId: item.instanceId })}
+                                >
+                                    {equipped && (
+                                        <div className="absolute top-1 right-1 bg-green-500/20 text-green-400 rounded-full p-0.5 border border-green-500/30">
+                                            <CheckIcon className="w-3 h-3" />
+                                        </div>
+                                    )}
+
+                                    <div className="group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg flex items-center justify-center w-full h-full mb-3">
+                                        {item.def?.imageUrl ? (
+                                            <img src={item.def.imageUrl} alt={item.def.name} className="w-3/4 h-3/4 object-contain" />
+                                        ) : (
+                                            <span className="text-2xl">{item.def?.icon}</span>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Item Name */}
+                                    <div className="absolute bottom-2 left-1 right-1 text-center">
+                                        <span className="text-[9px] font-bold text-white uppercase tracking-wider truncate block w-full drop-shadow-md">
+                                            {item.def?.name}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Rarity Indicator - Discrete Dot */}
+                                    <div className={`absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full ${styles.bg} ${item.def?.tier === 5 ? 'animate-pulse shadow-[0_0_4px_rgba(250,204,21,0.6)]' : ''}`} title={`Tier ${item.def?.tier}`} />
+                                </GlassCard>
+                            );
+                        })
+                    )
                 )}
             </div>
 

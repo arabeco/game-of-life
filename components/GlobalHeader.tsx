@@ -3,13 +3,17 @@ import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { MoodModal } from './MoodModal';
-import { OracleChat } from './OracleChat';
+import { OracleFeed } from './OracleFeed';
 import { SparklesIcon } from './Icons';
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
-    const { userProfile } = useGame();
+    const { userProfile, oracleMessages, notifications } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
+    
+    const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+    const hasUnreadMessages = oracleMessages.some(m => !m.read);
+    const hasUnread = hasUnreadMessages || unreadNotificationsCount > 0;
     const date = new Date();
     const day = date.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '');
     const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase().replace('.', '');
@@ -113,10 +117,15 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                 <button
                                     id="header-oracle"
                                     onClick={handleOracleClick}
-                                    className="absolute left-full ml-4 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-amber-500/50 transition-all group shadow-lg backdrop-blur-sm"
+                                    className={`absolute left-full ml-4 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-amber-500/50 transition-all group shadow-lg backdrop-blur-sm ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
                                     aria-label="Oracle Assistant"
                                 >
-                                    <SparklesIcon className="w-5 h-5 text-amber-200/80 group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)] transition-all" />
+                                    <SparklesIcon className={`w-5 h-5 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'text-amber-200/80 group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />
+                                    {unreadNotificationsCount > 0 && (
+                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border border-black">
+                                            <span className="text-[9px] font-bold text-white">{unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}</span>
+                                        </div>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -126,7 +135,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                 </div>
             </header>
             {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
-            {isOracleOpen && <OracleChat onClose={() => setOracleOpen(false)} />}
+            {isOracleOpen && <OracleFeed onClose={() => setOracleOpen(false)} />}
         </>
     );
 };

@@ -1,0 +1,1 @@
+UPDATE clan_aldeia_slots SET health = 50;

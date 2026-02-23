@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import { useGame } from '../contexts/GameContext';
+import { SKINS_DATA } from '../constants/GMboard';
 import { Report, ChestType } from '../types';
 import { getScoreGrade } from '../utils/scoreUtils';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon } from './Icons';
@@ -17,6 +19,7 @@ interface ReportResultCarouselProps {
     onStartNewCycle?: () => void; // Added for reward slide
     chest?: ChestType | null;     // Added for reward slide
     expGained?: number;           // Added for reward slide
+    onOpenChest?: () => void;     // Trigger chest opening
 }
 
 const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
@@ -63,8 +66,14 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     onPostToFeed,
     onStartNewCycle,
     chest,
-    expGained
+    expGained,
+    onOpenChest
 }) => {
+    const { userProfile } = useGame();
+    const userSkinId = userProfile.skin;
+    const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
+    const skinColor = userSkin?.color || '#ffffff';
+
     const [currentSlide, setCurrentSlide] = useState(0);
     const totalSlides = 5;
 
@@ -258,29 +267,87 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </div>
     );
 
-    // Slide 5: Conclusão (Recompensa oculta)
+    // Slide 5: Resumo do Relatório
     const renderRewardSlide = () => {
         return (
-            <div className="flex flex-col h-full items-center justify-center p-4 text-center space-y-6 relative overflow-hidden">
+            <div className="flex flex-col h-full items-center p-4 text-center space-y-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-5 pointer-events-none" />
                 
-                <h3 className="text-xl font-bold accent-text uppercase tracking-widest">Ciclo Finalizado</h3>
+                <h3 className="text-lg font-bold accent-text uppercase tracking-widest mt-2">Resumo do Relatório</h3>
                 
-                <div className="flex-1 flex flex-col items-center justify-center">
-                    <p className="text-gray-400 italic text-sm max-w-[250px]">
-                        "Sua disciplina forja seu destino."
-                    </p>
+                {/* Stats Header */}
+                <div className="flex w-full justify-around bg-black/40 p-3 rounded-xl border border-white/10 shadow-lg mb-4">
+                    <div className="text-center">
+                        <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">XP Coletada</p>
+                        <p className="text-xl font-black accent-text">+{report.expGained || expGained || 0}</p>
+                    </div>
+                    <div className="w-px bg-white/10" />
+                    <div className="text-center">
+                        <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">Nota</p>
+                        <p className={`text-xl font-black ${scoreInfo.color}`}>{report.performanceScore}</p>
+                    </div>
                 </div>
 
-                <div className="w-full flex space-x-3 pt-4">
-                    <button onClick={onOk} className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-colors font-bold text-xs uppercase tracking-wider">
-                        Descansar
-                    </button>
-                    {onStartNewCycle && (
-                        <button onClick={onStartNewCycle} className="flex-1 py-3 rounded-xl luxe-skin-button font-bold text-xs uppercase tracking-wider shadow-lg shadow-[var(--skin-accent-color)]/20">
+                <div className="flex-1 flex flex-col items-center justify-center w-full space-y-2">
+                    {chest ? (
+                        <div className="w-full max-w-[260px] bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center gap-3 justify-center animate-fade-in-up">
+                            <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-black/40 rounded-lg border border-white/5 relative overflow-hidden">
+                                <div className="transform scale-[0.3]">
+                                    <ChestVisual type={chest} />
+                                </div>
+                            </div>
+                            <div className="text-left flex-1">
+                                <p className="text-[8px] text-gray-500 uppercase tracking-wider">Recompensa</p>
+                                <h4 className="text-xs font-bold text-white drop-shadow-md">{chest} Chest</h4>
+                                <p className="text-[8px] text-[var(--skin-accent-color)] font-mono uppercase tracking-wider opacity-80">Adicionado</p>
+                            </div>
+                        </div>
+                    ) : null}
+                    
+                    {(expGained && expGained > 0) ? (
+                        <div className="w-full max-w-[260px] bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center gap-3 justify-center animate-fade-in-up">
+                            <div className="w-8 h-8 flex-shrink-0 bg-gradient-to-br from-yellow-500/20 to-transparent rounded-lg border border-yellow-500/30 flex items-center justify-center">
+                                <span className="text-lg filter drop-shadow-[0_0_10px_rgba(234,179,8,0.3)]">✨</span>
+                            </div>
+                            <div className="text-left flex-1">
+                                <p className="text-[8px] text-gray-500 uppercase tracking-wider">Recompensa</p>
+                                <h4 className="text-xs font-bold text-white drop-shadow-md">+{expGained} XP</h4>
+                                <p className="text-[8px] text-yellow-500 font-mono uppercase tracking-wider opacity-80">Coletado</p>
+                            </div>
+                        </div>
+                    ) : null}
+                    
+                    {!chest && (!expGained || expGained === 0) && (
+                        <p className="text-gray-500 italic text-[10px] max-w-[250px]">
+                            "Sua disciplina forja seu destino."
+                        </p>
+                    )}
+                </div>
+
+                <div className="w-full space-y-3 pt-2">
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={onShare} 
+                            className="p-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
+                            title="Compartilhar"
+                        >
+                            <ShareIcon className="w-4 h-4"/>
+                        </button>
+                        <button 
+                            onClick={onStartNewCycle || onOk} 
+                            className="flex-1 py-2.5 rounded-lg font-bold uppercase tracking-wider text-[10px] transition-all hover:brightness-110 flex items-center justify-center gap-2"
+                            style={{ backgroundColor: `${skinColor}15`, border: `1px solid ${skinColor}40`, color: skinColor }}
+                        >
                             Novo Ciclo
                         </button>
-                    )}
+                    </div>
+                    
+                    <button 
+                        onClick={onOk} 
+                        className="w-full py-2.5 rounded-lg font-bold uppercase tracking-wider text-[10px] bg-white/5 text-gray-400 hover:bg-white/10 transition-all border border-white/5 hover:text-white"
+                    >
+                        Descansar
+                    </button>
                 </div>
             </div>
         );
@@ -295,8 +362,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     ];
 
     return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex flex-col items-center justify-center p-4 animate-fade-in">
-            <div className="w-full max-w-[380px] h-[650px] bg-black/60 border border-white/10 rounded-3xl shadow-2xl relative flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[10001] flex items-center justify-center p-4 animate-fade-in">
+            <div className="w-full max-w-[420px] h-[85vh] max-h-[800px] bg-gradient-to-b from-gray-900 via-[#0a0a0a] to-black border border-white/10 rounded-[32px] shadow-2xl relative flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-white/5">
                     <div className="flex space-x-1">

@@ -1,122 +1,120 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
-import { XIcon } from './Icons';
-import { ChestType, UnlockCategory } from '../types';
+import { XIcon, Trash2Icon, ShareIcon, CheckIcon } from './Icons';
+import { ChestType, UnlockCategory, ItemRarity } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { GM_CONFIG, SKINS_DATA, SKIN_CHEST_POOL } from '../constants';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { VideoPlayer } from './VideoPlayer';
+import { ItemDef, ITEMS_DB } from '../constants/items';
 
 interface ChestOpeningModalProps {
     chestType: ChestType;
     onClose: () => void;
-    predefinedReward?: Reward; // Optional predefined reward
+    predefinedReward?: any; // For testing/forcing a specific reward
 }
 
-const CHEST_VIDEOS: Record<ChestType, string> = {
-    'Comum': '/assets/videos/chests/chest_normal.mp4',
-    'Incomum': '/assets/videos/chests/chest_silver.mp4',
-    'Raro': '/assets/videos/chests/chest_gold.mp4',
-    'Épico': '/assets/videos/chests/chest_epic.mp4',
-    'Lendário': '/assets/videos/chests/chest_legendary.mp4',
-};
-
-const getChestStyle = (type: ChestType) => {
-    switch (type) {
-        case 'Raro': return { color: '#CD7F32', shadow: 'shadow-orange-700/50' }; // Bronze
-        case 'Épico': return { color: '#C0C0C0', shadow: 'shadow-gray-400/50' };   // Silver
-        case 'Lendário': return { color: '#F0C843', shadow: 'shadow-yellow-500/50' }; // Gold
-        default: return { color: '#9ca3af', shadow: 'shadow-gray-600/50' }; // Gray
-    }
+interface Reward {
+    type: string;
+    value: string;
+    rarity: string;
+    itemUnlock?: { category: UnlockCategory; itemId: string };
+    skinUnlock?: string;
 }
 
-type Reward = { type: string; value: string | number; rarity: 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário'; itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string };
+type Stage = 'video' | 'reward';
 
-const ASSET_POOL: Record<UnlockCategory, { id: string; name: string }[]> = {
-    bodyStyles: SOVEREIGN_ASSETS.bodyStyles,
-    hairStyles: SOVEREIGN_ASSETS.hairStyles,
-    outfits: SOVEREIGN_ASSETS.outfits,
-    head_under_items: SOVEREIGN_ASSETS.head_under_items,
-    helmets: SOVEREIGN_ASSETS.helmets,
-    head_over_items: SOVEREIGN_ASSETS.head_over_items,
-    artifacts: SOVEREIGN_ASSETS.artifacts,
-    glyphs: SOVEREIGN_ASSETS.glyphs,
-    plates: SOVEREIGN_ASSETS.plates,
-    codexes: [],
-    skins: GM_CONFIG.cosmetics.skins,
-    borders: GM_CONFIG.cosmetics.borders,
-    banners: GM_CONFIG.cosmetics.banners,
-    auras: SOVEREIGN_ASSETS.auras,
-    orbs: SOVEREIGN_ASSETS.orbs,
+const getRandomReward = (chestType: ChestType): Reward => {
+    const rarityMap: Record<string, ItemRarity> = {
+        'Comum': 'common',
+        'Incomum': 'uncommon',
+        'Raro': 'rare',
+        'Épico': 'epic',
+        'Lendário': 'legendary',
+        // Fallbacks for lowercase or typos
+        'comum': 'common',
+        'incomum': 'uncommon',
+        'raro': 'rare',
+        'épico': 'epic',
+        'epico': 'epic',
+        'lendário': 'legendary',
+        'lendario': 'legendary',
+        'commum': 'common'
+    };
+
+    const targetRarity = rarityMap[chestType] || 'common';
+    const pool = ITEMS_DB.filter(item => item.rarity === targetRarity);
+
+    if (pool.length === 0) {
+        return {
+            type: 'Nada',
+            value: 'Vazio',
+            rarity: chestType
+        };
+    }
+
+    const randomItem = pool[Math.floor(Math.random() * pool.length)];
+
+    const getUnlockCategory = (category: string): UnlockCategory | null => {
+        const map: Record<string, UnlockCategory> = {
+            'skin': 'skins',
+            'hair': 'hairStyles',
+            'border': 'borders',
+            'banner': 'banners',
+            'glyph': 'glyphs',
+            'aura': 'auras',
+            'ui_skin': 'skins',
+            'artifact': 'artifacts',
+            'orb': 'orbs',
+            'plate': 'plates'
+        };
+        return map[category] || null;
+    };
+
+    const unlockCategory = getUnlockCategory(randomItem.category);
+
+    return {
+        type: randomItem.category === 'skin' ? 'Skin' : 'Item',
+        value: randomItem.name,
+        rarity: chestType,
+        itemUnlock: unlockCategory ? { category: unlockCategory, itemId: randomItem.id } : undefined,
+        skinUnlock: (randomItem.category === 'skin' || randomItem.category === 'ui_skin') ? randomItem.id : undefined
+    };
 };
 
-const getRandomReward = (type: ChestType): Reward => {
-    const poolConfig = GM_CONFIG.chestDrops.itemPool;
-    const pool = poolConfig.categories.flatMap(category =>
-        ASSET_POOL[category].filter(item => !poolConfig.excludeIds?.includes(item.id))
-            .map(item => ({ category, itemId: item.id, name: item.name }))
-    );
-    if (pool.length > 0 && Math.random() < GM_CONFIG.chestDrops.itemDropChanceByChest[type]) {
-        const picked = pool[Math.floor(Math.random() * pool.length)];
-        return { type: 'Item', value: picked.name, rarity: type, itemUnlock: { category: picked.category, itemId: picked.itemId } };
-    }
-    const skinDropChance = GM_CONFIG.chestDrops.skinDropChanceByChest?.[type] ?? 0;
-    const skinPool = SKINS_DATA.filter(skin => SKIN_CHEST_POOL.includes(skin.id));
-    if (skinPool.length > 0 && Math.random() < skinDropChance) {
-        const pickedSkin = skinPool[Math.floor(Math.random() * skinPool.length)];
-        return { type: 'Skin', value: pickedSkin.name, rarity: type, skinUnlock: pickedSkin.id };
-    }
-    const rewards: Omit<Reward, 'rarity'>[] = [
-        { type: 'EXP', value: 100 },
-        { type: 'Conselho', value: 'A disciplina é a ponte entre metas e realizações.' },
-        { type: 'Nada', value: 'O baú estava vazio.' },
-    ];
-
-    if (type === 'Raro' || type === 'Épico' || type === 'Lendário') {
-        rewards.push({ type: 'EXP', value: 500 });
-        rewards.push({ type: 'Artefato', value: 'Fragmento de Égide' });
-    }
-    if (type === 'Épico' || type === 'Lendário') {
-        rewards.push({ type: 'EXP', value: 2000 });
-        
-        // Random Epic/Legendary Border
-        const availableBorders = GM_CONFIG.cosmetics.borders.filter(b => b.rarity === 'epic' || b.rarity === 'legendary');
-        if (availableBorders.length > 0) {
-            const randomBorder = availableBorders[Math.floor(Math.random() * availableBorders.length)];
-            rewards.push({ type: 'Borda', value: randomBorder.name, itemUnlock: { category: 'borders', itemId: randomBorder.id } });
-        }
-    }
-    if (type === 'Lendário') {
-        // Random Legendary Banner
-        const availableBanners = GM_CONFIG.cosmetics.banners.filter(b => b.rarity === 'legendary');
-        if (availableBanners.length > 0) {
-            const randomBanner = availableBanners[Math.floor(Math.random() * availableBanners.length)];
-            rewards.push({ type: 'Banner', value: randomBanner.name, itemUnlock: { category: 'banners', itemId: randomBanner.id } });
-        }
-        rewards.push({ type: 'Artefato', value: 'Lâmina do Infinito' });
-    }
-    
-    const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
-    const rarity = type; // For simplicity, reward rarity matches chest rarity
-
-    return { ...randomReward, rarity };
+const CHEST_VIDEOS: Record<string, string> = {
+    'commum': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
+    'incomum': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
+    'raro': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
+    'epico': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
+    'lendario': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    // Map capitalized keys just in case
+    'Comum': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
+    'Incomum': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
+    'Raro': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
+    'Épico': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
+    'Lendário': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
 };
 
 const RARITY_COLORS: Record<string, string> = {
-    'Comum': '#9ca3af',
-    'Incomum': '#FFFFFF',
-    'Raro': '#CD7F32',
-    'Épico': '#C0C0C0',
-    'Lendário': '#F0C843'
+    'Comum': '#9ca3af', // gray-400
+    'Incomum': '#4ade80', // green-400
+    'Raro': '#60a5fa', // blue-400
+    'Épico': '#a78bfa', // purple-400
+    'Lendário': '#fbbf24', // amber-400
 };
 
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose, predefinedReward }) => {
-    const [stage, setStage] = useState<'video' | 'shaking' | 'exploding' | 'revealed'>('shaking');
-    const [reward, setReward] = useState<Reward | null>(null);
-    const { grantUserUnlock, updateUserProfile, userProfile, oraclePreferences } = useGame();
+    const { userProfile, grantUserUnlock, updateUserProfile, oraclePreferences } = useGame();
+    const [stage, setStage] = useState<Stage>('video');
+    const [reward, setReward] = useState<any>(predefinedReward || null);
 
-    const chestStyle = getChestStyle(chestType);
     const rarityColor = RARITY_COLORS[chestType] || RARITY_COLORS['Comum'];
+    
+    // Get user skin color for border
+    const userSkinId = userProfile.skin;
+    const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
+    const skinBorderColor = userSkin?.color || '#ffffff'; // Fallback to white
 
     useEffect(() => {
         // Use predefined reward or calculate random one
@@ -126,30 +124,19 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
 
         if (animationsEnabled) {
             setStage('video');
+            // Force end video after 4 seconds as requested
+            const timer = setTimeout(() => {
+                setStage('revealed');
+            }, 4000);
+            return () => clearTimeout(timer);
         } else {
-            // Skip directly to revealed if animations are off
             setStage('revealed');
         }
     }, [chestType, oraclePreferences?.animationsEnabled, predefinedReward]);
 
-    // Handle legacy animation stages if we ever fall back to them or for backup
-    useEffect(() => {
-        if (stage === 'shaking') {
-            const timer1 = setTimeout(() => {
-                setStage('exploding');
-            }, 1500);
-            return () => clearTimeout(timer1);
-        }
-        if (stage === 'exploding') {
-            const timer2 = setTimeout(() => {
-                setStage('revealed');
-            }, 500); // Faster explode
-            return () => clearTimeout(timer2);
-        }
-    }, [stage]);
+    // ... (keep sound effect)
 
     const handleCollect = () => {
-        // Only grant if no predefined reward (assuming predefined means already granted or handled elsewhere)
         if (!predefinedReward) {
             const rewardValue = reward as (Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string }) | null;
             if (rewardValue?.itemUnlock) {
@@ -163,90 +150,105 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
         onClose();
     };
 
+    const handleRecycle = () => {
+        const confirm = window.confirm(`Tem certeza que deseja reciclar ${reward?.value}? (Simulação)`);
+        if (confirm) {
+            alert(`Você reciclou ${reward?.value}!`);
+            onClose();
+        }
+    };
+
+    const handleDonate = () => {
+        alert(`Você doou ${reward?.value}! (Simulação)`);
+        // Logic to donate would go here
+    };
+
     const renderContent = () => {
         switch (stage) {
             case 'video':
                 return (
-                    <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
+                    <div className="relative aspect-[9/16] w-full bg-black rounded-t-3xl overflow-hidden">
                         <VideoPlayer 
                             src={CHEST_VIDEOS[chestType]}
                             onEnd={() => setStage('revealed')}
-                            className="w-full h-full"
+                            className="w-full h-full object-cover"
                             placeholderLabel={`Opening ${chestType} Chest...`}
                             duration={4000}
                         />
                     </div>
                 );
-            case 'shaking':
-                return (
-                    <div className="flex flex-col items-center justify-center h-64 relative">
-                         <div className={`w-32 h-32 bg-gray-800 rounded-lg flex items-center justify-center animate-shake border-4 ${chestStyle.shadow}`} style={{borderColor: chestStyle.color}}>
-                            <span className="text-6xl">?</span>
-                        </div>
-                        <p className="mt-8 text-gray-400 font-medium">Abrindo...</p>
-                    </div>
-                );
+            case 'shaking': // Fallback if needed
             case 'exploding':
-                return (
-                    <div className="flex items-center justify-center h-64 relative overflow-hidden">
-                        <div 
-                            className="absolute inset-0 animate-pulse-fast" 
-                            style={{ 
-                                background: `radial-gradient(circle, ${rarityColor}40 0%, transparent 70%)` 
-                            }} 
-                        />
-                        <div 
-                            className="w-4 h-4 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping"
-                            style={{ backgroundColor: rarityColor, boxShadow: `0 0 40px ${rarityColor}` }}
-                        />
-                        {/* Particles */}
-                        {[...Array(8)].map((_, i) => (
-                            <div 
-                                key={i}
-                                className="absolute w-2 h-2 rounded-full"
-                                style={{
-                                    backgroundColor: rarityColor,
-                                    top: '50%',
-                                    left: '50%',
-                                    '--rot': `${i * 45}deg`,
-                                    animation: `particle-explode 0.5s ease-out forwards`
-                                } as React.CSSProperties}
-                            />
-                        ))}
-                    </div>
-                );
+                return null; 
             case 'revealed':
                 if (!reward) return null;
+                
+                // Determine visuals based on reward type
+                // If it's an item/skin, we might want an image. 
+                // For now, using the text/icon representation similar to ItemDetailModal but simplified if no image available.
+                
                 return (
-                    <div className="flex flex-col items-center justify-center text-center h-64 space-y-4 animate-fade-in-up">
-                        {/* Rarity Glow Behind */}
-                        <div 
-                            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-3xl opacity-20 -z-10"
-                            style={{ backgroundColor: rarityColor }}
-                        />
-                        
-                        <div className="relative">
-                            <h3 className="text-3xl font-bold tracking-wider" style={{ color: rarityColor }}>
-                                {reward.value}
-                            </h3>
-                             {/* Rarity Dot with Pulse */}
-                             <div 
-                                className="absolute -top-3 -right-3 w-3 h-3 rounded-full animate-pulse"
-                                style={{ 
-                                    backgroundColor: rarityColor,
-                                    boxShadow: `0 0 10px ${rarityColor}`
-                                }} 
+                    <div className={`flex flex-col items-center p-6 gap-4 animate-fade-in-up w-full`}>
+                         {/* Item Image/Icon with Glow */}
+                        <div className="relative z-10 group mt-2">
+                            <div className={`absolute inset-0 bg-gradient-to-tr from-${rarityColor}/20 to-transparent rounded-full blur-xl opacity-50`} 
+                                 style={{ backgroundColor: rarityColor, opacity: 0.3, filter: 'blur(20px)' }}
                             />
+                            <div className="w-24 h-24 rounded-2xl flex items-center justify-center relative z-10 bg-black/40 border border-white/10 shadow-lg">
+                                {/* If we had imageUrl, use it. Else use generic icon/text */}
+                                <span className="text-4xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                                    {reward.type === 'Item' ? '⚔️' : 
+                                     reward.type === 'Skin' ? '👕' : 
+                                     reward.type === 'EXP' ? '✨' : '🎁'}
+                                </span>
+                            </div>
                         </div>
-                        
-                        <div className="flex flex-col items-center space-y-1">
-                            <span 
-                                className="text-xs font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/10"
-                                style={{ color: rarityColor, borderColor: `${rarityColor}40` }}
+
+                        {/* Info */}
+                        <div className="text-center space-y-1 z-10 w-full">
+                            <h2 className="text-xl font-black text-white uppercase tracking-widest drop-shadow-lg" style={{ color: rarityColor }}>
+                                {reward.value}
+                            </h2>
+                            <div className="flex justify-center">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg"
+                                      style={{ color: rarityColor, borderColor: `${rarityColor}40` }}>
+                                    {reward.rarity}
+                                </span>
+                            </div>
+                            <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto my-3" />
+                            <p className="text-xs text-white/60 px-2">
+                                {reward.type === 'Conselho' ? 'Um conselho para sua jornada.' : 
+                                 reward.type === 'Nada' ? 'Melhor sorte na próxima vez.' :
+                                 `Uma recompensa ${reward.rarity} para sua coleção.`}
+                            </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="w-full grid grid-cols-2 gap-2 z-10 mt-2">
+                            <button 
+                                onClick={handleCollect}
+                                className="col-span-2 py-3 rounded-xl font-bold uppercase tracking-wider transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center justify-center gap-2"
+                                style={{ backgroundColor: `${rarityColor}20`, border: `1px solid ${rarityColor}`, color: rarityColor }}
                             >
-                                {reward.rarity}
-                            </span>
-                            <span className="text-sm text-gray-400">{reward.type}</span>
+                                <CheckIcon className="w-4 h-4" />
+                                <span>OK</span>
+                            </button>
+                            
+                            <button 
+                                onClick={handleRecycle}
+                                className="py-2 rounded-xl bg-red-500/10 text-red-400 font-bold uppercase tracking-wider border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Trash2Icon className="w-3 h-3" />
+                                <span className="text-[10px]">Reciclar</span>
+                            </button>
+                            
+                            <button 
+                                onClick={handleDonate}
+                                className="py-2 rounded-xl bg-blue-500/10 text-blue-400 font-bold uppercase tracking-wider border border-blue-500/20 hover:bg-blue-500/20 transition-all flex items-center justify-center gap-2"
+                            >
+                                <ShareIcon className="w-3 h-3" />
+                                <span className="text-[10px]">Doar</span>
+                            </button>
                         </div>
                     </div>
                 );
@@ -254,17 +256,20 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-end">
-                     <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
+            {/* Reduced width to max-w-xs (approx 320px) as requested "30% menos" */}
+            <GlassCard 
+                variant="neutral" 
+                className="w-full max-w-xs rounded-3xl overflow-hidden relative shadow-2xl transform transition-all bg-zinc-900" 
+                onClick={e => e.stopPropagation()}
+                style={{ borderColor: `${skinBorderColor}40`, borderWidth: '1px' }}
+            >
+                <div className="absolute top-3 right-3 z-50">
+                     <button onClick={onClose} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-all backdrop-blur-md border border-white/10">
+                        <XIcon className="w-4 h-4"/>
+                    </button>
                 </div>
                 {renderContent()}
-                {stage === 'revealed' && (
-                    <button onClick={handleCollect} className="w-full py-2 rounded-xl luxe-skin-button">
-                        COLETAR
-                    </button>
-                )}
             </GlassCard>
         </div>
     );

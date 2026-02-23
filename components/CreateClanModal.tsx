@@ -6,7 +6,7 @@ import { IconPickerModal } from './IconPickerModal';
 import { ClanType, RecruitmentStatus } from '../types';
 import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
 
-const clanTypes: ClanType[] = ['Casual', 'Focado', 'Competitivo'];
+const clanTypes: ClanType[] = ['Casual', 'Office'];
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
 
 export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {

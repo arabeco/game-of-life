@@ -1,26 +1,25 @@
-
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { GlassCard } from './GlassCard';
 import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon } from './Icons';
+import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
-import { Arena, UserProfile, EnrichedClanMember, SeasonQuest, AldeiaSlot, AldeiaPresence, AldeiaSlotId } from '../types';
+import { Arena, UserProfile, EnrichedClanMember, SeasonQuest, AldeiaSlot, AldeiaPresence, AldeiaSlotId, ClanCustomQuest } from '../types';
 import { Sovereign } from './Avatar';
 import { ClanManagementModal } from './ClanManagementModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { TransferLeadershipModal } from './TransferLeadershipModal';
 import { ClanMemberCard } from './ClanMemberCard';
 import { AddClanMemberModal } from './AddClanMemberModal';
-import { BackgroundImageSelectionModal } from './BackgroundImageSelectionModal';
-import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
+import { ClanSlotModal } from './ClanSlotModal';
 
-const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; x: number; y: number }[] = [
-  { id: 'fogueira', label: 'Fogueira', x: 50, y: 55 },
-  { id: 'torre',    label: 'Torre',    x: 20, y: 40 },
-  { id: 'altar',    label: 'Altar',    x: 80, y: 40 },
-  { id: 'forja',    label: 'Forja',    x: 75, y: 70 },
-  { id: 'horta',    label: 'Horta',    x: 25, y: 70 },
-  { id: 'trono',    label: 'Trono',    x: 50, y: 28 },
+const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; emoji: string; x: number; y: number }[] = [
+  { id: 'fogueira', label: 'Fogueira', emoji: '🔥', x: 42, y: 51 },
+  { id: 'torre',    label: 'Torre',    emoji: '🏰', x: 23, y: 24 },
+  { id: 'altar',    label: 'Altar',    emoji: '⛩️', x: 70, y: 40 },
+  { id: 'forja',    label: 'Forja',    emoji: '⚒️', x: 75, y: 70 },
+  { id: 'horta',    label: 'Horta',    emoji: '🌿', x: 25, y: 70 },
+  { id: 'trono',    label: 'Trono',    emoji: '👑', x: 49, y: 32 },
 ];
 
 const getTierInfo = (rankIndex: number) => {
@@ -30,15 +29,20 @@ const getTierInfo = (rankIndex: number) => {
     return { name: 'Acampamento', tier: 1, description: 'Um refúgio temporário para guerreiros em jornada.' };
 };
 
-const getClanBackgroundUrl = (rankIndex: number) => {
+const getClanBackgroundUrl = (rankIndex: number, clanType: string = 'Casual') => {
     const baseUrl = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/';
-    // Map rank index (0-based) to background images
-    // 0, 1 (Lvl 1-2) -> land01
-    // 2, 3 (Lvl 3-4) -> land02
-    // 4, 5 (Lvl 5-6) -> land03
-    // 6, 7 (Lvl 7-8) -> land04
-    // 8, 9 (Lvl 9-10) -> land05
     
+    // Normalize to handle potential nulls from DB and case sensitivity
+    const type = (clanType || 'Casual');
+
+    if (type.toLowerCase() === 'office') {
+        // Dynamic Office Background: 1 background every 2 levels
+        const level = Math.max(1, rankIndex + 1); // Ensure minimum level 1
+        const bgNumber = Math.ceil(level / 2);
+        return `${baseUrl}office${bgNumber}.jpg`;
+    }
+
+    // Default / Casual behavior
     if (rankIndex >= 8) return `${baseUrl}land05.jpg`;
     if (rankIndex >= 6) return `${baseUrl}land04.jpg`;
     if (rankIndex >= 4) return `${baseUrl}land03.jpg`;
@@ -164,8 +168,11 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
                     <h2 className="text-lg font-black text-white luxe-title-shadow">{clan.name}</h2>
                     <p className="text-xs text-gray-300 font-bold">{currentRank?.name || 'N/A'}</p>
                 </div>
-                <div className="w-full bg-black/30 rounded-full h-1.5 mt-1">
+                <div className="w-full bg-black/30 rounded-full h-2 mt-1 relative group">
                     <div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progressPercentage}%` }}></div>
+                </div>
+                <div className="text-[10px] text-center text-gray-400 font-mono mt-0.5">
+                    {Math.floor(progressInRank)} / {expToNextRank} XP
                 </div>
                  <div className="flex items-center justify-center space-x-4 border-t border-white/10 pt-1 mt-1">
                     <button 
@@ -269,7 +276,7 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
     );
 };
 
-const AldeiaStats: React.FC<{ slots: AldeiaSlot[] }> = ({ slots }) => {
+const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_SLOTS }> = ({ slots, slotsConfig = ALDEIA_SLOTS }) => {
     const mainSlots = slots.filter(s => s.slotId !== 'trono');
     // const order = mainSlots.length > 0 ? Math.floor(mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length) : 0;
     
@@ -278,17 +285,20 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[] }> = ({ slots }) => {
             {/* Order Bar moved to Sanctuary Tab */}
             <div className="text-center text-xs text-gray-400 mb-2">Saúde Individual dos Slots</div>
             <div className="grid grid-cols-5 gap-1 pt-1">
-                {mainSlots.map(slot => (
-                    <div key={slot.slotId} className="flex flex-col items-center space-y-1">
-                        <div className="text-[8px] uppercase text-gray-500">{slot.slotId.substring(0, 3)}</div>
-                        <div className="w-full bg-black/30 rounded-full h-1">
-                            <div 
-                                className={`h-full rounded-full ${slot.health >= 70 ? 'bg-green-500' : 'bg-red-500'}`} 
-                                style={{ width: `${slot.health}%` }}
-                            />
+                {mainSlots.map(slot => {
+                    const configSlot = slotsConfig.find(s => s.id === slot.slotId);
+                    return (
+                        <div key={slot.slotId} className="flex flex-col items-center space-y-1">
+                            <div className="text-[10px] uppercase text-gray-500">{configSlot?.emoji || slot.slotId.substring(0, 3)}</div>
+                            <div className="w-full bg-black/30 rounded-full h-1">
+                                <div 
+                                    className={`h-full rounded-full bg-[var(--metal-gold)]`} 
+                                    style={{ width: `${slot.health}%` }}
+                                />
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </GlassCard>
     );
@@ -304,24 +314,285 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     // Aldeia State
     const [aldeiaSlots, setAldeiaSlots] = useState<AldeiaSlot[]>([]);
     const [aldeiaPresence, setAldeiaPresence] = useState<AldeiaPresence[]>([]);
+    const [selectedSlotForModal, setSelectedSlotForModal] = useState<AldeiaSlotId | null>(null);
+    
+    // --- Long Press Logic ---
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const isLongPressTriggered = useRef(false);
+    const pressStartTime = useRef<number>(0);
+    const startPos = useRef({ x: 0, y: 0 });
+    const [pressingSlot, setPressingSlot] = useState<string | null>(null);
+    const [showHoldVisual, setShowHoldVisual] = useState(false);
+    const visualTimer = useRef<NodeJS.Timeout | null>(null);
+
+    // 3 seconds for long press - Strictly followed per user request
+    const LONG_PRESS_DURATION = 3000;
+
+    const handlePointerDown = (e: React.PointerEvent, slotId: string, isThroneDisabled: boolean) => {
+        if (isThroneDisabled) return;
+        
+        // Prevent default to avoid context menus or selection
+        // e.preventDefault(); // Removed to allow click events to propagate properly
+
+        // Capture pointer to prevent cancellation on small movements
+        try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+        } catch (err) {
+            // Ignore capture errors
+        }
+
+        pressStartTime.current = Date.now();
+        startPos.current = { x: e.clientX, y: e.clientY };
+        isLongPressTriggered.current = false;
+        
+        // Start timers
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+        if (visualTimer.current) clearTimeout(visualTimer.current);
+
+        // Visual feedback starts quickly to indicate interaction
+        visualTimer.current = setTimeout(() => {
+            setPressingSlot(slotId);
+            setShowHoldVisual(true);
+        }, 200); // Increased slightly to avoid flicker on quick taps
+
+        longPressTimer.current = setTimeout(() => {
+            isLongPressTriggered.current = true;
+            // Visual feedback of completion happens here (maybe vibrate if possible)
+            if (navigator.vibrate) navigator.vibrate(200);
+            
+            setPressingSlot(null);
+            setShowHoldVisual(false);
+            
+            // Action: Occupy/Sit (Long Press)
+            console.log('[LONG_PRESS] Triggered for slot:', slotId);
+            handleSlotClick(slotId as AldeiaSlotId);
+        }, LONG_PRESS_DURATION);
+    };
+
+    const handlePointerUp = (e: React.PointerEvent, slotId: AldeiaSlotId, isThroneDisabled: boolean) => {
+        if (isThroneDisabled) return;
+        
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch (err) {
+            // Ignore release errors
+        }
+
+        // Clear timers
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+        if (visualTimer.current) clearTimeout(visualTimer.current);
+        
+        setPressingSlot(null);
+        setShowHoldVisual(false);
+    };
+
+    const handlePointerLeave = (e: React.PointerEvent) => {
+        // Cancel if leaving element
+         if (longPressTimer.current) clearTimeout(longPressTimer.current);
+         if (visualTimer.current) clearTimeout(visualTimer.current);
+         setPressingSlot(null);
+         setShowHoldVisual(false);
+         isLongPressTriggered.current = false;
+    };
+
+    const handlePointerCancel = (e: React.PointerEvent) => {
+         if (longPressTimer.current) clearTimeout(longPressTimer.current);
+         if (visualTimer.current) clearTimeout(visualTimer.current);
+         setPressingSlot(null);
+         setShowHoldVisual(false);
+         isLongPressTriggered.current = false;
+    };
+
+    // Click handler for Tap action (Open Modal)
+    const handleSlotTap = (e: React.MouseEvent, slotId: AldeiaSlotId, isThroneDisabled: boolean) => {
+        e.stopPropagation();
+        if (isThroneDisabled) return;
+
+        // If Long Press was triggered, DO NOT open modal
+        if (isLongPressTriggered.current) {
+            console.log('[CLICK] Ignored because Long Press was triggered');
+            isLongPressTriggered.current = false; // Reset for next interaction
+            return;
+        }
+
+        // Open Modal
+        console.log('[CLICK] Tap detected, opening modal for:', slotId);
+        setSelectedSlotForModal(slotId);
+    };
+
+    // Custom Quests State
+    const [clanQuests, setClanQuests] = useState<ClanCustomQuest[]>([]);
+    const [myParticipations, setMyParticipations] = useState<string[]>([]);
+    const [myContributions, setMyContributions] = useState<Record<string, number>>({});
+    const [isCreatingQuest, setIsCreatingQuest] = useState(false);
 
     useEffect(() => {
         if (!clan?.id) return;
         
-        // Perform daily update logic on mount
+        const fetchQuests = async () => {
+            const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
+            if (data) setClanQuests(data as ClanCustomQuest[]);
+
+            // Also fetch participations
+            const { data: partData } = await supabase
+                .from('clan_mission_participants')
+                .select('mission_id, contribution_value')
+                .eq('clan_id', clan.id)
+                .eq('user_id', userProfile.id);
+            
+            if (partData) {
+                setMyParticipations(partData.map(p => p.mission_id));
+                const contribs: Record<string, number> = {};
+                partData.forEach(p => contribs[p.mission_id] = p.contribution_value || 0);
+                setMyContributions(contribs);
+            }
+        };
+        
+        fetchQuests();
+
+        // Subscribe to quest changes
+        const channel = supabase.channel(`clan-quests-${clan.id}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'clan_custom_quests', filter: `clan_id=eq.${clan.id}` }, 
+                () => fetchQuests()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clan?.id, userProfile.id]);
+
+    const handleOptIn = async (quest: ClanCustomQuest) => {
+        try {
+            if (quest.mission_type === 'singular' && (quest.status === 'locked' || quest.assigned_user_id) && quest.assigned_user_id !== userProfile.id) {
+                 showToast("Esta missão já foi atribuída a outro membro.", "error");
+                 return;
+            }
+
+            // Check if already participating (extra safety)
+            if (myParticipations.includes(quest.id)) {
+                showToast("Você já está participando desta missão.", "info");
+                return;
+            }
+
+            const { error: participationError } = await supabase
+                .from('clan_mission_participants')
+                .insert({
+                    clan_id: clan.id,
+                    mission_id: quest.id,
+                    user_id: userProfile.id
+                });
+            
+            if (participationError && participationError.code !== '23505') {
+                 throw participationError;
+            }
+
+            if (quest.mission_type === 'singular') {
+                const { error: lockError } = await supabase
+                    .from('clan_custom_quests')
+                    .update({ status: 'locked', assigned_user_id: userProfile.id })
+                    .eq('id', quest.id);
+                if (lockError) throw lockError;
+            }
+
+            // Create Planner Action with Link
+            addAction({
+                arenaId: 'geral',
+                name: `[CLÃ] ${quest.title}`,
+                description: quest.description || 'Missão de Clã',
+                icon: '⚔️',
+                duration: 30,
+                repetitions: 1,
+                actionType: 'Marco',
+                originCodexId: `clan_quest:${quest.id}`
+            });
+            
+            showToast("Missão aceita! Verifique seu Planner.");
+            setMyParticipations(prev => [...prev, quest.id]);
+            
+            // Refresh quests to show locked status immediately
+            const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
+            if (data) setClanQuests(data as ClanCustomQuest[]);
+
+        } catch (error) {
+            console.error("Error opting in:", error);
+            showToast("Erro ao aceitar missão.", "error");
+        }
+    };
+
+    const handleAbortMission = async (quest: ClanCustomQuest) => {
+        try {
+            // Remove participation
+            const { error: partError } = await supabase
+                .from('clan_mission_participants')
+                .delete()
+                .eq('mission_id', quest.id)
+                .eq('user_id', userProfile.id);
+
+            if (partError) throw partError;
+
+            // Unlock mission if singular
+            if (quest.mission_type === 'singular') {
+                const { error: unlockError } = await supabase
+                    .from('clan_custom_quests')
+                    .update({ status: 'active', assigned_user_id: null })
+                    .eq('id', quest.id);
+                if (unlockError) throw unlockError;
+            }
+
+            showToast("Missão devolvida/abortada com sucesso.");
+            setMyParticipations(prev => prev.filter(id => id !== quest.id));
+            
+            // Refresh quests
+            const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
+            if (data) setClanQuests(data as ClanCustomQuest[]);
+
+        } catch (error) {
+            console.error("Error aborting mission:", error);
+            showToast("Erro ao abortar missão.", "error");
+        }
+    };
+
+    useEffect(() => {
+        if (!clan?.id) return;
+        
+        // Check for updates periodically
         performAldeiaDailyUpdate(clan.id);
+        const dailyCheckInterval = setInterval(() => performAldeiaDailyUpdate(clan.id), 60000 * 60); // Check every hour
 
         const loadAldeiaData = async () => {
+            // Prevent overwriting optimistic updates with stale data
+            if (Date.now() - lastUpdateRef.current < 2000) {
+                 console.log('Skipping aldeia update due to recent user action');
+                 return;
+            }
+
             const slots = await getAldeiaSlots(clan.id);
             setAldeiaSlots(slots);
             const presence = await getAldeiaPresence(clan.id);
-            setAldeiaPresence(presence);
+            
+            // Deduplicate presence by userId (keep latest startedAt) to fix visual multiplication bug
+            const uniquePresence = Object.values(presence.reduce((acc, p) => {
+                const existing = acc[p.userId];
+                // If no existing or current is newer, use current
+                if (!existing || (p.startedAt && existing.startedAt && new Date(p.startedAt) > new Date(existing.startedAt))) {
+                    acc[p.userId] = p;
+                } else if (!existing.startedAt && p.startedAt) {
+                     acc[p.userId] = p;
+                }
+                return acc;
+            }, {} as Record<string, AldeiaPresence>));
+
+            setAldeiaPresence(uniquePresence);
         };
 
         loadAldeiaData();
         const interval = setInterval(loadAldeiaData, 5000);
-        return () => clearInterval(interval);
-    }, [clan?.id, performAldeiaDailyUpdate, getAldeiaSlots, getAldeiaPresence]);
+        return () => {
+            clearInterval(interval);
+            clearInterval(dailyCheckInterval);
+        };
+    }, [clan?.id, getAldeiaSlots, getAldeiaPresence, performAldeiaDailyUpdate]);
 
     // Calculate Rank and Tier
     const currentRank = clanRanks.find(r => r.id === clan?.rankId);
@@ -337,37 +608,95 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         return Math.floor(totalHealth / mainSlots.length);
     }, [aldeiaSlots]);
 
-    // Handle Slot Click
-    const handleSlotClick = async (slotId: AldeiaSlotId) => {
-        if (!clan?.id) return;
+    // Slots Configuration (Dynamic based on Type and Customization)
+    const isOffice = useMemo(() => {
+        // Robust check for clan type from various potential property names
+        const rawType = (clan as any)?.clan_type || clan?.clanType || (clan as any)?.type || '';
+        console.log('[ClanDetailModal] Raw Clan Type:', rawType);
+        return String(rawType).toLowerCase().trim() === 'office';
+    }, [clan]);
+
+    const slotsConfig = useMemo(() => {
+        const base = isOffice ? [
+            { id: 'fogueira', label: 'Mesa Central', emoji: '💼', x: 42, y: 51 },
+            { id: 'torre',    label: 'Mesa 01',      emoji: '🖥️', x: 23, y: 24 },
+            { id: 'altar',    label: 'Mesa 02',      emoji: '🖥️', x: 70, y: 40 },
+            { id: 'forja',    label: 'Mesa 03',      emoji: '🖥️', x: 75, y: 70 },
+            { id: 'horta',    label: 'Copa',         emoji: '☕', x: 25, y: 70 },
+            { id: 'trono',    label: 'CEO',          emoji: '👑', x: 49, y: 32 },
+        ] : ALDEIA_SLOTS;
         
-        // If it's the Throne, check if user is leader and Order is 100%
+        if (!clan?.slotConfig) return base;
+        
+        return base.map(s => {
+            const custom = clan.slotConfig?.[s.id];
+            return custom ? { ...s, label: custom.label, emoji: custom.emoji } : s;
+        });
+    }, [isOffice, clan?.slotConfig]);
+
+    // Update clan exp/order if needed (Optional: sync with DB if this calculation is authoritative)
+    // Note: Ideally the backend calculates this, but for visual feedback we do it here.
+
+    // Handle Slot Click
+    const lastUpdateRef = useRef<number>(0);
+
+    const handleSlotClick = async (slotId: AldeiaSlotId) => {
+        console.log(`[HANDLE_SLOT_CLICK] User clicked slot: ${slotId}`);
+        if (!clan?.id) {
+            console.error('[HANDLE_SLOT_CLICK] No clan ID found');
+            return;
+        }
+        
+        // If it's the Throne, check if user is leader and Order is 90%
         if (slotId === 'trono') {
-            const isLeader = enrichedClanMembers.find(m => m.id === userProfile.id)?.role === 'leader';
-            
-            if (!isLeader) {
-                showToast("Apenas o líder pode sentar no trono.");
-                return;
-            }
+            // Restored restriction: Throne only accessible if Aldeia Order >= 90%
             if (aldeiaOrder < 90) {
-                showToast("O trono só está disponível quando a Ordem da Aldeia é maior que 90%.");
+                showToast("A ordem da aldeia deve ser de pelo menos 90% para acessar o trono.");
                 return;
             }
         }
 
-        await enterAldeiaSlot(clan.id, slotId);
-        // Refresh data immediately
-        const presence = await getAldeiaPresence(clan.id);
-        setAldeiaPresence(presence);
-        const slots = await getAldeiaSlots(clan.id);
-        setAldeiaSlots(slots);
-        showToast(`Você entrou em: ${ALDEIA_SLOTS.find(s => s.id === slotId)?.label}`);
+        console.log(`[HANDLE_SLOT_CLICK] Calling enterAldeiaSlot...`);
+        
+        // Optimistic Update to ensure immediate feedback
+        lastUpdateRef.current = Date.now(); // Prevent interval overwrite
+        setAldeiaPresence(prev => {
+            const others = prev.filter(p => p.userId !== userProfile.id);
+            return [...others, {
+                id: 'temp-optimistic',
+                clanId: clan.id,
+                userId: userProfile.id,
+                slotId: slotId,
+                startedAt: new Date().toISOString(),
+                hoursCounted: 0
+            }];
+        });
+
+        try {
+            await enterAldeiaSlot(clan.id, slotId);
+            console.log(`[HANDLE_SLOT_CLICK] enterAldeiaSlot returned. Refreshing data...`);
+            
+            // Short delay to ensure DB propagation
+            await new Promise(r => setTimeout(r, 500));
+
+            // Refresh data immediately
+            const presence = await getAldeiaPresence(clan.id);
+            console.log('[HANDLE_SLOT_CLICK] New presence:', presence);
+            setAldeiaPresence(presence);
+            const slots = await getAldeiaSlots(clan.id);
+            setAldeiaSlots(slots);
+            
+            const slotConfig = slotsConfig.find(s => s.id === slotId);
+            showToast(`Você entrou em: ${slotConfig?.label || slotId}`);
+        } catch (error) {
+            console.error('[HANDLE_SLOT_CLICK] Error:', error);
+            showToast("Erro ao entrar no slot.");
+        }
     };
 
     const [subModal, setSubModal] = useState<'manage' | 'leave' | 'transfer' | null>(null);
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
     const [memberToKick, setMemberToKick] = useState<EnrichedClanMember | null>(null);
-    const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<EnrichedClanMember | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
     const [expandDescription, setExpandDescription] = useState(false);
@@ -379,8 +708,26 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const activeSeason = seasons.find(s => s.is_active);
     const todayString = new Date().toISOString().split('T')[0];
     const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
-    // const sanctuaryBackground = clan?.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND;
-    const sanctuaryBackground = getClanBackgroundUrl(rankIndex !== -1 ? rankIndex : 0);
+    
+    // Background Image Handling
+    const [bgError, setBgError] = useState(false);
+    
+    useEffect(() => {
+        setBgError(false);
+    }, [clan?.rankId, isOffice]);
+
+    const backgroundUrl = useMemo(() => {
+        const url = getClanBackgroundUrl(rankIndex !== -1 ? rankIndex : 0, isOffice ? 'Office' : 'Casual');
+        if (isOffice) {
+            console.log('[ClanDetailModal] Office BG URL:', url);
+        }
+        return url;
+    }, [isOffice, rankIndex]);
+
+    const handleBgError = () => {
+        console.log(`[BG_ERROR] Failed to load background: ${backgroundUrl}`);
+        setBgError(true);
+    };
 
     const handleLeaveRequest = () => {
         if (userClanRole === 'leader' && enrichedClanMembers.length > 1) {
@@ -412,14 +759,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             setMemberToKick(null);
         }
     };
-
-    const handleBackgroundSelect = async (value: string) => {
-        if (!clan || !canEditBackground) return;
-        await updateClan(clan.id, { backgroundUrl: value });
-        setIsBackgroundModalOpen(false);
-    };
     
-    const clanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
+    const seasonClanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
     const questArenaName = activeSeason ? `Quests - Clã ${activeSeason.id}` : 'Quests - Clã';
 
     const isQuestActive = (quest: SeasonQuest) => {
@@ -460,34 +801,59 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     return createPortal(
         <>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <div className="relative w-full max-w-sm m-4 aspect-[9/16] rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <div className="relative w-full h-full rounded-3xl overflow-hidden bg-cover bg-center border border-white/10 flex flex-col" style={{ backgroundImage: `url('${sanctuaryBackground}')` }}>
+                <div className="relative w-full max-w-sm m-4 aspect-[9/16] rounded-3xl shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="relative w-full h-full rounded-3xl overflow-hidden border border-white/10 flex flex-col isolate bg-black"> 
+                        {/* Background Image Layer */}
+                        <div className="absolute inset-0 z-0 select-none pointer-events-none">
+                            {isOffice && bgError ? (
+                                <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 flex items-center justify-center border-4 border-dashed border-white/10">
+                                    <div className="text-white/20 text-4xl font-black uppercase tracking-widest rotate-[-15deg] select-none text-center">
+                                        <div>Office Mode</div>
+                                        <div className="text-xs mt-2 tracking-normal opacity-50 font-mono">office{Math.ceil(Math.max(1, rankIndex + 1) / 2)}.jpg not found</div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <img 
+                                    src={backgroundUrl} 
+                                    alt="Clan Background" 
+                                    className="w-full h-full object-cover transition-opacity duration-500"
+                                    onError={handleBgError}
+                                />
+                            )}
+                            {/* Overlay only for Casual mode */}
+                            {!isOffice && (
+                                <div className={`absolute inset-0 mix-blend-overlay ${tierInfo.tier === 1 ? 'bg-amber-900/30' : tierInfo.tier === 2 ? 'bg-emerald-900/30' : 'bg-purple-900/30'}`} />
+                            )}
+                        </div>
                         
                         {/* Header Section */}
-                        <div className="flex-none relative">
+                        <div className="flex-none relative z-10">
                             <ClanHeader userClanRole={userClanRole} expandDescription={expandDescription} />
                             
                             {/* Header Actions */}
-                            <button onClick={onClose} className="absolute top-4 right-4 z-40 p-1 rounded-full bg-black/50 hover:bg-black/80"><XIcon className="w-5 h-5"/></button>
-                            {/* {userClanRole === 'leader' && (
-                                <button
-                                    onClick={() => canEditBackground && setIsBackgroundModalOpen(true)}
-                                    disabled={!canEditBackground}
-                                    className={`absolute top-4 left-4 z-40 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${canEditBackground ? 'bg-black/50 text-white hover:bg-black/80' : 'bg-black/30 text-gray-400 cursor-not-allowed'}`}
+                            <button onClick={onClose} className="absolute top-4 right-4 z-50 p-1 rounded-full bg-black/50 hover:bg-black/80 text-white"><XIcon className="w-5 h-5"/></button>
+                            
+                            {/* Leader Edit Button */}
+                            {userClanRole === 'leader' && (
+                                <button 
+                                    onClick={() => setSubModal('manage')}
+                                    className="absolute top-4 left-4 z-50 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-colors border border-white/10 backdrop-blur-sm"
+                                    title="Editar Clã"
                                 >
-                                    {canEditBackground ? 'Editar Fundo' : 'Fundo Bloqueado'}
+                                    <span className="sr-only">Editar</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                    </svg>
                                 </button>
-                            )} */}
+                            )}
                         </div>
 
                         {/* Content Section */}
-                        <div className="flex-1 relative min-h-0">
+                        <div className="flex-1 relative min-h-0 pointer-events-auto">
                             {activeTab === 'santuario' && (
                                 <div className="absolute inset-0 overflow-hidden">
                                     <Sparkles />
-                                    {/* Background Placeholder - To be replaced by Tier Image */}
-                                    {/* <div className="absolute inset-0 bg-gradient-to-b from-slate-900 to-slate-800" /> */}
-                                    <div className={`absolute inset-0 transition-colors duration-1000 ${tierInfo.tier === 1 ? 'bg-amber-900/10' : tierInfo.tier === 2 ? 'bg-emerald-900/10' : tierInfo.tier === 3 ? 'bg-slate-900/20' : 'bg-purple-900/10'}`} />
+                                    
                                     
                                     {/* Tier Label */}
                                     {/* <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-center z-10">
@@ -496,7 +862,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                     </div> */}
 
                                     {/* Slots */}
-                                    {ALDEIA_SLOTS.map(slot => {
+                                    {slotsConfig.map((slot, idx) => {
+                                        // Hide Throne if Order < 90%
+                                        // if (slot.id === 'trono' && aldeiaOrder < 90) return null;
+
                                         const slotData = aldeiaSlots.find(s => s.slotId === slot.id);
                                         const health = slotData?.health ?? 100;
                                         const occupants = aldeiaPresence.filter(p => p.slotId === slot.id);
@@ -509,17 +878,62 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         else if (health >= 20) opacity = 0.6;
                                         else if (health > 0) opacity = 0.4;
 
-                                        // Hide Throne if Order is not 100
-                                        // if (slot.id === 'trono' && aldeiaOrder < 100) return null;
+                                        // Restored strict check for Order < 90
                                         const isThroneDisabled = slot.id === 'trono' && aldeiaOrder < 90;
+                                        
+                                        if (slot.id === 'trono') {
+                                            console.log(`[RENDER_SLOT] Throne: Order=${aldeiaOrder}, Disabled=${isThroneDisabled}`);
+                                        }
 
                                         return (
                                             <div
                                                 key={slot.id}
-                                                className={`absolute w-24 h-24 -ml-12 -mt-12 flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-110 z-10 ${isThroneDisabled ? 'opacity-50 grayscale cursor-not-allowed hover:scale-100' : ''}`}
-                                                style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
-                                                onClick={() => !isThroneDisabled && handleSlotClick(slot.id)}
+                                                className={`absolute w-24 h-24 -ml-12 -mt-12 flex flex-col items-center justify-center cursor-pointer transition-transform ${pressingSlot === slot.id ? 'scale-95' : 'hover:scale-110'} ${slot.id === 'trono' ? 'z-40' : 'z-10'} ${isThroneDisabled ? 'cursor-not-allowed hover:scale-100' : ''}`}
+                                                style={{ left: `${slot.x}%`, top: `${slot.y}%`, touchAction: 'none' }}
+                                                onPointerDown={(e) => handlePointerDown(e, slot.id, isThroneDisabled)}
+                                                onPointerUp={(e) => handlePointerUp(e, slot.id as AldeiaSlotId, isThroneDisabled)}
+                                                onPointerLeave={handlePointerLeave}
+                                                onPointerCancel={handlePointerCancel}
+                                                onClick={(e) => handleSlotTap(e, slot.id as AldeiaSlotId, isThroneDisabled)}
                                             >
+                                                {/* Visual Feedback for Holding */}
+                                                {pressingSlot === slot.id && showHoldVisual && (
+                                                    <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none scale-125">
+                                                        <div className="absolute inset-0 bg-white/10 rounded-full blur-md animate-pulse" />
+                                                        <svg className="w-24 h-24 rotate-[-90deg] relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                                                            <circle
+                                                                className="text-white/20"
+                                                                strokeWidth="6"
+                                                                stroke="currentColor"
+                                                                fill="transparent"
+                                                                r="40"
+                                                                cx="48"
+                                                                cy="48"
+                                                            />
+                                                            <circle
+                                                                className="text-[var(--skin-accent-color)]"
+                                                                strokeWidth="6"
+                                                                strokeDasharray={251.2}
+                                                                strokeDashoffset={251.2}
+                                                                strokeLinecap="round"
+                                                                stroke="currentColor"
+                                                                fill="transparent"
+                                                                r="40"
+                                                                cx="48"
+                                                                cy="48"
+                                                                style={{ 
+                                                                    animation: 'dash 3s linear forwards',
+                                                                    strokeDashoffset: 251.2 
+                                                                }}
+                                                            />
+                                                        </svg>
+                                                        <style>{`
+                                                            @keyframes dash {
+                                                                to { stroke-dashoffset: 0; }
+                                                            }
+                                                        `}</style>
+                                                    </div>
+                                                )}
                                                 {/* Occupants Avatars - MOVED TO TOP */}
                                                 <div className="relative h-16 w-full flex justify-center items-end -mb-2 z-20">
                                                     {occupants.map((presence, idx) => {
@@ -542,6 +956,18 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                         // Stagger multiple occupants
                                                         const offset = (idx - (occupants.length - 1) / 2) * 20;
                                                         
+                                                        // Calculate Planner Progress based on active singular quests
+                                                        let plannerProgress = 0;
+                                                        
+                                                        // Only calculate for Casual mode (or if requested later). For now Office is 0.
+                                                        if (!isOffice) {
+                                                            const memberActiveQuests = clanQuests.filter(q => q.assigned_user_id === member.id && q.status === 'locked');
+                                                            if (memberActiveQuests.length > 0) {
+                                                                const totalProgress = memberActiveQuests.reduce((acc, q) => acc + (q.current_value / Math.max(1, q.target_value)), 0);
+                                                                plannerProgress = Math.min(100, (totalProgress / memberActiveQuests.length) * 100);
+                                                            }
+                                                        }
+
                                                         return (
                                                             <div 
                                                                 key={presence.userId}
@@ -569,23 +995,36 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/70 px-1.5 py-0.5 rounded text-[8px] whitespace-nowrap text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                                                                     {member.nickname}
                                                                 </div>
+                                                                
+                                                                {/* Planner Progress Bar */}
+                                                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-black/50 rounded-full overflow-hidden border border-white/10 z-40">
+                                                                     <div className="h-full bg-[var(--skin-accent-color)] transition-all duration-500" style={{ width: `${plannerProgress}%` }}></div>
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}
                                                 </div>
 
                                                 {/* Slot Label (Transparent) */}
-                                                <div className="mb-0.5 z-10 flex flex-col items-center">
-                                                    <span className="text-xs font-bold uppercase tracking-widest text-white shadow-black drop-shadow-md">
-                                                        {slot.label}
-                                                    </span>
+                                                <div className={`mb-0.5 z-10 flex flex-col items-center gap-[1px] ${slot.id === 'trono' ? '' : ''}`}>
+                                                    
+                                                    {/* Emoji (Left) */}
+                                                    <div className="w-[18px] h-[18px] min-w-[18px] min-h-[18px] rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex flex-none items-center justify-center shadow-lg overflow-hidden">
+                                                        <span className="text-[9px] leading-none drop-shadow-md flex items-center justify-center w-full h-full">
+                                                            {slot.emoji}
+                                                        </span>
+                                                    </div>
                                                     
                                                     {/* Health Bar - Fixed below text, discrete */}
                                                     {slot.id !== 'trono' && (
-                                                        <div className="w-12 h-1 bg-black/50 rounded-full overflow-hidden mt-0.5 backdrop-blur-[1px]">
+                                                        <div className="w-[20px] h-[3px] min-h-[3px] bg-black/60 rounded-full overflow-hidden flex-shrink-0">
                                                             <div 
-                                                                className={`h-full transition-all duration-500 ${health < 30 ? 'bg-red-500' : 'bg-[var(--metal-gold)]'}`}
-                                                                style={{ width: `${health}%`, opacity: 0.8 }}
+                                                                className="h-full transition-all duration-500"
+                                                                style={{ 
+                                                                    width: isOffice ? '0%' : `${health}%`, 
+                                                                    background: 'var(--metal-gold)', 
+                                                                    opacity: 0.9 
+                                                                }}
                                                             />
                                                         </div>
                                                     )}
@@ -599,12 +1038,15 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         <div className="p-1">
                                             <div className="flex items-center justify-between mb-1 px-1">
                                                 <span className="text-[10px] font-bold uppercase tracking-wider text-white shadow-black drop-shadow-md">Ordem da Aldeia</span>
-                                                <span className={`text-xs font-mono font-bold shadow-black drop-shadow-md ${aldeiaOrder >= 70 ? 'text-[var(--metal-gold)]' : aldeiaOrder >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>{aldeiaOrder}%</span>
+                                                <span className="text-xs font-mono font-bold shadow-black drop-shadow-md text-[var(--metal-gold)]">{isOffice ? 0 : aldeiaOrder}%</span>
                                             </div>
                                             <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden backdrop-blur-sm">
                                                 <div 
-                                                    className={`h-full rounded-full transition-all duration-500 ${aldeiaOrder >= 70 ? 'bg-[var(--metal-gold)]' : aldeiaOrder >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} 
-                                                    style={{ width: `${aldeiaOrder}%` }}
+                                                    className="h-full rounded-full transition-all duration-500" 
+                                                    style={{ 
+                                                        width: isOffice ? '0%' : `${aldeiaOrder}%`, 
+                                                        background: 'var(--metal-gold)' 
+                                                    }}
                                                 />
                                             </div>
                                         </div>
@@ -674,38 +1116,112 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                             {activeTab === 'missoes' && (
                                 <div className="absolute inset-0 px-4 overflow-y-auto hide-scrollbar pt-4">
                                     <div className="space-y-3">
-                                        {/* <AldeiaStats slots={aldeiaSlots} /> */}
                                         <div className="text-center text-xs font-bold uppercase tracking-wider text-gray-300">
-                                            Quests do Clã
+                                            Missões do Clã
                                         </div>
                                     </div>
                                     {clanQuests.length === 0 && (
                                         <GlassCard variant="neutral" className="p-4 text-center text-sm text-gray-300">
-                                            Nenhuma quest de clã ativa nesta season.
+                                            Nenhuma missão ativa. O líder pode criar novas missões nas mesas.
                                         </GlassCard>
                                     )}
-                                    {clanQuests.map(quest => {
-                                        const progress = getQuestProgress(quest);
-                                        const isCompleted = progress >= 100;
-
-                                        return (
-                                            <GlassCard key={quest.id} variant={isCompleted ? 'accent' : 'neutral'} className={`p-4 transition-all duration-300 cursor-pointer ${isCompleted ? 'border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)]' : ''}`} onClick={() => setSelectedQuest(quest)}>
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-bold text-sm w-2/3">{quest.title}</span>
-                                                        <div className="flex items-center space-x-2">
-                                                            <span className="text-xs font-mono">{progress}%</span>
-                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isCompleted ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)] text-black' : 'border-gray-500'}`}>
-                                                                {isCompleted && <CheckIcon className="w-4 h-4" />}
-                                                            </div>
+                                    {clanQuests.map((quest: ClanCustomQuest) => {
+                                        const isParticipating = myParticipations.includes(quest.id);
+                                        const isLocked = quest.status === 'locked';
+                                        const isMyLockedQuest = isLocked && quest.assigned_user_id === userProfile.id;
+                                        
+                                        // If Type A and locked by someone else, show as locked
+                                        if (quest.mission_type === 'singular' && isLocked && !isMyLockedQuest) {
+                                            return (
+                                                <GlassCard key={quest.id} variant="neutral" className="p-4 opacity-50 grayscale border border-red-900/30">
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="space-y-1">
+                                                            <span className="font-bold text-sm text-gray-400">{quest.title}</span>
+                                                            <div className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Bloqueada por outro membro</div>
+                                                        </div>
+                                                        <div className="w-8 h-8 rounded-full bg-red-900/20 flex items-center justify-center">
+                                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                                                         </div>
                                                     </div>
-                                                    
-                                                    <div className="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
-                                                        <div className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-[var(--skin-accent-color)]' : 'bg-gray-500'}`} style={{width: `${progress}%`}}></div>
+                                                </GlassCard>
+                                            );
+                                        }
+
+                                        const progressPercent = Math.min(100, (quest.current_value / Math.max(1, quest.target_value)) * 100);
+
+                                        return (
+                                            <div 
+                                                key={quest.id} 
+                                                className={`p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border-2 shadow-lg ${
+                                                    isParticipating 
+                                                        ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
+                                                        : 'bg-gradient-to-br from-[#3d2b1f] to-[#1a100c] border-[#8b5cf6]/30 hover:border-[#8b5cf6]/60'
+                                                }`}
+                                            >
+                                                {/* Metallic sheen overlay */}
+                                                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                                
+                                                <div className="flex justify-between items-start relative z-10">
+                                                    <div className="space-y-1 max-w-[70%]">
+                                                        <h4 className="font-bold text-sm leading-tight">{quest.title}</h4>
+                                                        <p className="text-xs text-gray-400 line-clamp-2">{quest.description}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded border font-bold uppercase tracking-wider ${quest.mission_type === 'singular' ? 'border-purple-500/30 text-purple-300 bg-purple-500/10' : 'border-blue-500/30 text-blue-300 bg-blue-500/10'}`}>
+                                                            {quest.mission_type === 'singular' ? 'Individual' : 'Coletiva'}
+                                                        </span>
+                                                        <span className="text-[10px] text-yellow-500 font-mono">+{quest.reward_xp} XP</span>
                                                     </div>
                                                 </div>
-                                            </GlassCard>
+                                                
+                                                {/* Progress Bar */}
+                                                <div className="space-y-1 relative z-10">
+                                                    <div className="flex justify-between text-[10px] text-gray-400 font-mono">
+                                                        <span>Progresso {quest.mission_type === 'shared' && '(Global)'}</span>
+                                                        <span>{quest.current_value} / {quest.target_value}</span>
+                                                    </div>
+                                                    {isParticipating && quest.mission_type === 'shared' && (
+                                                        <div className="text-[9px] text-[var(--skin-accent-color)] font-mono text-right">
+                                                            Sua contribuição: {myContributions[quest.id] || 0} pts
+                                                        </div>
+                                                    )}
+                                                    <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden border border-white/5">
+                                                        <div 
+                                                            className={`h-full rounded-full transition-all duration-500 ${isParticipating ? 'bg-[var(--skin-accent-color)]' : 'bg-gray-500'}`} 
+                                                            style={{ width: `${progressPercent}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Actions */}
+                                                <div className="relative z-10 pt-1">
+                                                    {!isParticipating ? (
+                                                        <button 
+                                                            onClick={() => handleOptIn(quest)}
+                                                            className="w-full py-2 rounded-lg bg-gradient-to-r from-amber-700/80 to-amber-900/80 hover:from-amber-600 hover:to-amber-800 text-amber-100 text-xs font-bold uppercase tracking-wider transition-colors border border-amber-500/30 shadow-md"
+                                                        >
+                                                            Aceitar Missão
+                                                        </button>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <div className="w-full py-2 rounded-lg bg-purple-900/40 border border-purple-500/30 text-center">
+                                                                <span className="text-xs text-purple-300 font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
+                                                                    Em Andamento
+                                                                </span>
+                                                            </div>
+                                                            {quest.mission_type === 'singular' && (
+                                                                <button 
+                                                                    onClick={() => handleAbortMission(quest)}
+                                                                    className="w-full py-2 rounded-lg bg-red-900/40 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase tracking-wider hover:bg-red-900/60"
+                                                                >
+                                                                    Devolver Missão
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -716,7 +1232,9 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                         <div className="flex-none p-4 z-30 bg-gradient-to-t from-black/80 to-transparent">
                             <GlassCard variant="neutral" className="p-1">
                                 <div className="flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
-                                    <button onClick={() => setActiveTab('santuario')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'santuario' ? 'bg-white/10' : 'text-gray-400'}`}>Santuário</button>
+                                    <button onClick={() => setActiveTab('santuario')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'santuario' ? 'bg-white/10' : 'text-gray-400'}`}>
+                                        {isOffice ? 'Escritório' : 'Santuário'}
+                                    </button>
                                     <button onClick={() => setActiveTab('membros')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'membros' ? 'bg-white/10' : 'text-gray-400'}`}>Membros</button>
                                     <button onClick={() => setActiveTab('missoes')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'missoes' ? 'bg-white/10' : 'text-gray-400'}`}>Quests</button>
                                 </div>
@@ -741,16 +1259,6 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             )}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
             {subModal === 'manage' && <ClanManagementModal onClose={() => setSubModal(null)} />}
-            {/* {isBackgroundModalOpen && (
-                <BackgroundImageSelectionModal
-                    currentBackground={sanctuaryBackground}
-                    onSelect={handleBackgroundSelect}
-                    onClose={() => setIsBackgroundModalOpen(false)}
-                    options={SANCTUARY_BACKGROUND_OPTIONS}
-                    title="Fundo do Santuário"
-                    showUpload={false}
-                />
-            )} */}
             {memberToKick && <ConfirmationModal title="Expulsar Membro" message={`Tem certeza que deseja expulsar ${memberToKick.nickname} do clã?`} onConfirm={handleKickMember} onCancel={() => setMemberToKick(null)} />}
             {subModal === 'leave' && (
                 <ConfirmationModal 
@@ -765,6 +1273,27 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     onConfirm={handleConfirmTransfer}
                     onClose={() => setSubModal(null)}
                 />
+            )}
+            {selectedSlotForModal && clan && (
+                <div className="fixed inset-0 z-[12000] pointer-events-auto">
+                    <ClanSlotModal
+                        clanId={clan.id}
+                        slotId={selectedSlotForModal}
+                        slotLabel={slotsConfig.find(s => s.id === selectedSlotForModal)?.label || 'Slot'}
+                        slotEmoji={slotsConfig.find(s => s.id === selectedSlotForModal)?.emoji}
+                        occupant={enrichedClanMembers.find(m => aldeiaPresence.some(p => p.slotId === selectedSlotForModal && p.userId === m.id))}
+                        clanQuests={clanQuests}
+                        onClose={() => setSelectedSlotForModal(null)}
+                        onOccupy={() => {
+                            handleSlotClick(selectedSlotForModal);
+                            setSelectedSlotForModal(null);
+                        }}
+                        userRole={userClanRole || 'member'}
+                        onUpdate={() => loadClanAndMembers(clan.id)}
+                        myParticipations={myParticipations}
+                        onOptIn={handleOptIn}
+                    />
+                </div>
             )}
             {selectedMember && (
                 <SovereignDetailModal 

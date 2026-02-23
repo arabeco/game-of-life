@@ -99,6 +99,25 @@ export interface Skin {
   rarity?: ItemRarity;
 }
 
+export type ClanCustomQuestType = 'singular' | 'shared';
+
+export interface ClanCustomQuest {
+  id: string;
+  clan_id: string;
+  creator_id: string;
+  title: string;
+  description?: string;
+  mission_type: ClanCustomQuestType;
+  slot_id?: string;
+  status: 'active' | 'locked' | 'completed' | 'aborted';
+  target_value: number;
+  current_value: number;
+  reward_xp: number;
+  reward_gold: number;
+  created_at: string;
+  assigned_user_id?: string;
+}
+
 export interface Nobility {
     exp: number;
     rankId: string;
@@ -218,6 +237,7 @@ export interface ChecklistItem {
 
 export interface Report {
     id: string;
+    cycleId?: string;
     startDate: string;
     endDate: string;
     performanceScore: number;
@@ -257,19 +277,26 @@ export interface ClanRank {
     expRequired: number;
 }
 
-export type ClanType = 'Casual' | 'Focado' | 'Competitivo';
+export type ClanType = 'Casual' | 'Office';
 export type RecruitmentStatus = 'Aberto' | 'Privado';
+export type ClanRankId = string;
 
 export interface Clan {
     id: string;
     name: string;
-    icon: string;
+    icon?: string;
     description: string;
     backgroundUrl?: string;
-    clan_type: ClanType;
-    recruitment_status: RecruitmentStatus;
-    exp: number;
-    rankId: string;
+    leaderId: string;
+    rankId: ClanRankId;
+    level: number;
+    experience: number;
+    bannerUrl?: string;
+    clanType: ClanType;
+    created_at?: string;
+    privacy: 'open' | 'invite-only' | 'closed';
+    recruitmentStatus?: RecruitmentStatus;
+    slotConfig?: Record<string, { label: string; emoji: string }>;
 }
 
 export interface ClanMember {

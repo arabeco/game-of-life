@@ -14,6 +14,7 @@ import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { SovereignPanelView } from './SovereignPanelView';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { SeasonDetailModal } from '../components/SeasonDetailModal';
+import { DebugRewardControls } from '../components/DebugRewardControls';
 import { CODEXES } from '../constants/items';
 
 import { CodexModal } from '../components/CodexModal';
@@ -179,7 +180,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [savingLinkId, setSavingLinkId] = useState<string | null>(null);
     const [sessionUid, setSessionUid] = useState<string | null>(null);
     const [sliderValues, setSliderValues] = useState<Record<string, number>>({});
-    const [spectatorData, setSpectatorData] = useState<{ arena: Arena, actions: Action[], tasks: ScheduledTask[], pupilName: string } | null>(null);
+    const [spectatorData, setSpectatorData] = useState<{ arena: Arena, actions: Action[], tasks: ScheduledTask[], pupilName: string, link: RelationshipLink } | null>(null);
 
     const sessionReady = useMemo(() => !!sessionUid && isUuid(sessionUid), [sessionUid]);
 
@@ -283,13 +284,13 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         refresh();
     }, []);
 
-    const fetchSpectatorData = async (targetUserId: string, targetArenaId: string, targetName: string) => {
+    const fetchSpectatorData = async (link: RelationshipLink, targetName: string) => {
         setLoading(true);
         try {
-            const { data: arenaData, error: arenaError } = await supabase.from('arenas').select('*').eq('id', targetArenaId).single();
+            const { data: arenaData, error: arenaError } = await supabase.from('arenas').select('*').eq('id', link.arenaId).single();
             if (arenaError || !arenaData) throw new Error("Arena não encontrada.");
 
-            const { data: actionsData } = await supabase.from('actions').select('*').eq('arena_id', targetArenaId);
+            const { data: actionsData } = await supabase.from('actions').select('*').eq('arena_id', link.arenaId);
             
             const today = new Date().toISOString().split('T')[0];
             const { data: tasksData } = await supabase.from('scheduled_tasks').select('*').in('action_id', (actionsData || []).map((a: any) => a.id)).eq('date', today);
@@ -298,7 +299,8 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 arena: mapToCamelCase(arenaData),
                 actions: mapToCamelCase(actionsData || []),
                 tasks: mapToCamelCase(tasksData || []),
-                pupilName: targetName
+                pupilName: targetName,
+                link
             });
         } catch (e: any) {
             setError(e.message);
@@ -459,8 +461,8 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     const pupil = getProfile(link.pupilId);
                                                     const localValue = typeof sliderValues[link.id] === 'number' ? sliderValues[link.id] : link.satisfactionLevel;
                                                     return (
-                                                        <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
-                                                            <div className="flex items-center gap-3 cursor-pointer hover:bg-white/5 rounded-xl p-1 transition-colors" onClick={() => fetchSpectatorData(link.pupilId, link.arenaId, pupil?.nickname || 'Pupilo')}>
+                                                        <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => fetchSpectatorData(link, pupil?.nickname || 'Pupilo')}>
+                                                            <div className="flex items-center gap-3">
                                                                 <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
                                                                     {pupil?.avatarUrl ? <img src={pupil.avatarUrl} alt={pupil.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
                                                                 </div>
@@ -468,28 +470,17 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                     <div className="text-sm font-bold text-white">{pupil?.nickname || 'Pupilo'}</div>
                                                                     <div className="text-xs text-gray-400">{link.arenaSnapshot?.icon || '👁️'} {link.arenaSnapshot?.name || 'Arena'}</div>
                                                                 </div>
-                                                                <div className="text-xs font-bold text-gray-400">{Math.round(localValue)}%</div>
+                                                                <div className={`text-xs font-bold ${localValue <= 33 ? 'text-red-400' : localValue <= 66 ? 'text-yellow-400' : 'text-green-400'}`}>{Math.round(localValue)}%</div>
                                                             </div>
-                                                            <div className="space-y-1">
-                                                                <input
-                                                                    type="range"
-                                                                    min={0}
-                                                                    max={100}
-                                                                    value={localValue}
-                                                                    onChange={(e) => {
-                                                                        const next = Number(e.target.value);
-                                                                        setSliderValues(prev => ({ ...prev, [link.id]: next }));
-                                                                    }}
-                                                                    onMouseUp={() => setSatisfaction(link, localValue)}
-                                                                    onTouchEnd={() => setSatisfaction(link, localValue)}
-                                                                    className={`w-full h-2 rounded-full appearance-none bg-gradient-to-r ${sliderColor(localValue)} outline-none`}
+                                                            
+                                                            <div className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
+                                                                <div 
+                                                                    className={`h-full transition-all duration-500 ${localValue <= 33 ? 'bg-red-500' : localValue <= 66 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                                                    style={{ width: `${localValue}%` }}
                                                                 />
-                                                                {savingLinkId === link.id && <div className="text-[10px] text-gray-500">Salvando...</div>}
                                                             </div>
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                <button onClick={() => sendSignal(link, 'praise')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">ELOGIO</button>
-                                                                <button onClick={() => sendSignal(link, 'support')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">FORÇA</button>
-                                                                <button onClick={() => sendSignal(link, 'scold')} className="py-2 rounded-xl bg-black/20 border border-white/10 text-xs font-bold hover:bg-black/30">BRONCA</button>
+                                                            <div className="text-[10px] text-center text-gray-500 uppercase tracking-wider font-bold pt-1">
+                                                                Clique para Avaliar
                                                             </div>
                                                         </div>
                                                     );
@@ -557,16 +548,16 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         </div>
                                                         
                                                         <div className="flex gap-2">
-                                                             <div className="flex-1 bg-black/30 rounded-xl p-2 text-center border border-white/5 cursor-pointer hover:border-white/20" onClick={() => isMeMentor ? null : fetchSpectatorData(partnerId, link.arenaId, partner?.nickname || 'Parceiro')}>
-                                                                 <div className="text-[10px] text-gray-500 uppercase">Eu</div>
-                                                                 <div className="text-sm font-bold text-white">{link.arenaSnapshot?.name}</div>
-                                                                 {/* Sync status would go here */}
-                                                             </div>
-                                                             <div className="flex-1 bg-black/30 rounded-xl p-2 text-center border border-white/5 cursor-pointer hover:border-white/20" onClick={() => !isMeMentor ? null : fetchSpectatorData(partnerId, link.arenaId, partner?.nickname || 'Parceiro')}>
-                                                                 <div className="text-[10px] text-gray-500 uppercase">Parceiro</div>
-                                                                 <div className="text-sm font-bold text-white">{link.arenaSnapshot?.name}</div>
-                                                             </div>
-                                                        </div>
+                                                         <div className="flex-1 bg-black/30 rounded-xl p-2 text-center border border-white/5 cursor-pointer hover:border-white/20" onClick={() => isMeMentor ? null : fetchSpectatorData(link, partner?.nickname || 'Parceiro')}>
+                                                             <div className="text-[10px] text-gray-500 uppercase">Eu</div>
+                                                             <div className="text-sm font-bold text-white">{link.arenaSnapshot?.name}</div>
+                                                             {/* Sync status would go here */}
+                                                         </div>
+                                                         <div className="flex-1 bg-black/30 rounded-xl p-2 text-center border border-white/5 cursor-pointer hover:border-white/20" onClick={() => !isMeMentor ? null : fetchSpectatorData(link, partner?.nickname || 'Parceiro')}>
+                                                             <div className="text-[10px] text-gray-500 uppercase">Parceiro</div>
+                                                             <div className="text-sm font-bold text-white">{link.arenaSnapshot?.name}</div>
+                                                         </div>
+                                                    </div>
                                                         
                                                         <div className="text-center text-[10px] text-gray-500 italic">
                                                             "Aguardando sincronia..."
@@ -605,9 +596,14 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     tasks={spectatorData.tasks}
                     pupilName={spectatorData.pupilName}
                     onClose={() => setSpectatorData(null)}
-                >
-                    {/* Add controls here if needed, like slider for mentor */}
-                </SpectatorArenaModal>
+                    isMentor={activeTab === 'mentoria' && !!spectatorData.link && spectatorData.link.mentorId === sessionUid}
+                    satisfactionLevel={typeof sliderValues[spectatorData.link.id] === 'number' ? sliderValues[spectatorData.link.id] : spectatorData.link.satisfactionLevel}
+                    onSatisfactionChange={(val) => {
+                        setSliderValues(prev => ({ ...prev, [spectatorData.link.id]: val }));
+                        setSatisfaction(spectatorData.link, val);
+                    }}
+                    onSignal={(type) => sendSignal(spectatorData.link, type)}
+                />
             )}
         </div>
     );
@@ -1170,6 +1166,7 @@ const PremiumTab: React.FC = () => {
             {(userProfile.role === 'admin' || userProfile.role === 'gm') && (
                 <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
                     <SovereignPanelView />
+                    <DebugRewardControls />
                 </div>
             )}
 

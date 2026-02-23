@@ -7,6 +7,8 @@ interface VideoPlayerProps {
     className?: string;
     placeholderLabel?: string;
     duration?: number; // Duration for placeholder
+    playbackRate?: number; // Control video speed (default 1.0)
+    startTime?: number; // Start playing from this time (in seconds)
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
@@ -14,10 +16,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     onEnd, 
     className = "", 
     placeholderLabel = "Playing Video...",
-    duration = 4000 
+    duration = 4000,
+    playbackRate = 1.0,
+    startTime = 0
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [hasError, setHasError] = useState(false);
+
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = playbackRate;
+            // Only set currentTime once on mount if startTime > 0 to avoid loops
+            if (startTime > 0 && videoRef.current.currentTime === 0) {
+                videoRef.current.currentTime = startTime;
+            }
+        }
+    }, [playbackRate, startTime]);
 
     useEffect(() => {
         if (!src || hasError) {

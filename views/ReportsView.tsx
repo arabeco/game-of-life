@@ -541,10 +541,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                      return (
                         <ReportGenerationModal
                             onComplete={() => {
-                                performEndOfCycle();
+                                const chest = performEndOfCycle();
+                                if (chest || true) setView('results'); // Always go to results after generation
                             }}
                             onOpen={() => {
-                                setShowChestModal(true);
+                                // Legacy/Unused if we auto-transition
+                                setView('results');
                             }}
                             onClose={() => {
                                 setView('hub');
@@ -761,7 +763,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onStartNewCycle={() => {
                              applyExp(expGained);
-                             if (earnedChest) addChest(earnedChest);
+                             if (earnedChest) {
+                                 addChest(earnedChest);
+                                 showToast(`✦ Baú ${earnedChest} adicionado ao inventário · +${expGained} XP computados`);
+                             } else {
+                                 showToast(`✦ +${expGained} XP foram computados ao seu perfil`);
+                             }
                              setIsPostCycleFlow(false);
                              setShowNewCycleSetup(true);
                         }}

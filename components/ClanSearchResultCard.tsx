@@ -40,7 +40,7 @@ export const ClanSearchResultCard: React.FC<ClanSearchResultCardProps> = ({ clan
                 <span className="text-4xl">{clan.icon}</span>
                 <div className="flex-grow">
                     <h4 className="font-bold text-white">{clan.name}</h4>
-                    <p className="text-xs text-gray-400">{rank?.name || 'N/A'} • {clan.clan_type} • {clan.recruitment_status}</p>
+                    <p className="text-xs text-gray-400">{rank?.name || 'N/A'} • {clan.clanType} • {clan.recruitmentStatus}</p>
                 </div>
                 <button 
                     onClick={onJoin} 

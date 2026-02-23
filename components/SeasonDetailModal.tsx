@@ -5,6 +5,7 @@ import { CheckIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Season, SeasonMission, SeasonQuest } from '../types';
 import { ArenaDetailModal } from './ArenaDetailModal';
+import { MissionCompletionModal } from './MissionCompletionModal';
 
 // Helper to determine icon shape and style
 const ActionSymbol: React.FC<{ isMilestone?: boolean; icon?: string; count?: number; className?: string }> = ({ isMilestone, icon, count, className }) => {
@@ -357,12 +358,13 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
     const [selectedMission, setSelectedMission] = useState<SeasonMission | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
     const [questArena, setQuestArena] = useState<Arena | null>(null);
+    const [completedMission, setCompletedMission] = useState<SeasonMission | null>(null);
     const [shimmerMissionId, setShimmerMissionId] = useState<string | null>(null);
     const missionsForSeason = seasonMissions.filter(m => m.season_id === season.id);
     const questsForSeason = seasonQuests.filter(q => q.season_id === season.id && q.scope === 'season');
     const completedMissions = new Set(userProfile.completedSeasonMissions || []);
     const completedTasksInSeason = tasks.filter(task => task.completed && task.date >= season.start_date && task.date <= season.end_date).length;
-    
+
     const getMissionProgress = (mission: SeasonMission) => {
         if (mission.goal_type !== 'actions_completed') return 0;
         if (mission.goal_value <= 0) return 0;
@@ -435,12 +437,16 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
         if (completedMissions.has(mission.id)) return;
         addCompletedMission(mission);
         
+        // Show modal with video and reward
+        setCompletedMission(mission);
+
         const xp = mission.reward_value || 0;
         let msg = `✦ +${xp} XP computados`;
         if (mission.reward_type === 'item_id') {
              msg = `✦ Item adicionado ao inventário · +${xp} XP computados`;
         }
-        showToast(msg);
+        // Toast is redundant if modal opens, but keeping it for feedback
+        // showToast(msg); 
 
         setShimmerMissionId(mission.id);
         window.setTimeout(() => {
@@ -545,6 +551,16 @@ export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }
                     onClose={() => setSelectedMission(null)}
                     onClaim={() => handleMissionComplete(selectedMission)}
                     isShimmering={shimmerMissionId === selectedMission.id}
+                />
+            )}
+            {completedMission && (
+                <MissionCompletionModal
+                    mission={completedMission}
+                    onOk={() => {
+                        setCompletedMission(null);
+                        setSelectedMission(null);
+                    }}
+                    onClose={() => setCompletedMission(null)}
                 />
             )}
             {selectedQuest && (

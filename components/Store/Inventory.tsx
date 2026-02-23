@@ -5,6 +5,8 @@ import { ITEMS_DB, ItemDef, resolveItemDef } from '../../constants/items';
 import { CheckIcon, SovereignIcon, GlyphIcon } from '../Icons';
 import { SovereignCustomizer } from '../SovereignCustomizer';
 import { ItemDetailModal } from '../ItemDetailModal';
+import { ChestType } from '../../types';
+import { ChestOpeningModal } from '../ChestOpeningModal';
 
 type InventoryTab = 'all' | 'skins' | 'character' | 'ui' | 'glyphs' | 'chests';
 
@@ -25,6 +27,7 @@ export const Inventory: React.FC = () => {
     const [showSovereignEditor, setShowSovereignEditor] = useState(false);
     const [selectedItem, setSelectedItem] = useState<{ def: ItemDef, instanceId: string } | null>(null);
     const [showGlyphEditor, setShowGlyphEditor] = useState(false);
+    const [showChestOpeningModal, setShowChestOpeningModal] = useState<ChestType | null>(null);
 
     const normalizedRole = userProfile?.role?.toLowerCase?.() || '';
     const isGM = normalizedRole === 'admin' || normalizedRole === 'gm';
@@ -79,25 +82,47 @@ export const Inventory: React.FC = () => {
     const userChests = userProfile.chests || [];
 
     const getChestIcon = (type: string) => {
-        switch(type) {
-            case 'Comum': return '📦';
-            case 'Incomum': return '📤';
-            case 'Raro': return '🎁';
-            case 'Épico': return '🗳️';
-            case 'Lendário': return '👑';
-            default: return '📦';
-        }
+        // Map backend lowercase to frontend expectation if needed, or handle both
+        const normalized = type.toLowerCase();
+        if (normalized.includes('comum') || normalized === 'incomum') return '📤'; // Incomum
+        if (normalized.includes('ciclo') || normalized === 'raro') return '🎁'; // Raro/Ciclo
+        if (normalized.includes('radiante') || normalized === 'épico' || normalized === 'epico') return '🗳️'; // Épico/Radiante
+        if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) return '👑'; // Lendário/Season
+        return '📦'; // Fallback
     };
 
     const getChestColor = (type: string) => {
-        switch(type) {
-            case 'Comum': return 'text-gray-400';
-            case 'Incomum': return 'text-green-400';
-            case 'Raro': return 'text-blue-400';
-            case 'Épico': return 'text-purple-400';
-            case 'Lendário': return 'text-yellow-400';
-            default: return 'text-gray-400';
-        }
+        const normalized = type.toLowerCase();
+        if (normalized.includes('comum') || normalized === 'incomum') return 'text-green-400';
+        if (normalized.includes('ciclo') || normalized === 'raro') return 'text-amber-400';
+        if (normalized.includes('radiante') || normalized === 'épico' || normalized === 'epico') return 'text-purple-400';
+        if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) return 'text-yellow-400';
+        return 'text-gray-400';
+    };
+
+    const getChestLabel = (type: string) => {
+        const normalized = type.toLowerCase();
+        if (normalized === 'ciclo') return 'RARO';
+        return type;
+    };
+
+    const getChestItemDef = (type: string): ItemDef => {
+        const normalized = type.toLowerCase();
+        let rarity: any = 'common';
+        if (normalized.includes('incomum')) rarity = 'uncommon';
+        else if (normalized.includes('raro') || normalized.includes('ciclo')) rarity = 'rare';
+        else if (normalized.includes('épico') || normalized.includes('epico') || normalized.includes('radiante')) rarity = 'epic';
+        else if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) rarity = 'legendary';
+
+        return {
+            id: `chest_${normalized}`,
+            name: type,
+            category: 'chest',
+            tier: rarity === 'legendary' ? 5 : rarity === 'epic' ? 4 : rarity === 'rare' ? 3 : rarity === 'uncommon' ? 2 : 1,
+            rarity,
+            icon: getChestIcon(type),
+            description: 'Um baú contendo recompensas misteriosas. Abra para descobrir o que há dentro!'
+        };
     };
 
     return (
@@ -140,14 +165,14 @@ export const Inventory: React.FC = () => {
                                 key={`chest-${idx}`}
                                 className="relative group aspect-square p-2 flex flex-col items-center justify-center transition-all border cursor-pointer hover:border-white/50"
                                 style={{ borderColor: 'var(--skin-accent-color)' }}
-                                onClick={() => alert(`Abrir baú: ${chest.type} (Em breve)`)}
+                                onClick={() => setSelectedItem({ def: getChestItemDef(chest.type), instanceId: `chest-${idx}` })}
                             >
                                 <div className="group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg flex items-center justify-center w-full h-full mb-3">
                                     <span className="text-4xl">{getChestIcon(chest.type)}</span>
                                 </div>
                                 <div className="absolute bottom-2 left-1 right-1 text-center">
                                     <span className={`text-[9px] font-bold uppercase tracking-wider truncate block w-full drop-shadow-md ${getChestColor(chest.type)}`}>
-                                        {chest.type}
+                                        {getChestLabel(chest.type)}
                                     </span>
                                 </div>
                                 <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold shadow-lg">
@@ -210,7 +235,27 @@ export const Inventory: React.FC = () => {
                     item={selectedItem.def} 
                     instanceId={selectedItem.instanceId}
                     type="inventory" 
-                    onClose={() => setSelectedItem(null)} 
+                    onClose={() => setSelectedItem(null)}
+                    onOpen={() => {
+                        if (selectedItem.def.category === 'chest') {
+                            const chestName = selectedItem.def.name;
+                            let type: ChestType = 'Comum';
+                            const normalized = chestName.toLowerCase();
+                            
+                            if (normalized.includes('incomum')) type = 'Incomum';
+                            else if (normalized.includes('raro') || normalized.includes('ciclo')) type = 'Raro';
+                            else if (normalized.includes('épico') || normalized.includes('epico') || normalized.includes('radiante')) type = 'Épico';
+                            else if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) type = 'Lendário';
+                            
+                            setShowChestOpeningModal(type);
+                        }
+                    }} 
+                />
+            )}
+            {showChestOpeningModal && (
+                <ChestOpeningModal
+                    chestType={showChestOpeningModal}
+                    onClose={() => setShowChestOpeningModal(null)}
                 />
             )}
             {showSovereignEditor && (

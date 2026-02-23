@@ -54,6 +54,8 @@ export const CompactSanctuaryStats = React.memo<CompactSanctuaryStatsProps>(({ c
 
     if (clanId) {
       loadStats();
+      const interval = setInterval(loadStats, 60000); // Update every minute
+      return () => clearInterval(interval);
     }
   }, [clanId]);
 

@@ -118,17 +118,47 @@ interface SpectatorArenaModalProps {
     tasks: ScheduledTask[];
     pupilName: string;
     onClose: () => void;
-    children?: React.ReactNode; // For sliders/buttons
+    // Mentor Controls
+    isMentor?: boolean;
+    satisfactionLevel?: number;
+    onSatisfactionChange?: (value: number) => void;
+    onSignal?: (type: 'praise' | 'support' | 'scold') => void;
 }
 
-export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({ arena, actions, tasks, pupilName, onClose, children }) => {
+export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({ 
+    arena, 
+    actions, 
+    tasks, 
+    pupilName, 
+    onClose,
+    isMentor,
+    satisfactionLevel = 50,
+    onSatisfactionChange,
+    onSignal
+}) => {
     const { getActionBackgroundStyle, getClanQuestsForArena, getClanQuestProgress } = useGame();
     const [skinColor, setSkinColor] = useState('#F0C843');
+    const [localSatisfaction, setLocalSatisfaction] = useState(satisfactionLevel);
+
+    useEffect(() => {
+        setLocalSatisfaction(satisfactionLevel);
+    }, [satisfactionLevel]);
 
     useEffect(() => {
         const value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
         if (value) setSkinColor(value);
     }, []);
+
+    const sliderColor = (value: number) => {
+        if (value <= 33) return 'from-red-500 to-red-600';
+        if (value <= 66) return 'from-yellow-500 to-yellow-600';
+        return 'from-green-500 to-green-600';
+    };
+
+    const handleSignal = (type: 'praise' | 'support' | 'scold') => {
+        if (onSignal) onSignal(type);
+        // Visual feedback could be added here
+    };
 
     const milestoneActions = actions.filter(a => a.actionType === 'Marco');
     const bronzeActions = actions.filter(a => a.actionType !== 'Marco');
@@ -274,10 +304,76 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({ arena,
                         <p className="text-sm font-bold text-gray-300 text-center">{progress.toFixed(0)}%</p>
                     </div>
 
-                    {/* Children for controls (sliders, notifications) */}
-                    {children && (
+                    {/* Mentor Controls - Floating Footer */}
+                    {isMentor && (
+                        <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
+                            <div className="space-y-1">
+                                <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider">
+                                    <span className="text-gray-400">Nível de Satisfação</span>
+                                    <span className={localSatisfaction <= 33 ? 'text-red-400' : localSatisfaction <= 66 ? 'text-yellow-400' : 'text-green-400'}>{Math.round(localSatisfaction)}%</span>
+                                </div>
+                                <div className="relative h-6 w-full flex items-center">
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={100}
+                                        value={localSatisfaction}
+                                        onChange={(e) => {
+                                            const val = Number(e.target.value);
+                                            setLocalSatisfaction(val);
+                                        }}
+                                        onMouseUp={() => onSatisfactionChange?.(localSatisfaction)}
+                                        onTouchEnd={() => onSatisfactionChange?.(localSatisfaction)}
+                                        className="w-full h-2 rounded-full appearance-none bg-black/50 outline-none z-20 relative cursor-pointer"
+                                        style={{
+                                            backgroundImage: `linear-gradient(to right, ${localSatisfaction <= 33 ? '#ef4444' : localSatisfaction <= 66 ? '#eab308' : '#22c55e'} ${localSatisfaction}%, rgba(255,255,255,0.1) ${localSatisfaction}%)`
+                                        }}
+                                    />
+                                    {/* Tick marks or decoration could go here */}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2">
+                                <button 
+                                    onClick={() => handleSignal('praise')}
+                                    className="py-3 rounded-xl bg-gradient-to-br from-green-900/40 to-green-800/20 border border-green-500/30 text-[10px] font-bold uppercase tracking-wider text-green-300 hover:bg-green-500/20 hover:border-green-400 transition-all flex flex-col items-center gap-1 active:scale-95"
+                                >
+                                    <span className="text-lg">🔥</span>
+                                    Elogio
+                                </button>
+                                <button 
+                                    onClick={() => handleSignal('support')}
+                                    className="py-3 rounded-xl bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 text-[10px] font-bold uppercase tracking-wider text-blue-300 hover:bg-blue-500/20 hover:border-blue-400 transition-all flex flex-col items-center gap-1 active:scale-95"
+                                >
+                                    <span className="text-lg">🛡️</span>
+                                    Força
+                                </button>
+                                <button 
+                                    onClick={() => handleSignal('scold')}
+                                    className="py-3 rounded-xl bg-gradient-to-br from-red-900/40 to-red-800/20 border border-red-500/30 text-[10px] font-bold uppercase tracking-wider text-red-300 hover:bg-red-500/20 hover:border-red-400 transition-all flex flex-col items-center gap-1 active:scale-95"
+                                >
+                                    <span className="text-lg">⚡</span>
+                                    Bronca
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pupil View (Read Only Satisfaction) */}
+                    {!isMentor && satisfactionLevel !== undefined && (
                         <div className="mt-4 pt-4 border-t border-white/10">
-                            {children}
+                            <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+                                <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider mb-2">
+                                    <span className="text-gray-400">Avaliação do Mentor</span>
+                                    <span className={satisfactionLevel <= 33 ? 'text-red-400' : satisfactionLevel <= 66 ? 'text-yellow-400' : 'text-green-400'}>{Math.round(satisfactionLevel)}%</span>
+                                </div>
+                                <div className="w-full h-2 rounded-full bg-black/50 overflow-hidden">
+                                    <div 
+                                        className={`h-full transition-all duration-500 ${satisfactionLevel <= 33 ? 'bg-red-500' : satisfactionLevel <= 66 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                        style={{ width: `${satisfactionLevel}%` }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

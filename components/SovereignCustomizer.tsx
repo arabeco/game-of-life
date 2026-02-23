@@ -7,6 +7,8 @@ import { ChevronLeftIcon, ChevronRightIcon, CheckIcon, EditIcon, XIcon } from '.
 import { GlassCard } from './GlassCard';
 import { CanvasAvatar } from './CanvasAvatar';
 import { ImagePreloader } from './ImagePreloader';
+import { AchievementModal } from './AchievementModal';
+import { MissionCompletionModal } from './MissionCompletionModal';
 
 interface SovereignCustomizerProps {
     initialConfig?: SovereignConfig;
@@ -15,7 +17,7 @@ interface SovereignCustomizerProps {
 }
 
 type EditMode = 'sovereign' | 'artifact' | 'glyph';
-type SovereignSubTab = 'Corpo' | 'Cabelo' | 'Skin';
+type SovereignSubTab = 'Corpo' | 'Cabelo' | 'Skin' | 'Testes';
 
 // Reusable Left/Right Selector
 const Selector: React.FC<{
@@ -56,6 +58,8 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     });
     const [activeMode, setActiveMode] = useState<EditMode>('sovereign');
     const [sovereignSubTab, setSovereignSubTab] = useState<SovereignSubTab>('Corpo');
+    const [testLevelUp, setTestLevelUp] = useState(false);
+    const [testMission, setTestMission] = useState(false);
 
     // Parse initial body state for selectors
     useEffect(() => {
@@ -377,7 +381,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         <div className="space-y-6 animate-fade-in">
                             {/* Sub-Tabs for Sovereign */}
                             <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-lg">
-                                {(['Corpo', 'Cabelo', 'Skin'] as SovereignSubTab[]).map(tab => (
+                                {(['Corpo', 'Cabelo', 'Skin', 'Testes'] as SovereignSubTab[]).map(tab => (
                                     <button
                                         key={tab}
                                         onClick={() => setSovereignSubTab(tab)}
@@ -441,6 +445,23 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                         onPrev={() => cycleOutfit(-1)} 
                                         onNext={() => cycleOutfit(1)} 
                                     />
+                                </div>
+                            )}
+
+                            {sovereignSubTab === 'Testes' && (
+                                <div className="space-y-4">
+                                    <button
+                                        onClick={() => setTestLevelUp(true)}
+                                        className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                                    >
+                                        Testar Level Up
+                                    </button>
+                                    <button
+                                        onClick={() => setTestMission(true)}
+                                        className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                                    >
+                                        Testar Missão Completa
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -544,8 +565,37 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         Salvar
                     </button>
                 </div>
-
             </GlassCard>
+
+            {testLevelUp && (
+                <AchievementModal
+                    achievement={{
+                        type: 'PLAYER_RANK_UP',
+                        data: { name: 'Soberano Supremo' }
+                    }}
+                    onClose={() => setTestLevelUp(false)}
+                />
+            )}
+
+            {testMission && (
+                <MissionCompletionModal
+                    mission={{
+                        id: 'test-mission',
+                        season_id: 'test',
+                        title: 'Missão de Teste',
+                        description: 'Esta é uma missão de teste.',
+                        goal_type: 'actions_completed',
+                        goal_value: 10,
+                        reward_type: 'exp',
+                        reward_value: 100,
+                        action_name: 'Teste',
+                        icon: '⚔️',
+                        type: 'individual'
+                    }}
+                    onOpen={() => alert('Abrir Recompensa Clicked')}
+                    onClose={() => setTestMission(false)}
+                />
+            )}
         </div>
     );
 };

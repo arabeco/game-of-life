@@ -333,6 +333,7 @@ export interface GameContextType {
   craftItem: (tier: number, category?: string, exactItemId?: string) => Promise<InventoryItem | null>;
   equipItem: (item: InventoryItem) => Promise<void>;
   toggleEquipItem: (item: InventoryItem) => Promise<void>;
+  updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -1058,8 +1059,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
              }
         } catch (e) { console.error("Failed to load cached profile:", e); }
         setUserProfile(nextProfile);
+        
+        // Fetch fresh chests count immediately to ensure sync
+        fetchChestsFromDB(currentUserId).then(chests => {
+             if (chests) setUserProfile(prev => ({ ...prev, chests }));
+        });
     }
   }, [session?.user.id]);
+
+  // Helper to fetch chests directly from user_chests table
+  const fetchChestsFromDB = async (userId: string) => {
+      if (!isUuid(userId)) return null;
+      const { data, error } = await supabase
+          .from('user_chests')
+          .select('chest_type')
+          .eq('user_id', userId)
+          .eq('is_opened', false);
+          
+      if (error) {
+          console.error("Error fetching chests:", error.message);
+          return null;
+      }
+      
+      if (!data) return [];
+      
+      const counts: Record<string, number> = {};
+      data.forEach((row: any) => {
+          counts[row.chest_type] = (counts[row.chest_type] || 0) + 1;
+      });
+      
+      return Object.entries(counts).map(([type, count]) => ({ type: type as ChestType, count }));
+  };
 
   const getSupabaseUserId = useCallback(() => {
     const candidate = session?.user.id;
@@ -1536,8 +1566,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       )
       .subscribe();
 
-
-
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clan?.id, seasonQuests, fetchClanQuestParticipants]);
 
   // --- Aldeia System Implementation ---
   const getAldeiaSlots = async (clanId: string): Promise<AldeiaSlot[]> => {
@@ -1560,24 +1592,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   const enterAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId) => {
       const userId = getSupabaseUserId();
+      console.log(`[ENTER_ALDEIA] Starting for user ${userId}, clan ${clanId}, slot ${slotId}`);
       if (!userId) return;
 
-      // 1. Remove old presence
-      await supabase.from('clan_aldeia_presence').delete().eq('clan_id', clanId).eq('user_id', userId);
+      // STRATEGY: EXCLUSIVE RPC V2
+      // We rely 100% on the server-side function to handle the upsert logic.
+      // This eliminates client-side 409 conflicts because the client never attempts an INSERT directly.
 
-      // 2. Insert new presence
-      const { error: insertError } = await supabase.from('clan_aldeia_presence').insert({
-          clan_id: clanId,
-          user_id: userId,
-          slot_id: slotId
+      console.log(`[ENTER_ALDEIA] Calling RPC enter_aldeia_slot_v2...`);
+      const { data, error } = await supabase.rpc('enter_aldeia_slot_v2', {
+          p_clan_id: clanId,
+          p_slot_id: slotId
       });
-      if (insertError) console.error("Error entering aldeia slot:", insertError.message);
 
-      // 3. Mark slot as visited today
-      const { error: updateError } = await supabase.from('clan_aldeia_slots').update({
-          last_visited_at: new Date().toISOString()
-      }).eq('clan_id', clanId).eq('slot_id', slotId);
-       if (updateError) console.error("Error updating slot visited time:", updateError.message);
+      if (error) {
+          console.error("[ENTER_ALDEIA] RPC V2 Failed:", error);
+          console.error("[ENTER_ALDEIA] Error Message:", error.message);
+          console.error("[ENTER_ALDEIA] Error Details:", error.details);
+          console.error("[ENTER_ALDEIA] Error Hint:", error.hint);
+          
+          // If even the V2 fails, it's likely a network or auth issue, not a logic conflict.
+          // We do NOT fallback to client-side insert to avoid the 409 loop.
+          console.error(`Erro ao entrar no slot (RPC): ${error.message}`);
+          showToast(`Erro ao entrar: ${error.message}`);
+      } else {
+          console.log(`[ENTER_ALDEIA] RPC V2 Success! Data:`, data);
+          // Success! Optimistically update UI if needed (GameContext state usually auto-updates via subscription or refresh)
+          // We can trigger a refresh just in case
+          // loadAldeiaData(clanId); // Assuming this exists or is part of a useEffect
+      }
   };
 
   const performAldeiaDailyUpdate = async (clanId: string) => {
@@ -1592,7 +1635,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           const newSlots = missingSlots.map(id => ({
               clan_id: clanId,
               slot_id: id,
-              health: 100,
+              health: 50,
               streak_good: 0,
               streak_bad: 0,
               last_visited_at: null,
@@ -1620,6 +1663,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           }
 
           // Apply logic
+          // FORMULA:
+          // Gain: If visited within 24h (daysSinceVisit === 0) -> +2 + (streak * 0.5) (Max 10)
+          // Decay: If not visited (daysSinceVisit > 0) -> -2 - (streak * 0.8) (Max 15)
           let newHealth = slot.health;
           let newStreakGood = slot.streakGood;
           let newStreakBad = slot.streakBad;
@@ -1648,11 +1694,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           });
       }
   };
-
-  return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [clan?.id, seasonQuests, fetchClanQuestParticipants]);
 
   const loadClanAndMembers = useCallback(async (clanId: string, force = false) => {
     // Check cache first - use cache if less than 30 seconds old and not forced
@@ -1920,6 +1961,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
+        // Fetch chests independently to ensure they are up to date
+        fetchChestsFromDB(userId).then(chests => {
+             if (chests) setUserProfile(prev => ({ ...prev, chests }));
+        });
+
         if (!profileError && profileData) {
             const camelProfile = mapToCamelCase(profileData) as UserProfile;
             const normalizedRole = typeof camelProfile.role === 'string' ? camelProfile.role.toLowerCase() : undefined;
@@ -1968,7 +2014,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             () => supabase.from('asset_slots').select('*').eq('user_id', userId),
             () => supabase.from('asset_levels').select('*').eq('user_id', userId),
             () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
-            () => supabase.from('reports').select('*').eq('user_id', userId).order('end_date', { ascending: false }).limit(100),
+            () => supabase.from('cycles').select('*').eq('user_id', userId).not('end_date', 'is', null).order('end_date', { ascending: false }).limit(100),
             () => supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1)
         ]) as any[];
 
@@ -2074,7 +2120,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const { data: reportsData, error: reportsError } = reportsResult;
         if (!reportsError && reportsData) {
-            const nextReports = mapToCamelCase(reportsData) as Report[];
+            // Map cycles with report_data to Report objects
+            const nextReports = reportsData.map((row: any) => {
+                if (row.report_data) {
+                    return mapToCamelCase(row.report_data);
+                }
+                return null;
+            }).filter(Boolean) as Report[];
+
             if (nextReports.length > 0) {
                 setReports(nextReports);
             } else {
@@ -2429,9 +2482,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       // Perda de 5% (1440s) por dia (86400s) -> ~0.0166s por segundo real
       const DECAY_RATE_PER_SECOND = (MAX_POINTS * 0.05) / 86400;
 
-      // Intervalo mínimo de atualização (12 horas) para evitar writes excessivos
-      // e manter as "barrinhas" estáveis como solicitado (2x ao dia)
-      const MIN_UPDATE_INTERVAL = 43200;
+      // Intervalo mínimo de atualização (1 hora)
+      // e manter as "barrinhas" estáveis como solicitado (2x ao dia) -> Agora a cada hora
+      const MIN_UPDATE_INTERVAL = 3600;
 
       // OTIMIZAÇÃO: Buscar todos de uma vez para reduzir reads
       const { data: allStats, error: fetchError } = await supabase
@@ -2510,8 +2563,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (!clan?.id || !enableClanQuestProgress) return;
     fetchClanQuestProgress(clan.id);
     const intervalId = window.setInterval(() => fetchClanQuestProgress(clan.id), 15000);
-    return () => window.clearInterval(intervalId);
-  }, [clan?.id, fetchClanQuestProgress, enableClanQuestProgress]);
+    
+    // Add periodic check for sanctuary decay (every hour)
+    // This ensures that even if the modal isn't open, the decay is applied if the user is online
+    const sanctuaryInterval = window.setInterval(() => {
+        // We need to fetch occupancy for applySanctuaryAreaDecay
+        // For now, let's just trigger it with empty occupancy or fetch it inside
+        // Actually, applySanctuaryAreaDecay requires occupancy.
+        // Let's assume we can fetch it or just pass empty if we want decay only.
+        // BUT, getSanctuaryPositionsForClan is available.
+        getSanctuaryPositionsForClan(clan.id).then(positions => {
+             const occupancy: Record<string, number> = {};
+             Object.values(positions).forEach(p => {
+                 occupancy[p.area] = (occupancy[p.area] || 0) + 1;
+             });
+             // Also need total members... clan object has it? No, need enrichedClanMembers.length
+             // But enrichedClanMembers might not be loaded fully?
+             // Let's use a safe default or try to use what we have.
+             const totalMembers = enrichedClanMembers.length || 1;
+             applySanctuaryAreaDecay(clan.id, occupancy, totalMembers);
+        });
+    }, 3600000); // 1 hour
+
+    return () => {
+        window.clearInterval(intervalId);
+        window.clearInterval(sanctuaryInterval);
+    };
+  }, [clan?.id, fetchClanQuestProgress, enableClanQuestProgress, enrichedClanMembers.length]);
 
   // Real-time Clan Mission Progress & Participants
   useEffect(() => {
@@ -3047,14 +3125,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             clan_points: newReport.clanPoints
         };
         
-        // 1. Insert Report
-        supabase.from('reports').insert(snakeCaseReport).then(({error}) => {
-            if (error) console.error("Supabase report insert error:", error.message);
-        });
-
-        // 2. Update/Delete Cycle (Mark as ended)
+        // 1. Update Cycle with Report Data (Single Source of Truth)
         if (cycle?.id) {
-            supabase.from('cycles').update({ end_date: endDate }).eq('id', cycle.id).then(({ error }) => {
+            const updatePayload = {
+                end_date: endDate,
+                report_data: snakeCaseReport,
+                performance_score: newReport.performanceScore,
+                season_id: newReport.seasonId
+            };
+            supabase.from('cycles').update(updatePayload).eq('id', cycle.id).then(({ error }) => {
                 if (error) console.error("Supabase cycle update error:", error.message);
             });
         }
@@ -4197,6 +4276,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return getClanQuestForActionName(action.name);
   };
 
+  const updateCustomClanMissionProgress = async (missionId: string, increment: number) => {
+      const { data, error } = await supabase.rpc('update_clan_mission_progress', {
+          p_mission_id: missionId,
+          p_increment: increment
+      });
+      if (error) {
+          console.error("Error updating clan mission progress:", error);
+      } else {
+          console.log("Clan mission progress updated:", data);
+      }
+  };
+
   const scheduleAndCompleteNow = (actionId: string) => {
     const action = getActionById(actionId);
     if (!action || action.actionType === 'Marco') return;
@@ -4224,6 +4315,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     
     if (clanQuest) {
         updateClanMissionProgress(clanQuest.id, 1);
+    }
+
+    // Handle Custom Clan Mission Progress
+    if (action.originCodexId?.startsWith('clan_quest:')) {
+        const questId = action.originCodexId.split(':')[1];
+        updateCustomClanMissionProgress(questId, 1);
     }
     
     // If it's today, add to daily commitment so it shows in SITREP
@@ -4284,6 +4381,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateClanMissionProgress(clanQuest.id, 1);
     }
     
+    // Handle Custom Clan Mission Progress
+    if (action.originCodexId?.startsWith('clan_quest:')) {
+        const questId = action.originCodexId.split(':')[1];
+        updateCustomClanMissionProgress(questId, 1);
+    }
+
     // If it's today, add to daily commitment
     if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
         setDailyCommitmentState(prev => ({
@@ -4370,6 +4473,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const clanQuest = getClanQuestForAction(actionForClanQuest);
                 if (clanQuest) {
                     updateClanMissionProgress(clanQuest.id, updatedTask.completed ? 1 : -1);
+                }
+
+                // Handle Custom Clan Mission Progress
+                if (actionForClanQuest?.originCodexId?.startsWith('clan_quest:')) {
+                    const questId = actionForClanQuest.originCodexId.split(':')[1];
+                    updateCustomClanMissionProgress(questId, updatedTask.completed ? 1 : -1);
                 }
 
                 // Update in Supabase
@@ -4655,96 +4764,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       }
   };
 
-  // --- Aldeia System Implementation ---
-  const getAldeiaSlots = async (clanId: string): Promise<AldeiaSlot[]> => {
-      const { data, error } = await supabase.from('clan_aldeia_slots').select('*').eq('clan_id', clanId);
-      if (error) { console.error("Error fetching aldeia slots:", error.message); return []; }
-      return mapToCamelCase(data) as AldeiaSlot[];
-  };
 
-  const updateAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId, updates: Partial<AldeiaSlot>) => {
-      const snakeUpdates = mapToSnakeCase(updates);
-      const { error } = await supabase.from('clan_aldeia_slots').update(snakeUpdates).eq('clan_id', clanId).eq('slot_id', slotId);
-      if (error) console.error("Error updating aldeia slot:", error.message);
-  };
-
-  const getAldeiaPresence = async (clanId: string): Promise<AldeiaPresence[]> => {
-      const { data, error } = await supabase.from('clan_aldeia_presence').select('*').eq('clan_id', clanId);
-      if (error) { console.error("Error fetching aldeia presence:", error.message); return []; }
-      return mapToCamelCase(data) as AldeiaPresence[];
-  };
-
-  const enterAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId) => {
-      const userId = getSupabaseUserId();
-      if (!userId) return;
-
-      // 1. Remove old presence
-      await supabase.from('clan_aldeia_presence').delete().eq('clan_id', clanId).eq('user_id', userId);
-
-      // 2. Insert new presence
-      const { error: insertError } = await supabase.from('clan_aldeia_presence').insert({
-          clan_id: clanId,
-          user_id: userId,
-          slot_id: slotId
-      });
-      if (insertError) console.error("Error entering aldeia slot:", insertError.message);
-
-      // 3. Mark slot as visited today
-      const { error: updateError } = await supabase.from('clan_aldeia_slots').update({
-          last_visited_at: new Date().toISOString()
-      }).eq('clan_id', clanId).eq('slot_id', slotId);
-       if (updateError) console.error("Error updating slot visited time:", updateError.message);
-  };
-
-  const performAldeiaDailyUpdate = async (clanId: string) => {
-      const slots = await getAldeiaSlots(clanId);
-      const today = new Date().toISOString().split('T')[0];
-
-      for (const slot of slots) {
-          // If already updated today, skip
-          if (slot.lastDecayCalculation === today) continue;
-
-          // Calculate days passed since last visited
-          const lastVisit = slot.lastVisitedAt ? new Date(slot.lastVisitedAt) : null;
-          let daysSinceVisit = 100; // Default large number if never visited
-          if (lastVisit) {
-              const now = new Date();
-              const diffTime = Math.abs(now.getTime() - lastVisit.getTime());
-              daysSinceVisit = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
-          }
-
-          // Apply logic
-          let newHealth = slot.health;
-          let newStreakGood = slot.streakGood;
-          let newStreakBad = slot.streakBad;
-
-          // If visited today (0 days ago), it's a gain.
-          if (daysSinceVisit === 0) {
-               newStreakGood += 1;
-               newStreakBad = 0;
-               const gain = Math.min(2 + (newStreakGood * 0.5), 10);
-               newHealth = Math.min(newHealth + gain, 100);
-          } else {
-               // Missed days - Decay
-               newStreakBad += 1; // Increment bad streak
-               newStreakGood = 0;
-               
-               const loss = Math.min(2 + (newStreakBad * 0.8), 15);
-               newHealth = Math.max(newHealth - loss, 0);
-          }
-
-          // Update DB
-          await updateAldeiaSlot(clanId, slot.slotId, {
-              health: newHealth,
-              streakGood: newStreakGood,
-              streakBad: newStreakBad,
-              lastDecayCalculation: today
-          });
-      }
-  };
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate }}>
       {children}
     </GameContext.Provider>
   );

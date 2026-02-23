@@ -1,6 +1,6 @@
 import { ItemRarity } from '../types';
 
-export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate';
+export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest';
 
 export interface ItemDef {
     id: string;
@@ -174,7 +174,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_aura_2_001', name: 'Esmeralda', category: 'aura', tier: 2, rarity: 'uncommon', icon: '❇️', imageUrl: `${GLYPHS_BASE_URL}/AURA_T2_ESMERALDA.png` },
     { id: 'item_aura_2_002', name: 'Prata', category: 'aura', tier: 2, rarity: 'uncommon', icon: '⚪', imageUrl: `${GLYPHS_BASE_URL}/AURA_T2_PRATA.png` },
     // T3
-    { id: 'item_aura_3_001', name: 'Ouro', category: 'aura', tier: 3, rarity: 'rare', icon: '🟡', imageUrl: `${GLYPHS_BASE_URL}/AURA_T3_OURO.png` },
+    { id: 'item_aura_3_001', name: 'Ouro', category: 'aura', tier: 3, rarity: 'rare', icon: '🟡', imageUrl: '' },
     // T5
     { id: 'item_aura_5_001', name: 'Pedra da Lua', category: 'aura', tier: 5, rarity: 'legendary', icon: '🌙', imageUrl: `${GLYPHS_BASE_URL}/AURA_T5_PEDRA_LUA.png` },
     { id: 'item_aura_5_002', name: 'Multiverso', category: 'aura', tier: 5, rarity: 'legendary', icon: '🌌', imageUrl: `${GLYPHS_BASE_URL}/AURA_T5_MULTIVERSO.png` },

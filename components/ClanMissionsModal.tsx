@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { XIcon, CheckIcon } from './Icons';
 
 const MissionCard: React.FC<{ title: string; progress: number; }> = ({ title, progress }) => (
@@ -35,8 +36,9 @@ export const ClanMissionsModal: React.FC<{ onClose: () => void }> = ({ onClose }
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
                     <h2 className="text-lg font-bold uppercase tracking-wider">Missões do Clã</h2>
                     <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
@@ -96,6 +98,7 @@ export const ClanMissionsModal: React.FC<{ onClose: () => void }> = ({ onClose }
                     })}
                 </div>
             </GlassCard>
-        </div>
+            </div>
+        </Portal>
     );
 };

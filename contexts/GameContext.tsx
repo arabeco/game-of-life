@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef } from '../constants/items';
 import { supabase } from '../supabaseClient';
@@ -47,6 +47,7 @@ const TUTORIAL_ACTION_ID = 'action_tutorial_01';
 
 export const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
 export const STORAGE_KEY_ASSET_LEVELS = 'gol_asset_levels_v2';
+export const STORAGE_KEY_CAMPAIGNS = 'gol_campaigns_v2';
 
 export const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
 export const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
@@ -124,6 +125,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         auras: {},
         orbs: {},
         plates: {},
+        ornament: {},
     },
     completedSeasonMissions: []
 };
@@ -234,7 +236,7 @@ export interface GameContextType {
   addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
   updateAssetSlotValue: (assetId: string, slotId: string, value: SlotValue) => void;
   getArenas: () => Arena[];
-  addArena: (assetId: string, arenaData: Pick<Arena, 'name' | 'description' | 'icon'>, skipDb?: boolean) => Arena;
+  addArena: (assetId: string, arenaData: Pick<Arena, 'name' | 'description' | 'icon'>, skipDb?: boolean) => Promise<Arena>;
   updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived'>>) => void;
   deleteArena: (arenaId: string) => void;
   createArenaFolder: (name: string, icon: string, assetId?: string) => Promise<ArenaFolder | null>;
@@ -245,11 +247,11 @@ export interface GameContextType {
   getActionsForArena: (arenaId: string) => Action[];
   getAssetForAction: (actionId: string) => Asset | undefined;
   getActionBackgroundStyle: (actionId: string) => React.CSSProperties;
-  addAction: (actionData: Omit<Action, 'id'>) => Action;
+  addAction: (actionData: Omit<Action, 'id'>) => Promise<Action>;
   updateAction: (actionId: string, actionData: Partial<Action>) => void;
   deleteAction: (actionId: string) => void;
-  scheduleTask: (actionId: string, date: string, startTime: number) => ScheduledTask | undefined;
-  scheduleMultipleTasks: (actionId: string, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => void;
+  scheduleTask: (actionOrId: string | Action, date: string, startTime: number) => Promise<ScheduledTask | undefined>;
+  scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
   scheduleAndCompleteNow: (actionId: string) => void;
   scheduleAndCompleteMilestoneNow: (actionId: string) => void;
   returnTaskToPool: (taskId: string) => void;
@@ -334,6 +336,12 @@ export interface GameContextType {
   equipItem: (item: InventoryItem) => Promise<void>;
   toggleEquipItem: (item: InventoryItem) => Promise<void>;
   updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
+  
+  // Campaigns
+  campaigns: Campaign[];
+  addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>) => Campaign;
+  updateCampaign: (id: string, updates: Partial<Campaign>) => void;
+  deleteCampaign: (id: string) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -423,6 +431,46 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const [oracleMessages, setOracleMessages] = useState<OracleMessage[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+
+  // Campaigns State
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
+      const userId = session?.user.id;
+      if (userId) {
+          try {
+              const saved = localStorage.getItem(`${STORAGE_KEY_CAMPAIGNS}_${userId}`);
+              return saved ? JSON.parse(saved) : [];
+          } catch (e) {
+              return [];
+          }
+      }
+      return [];
+  });
+
+  useEffect(() => {
+      const userId = session?.user.id;
+      if (userId) {
+          localStorage.setItem(`${STORAGE_KEY_CAMPAIGNS}_${userId}`, JSON.stringify(campaigns));
+      }
+  }, [campaigns, session?.user.id]);
+
+  const addCampaign = (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>): Campaign => {
+      const newCampaign: Campaign = {
+          ...campaign,
+          id: crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+          status: 'active'
+      };
+      setCampaigns(prev => [...prev, newCampaign]);
+      return newCampaign;
+  };
+
+  const updateCampaign = (id: string, updates: Partial<Campaign>) => {
+      setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+  };
+
+  const deleteCampaign = (id: string) => {
+      setCampaigns(prev => prev.filter(c => c.id !== id));
+  };
 
   const showToast = useCallback((message: string) => {
       setToast({ message, visible: true });
@@ -591,9 +639,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           else category = 'fragmentos_sabedoria'; // Madrugada
       }
       
-      // Ensure category is enabled
+      // Ensure category is enabled and add variety
       const enabled = oraclePreferences.enabledCategories || [];
-      if (enabled.length > 0 && !enabled.includes(category as any)) {
+      
+      // 30% chance to pick a random enabled category for variety (if not empty)
+      if (enabled.length > 0 && Math.random() < 0.3) {
+          category = enabled[Math.floor(Math.random() * enabled.length)];
+      } else if (enabled.length > 0 && !enabled.includes(category as any)) {
+          // Fallback if the time-based category is disabled
           category = enabled[Math.floor(Math.random() * enabled.length)];
       }
 
@@ -630,7 +683,39 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       };
 
       // 6. Generate Prompt
-      const modeConfig = ORACLE_MODES[oraclePreferences.activeMode] || ORACLE_MODES['neutro'];
+      // Dynamic Mode Selection based on Category (The "Speak for All" Logic)
+      let selectedMode = oraclePreferences.activeMode;
+      
+      if (oraclePreferences.activeMode !== 'personalizado') {
+          switch (category) {
+              case 'dicas_produtividade':
+                  selectedMode = 'coach'; // Coach cobra produtividade
+                  break;
+              case 'frases_inspiradoras':
+                  selectedMode = 'calmo'; // Inspiração serena
+                  break;
+              case 'reflexoes_filosoficas':
+              case 'fragmentos_sabedoria':
+                  selectedMode = 'reflexivo'; // Filósofo reflete
+                  break;
+              case 'rituais_lifestyle':
+                  selectedMode = 'calmo'; // Lifestyle pede calma
+                  break;
+              case 'provocacoes':
+                  selectedMode = 'tatico'; // Provocação direta
+                  break;
+              case 'analise_padroes':
+                  selectedMode = 'estrategico'; // Análise pede estratégia
+                  break;
+              case 'sussurros_maestria':
+                  selectedMode = 'neutro'; // Mistério
+                  break;
+              default:
+                  selectedMode = oraclePreferences.activeMode;
+          }
+      }
+
+      const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
       const systemPrompt = modeConfig.systemPromptTemplate(contextData);
       
       const userPrompt = `Gere uma mensagem curta (máximo 3 frases) para o feed do usuário.
@@ -656,7 +741,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
               userId,
               category: category as any,
               content: text,
-              mode: oraclePreferences.activeMode,
+              mode: selectedMode, // Save the dynamic mode
               deliveryType: 'feed',
               read: false,
               createdAt: new Date().toISOString()
@@ -2814,6 +2899,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     updateUserProfile({ unlockedItems: nextUnlockedItems });
   };
 
+  const grantInventoryItem = async (itemId: string) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      const { data, error } = await supabase
+          .from('user_inventory')
+          .insert({
+              user_id: userId,
+              item_id: itemId
+          })
+          .select()
+          .single();
+
+      if (error) {
+          console.error("Error granting inventory item:", error);
+          return;
+      }
+
+      if (data) {
+          const newItem: InventoryItem = {
+              id: data.item_id, // This should match ItemDef.id
+              instanceId: data.id,
+              acquiredAt: data.created_at || new Date().toISOString(),
+              isEquipped: false
+          };
+          setInventory(prev => [...prev, newItem]);
+          showToast(`Item recebido: ${resolveItemDef(itemId)?.name || itemId}`, 'success');
+      }
+  };
+
   const addCompletedMission = (mission: SeasonMission) => {
     const completed = userProfile.completedSeasonMissions || [];
     if (completed.includes(mission.id)) return;
@@ -2834,6 +2949,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const rewardParts = rewardValue.includes(':') ? rewardValue.split(':') : [];
     const rewardCategory = rewardParts[0] as UnlockCategory | undefined;
     const rewardItemId = rewardParts[1];
+
+    // Check for Badge/Inventory Item Reward
+    if (mission.reward_type === 'item_id' && rewardCategory === 'ornament' && rewardItemId) {
+        grantInventoryItem(rewardItemId);
+    }
+    
+    // Also grant generic Quest Badge for every mission completion (as per instructions)
+    // "Agora, ao completar qualquer missão de temporada válida, a insígnia será corretamente adicionada ao seu inventário."
+    // Assuming 'item_ornament_quest_badge' is the generic badge
+    grantInventoryItem('item_ornament_quest_badge');
 
     const unlockedItems: UserUnlocks = userProfile.unlockedItems || {
         bodyStyles: {},
@@ -3461,7 +3586,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const getArenas = () => assets.flatMap(asset => asset.arenas);
-  const addArena = (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Arena => {
+  const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
     const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
     const userId = getSupabaseUserId();
@@ -3472,7 +3597,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (snakeCaseData.origin_codex_id && !isUuid(String(snakeCaseData.origin_codex_id))) {
             delete snakeCaseData.origin_codex_id;
         }
-        supabase.from('arenas').insert(snakeCaseData).then(({error}) => { if (error) console.error("Supabase add arena error:", error.message) });
+        const { error } = await supabase.from('arenas').insert(snakeCaseData);
+        if (error) {
+            console.error("Supabase add arena error:", error.message);
+            showToast("Erro ao salvar arena: " + error.message);
+            throw error;
+        }
     }
     return newArena;
   };
@@ -3497,7 +3627,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           id: crypto.randomUUID(),
           name,
           icon,
-          assetId
+          assetId,
+          status: 'active',
+          createdAt: new Date().toISOString()
       };
       
       setArenaFolders(prev => [...prev, newFolder]);
@@ -3835,7 +3967,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return { ...(baseContext || {}), schedule };
   };
 
-  const addAction = (actionData: Omit<Action, 'id'>): Action => {
+  const addAction = async (actionData: Omit<Action, 'id'>): Promise<Action> => {
     const newAction: Action = { ...actionData, id: crypto.randomUUID() };
     setActions(prev => [...prev, newAction]);
     setAssets(prevAssets => prevAssets.map(asset => {
@@ -3876,9 +4008,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             origin_codex_id: originCodexId
         };
         
-        supabase.from('actions').insert(actionPayload).then(({error}) => { 
-            if (error) console.error("Supabase add action error:", error.message);
-        });
+        const { error } = await supabase.from('actions').insert(actionPayload);
+        if (error) {
+            console.error("Supabase add action error:", error.message);
+            showToast("Erro ao salvar ação: " + error.message);
+            throw error;
+        }
     }
 
     return newAction;
@@ -4173,13 +4308,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     alert(`Recompensa resgatada! +${addedExp} XP${addedGold > 0 ? ` e +${addedGold} Gold` : ''}`);
   };
   
-  const scheduleMultipleTasks = (actionId: string, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
-    const action = getActionById(actionId);
+  const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
+    const action = typeof actionOrId === 'string' ? getActionById(actionOrId) : actionOrId;
     if (!action) return;
+    const actionId = action.id;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const dayMap: DayOfWeek[] = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+    // Check existing tasks for duplicates
     const existingKeys = new Set(tasks.map(t => `${t.actionId}_${t.date}_${t.startTime}`));
     const newTasks: ScheduledTask[] = [];
 
@@ -4211,14 +4348,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const userId = getSupabaseUserId();
     if (userId) {
         const snakeCaseData = newTasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
-        supabase.from('scheduled_tasks').insert(snakeCaseData).then(({ error }) => {
-            if (error) console.error("Supabase schedule multiple tasks error:", error.message);
-        });
+        const { error } = await supabase.from('scheduled_tasks').insert(snakeCaseData);
+        if (error) {
+            console.error("Supabase schedule multiple tasks error:", error.message);
+            showToast("Erro ao agendar tarefas recorrentes: " + error.message);
+            throw error;
+        }
     }
   };
-  const scheduleTask = (actionId: string, date: string, startTime: number): ScheduledTask | undefined => {
-      const action = getActionById(actionId);
+  const scheduleTask = async (actionOrId: string | Action, date: string, startTime: number): Promise<ScheduledTask | undefined> => {
+      const action = typeof actionOrId === 'string' ? getActionById(actionOrId) : actionOrId;
       if (!action) return undefined;
+      const actionId = action.id;
 
       const newTask: ScheduledTask = {
         id: crypto.randomUUID(),
@@ -4234,9 +4375,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       const userId = getSupabaseUserId();
       if (userId) {
           const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-          supabase.from('scheduled_tasks').insert(snakeCaseData).then(({error}) => {
-              if (error) console.error("Supabase schedule task error:", error.message);
-          });
+          const { error } = await supabase.from('scheduled_tasks').insert(snakeCaseData);
+          if (error) {
+              console.error("Supabase schedule task error:", error.message);
+              showToast("Erro ao agendar tarefa: " + error.message);
+              throw error;
+          }
       }
 
       return newTask;
@@ -4767,7 +4911,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign }}>
       {children}
     </GameContext.Provider>
   );

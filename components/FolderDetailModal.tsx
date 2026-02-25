@@ -5,6 +5,7 @@ import { useGame } from '../contexts/GameContext';
 import { ArenaCard } from './ArenaCard';
 import { XIcon, Trash2Icon, EditIcon, CheckIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
+import { Portal } from './Portal';
 
 interface FolderDetailModalProps {
     folder: ArenaFolder;
@@ -37,7 +38,8 @@ export const FolderDetailModal: React.FC<FolderDetailModalProps> = ({ folder, on
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+        <Portal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
             <div className="bg-[#1a1a1a] border border-[var(--skin-accent-color)] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
                 {/* Header */}
                 <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-black to-[var(--skin-accent-color)]/20">
@@ -117,6 +119,7 @@ export const FolderDetailModal: React.FC<FolderDetailModalProps> = ({ folder, on
                     onClose={() => setIsIconPickerOpen(false)}
                 />
             )}
-        </div>
+</div>
+        </Portal>
     );
 };

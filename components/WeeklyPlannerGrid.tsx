@@ -125,6 +125,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
         onClick: handleClick,
         onDragStart: handleDragStart,
         delay: 300,
+        dragThreshold: 20,
     });
 
 

@@ -232,8 +232,8 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
     addAction,
     updateAction,
     deleteAction,
-    scheduleTask: () => undefined,
-    scheduleMultipleTasks: () => undefined,
+    scheduleTask: () => Promise.resolve(undefined),
+    scheduleMultipleTasks: () => Promise.resolve(undefined),
     scheduleAndCompleteNow: () => undefined,
     scheduleAndCompleteMilestoneNow: () => undefined,
   };

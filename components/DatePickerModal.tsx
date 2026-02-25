@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { XIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { Portal } from './Portal';
 
 interface DatePickerModalProps {
     selectedDate: Date | null;
@@ -115,6 +116,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
     };
     
     return (
+        <Portal>
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
             <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-3xl p-0">
                 <div className="dossier-bg p-4 rounded-3xl">
@@ -165,5 +167,6 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                 </div>
             </GlassCard>
         </div>
+        </Portal>
     );
 };

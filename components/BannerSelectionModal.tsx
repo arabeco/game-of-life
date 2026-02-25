@@ -1,5 +1,6 @@
 import React from 'react';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { BANNERS_DATA, BANNER_UNLOCKS_BY_RANK } from '../constants';
 import { useGame } from '../contexts/GameContext';
 
@@ -50,8 +51,9 @@ export const BannerSelectionModal: React.FC<BannerSelectionModalProps> = ({ curr
     const availableBanners = BANNERS_DATA.filter(isBannerUnlocked);
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Banner</h2>
                 <div className="grid grid-cols-1 gap-2 p-2 max-h-64 overflow-y-auto">
                     {availableBanners.map(banner => (
@@ -68,6 +70,7 @@ export const BannerSelectionModal: React.FC<BannerSelectionModalProps> = ({ curr
                     FECHAR
                 </button>
             </GlassCard>
-        </div>
+            </div>
+        </Portal>
     );
 };

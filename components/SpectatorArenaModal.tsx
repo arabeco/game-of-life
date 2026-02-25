@@ -3,6 +3,7 @@ import { Arena, Action, ScheduledTask } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { CheckIcon, CloseIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
+import { Portal } from './Portal';
 
 // Helper to render plasma background (reused from ArenaDetailModal)
 const hexToRgb = (hex: string) => {
@@ -191,7 +192,8 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
             <div 
                 className="dossier-bg arena-plate border w-full max-w-sm m-4 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
                 style={{ borderColor: 'var(--skin-accent-color)', backgroundImage: 'linear-gradient(135deg, rgba(20,20,20,0.96) 0%, rgba(10,10,10,1) 58%, rgba(18,18,18,0.9) 100%)' }}
@@ -379,5 +381,6 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
                 </div>
             </div>
         </div>
+        </Portal>
     );
 };

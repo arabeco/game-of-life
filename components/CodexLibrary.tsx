@@ -204,7 +204,7 @@ export const BIOLOGICAL_MACHINE_CODEX: CodexTemplate = {
 };
 
 export const CodexLibrary: React.FC = () => {
-  const { addArena, addAction, getArenas, deleteArena, assets, userProfile } = useGame();
+  const { addArena, addAction, getArenas, deleteArena, assets, userProfile, scheduleMultipleTasks } = useGame();
   
   // Check if Codex is installed
   const legacyCodexId = 'codex-bio-machine-v1';
@@ -225,7 +225,7 @@ export const CodexLibrary: React.FC = () => {
 
         const fisicoAssetId = assets.find(asset => asset.id === 'fisico')?.id || assets[0]?.id || 'geral';
         
-        const newArena = addArena(fisicoAssetId, {
+        const newArena = await addArena(fisicoAssetId, {
             name: `${level.title}`,
             description: level.description,
             icon: '🧬',
@@ -233,14 +233,29 @@ export const CodexLibrary: React.FC = () => {
             codexLevel: level.level
         });
 
+        if (!newArena) {
+            throw new Error("Falha ao criar Arena do Codex");
+        }
+
         // Add Actions to this Arena
-        level.actions.forEach(actionTemplate => {
+        const actionPromises = level.actions.map(actionTemplate => 
             addAction({
                 ...actionTemplate,
                 arenaId: newArena.id,
                 originCodexId: BIOLOGICAL_MACHINE_CODEX.id,
-            });
-        });
+            })
+        );
+        
+        const createdActionsResults = await Promise.all(actionPromises);
+        const createdActions = createdActionsResults.filter((a): a is Action => !!a);
+
+        // Schedule recurrent tasks if applicable
+        for (const action of createdActions) {
+            if (action.actionType === 'Ação Recorrente' && action.scheduledDays && action.scheduledDays.length > 0 && action.scheduledStartTime !== undefined) {
+                await scheduleMultipleTasks(action, action.scheduledDays, action.scheduledStartTime);
+            }
+        }
+
 
         console.log(`Level ${targetLevel} Installed Successfully`);
     } catch (error) {

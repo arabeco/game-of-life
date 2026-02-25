@@ -5,6 +5,7 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { XIcon, LightbulbIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon } from './Icons';
 import { ScheduledTask, Action, DailyCommitment } from '../types';
+import { Portal } from './Portal';
 import { handleShare } from './Share';
 
 const parseDate = (value: string) => {
@@ -104,9 +105,9 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return normalized.includes('quests - cla');
     };
 
-    const handleCommitAction = (actionId: string) => {
+    const handleCommitAction = async (actionId: string) => {
         const today = new Date().toISOString().split('T')[0];
-        const newTask = scheduleTask(actionId, today, 0); // Schedule for today with no specific time
+        const newTask = await scheduleTask(actionId, today, 0); // Schedule for today with no specific time
         if (newTask) {
             if (!isClanQuestActionId(actionId)) {
                 setDailyCommitment([...dailyCommitment.taskIds, newTask.id]);
@@ -346,17 +347,19 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="dossier" className="w-full max-w-md m-4 rounded-3xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                <div className="relative flex items-center justify-center p-4 border-b border-white/10">
-                    <div className="flex items-center space-x-2">
-                        <LightbulbIcon className={`w-6 h-6 transition-colors duration-500 ${getLightbulbColor()}`} />
-                        <h2 className="text-lg font-bold uppercase tracking-wider text-center">Plano Diário</h2>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="dossier" className="w-full max-w-md m-4 rounded-3xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                    <div className="relative flex items-center justify-center p-4 border-b border-white/10">
+                        <div className="flex items-center space-x-2">
+                            <LightbulbIcon className={`w-6 h-6 transition-colors duration-500 ${getLightbulbColor()}`} />
+                            <h2 className="text-lg font-bold uppercase tracking-wider text-center">Plano Diário</h2>
+                        </div>
+                        <button onClick={onClose} className="absolute right-4 p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
                     </div>
-                    <button onClick={onClose} className="absolute right-4 p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
-                </div>
-                {renderContent()}
-            </GlassCard>
-        </div>
+                    {renderContent()}
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };

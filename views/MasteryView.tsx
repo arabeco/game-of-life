@@ -5,6 +5,7 @@ import { useGame } from '../contexts/GameContext';
 import { Asset } from '../types';
 import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { GlassCard } from '../components/GlassCard';
+import { Portal } from '../components/Portal';
 
 type MasteryMode = 'LEGADO' | 'SOBERANO';
 
@@ -137,23 +138,25 @@ export const MasteryView: React.FC = () => {
             </button>
             
             {showConfirmModal && (
-                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={() => setShowConfirmModal(false)}>
-                    <GlassCard variant="accent" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-bold uppercase tracking-wider text-center">Confirmar Atualização</h2>
-                        <p className="text-center">Seu nível geral será atualizado para: <span className="font-bold text-2xl" style={{color: 'var(--skin-accent-color)'}}>{totalLevel}</span></p>
-                        <p className="text-center text-sm text-gray-400">
-                            {mode === 'LEGADO' ? 'Deseja atualizar seu nível? Você só poderá fazer isso novamente em 72 horas.' : 'Deseja salvar as alterações? Você pode editar as frases a qualquer momento, mas só poderá editar seu nível novamente em 72 horas.'}
-                        </p>
-                        <div className="flex space-x-2">
-                            <button onClick={() => setShowConfirmModal(false)} className="w-full py-2 rounded-xl luxe-button-secondary">
-                                CANCELAR
-                            </button>
-                            <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
-                                CONFIRMAR
-                            </button>
-                        </div>
-                    </GlassCard>
-                </div>
+                <Portal>
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={() => setShowConfirmModal(false)}>
+                        <GlassCard variant="accent" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                            <h2 className="text-lg font-bold uppercase tracking-wider text-center">Confirmar Atualização</h2>
+                            <p className="text-center">Seu nível geral será atualizado para: <span className="font-bold text-2xl" style={{color: 'var(--skin-accent-color)'}}>{totalLevel}</span></p>
+                            <p className="text-center text-sm text-gray-400">
+                                {mode === 'LEGADO' ? 'Deseja atualizar seu nível? Você só poderá fazer isso novamente em 72 horas.' : 'Deseja salvar as alterações? Você pode editar as frases a qualquer momento, mas só poderá editar seu nível novamente em 72 horas.'}
+                            </p>
+                            <div className="flex space-x-2">
+                                <button onClick={() => setShowConfirmModal(false)} className="w-full py-2 rounded-xl luxe-button-secondary">
+                                    CANCELAR
+                                </button>
+                                <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
+                                    CONFIRMAR
+                                </button>
+                            </div>
+                        </GlassCard>
+                    </div>
+                </Portal>
             )}
         </div>
     );

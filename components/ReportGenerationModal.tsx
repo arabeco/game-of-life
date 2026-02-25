@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { VideoPlayer } from './VideoPlayer';
 
 interface ReportGenerationModalProps {
@@ -48,7 +49,8 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
     const currentPhrase = PHRASES.find(p => progress <= p.threshold)?.text || 'Relatório pronto';
 
     return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4">
+        <Portal>
+            <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4">
             <div className="w-full max-w-xs relative">
                 <GlassCard variant="neutral" className="p-6 flex flex-col items-center space-y-6">
                     {/* Video Container */}
@@ -78,6 +80,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
                     </div>
                 </GlassCard>
             </div>
-        </div>
+            </div>
+        </Portal>
     );
 };

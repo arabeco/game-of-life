@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { useGame } from '../contexts/GameContext';
+import { Portal } from './Portal';
 import { SKINS_DATA } from '../constants/GMboard';
 import { Report, ChestType } from '../types';
 import { getScoreGrade } from '../utils/scoreUtils';
@@ -362,7 +363,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     ];
 
     return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[10001] flex items-center justify-center p-4 animate-fade-in">
+        <Portal>
+            <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[10001] flex items-center justify-center p-4 animate-fade-in">
             <div className="w-full max-w-[420px] h-[85vh] max-h-[800px] bg-gradient-to-b from-gray-900 via-[#0a0a0a] to-black border border-white/10 rounded-[32px] shadow-2xl relative flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-white/5">
@@ -412,5 +414,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 </div>
             </div>
         </div>
+        </Portal>
     );
 };

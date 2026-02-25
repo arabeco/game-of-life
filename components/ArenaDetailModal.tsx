@@ -5,6 +5,7 @@ import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIc
 import { ActionModal } from './ActionModal';
 import { IconPickerModal } from './IconPickerModal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 
 const hexToRgb = (hex: string) => {
@@ -291,7 +292,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     // Removed SharedArenaView block to use standard render as requested
     
     return (
-        <>
+        <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
                 <div 
                     className="dossier-bg arena-plate border w-full max-w-sm m-4 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
@@ -515,6 +516,6 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     </div>
                 </div>
             )}
-        </>
+        </Portal>
     );
 };

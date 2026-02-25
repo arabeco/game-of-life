@@ -80,6 +80,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
         onDragStart: handleDragStart,
         onClick: handleClick,
         delay: 300,
+        dragThreshold: 20,
     });
 
     return (

@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { GlassCard } from './GlassCard';
 import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon } from './Icons';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
 import { Arena, UserProfile, EnrichedClanMember, SeasonQuest, AldeiaSlot, AldeiaPresence, AldeiaSlotId, ClanCustomQuest } from '../types';
 import { Sovereign } from './Avatar';
+import { Portal } from './Portal';
 import { ClanManagementModal } from './ClanManagementModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { TransferLeadershipModal } from './TransferLeadershipModal';
 import { ClanMemberCard } from './ClanMemberCard';
 import { AddClanMemberModal } from './AddClanMemberModal';
 import { ClanSlotModal } from './ClanSlotModal';
+import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 
 const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; emoji: string; x: number; y: number }[] = [
   { id: 'fogueira', label: 'Fogueira', emoji: '🔥', x: 42, y: 51 },
@@ -86,8 +87,9 @@ const Sparkles: React.FC = () => (
 const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () => void }> = ({ member, onClose }) => {
     if (!member.sovereign) return null;
     return (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-            <GlassCard variant="accent" className="w-full max-w-sm m-4 p-6 relative flex flex-col items-center space-y-4" onClick={e => e.stopPropagation()}>
+        <Portal>
+            <div className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+                <GlassCard variant="accent" className="w-full max-w-sm m-4 p-6 relative flex flex-col items-center space-y-4" onClick={e => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/20 text-gray-400 hover:text-white transition-colors">
                     <XIcon className="w-5 h-5" />
                 </button>
@@ -125,7 +127,8 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
                     </div>
                 </div>
             </GlassCard>
-        </div>
+            </div>
+        </Portal>
     );
 };
 
@@ -225,6 +228,7 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
     const actionsRemaining = Math.max(0, quest.goal_value - currentValue);
     
     return (
+        <Portal>
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[230] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl p-4" onClick={e => e.stopPropagation()}>
                 <div className="text-center space-y-1">
@@ -273,6 +277,7 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
                 </div>
             </GlassCard>
         </div>
+    </Portal>
     );
 };
 
@@ -308,8 +313,13 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
     const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate } = useGame();
+    const { trigger } = useSensoryFeedback();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const enrichedClanMembersRef = useRef(enrichedClanMembers);
+    
+    useEffect(() => {
+        trigger('whoosh');
+    }, [trigger]);
     
     // Aldeia State
     const [aldeiaSlots, setAldeiaSlots] = useState<AldeiaSlot[]>([]);
@@ -496,7 +506,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             }
 
             // Create Planner Action with Link
-            addAction({
+            await addAction({
                 arenaId: 'geral',
                 name: `[CLÃ] ${quest.title}`,
                 description: quest.description || 'Missão de Clã',
@@ -798,8 +808,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         setSelectedQuest(null);
     };
 
-    return createPortal(
-        <>
+    return (
+        <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <div className="relative w-full max-w-sm m-4 aspect-[9/16] rounded-3xl shadow-2xl" onClick={e => e.stopPropagation()}>
                     <div className="relative w-full h-full rounded-3xl overflow-hidden border border-white/10 flex flex-col isolate bg-black"> 
@@ -1275,25 +1285,23 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 />
             )}
             {selectedSlotForModal && clan && (
-                <div className="fixed inset-0 z-[12000] pointer-events-auto">
-                    <ClanSlotModal
-                        clanId={clan.id}
-                        slotId={selectedSlotForModal}
-                        slotLabel={slotsConfig.find(s => s.id === selectedSlotForModal)?.label || 'Slot'}
-                        slotEmoji={slotsConfig.find(s => s.id === selectedSlotForModal)?.emoji}
-                        occupant={enrichedClanMembers.find(m => aldeiaPresence.some(p => p.slotId === selectedSlotForModal && p.userId === m.id))}
-                        clanQuests={clanQuests}
-                        onClose={() => setSelectedSlotForModal(null)}
-                        onOccupy={() => {
-                            handleSlotClick(selectedSlotForModal);
-                            setSelectedSlotForModal(null);
-                        }}
-                        userRole={userClanRole || 'member'}
-                        onUpdate={() => loadClanAndMembers(clan.id)}
-                        myParticipations={myParticipations}
-                        onOptIn={handleOptIn}
-                    />
-                </div>
+                <ClanSlotModal
+                    clanId={clan.id}
+                    slotId={selectedSlotForModal}
+                    slotLabel={slotsConfig.find(s => s.id === selectedSlotForModal)?.label || 'Slot'}
+                    slotEmoji={slotsConfig.find(s => s.id === selectedSlotForModal)?.emoji}
+                    occupant={enrichedClanMembers.find(m => aldeiaPresence.some(p => p.slotId === selectedSlotForModal && p.userId === m.id))}
+                    clanQuests={clanQuests}
+                    onClose={() => setSelectedSlotForModal(null)}
+                    onOccupy={() => {
+                        handleSlotClick(selectedSlotForModal);
+                        setSelectedSlotForModal(null);
+                    }}
+                    userRole={userClanRole || 'member'}
+                    onUpdate={() => loadClanAndMembers(clan.id)}
+                    myParticipations={myParticipations}
+                    onOptIn={handleOptIn}
+                />
             )}
             {selectedMember && (
                 <SovereignDetailModal 
@@ -1301,7 +1309,6 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     onClose={() => setSelectedMember(null)} 
                 />
             )}
-        </>,
-        document.body
+        </Portal>
     );
 }

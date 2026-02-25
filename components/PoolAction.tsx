@@ -97,6 +97,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
       onDragStart: handleDragStart,
       onClick: handleClick,
       delay: 300,
+      dragThreshold: 20,
     });
 
     return (

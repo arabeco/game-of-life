@@ -9,9 +9,9 @@ export const ArsenalView: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'inventory' | 'library'>('inventory');
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 h-full flex flex-col">
              {/* Navigation */}
-            <div className="flex items-center justify-center px-2">
+            <div className="flex items-center justify-center px-2 shrink-0">
                 <div className="flex space-x-2 bg-black/30 p-1 rounded-lg">
                     <button 
                         onClick={() => setActiveTab('inventory')}
@@ -29,7 +29,7 @@ export const ArsenalView: React.FC = () => {
             </div>
 
             {activeTab === 'inventory' && (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-6 animate-fade-in flex-1 min-h-0 overflow-hidden">
                     <Inventory />
                 </div>
             )}

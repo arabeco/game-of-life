@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { XIcon, Trash2Icon, ShareIcon } from './Icons';
 import { ItemDef } from '../constants/items';
 
@@ -78,11 +79,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, instance
     };
 
     return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[70] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-            <div 
-                className={`w-full max-w-sm relative overflow-hidden rounded-2xl flex flex-col items-center p-8 gap-6 plasma-card plasma-bg ${rarityClass}`} 
-                onClick={e => e.stopPropagation()}
-            >
+        <Portal>
+            <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[70] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+                <div 
+                    className={`w-full max-w-sm relative overflow-hidden rounded-2xl flex flex-col items-center p-8 gap-6 plasma-card plasma-bg ${rarityClass}`} 
+                    onClick={e => e.stopPropagation()}
+                >
                 <button onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors z-20">
                     <XIcon className="w-6 h-6" />
                 </button>
@@ -149,5 +151,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item, instance
                 </div>
             </div>
         </div>
+        </Portal>
     );
 };

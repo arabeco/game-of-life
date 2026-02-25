@@ -16,6 +16,7 @@ import { getScoreGrade } from '../utils/scoreUtils';
 import { supabase } from '../supabaseClient';
 import { ReportGenerationModal } from '../components/ReportGenerationModal';
 import { ChestOpeningModal } from '../components/ChestOpeningModal';
+import { Portal } from '../components/Portal';
 
 // --- Helper Functions ---
 export const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
@@ -163,33 +164,35 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
     };
     
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant='neutral' className='p-4 space-y-4 w-full max-w-sm' onClick={e => e.stopPropagation()}>
-                <h2 className='text-center font-bold text-lg uppercase'>Definir Ciclo de Soberania</h2>
-                <p className="text-center text-sm text-gray-400">Dê um nome à sua campanha e escolha a data de término para formalizar seu compromisso.</p>
-                <div>
-                    <label className='text-sm font-bold'>Nome do Ciclo</label>
-                     <input 
-                        type='text'
-                        placeholder='Ex: Conquista de Fevereiro'
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1' 
-                    />
-                </div>
-                <div>
-                    <label className='text-sm font-bold'>Data de Término</label>
-                    <input 
-                        type='date' 
-                        value={endDate} 
-                        min={today}
-                        onChange={e => setEndDate(e.target.value)} 
-                        className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1' 
-                    />
-                </div>
-                <button onClick={handleStart} disabled={!endDate || !name} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR CICLO</button>
-            </GlassCard>
-        </div>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant='neutral' className='p-4 space-y-4 w-full max-w-sm' onClick={e => e.stopPropagation()}>
+                    <h2 className='text-center font-bold text-lg uppercase'>Definir Ciclo de Soberania</h2>
+                    <p className="text-center text-sm text-gray-400">Dê um nome à sua campanha e escolha a data de término para formalizar seu compromisso.</p>
+                    <div>
+                        <label className='text-sm font-bold'>Nome do Ciclo</label>
+                        <input 
+                            type='text'
+                            placeholder='Ex: Conquista de Fevereiro'
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1' 
+                        />
+                    </div>
+                    <div>
+                        <label className='text-sm font-bold'>Data de Término</label>
+                        <input 
+                            type='date' 
+                            value={endDate} 
+                            min={today}
+                            onChange={e => setEndDate(e.target.value)} 
+                            className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1' 
+                        />
+                    </div>
+                    <button onClick={handleStart} disabled={!endDate || !name} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR CICLO</button>
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };
 

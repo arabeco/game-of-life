@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
+import { Portal } from './Portal';
 import { XIcon, CrownIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -33,7 +34,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
     }
 
     return (
-        <>
+        <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10001] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center flex-shrink-0">
@@ -89,6 +90,6 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
             {isIconPickerOpen && <IconPickerModal onSelect={(i) => { setIcon(i); setIsIconPickerOpen(false); }} onClose={() => setIsIconPickerOpen(false)} />}
             {memberToKick && <ConfirmationModal title="Expulsar Membro" message={`Tem certeza que deseja expulsar ${enrichedClanMembers.find(m => m.id === memberToKick)?.nickname}?`} onConfirm={handleKickMember} onCancel={() => setMemberToKick(null)} />}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
-        </>
+        </Portal>
     );
 };

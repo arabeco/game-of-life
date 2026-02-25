@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Portal } from './components/Portal';
 import { AssetsView } from './views/AssetsView';
 import { ArenasView } from './views/ArenasView';
 import { PlannerView } from './views/PlannerView';
@@ -11,7 +12,8 @@ import { GameProvider, useGame, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_
 import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import { OracleTutorialOverlay } from './components/OracleTutorialOverlay';
-import { TUTORIAL_STEPS } from './constants/tutorialSteps';
+import { TUTORIAL_STEPS, View as TutorialView } from './constants/tutorialSteps';
+import { TutorialOverlay } from './components/TutorialOverlay';
 import { GlobalHeader } from './components/GlobalHeader';
 import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from './components/Icons';
 import { AchievementModal } from './components/AchievementModal';
@@ -19,10 +21,15 @@ import { supabase } from './supabaseClient';
 import { GoldenToast } from './components/GoldenToast';
 import type { Session } from '@supabase/supabase-js';
 import { useLongPress } from './hooks/useLongPress';
+import { useSensoryFeedback } from './hooks/useSensoryFeedback';
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
+
+const TutorialBridge: React.FC<{ currentView: View; onNavigate: (v: View) => void }> = ({ currentView, onNavigate }) => {
+    return <TutorialOverlay currentView={currentView as TutorialView} onNavigate={(v) => onNavigate(v as View)} />;
+};
 
 const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open, onAccept }) => {
     const clauses = [
@@ -101,6 +108,7 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
     if (!open) return null;
 
     return (
+        <Portal>
         <div
             className="fixed inset-0 z-[9999] flex items-center justify-center animate-fade-in"
             style={{ background: 'radial-gradient(circle at center, #0A0A0A 0%, #000000 72%)' }}
@@ -173,6 +181,7 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                 }
             `}</style>
         </div>
+        </Portal>
     );
 };
 
@@ -180,16 +189,18 @@ const TutorialGateOverlay: React.FC<{ open: boolean; onStart: () => void; onSkip
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-[9998] flex items-center justify-center p-4">
-            <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 space-y-4 max-w-sm text-center animate-fade-in">
-                <h2 className="text-2xl font-bold text-white">Você já viu o tutorial?</h2>
-                <p className="text-gray-300">Se já concluiu, seguimos direto. Se não, te guio pelos primeiros passos.</p>
-                <div className="flex space-x-2">
-                    <button onClick={onSkip} className="w-full py-2 rounded-lg bg-gray-700 text-white">Já vi</button>
-                    <button onClick={onStart} className="w-full py-2 rounded-lg bg-yellow-500 text-black font-bold">Quero ver</button>
+        <Portal>
+            <div className="fixed inset-0 bg-black/80 z-[9998] flex items-center justify-center p-4">
+                <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 space-y-4 max-w-sm text-center animate-fade-in">
+                    <h2 className="text-2xl font-bold text-white">Você já viu o tutorial?</h2>
+                    <p className="text-gray-300">Se já concluiu, seguimos direto. Se não, te guio pelos primeiros passos.</p>
+                    <div className="flex space-x-2">
+                        <button onClick={onSkip} className="w-full py-2 rounded-lg bg-gray-700 text-white">Já vi</button>
+                        <button onClick={onStart} className="w-full py-2 rounded-lg bg-yellow-500 text-black font-bold">Quero ver</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </Portal>
     );
 };
 
@@ -197,6 +208,7 @@ const BootRitualOverlay: React.FC<{ open: boolean }> = ({ open }) => {
     if (!open) return null;
 
     return (
+        <Portal>
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(7,6,4,0.8),rgba(0,0,0,0.98))]" />
             <div className="absolute inset-8 rounded-[36px] border border-[var(--skin-line-color)] boot-frame" />
@@ -230,6 +242,7 @@ const BootRitualOverlay: React.FC<{ open: boolean }> = ({ open }) => {
                 @keyframes bootFrame { 0% { opacity: 0; } 60% { opacity: 1; } 100% { opacity: 0.8; } }
             `}</style>
         </div>
+        </Portal>
     );
 };
 
@@ -242,13 +255,12 @@ const AppWithTutorial: React.FC = () => {
     const { isTutorialActive, currentStep } = useTutorial();
 
     useEffect(() => {
-        if (isTutorialActive) {
-            const step = TUTORIAL_STEPS[currentStep];
-            if (step) {
-                setCurrentView(step.view);
-            }
-        }
-    }, [isTutorialActive, currentStep]);
+        const handleNavigate = (e: CustomEvent<{ view: View }>) => {
+            setCurrentView(e.detail.view);
+        };
+        window.addEventListener('tutorialNavigate', handleNavigate as EventListener);
+        return () => window.removeEventListener('tutorialNavigate', handleNavigate as EventListener);
+    }, []);
 
     useEffect(() => {
         if (isBuilderMode) setCurrentView('arenas');
@@ -312,8 +324,9 @@ const AppWithTutorial: React.FC = () => {
         }
     };
 
-    const NavItem: React.FC<{ view: View; label: string; icon: React.ReactNode; navRef?: React.Ref<HTMLButtonElement> }> = ({ view, label, icon, navRef }) => (
+    const NavItem: React.FC<{ view: View; label: string; icon: React.ReactNode; navRef?: React.Ref<HTMLButtonElement>; id?: string }> = ({ view, label, icon, navRef, id }) => (
         <button
+            id={id}
             ref={navRef}
             onClick={() => handleSetView(view)}
             className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${
@@ -358,6 +371,7 @@ const AppWithTutorial: React.FC = () => {
                 </div>
             )}
             <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ? 44 : 0} />
+            <TutorialBridge currentView={currentView} onNavigate={handleSetView} />
             <main className={`flex-1 ${isBuilderMode ? 'pt-32' : 'pt-20'} pb-16 flex flex-col`}>
                 <div className="max-w-7xl mx-auto w-full h-full flex flex-col">
                     {renderView()}
@@ -370,11 +384,11 @@ const AppWithTutorial: React.FC = () => {
             <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/50 backdrop-blur-lg border-t border-[var(--glass-border)]">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex justify-around items-center h-16">
-                        <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} />
-                        <NavItem view="arenas" label="ARENAS" icon={<ArenaIcon />} />
-                        <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} />
-                        <NavItem view="social" label="MUNDO" icon={<SocialIcon />} />
-                        <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} />
+                        <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />
+                        <NavItem view="arenas" label="ARENAS" icon={<ArenaIcon />} id="nav-arenas" />
+                        <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} id="nav-planner" />
+                        <NavItem view="social" label="MUNDO" icon={<SocialIcon />} id="nav-mundo" />
+                        <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} id="nav-settings" />
                     </div>
                 </div>
             </footer>
@@ -386,6 +400,27 @@ const MainApp: React.FC = () => {
     const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag, toast, hideToast } = useGame();
     const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
+    const { trigger } = useSensoryFeedback();
+
+    useEffect(() => {
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target as HTMLElement | null;
+            if (!target) return;
+            const interactive = target.closest('button, [role="button"], a, input[type="button"], input[type="submit"], .luxe-skin-button') as HTMLElement | null;
+            if (!interactive) return;
+
+            trigger('click');
+
+            interactive.classList.add('click-flash');
+            window.setTimeout(() => interactive.classList.remove('click-flash'), 180);
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown, { passive: true });
+
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown);
+        };
+    }, [trigger]);
 
     // Online Only: Removed localStorage migration for tutorial completion
     
@@ -453,10 +488,8 @@ const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [showBootRitual, setShowBootRitual] = useState(false);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const lastSoundAtRef = useRef(0);
+
     useEffect(() => {
-        // --- Auth Logic ---
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
@@ -475,75 +508,6 @@ const App: React.FC = () => {
         });
 
         return () => subscription.unsubscribe();
-    }, []);
-
-    useEffect(() => {
-        const playClickSound = () => {
-            const now = performance.now();
-            if (now - lastSoundAtRef.current < 40) return;
-            lastSoundAtRef.current = now;
-
-            const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-            if (!AudioContextClass) return;
-            if (!audioContextRef.current) {
-                try {
-                    audioContextRef.current = new AudioContextClass();
-                } catch {
-                    return;
-                }
-            }
-            const ctx = audioContextRef.current;
-            if (!ctx) return;
-            if (ctx.state === 'suspended') {
-                ctx.resume().catch(() => {});
-            }
-
-            const t = ctx.currentTime;
-            const master = ctx.createGain();
-            master.gain.setValueAtTime(0.0001, t);
-            master.gain.exponentialRampToValueAtTime(0.08, t + 0.002);
-            master.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-
-            const click = ctx.createOscillator();
-            click.type = 'square';
-            click.frequency.setValueAtTime(1400, t);
-            click.frequency.exponentialRampToValueAtTime(700, t + 0.02);
-
-            const snap = ctx.createOscillator();
-            snap.type = 'sine';
-            snap.frequency.setValueAtTime(3000, t);
-            snap.frequency.exponentialRampToValueAtTime(1800, t + 0.015);
-            const snapGain = ctx.createGain();
-            snapGain.gain.setValueAtTime(0.0001, t);
-            snapGain.gain.exponentialRampToValueAtTime(0.05, t + 0.001);
-            snapGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.02);
-
-            click.connect(master);
-            snap.connect(snapGain);
-            snapGain.connect(master);
-            master.connect(ctx.destination);
-
-            click.start(t);
-            snap.start(t);
-            click.stop(t + 0.05);
-            snap.stop(t + 0.03);
-        };
-
-        const handlePointerDown = (event: PointerEvent) => {
-            const target = event.target as HTMLElement | null;
-            if (!target) return;
-            const interactive = target.closest('button, [role="button"], a, input[type="button"], input[type="submit"], .luxe-skin-button') as HTMLElement | null;
-            if (!interactive) return;
-            playClickSound();
-            interactive.classList.add('click-flash');
-            window.setTimeout(() => interactive.classList.remove('click-flash'), 180);
-        };
-
-        document.addEventListener('pointerdown', handlePointerDown, { passive: true });
-
-        return () => {
-            document.removeEventListener('pointerdown', handlePointerDown);
-        };
     }, []);
 
     useEffect(() => {
@@ -586,7 +550,7 @@ const App: React.FC = () => {
             if (mouseListener) window.removeEventListener('mousemove', mouseListener);
         };
     }, []);
-    
+
     if (loading) {
         return <div className="w-screen h-screen flex items-center justify-center bg-black">Carregando...</div>;
     }
@@ -597,12 +561,12 @@ const App: React.FC = () => {
 
     return (
         <CodexBuilderProvider>
-          <GameProvider session={session}>
-            <TutorialProvider>
-              {renderContent()}
-              <BootRitualOverlay open={showBootRitual} />
-            </TutorialProvider>
-          </GameProvider>
+            <GameProvider session={session}>
+                <TutorialProvider>
+                    {renderContent()}
+                    <BootRitualOverlay open={showBootRitual} />
+                </TutorialProvider>
+            </GameProvider>
         </CodexBuilderProvider>
     );
 };

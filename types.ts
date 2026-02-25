@@ -68,8 +68,13 @@ export interface Arena {
   tags?: string[];
   actionIds: string[];
   isArchived?: boolean;
-  folderId?: string; // New: Arena grouping
+  folderId?: string; // Links to ArenaFolder
   
+  // Campaign/Progression State
+  isLocked?: boolean;
+  isHidden?: boolean;
+  isCleared?: boolean;
+
   // Codex Fields
   originCodexId?: string;
   codexLevel?: number; // 1, 2, 3...
@@ -79,7 +84,35 @@ export interface ArenaFolder {
     id: string;
     name: string;
     icon: string;
-    assetId?: string;
+    assetId?: string; // Optional context link
+    
+    // Campaign metadata
+    description?: string;
+    deadline?: string;
+    status: 'active' | 'completed' | 'archived';
+    createdAt: string;
+    completedAt?: string;
+    
+    // UI Config
+    theme?: string; // For "subpastinhas" visual
+}
+
+// Alias for backward compatibility if needed, but prefer ArenaFolder
+export interface Campaign {
+    id: string;
+    title: string;
+    description?: string;
+    deadline?: string;
+    status: 'active' | 'completed' | 'archived';
+    createdAt: string;
+    completedAt?: string;
+    arenaIds: string[];
+    arenaConfig?: Record<string, {
+        isLocked: boolean;
+        isHidden?: boolean;
+        isCleared?: boolean;
+        completedActionIds?: string[];
+    }>;
 }
 
 export interface Asset {
@@ -154,7 +187,7 @@ export interface SovereignConfig {
     primaryDisplay?: 'sovereign' | 'item' | 'glyph'; // Preferred miniature display
 }
 
-export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates';
+export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament';
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
@@ -368,6 +401,12 @@ export interface Cycle {
     endDate: string;
     arenaIds: string[]; // IDs das arenas ativas neste ciclo
     userId: string; // ID do usuário dono do ciclo
+    arenaConfig?: Record<string, {
+        isLocked: boolean;
+        isHidden?: boolean;
+        isCleared?: boolean;
+        completedActionIds?: string[];
+    }>;
 }
 
 export type DailyCommitmentStage = 'planning' | 'battle' | 'judgment';

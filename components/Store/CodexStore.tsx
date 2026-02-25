@@ -7,6 +7,7 @@ import { ArenaCard } from '../ArenaCard';
 import { Arena, Action } from '../../types';
 import { ArenaDetailModal } from '../ArenaDetailModal';
 import { ActionModal } from '../ActionModal';
+import { Portal } from '../Portal';
 
 const CODEX_SKIN_COLOR = '#F0F8FF'; // Branco Gelo
 
@@ -294,18 +295,13 @@ export const CodexStore: React.FC = () => {
 
             {/* Arena Detail Modal Overlay */}
             {selectedLevelArena && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedLevelArena(null)}>
-                    {/* We reuse the ArenaDetailModal but we might need to mock context/provider if it relies heavily on global state for actions. 
-                        ArenaDetailModal uses `getActionsForArena` from context. Since these are mock arenas not in state, it might fail.
-                        
-                        STRATEGY: Create a lightweight visual-only version OR temporarily mock the context.
-                        Given the complexity, re-implementing a "Visual Only" ArenaDetailModal is safer and cleaner for the store.
-                    */}
-                    <div 
-                        className="dossier-bg arena-plate border w-full max-w-sm m-4 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
-                        style={{ borderColor: CODEX_SKIN_COLOR, backgroundImage: 'linear-gradient(135deg, rgba(20,20,20,0.96) 0%, rgba(10,10,10,1) 58%, rgba(18,18,18,0.9) 100%)' }}
-                        onClick={e => e.stopPropagation()}
-                    >
+                <Portal>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedLevelArena(null)}>
+                        <div 
+                            className="dossier-bg arena-plate border w-full max-w-sm m-4 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
+                            style={{ borderColor: CODEX_SKIN_COLOR, backgroundImage: 'linear-gradient(135deg, rgba(20,20,20,0.96) 0%, rgba(10,10,10,1) 58%, rgba(18,18,18,0.9) 100%)' }}
+                            onClick={e => e.stopPropagation()}
+                        >
                         <div className="arena-plasma" style={{ opacity: 0.45 }}>
                             <PlasmaCanvas color={CODEX_SKIN_COLOR} opacity={0.189} className="arena-plasma-canvas" />
                         </div>
@@ -385,6 +381,7 @@ export const CodexStore: React.FC = () => {
                         </div>
                     </div>
                 </div>
+                </Portal>
             )}
 
             {/* Action Preview Modal */}

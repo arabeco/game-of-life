@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Point, Area } from 'react-easy-crop';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 
 // Helper function to create a cropped image
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -101,6 +102,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({ imageSrc, cropShape,
     };
 
     return (
+        <Portal>
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Ajustar Imagem</h2>
@@ -135,5 +137,6 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({ imageSrc, cropShape,
                 </div>
             </GlassCard>
         </div>
+        </Portal>
     );
 };

@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
-import { CheckIcon } from './Icons';
+import { CheckIcon, XIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Season, SeasonMission, SeasonQuest } from '../types';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { MissionCompletionModal } from './MissionCompletionModal';
+
+import { Portal } from './Portal';
 
 // Helper to determine icon shape and style
 const ActionSymbol: React.FC<{ isMilestone?: boolean; icon?: string; count?: number; className?: string }> = ({ isMilestone, icon, count, className }) => {
@@ -104,7 +106,8 @@ export const MissionDetailModal: React.FC<{ mission: SeasonMission; progress: nu
     const isMilestone = mission.requirements?.milestone;
     
     return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[80] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[80] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
             <div className={`w-full max-w-sm aspect-[9/16] max-h-[80vh] rounded-[32px] overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-[var(--skin-accent-color)]/30 flex flex-col ${isShimmering ? 'shimmer-effect' : ''}`} onClick={e => e.stopPropagation()}>
                 {/* Background Image */}
                 <div className="absolute inset-0 z-0">
@@ -197,6 +200,7 @@ export const MissionDetailModal: React.FC<{ mission: SeasonMission; progress: nu
                 </div>
             </div>
         </div>
+        </Portal>
     );
 };
 
@@ -229,11 +233,24 @@ export const QuestCard: React.FC<{ quest: SeasonQuest; progress: number; onSelec
     );
 };
 
-export const QuestDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; participants?: number; onClose: () => void; onTake: () => void; onAbandon?: () => void; onClaim?: () => void; canClaim?: boolean }> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, onClaim, canClaim }) => {
+interface QuestDetailModalProps {
+    quest: SeasonQuest;
+    progress: number;
+    isActive: boolean;
+    participants?: number;
+    onClose: () => void;
+    onTake: () => void;
+    onAbandon?: () => void;
+    onClaim?: () => void;
+    canClaim?: boolean;
+}
+
+export const QuestDetailModal: React.FC<QuestDetailModalProps> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, onClaim, canClaim }) => {
     const isMilestone = quest.actionTemplate?.isMilestone || quest.requirements?.milestone;
     const count = quest.actionTemplate?.repetitions || quest.requirements?.totalReps;
 
     return (
+        <Portal>
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[80] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
             <div className="w-full max-w-sm aspect-[9/16] max-h-[80vh] rounded-[32px] overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-[var(--gold)]/30 flex flex-col" onClick={e => e.stopPropagation()}>
                 {/* Background Image */}
@@ -347,240 +364,191 @@ export const QuestDetailModal: React.FC<{ quest: SeasonQuest; progress: number; 
                             </>
                         )}
                     </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </Portal>
     );
 };
 
-export const SeasonDetailModal: React.FC<{ season: Season, onClose: () => void }> = ({ season, onClose }) => {
-    const { seasonMissions, seasonQuests, addCompletedMission, claimSeasonQuestReward, showToast, userProfile, tasks, assets, getArenas, getActionsForArena, addArena, addAction, deleteAction } = useGame();
+export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }> = ({ season, onClose }) => {
+    const { 
+        claimSeasonMission, 
+        claimSeasonQuest, 
+        userProfile, 
+        seasonPassLevel,
+        seasonPassXp,
+        userMissions,
+        userQuests
+    } = useGame();
+    
     const [selectedMission, setSelectedMission] = useState<SeasonMission | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
-    const [questArena, setQuestArena] = useState<Arena | null>(null);
-    const [completedMission, setCompletedMission] = useState<SeasonMission | null>(null);
-    const [shimmerMissionId, setShimmerMissionId] = useState<string | null>(null);
-    const missionsForSeason = seasonMissions.filter(m => m.season_id === season.id);
-    const questsForSeason = seasonQuests.filter(q => q.season_id === season.id && q.scope === 'season');
-    const completedMissions = new Set(userProfile.completedSeasonMissions || []);
-    const completedTasksInSeason = tasks.filter(task => task.completed && task.date >= season.start_date && task.date <= season.end_date).length;
+    const [viewMode, setViewMode] = useState<'missions' | 'quests'>('missions');
 
     const getMissionProgress = (mission: SeasonMission) => {
-        if (mission.goal_type !== 'actions_completed') return 0;
-        if (mission.goal_value <= 0) return 0;
-        return Math.min(100, Math.round((completedTasksInSeason / mission.goal_value) * 100));
+        const userMission = userMissions.find(m => m.mission_id === mission.id);
+        if (!userMission) return 0;
+        return Math.min(100, (userMission.progress / mission.goal_value) * 100);
+    };
+
+    const isMissionCompleted = (mission: SeasonMission) => {
+        const userMission = userMissions.find(m => m.mission_id === mission.id);
+        return userMission?.completed || false;
     };
     
-    const endDate = new Date(season.end_date);
-    const daysRemaining = Math.ceil((endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    const questArenaName = `Quests - Season ${season.id}`;
-
-    const ensureQuestArena = () => {
-        const existing = getArenas().find(arena => arena.name === questArenaName);
-        if (existing) return existing;
-        const fallbackAssetId = assets.find(asset => asset.id === 'geral')?.id || assets[0]?.id || '';
-        return addArena(fallbackAssetId, { name: questArenaName, description: 'Missões da season', icon: '🧭' });
-    };
-
-    const getQuestAction = (quest: SeasonQuest) => {
-        const arena = getArenas().find(arena => arena.name === questArenaName);
-        if (!arena) return null;
-        return getActionsForArena(arena.id).find(a => a.name === quest.title);
-    };
-
-    const isQuestActive = (quest: SeasonQuest) => {
-        return !!getQuestAction(quest);
+    const canClaimMission = (mission: SeasonMission) => {
+        const progress = getMissionProgress(mission);
+        const completed = isMissionCompleted(mission);
+        return progress >= 100 && !completed;
     };
 
     const getQuestProgress = (quest: SeasonQuest) => {
-        const action = getQuestAction(quest);
-        if (!action) return 0;
-        const completed = tasks.filter(task => task.completed && task.actionId === action.id).length;
-        return quest.goal_value > 0 ? Math.min(100, Math.round((completed / quest.goal_value) * 100)) : 0;
+        const userQuest = userQuests.find(q => q.quest_id === quest.id);
+        if (!userQuest) return 0;
+        return Math.min(100, (userQuest.progress / quest.goal_value) * 100);
     };
 
-    const handleTakeQuest = (quest: SeasonQuest) => {
-        const arena = ensureQuestArena();
-        const exists = getActionsForArena(arena.id).some(action => action.name === quest.title);
-        
-        if (!exists) {
-            addAction({
-                arenaId: arena.id,
-                name: quest.title,
-                description: quest.description,
-                icon: quest.actionTemplate.icon || '🎯',
-                duration: quest.actionTemplate.duration || 30,
-                repetitions: Math.max(1, quest.goal_value || 1),
-                actionType: quest.actionTemplate.isMilestone ? 'Marco' : 'Ação Recorrente',
-                difficulty: 3
-            });
-        }
-        
-        // Refresh local state context implicitly via useGame hooks triggering re-renders, 
-        // but we might need to force update if state is lagging. 
-        // For now, let's just close the modal or update the selected quest state.
-        setQuestArena(arena);
-        // Don't close immediately, let user see status change
+    const isQuestCompleted = (quest: SeasonQuest) => {
+        const userQuest = userQuests.find(q => q.quest_id === quest.id);
+        return userQuest?.completed || false;
     };
-
-    const handleAbandonQuest = (quest: SeasonQuest) => {
-        const action = getQuestAction(quest);
-        if (action) {
-            if (window.confirm('Tem certeza que deseja abandonar esta missão? Todo o progresso será perdido.')) {
-                deleteAction(action.id);
-                setSelectedQuest(null); // Close modal
-            }
-        }
-    };
-
-    const handleMissionComplete = (mission: SeasonMission) => {
-        if (completedMissions.has(mission.id)) return;
-        addCompletedMission(mission);
-        
-        // Show modal with video and reward
-        setCompletedMission(mission);
-
-        const xp = mission.reward_value || 0;
-        let msg = `✦ +${xp} XP computados`;
-        if (mission.reward_type === 'item_id') {
-             msg = `✦ Item adicionado ao inventário · +${xp} XP computados`;
-        }
-        // Toast is redundant if modal opens, but keeping it for feedback
-        // showToast(msg); 
-
-        setShimmerMissionId(mission.id);
-        window.setTimeout(() => {
-            setShimmerMissionId(prev => (prev === mission.id ? null : prev));
-        }, 1600);
-    };
-
-    const handleClaimQuest = (quest: SeasonQuest) => {
-        if (completedMissions.has(quest.id)) return;
-        claimSeasonQuestReward(quest.id);
-
-        const xp = quest.rewards.xp;
-        const items = quest.rewards.items || [];
-        let msg = `✦ +${xp} XP computados`;
-        if (items.length > 0) {
-            msg = `✦ ${items.join(', ')} adicionado ao inventário · +${xp} XP computados`;
-        }
-        showToast(msg);
-        setSelectedQuest(null);
+    
+    const canClaimQuest = (quest: SeasonQuest) => {
+        const progress = getQuestProgress(quest);
+        const completed = isQuestCompleted(quest);
+        return progress >= 100 && !completed;
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
-            <div className="w-full max-w-sm h-[85vh] rounded-[32px] animate-slide-up overflow-hidden border border-[var(--skin-accent-color)] shadow-[0_0_30px_var(--sephirot-glow-color)] relative bg-black" onClick={e => e.stopPropagation()}>
-                {/* Background */}
-                <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-60 transition-opacity duration-1000" 
-                    style={{ backgroundImage: `url('${season.background_png_url || 'https://images.unsplash.com/photo-1468657988500-aca2be09f4c6?q=80&w=2070&auto=format&fit=crop'}')` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/70 to-black/90" />
-
-                <div className="relative z-10 flex flex-col h-full">
-                    {/* Header Section (Fixed) */}
-                    <div className="p-6 pb-4 text-center shrink-0">
-                        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-black/40 rounded-full text-white hover:bg-black/60 transition-colors backdrop-blur-sm border border-white/10">
-                            <span className="text-xl leading-none">&times;</span>
-                        </button>
-
-                        <div className="inline-block px-3 py-1 rounded-full bg-[var(--skin-accent-color)]/10 backdrop-blur-md border border-[var(--skin-accent-color)]/30 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)] mb-3 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                            TEMPORADA ATUAL
-                        </div>
-                        <h2 className="text-3xl font-black uppercase tracking-widest luxe-title-shadow drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] leading-none mb-1">{season.name}</h2>
-                        <p className="text-[10px] text-gray-400 font-mono tracking-widest uppercase">Termina em {daysRemaining} dias</p>
-                    </div>
+        <Portal>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
+                <div className="w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row gap-6" onClick={e => e.stopPropagation()}>
                     
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-6 custom-scrollbar">
-                        <div>
-                            <GlassCard variant="neutral" className="p-4 text-center text-xs italic text-gray-300/90 border-white/5 bg-black/30 backdrop-blur-md">
-                                "{season.lore_text}"
-                            </GlassCard>
-                        </div>
-                        
-                        <div className="space-y-3">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--skin-accent-color)] flex items-center gap-2">
-                                <span className="w-1 h-4 bg-[var(--skin-accent-color)] rounded-full"></span>
-                                Missões Básicas
-                            </h3>
-                            <div className="space-y-3">
-                                {missionsForSeason.map(mission => (
-                                    <MissionCard
-                                        key={mission.id}
-                                        mission={mission}
-                                        progress={completedMissions.has(mission.id) ? 100 : getMissionProgress(mission)}
-                                        isCompleted={completedMissions.has(mission.id)}
-                                        canClaim={!completedMissions.has(mission.id) && getMissionProgress(mission) >= 100}
-                                        onComplete={() => handleMissionComplete(mission)}
-                                        onSelect={() => setSelectedMission(mission)}
-                                        isShimmering={shimmerMissionId === mission.id}
-                                    />
-                                ))}
+                    {/* Left Panel: Season Info */}
+                    <div className="w-full md:w-1/3 flex flex-col gap-4">
+                        <GlassCard variant="gold" className="p-6 text-center relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                            <h2 className="text-2xl font-black uppercase tracking-widest text-yellow-500 mb-2 drop-shadow-lg">{season.name}</h2>
+                            <p className="text-xs text-yellow-200/80 font-serif italic">"{season.description}"</p>
+                            
+                            <div className="my-6 relative">
+                                <div className="w-24 h-24 mx-auto rounded-full bg-black/40 border-2 border-yellow-500/30 flex items-center justify-center relative z-10">
+                                    <span className="text-4xl font-black text-white">{seasonPassLevel}</span>
+                                </div>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-yellow-500/10 rounded-full blur-xl animate-pulse"></div>
                             </div>
-                        </div>
 
-                        {questsForSeason.length > 0 && (
-                            <div className="space-y-3 pb-4">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--gold)] flex items-center gap-2">
-                                    <span className="w-1 h-4 bg-[var(--gold)] rounded-full"></span>
-                                    Quests da Season
-                                </h3>
-                                <div className="space-y-3">
-                                    {questsForSeason.map(quest => (
-                                        <QuestCard
-                                            key={quest.id}
-                                            quest={quest}
-                                            progress={getQuestProgress(quest)}
-                                            onSelect={() => setSelectedQuest(quest)}
-                                        />
-                                    ))}
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-yellow-500/80">
+                                    <span>Nível {seasonPassLevel}</span>
+                                    <span>{seasonPassXp} XP</span>
+                                </div>
+                                <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                    <div className="h-full bg-yellow-500 relative overflow-hidden" style={{ width: `${Math.min(100, (seasonPassXp / 1000) * 100)}%` }}>
+                                        <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                                    </div>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+                        </GlassCard>
 
-            {selectedMission && (
-                <MissionDetailModal
-                    mission={selectedMission}
-                    progress={completedMissions.has(selectedMission.id) ? 100 : getMissionProgress(selectedMission)}
-                    isCompleted={completedMissions.has(selectedMission.id)}
-                    onClose={() => setSelectedMission(null)}
-                    onClaim={() => handleMissionComplete(selectedMission)}
-                    isShimmering={shimmerMissionId === selectedMission.id}
-                />
-            )}
-            {completedMission && (
-                <MissionCompletionModal
-                    mission={completedMission}
-                    onOk={() => {
-                        setCompletedMission(null);
-                        setSelectedMission(null);
-                    }}
-                    onClose={() => setCompletedMission(null)}
-                />
-            )}
-            {selectedQuest && (
-                <QuestDetailModal
-                    quest={selectedQuest}
-                    progress={getQuestProgress(selectedQuest)}
-                    isActive={isQuestActive(selectedQuest)}
-                    onClose={() => setSelectedQuest(null)}
-                    onTake={() => handleTakeQuest(selectedQuest)}
-                    onAbandon={() => handleAbandonQuest(selectedQuest)}
-                    onClaim={() => handleClaimQuest(selectedQuest)}
-                    canClaim={!completedMissions.has(selectedQuest.id) && getQuestProgress(selectedQuest) >= 100}
-                />
-            )}
-            {questArena && (
-                <ArenaDetailModal
-                    arena={questArena}
-                    onClose={() => setQuestArena(null)}
-                />
-            )}
-        </div>
+                        <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
+                            <button 
+                                onClick={() => setViewMode('missions')}
+                                className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${viewMode === 'missions' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_rgba(var(--skin-accent-rgb),0.3)]' : 'hover:bg-white/5 text-gray-400'}`}
+                            >
+                                Missões
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('quests')}
+                                className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${viewMode === 'quests' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_rgba(var(--skin-accent-rgb),0.3)]' : 'hover:bg-white/5 text-gray-400'}`}
+                            >
+                                Jornada
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Right Panel: Content */}
+                    <GlassCard variant="neutral" className="flex-1 p-0 overflow-hidden flex flex-col bg-black/40 backdrop-blur-md">
+                        <div className="p-4 border-b border-white/5 flex justify-between items-center bg-black/20">
+                            <h3 className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                {viewMode === 'missions' ? (
+                                    <><span className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)]"></span> Missões da Temporada</>
+                                ) : (
+                                    <><span className="w-2 h-2 rounded-full bg-purple-500"></span> Jornada Épica</>
+                                )}
+                            </h3>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white">
+                                <XIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                            {viewMode === 'missions' ? (
+                                season.missions?.map(mission => (
+                                    <MissionCard 
+                                        key={mission.id} 
+                                        mission={mission} 
+                                        progress={getMissionProgress(mission)}
+                                        isCompleted={isMissionCompleted(mission)}
+                                        canClaim={canClaimMission(mission)}
+                                        onComplete={() => claimSeasonMission(mission.id)}
+                                        onSelect={() => setSelectedMission(mission)}
+                                    />
+                                ))
+                            ) : (
+                                season.quests?.map(quest => (
+                                    <QuestCard 
+                                        key={quest.id} 
+                                        quest={quest}
+                                        progress={getQuestProgress(quest)}
+                                        isCompleted={isQuestCompleted(quest)}
+                                        canClaim={canClaimQuest(quest)}
+                                        onComplete={() => claimSeasonQuest(quest.id)}
+                                        onSelect={() => setSelectedQuest(quest)}
+                                    />
+                                ))
+                            )}
+                            
+                            {((viewMode === 'missions' && (!season.missions || season.missions.length === 0)) || 
+                              (viewMode === 'quests' && (!season.quests || season.quests.length === 0))) && (
+                                <div className="h-full flex flex-col items-center justify-center text-gray-500 gap-4 opacity-50 py-12">
+                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+                                        <span className="text-2xl">?</span>
+                                    </div>
+                                    <p className="text-sm uppercase tracking-widest font-bold">Nenhum item disponível</p>
+                                </div>
+                            )}
+                        </div>
+                    </GlassCard>
+                </div>
+
+                {selectedMission && (
+                    <MissionDetailModal 
+                        mission={selectedMission} 
+                        progress={getMissionProgress(selectedMission)}
+                        isCompleted={isMissionCompleted(selectedMission)}
+                        onClose={() => setSelectedMission(null)}
+                        onClaim={() => {
+                            claimSeasonMission(selectedMission.id);
+                            setSelectedMission(null);
+                        }}
+                    />
+                )}
+
+                {selectedQuest && (
+                    <QuestDetailModal 
+                        quest={selectedQuest}
+                        progress={getQuestProgress(selectedQuest)}
+                        isCompleted={isQuestCompleted(selectedQuest)}
+                        onClose={() => setSelectedQuest(null)}
+                        onClaim={() => {
+                            claimSeasonQuest(selectedQuest.id);
+                            setSelectedQuest(null);
+                        }}
+                    />
+                )}
+            </div>
+        </Portal>
     );
 };

@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { GlassCard } from './GlassCard';
 import { SeasonMission } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { SKINS_DATA } from '../constants/GMboard';
 import { VideoPlayer } from './VideoPlayer';
 import { ShareIcon } from './Icons';
+import { Portal } from './Portal';
+import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 
 interface MissionCompletionModalProps {
     mission: SeasonMission;
@@ -14,19 +16,25 @@ interface MissionCompletionModalProps {
 
 export const MissionCompletionModal: React.FC<MissionCompletionModalProps> = ({ mission, onOk, onClose }) => {
     const { userProfile, showToast } = useGame();
+    const { trigger } = useSensoryFeedback();
     const userSkinId = userProfile.skin;
     const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
     const skinColor = userSkin?.color || '#ffffff';
 
+    useEffect(() => {
+        trigger('fanfare');
+    }, [trigger]);
+
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10001] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard 
-                variant="accent" 
-                className="w-full max-w-sm overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-white/10 bg-gradient-to-b from-gray-900 via-[#0a0a0a] to-black"
-                style={{ borderColor: skinColor, boxShadow: `0 0 30px ${skinColor}20` }}
-                onClick={e => e.stopPropagation()}
-            >
-                {/* Header Title */}
+        <Portal>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10001] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard 
+                    variant="accent" 
+                    className="w-full max-w-sm overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-white/10 bg-gradient-to-b from-gray-900 via-[#0a0a0a] to-black"
+                    style={{ borderColor: skinColor, boxShadow: `0 0 30px ${skinColor}20` }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    {/* Header Title */}
                 <div className="pt-6 pb-4 px-6 text-center z-20 relative">
                     <h2 
                         className="text-lg font-bold text-white uppercase tracking-[0.2em]"
@@ -92,13 +100,16 @@ export const MissionCompletionModal: React.FC<MissionCompletionModalProps> = ({ 
                         
                         <button 
                             onClick={onOk} 
-                            className="w-full py-2.5 rounded-lg font-bold uppercase tracking-wider text-[10px] bg-white/5 text-gray-400 hover:bg-white/10 transition-all border border-white/5 hover:text-white"
+                            className="w-full py-3 rounded-lg font-bold uppercase tracking-wider text-xs transition-all hover:brightness-110 relative overflow-hidden group"
+                            style={{ backgroundColor: skinColor, color: '#000' }}
                         >
-                            OK
+                            <span className="relative z-10">Confirmar</span>
+                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                         </button>
                     </div>
                 </div>
             </GlassCard>
         </div>
+    </Portal>
     );
 };

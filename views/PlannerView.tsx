@@ -122,6 +122,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         onClick: handleClick,
         onDragStart: handleDragStart,
         delay: 300,
+        dragThreshold: 20, // Increased to prevent accidental drags during long press
     });
 
     const top = (task.startTime - (4 * 60)) * scaleFactor; // Time is in minutes, view starts at 4am (240 mins)
@@ -525,116 +526,120 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return { base, arenaName, description };
     };
 
-    const handleOracleSubmit = () => {
+    const handleOracleSubmit = async () => {
         if (!oracleInput.trim()) return;
 
-        const { base, arenaName, description } = splitOracleInput(oracleInput);
-        const duration = parseDurationMinutes(base) ?? 30;
-        const repetitions = parseRepetitions(base) ?? 1;
-        const startTimeInMinutes = parseTimeMinutes(base);
-        const selectedDays = parseDaysOfWeek(base);
+        try {
+            const { base, arenaName, description } = splitOracleInput(oracleInput);
+            const duration = parseDurationMinutes(base) ?? 30;
+            const repetitions = parseRepetitions(base) ?? 1;
+            const startTimeInMinutes = parseTimeMinutes(base);
+            const selectedDays = parseDaysOfWeek(base);
 
-        const normalizedBase = base;
-        const cutPoints = [
-            normalizedBase.search(/\b\d+\s*(x|vez|vezes)\b/i),
-            normalizedBase.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
-            normalizedBase.search(/\b(?:as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
-            normalizedBase.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
-        ].filter(i => i >= 0);
-        const nameEnd = cutPoints.length > 0 ? Math.min(...cutPoints) : normalizedBase.length;
-        const parsedName = normalizedBase.slice(0, nameEnd).trim();
-        const actionName = parsedName;
-        const actionDescription = description;
+            const normalizedBase = base;
+            const cutPoints = [
+                normalizedBase.search(/\b\d+\s*(x|vez|vezes)\b/i),
+                normalizedBase.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
+                normalizedBase.search(/\b(?:as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
+                normalizedBase.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
+            ].filter(i => i >= 0);
+            const nameEnd = cutPoints.length > 0 ? Math.min(...cutPoints) : normalizedBase.length;
+            const parsedName = normalizedBase.slice(0, nameEnd).trim();
+            const actionName = parsedName;
+            const actionDescription = description;
 
-        // 2. Find Target Arena
-        let targetArenaId = '';
+            // 2. Find Target Arena
+            let targetArenaId = '';
 
-        const allArenas: Array<{ arena: Arena; assetId: string; normalizedName: string }> = assets.flatMap(asset =>
-            asset.arenas.map(arena => ({ arena, assetId: asset.id, normalizedName: normalizeText(arena.name) }))
-        );
+            const allArenas: Array<{ arena: Arena; assetId: string; normalizedName: string }> = assets.flatMap(asset =>
+                asset.arenas.map(arena => ({ arena, assetId: asset.id, normalizedName: normalizeText(arena.name) }))
+            );
 
-        const findArena = (name: string): { arena: Arena, assetId: string } | null => {
-            const normalizedQuery = normalizeText(name);
-            const exact = allArenas.find(a => a.normalizedName === normalizedQuery);
-            if (exact) return { arena: exact.arena, assetId: exact.assetId };
+            const findArena = (name: string): { arena: Arena, assetId: string } | null => {
+                const normalizedQuery = normalizeText(name);
+                const exact = allArenas.find(a => a.normalizedName === normalizedQuery);
+                if (exact) return { arena: exact.arena, assetId: exact.assetId };
 
-            let best: { arena: Arena; assetId: string; score: number; dist: number } | null = null;
-            for (const candidate of allArenas) {
-                const candName = candidate.normalizedName;
-                const dist = levenshteinDistance(normalizedQuery, candName);
-                const maxLen = Math.max(normalizedQuery.length, candName.length) || 1;
-                const score = 1 - dist / maxLen;
-                const prefixBonus = candName.startsWith(normalizedQuery) || normalizedQuery.startsWith(candName) ? 0.08 : 0;
-                const finalScore = Math.min(1, score + prefixBonus);
-                if (!best || finalScore > best.score) {
-                    best = { arena: candidate.arena, assetId: candidate.assetId, score: finalScore, dist };
+                let best: { arena: Arena; assetId: string; score: number; dist: number } | null = null;
+                for (const candidate of allArenas) {
+                    const candName = candidate.normalizedName;
+                    const dist = levenshteinDistance(normalizedQuery, candName);
+                    const maxLen = Math.max(normalizedQuery.length, candName.length) || 1;
+                    const score = 1 - dist / maxLen;
+                    const prefixBonus = candName.startsWith(normalizedQuery) || normalizedQuery.startsWith(candName) ? 0.08 : 0;
+                    const finalScore = Math.min(1, score + prefixBonus);
+                    if (!best || finalScore > best.score) {
+                        best = { arena: candidate.arena, assetId: candidate.assetId, score: finalScore, dist };
+                    }
+                }
+
+                if (best && (best.dist <= 2 || best.score >= 0.82)) {
+                    return { arena: best.arena, assetId: best.assetId };
+                }
+
+                return null;
+            };
+
+            const geralAsset = assets.find(a => a.id === 'geral') || assets[0];
+
+            if (arenaName) {
+                const found = findArena(arenaName);
+                if (found) {
+                    targetArenaId = found.arena.id;
+                } else if (geralAsset) {
+                    const newArena = await addArena(geralAsset.id, {
+                        name: arenaName,
+                        icon: '🏟️',
+                        description: 'Arena criada pelo Oráculo'
+                    });
+                    targetArenaId = newArena.id;
                 }
             }
 
-            if (best && (best.dist <= 2 || best.score >= 0.82)) {
-                return { arena: best.arena, assetId: best.assetId };
+            if (!targetArenaId) {
+                const outros = findArena('Outros');
+                if (outros) {
+                    targetArenaId = outros.arena.id;
+                } else if (geralAsset) {
+                    const newArena = await addArena(geralAsset.id, {
+                        name: 'Outros',
+                        icon: '📦',
+                        description: 'Arena criada pelo Oráculo'
+                    });
+                    targetArenaId = newArena.id;
+                }
             }
 
-            return null;
-        };
+            // 4. Create Action
+            if (!targetArenaId || !actionName) return;
 
-        const geralAsset = assets.find(a => a.id === 'geral') || assets[0];
+            const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ? 'Compromisso' : 'Ação Recorrente';
 
-        if (arenaName) {
-            const found = findArena(arenaName);
-            if (found) {
-                targetArenaId = found.arena.id;
-            } else if (geralAsset) {
-                const newArena = addArena(geralAsset.id, {
-                    name: arenaName,
-                    icon: '🏟️',
-                    description: 'Arena criada pelo Oráculo'
-                });
-                targetArenaId = newArena.id;
+            const created = await addAction({
+                name: actionName,
+                description: actionDescription || undefined,
+                arenaId: targetArenaId,
+                icon: '📝',
+                duration,
+                difficulty: 1,
+                actionType,
+                repetitions: actionType === 'Ação Recorrente' ? Math.max(1, repetitions) : 1,
+            });
+
+            if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
+                const dateString = currentDate.toISOString().split('T')[0];
+                await scheduleTask(created, dateString, startTimeInMinutes);
             }
-        }
 
-        if (!targetArenaId) {
-            const outros = findArena('Outros');
-            if (outros) {
-                targetArenaId = outros.arena.id;
-            } else if (geralAsset) {
-                const newArena = addArena(geralAsset.id, {
-                    name: 'Outros',
-                    icon: '📦',
-                    description: 'Arena criada pelo Oráculo'
-                });
-                targetArenaId = newArena.id;
+            if (actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTimeInMinutes !== null) {
+                await scheduleMultipleTasks(created, selectedDays, startTimeInMinutes);
             }
+
+            setOracleInput('');
+            setShowOracleInput(false);
+        } catch (error) {
+            console.error("Error in Oracle Submit:", error);
         }
-
-        // 4. Create Action
-        if (!targetArenaId || !actionName) return;
-
-        const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ? 'Compromisso' : 'Ação Recorrente';
-
-        const created = addAction({
-            name: actionName,
-            description: actionDescription || undefined,
-            arenaId: targetArenaId,
-            icon: '📝',
-            duration,
-            difficulty: 1,
-            actionType,
-            repetitions: actionType === 'Ação Recorrente' ? Math.max(1, repetitions) : 1,
-        });
-
-        if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
-            const dateString = currentDate.toISOString().split('T')[0];
-            scheduleTask(created.id, dateString, startTimeInMinutes);
-        }
-
-        if (actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTimeInMinutes !== null) {
-            scheduleMultipleTasks(created.id, selectedDays, startTimeInMinutes);
-        }
-
-        setOracleInput('');
-        setShowOracleInput(false);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {

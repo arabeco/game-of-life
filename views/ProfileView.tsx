@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon } from '../components/Icons';
@@ -14,6 +13,7 @@ import { Sovereign } from '../components/Avatar';
 import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { handleShare } from '../components/Share';
+import { Portal } from '../components/Portal';
 
 const UnifiedSovereignDisplay: React.FC<{ 
     sovereignConfig: UserProfile['sovereign']; 
@@ -442,8 +442,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     // Layout Adjustment: Ensure the card container is centered and scrollable if needed, matching "comprido" (long) description.
     // Using h-[92vh] md:h-[95vh] ensures it takes up most of the screen vertically.
     // z-index increased to 9999 and using Portal to overlay everything
-    return createPortal(
-        <>
+    return (
+        <Portal>
             <div style={{ position: 'fixed', top: 0, left: '-9999px', zIndex: -1 }}>
                 <ShareableProfileCard 
                     id="shareable-profile" 
@@ -611,9 +611,33 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                  </div>
             </div>
             {isAvatarModalOpen && <AvatarUploadModal currentAvatar={editableProfile.avatarUrl} onSave={handleAvatarSelect} onClose={() => setIsAvatarModalOpen(false)} />}
-            {isBorderModalOpen && <BorderSelectionModal currentBorder={editableProfile.border} onSelect={handleBorderSelect} onClose={() => setBorderModalOpen(false)} />}
-            {isBackgroundModalOpen && <BackgroundImageSelectionModal currentBackground={editableProfile.backgroundUrl} onSelect={handleBackgroundSelect} onClose={() => setBackgroundModalOpen(false)} />}
-            {isBannerModalOpen && <BannerSelectionModal currentBanner={editableProfile.bannerUrl || ''} onSelect={handleBannerSelect} onClose={() => setBannerModalOpen(false)} />}
+            {isBorderModalOpen && (
+                <Portal>
+                    <BorderSelectionModal 
+                        currentBorder={editableProfile.border} 
+                        onSelect={handleBorderSelect} 
+                        onClose={() => setBorderModalOpen(false)} 
+                    />
+                </Portal>
+            )}
+            {isBackgroundModalOpen && (
+                <Portal>
+                    <BackgroundImageSelectionModal 
+                        currentBackground={editableProfile.backgroundUrl} 
+                        onSelect={handleBackgroundSelect} 
+                        onClose={() => setBackgroundModalOpen(false)} 
+                    />
+                </Portal>
+            )}
+            {isBannerModalOpen && (
+                <Portal>
+                    <BannerSelectionModal 
+                        currentBanner={editableProfile.bannerUrl || ''} 
+                        onSelect={handleBannerSelect} 
+                        onClose={() => setBannerModalOpen(false)} 
+                    />
+                </Portal>
+            )}
             {isClanModalOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanModalOpen(false)} />}
             {isSovereignModalOpen && (
                 <SovereignCustomizer
@@ -625,7 +649,6 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                     onClose={() => setIsSovereignModalOpen(false)}
                 />
             )}
-        </>,
-        document.body
+        </Portal>
     );
 };

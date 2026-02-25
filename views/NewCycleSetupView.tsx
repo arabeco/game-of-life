@@ -6,6 +6,7 @@ import { EditIcon, RefreshCwIcon, ArchiveBoxIcon, Trash2Icon, XIcon, ChevronLeft
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { DatePickerModal } from '../components/DatePickerModal';
+import { Portal } from '../components/Portal';
 import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 
 type ArenaStatus = 'renew' | 'archive' | 'delete';
@@ -84,7 +85,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     };
 
     return (
-        <>
+        <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={onCancel}>
                 <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="flex-shrink-0 flex justify-between items-center text-white pb-4">
@@ -151,6 +152,6 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
             {editingArena && <ArenaDetailModal arena={editingArena} onClose={() => setEditingArena(null)} />}
             {showConfirm && <ConfirmationModal title="Iniciar Novo Ciclo?" message="Suas arenas serão atualizadas e o Planner será reiniciado. Esta ação não pode ser desfeita." onConfirm={() => { setShowConfirm(false); handleStartCycle(); }} onCancel={() => setShowConfirm(false)} />}
             {isDatePickerOpen && <DatePickerModal initialDate={new Date(cycleEndDate)} onClose={() => setDatePickerOpen(false)} onSelect={handleDateSelect} />}
-        </>
+        </Portal>
     );
 };

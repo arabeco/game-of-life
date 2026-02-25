@@ -190,6 +190,7 @@ export const buildDefaultLevelUnlocks = (): LevelUnlocks => ({
   auras: buildUnlockMap(SOVEREIGN_ASSETS.auras),
   orbs: buildUnlockMap(SOVEREIGN_ASSETS.orbs),
   plates: buildUnlockMap(SOVEREIGN_ASSETS.plates),
+  ornament: {},
 });
 
 // --- GM CONFIG & MASTERY ---

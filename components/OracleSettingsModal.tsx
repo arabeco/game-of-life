@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { OracleMode, OracleCategory, OraclePreferences } from '../types';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { XIcon, SparklesIcon, CheckIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 
@@ -166,7 +167,8 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({ onClos
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 rounded-3xl flex flex-col max-h-[85vh] overflow-hidden !p-0" onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
@@ -264,5 +266,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({ onClos
 
             </GlassCard>
         </div>
+        </Portal>
     );
 };

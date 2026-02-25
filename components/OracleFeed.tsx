@@ -1,18 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
-import { XIcon, SparklesIcon, MessageIcon, TrashIcon } from './Icons';
+import { XIcon, SparklesIcon, MessageIcon, TrashIcon, UsersIcon } from './Icons';
 import { OracleChat } from './OracleChat';
+import { ClanChat } from './ClanChat';
 import { Notification } from '../types';
+import { Portal } from './Portal';
 
 interface OracleFeedProps {
     onClose: () => void;
 }
 
-type Tab = 'chat' | 'notifications';
+type Tab = 'chat' | 'notifications' | 'clan';
 
 export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
-    const { notifications, markNotificationRead, deleteNotification, oracleMessages } = useGame();
+    const { notifications, markNotificationRead, deleteNotification, oracleMessages, clan } = useGame();
     const [activeTab, setActiveTab] = useState<Tab>('chat');
     
     // Calculate unread counts for badges
@@ -23,7 +25,8 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
     const unreadChat = oracleMessages.some(m => !m.read);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+        <Portal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
             <GlassCard 
                 variant="neutral" 
                 className="w-full max-w-lg h-[85vh] m-4 rounded-3xl flex flex-col overflow-hidden !p-0 border border-white/10 shadow-2xl"
@@ -31,14 +34,22 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
             >
                 {/* Header / Tabs */}
                 <div className="flex-none flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 gap-4">
-                    <div className="flex-1 flex p-1 bg-white/5 rounded-xl">
+                    <div className="flex-1 flex p-1 bg-white/5 rounded-xl overflow-hidden">
                         <button 
                             onClick={() => setActiveTab('chat')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
                             <SparklesIcon className="w-4 h-4" />
-                            <span className="text-xs font-bold tracking-wider">ORÁCULO</span>
+                            <span className="text-[10px] sm:text-xs font-bold tracking-wider">ORÁCULO</span>
                             {unreadChat && activeTab !== 'chat' && <div className="w-2 h-2 rounded-full bg-amber-400 ml-1" />}
+                        </button>
+
+                        <button 
+                            onClick={() => setActiveTab('clan')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all relative ${activeTab === 'clan' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <UsersIcon className="w-4 h-4" />
+                            <span className="text-[10px] sm:text-xs font-bold tracking-wider">CLÃ</span>
                         </button>
                         
                         <button 
@@ -46,28 +57,38 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all relative ${activeTab === 'notifications' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
                             <MessageIcon className="w-4 h-4" />
-                            <span className="text-xs font-bold tracking-wider">NOTIFICAÇÕES</span>
+                            <span className="text-[10px] sm:text-xs font-bold tracking-wider">NOTIFICAÇÕES</span>
                             {unreadNotifications > 0 && (
-                                <div className={`ml-1 px-1.5 py-0.5 text-[9px] font-bold rounded-full min-w-[1.25rem] text-center ${activeTab === 'notifications' ? 'bg-black/20 text-black' : 'bg-red-500 text-white'}`}>
-                                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                                </div>
+                                <span className="absolute top-1 right-1 flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                </span>
                             )}
                         </button>
                     </div>
-
                     <button 
                         onClick={onClose}
-                        className="flex-none w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors border border-white/5"
+                        className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                     >
                         <XIcon className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Content Area */}
+                {/* Content */}
                 <div className="flex-1 overflow-hidden relative">
-                    {activeTab === 'chat' ? (
-                        <OracleChat onClose={onClose} hideHeader={true} isEmbedded={true} />
-                    ) : (
+                    {activeTab === 'chat' && (
+                        <div className="absolute inset-0 animate-in slide-in-from-left-4 duration-200">
+                            <OracleChat onClose={onClose} />
+                        </div>
+                    )}
+
+                    {activeTab === 'clan' && (
+                        <div className="absolute inset-0 animate-in slide-in-from-right-4 duration-200 bg-black/20 p-2">
+                             <ClanChat />
+                        </div>
+                    )}
+                    
+                    {activeTab === 'notifications' && (
                         <NotificationsList 
                             notifications={notifications} 
                             onRead={markNotificationRead} 
@@ -77,6 +98,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
                 </div>
             </GlassCard>
         </div>
+        </Portal>
     );
 };
 

@@ -16,13 +16,22 @@ const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-export const OracleTutorialOverlay: React.FC = () => {
+export const TutorialOverlay: React.FC = () => {
     const { isTutorialActive, currentStep, nextStep, endTutorial } = useTutorial();
     const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
     
     const step = TUTORIAL_STEPS[currentStep];
+
+    // View Switching
+    useEffect(() => {
+        if (!isTutorialActive || !step) return;
+
+        // Dispatch event to switch view in App.tsx
+        const event = new CustomEvent('tutorialNavigate', { detail: { view: step.view } });
+        window.dispatchEvent(event);
+    }, [currentStep, isTutorialActive, step]);
 
     // Typing Effect
     useEffect(() => {
@@ -70,7 +79,11 @@ export const OracleTutorialOverlay: React.FC = () => {
 
         updateRect();
         window.addEventListener('resize', updateRect);
-        return () => window.removeEventListener('resize', updateRect);
+        window.addEventListener('scroll', updateRect, true); // Capture scroll events
+        return () => {
+            window.removeEventListener('resize', updateRect);
+            window.removeEventListener('scroll', updateRect, true);
+        };
     }, [currentStep, isTutorialActive, step]);
 
     // Keyboard Navigation

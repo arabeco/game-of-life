@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { MOODS_DATA } from '../constants';
 import { XIcon } from './Icons';
+import { Portal } from './Portal';
 
 export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { userProfile, updateMood } = useGame();
@@ -34,6 +35,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const moodLabels = ['VERGONHA', 'CORAGEM', 'AMOR', 'PAZ', 'ILUMINADO'];
 
     return (
+        <Portal>
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
@@ -63,5 +65,6 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
             </GlassCard>
         </div>
+        </Portal>
     );
 };

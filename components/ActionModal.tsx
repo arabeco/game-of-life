@@ -11,8 +11,10 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
 
+import { Portal } from './Portal';
+
 interface ActionModalProps {
-    arenaId: string;
+  arenaId: string;
     action: Action | null;
     initialMode: 'view' | 'edit';
     onClose: () => void;
@@ -127,12 +129,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
             context: editableAction.context || {}
         };
         
-        const scheduleTasks = (actionIdToSchedule: string) => {
+        const scheduleTasks = async (actionIdToSchedule: string) => {
             // Para Ação Recorrente: usa dias da semana
             if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Horário') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
-                scheduleMultipleTasks(actionIdToSchedule, selectedDays, startTimeInMinutes);
+                await scheduleMultipleTasks(actionIdToSchedule, selectedDays, startTimeInMinutes);
             }
             
             // Para Compromisso: usa data específica
@@ -140,21 +142,23 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
                 const dateString = selectedDate.toISOString().split('T')[0];
-                scheduleTask(actionIdToSchedule, dateString, startTimeInMinutes);
+                await scheduleTask(actionIdToSchedule, dateString, startTimeInMinutes);
             }
         }
 
-        if (isNew) {
-            const newActionId = `action_${Date.now()}`;
-            const newActionWithId = { ...actionData, id: newActionId } as Action;
-            addAction(newActionWithId);
-            scheduleTasks(newActionId);
-        } else if (action) {
-            updateAction(action.id, actionData);
-            scheduleTasks(action.id);
-        }
+        const executeSave = async () => {
+            if (isNew) {
+                // Let the context generate the ID to ensure consistency
+                const newAction = await addAction(actionData);
+                await scheduleTasks(newAction.id);
+            } else if (action) {
+                updateAction(action.id, actionData);
+                await scheduleTasks(action.id);
+            }
+            onClose();
+        };
 
-        onClose();
+        executeSave().catch(err => console.error("Error saving action:", err));
     };
     
     const handleStartMission = () => {
@@ -224,7 +228,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const modalStyle = customThemeColor ? { '--skin-accent-color': customThemeColor, '--accent-bronze': customThemeColor } as React.CSSProperties : undefined;
 
     return (
-        <>
+        <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick} style={modalStyle}>
                 <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col h-[85vh] p-0 relative overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
                     
@@ -722,6 +726,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                 />
             )}
             {isConfirmDeleteOpen && (<ConfirmationModal title="Confirmar Exclusão" message={`Tem certeza que deseja excluir a ação "${action?.name}"?`} onConfirm={confirmDelete} onCancel={() => setConfirmDeleteOpen(false)}/>)}
-        </>
+        </Portal>
     );
 };

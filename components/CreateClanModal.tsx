@@ -5,6 +5,7 @@ import { useGame } from '../contexts/GameContext';
 import { IconPickerModal } from './IconPickerModal';
 import { ClanType, RecruitmentStatus } from '../types';
 import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
+import { Portal } from './Portal';
 
 const clanTypes: ClanType[] = ['Casual', 'Office'];
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
@@ -30,7 +31,8 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <Portal>
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <h2 className="text-lg font-bold uppercase tracking-wider text-center">Fundar Clã</h2>
                     <div className="flex flex-col items-center space-y-4">
@@ -100,12 +102,21 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
-                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">FUNDAR</button>
-                    </div>
-                </GlassCard>
-            </div>
-            {isIconPickerOpen && <IconPickerModal onSelect={(i) => { setIcon(i); setIsIconPickerOpen(false); }} onClose={() => setIsIconPickerOpen(false)} />}
+                            <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
+                            <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">FUNDAR</button>
+                        </div>
+                    </GlassCard>
+                </div>
+            </Portal>
+            {isIconPickerOpen && (
+                <IconPickerModal
+                    onSelect={(i) => {
+                        setIcon(i);
+                        setIsIconPickerOpen(false);
+                    }}
+                    onClose={() => setIsIconPickerOpen(false)}
+                />
+            )}
         </>
     );
 };

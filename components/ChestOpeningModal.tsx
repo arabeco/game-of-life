@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { XIcon, Trash2Icon, ShareIcon, CheckIcon } from './Icons';
 import { ChestType, UnlockCategory, ItemRarity } from '../types';
 import { useGame } from '../contexts/GameContext';
@@ -256,21 +257,23 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
-            {/* Reduced width to max-w-xs (approx 320px) as requested "30% menos" */}
-            <GlassCard 
-                variant="neutral" 
-                className="w-full max-w-xs rounded-3xl overflow-hidden relative shadow-2xl transform transition-all bg-zinc-900" 
-                onClick={e => e.stopPropagation()}
-                style={{ borderColor: `${skinBorderColor}40`, borderWidth: '1px' }}
-            >
+        <Portal>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
+                {/* Reduced width to max-w-xs (approx 320px) as requested "30% menos" */}
+                <GlassCard 
+                    variant="neutral" 
+                    className="w-full max-w-xs rounded-3xl overflow-hidden relative shadow-2xl transform transition-all bg-zinc-900" 
+                    onClick={e => e.stopPropagation()}
+                    style={{ borderColor: `${skinBorderColor}40`, borderWidth: '1px' }}
+                >
                 <div className="absolute top-3 right-3 z-50">
                      <button onClick={onClose} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-all backdrop-blur-md border border-white/10">
                         <XIcon className="w-4 h-4"/>
                     </button>
                 </div>
                 {renderContent()}
-            </GlassCard>
-        </div>
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };

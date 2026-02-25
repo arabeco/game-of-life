@@ -9,6 +9,7 @@ import { CanvasAvatar } from './CanvasAvatar';
 import { ImagePreloader } from './ImagePreloader';
 import { AchievementModal } from './AchievementModal';
 import { MissionCompletionModal } from './MissionCompletionModal';
+import { Portal } from './Portal';
 
 interface SovereignCustomizerProps {
     initialConfig?: SovereignConfig;
@@ -254,11 +255,12 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     const primary = config.primaryDisplay || 'sovereign';
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <ImagePreloader />
-            <GlassCard variant="neutral" className="w-full max-w-md m-4 rounded-3xl flex flex-col max-h-[90vh] overflow-hidden border-2" onClick={e => e.stopPropagation()} style={{ borderColor: 'var(--skin-accent-color)' }}>
-                
-                {/* Header */}
+        <Portal>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <ImagePreloader />
+                <GlassCard variant="neutral" className="w-full max-w-md m-4 rounded-3xl flex flex-col max-h-[90vh] overflow-hidden border-2" onClick={e => e.stopPropagation()} style={{ borderColor: 'var(--skin-accent-color)' }}>
+                    
+                    {/* Header */}
                 <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
                     <h2 className="text-lg font-bold text-white uppercase tracking-widest flex items-center gap-2">
                         <EditIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />
@@ -597,5 +599,6 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                 />
             )}
         </div>
+        </Portal>
     );
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { XIcon, EyeIcon, PlusIcon, ChevronRightIcon, CheckIcon, Trash2Icon } from './Icons';
 import { Action, ActionType, Arena } from '../types';
 import { ArenaCard } from './ArenaCard';
@@ -259,53 +260,62 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   };
 
-  const handleApplyCodex = () => {
+  const handleApplyCodex = async () => {
     if (!activeCodex) return;
     if (!confirm('Deseja importar todas as arenas e ações deste Codex para o seu jogo?')) return;
 
     const arenaIdMap: Record<string, string> = {};
 
-    activeCodex.arenas.forEach(arena => {
-        // Tenta encontrar o asset correspondente ou usa 'geral' como fallback
-        const targetAssetId = assets.find(a => a.id === arena.assetId)?.id || 'geral';
-        
-        const newArena = addArena(targetAssetId, {
-            name: arena.name,
-            description: arena.description,
-            icon: arena.icon
-        });
-        arenaIdMap[arena.id] = newArena.id;
-    });
-
-    activeCodex.actions.forEach(action => {
-        const realArenaId = arenaIdMap[action.arenaId];
-        if (realArenaId) {
-             const newAction = addAction({
-                arenaId: realArenaId,
-                name: action.name,
-                description: action.description,
-                icon: action.icon,
-                duration: action.duration,
-                repetitions: action.repetitions,
-                actionType: action.actionType,
-                difficulty: action.difficulty,
-                scheduledDays: action.scheduledDays,
-                scheduledStartTime: action.scheduledStartTime,
-                briefing: action.briefing,
-                assets: action.assets,
-                preFlight: action.preFlight,
-                context: action.context,
-                originCodexId: activeCodex.id
+    try {
+        // Create arenas first
+        for (const arena of activeCodex.arenas) {
+            // Tenta encontrar o asset correspondente ou usa 'geral' como fallback
+            const targetAssetId = assets.find(a => a.id === arena.assetId)?.id || 'geral';
+            
+            const newArena = await addArena(targetAssetId, {
+                name: arena.name,
+                description: arena.description,
+                icon: arena.icon
             });
-
-            if (newAction.actionType === 'Ação Recorrente' && newAction.scheduledDays && newAction.scheduledDays.length > 0 && newAction.scheduledStartTime !== undefined) {
-                scheduleMultipleTasks(newAction.id, newAction.scheduledDays, newAction.scheduledStartTime);
-            }
+            arenaIdMap[arena.id] = newArena.id;
         }
-    });
 
-    alert('Codex importado com sucesso!');
-    onClose();
+        // Create actions
+        const actionPromises = activeCodex.actions.map(async (action) => {
+            const realArenaId = arenaIdMap[action.arenaId];
+            if (realArenaId) {
+                 const newAction = await addAction({
+                    arenaId: realArenaId,
+                    name: action.name,
+                    description: action.description,
+                    icon: action.icon,
+                    duration: action.duration,
+                    repetitions: action.repetitions,
+                    actionType: action.actionType,
+                    difficulty: action.difficulty,
+                    scheduledDays: action.scheduledDays,
+                    scheduledStartTime: action.scheduledStartTime,
+                    briefing: action.briefing,
+                    assets: action.assets,
+                    preFlight: action.preFlight,
+                    context: action.context,
+                    originCodexId: activeCodex.id
+                });
+
+                if (newAction.actionType === 'Ação Recorrente' && newAction.scheduledDays && newAction.scheduledDays.length > 0 && newAction.scheduledStartTime !== undefined) {
+                    await scheduleMultipleTasks(newAction.id, newAction.scheduledDays, newAction.scheduledStartTime);
+                }
+            }
+        });
+
+        await Promise.all(actionPromises);
+        setStatus('Codex aplicado com sucesso!');
+        setTimeout(() => setStatus(null), 2000);
+        onClose();
+    } catch (error) {
+        console.error("Error applying codex:", error);
+        setStatus('Erro ao aplicar Codex.');
+    }
   };
 
   const selectedArena = activeCodex?.arenas.find(a => a.id === selectedArenaId) || null;
@@ -313,8 +323,8 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const actionArena = activeCodex?.arenas.find(a => a.id === actionDraft.arenaId) || null;
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+    <Portal>
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-center">
             <div className="text-xs font-bold uppercase tracking-wider accent-text">CODEXES</div>
@@ -692,6 +702,6 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </GlassCard>
         </div>
       )}
-    </>
+    </Portal>
   );
 };

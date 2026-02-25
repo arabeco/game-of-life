@@ -5,6 +5,7 @@ import { GoldenInvite, LevelUnlocks, Season, SeasonMission } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { CheckIcon } from '../components/Icons';
 import { SeasonDetailModal } from '../components/SeasonDetailModal';
+import { Portal } from '../components/Portal';
 import { buildDefaultLevelUnlocks, SOVEREIGN_ASSETS } from '../constants/avatar';
 import { GM_CONFIG } from '../constants';
 import { SupabaseService } from '../services/SupabaseService';
@@ -81,20 +82,22 @@ const SeasonEditorModal: React.FC<{ season: Season | null; onClose: () => void; 
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center" onClick={onClose}>
-            <GlassCard variant='neutral' className='p-4 space-y-3 w-full max-w-sm' onClick={e => e.stopPropagation()}>
-                <h3 className='text-center font-bold uppercase'>{season ? 'Editar Era' : 'Criar Nova Era'}</h3>
-                <input type="text" placeholder="Nome da Season" value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
-                <div className="grid grid-cols-2 gap-2">
-                    <input type="date" value={formData.start_date} onChange={e => setFormData(p => ({ ...p, start_date: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
-                    <input type="date" value={formData.end_date} onChange={e => setFormData(p => ({ ...p, end_date: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
-                </div>
-                <input type="text" placeholder="URL da Imagem de Fundo" value={formData.background_png_url} onChange={e => setFormData(p => ({ ...p, background_png_url: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
-                <textarea placeholder="Lore / Descrição" value={formData.lore_text} onChange={e => setFormData(p => ({ ...p, lore_text: e.target.value }))} rows={3} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
-                <label className="flex items-center space-x-2"><input type="checkbox" checked={formData.is_active} onChange={e => setFormData(p => ({...p, is_active: e.target.checked}))} /> <span>Ativar esta Season?</span></label>
-                <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
-            </GlassCard>
-        </div>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center" onClick={onClose}>
+                <GlassCard variant='neutral' className='p-4 space-y-3 w-full max-w-sm' onClick={e => e.stopPropagation()}>
+                    <h3 className='text-center font-bold uppercase'>{season ? 'Editar Era' : 'Criar Nova Era'}</h3>
+                    <input type="text" placeholder="Nome da Season" value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
+                    <div className="grid grid-cols-2 gap-2">
+                        <input type="date" value={formData.start_date} onChange={e => setFormData(p => ({ ...p, start_date: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
+                        <input type="date" value={formData.end_date} onChange={e => setFormData(p => ({ ...p, end_date: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
+                    </div>
+                    <input type="text" placeholder="URL da Imagem de Fundo" value={formData.background_png_url} onChange={e => setFormData(p => ({ ...p, background_png_url: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
+                    <textarea placeholder="Lore / Descrição" value={formData.lore_text} onChange={e => setFormData(p => ({ ...p, lore_text: e.target.value }))} rows={3} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={formData.is_active} onChange={e => setFormData(p => ({...p, is_active: e.target.checked}))} /> <span>Ativar esta Season?</span></label>
+                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };
 
@@ -115,49 +118,51 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center" onClick={onClose}>
-            <GlassCard variant='neutral' className='p-4 space-y-3 w-full max-w-sm max-h-[90vh] flex flex-col' onClick={e => e.stopPropagation()}>
-                <h3 className='text-center font-bold uppercase'>Missões de "{season.name}"</h3>
-                <div className='flex-grow space-y-2 overflow-y-auto pr-2'>
-                    {missionsForSeason.map(m => (
-                        <div key={m.id} className="p-2 bg-black/20 rounded-lg text-xs">
-                            <div className="flex justify-between">
-                                <p className="font-bold">{m.title}</p>
-                                <span className="text-[10px] bg-white/10 px-1 rounded">{m.type}</span>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center" onClick={onClose}>
+                <GlassCard variant='neutral' className='p-4 space-y-3 w-full max-w-sm max-h-[90vh] flex flex-col' onClick={e => e.stopPropagation()}>
+                    <h3 className='text-center font-bold uppercase'>Missões de "{season.name}"</h3>
+                    <div className='flex-grow space-y-2 overflow-y-auto pr-2'>
+                        {missionsForSeason.map(m => (
+                            <div key={m.id} className="p-2 bg-black/20 rounded-lg text-xs">
+                                <div className="flex justify-between">
+                                    <p className="font-bold">{m.title}</p>
+                                    <span className="text-[10px] bg-white/10 px-1 rounded">{m.type}</span>
+                                </div>
+                                <p className="text-gray-400">{m.description} ({m.goal_value} {m.goal_type})</p>
+                                {m.action_name && <p className="text-[10px] text-gray-500">Action: {m.action_name}</p>}
                             </div>
-                            <p className="text-gray-400">{m.description} ({m.goal_value} {m.goal_type})</p>
-                            {m.action_name && <p className="text-[10px] text-gray-500">Action: {m.action_name}</p>}
+                        ))}
+                    </div>
+                    <div className='flex-shrink-0 border-t border-white/10 pt-3 space-y-2'>
+                        <h4 className="text-center font-bold text-sm">Nova Missão</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                             <select value={formData.type} onChange={e => setFormData(p => ({...p, type: e.target.value as any}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="individual">Individual</option><option value="clan">Clã</option></select>
+                             <input type="text" placeholder="Ícone (ex: 🛡️)" value={formData.icon} onChange={e => setFormData(p => ({ ...p, icon: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
                         </div>
-                    ))}
-                </div>
-                <div className='flex-shrink-0 border-t border-white/10 pt-3 space-y-2'>
-                    <h4 className="text-center font-bold text-sm">Nova Missão</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                         <select value={formData.type} onChange={e => setFormData(p => ({...p, type: e.target.value as any}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="individual">Individual</option><option value="clan">Clã</option></select>
-                         <input type="text" placeholder="Ícone (ex: 🛡️)" value={formData.icon} onChange={e => setFormData(p => ({ ...p, icon: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                    </div>
-                    <input type="text" placeholder="Título" value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                    <input type="text" placeholder="Descrição" value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                    
-                    <div className="space-y-1">
-                        <label className="text-[10px] text-gray-400 ml-1">Vincular a Ação (Nome exato)</label>
-                        <input type="text" placeholder="Nome da Ação (opcional)" value={formData.action_name} onChange={e => setFormData(p => ({ ...p, action_name: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                    </div>
+                        <input type="text" placeholder="Título" value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                        <input type="text" placeholder="Descrição" value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                        
+                        <div className="space-y-1">
+                            <label className="text-[10px] text-gray-400 ml-1">Vincular a Ação (Nome exato)</label>
+                            <input type="text" placeholder="Nome da Ação (opcional)" value={formData.action_name} onChange={e => setFormData(p => ({ ...p, action_name: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                        </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <select value={formData.goal_type} onChange={e => setFormData(p => ({...p, goal_type: e.target.value as SeasonMission['goal_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="actions_completed">Ações Completas</option><option value="km_run">KM Corridos</option><option value="books_read">Livros Lidos</option><option value="meditation_days">Dias de Meditação</option></select>
-                        <input type="number" placeholder="Meta" value={formData.goal_value} onChange={e => setFormData(p => ({ ...p, goal_value: Number(e.target.value) }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                        <div className="grid grid-cols-2 gap-2">
+                            <select value={formData.goal_type} onChange={e => setFormData(p => ({...p, goal_type: e.target.value as SeasonMission['goal_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="actions_completed">Ações Completas</option><option value="km_run">KM Corridos</option><option value="books_read">Livros Lidos</option><option value="meditation_days">Dias de Meditação</option></select>
+                            <input type="number" placeholder="Meta" value={formData.goal_value} onChange={e => setFormData(p => ({ ...p, goal_value: Number(e.target.value) }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                            <select value={formData.reward_type} onChange={e => setFormData(p => ({...p, reward_type: e.target.value as SeasonMission['reward_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="exp">EXP</option><option value="item_id">Item ID</option></select>
+                            <input type="text" placeholder="Recompensa" value={String(formData.reward_value)} onChange={e => setFormData(p => ({ ...p, reward_value: p.reward_type === 'exp' ? Number(e.target.value) : e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                        </div>
+                        
+                        <button onClick={handleAddMission} className="w-full py-2 rounded-xl luxe-skin-button">Adicionar Missão</button>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                        <select value={formData.reward_type} onChange={e => setFormData(p => ({...p, reward_type: e.target.value as SeasonMission['reward_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="exp">EXP</option><option value="item_id">Item ID</option></select>
-                        <input type="text" placeholder="Recompensa" value={String(formData.reward_value)} onChange={e => setFormData(p => ({ ...p, reward_value: p.reward_type === 'exp' ? Number(e.target.value) : e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                    </div>
-                    
-                    <button onClick={handleAddMission} className="w-full py-2 rounded-xl luxe-skin-button">Adicionar Missão</button>
-                </div>
-            </GlassCard>
-        </div>
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };
 

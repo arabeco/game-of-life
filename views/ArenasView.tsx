@@ -8,6 +8,9 @@ import { ArenaCard } from '../components/ArenaCard';
 import { useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { IconPickerModal } from '../components/IconPickerModal';
 import { FolderDetailModal } from '../components/FolderDetailModal';
+import { CampaignDetailModal } from '../components/CampaignDetailModal';
+import { CampaignsCodex } from '../components/CampaignsCodex';
+import { CreateCampaignModal } from '../components/CreateCampaignModal';
 
 type PendingAction = {
     id: string;
@@ -21,14 +24,20 @@ type PendingAction = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena } = useGame();
+    const { getArenas, assets, actions, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, campaigns, addCampaign } = useGame();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const fabRef = useRef<HTMLButtonElement>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+    // Campaign Creation Mode
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedForCampaign, setSelectedForCampaign] = useState<string[]>([]);
+    const [showCreateCampaignModal, setShowCreateCampaignModal] = useState(false);
 
     // Builder State
     const [builderAssetId, setBuilderAssetId] = useState<string>('');
@@ -45,10 +54,39 @@ export const ArenasView: React.FC = () => {
     const [actionRepetitions, setActionRepetitions] = useState(1);
     const [iconTarget, setIconTarget] = useState<'arena' | 'action' | null>(null);
     
+    // Filter out arenas that are in campaigns
+    const allCampaignArenaIds = campaigns.reduce((acc, campaign) => [...acc, ...campaign.arenaIds], [] as string[]);
+    
     const allArenas = getArenas().filter(a => showArchived || !a.isArchived);
-    const rootArenas = allArenas.filter(a => !a.folderId);
+    const rootArenas = allArenas.filter(a => !a.folderId && !allCampaignArenaIds.includes(a.id));
     const selectedArena = allArenas.find(a => a.id === selectedArenaId);
     const selectedFolder = arenaFolders.find(f => f.id === selectedFolderId);
+    const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+
+    const toggleSelection = (arenaId: string) => {
+        setSelectedForCampaign(prev => 
+            prev.includes(arenaId) 
+                ? prev.filter(id => id !== arenaId)
+                : [...prev, arenaId]
+        );
+    };
+
+    const handleCreateCampaignClick = () => {
+        if (isSelectionMode) {
+            // If already in selection mode and has selection, open modal
+            if (selectedForCampaign.length > 0) {
+                setShowCreateCampaignModal(true);
+            } else {
+                // Cancel selection mode
+                setIsSelectionMode(false);
+            }
+        } else {
+            // Enter selection mode
+            setIsSelectionMode(true);
+            setSelectedForCampaign([]);
+        }
+    };
+
 
     const handleDragStart = (e: React.DragEvent, id: string, type: 'arena') => {
         e.dataTransfer.setData('id', id);
@@ -87,16 +125,17 @@ export const ArenasView: React.FC = () => {
                  return;
              }
 
-             // Cria nova pasta automaticamente
-             const folderName = "Nova Pasta";
-             const newFolder = await createArenaFolder(folderName, '📁', targetArena.assetId);
-            if (newFolder) {
-                await moveArenaToFolder(targetId, newFolder.id);
-                await moveArenaToFolder(draggedId, newFolder.id);
-            } else {
-                console.error("Failed to create folder");
-                // Fallback: just try to move without creating folder? No, that doesn't make sense.
-            }
+             // Cria nova campanha automaticamente
+             addCampaign({
+                title: "Nova Campanha",
+                description: "",
+                arenaIds: [targetId, draggedId],
+                arenaConfig: {
+                    [targetId]: { isLocked: false, isHidden: false },
+                    [draggedId]: { isLocked: true, isHidden: false }
+                },
+                status: 'active'
+             });
         }
     };
 
@@ -138,31 +177,43 @@ export const ArenasView: React.FC = () => {
         setPendingActions(prev => prev.filter(action => action.id !== id));
     };
 
-    const handleSaveArenaDraft = () => {
+    const handleSaveArenaDraft = async () => {
         if (!arenaName.trim() || !builderAssetId) return;
-        const newArena = addArena(builderAssetId, {
-            name: arenaName.trim(),
-            description: arenaDescription.trim(),
-            icon: arenaIcon || '🏟️',
-        });
-        if (!arenaActive) updateArena(newArena.id, { isArchived: true });
-        [...pendingActions].reverse().forEach(action => {
-            addAction({
-                arenaId: newArena.id,
-                name: action.name,
-                description: action.description,
-                icon: action.icon,
-                duration: action.duration,
-                repetitions: action.repetitions,
-                actionType: action.actionType,
-                difficulty: action.difficulty,
+        
+        try {
+            const newArena = await addArena(builderAssetId, {
+                name: arenaName.trim(),
+                description: arenaDescription.trim(),
+                icon: arenaIcon || '🏟️',
             });
-        });
-        setArenaName('');
-        setArenaDescription('');
-        setArenaIcon('🏟️');
-        setArenaActive(true);
-        setPendingActions([]);
+            
+            if (!arenaActive) updateArena(newArena.id, { isArchived: true });
+            
+            // Create all actions in parallel
+            const actionPromises = [...pendingActions].reverse().map(action => 
+                addAction({
+                    arenaId: newArena.id,
+                    name: action.name,
+                    description: action.description,
+                    icon: action.icon,
+                    duration: action.duration,
+                    repetitions: action.repetitions,
+                    actionType: action.actionType,
+                    difficulty: action.difficulty,
+                })
+            );
+            
+            await Promise.all(actionPromises);
+            
+            setArenaName('');
+            setArenaDescription('');
+            setArenaIcon('🏟️');
+            setArenaActive(true);
+            setPendingActions([]);
+        } catch (error) {
+            console.error("Error creating arena draft:", error);
+            // Optionally show user feedback here
+        }
     };
 
     const handleOpenCreateArena = () => {
@@ -342,15 +393,58 @@ export const ArenasView: React.FC = () => {
     return (
         <>
             <div className="p-4 relative min-h-full">
-                 <div className="absolute top-0 right-4">
+                 <div className="absolute top-0 right-4 flex items-center gap-2">
+                    <button 
+                        onClick={handleCreateCampaignClick} 
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                            isSelectionMode 
+                                ? selectedForCampaign.length > 0
+                                    ? 'bg-[var(--skin-accent-color)] text-black'
+                                    : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                        }`}
+                    >
+                        {isSelectionMode 
+                            ? selectedForCampaign.length > 0 ? `Criar (${selectedForCampaign.length})` : 'Cancelar'
+                            : 'Nova Campanha'
+                        }
+                    </button>
                     <button onClick={() => setShowArchived(s => !s)} className={`p-2 rounded-full transition-colors ${showArchived ? 'bg-white/20 text-white' : 'text-gray-500'}`}>
                         <EyeIcon className="w-5 h-5" />
                     </button>
                 </div>
+
+                {isSelectionMode && (
+                    <div className="mb-4 p-3 bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 rounded-xl">
+                        {/* Prompt removed per user request */}
+                    </div>
+                )}
+
                 <div id="arenas-container" className="grid grid-cols-3 gap-3 pt-8">
+                    {/* Render Campaigns */}
+                    {campaigns.map(campaign => (
+                         <div 
+                            key={campaign.id}
+                            onClick={() => setSelectedCampaignId(campaign.id)}
+                            className="relative aspect-[3/4] bg-purple-900/20 rounded-2xl border border-purple-500/30 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-colors group"
+                        >
+                             {/* Stack visual effect */}
+                            <div className="absolute top-1 right-1 w-full h-full bg-purple-900/10 rounded-2xl -z-10 transform translate-x-1 -translate-y-1 border border-purple-500/10" />
+                            <div className="absolute top-2 right-2 w-full h-full bg-purple-900/5 rounded-2xl -z-20 transform translate-x-2 -translate-y-2 border border-purple-500/5" />
+
+                            <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-500/20 rounded text-[8px] font-bold text-purple-400 uppercase tracking-widest">
+                                CMP
+                            </div>
+
+                            <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">🚩</span>
+                            <span className="text-sm font-bold text-gray-200 line-clamp-2 px-2 text-center">{campaign.title}</span>
+                            <span className="text-xs text-gray-500 mt-1">{campaign.arenaIds.length} arenas</span>
+                        </div>
+                    ))}
+
                     {/* Render Folders */}
                     {arenaFolders.map(folder => {
-                        const arenasInFolder = getArenas().filter(a => a.folderId === folder.id); // Use getArenas to include all including archived if needed
+                        const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id)); 
                         const isDragOver = dragOverId === folder.id;
                         
                         return (
@@ -359,6 +453,7 @@ export const ArenasView: React.FC = () => {
                                 onDragOver={(e) => handleDragOver(e, folder.id)}
                                 onDragLeave={handleDragLeave}
                                 onDrop={(e) => handleDrop(e, folder.id, 'folder')}
+
                                 onClick={() => setSelectedFolderId(folder.id)}
                                 className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
                             >
@@ -379,24 +474,32 @@ export const ArenasView: React.FC = () => {
                          const asset = getAssetById(arena.assetId);
                          const arenaActions = getActionsForArena(arena.id);
                          const isDragOver = dragOverId === arena.id;
+                         const isSelected = selectedForCampaign.includes(arena.id);
 
                         return (
                             <div
                                 key={arena.id}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, arena.id, 'arena')}
-                                onDragOver={(e) => handleDragOver(e, arena.id)}
+                                draggable={!isSelectionMode}
+                                onDragStart={(e) => !isSelectionMode && handleDragStart(e, arena.id, 'arena')}
+                                onDragOver={(e) => !isSelectionMode && handleDragOver(e, arena.id)}
                                 onDragLeave={handleDragLeave}
-                                onDrop={(e) => handleDrop(e, arena.id, 'arena')}
-                                className={`transition-transform ${isDragOver ? 'scale-105 brightness-110 z-10' : ''}`}
+                                onDrop={(e) => !isSelectionMode && handleDrop(e, arena.id, 'arena')}
+                                className={`transition-transform ${isDragOver ? 'scale-105 brightness-110 z-10' : ''} ${isSelected ? 'ring-2 ring-[var(--skin-accent-color)] rounded-2xl scale-95 opacity-80' : ''}`}
                             >
-                                <ArenaCard 
-                                    arena={arena} 
-                                    assetName={asset?.name || ''}
-                                    actions={arenaActions}
-                                    onClick={() => setSelectedArenaId(arena.id)}
-                                    variant="overview"
-                                />
+                                <div className="relative">
+                                    <ArenaCard 
+                                        arena={arena} 
+                                        assetName={asset?.name || ''}
+                                        actions={arenaActions}
+                                        onClick={() => isSelectionMode ? toggleSelection(arena.id) : setSelectedArenaId(arena.id)}
+                                        variant="overview"
+                                    />
+                                    {isSelectionMode && (
+                                        <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'bg-[var(--skin-accent-color)] border-[var(--skin-accent-color)]' : 'border-gray-400 bg-black/50'}`}>
+                                            {isSelected && <span className="text-black font-bold text-xs">✓</span>}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )
                     })}
@@ -404,7 +507,7 @@ export const ArenasView: React.FC = () => {
                  <button 
                     ref={fabRef}
                     onClick={handleOpenCreateArena}
-                    className="fixed bottom-20 right-4 w-16 h-16 rounded-full bg-[var(--skin-accent-color)] flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"
+                    className={`fixed bottom-20 right-4 w-16 h-16 rounded-full bg-[var(--skin-accent-color)] flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isSelectionMode ? 'opacity-0 pointer-events-none' : ''}`}
                 >
                     <PlusIcon className="w-8 h-8 text-black" />
                 </button>
@@ -413,6 +516,22 @@ export const ArenasView: React.FC = () => {
                 <ArenaDetailModal
                     arena={selectedArena}
                     onClose={() => setSelectedArenaId(null)}
+                />
+            )}
+            {selectedCampaign && (
+                <CampaignsCodex
+                    initialCampaignId={selectedCampaign.id}
+                    onClose={() => setSelectedCampaignId(null)}
+                />
+            )}
+            {showCreateCampaignModal && (
+                <CreateCampaignModal
+                    selectedArenaIds={selectedForCampaign}
+                    onClose={() => setShowCreateCampaignModal(false)}
+                    onCreated={() => {
+                        setIsSelectionMode(false);
+                        setSelectedForCampaign([]);
+                    }}
                 />
             )}
             {isCreatingArena && (
@@ -425,3 +544,4 @@ export const ArenasView: React.FC = () => {
         </>
     );
 };
+

@@ -3,6 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { Arena } from '../types';
 import { CrownIcon, ChevronRightIcon } from './Icons';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { ArenaSelectionModal } from './ArenaSelectionModal'; // Re-using for asset selection
 
 interface NewArenaModalProps {
@@ -16,8 +17,9 @@ const AssetSelectionModal: React.FC<{currentAssetId: string, onSelect: (assetId:
     const geralAsset = assets.find(a => a.id === 'geral');
     const assetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
     return (
-         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+         <Portal>
+             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                  <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Ativo</h2>
                  <div className="space-y-2 max-h-60 overflow-y-auto">
                     {geralAsset && (
@@ -33,6 +35,7 @@ const AssetSelectionModal: React.FC<{currentAssetId: string, onSelect: (assetId:
                  </div>
             </GlassCard>
         </div>
+        </Portal>
     )
 }
 
@@ -45,12 +48,12 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
     const modalCardRef = useRef<HTMLDivElement>(null);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!name.trim() || !assetId) {
             alert("Por favor, selecione um Ativo e dê um nome à Arena.");
             return;
         };
-        const newArena = addArena(assetId, { name, description, icon: '🏆' });
+        const newArena = await addArena(assetId, { name, description, icon: '🏆' });
 
         if (onArenaCreated) {
             onArenaCreated(newArena);
@@ -64,6 +67,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
 
     return (
         <>
+            <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard ref={ modalCardRef } variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="text-center">
@@ -93,6 +97,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                     </div>
                 </GlassCard>
             </div>
+            </Portal>
             {isAssetPickerOpen && <AssetSelectionModal currentAssetId={assetId} onSelect={(id) => {setAssetId(id); setIsAssetPickerOpen(false)}} onClose={() => setIsAssetPickerOpen(false)} />}
         </>
     );

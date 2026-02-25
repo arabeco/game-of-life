@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
+import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
 import { AldeiaSlotId, EnrichedClanMember, UserProfile, ClanCustomQuest } from '../types';
 import { UserAvatar } from './UserAvatar';
@@ -133,6 +134,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     };
 
     return (
+        <Portal>
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1200] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 p-5 space-y-4 relative" onClick={e => e.stopPropagation()}>
                 
@@ -381,5 +383,6 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
             </GlassCard>
         </div>
+        </Portal>
     );
 };

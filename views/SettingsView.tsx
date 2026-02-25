@@ -18,6 +18,8 @@ import { DebugRewardControls } from '../components/DebugRewardControls';
 import { CODEXES } from '../constants/items';
 
 import { CodexModal } from '../components/CodexModal';
+import { CampaignsCodex } from '../components/CampaignsCodex';
+import { Portal } from '../components/Portal';
 
 type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
@@ -74,16 +76,18 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
     };
 
     return (
-         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                <h2 className="text-lg font-bold uppercase tracking-wider text-center">Configurar Notificações</h2>
-                <div className="grid grid-cols-2 gap-2">
-                    {notificationModes.map(mode => (<button key={mode.id} onClick={() => setSelectedMode(mode.id)} className={`p-3 rounded-xl transition-colors text-center ${selectedMode === mode.id ? 'bg-white/20 ring-2 ring-white/30' : 'bg-black/20 hover:bg-white/10'}`}><span className="text-2xl">{mode.icon}</span><p className="text-sm font-bold">{mode.name}</p></button>))}
-                </div>
-                <div className="p-3 bg-black/20 rounded-xl min-h-[150px] flex flex-col justify-center">{renderPreview()}</div>
-                <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
-            </GlassCard>
-        </div>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">Configurar Notificações</h2>
+                    <div className="grid grid-cols-2 gap-2">
+                        {notificationModes.map(mode => (<button key={mode.id} onClick={() => setSelectedMode(mode.id)} className={`p-3 rounded-xl transition-colors text-center ${selectedMode === mode.id ? 'bg-white/20 ring-2 ring-white/30' : 'bg-black/20 hover:bg-white/10'}`}><span className="text-2xl">{mode.icon}</span><p className="text-sm font-bold">{mode.name}</p></button>))}
+                    </div>
+                    <div className="p-3 bg-black/20 rounded-xl min-h-[150px] flex flex-col justify-center">{renderPreview()}</div>
+                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };
 
@@ -120,13 +124,15 @@ const TutorialSettings: React.FC = () => {
 };
 
 const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
-        <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold uppercase tracking-wider text-center">Tutoriais</h2>
-            <TutorialSettings />
-            <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button>
-        </GlassCard>
-    </div>
+    <Portal>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                <h2 className="text-lg font-bold uppercase tracking-wider text-center">Tutoriais</h2>
+                <TutorialSettings />
+                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button>
+            </GlassCard>
+        </div>
+    </Portal>
 );
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -398,7 +404,8 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
                     <div className="text-xs font-bold uppercase tracking-wider accent-text">VÍNCULOS</div>
@@ -606,6 +613,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 />
             )}
         </div>
+        </Portal>
     );
 };
 
@@ -735,17 +743,18 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <div className="text-xs font-bold uppercase tracking-wider accent-text">Relatório de Inteligência Beta</div>
-                        <div className="text-[10px] text-gray-500">ID: {userProfile.nickname}</div>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <div className="text-xs font-bold uppercase tracking-wider accent-text">Relatório de Inteligência Beta</div>
+                            <div className="text-[10px] text-gray-500">ID: {userProfile.nickname}</div>
+                        </div>
+                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
-                    <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
-                </div>
 
-                <div className="space-y-5 max-h-[62vh] overflow-y-auto pr-1">
+                    <div className="space-y-5 max-h-[62vh] overflow-y-auto pr-1">
                     {feedbackQuestions.map(q => {
                         const v = answers[q.id] ?? 3;
                         return (
@@ -792,6 +801,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </button>
             </GlassCard>
         </div>
+        </Portal>
     );
 };
 
@@ -998,7 +1008,8 @@ const GeralTab: React.FC = () => {
             )}
 
             {showStartCycle && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowStartCycle(false)}>
+                <Portal>
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowStartCycle(false)}>
                     <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                         <h2 className="text-lg font-bold uppercase tracking-wider text-center">Criar Ciclo</h2>
                         <div className="space-y-2">
@@ -1031,10 +1042,12 @@ const GeralTab: React.FC = () => {
                         </div>
                     </GlassCard>
                 </div>
+                </Portal>
             )}
 
             {showMastery && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowMastery(false)}>
+                <Portal>
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowMastery(false)}>
                     <GlassCard variant="neutral" className="w-full max-w-sm m-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                         <div className="p-4 flex items-center justify-between">
                             <h2 className="text-lg font-bold tracking-wider">Maestria</h2>
@@ -1047,6 +1060,7 @@ const GeralTab: React.FC = () => {
                         </div>
                     </GlassCard>
                 </div>
+                </Portal>
             )}
         </div>
     );
@@ -1096,6 +1110,7 @@ const PremiumTab: React.FC = () => {
     const { userProfile, oraclePreferences } = useGame();
     const [isLinksOpen, setLinksOpen] = useState(false);
     const [isOracleSettingsOpen, setOracleSettingsOpen] = useState(false);
+    const [showCampaignsCodex, setShowCampaignsCodex] = useState(false);
     const [isOracleChatOpen, setOracleChatOpen] = useState(false);
     const [isCodexOpen, setCodexOpen] = useState(false);
     const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
@@ -1147,10 +1162,10 @@ const PremiumTab: React.FC = () => {
                             </span>
                         </button>
                         <button
-                            onClick={() => alert('Mock: campanhas não implementadas.')}
-                            disabled={!isPremium}
-                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
-                        >
+                      onClick={() => setShowCampaignsCodex(true)}
+                      disabled={!isPremium}
+                      className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                    >
                             <span className="text-3xl group-hover:scale-110 transition-transform">🎯</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>
                         </button>
@@ -1193,6 +1208,7 @@ const PremiumTab: React.FC = () => {
             {isOracleChatOpen && <OracleChat onClose={() => setOracleChatOpen(false)} />}
             
             {isCodexOpen && <CodexListModal onClose={() => setCodexOpen(false)} />}
+            {showCampaignsCodex && <CampaignsCodex onClose={() => setShowCampaignsCodex(false)} />}
         </div>
     );
 };
@@ -1217,7 +1233,8 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 p-6 space-y-6 rounded-3xl relative overflow-hidden" onClick={e => e.stopPropagation()}>
                 {/* Background Glow */}
                 <div className="absolute top-0 left-0 w-full h-1/2 bg-[var(--skin-accent-color)]/10 blur-[50px] pointer-events-none" />
@@ -1301,6 +1318,7 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
                 )}
             </GlassCard>
         </div>
+        </Portal>
     );
 };
 
@@ -1396,7 +1414,8 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-lg m-4 rounded-3xl h-[80vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
                 <div className="p-4 flex items-center justify-between border-b border-white/10 flex-shrink-0">
                     <h2 className="text-lg font-bold uppercase tracking-wider">Meus Codex</h2>
@@ -1455,6 +1474,7 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </GlassCard>
             {isCreatorOpen && <CodexModal onClose={() => setCreatorOpen(false)} />}
         </div>
+        </Portal>
     );
 };
 

@@ -5,6 +5,7 @@ import { SliderInput } from './SliderInput';
 import { ImageUploadSlot } from './ImageUploadSlot';
 import { GlassCard } from '../GlassCard';
 import { ChevronRightIcon } from '../Icons';
+import { Portal } from '../Portal';
 
 interface InputModalProps {
     slot: Slot;
@@ -58,6 +59,7 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
     }
 
     return (
+        <Portal>
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">{slot.label}</h2>
@@ -72,5 +74,6 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
                 </div>
             </GlassCard>
         </div>
+        </Portal>
     );
 };

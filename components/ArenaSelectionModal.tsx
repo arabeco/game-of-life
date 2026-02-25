@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { CheckIcon, PlusIcon, XIcon } from './Icons';
+import { Portal } from './Portal';
 
 interface ArenaSelectionModalProps {
     currentArenaId: string;
@@ -16,21 +17,26 @@ export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ curren
     const [selectedAssetId, setSelectedAssetId] = useState(assets[0]?.id || 'geral');
     const [newArenaIcon, setNewArenaIcon] = useState('🏟️');
 
-    const handleCreateArena = () => {
+    const handleCreateArena = async () => {
         if (!newArenaName.trim()) return;
         
-        const newArena = addArena(selectedAssetId, {
-            name: newArenaName,
-            description: '',
-            icon: newArenaIcon
-        });
+        try {
+            const newArena = await addArena(selectedAssetId, {
+                name: newArenaName,
+                description: '',
+                icon: newArenaIcon
+            });
 
-        onSelect(newArena.id);
-        setIsCreating(false);
+            onSelect(newArena.id);
+            setIsCreating(false);
+        } catch (error) {
+            console.error("Error creating arena:", error);
+        }
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
                     <h2 className="text-lg font-bold uppercase tracking-wider text-center flex-1">{isCreating ? 'Nova Arena' : 'Selecionar Arena'}</h2>
@@ -112,5 +118,6 @@ export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ curren
                 )}
             </GlassCard>
         </div>
+        </Portal>
     );
 }

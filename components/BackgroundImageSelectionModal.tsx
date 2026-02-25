@@ -19,6 +19,8 @@ const BACKGROUND_OPTIONS = [
     { id: 'bronze', name: 'Bronze', value: 'var(--metal-bronze)' },
 ];
 
+import { Portal } from './Portal';
+
 export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionModalProps> = ({ currentBackground, onClose, onSelect, options, title, showUpload }) => {
     const backgroundOptions = options ?? BACKGROUND_OPTIONS;
     const modalTitle = title ?? 'Selecionar Plano de Fundo';
@@ -29,49 +31,51 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
     }
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                <h2 className="text-lg font-bold uppercase tracking-wider text-center">{modalTitle}</h2>
-                <div className="grid grid-cols-2 gap-2 p-2 max-h-64 overflow-y-auto">
-                    {backgroundOptions.map(bg => {
-                        const isSelected = currentBackground === bg.value;
-                        const isUrl = bg.value.startsWith('http');
-                        
-                        return (
-                            <div key={bg.id} className="text-center">
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">{modalTitle}</h2>
+                    <div className="grid grid-cols-2 gap-2 p-2 max-h-64 overflow-y-auto">
+                        {backgroundOptions.map(bg => {
+                            const isSelected = currentBackground === bg.value;
+                            const isUrl = bg.value.startsWith('http');
+                            
+                            return (
+                                <div key={bg.id} className="text-center">
+                                    <button 
+                                        onClick={() => onSelect(bg.value)}
+                                        className={`aspect-[16/9] w-full rounded-lg overflow-hidden transition-all duration-200 ${isSelected ? 'ring-4 ring-offset-2 ring-offset-gray-800 ring-white' : ''}`}
+                                    >
+                                        <div 
+                                            className="w-full h-full"
+                                            style={{
+                                                background: isUrl ? `url(${bg.value})` : bg.value,
+                                                backgroundSize: 'cover',
+                                                backgroundPosition: 'center',
+                                            }}
+                                        />
+                                    </button>
+                                    <p className="text-xs mt-1">{bg.name}</p>
+                                </div>
+                            )
+                        })}
+                        {allowUpload && (
+                            <div className="text-center">
                                 <button 
-                                    onClick={() => onSelect(bg.value)}
-                                    className={`aspect-[16/9] w-full rounded-lg overflow-hidden transition-all duration-200 ${isSelected ? 'ring-4 ring-offset-2 ring-offset-gray-800 ring-white' : ''}`}
+                                    onClick={handleFileUpload}
+                                    className="aspect-[16/9] w-full rounded-lg bg-black/30 border-2 border-dashed border-gray-500 flex flex-col items-center justify-center text-gray-400 hover:border-white hover:text-white transition-colors"
                                 >
-                                    <div 
-                                        className="w-full h-full"
-                                        style={{
-                                            background: isUrl ? `url(${bg.value})` : bg.value,
-                                            backgroundSize: 'cover',
-                                            backgroundPosition: 'center',
-                                        }}
-                                    />
+                                    <UploadIcon className="w-8 h-8"/>
                                 </button>
-                                <p className="text-xs mt-1">{bg.name}</p>
+                                <p className="text-xs mt-1">UPLOAD</p>
                             </div>
-                        )
-                    })}
-                    {allowUpload && (
-                        <div className="text-center">
-                            <button 
-                                onClick={handleFileUpload}
-                                className="aspect-[16/9] w-full rounded-lg bg-black/30 border-2 border-dashed border-gray-500 flex flex-col items-center justify-center text-gray-400 hover:border-white hover:text-white transition-colors"
-                            >
-                                <UploadIcon className="w-8 h-8"/>
-                            </button>
-                            <p className="text-xs mt-1">UPLOAD</p>
-                        </div>
-                    )}
-                </div>
-                 <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">
-                    FECHAR
-                </button>
-            </GlassCard>
-        </div>
+                        )}
+                    </div>
+                     <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">
+                        FECHAR
+                    </button>
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };

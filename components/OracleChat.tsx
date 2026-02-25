@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
-import { XIcon, SendIcon, SparklesIcon } from './Icons';
+import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
-import { OracleContext } from '../types';
+import { OracleContext, OracleMode } from '../types';
+import { Portal } from './Portal';
 
 // API Key from gateway.ts (hardcoded for now as per instructions)
 const API_KEY = "AIzaSyAryjNyDFBRrwfvsHdQWvUTCRm1-yx83zo";
@@ -17,10 +18,56 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  mode?: OracleMode;
 }
 
+const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>, color: string, bg: string, border: string }> = {
+    neutro: { 
+        icon: SparklesIcon, 
+        color: "text-amber-200", 
+        bg: "bg-black/40", 
+        border: "border-white/5" 
+    },
+    coach: { 
+        icon: ZapIcon, 
+        color: "text-yellow-400", 
+        bg: "bg-yellow-900/20", 
+        border: "border-yellow-500/30" 
+    },
+    calmo: { 
+        icon: EyeIcon, 
+        color: "text-blue-300", 
+        bg: "bg-blue-900/20", 
+        border: "border-blue-500/30" 
+    },
+    reflexivo: { 
+        icon: LightbulbIcon, 
+        color: "text-purple-300", 
+        bg: "bg-purple-900/20", 
+        border: "border-purple-500/30" 
+    },
+    tatico: { 
+        icon: CheckIcon, 
+        color: "text-green-400", 
+        bg: "bg-green-900/20", 
+        border: "border-green-500/30" 
+    },
+    estrategico: { 
+        icon: PlannerIcon, 
+        color: "text-indigo-400", 
+        bg: "bg-indigo-900/20", 
+        border: "border-indigo-500/30" 
+    },
+    personalizado: { 
+        icon: CrownIcon, 
+        color: "text-pink-400", 
+        bg: "bg-pink-900/20", 
+        border: "border-pink-500/30" 
+    }
+};
+
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences } = useGame();
+  const { userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences, oracleMessages } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +75,36 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const activeMode = oraclePreferences?.activeMode || 'neutro';
+  const [currentMode, setCurrentMode] = useState<OracleMode>(oraclePreferences?.activeMode || 'neutro');
+
+  // Update mode when preferences change
+  useEffect(() => {
+    if (oraclePreferences?.activeMode) {
+      setCurrentMode(oraclePreferences.activeMode);
+    }
+  }, [oraclePreferences?.activeMode]);
+
+  // Load initial messages from history and set mode based on last message
+  useEffect(() => {
+    if (oracleMessages && oracleMessages.length > 0) {
+        const history: Message[] = oracleMessages
+            .filter(m => m.deliveryType === 'feed') // Show feed messages
+            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+            .map(m => ({
+                role: 'assistant',
+                content: m.content,
+                timestamp: new Date(m.createdAt),
+                mode: m.mode // Store mode for display
+            }));
+        setMessages(history);
+
+        // Set current chat mode to the last message's mode if available
+        const lastMsg = history[history.length - 1];
+        if (lastMsg && lastMsg.mode) {
+            setCurrentMode(lastMsg.mode);
+        }
+    }
+  }, [oracleMessages]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -42,7 +118,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Build System Prompt based on Mode
   const systemPrompt = useMemo(() => {
-    const config = ORACLE_MODES[activeMode];
+    const config = ORACLE_MODES[currentMode];
     const now = new Date();
     const hour = now.getHours();
     let timeOfDay: "madrugada" | "manhã" | "tarde" | "noite" = "manhã";
@@ -65,7 +141,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         completedActionsInCycle: 0, // Logic needed
         pendingActionsToday: tasks.filter(t => t.date === now.toISOString().split('T')[0] && !t.completed).length,
         overdueActions: 0, // Logic needed
-        activeMode,
+        activeMode: currentMode,
         customModeInstructions: oraclePreferences?.customModeInstructions || null,
         enabledCategories: oraclePreferences?.enabledCategories || [],
         username: userProfile.nickname,
@@ -77,7 +153,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     };
 
     return config.systemPromptTemplate(contextData);
-  }, [activeMode, userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences]);
+  }, [currentMode, userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences]);
 
   const handleCommand = (cmd: string): string | null => {
     const lowerCmd = cmd.toLowerCase().trim();
@@ -133,7 +209,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       });
 
       let fullResponse = '';
-      const assistantMessage: Message = { role: 'assistant', content: '', timestamp: new Date() };
+      const assistantMessage: Message = { role: 'assistant', content: '', timestamp: new Date(), mode: currentMode };
       setMessages(prev => [...prev, assistantMessage]);
 
       for await (const textPart of result.textStream) {
@@ -159,18 +235,21 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   };
 
+  const HeaderIcon = MODE_VISUALS[currentMode].icon || SparklesIcon;
+  
   const content = (
       <>
         {/* Header */}
         {!hideHeader && (
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-600/20 flex items-center justify-center border border-white/10">
-               <SparklesIcon className="w-4 h-4 text-amber-200" />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${MODE_VISUALS[currentMode].border} ${MODE_VISUALS[currentMode].bg}`}>
+               <HeaderIcon className={`w-4 h-4 ${MODE_VISUALS[currentMode].color}`} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-200 tracking-wider">ORÁCULO</h3>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col">
+                  <span className={`text-[10px] uppercase tracking-widest ${MODE_VISUALS[currentMode].color}`}>{ORACLE_MODES[currentMode].name}</span>
                   <div className="flex items-center gap-1.5">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -178,8 +257,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       </span>
                       <span className="text-[10px] text-green-400 font-bold uppercase tracking-widest">Online</span>
                   </div>
-                  <span className="text-[10px] text-gray-600 uppercase tracking-widest">•</span>
-                  <span className="text-[10px] text-amber-500/50 uppercase tracking-widest">{ORACLE_MODES[activeMode].name}</span>
               </div>
             </div>
           </div>
@@ -198,27 +275,42 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-50">
               <SparklesIcon className="w-12 h-12 mb-4 text-gray-600" />
               <p className="text-sm text-gray-500">O Oráculo aguarda sua consulta, Soberano.</p>
-              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[activeMode].description}</p>
+              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[currentMode].description}</p>
             </div>
           )}
           
-          {messages.map((msg, idx) => (
+          {messages.map((msg, idx) => {
+             const msgMode = msg.role === 'assistant' ? (msg.mode || 'neutro') : 'neutro';
+             const visuals = MODE_VISUALS[msgMode];
+             const ModeIcon = visuals.icon;
+
+             return (
             <div 
               key={idx} 
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} mb-4`}
             >
+              {msg.role === 'assistant' && (
+                 <div className="flex items-center gap-2 mb-1 ml-1">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${visuals.bg} border ${visuals.border}`}>
+                        <ModeIcon className={`w-2.5 h-2.5 ${visuals.color}`} />
+                    </div>
+                    <span className={`text-[10px] uppercase tracking-widest ${visuals.color}`}>
+                        {ORACLE_MODES[msgMode].name}
+                    </span>
+                 </div>
+              )}
               <div 
                 className={`
                   max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed
                   ${msg.role === 'user' 
                     ? 'bg-white/10 text-white rounded-tr-sm border border-white/5' 
-                    : 'bg-black/40 text-gray-300 rounded-tl-sm border border-white/5 shadow-inner'}
+                    : `${visuals.bg} ${visuals.color.replace('text-', 'text-white/90 ')} rounded-tl-sm border ${visuals.border} shadow-inner`}
                 `}
               >
                 {msg.content}
               </div>
             </div>
-          ))}
+          )})}
           
           {isLoading && (
             <div className="flex justify-start">
@@ -267,13 +359,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 pointer-events-none">
-      {/* Backdrop for mobile mostly, but let's keep it clickable through except the chat */}
-      <div className="absolute inset-0 bg-transparent" onClick={onClose} />
-      
-      <div className="pointer-events-auto w-full max-w-sm mt-16 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[80vh] animate-in slide-in-from-top-5 fade-in duration-300">
-        {content}
-      </div>
-    </div>
+    <Portal>
+        <div className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 pointer-events-none">
+            {/* Backdrop for mobile mostly, but let's keep it clickable through except the chat */}
+            <div className="absolute inset-0 bg-transparent" onClick={onClose} />
+            
+            <div className="pointer-events-auto w-full max-w-sm mt-16 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[80vh] animate-in slide-in-from-top-5 fade-in duration-300">
+                {content}
+            </div>
+        </div>
+    </Portal>
   );
 };

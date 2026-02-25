@@ -126,9 +126,9 @@ export const Inventory: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in pb-20">
+        <div className="flex flex-col h-full space-y-4 animate-fade-in pb-2">
             {/* --- ACTION BUTTONS (Editors) --- */}
-            <div className="flex gap-3">
+            <div className="flex-none flex gap-3">
                 <button 
                     onClick={() => setShowSovereignEditor(true)}
                     className="w-full py-3 px-4 rounded-xl luxe-skin-button flex items-center justify-center gap-2 hover:scale-105 transition-transform group"
@@ -139,7 +139,7 @@ export const Inventory: React.FC = () => {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700">
+            <div className="flex-none flex space-x-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700">
                 {TABS.map(tab => (
                     <button
                         key={tab.id}
@@ -151,8 +151,9 @@ export const Inventory: React.FC = () => {
                 ))}
             </div>
 
-            {/* Items Grid */}
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+            {/* Items Grid - Scrollable Area */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
                 {activeTab === 'chests' ? (
                     userChests.length === 0 ? (
                          <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
@@ -227,6 +228,7 @@ export const Inventory: React.FC = () => {
                         })
                     )
                 )}
+            </div>
             </div>
 
             {/* Editors Modals */}

@@ -534,9 +534,9 @@ export const ASSETS_DATA: Asset[] = [
   },
   {
     id: 'financas', name: 'FINANÇAS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.financas.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'financas.renda', label: 'Renda Mensal', type: 3, inputType: 'wheelpick', options: ['R$ 0-2.000', 'R$ 2.000-5.000', 'R$ 5.000-10.000', 'R$ 10.000+'], value: 'R$ 0-2.000' },
-      { id: 'financas.gasto', label: 'Gasto Mensal', type: 3, inputType: 'wheelpick', options: ['R$ 0-2.000', 'R$ 2.000-5.000', 'R$ 5.000-10.000', 'R$ 10.000+'], value: 'R$ 0-2.000' },
-      { id: 'financas.patrimonio', label: 'Patrimônio', type: 1, inputType: 'wheelpick', options: ['R$ 0-10.000', 'R$ 10.000-25.000', 'R$ 25.000-100.000', 'R$ 100.000-500.000', 'R$ 500k-1M', 'R$ 1M+'], value: 'R$ 0-10.000' },
+      { id: 'financas.mentalidade', label: 'Mentalidade', type: 3, inputType: 'wheelpick', options: ['O Corre', 'Acumulador', 'Precavido', 'Bon Vivant', 'Minimalista', 'O Planilheiro', 'Limpar o Nome'], value: 'O Corre' },
+      { id: 'financas.luxos', label: 'Luxos', type: 3, inputType: 'wheelpick', options: ['Comer Bem', 'Conforto em Casa', 'Viagens e Rolês', 'Estética e Shape', 'Pequenos Prazeres', 'Praticidade e Tecnologia', 'Mimar os Outros'], value: 'Comer Bem' },
+      { id: 'financas.status', label: 'Status Financeiro', type: 1, inputType: 'wheelpick', options: ['No Vermelho', 'Zero a Zero', 'Estabilizando', 'No Azul', 'Multiplicando', 'Liberdade Financeira'], value: 'No Vermelho' },
       { id: 'financas.ativo1', label: 'Ativo 1', type: 2, inputType: 'image', value: emptyImage },
       { id: 'financas.ativo2', label: 'Ativo 2', type: 2, inputType: 'image', value: emptyImage },
       { id: 'financas.ativo3', label: 'Ativo 3', type: 2, inputType: 'image', value: emptyImage },

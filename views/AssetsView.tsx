@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Asset } from '../types';
 import { AssetDossier } from '../components/AssetDossier';
@@ -37,17 +37,34 @@ const SEPHIROT_COORDS = [
 export const AssetsView: React.FC = () => {
   const { assets, userProfile } = useGame();
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   // Get user skin color or default to GOLD
   const skinColor = SKINS_DATA.find(s => s.id === userProfile.skin)?.color || '#d4af37';
 
   // Prepare points with levels for the shader
-  const fogPoints = SEPHIROT_COORDS.map(coord => {
-      const asset = assets.find(a => a.id === coord.id);
+  const baseAspect = 9 / 16;
+  const containerAspect = containerSize.width > 0 && containerSize.height > 0
+      ? containerSize.width / containerSize.height
+      : baseAspect;
+  const stretchY = containerAspect < baseAspect ? baseAspect / containerAspect : 1;
+  const layoutCoords = SEPHIROT_COORDS.map(coord => {
+      const yNorm = coord.y / 100;
+      const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
+      return {
+          id: coord.id,
+          x: coord.x,
+          y: yStretched * 100
+      };
+  });
+  const assetById = new Map<string, Asset>(assets.map(asset => [asset.id, asset]));
+  const fogPoints = layoutCoords.map(coord => {
+      const asset = assetById.get(coord.id);
       return {
           x: coord.x,
           y: coord.y,
-          level: asset ? asset.level : 1 // Default level 1 if not found
+          level: asset ? asset.level : 1
       };
   });
 
@@ -55,6 +72,27 @@ export const AssetsView: React.FC = () => {
   const handleBack = () => setSelectedAssetId(null);
   
   const selectedAsset = assets.find(a => a.id === selectedAssetId);
+
+  useLayoutEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const updateSize = () => {
+          const rect = container.getBoundingClientRect();
+          setContainerSize({ width: rect.width, height: rect.height });
+      };
+
+      updateSize();
+
+      if (typeof ResizeObserver !== 'undefined') {
+          const observer = new ResizeObserver(() => updateSize());
+          observer.observe(container);
+          return () => observer.disconnect();
+      }
+
+      window.addEventListener('resize', updateSize);
+      return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   if (selectedAsset) {
     return (
@@ -65,25 +103,30 @@ export const AssetsView: React.FC = () => {
   }
 
   return (
-    <div className="flex justify-center items-center h-full relative overflow-hidden bg-black">
+    <div
+        ref={containerRef}
+        className="flex justify-center items-center h-full relative bg-black"
+        style={{ height: 'calc(100vh - 80px - var(--safe-area-top) - 64px - var(--safe-area-bottom))' }}
+    >
         {/* Background Fog Shader */}
         <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-black" />
             <SephirotFog points={fogPoints} color={skinColor} />
         </div>
         
-        <div className="relative w-full aspect-[9/16] z-10">
-            <div id="assets-grid" className="grid grid-cols-3 grid-rows-7 w-full h-full">
-                {assets.map(asset => {
-                    const pos = assetPositions[asset.id];
-                    if (!pos) return null;
+        <div className="relative z-10 w-full h-full">
+            <div id="assets-grid" className="relative w-full h-full">
+                {layoutCoords.map(coord => {
+                    const asset = assetById.get(coord.id);
+                    if (!asset) return null;
                     return (
-                        <div key={asset.id} style={{ gridRow: pos.row, gridColumn: pos.col }} className="flex items-center justify-center">
+                        <div key={asset.id} className="absolute flex items-center justify-center" style={{ left: `${coord.x}%`, top: `${coord.y}%`, transform: 'translate(-50%, -50%)' }}>
                             <Sephirot 
                                 asset={asset} 
                                 onClick={() => handleSphereClick(asset)} 
                             />
                         </div>
-                    )
+                    );
                 })}
             </div>
         </div>

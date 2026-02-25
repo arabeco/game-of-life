@@ -56,7 +56,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
     return (
         <>
-            <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-black/40 backdrop-blur-lg border-b" style={{ top: topOffsetPx, borderColor: 'var(--skin-accent-color)' }}>
+            <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-black/40 backdrop-blur-lg border-b safe-area-top" style={{ top: topOffsetPx, borderColor: 'var(--skin-accent-color)' }}>
                 <div className="max-w-7xl mx-auto relative flex items-center justify-between h-20 px-4 text-xs font-semibold text-gray-300">
                     <span className="text-center w-24 flex-shrink-0 text-[10px] uppercase tracking-[0.2em] bg-white/5 border px-3 py-1 rounded-full" style={{ borderColor: 'var(--skin-accent-color)' }}>{day} • {dateStr}</span>
                     

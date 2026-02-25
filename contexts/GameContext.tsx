@@ -3009,7 +3009,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm') {
         // Permite atualização imediata para contas privilegiadas
     } else if (Date.now() - lastUpdate < threeDays) {
-        alert("Você só pode atualizar seus níveis de maestria a cada 72 horas.");
+        showToast("Você só pode atualizar seus níveis de maestria a cada 72 horas.");
         return false;
     }
 

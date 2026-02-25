@@ -185,6 +185,22 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
     );
 };
 
+const OfflineOverlay: React.FC<{ open: boolean }> = ({ open }) => {
+    if (!open) return null;
+
+    return (
+        <Portal>
+            <div className="fixed inset-0 z-[9998] bg-black/90 backdrop-blur-sm flex items-center justify-center safe-area-top safe-area-bottom">
+                <div className="w-full max-w-sm mx-auto p-6 text-center space-y-3">
+                    <div className="text-3xl">📡</div>
+                    <h2 className="text-lg font-black tracking-wider text-white">Conectando ao servidor da Liga...</h2>
+                    <p className="text-xs text-gray-400">Sem internet. Verifique sua conexão para continuar.</p>
+                </div>
+            </div>
+        </Portal>
+    );
+};
+
 const TutorialGateOverlay: React.FC<{ open: boolean; onStart: () => void; onSkip: () => void; }> = ({ open, onStart, onSkip }) => {
     if (!open) return null;
 
@@ -253,6 +269,7 @@ const AppWithTutorial: React.FC = () => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
+    const historyReady = useRef(false);
 
     useEffect(() => {
         const handleNavigate = (e: CustomEvent<{ view: View }>) => {
@@ -264,6 +281,40 @@ const AppWithTutorial: React.FC = () => {
 
     useEffect(() => {
         if (isBuilderMode) setCurrentView('arenas');
+    }, [isBuilderMode]);
+
+    useEffect(() => {
+        const state = window.history.state as { view?: View } | null;
+        if (state?.view) {
+            setCurrentView(state.view);
+        } else {
+            window.history.replaceState({ view: currentView }, '');
+        }
+        historyReady.current = true;
+    }, []);
+
+    useEffect(() => {
+        if (!historyReady.current) return;
+        const state = window.history.state as { view?: View } | null;
+        if (state?.view !== currentView) {
+            window.history.pushState({ view: currentView }, '');
+        }
+    }, [currentView]);
+
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            const nextView = (event.state as { view?: View } | null)?.view;
+            if (!nextView) return;
+            if (isBuilderMode && nextView !== 'arenas') {
+                setCurrentView('arenas');
+                window.history.pushState({ view: 'arenas' }, '');
+                return;
+            }
+            setCurrentView(nextView);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
     }, [isBuilderMode]);
 
     const handleSetView = (view: View) => {
@@ -339,6 +390,13 @@ const AppWithTutorial: React.FC = () => {
         </button>
     );
 
+    const baseTopPadding = isBuilderMode ? 128 : 80;
+    const baseBottomPadding = 64;
+    const mainPaddingTop = `calc(${baseTopPadding}px + var(--safe-area-top))`;
+    const mainPaddingBottom = currentView === 'assets'
+        ? 'var(--safe-area-bottom)'
+        : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
+
     return (
         <div 
             className={`min-h-screen text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''}`}
@@ -372,7 +430,7 @@ const AppWithTutorial: React.FC = () => {
             )}
             <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ? 44 : 0} />
             <TutorialBridge currentView={currentView} onNavigate={handleSetView} />
-            <main className={`flex-1 ${isBuilderMode ? 'pt-32' : 'pt-20'} pb-16 flex flex-col`}>
+            <main className="flex-1 flex flex-col" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
                 <div className="max-w-7xl mx-auto w-full h-full flex flex-col">
                     {renderView()}
                 </div>
@@ -381,7 +439,7 @@ const AppWithTutorial: React.FC = () => {
             {isProfileVisible && <ProfileView onClose={() => setProfileVisible(false)} />}
             {isReportsVisible && <ReportsView onClose={() => setReportsVisible(false)} />}
             
-            <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/50 backdrop-blur-lg border-t border-[var(--glass-border)]">
+            <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/50 backdrop-blur-lg border-t border-[var(--glass-border)] safe-area-bottom" style={{ paddingBottom: 'var(--safe-area-bottom)' }}>
                 <div className="max-w-7xl mx-auto">
                     <div className="flex justify-around items-center h-16">
                         <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />
@@ -400,6 +458,7 @@ const MainApp: React.FC = () => {
     const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag, toast, hideToast } = useGame();
     const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
+    const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
 
     useEffect(() => {
@@ -464,10 +523,24 @@ const MainApp: React.FC = () => {
         }
     }, [isTutorialCompleted, userProfile.completedSeasonMissions]);
 
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
     return (
         <>
             <AppWithTutorial />
             <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
+            <OfflineOverlay open={!isOnline} />
             {achievementUnlocked && (
                 <AchievementModal 
                     achievement={achievementUnlocked}

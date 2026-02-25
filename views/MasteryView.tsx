@@ -139,7 +139,7 @@ export const MasteryView: React.FC = () => {
             
             {showConfirmModal && (
                 <Portal>
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={() => setShowConfirmModal(false)}>
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center animate-fade-in" onClick={() => setShowConfirmModal(false)}>
                         <GlassCard variant="accent" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                             <h2 className="text-lg font-bold uppercase tracking-wider text-center">Confirmar Atualização</h2>
                             <p className="text-center">Seu nível geral será atualizado para: <span className="font-bold text-2xl" style={{color: 'var(--skin-accent-color)'}}>{totalLevel}</span></p>

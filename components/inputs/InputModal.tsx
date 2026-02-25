@@ -23,7 +23,6 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
     
     const handleWheelSelect = (newValue: string) => {
         setCurrentValue(newValue);
-        setIsPickerOpen(false);
     };
 
     const renderInput = () => {
@@ -43,7 +42,13 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
                             <ChevronRightIcon className={`w-5 h-5 text-gray-400 transition-transform ${isPickerOpen ? 'rotate-90' : ''}`} />
                         </button>
                         {isPickerOpen && (
-                            <div className="mt-2">
+                            <div
+                                className="mt-2"
+                                onMouseDown={e => e.stopPropagation()}
+                                onPointerDown={e => e.stopPropagation()}
+                                onTouchStart={e => e.stopPropagation()}
+                                onClick={e => e.stopPropagation()}
+                            >
                                 <WheelPicker options={slot.options!} value={currentValue as string} onSelect={handleWheelSelect} />
                             </div>
                         )}
@@ -58,9 +63,13 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
         }
     }
 
+    const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (event.target === event.currentTarget) onClose();
+    };
+
     return (
         <Portal>
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">{slot.label}</h2>
                 <div>{renderInput()}</div>

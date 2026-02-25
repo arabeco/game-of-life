@@ -165,7 +165,7 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return JSON.stringify(template, null, 2);
   };
 
-  const addArena: GameContextType['addArena'] = (assetId, arenaData) => {
+  const addArena: GameContextType['addArena'] = async (assetId, arenaData) => {
     const newArena = createArena(assetId, arenaData);
     setDraftArenas(prev => [newArena, ...prev]);
     return newArena;
@@ -180,7 +180,7 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setDraftActions(prev => prev.filter(a => a.arenaId !== arenaId));
   };
 
-  const addAction: GameContextType['addAction'] = (actionData: any) => {
+  const addAction: GameContextType['addAction'] = async (actionData: any) => {
     const id = typeof actionData?.id === 'string' && actionData.id.trim() ? actionData.id : createActionId();
     const newAction: Action = {
       id,

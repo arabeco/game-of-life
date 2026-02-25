@@ -4191,7 +4191,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (!arena) {
         const assetId = assets[0]?.id || 'geral';
         // Create locally but skip auto-DB insert to ensure order
-        arena = addArena(assetId, {
+        arena = await addArena(assetId, {
             name: seasonArenaName,
             description: isClanQuest ? 'Missões Coletivas do Clã' : `Missões da temporada ${activeSeason.name}`,
             icon: isClanQuest ? '🛡️' : '📜'
@@ -4214,7 +4214,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateArena(arena.id, { isArchived: false });
     }
 
-    const newAction = addAction({
+    const newAction = await addAction({
         arenaId: arena.id,
         name: quest.actionTemplate.name,
         description: quest.actionTemplate.description,

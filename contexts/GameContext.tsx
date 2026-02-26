@@ -2808,7 +2808,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const lockedArenaIds = new Set<string>();
     campaigns.forEach(campaign => {
         if (campaign.status === 'active' && campaign.arenaConfig) {
-            Object.entries(campaign.arenaConfig).forEach(([arenaId, config]) => {
+            Object.entries(campaign.arenaConfig).forEach(([arenaId, config]: [string, any]) => {
                 if (config.isLocked) {
                     lockedArenaIds.add(arenaId);
                 }

@@ -4,7 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { Portal } from './Portal';
 import { SKINS_DATA } from '../constants/GMboard';
 import { Report, ChestType } from '../types';
-import { getScoreGrade } from '../utils/scoreUtils';
+import { getScoreGrade } from '../utils/dateUtils';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon } from './Icons';
 
 // Helper functions (duplicated to avoid circular dependencies)

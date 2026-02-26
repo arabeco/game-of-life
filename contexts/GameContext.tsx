@@ -244,6 +244,7 @@ export interface GameContextType {
   deleteArenaFolder: (folderId: string) => Promise<void>;
   moveArenaToFolder: (arenaId: string, folderId: string | null) => Promise<void>;
   reorderArena: (arenaId: string, newIndex: number) => void;
+  reorderAction: (arenaId: string, actionId: string, newIndex: number) => void;
   getActionsForArena: (arenaId: string) => Action[];
   getAssetForAction: (actionId: string) => Asset | undefined;
   getActionBackgroundStyle: (actionId: string) => React.CSSProperties;
@@ -2128,8 +2129,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             () => supabase.from('asset_slots').select('*').eq('user_id', userId),
             () => supabase.from('asset_levels').select('*').eq('user_id', userId),
             () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
-            () => supabase.from('cycles').select('*').eq('user_id', userId).not('end_date', 'is', null).order('end_date', { ascending: false }).limit(100),
-            () => supabase.from('cycles').select('*').eq('user_id', userId).is('end_date', null).limit(1)
+            () => supabase.from('cycles').select('*').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
+            () => supabase.from('cycles').select('*').eq('user_id', userId).is('report_data', null).limit(1)
         ]) as any[];
 
         const { data: foldersData, error: foldersError } = foldersResult;
@@ -2270,24 +2271,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
                 return;
             }
-            await loadDataFromSupabase();
+        await loadDataFromSupabase();
+        
+        // Use the actual cycle from state (it will be updated after loadDataFromSupabase finishes)
+        // Since loadDataFromSupabase calls setActiveCycle, we can't just read state here.
+        // Let's modify loadDataFromSupabase to return the found cycle or fetch it again.
+        
+        // Actually, we can fetch it directly here to be sure.
+        const { data: currentCycleData } = await supabase
+            .from('cycles')
+            .select('*')
+            .eq('user_id', userId)
+            .is('report_data', null)
+            .maybeSingle();
+
+        if (currentCycleData) {
+            const cycle = mapToCamelCase(currentCycleData) as Cycle;
+            setActiveCycle(cycle); // CRITICAL: Actually set the active cycle in state
             
-            // Recalculate Cycle XP Bonus from History
-            if (activeCycle) {
-                const { data: sitreps } = await supabase
-                    .from('sitrep_reports')
-                    .select('score')
-                    .gte('date', activeCycle.startDate)
-                    .lte('date', activeCycle.endDate);
-                
-                if (sitreps) {
-                    const totalBonus = sitreps.reduce((sum, r) => {
-                        const bonus = r.score >= 95 ? 120 : r.score >= 85 ? 60 : 0;
-                        return sum + bonus;
-                    }, 0);
-                    setCycleExpBonus(totalBonus);
-                }
+            const { data: sitreps } = await supabase
+                .from('sitrep_reports')
+                .select('score')
+                .gte('date', cycle.startDate)
+                .lte('date', cycle.endDate);
+            
+            if (sitreps) {
+                const totalBonus = sitreps.reduce((sum, r) => {
+                    const bonus = r.score >= 95 ? 120 : r.score >= 85 ? 60 : 0;
+                    return sum + bonus;
+                }, 0);
+                setCycleExpBonus(totalBonus);
             }
+        } else {
+            setActiveCycle(null); // Ensure state is cleared if no active cycle found
+        }
 
             hydrated = true;
         } finally {
@@ -2609,16 +2626,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       
       // Constantes de Balanceamento (Baseado em 28800s = 100%)
       const MAX_POINTS = 28800; 
-      // Ganho de 10% (2880s) por dia (86400s) -> ~0.0333s por segundo real
-      const MAX_DAILY_GROWTH = MAX_POINTS * 0.10;
+      // Ganho de 30% (8640s) por dia (86400s) -> mais rápido para incentivar
+      const MAX_DAILY_GROWTH = MAX_POINTS * 0.30;
       const GROWTH_RATE_PER_SECOND = MAX_DAILY_GROWTH / 86400; 
       
-      // Perda de 5% (1440s) por dia (86400s) -> ~0.0166s por segundo real
-      const DECAY_RATE_PER_SECOND = (MAX_POINTS * 0.05) / 86400;
+      // Perda de 25% (7200s) por dia (86400s) -> decaimento visível
+      const DECAY_RATE_PER_SECOND = (MAX_POINTS * 0.25) / 86400;
 
-      // Intervalo mínimo de atualização (1 hora)
-      // e manter as "barrinhas" estáveis como solicitado (2x ao dia) -> Agora a cada hora
-      const MIN_UPDATE_INTERVAL = 3600;
+      // Intervalo mínimo de atualização reduzido para 10s para ser muito fluido
+      const MIN_UPDATE_INTERVAL = 10;
 
       // OTIMIZAÇÃO: Buscar todos de uma vez para reduzir reads
       const { data: allStats, error: fetchError } = await supabase
@@ -2698,7 +2714,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     fetchClanQuestProgress(clan.id);
     const intervalId = window.setInterval(() => fetchClanQuestProgress(clan.id), 15000);
     
-    // Add periodic check for sanctuary decay (every hour)
+    // Add periodic check for sanctuary decay (every minute)
     // This ensures that even if the modal isn't open, the decay is applied if the user is online
     const sanctuaryInterval = window.setInterval(() => {
         // We need to fetch occupancy for applySanctuaryAreaDecay
@@ -2717,7 +2733,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
              const totalMembers = enrichedClanMembers.length || 1;
              applySanctuaryAreaDecay(clan.id, occupancy, totalMembers);
         });
-    }, 3600000); // 1 hour
+    }, 60000); // 1 minute (reduced from 1 hour for visible decay)
 
     return () => {
         window.clearInterval(intervalId);
@@ -2787,7 +2803,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   useEffect(() => {
     const activeArenas = assets.flatMap(asset => asset.arenas.filter(a => !a.isArchived));
-    const activeArenaIds = new Set(activeArenas.map(a => a.id));
+    
+    // Filter out arenas that are locked by any active campaign
+    const lockedArenaIds = new Set<string>();
+    campaigns.forEach(campaign => {
+        if (campaign.status === 'active' && campaign.arenaConfig) {
+            Object.entries(campaign.arenaConfig).forEach(([arenaId, config]) => {
+                if (config.isLocked) {
+                    lockedArenaIds.add(arenaId);
+                }
+            });
+        }
+    });
+
+    // If activeCycle has specific arenaIds, only include those
+    let activeArenaIds: Set<string>;
+    if (activeCycle?.arenaIds && activeCycle.arenaIds.length > 0) {
+        activeArenaIds = new Set(activeCycle.arenaIds.filter(id => !lockedArenaIds.has(id)));
+    } else {
+        activeArenaIds = new Set(activeArenas.map(a => a.id).filter(id => !lockedArenaIds.has(id)));
+    }
+
     const activeActions = actions.filter(a => activeArenaIds.has(a.arenaId));
 
     // Create a count map of scheduled tasks to avoid nested loops.
@@ -2802,12 +2838,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (isClanQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
         const scheduledCount = scheduledCounts[action.id] || 0;
         const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
-        const poolCount = Math.max(0, repetitions - scheduledCount);
+        
+        // MODIFICAÇÃO: Não reduzir o pool baseado nas tarefas já agendadas (scheduledCount).
+        // Isso garante que as ações continuem aparecendo no Planner mesmo se já estiverem no Sitrep,
+        // permitindo que o usuário veja o que planejou para o dia.
+        const poolCount = repetitions; 
+        
         return Array.from({ length: poolCount }, () => ({ actionId: action.id }));
     });
     
     setTaskPool(pool);
-  }, [actions, tasks, assets]); 
+  }, [actions, tasks, assets, activeCycle?.arenaIds, campaigns]); 
 
   useEffect(() => { document.body.setAttribute('data-skin', userProfile.skin); }, [userProfile.skin]);
 
@@ -2824,16 +2865,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [assets, userProfile.level, session?.user.id]);
 
   useEffect(() => {
+    if (!hasHydratedFromSupabase) return;
     const oldRankId = userProfile.nobility.rankId;
     const currentExp = userProfile.nobility.exp || 0;
     const newRank = nobilityRanks.slice().reverse().find(r => currentExp >= r.expTotalRequired);
     const newRankId = newRank ? newRank.id : oldRankId;
 
     if (oldRankId !== newRankId) {
-        if (newRank) setAchievementUnlocked({ type: 'PLAYER_RANK_UP', data: newRank });
+        const oldRankIndex = nobilityRanks.findIndex(r => r.id === oldRankId);
+        const newRankIndex = nobilityRanks.findIndex(r => r.id === newRankId);
+        
+        // MODIFICAÇÃO: Só dispara se subiu de fato e não é o carregamento inicial (oldRankIndex !== -1)
+        // E também não dispara se o novo rank for o inicial (Vagante) para evitar aviso no login para nível 1
+        if (newRankIndex > oldRankIndex && oldRankIndex !== -1 && newRankIndex > 0) {
+            if (newRank) setAchievementUnlocked({ type: 'PLAYER_RANK_UP', data: newRank });
+        }
         updateUserProfile({ nobility: { ...userProfile.nobility, rankId: newRankId } });
     }
-  }, [userProfile.nobility.exp, userProfile.nobility.rankId]);
+  }, [userProfile.nobility.exp, userProfile.nobility.rankId, hasHydratedFromSupabase]);
 
   const missingProfileColumnsRef = useRef<{ completedSeasonMissions: boolean }>({ completedSeasonMissions: false });
 
@@ -3099,7 +3148,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return true;
   };
 
-  const startCycle = (name: string, endDate: string) => {
+  const startCycle = (name: string, endDate: string, arenaIds?: string[]) => {
     const userId = getSupabaseUserId();
     if (!userId) return;
     const newCycle: Cycle = { 
@@ -3108,7 +3157,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         startDate: new Date().toISOString().split('T')[0], 
         endDate: endDate,
         userId: userId,
-        arenaIds: assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id))
+        arenaIds: arenaIds || assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id))
     };
     setCycleExpBonus(0);
     setActiveCycle(newCycle);
@@ -3362,8 +3411,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
   };
   
-  const startNewCycle = (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; endDate: string; }) => {
+  const startNewCycle = async (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; endDate: string; }) => {
     setCycleExpBonus(0);
+    
+    // Process arena changes
+    for (const change of arenaChanges) {
+        if (change.status === 'archive') {
+            updateArena(change.id, { isArchived: true });
+        } else if (change.status === 'delete') {
+            await deleteArena(change.id);
+        } else if (change.status === 'renew') {
+            updateArena(change.id, { isArchived: false });
+        }
+        
+        if (change.updatedData) {
+            updateArena(change.id, change.updatedData);
+        }
+    }
+
+    // Start the new cycle using the details provided
+    const newArenaIds = arenaChanges
+        .filter(c => c.status === 'renew' || (c.status !== 'archive' && c.status !== 'delete'))
+        .map(c => c.id);
+        
+    startCycle(cycleDetails.name, cycleDetails.endDate, newArenaIds.length > 0 ? newArenaIds : undefined);
   };
 
   const setCurrentSkin = (skinId: string) => updateUserProfile({ skin: skinId });
@@ -3657,7 +3728,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return newArena;
   };
   
-  const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived'>>) => {
+  const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => {
     setAssets(prevAssets => prevAssets.map(asset => ({
         ...asset,
         arenas: asset.arenas.map(arena => arena.id === arenaId ? { ...arena, ...arenaData } : arena)
@@ -3731,16 +3802,53 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       updateArena(arenaId, { folderId: folderId || null }); // Use null explicitly for DB update
   };
 
-  const reorderArena = (arenaId: string, newIndex: number) => {
+  const reorderArena = (arenaId: string, newIndexOrTargetId: number | string) => {
     setAssets(prevAssets => {
         return prevAssets.map(asset => {
             const currentArenas = asset.arenas;
             const arenaIndex = currentArenas.findIndex(a => a.id === arenaId);
             if (arenaIndex === -1) return asset;
 
+            let newIndex: number;
+            if (typeof newIndexOrTargetId === 'string') {
+                newIndex = currentArenas.findIndex(a => a.id === newIndexOrTargetId);
+                if (newIndex === -1) return asset;
+            } else {
+                newIndex = newIndexOrTargetId;
+            }
+
             const newArenas = [...currentArenas];
             const [movedArena] = newArenas.splice(arenaIndex, 1);
             newArenas.splice(newIndex, 0, movedArena);
+
+            return { ...asset, arenas: newArenas };
+        });
+    });
+  };
+
+  const reorderAction = (arenaId: string, actionId: string, newIndex: number) => {
+    setAssets(prevAssets => {
+        return prevAssets.map(asset => {
+            const arenaIndex = asset.arenas.findIndex(a => a.id === arenaId);
+            if (arenaIndex === -1) return asset;
+
+            const newArenas = [...asset.arenas];
+            const arena = { ...newArenas[arenaIndex] };
+            
+            // Get current actionIds and handle if null
+            const currentActionIds = [...(arena.actionIds || [])];
+            
+            // Remove from old position
+            const oldIndex = currentActionIds.indexOf(actionId);
+            if (oldIndex !== -1) {
+                currentActionIds.splice(oldIndex, 1);
+            }
+            
+            // Insert at new position
+            currentActionIds.splice(newIndex, 0, actionId);
+            
+            arena.actionIds = currentActionIds;
+            newArenas[arenaIndex] = arena;
 
             return { ...asset, arenas: newArenas };
         });
@@ -4654,12 +4762,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 // If we are completing a milestone, trigger achievement
                 if (updatedTask.completed) {
                     const action = getActionById(task.actionId);
-                    if (action?.actionType === 'Marco') {
-                        setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
-                        addFeedEvent({
-                            type: 'MILESTONE_COMPLETED',
-                            content: { title: action.name, icon: action.icon }
-                        });
+                    if (action) {
+                        showToast(`+${action.expAward || 10} EXP: ${action.name}`, 'success');
+                        if (action.actionType === 'Marco') {
+                            setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
+                            addFeedEvent({
+                                type: 'MILESTONE_COMPLETED',
+                                content: { title: action.name, icon: action.icon }
+                            });
+                        }
                     }
                 }
 
@@ -4961,7 +5072,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
       {children}
     </GameContext.Provider>
   );

@@ -3,7 +3,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { useGame } from '../contexts/GameContext';
 import { Report } from '../types';
 import { GlassCard } from './GlassCard';
-import { formatDate, daysBetween } from '../views/ReportsView';
+import { formatDate, daysBetween, parseDate } from '../utils/dateUtils';
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
 interface CycleComparatorProps {
@@ -12,8 +12,8 @@ interface CycleComparatorProps {
 }
 
 const calculateAnalysis = (report: Report, allTasks: any[], allActions: any[], allAssets: any[]) => {
-    const startDate = new Date(report.startDate);
-    const endDate = new Date(report.endDate);
+    const startDate = parseDate(report.startDate);
+    const endDate = parseDate(report.endDate);
     const durationDays = Math.max(1, daysBetween(startDate, endDate) + 1);
 
     const isClanQuestActionId = (actionId: string) => {
@@ -37,7 +37,7 @@ const calculateAnalysis = (report: Report, allTasks: any[], allActions: any[], a
     });
 
     const tasksInCycle = allTasks.filter(t => {
-        const taskDate = new Date(t.date);
+        const taskDate = parseDate(t.date);
         return taskDate >= startDate && taskDate <= endDate && !isClanQuestActionId(t.actionId);
     });
 

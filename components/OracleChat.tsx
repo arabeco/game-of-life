@@ -67,7 +67,7 @@ const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>,
 };
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences, oracleMessages } = useGame();
+  const { userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences, oracleMessages, addArena, addAction } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -155,12 +155,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     return config.systemPromptTemplate(contextData);
   }, [currentMode, userProfile, assets, actions, tasks, reports, activeCycle, oraclePreferences]);
 
-  const handleCommand = (cmd: string): string | null => {
+  const handleCommand = async (cmd: string): Promise<string | null> => {
     const lowerCmd = cmd.toLowerCase().trim();
     
     // Help Command
     if (lowerCmd === '?ajuda' || lowerCmd === '?help') {
-        return "🤖 **Comandos do Oráculo**\n\nUse **?** para saber o que é algo.\nUse **!** para ver seus dados.\n\nExemplos:\n• **?arenas** - O que são Arenas?\n• **!arenas** - Ver minhas Arenas\n\nExperimente também conversar naturalmente comigo!";
+        return "🤖 **Comandos do Oráculo**\n\nUse **?** para saber o que é algo.\nUse **!** para ver seus dados ou criar novos elementos.\n\nExemplos:\n• **?arenas** - O que são Arenas?\n• **!arenas** - Ver minhas Arenas\n• **!assets** - Ver Categorias (Assets)\n• **!criar-arena <nome> <id_categoria>** - Criar nova Arena\n• **!criar-acao <nome> <id_arena>** - Criar nova Ação\n\nExperimente também conversar naturalmente comigo!";
     }
 
     // Explanation Commands (?)
@@ -170,11 +170,74 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     // List Commands (!)
     if (lowerCmd === '!arenas') {
-        const arenaList = assets.flatMap(a => a.arenas.map(ar => ar.name));
+        const arenaList = assets.flatMap(a => a.arenas.map(ar => ({ name: ar.name, id: ar.id, asset: a.name })));
         if (arenaList.length === 0) {
             return "📜 **Suas Arenas**\n\nVocê ainda não possui Arenas ativas. Vá até o Inventário para criar sua primeira Arena.";
         }
-        return `📜 **Suas Arenas Ativas**\n\n${arenaList.map(name => `• ${name}`).join('\n')}`;
+        return `📜 **Suas Arenas Ativas**\n\n${arenaList.map(a => `• **${a.name}** (ID: \`${a.id.slice(0,8)}\`) - Categoria: ${a.asset}`).join('\n')}`;
+    }
+
+    if (lowerCmd === '!assets') {
+        if (assets.length === 0) return "Categorias não encontradas.";
+        return `📂 **Categorias Disponíveis (Assets)**\n\n${assets.map(a => `• **${a.name}** (ID: \`${a.id}\`)`).join('\n')}`;
+    }
+
+    // Creation Commands
+    if (lowerCmd.startsWith('!criar-arena')) {
+        const parts = cmd.split(' ');
+        if (parts.length < 3) return "❌ Formato inválido. Use: `!criar-arena <nome> <id_categoria>`\nEx: `!criar-arena Corrida saude`";
+        
+        const name = parts[1];
+        const assetId = parts[2].toLowerCase();
+        
+        // Find asset by ID or Name
+        const targetAsset = assets.find(a => a.id.toLowerCase() === assetId || a.name.toLowerCase() === assetId);
+        
+        if (!targetAsset) return `❌ Categoria \`${assetId}\` não encontrada. Use \`!assets\` para ver as disponíveis.`;
+        
+        try {
+            const newArena = await addArena(targetAsset.id, {
+                name,
+                description: "Criada via Oráculo",
+                icon: "Sparkles",
+            });
+            return `✅ **Arena Criada!**\n\nNome: ${newArena.name}\nCategoria: ${targetAsset.name}\nID: \`${newArena.id.slice(0,8)}\``;
+        } catch (e) {
+            return "❌ Erro ao criar arena. Verifique os logs.";
+        }
+    }
+
+    if (lowerCmd.startsWith('!criar-acao')) {
+        const parts = cmd.split(' ');
+        if (parts.length < 3) return "❌ Formato inválido. Use: `!criar-acao <nome> <id_arena>`\nEx: `!criar-acao Meditar <id_da_arena>`";
+        
+        const name = parts[1];
+        const arenaIdPart = parts[2].toLowerCase();
+        
+        // Find arena by ID (partial or full) or Name
+        const allArenas = assets.flatMap(a => a.arenas);
+        const targetArena = allArenas.find(a => 
+            a.id.toLowerCase().startsWith(arenaIdPart) || 
+            a.name.toLowerCase() === arenaIdPart
+        );
+        
+        if (!targetArena) return `❌ Arena \`${arenaIdPart}\` não encontrada. Use \`!arenas\` para ver as disponíveis.`;
+        
+        try {
+            const newAction = await addAction({
+                arenaId: targetArena.id,
+                name,
+                description: "Criada via Oráculo",
+                icon: "Activity",
+                duration: 30,
+                repetitions: 1,
+                actionType: 'Ação',
+                difficulty: 'Média'
+            });
+            return `✅ **Ação Criada!**\n\nNome: ${newAction.name}\nArena: ${targetArena.name}\nID: \`${newAction.id.slice(0,8)}\``;
+        } catch (e) {
+            return "❌ Erro ao criar ação. Verifique os logs.";
+        }
     }
 
     return null;
@@ -190,7 +253,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     // Check for commands
     if (input.startsWith('?') || input.startsWith('!')) {
-        const commandResponse = handleCommand(input);
+        const commandResponse = await handleCommand(input);
         if (commandResponse) {
              // Simulate small delay for natural feel
              setTimeout(() => {

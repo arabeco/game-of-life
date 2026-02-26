@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Arena, ActionType, ArenaFolder } from '../types';
-import { PlusIcon, EyeIcon, XIcon } from '../components/Icons';
+import { PlusIcon, EyeIcon, XIcon, LayersIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';
+import { MiniCycleHUD } from '../components/MiniCycleHUD';
 import { useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { IconPickerModal } from '../components/IconPickerModal';
 import { FolderDetailModal } from '../components/FolderDetailModal';
@@ -24,15 +25,21 @@ type PendingAction = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, campaigns, addCampaign } = useGame();
+    const { getArenas, assets, actions, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, campaigns, addCampaign, activeCycle } = useGame();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
+    const [viewMode, setViewMode] = useState<'free' | 'priorities' | 'assets'>('free');
     const fabRef = useRef<HTMLButtonElement>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
+    const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+    const toggleSection = (id: string) => {
+        setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     // Campaign Creation Mode
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -62,6 +69,34 @@ export const ArenasView: React.FC = () => {
     const selectedArena = allArenas.find(a => a.id === selectedArenaId);
     const selectedFolder = arenaFolders.find(f => f.id === selectedFolderId);
     const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+
+    // Priorities grouping
+    const priorities = {
+        alta: rootArenas.filter(a => a.priority === 'alta'),
+        media: rootArenas.filter(a => a.priority === 'media' || !a.priority),
+        baixa: rootArenas.filter(a => a.priority === 'baixa'),
+    };
+
+    // Assets grouping
+    const assetGroups = assets.map(asset => ({
+        ...asset,
+        arenas: rootArenas.filter(a => a.assetId === asset.id)
+    })).filter(group => group.arenas.length > 0);
+
+    const handlePriorityDrop = async (e: React.DragEvent, priority: 'alta' | 'media' | 'baixa') => {
+        e.preventDefault();
+        const draggedId = e.dataTransfer.getData('id');
+        const draggedType = e.dataTransfer.getData('type');
+        if (draggedType === 'arena') {
+            await updateArena(draggedId, { priority });
+        }
+    };
+
+    const handleCycleViewMode = () => {
+        const modes: ('free' | 'priorities' | 'assets')[] = ['free', 'priorities', 'assets'];
+        const nextIndex = (modes.indexOf(viewMode) + 1) % modes.length;
+        setViewMode(modes[nextIndex]);
+    };
 
     const toggleSelection = (arenaId: string) => {
         setSelectedForCampaign(prev => 
@@ -119,13 +154,19 @@ export const ArenasView: React.FC = () => {
              const targetArena = allArenas.find(a => a.id === targetId);
              if (!targetArena) return;
              
+             if (viewMode === 'free') {
+                 // Reordenar no modo livre
+                 await reorderArena(draggedId, targetId);
+                 return;
+             }
+
              // Se já está em uma pasta, move o arrastado para a mesma pasta
              if (targetArena.folderId) {
                  await moveArenaToFolder(draggedId, targetArena.folderId);
                  return;
              }
 
-             // Cria nova campanha automaticamente
+             // Cria nova campanha automaticamente se não estiver no modo livre
              addCampaign({
                 title: "Nova Campanha",
                 description: "",
@@ -392,11 +433,12 @@ export const ArenasView: React.FC = () => {
 
     return (
         <>
-            <div className="p-4 relative min-h-full">
-                 <div className="absolute top-0 right-4 flex items-center gap-2">
+            {activeCycle && <MiniCycleHUD cycle={activeCycle} />}
+            <div className="px-4 pb-4 pt-4 relative min-h-full">
+                <div className="flex items-center justify-end gap-2 mb-4 z-[60]">
                     <button 
                         onClick={handleCreateCampaignClick} 
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
                             isSelectionMode 
                                 ? selectedForCampaign.length > 0
                                     ? 'bg-[var(--skin-accent-color)] text-black'
@@ -409,9 +451,22 @@ export const ArenasView: React.FC = () => {
                             : 'Nova Campanha'
                         }
                     </button>
-                    <button onClick={() => setShowArchived(s => !s)} className={`p-2 rounded-full transition-colors ${showArchived ? 'bg-white/20 text-white' : 'text-gray-500'}`}>
-                        <EyeIcon className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center bg-black/40 rounded-full px-1 border border-white/5">
+                        <button 
+                            onClick={handleCycleViewMode}
+                            className={`p-1.5 rounded-full transition-colors flex items-center gap-1.5 ${viewMode !== 'free' ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
+                            title={`Modo: ${viewMode === 'free' ? 'Livre' : viewMode === 'priorities' ? 'Prioridades' : 'Por Ativo'}`}
+                        >
+                            <LayersIcon className="w-4 h-4" />
+                            <span className="text-[9px] font-bold uppercase tracking-tighter w-12 text-center truncate">
+                                {viewMode === 'free' ? 'Livre' : viewMode === 'priorities' ? 'Prios' : 'Ativo'}
+                            </span>
+                        </button>
+                        <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+                        <button onClick={() => setShowArchived(s => !s)} className={`p-1.5 rounded-full transition-colors ${showArchived ? 'text-white' : 'text-gray-500'}`}>
+                            <EyeIcon className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
 
                 {isSelectionMode && (
@@ -420,89 +475,178 @@ export const ArenasView: React.FC = () => {
                     </div>
                 )}
 
-                <div id="arenas-container" className="grid grid-cols-3 gap-3 pt-8">
-                    {/* Render Campaigns */}
-                    {campaigns.map(campaign => (
-                         <div 
-                            key={campaign.id}
-                            onClick={() => setSelectedCampaignId(campaign.id)}
-                            className="relative aspect-[3/4] bg-purple-900/20 rounded-2xl border border-purple-500/30 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-colors group"
-                        >
-                             {/* Stack visual effect */}
-                            <div className="absolute top-1 right-1 w-full h-full bg-purple-900/10 rounded-2xl -z-10 transform translate-x-1 -translate-y-1 border border-purple-500/10" />
-                            <div className="absolute top-2 right-2 w-full h-full bg-purple-900/5 rounded-2xl -z-20 transform translate-x-2 -translate-y-2 border border-purple-500/5" />
+                <div id="arenas-container" className="space-y-8">
+                    {viewMode === 'free' && (
+                        <div className="grid grid-cols-4 gap-3">
+                            {/* Render Campaigns */}
+                            {campaigns.map(campaign => (
+                                <div 
+                                    key={campaign.id}
+                                    onClick={() => setSelectedCampaignId(campaign.id)}
+                                    className="relative aspect-[3/4] bg-purple-900/20 rounded-2xl border border-purple-500/30 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-colors group"
+                                >
+                                     {/* Stack visual effect */}
+                                    <div className="absolute top-1 right-1 w-full h-full bg-purple-900/10 rounded-2xl -z-10 transform translate-x-1 -translate-y-1 border border-purple-500/10" />
+                                    <div className="absolute top-2 right-2 w-full h-full bg-purple-900/5 rounded-2xl -z-20 transform translate-x-2 -translate-y-2 border border-purple-500/5" />
 
-                            <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-500/20 rounded text-[8px] font-bold text-purple-400 uppercase tracking-widest">
-                                CMP
-                            </div>
+                                    <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-500/20 rounded text-[8px] font-bold text-purple-400 uppercase tracking-widest">
+                                        CMP
+                                    </div>
 
-                            <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">🚩</span>
-                            <span className="text-sm font-bold text-gray-200 line-clamp-2 px-2 text-center">{campaign.title}</span>
-                            <span className="text-xs text-gray-500 mt-1">{campaign.arenaIds.length} arenas</span>
-                        </div>
-                    ))}
+                                    <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">🚩</span>
+                                    <span className="text-sm font-bold text-gray-200 line-clamp-2 px-2 text-center">{campaign.title}</span>
+                                    <span className="text-xs text-gray-500 mt-1">{campaign.arenaIds.length} arenas</span>
+                                </div>
+                            ))}
 
-                    {/* Render Folders */}
-                    {arenaFolders.map(folder => {
-                        const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id)); 
-                        const isDragOver = dragOverId === folder.id;
-                        
-                        return (
-                             <div 
-                                key={folder.id}
-                                onDragOver={(e) => handleDragOver(e, folder.id)}
-                                onDragLeave={handleDragLeave}
-                                onDrop={(e) => handleDrop(e, folder.id, 'folder')}
-
-                                onClick={() => setSelectedFolderId(folder.id)}
-                                className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
-                            >
-                                {/* Stack visual effect */}
-                                <div className="absolute top-1 right-1 w-full h-full bg-gray-700/50 rounded-2xl -z-10 transform translate-x-1 -translate-y-1" />
-                                <div className="absolute top-2 right-2 w-full h-full bg-gray-600/30 rounded-2xl -z-20 transform translate-x-2 -translate-y-2" />
+                            {/* Render Folders */}
+                            {arenaFolders.map(folder => {
+                                const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id)); 
+                                const isDragOver = dragOverId === folder.id;
                                 
-                                <div className="flex flex-col items-center p-2 text-center">
-                                    <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{folder.icon}</span>
-                                    <span className="text-sm font-bold text-gray-200 line-clamp-2">{folder.name}</span>
-                                    <span className="text-xs text-gray-500 mt-1">{arenasInFolder.length} arenas</span>
-                                </div>
-                            </div>
-                        );
-                    })}
+                                return (
+                                     <div 
+                                        key={folder.id}
+                                        onDragOver={(e) => handleDragOver(e, folder.id)}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={(e) => handleDrop(e, folder.id, 'folder')}
 
-                    {rootArenas.map((arena) => {
-                         const asset = getAssetById(arena.assetId);
-                         const arenaActions = getActionsForArena(arena.id);
-                         const isDragOver = dragOverId === arena.id;
-                         const isSelected = selectedForCampaign.includes(arena.id);
-
-                        return (
-                            <div
-                                key={arena.id}
-                                draggable={!isSelectionMode}
-                                onDragStart={(e) => !isSelectionMode && handleDragStart(e, arena.id, 'arena')}
-                                onDragOver={(e) => !isSelectionMode && handleDragOver(e, arena.id)}
-                                onDragLeave={handleDragLeave}
-                                onDrop={(e) => !isSelectionMode && handleDrop(e, arena.id, 'arena')}
-                                className={`transition-transform ${isDragOver ? 'scale-105 brightness-110 z-10' : ''} ${isSelected ? 'ring-2 ring-[var(--skin-accent-color)] rounded-2xl scale-95 opacity-80' : ''}`}
-                            >
-                                <div className="relative">
-                                    <ArenaCard 
-                                        arena={arena} 
-                                        assetName={asset?.name || ''}
-                                        actions={arenaActions}
-                                        onClick={() => isSelectionMode ? toggleSelection(arena.id) : setSelectedArenaId(arena.id)}
-                                        variant="overview"
-                                    />
-                                    {isSelectionMode && (
-                                        <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'bg-[var(--skin-accent-color)] border-[var(--skin-accent-color)]' : 'border-gray-400 bg-black/50'}`}>
-                                            {isSelected && <span className="text-black font-bold text-xs">✓</span>}
+                                        onClick={() => setSelectedFolderId(folder.id)}
+                                        className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
+                                    >
+                                        {/* Stack visual effect */}
+                                        <div className="absolute top-1 right-1 w-full h-full bg-gray-700/50 rounded-2xl -z-10 transform translate-x-1 -translate-y-1" />
+                                        <div className="absolute top-2 right-2 w-full h-full bg-gray-600/30 rounded-2xl -z-20 transform translate-x-2 -translate-y-2" />
+                                        
+                                        <div className="flex flex-col items-center p-2 text-center">
+                                            <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{folder.icon}</span>
+                                            <span className="text-sm font-bold text-gray-200 line-clamp-2">{folder.name}</span>
+                                            <span className="text-xs text-gray-500 mt-1">{arenasInFolder.length} arenas</span>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-                        )
-                    })}
+                                    </div>
+                                );
+                            })}
+
+                            {rootArenas.map((arena) => {
+                                 const asset = getAssetById(arena.assetId);
+                                 const arenaActions = getActionsForArena(arena.id);
+                                 const isDragOver = dragOverId === arena.id;
+                                 const isSelected = selectedForCampaign.includes(arena.id);
+
+                                return (
+                                    <div
+                                        key={arena.id}
+                                        draggable={!isSelectionMode}
+                                        onDragStart={(e) => !isSelectionMode && handleDragStart(e, arena.id, 'arena')}
+                                        onDragOver={(e) => !isSelectionMode && handleDragOver(e, arena.id)}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={(e) => !isSelectionMode && handleDrop(e, arena.id, 'arena')}
+                                        className={`transition-transform ${isDragOver ? 'scale-105 brightness-110 z-10' : ''} ${isSelected ? 'ring-2 ring-[var(--skin-accent-color)] rounded-2xl scale-95 opacity-80' : ''}`}
+                                    >
+                                        <div className="relative">
+                                            <ArenaCard 
+                                                arena={arena}
+                                                assetName={asset?.name || ''}
+                                                actions={arenaActions}
+                                                onClick={() => isSelectionMode ? toggleSelection(arena.id) : setSelectedArenaId(arena.id)}
+                                                variant="overview"
+                                            />
+                                            {isSelectionMode && (
+                                                <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'bg-[var(--skin-accent-color)] border-[var(--skin-accent-color)]' : 'border-gray-400 bg-black/50'}`}>
+                                                    {isSelected && <span className="text-black font-bold text-xs">✓</span>}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+
+                    {viewMode === 'priorities' && (
+                        <div className="space-y-6">
+                            {(['alta', 'media', 'baixa'] as const).map(p => {
+                                const isCollapsed = collapsedSections[`priority-${p}`];
+                                return (
+                                    <div 
+                                        key={p} 
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={(e) => handlePriorityDrop(e, p)}
+                                        className="space-y-2"
+                                    >
+                                        <div 
+                                            className="flex items-center gap-2 px-2 cursor-pointer group"
+                                            onClick={() => toggleSection(`priority-${p}`)}
+                                        >
+                                            <div className={`w-2 h-2 rounded-full ${p === 'alta' ? 'bg-red-500' : p === 'media' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">
+                                                {p === 'alta' ? 'Alta Prioridade' : p === 'media' ? 'Média Prioridade' : 'Baixa Prioridade'}
+                                            </span>
+                                            <div className="flex-1 h-[1px] bg-white/5" />
+                                            <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
+                                        </div>
+                                        {!isCollapsed && (
+                                            <div className="grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                {priorities[p].map(arena => (
+                                                    <div
+                                                        key={arena.id}
+                                                        draggable={!isSelectionMode}
+                                                        onDragStart={(e) => handleDragStart(e, arena.id, 'arena')}
+                                                        className="relative"
+                                                    >
+                                                        <ArenaCard 
+                                                            arena={arena} 
+                                                            assetName={getAssetById(arena.assetId)?.name}
+                                                            actions={getActionsForArena(arena.id)}
+                                                            onClick={() => setSelectedArenaId(arena.id)}
+                                                            variant="overview"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {viewMode === 'assets' && (
+                        <div className="space-y-6">
+                            {assetGroups.map(group => {
+                                const isCollapsed = collapsedSections[`asset-${group.id}`];
+                                return (
+                                    <div key={group.id} className="space-y-2">
+                                        <div 
+                                            className="flex items-center gap-2 px-2 cursor-pointer group"
+                                            onClick={() => toggleSection(`asset-${group.id}`)}
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">
+                                                {group.name}
+                                            </span>
+                                            <div className="flex-1 h-[1px] bg-white/5" />
+                                            <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
+                                        </div>
+                                        {!isCollapsed && (
+                                            <div className="grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                {group.arenas.map(arena => (
+                                                    <div key={arena.id} className="relative">
+                                                        <ArenaCard 
+                                                            arena={arena} 
+                                                            assetName={group.name}
+                                                            actions={getActionsForArena(arena.id)}
+                                                            onClick={() => setSelectedArenaId(arena.id)}
+                                                            variant="overview"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
                  <button 
                     ref={fabRef}

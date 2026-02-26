@@ -271,6 +271,33 @@ const AppWithTutorial: React.FC = () => {
     const { isTutorialActive, currentStep } = useTutorial();
     const historyReady = useRef(false);
 
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.altKey) {
+                switch (e.key) {
+                    case '1': setCurrentView('assets'); break;
+                    case '2': setCurrentView('arenas'); break;
+                    case '3': setCurrentView('planner'); break;
+                    case '4': setCurrentView('social'); break;
+                    case '5': setCurrentView('settings'); break;
+                    case 'r': 
+                    case 'R': setReportsVisible(prev => !prev); break;
+                    case 'p':
+                    case 'P': setProfileVisible(prev => !prev); break;
+                    case 's':
+                    case 'S': {
+                        const event = new CustomEvent('openSitrep');
+                        window.dispatchEvent(event);
+                        break;
+                    }
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     useEffect(() => {
         const handleNavigate = (e: CustomEvent<{ view: View }>) => {
             setCurrentView(e.detail.view);
@@ -483,12 +510,16 @@ const MainApp: React.FC = () => {
 
     // Online Only: Removed localStorage migration for tutorial completion
     
+    // Inicia o tutorial apenas uma vez por sessão se não estiver concluído
+    const [tutorialShownInSession, setTutorialShownInSession] = useState(false);
+    
     useEffect(() => {
         if (userProfile.id === 'placeholder_user') return;
-        if (!isTutorialCompleted && !isTutorialActive) {
+        if (!isTutorialCompleted && !isTutorialActive && !tutorialShownInSession) {
             startTutorial();
+            setTutorialShownInSession(true);
         }
-    }, [userProfile.id, isTutorialCompleted, isTutorialActive, startTutorial]);
+    }, [userProfile.id, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession]);
 
     useEffect(() => {
         // Não mostrar termos para contas privilegiadas

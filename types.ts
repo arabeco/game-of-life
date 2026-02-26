@@ -74,6 +74,7 @@ export interface Arena {
   isLocked?: boolean;
   isHidden?: boolean;
   isCleared?: boolean;
+  priority?: 'alta' | 'media' | 'baixa';
 
   // Codex Fields
   originCodexId?: string;

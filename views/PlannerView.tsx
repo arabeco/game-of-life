@@ -315,6 +315,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
     const [isChecklistVisible, setChecklistVisible] = useState(false);
     const [isSitrepVisible, setIsSitrepVisible] = useState(false);
+
+    useEffect(() => {
+        const handleOpenSitrep = () => {
+            setIsSitrepVisible(true);
+        };
+        window.addEventListener('openSitrep', handleOpenSitrep);
+        return () => window.removeEventListener('openSitrep', handleOpenSitrep);
+    }, []);
     const [showOracleInput, setShowOracleInput] = useState(false);
     const [oracleInput, setOracleInput] = useState('');
     const oracleInputRef = useRef<HTMLInputElement>(null);

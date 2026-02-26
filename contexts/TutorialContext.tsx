@@ -13,6 +13,7 @@ interface TutorialContextType {
     spotlightTarget: DOMRect | null;
     tooltipContent: TooltipContent | null;
     startTutorial: () => void;
+    restartTutorial: () => void;
     endTutorial: (completed?: boolean) => void;
     nextStep: () => void;
     goToStep: (step: number) => void;
@@ -30,6 +31,11 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
     const isTutorialCompleted = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
 
     const startTutorial = useCallback(() => {
+        setIsTutorialActive(true);
+        setCurrentStep(0);
+    }, []);
+
+    const restartTutorial = useCallback(() => {
         setIsTutorialActive(true);
         setCurrentStep(0);
     }, []);
@@ -64,6 +70,7 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             spotlightTarget: null,
             tooltipContent: null,
             startTutorial,
+            restartTutorial,
             endTutorial,
             nextStep,
             goToStep,

@@ -12,19 +12,13 @@ import { handleShare } from '../components/Share';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { NewCycleSetupView } from './NewCycleSetupView';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
-import { getScoreGrade } from '../utils/scoreUtils';
 import { supabase } from '../supabaseClient';
 import { ReportGenerationModal } from '../components/ReportGenerationModal';
 import { ChestOpeningModal } from '../components/ChestOpeningModal';
 import { Portal } from '../components/Portal';
 
 // --- Helper Functions ---
-export const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-const parseDate = (value: string) => {
-    const [year, month, day] = value.split('-').map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
-};
-export const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+import { parseDate, daysBetween, formatDate, getScoreGrade } from '../utils/dateUtils';
 const toRoman = (num: number) => {
     const map = [
         { value: 1000, symbol: 'M' },
@@ -60,6 +54,15 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const endDate = cycle.endDate;
     const today = new Date().toISOString().split('T')[0];
 
+    const isQuestActionId = (actionId: string) => {
+        const action = actions.find(a => a.id === actionId);
+        if (!action) return false;
+        const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
+        if (!arena?.name) return false;
+        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return normalized.includes('quests');
+    };
+
     const isClanQuestActionId = (actionId: string) => {
         const action = actions.find(a => a.id === actionId);
         if (!action) return false;
@@ -79,11 +82,12 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const timeProgress = Math.min(100, (daysElapsed / totalDays) * 100);
 
     // Filtrar tarefas apenas do usuário atual e dentro do período do ciclo
-    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && !isClanQuestActionId(t.actionId));
+    // Incluir Quests na contagem principal conforme solicitação do usuário
+    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate);
     const completedTasks = cycleTasks.filter(t => t.completed);
 
-    // Quest Tasks
-    const questTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && isClanQuestActionId(t.actionId));
+    // Quest Tasks (mantidas para exibição de bônus específica se necessário)
+    const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId) || isClanQuestActionId(t.actionId));
     const completedQuests = questTasks.filter(t => t.completed);
 
     // 1. Fidelity

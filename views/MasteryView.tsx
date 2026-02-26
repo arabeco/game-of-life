@@ -6,6 +6,7 @@ import { Asset } from '../types';
 import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { GlassCard } from '../components/GlassCard';
 import { Portal } from '../components/Portal';
+import { AssetDecagon } from '../components/AssetDecagon';
 
 type MasteryMode = 'LEGADO' | 'SOBERANO';
 
@@ -109,13 +110,24 @@ export const MasteryView: React.FC = () => {
 
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-center bg-black/20 rounded-full p-1">
-                <button onClick={() => setMode('LEGADO')} className={`w-1/2 py-2 text-sm font-bold rounded-full transition-colors ${mode === 'LEGADO' ? 'bg-white/10' : 'text-gray-500'}`}>LEGADO</button>
-                <button onClick={() => setMode('SOBERANO')} className={`w-1/2 py-2 text-sm font-bold rounded-full transition-colors ${mode === 'SOBERANO' ? 'bg-white/10' : 'text-gray-500'}`}>SOBERANO</button>
+        <div className="flex flex-col h-full space-y-4">
+            {/* Header Fixo com Decágono */}
+            <div className="sticky top-[-16px] z-30 bg-black pb-4 pt-4 -mx-4 px-4 border-b border-white/5">
+                <div className="flex items-center justify-center bg-white/5 rounded-full p-1 mb-6 max-w-[160px] mx-auto">
+                    <button onClick={() => setMode('LEGADO')} className={`w-1/2 py-1 text-[9px] font-bold rounded-full transition-colors ${mode === 'LEGADO' ? 'bg-white/10 text-white' : 'text-gray-500'}`}>LEGADO</button>
+                    <button onClick={() => setMode('SOBERANO')} className={`w-1/2 py-1 text-[9px] font-bold rounded-full transition-colors ${mode === 'SOBERANO' ? 'bg-white/10 text-white' : 'text-gray-500'}`}>SOBERANO</button>
+                </div>
+                
+                <div className="mx-auto max-w-[220px]">
+                    <AssetDecagon 
+                        assets={assets} 
+                        tempLevels={tempLevels} 
+                        size={150} 
+                    />
+                </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 pb-24 pt-6">
                 {assets.filter(a => a.id !== 'geral').map(asset => {
                     const currentLevel = tempLevels[asset.id] === 0 ? 1 : (tempLevels[asset.id] || 1);
                     const phrase = tempPhrases[asset.id]?.[currentLevel - 1]?.replace(`Nível ${currentLevel}: `, '') || '';
@@ -133,9 +145,11 @@ export const MasteryView: React.FC = () => {
                 })}
             </div>
 
-            <button onClick={() => setShowConfirmModal(true)} className="w-full py-3 rounded-xl luxe-skin-button transition-transform hover:scale-105">
-                SALVAR NÍVEIS
-            </button>
+            <div className="sticky bottom-[-16px] bg-black pt-4 pb-4 -mx-4 px-4 border-t border-white/5 z-30">
+                <button onClick={() => setShowConfirmModal(true)} className="w-full py-3 rounded-xl luxe-skin-button transition-transform hover:scale-105">
+                    SALVAR NÍVEIS
+                </button>
+            </div>
             
             {showConfirmModal && (
                 <Portal>

@@ -12,6 +12,7 @@ import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { Sovereign } from '../components/Avatar';
 import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
+import { AssetDecagon } from '../components/AssetDecagon';
 import { handleShare } from '../components/Share';
 import { Portal } from '../components/Portal';
 
@@ -302,10 +303,12 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [isClanModalOpen, setClanModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
+    const [activeWidgetTab, setActiveWidgetTab] = useState<'mural' | 'ativos'>('mural');
 
     const [viewedClan, setViewedClan] = useState<Clan | null>(null);
     const [viewedClanRank, setViewedClanRank] = useState<ClanRank | undefined>(undefined);
     const [viewedSlots, setViewedSlots] = useState<Slot[]>([]);
+    const [viewedLevels, setViewedLevels] = useState<Record<string, number>>({});
     const [fetchedProfile, setFetchedProfile] = useState<UserProfile | null>(null);
     
     useEffect(() => {
@@ -315,6 +318,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                 setViewedClan(data.clan);
                 setViewedClanRank(data.clanRank);
                 setViewedSlots(data.slots);
+                if (data.levels) setViewedLevels(data.levels);
             });
         }
     }, [isOwnProfile, profile?.id, getUserPublicData]);
@@ -559,43 +563,70 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     </div>
                                 ) : null}
 
-                                {isEditing && isOwnProfile ? (
-                                    <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-inner w-full">
-                                        <h3 className="text-sm font-bold text-gray-300 mb-3 text-left flex items-center gap-2">
-                                            <PlusIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                            Gerenciar Widgets
-                                        </h3>
-                                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-                                        {assets.flatMap(a => a.slots).map(slot => {
-                                            const isSelected = editableProfile.visibleWidgets?.includes(slot.id);
-                                            return (
-                                                <button
-                                                    key={slot.id}
-                                                    onClick={() => handleWidgetToggle(slot.id)}
-                                                    className={`p-2 rounded-xl text-left text-sm transition-all flex items-center justify-between ${isSelected ? 'bg-white/10 ring-1 ring-[var(--skin-accent-color)] text-white' : 'bg-black/20 text-gray-400 hover:bg-white/5'}`}
-                                                >
-                                                    <span className="truncate">{slot.label}</span>
-                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] shadow-[0_0_5px_var(--skin-accent-color)]" />}
-                                                </button>
-                                            );
-                                        })}
-                                        </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-center space-x-4 mb-2">
+                                        <button 
+                                            onClick={() => setActiveWidgetTab('mural')}
+                                            className={`text-[10px] font-bold uppercase tracking-widest transition-all ${activeWidgetTab === 'mural' ? 'text-white border-b-2 border-[var(--skin-accent-color)] pb-1' : 'text-gray-500 hover:text-gray-300'}`}
+                                        >
+                                            Mural
+                                        </button>
+                                        <button 
+                                            onClick={() => setActiveWidgetTab('ativos')}
+                                            className={`text-[10px] font-bold uppercase tracking-widest transition-all ${activeWidgetTab === 'ativos' ? 'text-white border-b-2 border-[var(--skin-accent-color)] pb-1' : 'text-gray-500 hover:text-gray-300'}`}
+                                        >
+                                            Ativos
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
-                                        {displayProfile.visibleWidgets.length > 0 ? (
-                                            <div className="grid grid-cols-6 gap-2">
-                                            {displayProfile.visibleWidgets.map(slotId => {
-                                                const slot = getSlotById(slotId);
-                                                if (!slot) return null;
-                                                return <ProfileSlotWidget key={slotId} slot={slot} />
-                                            })}
+
+                                    {activeWidgetTab === 'mural' ? (
+                                        isEditing && isOwnProfile ? (
+                                            <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-inner w-full">
+                                                <h3 className="text-sm font-bold text-gray-300 mb-3 text-left flex items-center gap-2">
+                                                    <PlusIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                                                    Gerenciar Widgets
+                                                </h3>
+                                                <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                                {assets.flatMap(a => a.slots).map(slot => {
+                                                    const isSelected = editableProfile.visibleWidgets?.includes(slot.id);
+                                                    return (
+                                                        <button
+                                                            key={slot.id}
+                                                            onClick={() => handleWidgetToggle(slot.id)}
+                                                            className={`p-2 rounded-xl text-left text-sm transition-all flex items-center justify-between ${isSelected ? 'bg-white/10 ring-1 ring-[var(--skin-accent-color)] text-white' : 'bg-black/20 text-gray-400 hover:bg-white/5'}`}
+                                                        >
+                                                            <span className="truncate">{slot.label}</span>
+                                                            {isSelected && <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] shadow-[0_0_5px_var(--skin-accent-color)]" />}
+                                                        </button>
+                                                    );
+                                                })}
+                                                </div>
                                             </div>
                                         ) : (
-                                            <p className="text-center text-sm text-gray-500 py-4">Nenhum widget visível.</p>
-                                        )}
-                                    </div>
-                                )}
+                                            <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
+                                                {displayProfile.visibleWidgets.length > 0 ? (
+                                                    <div className="grid grid-cols-6 gap-2">
+                                                    {displayProfile.visibleWidgets.map(slotId => {
+                                                        const slot = getSlotById(slotId);
+                                                        if (!slot) return null;
+                                                        return <ProfileSlotWidget key={slotId} slot={slot} />
+                                                    })}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-center text-sm text-gray-500 py-4">Nenhum widget visível.</p>
+                                                )}
+                                            </div>
+                                        )
+                                    ) : (
+                                        <div className="bg-black/30 backdrop-blur-sm p-1 rounded-2xl border border-white/5 w-full flex items-center justify-center">
+                                            <AssetDecagon 
+                                                assets={assets} 
+                                                tempLevels={!isOwnProfile ? viewedLevels : undefined}
+                                                size={280} 
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 

@@ -984,6 +984,11 @@ const GeralTab: React.FC = () => {
             </div>
 
             <div className="space-y-4">
+                {installPrompt && (
+                    <button onClick={promptInstall} className="w-full py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2">
+                        <span>📱</span> Instalar App na Tela Inicial
+                    </button>
+                )}
                 <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl">
                     <label className="text-sm font-semibold">Nickname</label>
                     <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="px-3 py-1 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors w-40 text-right"/>

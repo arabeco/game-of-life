@@ -5,3 +5,4 @@ BEGIN
         ALTER TABLE reports ADD COLUMN season_id TEXT;
     END IF;
 END $$;
+..................

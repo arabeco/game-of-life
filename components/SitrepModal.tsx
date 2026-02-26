@@ -275,7 +275,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const renderNoCycle = () => {
         const today = new Date().toISOString().split('T')[0];
-        const todaysTasks = tasks.filter(t => t.date === today && !isClanQuestActionId(t.actionId));
+        const todaysTasks = tasks.filter(t => t.date === today);
         const completedTasks = todaysTasks.filter(t => t.completed);
         
         const checklistCompleted = checklistItems.filter(i => i.completed).length;

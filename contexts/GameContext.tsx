@@ -337,6 +337,10 @@ export interface GameContextType {
   toggleEquipItem: (item: InventoryItem) => Promise<void>;
   updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
   
+  // PWA
+  installPrompt: any;
+  promptInstall: () => Promise<void>;
+
   // Campaigns
   campaigns: Campaign[];
   addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>) => Campaign;
@@ -2242,6 +2246,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 return;
             }
             await loadDataFromSupabase();
+            
+            // Recalculate Cycle XP Bonus from History
+            if (activeCycle) {
+                const { data: sitreps } = await supabase
+                    .from('sitrep_reports')
+                    .select('score')
+                    .gte('date', activeCycle.startDate)
+                    .lte('date', activeCycle.endDate);
+                
+                if (sitreps) {
+                    const totalBonus = sitreps.reduce((sum, r) => {
+                        const bonus = r.score >= 95 ? 120 : r.score >= 85 ? 60 : 0;
+                        return sum + bonus;
+                    }, 0);
+                    setCycleExpBonus(totalBonus);
+                }
+            }
+
             hydrated = true;
         } finally {
             if (hydrated) setHasHydratedFromSupabase(true);
@@ -2356,7 +2378,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
   
   const endDailyBattle = () => {
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date && !isQuestActionId(t.actionId));
+    // Modified to include ALL tasks in the battle calculation (including Clan Quests)
+    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date);
     const committedCounts = committedTasks.reduce((acc, task) => {
         acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
@@ -2364,7 +2387,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const completedCounts = tasks.reduce((acc, task) => {
         if (task.date !== dailyCommitment.date) return acc;
         if (!committedCounts[task.actionId]) return acc;
-        if (isQuestActionId(task.actionId)) return acc;
+        // Removed isQuestActionId filter to allow all types of tasks to count
         if (task.completed) acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
@@ -2403,7 +2426,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         score: score,
         completed_tasks: completedCount,
         total_tasks: totalCount,
-        task_ids: dailyCommitment.taskIds
+        task_ids: dailyCommitment.taskIds,
+        bonus_xp: sitrepBonus // Add explicit bonus_xp column if it exists or rely on recalculation
       };
 
       supabase.from('sitrep_reports').insert(sitrepReport).then(({ error }) => {
@@ -4532,7 +4556,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
 
     // If it's today, add to daily commitment
-    if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
+    if (date === dailyCommitment.date) {
         setDailyCommitmentState(prev => ({
             ...prev,
             taskIds: [...prev.taskIds, newTask.id]

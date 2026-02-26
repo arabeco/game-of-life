@@ -856,7 +856,7 @@ const NobrezaHierarchyView: React.FC = () => {
 };
 
 const GeralTab: React.FC = () => {
-    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets } = useGame();
+    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall } = useGame();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -984,10 +984,19 @@ const GeralTab: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-                {installPrompt && (
+                {installPrompt ? (
                     <button onClick={promptInstall} className="w-full py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2">
                         <span>📱</span> Instalar App na Tela Inicial
                     </button>
+                ) : (
+                    <div className="space-y-1">
+                        <button disabled className="w-full py-3 rounded-xl bg-white/5 text-gray-500 font-bold flex items-center justify-center gap-2 border border-white/5 cursor-not-allowed">
+                            <span>📱</span> App Instalado / Indisponível
+                        </button>
+                        <p className="text-[10px] text-center text-gray-600 px-4">
+                            Se não aparecer: No PC, clique no ícone de install na barra de endereço. No iOS, use Compartilhar {'>'} Adicionar à Tela de Início.
+                        </p>
+                    </div>
                 )}
                 <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl">
                     <label className="text-sm font-semibold">Nickname</label>

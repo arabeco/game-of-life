@@ -16,7 +16,7 @@ const parseDate = (value: string) => {
 const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
 const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, isClanQuestActionId: (actionId: string) => boolean) => {
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date && !isClanQuestActionId(t.actionId));
+    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date);
     const committedCounts = committedTasks.reduce((acc, task) => {
         acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
@@ -24,7 +24,6 @@ const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyComm
     const completedCounts = tasks.reduce((acc, task) => {
         if (task.date !== dailyCommitment.date) return acc;
         if (!committedCounts[task.actionId]) return acc;
-        if (isClanQuestActionId(task.actionId)) return acc;
         if (task.completed) acc[task.actionId] = (acc[task.actionId] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
@@ -109,9 +108,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const today = new Date().toISOString().split('T')[0];
         const newTask = await scheduleTask(actionId, today, 0); // Schedule for today with no specific time
         if (newTask) {
-            if (!isClanQuestActionId(actionId)) {
-                setDailyCommitment([...dailyCommitment.taskIds, newTask.id]);
-            }
+            setDailyCommitment([...dailyCommitment.taskIds, newTask.id]);
         }
     };
 
@@ -120,7 +117,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setDailyCommitment(dailyCommitment.taskIds.filter(id => id !== taskId));
     };
 
-    const groupedTaskPool = useMemo(() => taskPool.filter(item => !isClanQuestActionId(item.actionId)).reduce((acc, item) => {
+    const groupedTaskPool = useMemo(() => taskPool.reduce((acc, item) => {
         acc[item.actionId] = (acc[item.actionId] || 0) + 1;
         return acc;
     }, {} as Record<string, number>), [taskPool, actions, getArenas]);

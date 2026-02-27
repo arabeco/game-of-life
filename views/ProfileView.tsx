@@ -294,7 +294,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
-    const isOffice = appMode === 'OFFICE';
+    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
 
     const [isEditing, setIsEditing] = useState(false);
     const [editableProfile, setEditableProfile] = useState<UserProfile>(baseProfile);

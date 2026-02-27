@@ -276,9 +276,9 @@ const SocialTab: React.FC = () => {
 // --- Main View ---
 
 const MundoView: React.FC = () => {
-    const { appMode } = useGame();
+    const { appMode, clan } = useGame();
     const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>('social');
-    const isOffice = appMode === 'OFFICE';
+    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
 
     const tabs = useMemo(() => {
         const allTabs = [

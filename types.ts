@@ -330,6 +330,7 @@ export interface Clan {
     rankId: ClanRankId;
     level: number;
     experience: number;
+    exp: number;
     bannerUrl?: string;
     clanType: ClanType;
     created_at?: string;

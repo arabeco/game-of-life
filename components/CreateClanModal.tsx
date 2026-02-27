@@ -26,7 +26,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
             alert("O nome do clã não pode estar vazio.");
             return;
         }
-        await createClan({ name, icon, description, clan_type: clanType, recruitment_status: recruitmentStatus, backgroundUrl });
+        await createClan({ name, icon, description, clanType, recruitmentStatus, backgroundUrl });
         onClose();
     };
 

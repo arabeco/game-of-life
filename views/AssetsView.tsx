@@ -35,10 +35,12 @@ const SEPHIROT_COORDS = [
 ];
 
 export const AssetsView: React.FC = () => {
-  const { assets, userProfile, appMode } = useGame();
+  const { assets, userProfile, appMode, clan } = useGame();
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  
+  const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
 
   // Get user skin color or default to GOLD
   const skinColor = SKINS_DATA.find(s => s.id === userProfile.skin)?.color || '#d4af37';
@@ -113,8 +115,8 @@ export const AssetsView: React.FC = () => {
             <div className="absolute inset-0 bg-black" />
             <SephirotFog 
                 points={fogPoints} 
-                color={appMode === 'OFFICE' ? '#ffffff' : skinColor} 
-                mode={appMode === 'OFFICE' ? 'office' : 'sephirot'}
+                color={isOffice ? '#ffffff' : skinColor} 
+                mode={isOffice ? 'office' : 'sephirot'}
             />
         </div>
         

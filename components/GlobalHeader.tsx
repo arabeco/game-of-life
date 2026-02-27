@@ -7,10 +7,10 @@ import { OracleFeed } from './OracleFeed';
 import { SparklesIcon } from './Icons';
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
-    const { userProfile, oracleMessages, notifications, appMode } = useGame();
+    const { userProfile, oracleMessages, notifications, appMode, clan } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
-    const isOffice = appMode === 'OFFICE';
+    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
     
     const unreadNotificationsCount = notifications.filter(n => !n.read).length;
     const hasUnreadMessages = oracleMessages.some(m => !m.read);

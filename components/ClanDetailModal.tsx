@@ -37,10 +37,8 @@ const getClanBackgroundUrl = (rankIndex: number, clanType: string = 'Casual') =>
     const type = (clanType || 'Casual');
 
     if (type.toLowerCase() === 'office') {
-        // Dynamic Office Background: 1 background every 2 levels
-        const level = Math.max(1, rankIndex + 1); // Ensure minimum level 1
-        const bgNumber = Math.ceil(level / 2);
-        return `${baseUrl}office${bgNumber}.jpg`;
+        // Dynamic Office Background: ALWAYS use office1.jpg as requested
+        return `${baseUrl}office1.jpg`;
     }
 
     // Default / Casual behavior
@@ -312,7 +310,9 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode } = useGame();
+    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
+
     const { trigger } = useSensoryFeedback();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const enrichedClanMembersRef = useRef(enrichedClanMembers);
@@ -388,10 +388,17 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             // Ignore release errors
         }
 
-        // Clear timers
+        const duration = Date.now() - pressStartTime.current;
+        console.log(`[POINTER_UP] Duration: ${duration}ms, LongPressTriggered: ${isLongPressTriggered.current}`);
+
+        // If it was a quick tap (less than 300ms) and long press hasn't triggered yet, open modal
+        if (duration < 300 && !isLongPressTriggered.current) {
+            console.log('[POINTER_UP] Quick tap detected, opening modal');
+            handleSlotTap(e, slotId, isThroneDisabled);
+        }
+
         if (longPressTimer.current) clearTimeout(longPressTimer.current);
         if (visualTimer.current) clearTimeout(visualTimer.current);
-        
         setPressingSlot(null);
         setShowHoldVisual(false);
     };
@@ -414,19 +421,24 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     };
 
     // Click handler for Tap action (Open Modal)
-    const handleSlotTap = (e: React.MouseEvent, slotId: AldeiaSlotId, isThroneDisabled: boolean) => {
-        e.stopPropagation();
-        if (isThroneDisabled) return;
+    const handleSlotTap = (e: React.MouseEvent | React.PointerEvent, slotId: AldeiaSlotId, isThroneDisabled: boolean) => {
+        // e.stopPropagation(); // Let's try removing stopPropagation for a moment to see if it helps, but usually it's better to have it
+        console.log(`[HANDLE_SLOT_TAP] Interaction on: ${slotId}, isThroneDisabled: ${isThroneDisabled}, isLongPressTriggered: ${isLongPressTriggered.current}`);
+        
+        if (isThroneDisabled) {
+            console.log('[HANDLE_SLOT_TAP] Throne is disabled, skipping modal');
+            return;
+        }
 
         // If Long Press was triggered, DO NOT open modal
         if (isLongPressTriggered.current) {
-            console.log('[CLICK] Ignored because Long Press was triggered');
+            console.log('[HANDLE_SLOT_TAP] Ignored because Long Press was triggered');
             isLongPressTriggered.current = false; // Reset for next interaction
             return;
         }
 
         // Open Modal
-        console.log('[CLICK] Tap detected, opening modal for:', slotId);
+        console.log('[HANDLE_SLOT_TAP] Opening modal for:', slotId);
         setSelectedSlotForModal(slotId);
     };
 
@@ -436,27 +448,28 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const [myContributions, setMyContributions] = useState<Record<string, number>>({});
     const [isCreatingQuest, setIsCreatingQuest] = useState(false);
 
+    const fetchQuests = useCallback(async () => {
+        if (!clan?.id) return;
+        const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
+        if (data) setClanQuests(data as ClanCustomQuest[]);
+
+        // Also fetch participations
+        const { data: partData } = await supabase
+            .from('clan_mission_participants')
+            .select('mission_id, contribution_value')
+            .eq('clan_id', clan.id)
+            .eq('user_id', userProfile.id);
+        
+        if (partData) {
+            setMyParticipations(partData.map(p => p.mission_id));
+            const contribs: Record<string, number> = {};
+            partData.forEach(p => contribs[p.mission_id] = p.contribution_value || 0);
+            setMyContributions(contribs);
+        }
+    }, [clan?.id, userProfile.id]);
+
     useEffect(() => {
         if (!clan?.id) return;
-        
-        const fetchQuests = async () => {
-            const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
-            if (data) setClanQuests(data as ClanCustomQuest[]);
-
-            // Also fetch participations
-            const { data: partData } = await supabase
-                .from('clan_mission_participants')
-                .select('mission_id, contribution_value')
-                .eq('clan_id', clan.id)
-                .eq('user_id', userProfile.id);
-            
-            if (partData) {
-                setMyParticipations(partData.map(p => p.mission_id));
-                const contribs: Record<string, number> = {};
-                partData.forEach(p => contribs[p.mission_id] = p.contribution_value || 0);
-                setMyContributions(contribs);
-            }
-        };
         
         fetchQuests();
 
@@ -470,7 +483,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [clan?.id, userProfile.id]);
+    }, [clan?.id, fetchQuests]);
 
     const handleOptIn = async (quest: ClanCustomQuest) => {
         try {
@@ -506,18 +519,28 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             }
 
             // Create Planner Action with Link
-            await addAction({
+            const newAction = await addAction({
                 arenaId: 'geral',
-                name: `[CLÃ] ${quest.title}`,
-                description: quest.description || 'Missão de Clã',
-                icon: '⚔️',
+                name: `[${quest.priority === 'urgent' ? 'URGENTE' : (isOffice ? 'AÇÃO' : 'CLÃ')}] ${quest.title}`,
+                description: quest.description || (isOffice ? 'Ação de Clã' : 'Missão de Clã'),
+                icon: quest.category === 'work' ? '💼' : (quest.category === 'meeting' ? '📅' : '⚔️'),
                 duration: 30,
                 repetitions: 1,
                 actionType: 'Marco',
                 originCodexId: `clan_quest:${quest.id}`
             });
             
-            showToast("Missão aceita! Verifique seu Planner.");
+            // Auto-schedule if due date exists
+            if (quest.due_date) {
+                const date = new Date(quest.due_date);
+                const dateString = date.toISOString().split('T')[0];
+                const timeInMinutes = date.getHours() * 60 + date.getMinutes();
+                scheduleTask(newAction.id, dateString, timeInMinutes);
+                showToast(isOffice ? "Ação aceita e agendada no Planner!" : "Missão aceita e agendada no Planner!");
+            } else {
+                showToast(isOffice ? "Ação aceita! Verifique seu Planner." : "Missão aceita! Verifique seu Planner.");
+            }
+
             setMyParticipations(prev => [...prev, quest.id]);
             
             // Refresh quests to show locked status immediately
@@ -619,30 +642,27 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     }, [aldeiaSlots]);
 
     // Slots Configuration (Dynamic based on Type and Customization)
-    const isOffice = useMemo(() => {
-        // Robust check for clan type from various potential property names
-        const rawType = (clan as any)?.clan_type || clan?.clanType || (clan as any)?.type || '';
-        console.log('[ClanDetailModal] Raw Clan Type:', rawType);
-        return String(rawType).toLowerCase().trim() === 'office';
-    }, [clan]);
-
     const slotsConfig = useMemo(() => {
         const base = isOffice ? [
-            { id: 'fogueira', label: 'Mesa Central', emoji: '💼', x: 42, y: 51 },
-            { id: 'torre',    label: 'Mesa 01',      emoji: '🖥️', x: 23, y: 24 },
-            { id: 'altar',    label: 'Mesa 02',      emoji: '🖥️', x: 70, y: 40 },
-            { id: 'forja',    label: 'Mesa 03',      emoji: '🖥️', x: 75, y: 70 },
-            { id: 'horta',    label: 'Copa',         emoji: '☕', x: 25, y: 70 },
-            { id: 'trono',    label: 'CEO',          emoji: '👑', x: 49, y: 32 },
+            { id: 'fogueira', label: 'Mesa Central', emoji: '🏢', x: 42, y: 51 },
+            { id: 'torre',    label: 'Recepção',     emoji: '🛎️', x: 23, y: 24 },
+            { id: 'altar',    label: 'Café',          emoji: '☕', x: 70, y: 40 },
+            { id: 'forja',    label: 'Mesa 1',       emoji: '💻', x: 75, y: 70 },
+            { id: 'horta',    label: 'Mesa 2',       emoji: '💻', x: 25, y: 70 },
+            { id: 'trono',    label: 'Sala Diretor', emoji: '💼', x: 49, y: 32 },
         ] : ALDEIA_SLOTS;
         
-        if (!clan?.slotConfig) return base;
+        // No modo Office, ignoramos configurações customizadas do banco para garantir os nomes de escritório
+        if (isOffice) return base;
+        
+        const customConfig = clan?.slotConfig || clan?.slot_config;
+        if (!customConfig) return base;
         
         return base.map(s => {
-            const custom = clan.slotConfig?.[s.id];
+            const custom = customConfig[s.id];
             return custom ? { ...s, label: custom.label, emoji: custom.emoji } : s;
         });
-    }, [isOffice, clan?.slotConfig]);
+    }, [isOffice, clan?.slotConfig, clan?.slot_config]);
 
     // Update clan exp/order if needed (Optional: sync with DB if this calculation is authoritative)
     // Note: Ideally the backend calculates this, but for visual feedback we do it here.
@@ -872,40 +892,41 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                     </div> */}
 
                                     {/* Slots */}
-                                    {slotsConfig.map((slot, idx) => {
-                                        // Hide Throne if Order < 90%
-                                        // if (slot.id === 'trono' && aldeiaOrder < 90) return null;
+                                    <div className="absolute inset-0 pointer-events-none">
+                                        {slotsConfig.map((slot, idx) => {
+                                            // Hide Throne if Order < 90%
+                                            // if (slot.id === 'trono' && aldeiaOrder < 90) return null;
 
-                                        const slotData = aldeiaSlots.find(s => s.slotId === slot.id);
-                                        const health = slotData?.health ?? 100;
-                                        const occupants = aldeiaPresence.filter(p => p.slotId === slot.id);
-                                        
-                                        // Visual health (brightness/opacity)
-                                        // 80-100: 1, 50-79: 0.8, 20-49: 0.6, 0-19: 0.4, 0: 0.2
-                                        let opacity = 0.2;
-                                        if (health >= 80) opacity = 1;
-                                        else if (health >= 50) opacity = 0.8;
-                                        else if (health >= 20) opacity = 0.6;
-                                        else if (health > 0) opacity = 0.4;
+                                            const slotData = aldeiaSlots.find(s => s.slotId === slot.id);
+                                            const health = slotData?.health ?? 100;
+                                            const occupants = aldeiaPresence.filter(p => p.slotId === slot.id);
+                                            
+                                            // Visual health (brightness/opacity)
+                                            // 80-100: 1, 50-79: 0.8, 20-49: 0.6, 0-19: 0.4, 0: 0.2
+                                            let opacity = 0.2;
+                                            if (health >= 80) opacity = 1;
+                                            else if (health >= 50) opacity = 0.8;
+                                            else if (health >= 20) opacity = 0.6;
+                                            else if (health > 0) opacity = 0.4;
 
-                                        // Restored strict check for Order < 90
-                                        const isThroneDisabled = slot.id === 'trono' && aldeiaOrder < 90;
-                                        
-                                        if (slot.id === 'trono') {
-                                            console.log(`[RENDER_SLOT] Throne: Order=${aldeiaOrder}, Disabled=${isThroneDisabled}`);
-                                        }
+                                            // Restored strict check for Order < 90
+                                            const isThroneDisabled = slot.id === 'trono' && aldeiaOrder < 90;
+                                            
+                                            if (slot.id === 'trono') {
+                                                console.log(`[RENDER_SLOT] Throne: Order=${aldeiaOrder}, Disabled=${isThroneDisabled}`);
+                                            }
 
-                                        return (
-                                            <div
-                                                key={slot.id}
-                                                className={`absolute w-24 h-24 -ml-12 -mt-12 flex flex-col items-center justify-center cursor-pointer transition-transform ${pressingSlot === slot.id ? 'scale-95' : 'hover:scale-110'} ${slot.id === 'trono' ? 'z-40' : 'z-10'} ${isThroneDisabled ? 'cursor-not-allowed hover:scale-100' : ''}`}
-                                                style={{ left: `${slot.x}%`, top: `${slot.y}%`, touchAction: 'none' }}
-                                                onPointerDown={(e) => handlePointerDown(e, slot.id, isThroneDisabled)}
-                                                onPointerUp={(e) => handlePointerUp(e, slot.id as AldeiaSlotId, isThroneDisabled)}
-                                                onPointerLeave={handlePointerLeave}
-                                                onPointerCancel={handlePointerCancel}
-                                                onClick={(e) => handleSlotTap(e, slot.id as AldeiaSlotId, isThroneDisabled)}
-                                            >
+                                            return (
+                                                <div
+                                                    key={slot.id}
+                                                    className={`absolute w-24 h-24 -ml-12 -mt-12 flex flex-col items-center justify-center cursor-pointer transition-transform pointer-events-auto ${pressingSlot === slot.id ? 'scale-95' : 'hover:scale-110'} ${slot.id === 'trono' ? 'z-40' : 'z-10'} ${isThroneDisabled ? 'cursor-not-allowed hover:scale-100' : ''}`}
+                                                    style={{ left: `${slot.x}%`, top: `${slot.y}%`, touchAction: 'none' }}
+                                                    onPointerDown={(e) => handlePointerDown(e, slot.id, isThroneDisabled)}
+                                                    onPointerUp={(e) => handlePointerUp(e, slot.id as AldeiaSlotId, isThroneDisabled)}
+                                                    onPointerLeave={handlePointerLeave}
+                                                    onPointerCancel={handlePointerCancel}
+                                                    onClick={(e) => handleSlotTap(e, slot.id as AldeiaSlotId, isThroneDisabled)}
+                                                >
                                                 {/* Visual Feedback for Holding */}
                                                 {pressingSlot === slot.id && showHoldVisual && (
                                                     <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none scale-125">
@@ -1031,8 +1052,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                             <div 
                                                                 className="h-full transition-all duration-500"
                                                                 style={{ 
-                                                                    width: isOffice ? '0%' : `${health}%`, 
-                                                                    background: 'var(--metal-gold)', 
+                                                                    width: `${health}%`, 
+                                                                    background: isOffice ? 'var(--skin-accent-color)' : 'var(--metal-gold)', 
                                                                     opacity: 0.9 
                                                                 }}
                                                             />
@@ -1042,19 +1063,20 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                             </div>
                                         );
                                     })}
+                                    </div>
 
                                     {/* Aldeia Order Bar - Moved to Bottom */}
                                     <div className="absolute bottom-4 left-4 right-4 z-20">
                                         <div className="p-1">
                                             <div className="flex items-center justify-between mb-1 px-1">
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-white shadow-black drop-shadow-md">Ordem da Aldeia</span>
-                                                <span className="text-xs font-mono font-bold shadow-black drop-shadow-md text-[var(--metal-gold)]">{isOffice ? 0 : aldeiaOrder}%</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-white shadow-black drop-shadow-md">{isOffice ? 'Produtividade' : 'Ordem da Aldeia'}</span>
+                                                <span className="text-xs font-mono font-bold shadow-black drop-shadow-md text-[var(--metal-gold)]">{aldeiaOrder}%</span>
                                             </div>
                                             <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden backdrop-blur-sm">
                                                 <div 
                                                     className="h-full rounded-full transition-all duration-500" 
                                                     style={{ 
-                                                        width: isOffice ? '0%' : `${aldeiaOrder}%`, 
+                                                        width: `${aldeiaOrder}%`, 
                                                         background: 'var(--metal-gold)' 
                                                     }}
                                                 />
@@ -1173,8 +1195,24 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                 
                                                 <div className="flex justify-between items-start relative z-10">
                                                     <div className="space-y-1 max-w-[70%]">
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            {quest.priority === 'urgent' && <span className="text-[10px] font-bold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30 uppercase tracking-wider animate-pulse">URGENTE</span>}
+                                                            {quest.priority === 'high' && <span className="text-[10px] font-bold bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/30 uppercase tracking-wider">Alta</span>}
+                                                            {quest.category === 'work' && <span className="text-xs" title="Trabalho">💼</span>}
+                                                            {quest.category === 'meeting' && <span className="text-xs" title="Reunião">📅</span>}
+                                                            {quest.category === 'report' && <span className="text-xs" title="Relatório">📊</span>}
+                                                            {quest.category === 'development' && <span className="text-xs" title="Desenvolvimento">👨‍💻</span>}
+                                                        </div>
                                                         <h4 className="font-bold text-sm leading-tight">{quest.title}</h4>
                                                         <p className="text-xs text-gray-400 line-clamp-2">{quest.description}</p>
+                                                        {quest.due_date && (
+                                                            <div className="text-[10px] text-gray-400 flex items-center gap-1 mt-1">
+                                                                <span>🕒 Prazo:</span>
+                                                                <span className={new Date(quest.due_date) < new Date() ? 'text-red-400 font-bold' : 'text-gray-300'}>
+                                                                    {new Date(quest.due_date).toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="flex flex-col items-end gap-1">
                                                         <span className={`text-[10px] px-2 py-0.5 rounded border font-bold uppercase tracking-wider ${quest.mission_type === 'singular' ? 'border-purple-500/30 text-purple-300 bg-purple-500/10' : 'border-blue-500/30 text-blue-300 bg-blue-500/10'}`}>
@@ -1298,9 +1336,13 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                         setSelectedSlotForModal(null);
                     }}
                     userRole={userClanRole || 'member'}
-                    onUpdate={() => loadClanAndMembers(clan.id)}
+                    onUpdate={() => {
+                        loadClanAndMembers(clan.id);
+                        fetchQuests();
+                    }}
                     myParticipations={myParticipations}
                     onOptIn={handleOptIn}
+                    allSlots={slotsConfig}
                 />
             )}
             {selectedMember && (

@@ -15,7 +15,7 @@ export const ClanSearchResultCard: React.FC<ClanSearchResultCardProps> = ({ clan
 
     const isMemberOfThisClan = userClan?.id === clan.id;
     const isMemberOfAnyClan = !!userClan;
-    const isPrivate = clan.recruitment_status === 'Privado';
+    const isPrivate = clan.recruitmentStatus === 'Privado';
     const hasPendingRequest = clanJoinRequestsOutgoing.some(request => request.clanId === clan.id && request.status === 'pending');
 
     let buttonText = 'Entrar';

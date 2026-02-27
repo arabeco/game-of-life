@@ -173,6 +173,16 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const progress = commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 0;
         const todayStr = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase().replace('.', '');
 
+        // Office Mode Metrics
+        const workTasks = commitmentStats.tasksWithStatus.filter(({ task }) => {
+            const action = getActionById(task.actionId);
+            return action?.name?.includes('[CLÃ]') || action?.name?.includes('[URGENTE]');
+        });
+        
+        const workCompleted = workTasks.filter(t => t.isCompleted).length;
+        const workTotal = workTasks.length;
+        const productivityScore = workTotal > 0 ? (workCompleted / workTotal) * 100 : 0;
+
         return (
             <>
                 <div className="flex items-center justify-center text-[12px] uppercase tracking-[0.28em] text-gray-300 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
@@ -183,6 +193,19 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <div className="w-full bg-black/30 rounded-full h-1.5 mt-1"><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
                     <p className="text-xs text-gray-400 mt-1">Progresso: {progress.toFixed(0)}% • {commitmentStats.completedCount}/{commitmentStats.totalCount} ações</p>
                 </div>
+
+                {workTotal > 0 && (
+                    <div className="grid grid-cols-2 gap-2 my-2">
+                        <div className="bg-black/20 p-2 rounded-lg text-center border border-white/5">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Produtividade</p>
+                            <p className={`text-xl font-black ${productivityScore >= 80 ? 'text-green-400' : 'text-white'}`}>{productivityScore.toFixed(0)}%</p>
+                        </div>
+                        <div className="bg-black/20 p-2 rounded-lg text-center border border-white/5">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Entregas</p>
+                            <p className="text-xl font-black text-white">{workCompleted}/{workTotal}</p>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                      <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-1">🎯 ALVOS TRAVADOS:</h3>

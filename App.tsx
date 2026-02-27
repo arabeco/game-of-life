@@ -267,7 +267,7 @@ const AppWithTutorial: React.FC = () => {
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme } = useGame();
+    const { userProfile, appMode, activeTheme, clan } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
     const historyReady = useRef(false);
 
@@ -424,7 +424,7 @@ const AppWithTutorial: React.FC = () => {
         ? 'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
 
-    const isOffice = appMode === 'OFFICE';
+    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
     const themeClass = isOffice ? `mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
 
     useEffect(() => {

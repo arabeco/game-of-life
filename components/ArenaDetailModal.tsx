@@ -337,18 +337,26 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-300">{parentAsset.name}</p>
                             )}
                             {isClanQuestArena && (
-                                <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full text-[10px] accent-text mt-1 border border-white/10">
-                                    <UsersIcon className="w-3 h-3" />
-                                    <span className="font-mono font-bold">
-                                        {(() => {
-                                            const quest = seasonQuests.find(q => q.type === 'clan' && (
-                                                q.title === arena.name || 
-                                                q.actionTemplate.name === arena.name || 
-                                                allActions.some(a => a.name === q.actionTemplate.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
-                                            ));
-                                            return quest ? (clanQuestParticipants[quest.id] || 0) : 0;
-                                        })()}
-                                    </span>
+                                <div className="flex flex-col items-center gap-1 mt-1">
+                                    <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full text-[10px] accent-text border border-white/10">
+                                        <UsersIcon className="w-3 h-3" />
+                                        <span className="font-mono font-bold">
+                                            {(() => {
+                                                const quest = seasonQuests.find(q => q.type === 'clan' && (
+                                                    q.title === arena.name || 
+                                                    q.actionTemplate.name === arena.name || 
+                                                    allActions.some(a => a.name === q.actionTemplate.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
+                                                ));
+                                                return quest ? (clanQuestParticipants[quest.id] || 0) : 0;
+                                            })()}
+                                        </span>
+                                    </div>
+                                    {/* Office Mode Tags for Clan Quests */}
+                                    {allActions.some(a => a.name.includes('[URGENTE]')) && (
+                                        <span className="text-[9px] font-bold text-red-400 bg-red-900/20 px-1.5 rounded border border-red-500/30 uppercase tracking-widest animate-pulse">
+                                            URGENTE
+                                        </span>
+                                    )}
                                 </div>
                             )}
                         </div>

@@ -1,4 +1,4 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import fs from 'fs'; // Importa o leitor de arquivos
 
@@ -7,12 +7,13 @@ async function main() {
   const rawData = fs.readFileSync('./save_game.json', 'utf-8');
   const saveGame = JSON.parse(rawData);
 
-  const google = createGoogleGenerativeAI({
-    apiKey: "AIzaSyAryjNyDFBRrwfvsHdQWvUTCRm1-yx83zo"
+  const openrouter = createOpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: "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"
   });
 
   const result = streamText({
-    model: google('models/gemini-3-flash-preview'),
+    model: openrouter('google/gemini-2.0-flash-001'),
     
     // 2. PASSAR O SAVE PARA O SISTEMA
     system: `Você é o Mentor Supremo do sistema GLYPH. 

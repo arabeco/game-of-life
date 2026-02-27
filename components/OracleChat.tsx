@@ -1,17 +1,18 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 import { OracleContext, OracleMode } from '../types';
 import { Portal } from './Portal';
 
-// API Key from gateway.ts (hardcoded for now as per instructions)
-const API_KEY = "AIzaSyAryjNyDFBRrwfvsHdQWvUTCRm1-yx83zo";
+// API Key from OpenRouter
+const API_KEY = "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";
 
-const google = createGoogleGenerativeAI({
-  apiKey: API_KEY
+const openrouter = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: API_KEY,
 });
 
 interface Message {
@@ -266,7 +267,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     try {
       const result = await streamText({
-        model: google('models/gemini-3-flash-preview'),
+        model: openrouter('google/gemini-2.0-flash-001'),
         system: systemPrompt,
         messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
       });

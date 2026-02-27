@@ -1,17 +1,18 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 
 async function main() {
   console.log("--- Iniciando com o ID Exato da Lista ---");
 
-  const google = createGoogleGenerativeAI({
-    apiKey: "AIzaSyAryjNyDFBRrwfvsHdQWvUTCRm1-yx83zo" 
+  const openrouter = createOpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: "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" 
   });
 
   try {
     const result = streamText({
       // Usando o ID exato que apareceu na sua lista (o mais estável)
-      model: google('models/gemini-flash-latest'), 
+      model: openrouter('google/gemini-2.0-flash-001'), 
       prompt: 'Se você está lendo isso, o código finalmente funcionou! Comemore com uma frase épica.',
     });
 

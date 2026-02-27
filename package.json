@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.29",
+    "@ai-sdk/openai": "^3.0.36",
     "@supabase/supabase-js": "^2.45.0",
     "ai": "^6.0.86",
     "dotenv": "^17.3.1",

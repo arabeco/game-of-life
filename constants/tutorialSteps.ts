@@ -7,7 +7,7 @@ export interface TutorialStep {
     targetId?: string; // ID do elemento para highlight
 }
 
-export const TUTORIAL_STEPS: TutorialStep[] = [
+export const TUTORIAL_STEPS_GAME: TutorialStep[] = [
     {
         title: "BEM-VINDO, SOBERANO",
         text: "Eu sou o Oráculo. Vou guiá-lo pelo Life OS.\n\nEste sistema foi projetado para transformar sua vida em um jogo de estratégia. Siga minhas instruções.",
@@ -45,3 +45,45 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         targetId: 'settings-container'
     }
 ];
+
+export const TUTORIAL_STEPS_OFFICE: TutorialStep[] = [
+    {
+        title: "BEM-VINDO AO OFFICE",
+        text: "Este é o seu centro de comando profissional. O Life OS foi adaptado para focar em produtividade e gestão de projetos corporativos.",
+        view: 'assets',
+        targetId: 'header-oracle' 
+    },
+    {
+        title: "DEPARTAMENTOS E KPIs",
+        text: "As esferas agora representam Departamentos. Acompanhe indicadores de performance e evolução de competências profissionais.",
+        view: 'assets',
+        targetId: 'assets-grid'
+    },
+    {
+        title: "CENTRO DE PROJETOS",
+        text: "Aqui você organiza seus Projetos e Entregas.\n\nDefina cronogramas, prioridades e acompanhe o status de cada iniciativa estratégica da sua equipe.",
+        view: 'arenas',
+        targetId: 'arenas-container'
+    },
+    {
+        title: "AGENDA EXECUTIVA",
+        text: "Planeje seu dia com foco em entregas. Gerencie sua pauta, checklists de reuniões e gere relatórios de produtividade (SITREP).",
+        view: 'planner',
+        targetId: 'planner-container'
+    },
+    {
+        title: "REDE PROFISSIONAL",
+        text: "Colabore com sua equipe, gerencie membros do seu Clã (Squad) e acompanhe o progresso coletivo em missões compartilhadas.",
+        view: 'social',
+        targetId: 'social-container'
+    },
+    {
+        title: "PAINEL DE CONTROLE",
+        text: "Ajuste as preferências do sistema, gerencie acessos e personalize seu ambiente de trabalho digital.",
+        view: 'settings',
+        targetId: 'settings-container'
+    }
+];
+
+// Para compatibilidade, manter TUTORIAL_STEPS exportado
+export const TUTORIAL_STEPS = TUTORIAL_STEPS_GAME;

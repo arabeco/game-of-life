@@ -36,42 +36,42 @@ export const SEASONS: Record<string, SeasonConfig> = {
       {
         id: 'quest-wanderer',
         title: 'O Andarilho',
-        description: 'Caminhe 20km no total para fortalecer suas pernas e espírito.',
+        description: 'Caminhe 20km no total para fortalecer suas pernas e espírito. (Recompensa: 1 Baú Incomum)',
         type: 'individual',
         category: 'physical',
         actionTemplate: { name: 'Caminhada (1km)', description: 'Caminhar 1km em ritmo constante.', duration: 15, icon: '🥾', repetitions: 20 },
         requirements: { totalReps: 20 },
-        rewards: { xp: 1000, gold: 50 }
+        rewards: { xp: 2250, gold: 0 }
       },
       {
         id: 'quest-scholar',
         title: 'O Erudito',
-        description: 'Leia um livro inteiro ou dedique tempo consistente à leitura.',
+        description: 'Leia um livro inteiro ou dedique tempo consistente à leitura. (Recompensa: 1 Baú Ciclo)',
         type: 'individual',
         category: 'intellectual',
         actionTemplate: { name: 'Leitura Focada', description: 'Ler um livro com atenção plena.', duration: 30, icon: '📖', repetitions: 15, isMilestone: true },
         requirements: { milestone: true },
-        rewards: { xp: 800, gold: 30 }
+        rewards: { xp: 1800, gold: 0 }
       },
       {
         id: 'quest-warrior',
         title: 'O Guerreiro',
-        description: 'Complete 50 flexões (total acumulado) para fortalecer seu corpo.',
+        description: 'Complete 50 flexões (total acumulado) para fortalecer seu corpo. (Recompensa: 1 Baú Raro)',
         type: 'individual',
         category: 'physical',
         actionTemplate: { name: 'Flexões (x10)', description: 'Fazer 10 flexões com boa forma.', duration: 5, icon: '⚔️', repetitions: 5 },
         requirements: { totalReps: 5 },
-        rewards: { xp: 500, gold: 20 }
+        rewards: { xp: 1125, gold: 0 }
       },
       {
         id: 'quest-clan-unity',
         title: 'Unidade do Clã',
-        description: 'O Clã deve acumular 50 horas de atividades conjuntas.',
+        description: 'O Clã deve acumular 50 horas de atividades conjuntas. (Recompensa: 1 Baú Épico)',
         type: 'clan',
         category: 'social',
         actionTemplate: { name: 'Socializar (1h)', description: 'Uma hora de presença e vínculo.', duration: 60, icon: '🗣️', repetitions: 50 },
         requirements: { clanGoal: 50 },
-        rewards: { xp: 2000, gold: 100 },
+        rewards: { xp: 4500, gold: 0 },
         clanConfig: { collectiveGoal: 50 }
       }
     ]
@@ -200,15 +200,15 @@ export const GM_CONFIG = {
     { id: 'season_0', name: 'Season 0 - Aquário', start_date: '2024-01-01', end_date: '2026-02-18', background_png_url: 'https://i.imgur.com/6c2z3uH.jpeg', lore_text: 'Um tempo de purificação...', is_active: true }
   ] as Season[],
   seasonMissions: [
-    { id: 'sm_1', season_id: 'season_0', title: 'O Peregrino', description: 'Correr um total de 50km.', goal_type: 'km_run', goal_value: 50, reward_type: 'exp', reward_value: 1000 },
-    { id: 'sm_2', season_id: 'season_0', title: 'O Sábio', description: 'Ler 1 livro completo.', goal_type: 'books_read', goal_value: 1, reward_type: 'exp', reward_value: 500 },
-    { id: 'sm_3', season_id: 'season_0', title: 'O Monge', description: 'Meditar por 20 dias.', goal_type: 'meditation_days', goal_value: 20, reward_type: 'item_id', reward_value: 'head_over_items:crown' },
+    { id: 'sm_1', season_id: 'season_0', title: 'O Peregrino', description: 'Correr um total de 50km. (Recompensa: 1 Baú Incomum)', goal_type: 'km_run', goal_value: 50, reward_type: 'exp', reward_value: 2250 },
+    { id: 'sm_2', season_id: 'season_0', title: 'O Sábio', description: 'Ler 1 livro completo. (Recompensa: 1 Baú Ciclo)', goal_type: 'books_read', goal_value: 1, reward_type: 'exp', reward_value: 1125 },
+    { id: 'sm_3', season_id: 'season_0', title: 'O Monge', description: 'Meditar por 20 dias. (Recompensa: 1 Baú Raro)', goal_type: 'meditation_days', goal_value: 20, reward_type: 'exp', reward_value: 1800 },
   ] as SeasonMission[],
   seasonQuests: [
     {
       id: 'sq_1',
       title: 'O Andarilho',
-      description: 'Andar 20 km no total.',
+      description: 'Andar 20 km no total. (Recompensa: 1 Baú Incomum)',
       type: 'individual',
       category: 'physical',
       actionTemplate: {
@@ -219,12 +219,12 @@ export const GM_CONFIG = {
         repetitions: 20,
       },
       requirements: { totalReps: 20 },
-      rewards: { xp: 0, gold: 0 },
+      rewards: { xp: 2250, gold: 0 },
     },
     {
       id: 'sq_2',
       title: 'O Leitor',
-      description: 'Ler 1 livro inteiro.',
+      description: 'Ler 1 livro inteiro. (Recompensa: 1 Baú Ciclo)',
       type: 'individual',
       category: 'intellectual',
       actionTemplate: {
@@ -235,12 +235,12 @@ export const GM_CONFIG = {
         repetitions: 10,
       },
       requirements: { totalReps: 10 },
-      rewards: { xp: 500, gold: 0 },
+      rewards: { xp: 1800, gold: 0 },
     },
     {
       id: 'sq_3',
       title: 'O Forte',
-      description: 'Não perder um dia de academia.',
+      description: 'Não perder um dia de academia. (Recompensa: 1 Baú Raro)',
       type: 'individual',
       category: 'physical',
       actionTemplate: {
@@ -252,12 +252,12 @@ export const GM_CONFIG = {
         isMilestone: true,
       },
       requirements: { milestone: true },
-      rewards: { xp: 800, gold: 0 },
+      rewards: { xp: 1125, gold: 0 },
     },
     {
       id: 'sq_clan_1',
       title: 'Socializar 50 horas',
-      description: 'Somar 50 horas em equipe.',
+      description: 'Somar 50 horas em equipe. (Recompensa: 1 Baú Épico)',
       type: 'clan',
       category: 'social',
       actionTemplate: {
@@ -268,7 +268,7 @@ export const GM_CONFIG = {
         repetitions: 50,
       },
       requirements: { clanGoal: 50 },
-      rewards: { xp: 1500, gold: 0 },
+      rewards: { xp: 4500, gold: 0 },
       clanConfig: { collectiveGoal: 50 },
     },
   ] as SeasonQuest[],

@@ -17,12 +17,12 @@ const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 export const OracleTutorialOverlay: React.FC = () => {
-    const { isTutorialActive, currentStep, nextStep, endTutorial } = useTutorial();
+    const { isTutorialActive, currentStep, nextStep, endTutorial, tutorialSteps } = useTutorial();
     const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
     
-    const step = TUTORIAL_STEPS[currentStep];
+    const step = tutorialSteps[currentStep];
 
     // Typing Effect
     useEffect(() => {
@@ -98,7 +98,7 @@ export const OracleTutorialOverlay: React.FC = () => {
             setDisplayedText(step.text);
             setIsTyping(false);
         } else {
-            if (currentStep >= TUTORIAL_STEPS.length - 1) {
+            if (currentStep >= tutorialSteps.length - 1) {
                 endTutorial(true);
             } else {
                 nextStep();
@@ -164,7 +164,7 @@ export const OracleTutorialOverlay: React.FC = () => {
                                     onClick={handleNext}
                                     className="text-[var(--gold)] text-xs font-bold animate-bounce flex items-center gap-1 hover:text-white transition-colors"
                                 >
-                                    {currentStep === TUTORIAL_STEPS.length - 1 ? 'CONCLUIR' : 'PRÓXIMO'} ▼
+                                    {currentStep === tutorialSteps.length - 1 ? 'CONCLUIR' : 'PRÓXIMO'} ▼
                                 </button>
                             )}
                         </div>

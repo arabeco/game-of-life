@@ -6,49 +6,127 @@ import { ConfigSeasonQuest, ChestType, SeasonMission } from '../types';
 import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 import { QuestDetailModal, SeasonDetailModal } from '../components/SeasonDetailModal';
 
-const SeasonQuestCard: React.FC<{ quest: ConfigSeasonQuest; isAccepted: boolean; isClaimed: boolean; progress: number; participants?: number; onClick: () => void }> = ({ quest, isAccepted, isClaimed, progress, participants, onClick }) => {
+const SeasonQuestCard: React.FC<{ 
+    quest: ConfigSeasonQuest; 
+    isAccepted: boolean; 
+    isClaimed: boolean; 
+    progress: number; 
+    participants?: number; 
+    onClick: () => void;
+    onAbort?: () => void;
+}> = ({ quest, isAccepted, isClaimed, progress, participants, onClick, onAbort }) => {
     const isCompleted = progress >= 100;
     const isClan = quest.type === 'clan';
 
     return (
-        <GlassCard variant={isClan ? 'accent' : 'neutral'} className="p-3 relative overflow-hidden group transition-all duration-300 cursor-pointer hover:bg-white/5" onClick={onClick}>
-            <div className="flex items-center justify-between">
-                <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                        <span className="text-lg accent-text">{quest.actionTemplate.icon}</span>
-                        <h3 className="font-bold text-sm uppercase tracking-wide">{quest.title}</h3>
-                    </div>
-                    {isAccepted && (
-                        <div className="mt-1 flex items-center space-x-2">
-                            <div className="flex-grow bg-black/30 rounded-full h-1.5">
-                                <div className={`h-1.5 rounded-full transition-all duration-500 ${isClan ? 'bg-[var(--skin-accent-color)]' : 'bg-white'}`} style={{ width: `${Math.min(100, progress)}%` }}></div>
-                            </div>
-                            <span className="text-[10px] font-mono font-bold text-gray-400">{progress}%</span>
+        <GlassCard 
+            variant={isClan ? 'accent' : 'neutral'} 
+            className={`p-4 relative overflow-hidden group transition-all duration-500 cursor-pointer border-2 ${
+                isClan 
+                    ? 'border-[var(--skin-accent-color)]/30 hover:border-[var(--skin-accent-color)] shadow-[0_0_20px_rgba(var(--skin-accent-color-rgb),0.1)]' 
+                    : 'border-white/10 hover:border-white/30 shadow-xl'
+            } hover:translate-y-[-2px] active:scale-[0.98] rounded-2xl`} 
+            onClick={onClick}
+        >
+            {/* Background Decorative Element */}
+            <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-10 transition-opacity group-hover:opacity-20 ${isClan ? 'bg-[var(--skin-accent-color)]' : 'bg-white'}`} />
+            
+            <div className="flex items-start justify-between relative z-10">
+                <div className="flex-1 space-y-3">
+                    <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-inner ${
+                            isClan ? 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)]' : 'bg-white/10 text-white'
+                        }`}>
+                            {quest.actionTemplate.icon}
                         </div>
-                    )}
-                    {isClan && (
-                        <div className="mt-1 flex items-center space-x-1 text-[10px] text-gray-400">
-                            <UsersIcon className="w-3 h-3" />
-                            <span>{participants || 0} guerreiros ativos</span>
+                        <div>
+                            <h3 className="font-black text-sm uppercase tracking-wider luxe-title-shadow leading-tight">{quest.title}</h3>
+                            <div className="flex items-center space-x-2 mt-0.5">
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter ${
+                                    isClan ? 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)]' : 'bg-white/10 text-gray-400'
+                                }`}>
+                                    {isClan ? 'Missão de Clã' : 'Individual'}
+                                </span>
+                                {isClan && (
+                                    <div className="flex items-center space-x-1 text-[9px] text-gray-400 font-bold">
+                                        <UsersIcon className="w-3 h-3" />
+                                        <span>{participants || 0} Ativos</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {isAccepted && (
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                <span className={isClan ? 'text-[var(--skin-accent-color)]' : 'text-gray-400'}>Progresso</span>
+                                <span className="font-mono text-white">{progress}%</span>
+                            </div>
+                            <div className="relative w-full bg-black/40 rounded-full h-2 overflow-hidden border border-white/5 p-[1px]">
+                                <div 
+                                    className={`h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(255,255,255,0.2)] ${
+                                        isClan ? 'bg-gradient-to-r from-[var(--skin-accent-color)] to-white' : 'bg-gradient-to-r from-gray-400 to-white'
+                                    }`} 
+                                    style={{ width: `${Math.min(100, progress)}%` }}
+                                />
+                                {isCompleted && !isClaimed && (
+                                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
-                <div className="pl-2">
+
+                <div className="flex flex-col items-center justify-center h-full pt-1 space-y-2">
                     {isClaimed ? (
-                        <CheckIcon className="w-5 h-5 text-green-500" />
+                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/30">
+                            <CheckIcon className="w-5 h-5 text-green-400" />
+                        </div>
                     ) : isCompleted ? (
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-green-500 blur-md animate-ping opacity-30 rounded-full" />
+                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.5)] relative z-10">
+                                <CheckIcon className="w-5 h-5 text-white" />
+                            </div>
+                        </div>
                     ) : (
-                        <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                        <>
+                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                            </div>
+                            {isAccepted && onAbort && (
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAbort();
+                                    }}
+                                    className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 hover:bg-red-500/20 transition-colors group/abort"
+                                    title="Abandonar Missão"
+                                >
+                                    <XIcon className="w-4 h-4 text-red-400/50 group-hover/abort:text-red-400" />
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
+
+            {/* Completion Sparkle */}
+            {isCompleted && !isClaimed && (
+                <div className="absolute -left-1 -top-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping" />
+            )}
         </GlassCard>
     );
 };
 
 export const SeasonView: React.FC = () => {
-    const { userProfile, tasks, seasons, seasonQuests, acceptSeasonQuest, claimSeasonQuestReward, getArenas, getActionsForArena, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, userMissionParticipations, addCompletedMission, addProfileFlag, showToast, addChest } = useGame();
+    const { 
+        userProfile, tasks, seasons, seasonQuests, acceptSeasonQuest, abortSeasonQuest,
+        claimSeasonQuestReward, getArenas, getActionsForArena, getClanQuestProgress, 
+        clanQuestParticipants, fetchClanQuestParticipants, userMissionParticipations, 
+        addCompletedMission, addProfileFlag, showToast, addChest 
+    } = useGame();
     const [selectedQuest, setSelectedQuest] = useState<ConfigSeasonQuest | null>(null);
     const [isSeasonDetailOpen, setSeasonDetailOpen] = useState(false);
 
@@ -284,6 +362,7 @@ export const SeasonView: React.FC = () => {
                                         isClaimed={isClaimed}
                                         progress={progress}
                                         onClick={() => setSelectedQuest(quest)}
+                                        onAbort={() => abortSeasonQuest(quest.id)}
                                     />
                                 );
                             })}
@@ -311,6 +390,7 @@ export const SeasonView: React.FC = () => {
                                             progress={progress}
                                             participants={participantsCount}
                                             onClick={() => setSelectedQuest(quest)}
+                                            onAbort={() => abortSeasonQuest(quest.id)}
                                         />
                                     );
                                 })}

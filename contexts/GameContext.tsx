@@ -223,6 +223,7 @@ export interface GameContextType {
   userMissionParticipations: Record<string, boolean>;
   joinClanMission: (questId: string) => Promise<void>;
   updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
+  leaveClanMission: (questId: string) => Promise<void>;
   getUserPublicData: (userId: string) => Promise<{ profile: UserProfile | null, clan: Clan | null, clanRank: ClanRank | undefined, slots: Slot[] }>;
   levelUnlocks: LevelUnlocks;
   setAchievementUnlocked: (achievement: { type: FeedEventType; data: any; } | null) => void;
@@ -230,7 +231,9 @@ export interface GameContextType {
   grantUserUnlock: (category: UnlockCategory, itemId: string) => void;
   addCompletedMission: (mission: SeasonMission) => void;
   acceptSeasonQuest: (questId: string) => void;
+  abortSeasonQuest: (questId: string) => Promise<void>;
   claimSeasonQuestReward: (questId: string) => void;
+  claimSeasonMission: (missionId: string) => Promise<void>;
   addProfileFlag: (flag: string) => void;
   feed: FeedEvent[];
   addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
@@ -357,6 +360,7 @@ export interface GameContextType {
 
   // App Mode & Theme
   appMode: AppMode;
+  isProfileLoaded: boolean;
   setAppMode: (mode: AppMode) => void;
   activeTheme: ThemePreference;
   toggleTheme: () => void;
@@ -389,6 +393,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       id: userId || DEFAULT_USER_PROFILE.id,
     };
   });
+
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
 
   const isNewUser = useMemo(() => {
       return !userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
@@ -518,8 +524,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   // App Mode & Theme Implementation
-  const [appMode, setAppModeState] = useState<AppMode>('GAME');
-  const [activeTheme, setActiveTheme] = useState<ThemePreference>('DARK');
+  const [appMode, setAppModeState] = useState<AppMode>(() => {
+    const userId = session?.user.id;
+    if (userId) {
+        try {
+            const saved = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${userId}`);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return parsed.appMode || 'GAME';
+            }
+        } catch (e) {}
+    }
+    return 'GAME';
+  });
+  
+  const [activeTheme, setActiveTheme] = useState<ThemePreference>(() => {
+    const userId = session?.user.id;
+    if (userId) {
+        try {
+            const saved = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${userId}`);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return parsed.themePreference || 'DARK';
+            }
+        } catch (e) {}
+    }
+    return 'DARK';
+  });
 
   useEffect(() => {
     if (userProfile?.appMode) {
@@ -1395,6 +1426,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           target_value: targetValue,
           current_value: 0 // Começa com 0 se não existir
       }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se já existir, NÃO sobrescreve (mantém o progresso atual)
+  };
+
+  const leaveClanMission = async (questId: string) => {
+      if (!clan) return;
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      const { error } = await supabase
+          .from('clan_mission_participants')
+          .delete()
+          .eq('clan_id', clan.id)
+          .eq('mission_id', questId)
+          .eq('user_id', userId);
+
+      if (error) {
+          console.error("Error leaving clan mission:", error);
+      } else {
+          setUserMissionParticipations(prev => {
+              const next = { ...prev };
+              delete next[questId];
+              return next;
+          });
+          setClanQuestParticipants(prev => ({ ...prev, [questId]: Math.max(0, (prev[questId] || 0) - 1) }));
+      }
   };
 
   const updateClanMissionProgress = async (questId: string, increment: number) => {
@@ -2369,6 +2424,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             hydrated = true;
         } finally {
             if (hydrated) setHasHydratedFromSupabase(true);
+            setIsProfileLoaded(true);
             suspendPersistenceRef.current = false;
         if (hydrated && pendingProfilePatchRef.current) {
             const patch = pendingProfilePatchRef.current;
@@ -2944,8 +3000,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
   }, [userProfile.nobility.exp, userProfile.nobility.rankId, hasHydratedFromSupabase]);
 
-  const missingProfileColumnsRef = useRef<{ completedSeasonMissions: boolean }>({ completedSeasonMissions: false });
-
   const updateUserProfile = (profileData: Partial<UserProfile>) => {
     if (profileData.avatarUrl) {
         console.log("Updating profile avatarUrl:", profileData.avatarUrl);
@@ -2994,7 +3048,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const entries = Object.entries(profileData).filter(([key, value]) => {
             if (!allowedKeys.includes(key as keyof UserProfile)) return false;
             if (value === undefined) return false;
-            if (missingProfileColumnsRef.current.completedSeasonMissions && key === 'completedSeasonMissions') return false;
             return true;
         });
         if (entries.length > 0) {
@@ -3007,17 +3060,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     delete profileUpdateInFlightRef.current[key];
                 }
                 if (!error) return;
-                const message = error.message || '';
-                if (message.includes('completed_season_missions')) {
-                    missingProfileColumnsRef.current.completedSeasonMissions = true;
-                    const { completed_season_missions, ...rest } = snakeCaseData as Record<string, any>;
-                    if (completed_season_missions !== undefined) {
-                        supabase.from('user_profiles').update(rest).eq('id', supabaseUserId).then(({ error: retryError }) => {
-                            if (retryError) console.error("Supabase profile update error:", retryError.message);
-                        });
-                        return;
-                    }
-                }
                 console.error("Supabase profile update error:", error.message);
             });
         }
@@ -4477,16 +4519,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     alert(`Missão "${quest.title}" aceita! Verifique a arena "${seasonArenaName}" no seu Planner.`);
   };
 
+  const abortSeasonQuest = async (questId: string) => {
+    const quest = seasonQuests.find(q => q.id === questId);
+    if (!quest) return;
 
+    // 1. If it's a clan quest, remove participation
+    if (quest.type === 'clan') {
+        await leaveClanMission(quest.id);
+    }
 
-  const claimSeasonQuestReward = (questId: string) => {
+    // 2. Find and delete associated action
+    const existingAction = actions.find(a => a.name === quest.actionTemplate.name);
+    if (existingAction) {
+        // Delete action locally
+        setActions(prev => prev.filter(a => a.id !== existingAction.id));
+        
+        // Delete action from Supabase
+        const { error } = await supabase
+            .from('actions')
+            .delete()
+            .eq('id', existingAction.id);
+            
+        if (error) {
+            console.error("Error deleting season quest action:", error);
+        }
+    }
+
+    showToast(`Missão "${quest.title}" abandonada.`);
+  };
+
+  const claimSeasonQuestReward = async (questId: string) => {
     const activeSeason = SEASONS[ACTIVE_SEASON_ID];
     if (!activeSeason) return;
     const quest = activeSeason.quests.find(q => q.id === questId);
     if (!quest) return;
 
     if (userProfile.completedSeasonMissions?.includes(questId)) {
-        alert("Recompensa já resgatada!");
+        showToast("Recompensa já resgatada!");
         return;
     }
 
@@ -4495,24 +4564,60 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const addedExp = quest.rewards.xp;
     const nextExp = currentExp + addedExp;
 
-    // Add Gold (if applicable)
-    const currentGold = userProfile.wallet.gold || 0;
-    const addedGold = quest.rewards.gold || 0;
-    const nextGold = currentGold + addedGold;
+    // Check for chest rewards in description
+    if (quest.description.includes("Baú Incomum")) await addChest('Incomum');
+    if (quest.description.includes("Baú Ciclo")) await addChest('Ciclo');
+    if (quest.description.includes("Baú Raro")) await addChest('Raro');
+    if (quest.description.includes("Baú Épico")) await addChest('Épico');
+    if (quest.description.includes("Baú Lendário")) await addChest('Lendário');
 
-    // Update Profile
+    // Update Profile (Removing gold)
     updateUserProfile({
         nobility: { ...userProfile.nobility, exp: nextExp },
-        wallet: { ...userProfile.wallet, gold: nextGold },
         completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), questId]
     });
 
     addFeedEvent({
-        type: 'MILESTONE_COMPLETED', // Reusing this for now
+        type: 'MILESTONE_COMPLETED',
         content: { title: `Quest Completada: ${quest.title}`, icon: '🏆', score: addedExp }
     });
 
-    alert(`Recompensa resgatada! +${addedExp} XP${addedGold > 0 ? ` e +${addedGold} Gold` : ''}`);
+    showToast(`Recompensa resgatada! +${addedExp} XP`);
+  };
+
+  const claimSeasonMission = async (missionId: string) => {
+    const mission = GM_CONFIG.seasonMissions.find(m => m.id === missionId);
+    if (!mission) return;
+
+    if (userProfile.completedSeasonMissions?.includes(missionId)) {
+        showToast("Recompensa já resgatada!");
+        return;
+    }
+
+    // Add XP
+    const currentExp = userProfile.nobility.exp;
+    const addedExp = mission.reward_value;
+    const nextExp = currentExp + addedExp;
+
+    // Check for chest rewards in description
+    if (mission.description.includes("Baú Incomum")) await addChest('Incomum');
+    if (mission.description.includes("Baú Ciclo")) await addChest('Ciclo');
+    if (mission.description.includes("Baú Raro")) await addChest('Raro');
+    if (mission.description.includes("Baú Épico")) await addChest('Épico');
+    if (mission.description.includes("Baú Lendário")) await addChest('Lendário');
+
+    // Update Profile
+    updateUserProfile({
+        nobility: { ...userProfile.nobility, exp: nextExp },
+        completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), missionId]
+    });
+
+    addFeedEvent({
+        type: 'MILESTONE_COMPLETED',
+        content: { title: `Missão de Temporada: ${mission.title}`, icon: '🌟', score: addedExp }
+    });
+
+    showToast(`Recompensa resgatada! +${addedExp} XP`);
   };
   
   const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
@@ -4767,6 +4872,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     } else if (!tutorialTask) {
       scheduleAndCompleteMilestoneNow(TUTORIAL_ACTION_ID);
     }
+    
+    // Ensure the flag is added to user profile for persistence
+    addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
   };
   const deleteTask = (taskId: string) => {
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
@@ -5275,9 +5383,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, 
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
+        abortSeasonQuest,
+        claimSeasonQuestReward,
+        claimSeasonMission,
+        addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, 
       directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-      addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, appMode, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
+      addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
       {children}
     </GameContext.Provider>
   );

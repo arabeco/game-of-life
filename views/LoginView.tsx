@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { PROFILE_FLAG_TERMS_PENDING, useGame } from '../contexts/GameContext';
 import { SupabaseService } from '../services/SupabaseService';
-import { GoldenInvite, UserProfile } from '../types';
+import { GoldenInvite, UserProfile, AppMode } from '../types';
 import { GM_CONFIG } from '../constants';
 import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GoogleIcon } from '../components/Icons';
 import { AchievementModal } from '../components/AchievementModal';
@@ -15,6 +15,7 @@ export const LoginView: React.FC = () => {
     const [password, setPassword] = useState('');
     const [nickname, setNickname] = useState('');
     const [inviteCode, setInviteCode] = useState('');
+    const [appMode, setAppMode] = useState<AppMode>('GAME');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
@@ -74,6 +75,7 @@ export const LoginView: React.FC = () => {
                     id: data.user.id,
                     email: data.user.email,
                     nickname: nickname || email.split('@')[0],
+                    appMode: appMode,
                     avatarUrl: `https://picsum.photos/seed/${data.user.id}/100/100`,
                     border: 'default',
                     level: 0,
@@ -104,7 +106,10 @@ export const LoginView: React.FC = () => {
                     nobility: { exp: 0, rankId: 'vagante' },
                     wallet: { gold: 0, fragments: 0 },
                     mood: 50,
-                    chests: [{ type: 'Comum', count: 1 }],
+                    chests: [
+                        { type: 'Incomum', count: 1 },
+                        { type: 'Ciclo', count: 1 }
+                    ],
                     inventory: [],
                     role: 'user',
                     isPremium: false
@@ -116,6 +121,7 @@ export const LoginView: React.FC = () => {
                         id: newProfile.id,
                         email: newProfile.email,
                         nickname: newProfile.nickname,
+                        app_mode: newProfile.appMode,
                         avatar_url: newProfile.avatarUrl,
                         border: newProfile.border,
                         level: newProfile.level,
@@ -166,6 +172,8 @@ export const LoginView: React.FC = () => {
                     const userProfileForState: UserProfile = {
                         id: profile.id,
                         email: profile.email,
+                        appMode: profile.app_mode,
+                        themePreference: profile.theme_preference,
                         sovereign: profile.sovereign,
                         avatarUrl: profile.avatar_url,
                         border: profile.border,
@@ -296,7 +304,7 @@ export const LoginView: React.FC = () => {
                             { type: 'Épico', count: 25 },
                             { type: 'Lendário', count: 10 }
                         ],
-                        wallet: { gold: 99999, fragments: 99999 },
+                        wallet: { gold: 0, fragments: 0 },
                         inventory: [],
                         role: 'admin',
                         isPremium: true
@@ -440,6 +448,37 @@ export const LoginView: React.FC = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                     />
+                    {isSigningUp && (
+                        <div className="flex flex-col space-y-2 text-left mb-4">
+                            <label className="text-xs font-bold uppercase tracking-wider text-[var(--skin-accent-color)] opacity-70 ml-1">Modo de Início</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setAppMode('GAME')}
+                                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${
+                                        appMode === 'GAME' 
+                                        ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] text-[var(--skin-accent-color)] shadow-[0_0_15px_rgba(var(--skin-accent-color-rgb),0.3)]' 
+                                        : 'bg-black/30 border-[var(--glass-border)] text-gray-500 hover:border-gray-400'
+                                    }`}
+                                >
+                                    <AssetIcon className="w-4 h-4" />
+                                    <span className="font-bold text-sm">GAME</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAppMode('OFFICE')}
+                                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${
+                                        appMode === 'OFFICE' 
+                                        ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                                        : 'bg-black/30 border-[var(--glass-border)] text-gray-500 hover:border-gray-400'
+                                    }`}
+                                >
+                                    <ConfigIcon className="w-4 h-4" />
+                                    <span className="font-bold text-sm">OFFICE</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     {isSigningUp && (
                         <input 
                             type="text" 

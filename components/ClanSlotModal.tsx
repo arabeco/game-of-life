@@ -41,7 +41,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     allSlots = []
 }) => {
     const { userProfile, showToast, appMode, clan } = useGame();
-    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
+    const isOffice = clan?.clanType?.toLowerCase() === 'office';
     const [view, setView] = useState<'details' | 'create-quest' | 'edit-slot' | 'move-quest'>('details');
     
     // Quest State
@@ -52,6 +52,25 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     const [questGold, setQuestGold] = useState(100);
     const [assignToOccupant, setAssignToOccupant] = useState(!!occupant);
     const [selectedQuestToMove, setSelectedQuestToMove] = useState<ClanCustomQuest | null>(null);
+    const [slotHealth, setSlotHealth] = useState(100);
+
+    useEffect(() => {
+        const fetchSlotHealth = async () => {
+            const { data } = await supabase.from('clan_aldeia_slots').select('health').eq('clan_id', clanId).eq('slot_id', slotId).single();
+            if (data) setSlotHealth(data.health);
+        };
+        fetchSlotHealth();
+    }, [clanId, slotId]);
+
+    const handleUpdateHealth = async (newHealth: number) => {
+        setSlotHealth(newHealth);
+        try {
+            await supabase.from('clan_aldeia_slots').update({ health: newHealth }).eq('clan_id', clanId).eq('slot_id', slotId);
+            if (onUpdate) onUpdate();
+        } catch (error) {
+            console.error(error);
+        }
+    };
     
     // New Office Mode Fields
     const [questPriority, setQuestPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
@@ -221,6 +240,30 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                 </div>
                             )}
                         </div>
+
+                        {/* Leader Editable Health Bar (Office Mode) */}
+                        {isOffice && userRole === 'leader' && slotId !== 'trono' && (
+                            <div className="space-y-3 bg-black/20 p-4 rounded-2xl border border-white/5">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Status da Mesa</h4>
+                                    <span className={`text-xs font-bold ${slotHealth >= 80 ? 'text-green-400' : slotHealth >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                        {slotHealth >= 80 ? 'Satisfeito' : slotHealth >= 40 ? 'Regular' : 'Crítico'}
+                                    </span>
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="100" 
+                                    value={slotHealth} 
+                                    onChange={(e) => handleUpdateHealth(parseInt(e.target.value))}
+                                    className="w-full h-1.5 bg-black/50 rounded-full appearance-none cursor-pointer accent-[var(--skin-accent-color)]"
+                                />
+                                <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+                                    <span>Ruim</span>
+                                    <span>Bom</span>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Active Quests on this Slot */}
                         {clanQuests.filter(q => q.slot_id === slotId && q.status !== 'completed').length > 0 && (

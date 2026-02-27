@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTutorial } from '../contexts/TutorialContext';
-import { TUTORIAL_STEPS } from '../constants/tutorialSteps';
 import { Portal } from './Portal';
 
 const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -17,12 +16,12 @@ const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 export const TutorialOverlay: React.FC = () => {
-    const { isTutorialActive, currentStep, nextStep, endTutorial } = useTutorial();
+    const { isTutorialActive, currentStep, nextStep, endTutorial, tutorialSteps } = useTutorial();
     const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
     
-    const step = TUTORIAL_STEPS[currentStep];
+    const step = tutorialSteps[currentStep];
 
     // View Switching
     useEffect(() => {
@@ -111,7 +110,7 @@ export const TutorialOverlay: React.FC = () => {
             setDisplayedText(step.text);
             setIsTyping(false);
         } else {
-            if (currentStep >= TUTORIAL_STEPS.length - 1) {
+            if (currentStep >= tutorialSteps.length - 1) {
                 endTutorial(true);
             } else {
                 nextStep();
@@ -177,7 +176,7 @@ export const TutorialOverlay: React.FC = () => {
                                     onClick={handleNext}
                                     className="text-[var(--gold)] text-xs font-bold animate-bounce flex items-center gap-1 hover:text-white transition-colors"
                                 >
-                                    {currentStep === TUTORIAL_STEPS.length - 1 ? 'CONCLUIR' : 'PRÓXIMO'} ▼
+                                    {currentStep === tutorialSteps.length - 1 ? 'CONCLUIR' : 'PRÓXIMO'} ▼
                                 </button>
                             )}
                         </div>

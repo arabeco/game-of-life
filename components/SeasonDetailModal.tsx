@@ -375,16 +375,30 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
     const { 
         claimSeasonMission, 
         claimSeasonQuest, 
+        acceptSeasonQuest,
+        abortSeasonQuest,
         userProfile, 
         seasonPassLevel,
         seasonPassXp,
         userMissions,
-        userQuests
+        userQuests,
+        getArenas,
+        getActionsForArena,
+        userMissionParticipations,
+        clanQuestParticipants,
+        fetchClanQuestParticipants
     } = useGame();
     
     const [selectedMission, setSelectedMission] = useState<SeasonMission | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
     const [viewMode, setViewMode] = useState<'missions' | 'quests'>('missions');
+
+    const seasonArenaName = `Quests - ${season.name}`;
+    const seasonArena = getArenas().find(a => a.name === seasonArenaName);
+    const seasonActions = seasonArena ? getActionsForArena(seasonArena.id) : [];
+
+    const clanArena = getArenas().find(a => a.name === 'Quests - Clã');
+    const clanActions = clanArena ? getActionsForArena(clanArena.id) : [];
 
     const getMissionProgress = (mission: SeasonMission) => {
         const userMission = userMissions.find(m => m.mission_id === mission.id);
@@ -540,12 +554,22 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
                     <QuestDetailModal 
                         quest={selectedQuest}
                         progress={getQuestProgress(selectedQuest)}
-                        isCompleted={isQuestCompleted(selectedQuest)}
+                        isActive={seasonActions.some(a => a.name === selectedQuest.actionTemplate.name) || clanActions.some(a => a.name === selectedQuest.actionTemplate.name)}
+                        participants={clanQuestParticipants[selectedQuest.id]}
                         onClose={() => setSelectedQuest(null)}
+                        onTake={() => {
+                            acceptSeasonQuest(selectedQuest.id);
+                            setSelectedQuest(null);
+                        }}
+                        onAbandon={() => {
+                            abortSeasonQuest(selectedQuest.id);
+                            setSelectedQuest(null);
+                        }}
                         onClaim={() => {
                             claimSeasonQuest(selectedQuest.id);
                             setSelectedQuest(null);
                         }}
+                        canClaim={canClaimQuest(selectedQuest)}
                     />
                 )}
             </div>

@@ -1,5 +1,6 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useGame, PROFILE_FLAG_TUTORIAL_COMPLETED } from './GameContext';
+import { TUTORIAL_STEPS_GAME, TUTORIAL_STEPS_OFFICE, TutorialStep } from '../constants/tutorialSteps';
 
 interface TooltipContent {
     title: string;
@@ -12,6 +13,7 @@ interface TutorialContextType {
     currentStep: number;
     spotlightTarget: DOMRect | null;
     tooltipContent: TooltipContent | null;
+    tutorialSteps: TutorialStep[];
     startTutorial: () => void;
     restartTutorial: () => void;
     endTutorial: (completed?: boolean) => void;
@@ -23,12 +25,17 @@ interface TutorialContextType {
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { userProfile, addProfileFlag } = useGame();
+    const { userProfile, completeTutorialMission, appMode } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     
     // Get tutorial completion status from user profile
     const isTutorialCompleted = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
+
+    // Select tutorial steps based on app mode
+    const tutorialSteps = useMemo(() => {
+        return appMode === 'OFFICE' ? TUTORIAL_STEPS_OFFICE : TUTORIAL_STEPS_GAME;
+    }, [appMode]);
 
     const startTutorial = useCallback(() => {
         setIsTutorialActive(true);
@@ -44,10 +51,10 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         setIsTutorialActive(false);
         setCurrentStep(0);
         if (completed) {
-            // Save tutorial completion to user profile instead of localStorage
-            addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
+            // Use the completeTutorialMission from GameContext which handles both task and flag
+            completeTutorialMission();
         }
-    }, [addProfileFlag]);
+    }, [completeTutorialMission]);
 
     const nextStep = useCallback(() => {
         setCurrentStep(prev => prev + 1);
@@ -69,6 +76,7 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             currentStep,
             spotlightTarget: null,
             tooltipContent: null,
+            tutorialSteps,
             startTutorial,
             restartTutorial,
             endTutorial,

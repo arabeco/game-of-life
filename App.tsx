@@ -497,7 +497,7 @@ const AppWithTutorial: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
-    const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag, toast, hideToast } = useGame();
+    const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag, toast, hideToast, isProfileLoaded } = useGame();
     const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
@@ -529,12 +529,12 @@ const MainApp: React.FC = () => {
     const [tutorialShownInSession, setTutorialShownInSession] = useState(false);
     
     useEffect(() => {
-        if (userProfile.id === 'placeholder_user') return;
+        if (userProfile.id === 'placeholder_user' || !isProfileLoaded) return;
         if (!isTutorialCompleted && !isTutorialActive && !tutorialShownInSession) {
             startTutorial();
             setTutorialShownInSession(true);
         }
-    }, [userProfile.id, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession]);
+    }, [userProfile.id, isProfileLoaded, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession]);
 
     useEffect(() => {
         // Não mostrar termos para contas privilegiadas

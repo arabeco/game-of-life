@@ -66,7 +66,7 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
     const totalLevel = tempLevels 
         ? Object.entries(tempLevels)
             .filter(([id]) => id !== 'geral')
-            .reduce((sum, [, level]) => sum + (level as number), 0)
+            .reduce((sum: number, [, level]) => sum + (level as number), 0)
         : filteredAssets.reduce((sum, asset) => sum + asset.level, 0);
 
     const goldMetallic = "#705E43"; // Bronze/Ouro envelhecido escuro

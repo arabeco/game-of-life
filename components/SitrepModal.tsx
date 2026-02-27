@@ -66,7 +66,7 @@ const BattleTaskItem: React.FC<{ task: ScheduledTask, action: Action | undefined
 
     return (
         <div 
-            className={`relative p-2 flex items-center space-x-3 rounded-xl text-left overflow-hidden transition-all text-white ${isMilestone ? 'border-2 border-[var(--accent-bronze)] shadow-[0_0_10px_rgba(182,128,74,0.3)]' : ''}`}
+            className={`relative p-2 flex items-center space-x-3 rounded-xl text-left overflow-hidden transition-all text-white ${isMilestone ? 'border-2 border-[var(--accent-bronze)] shadow-[0_0_10px_var(--accent-bronze-soft)]' : ''}`}
             style={backgroundStyle}
         >
              <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${isCompleted ? 'opacity-100' : 'opacity-0'}`}></div>

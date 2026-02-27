@@ -4,6 +4,7 @@ import { GlassCard } from './GlassCard';
 import { XIcon, SparklesIcon, MessageIcon, TrashIcon, UsersIcon } from './Icons';
 import { OracleChat } from './OracleChat';
 import { ClanChat } from './ClanChat';
+import { DirectMessages } from './DirectMessages';
 import { Notification } from '../types';
 import { Portal } from './Portal';
 
@@ -11,14 +12,15 @@ interface OracleFeedProps {
     onClose: () => void;
 }
 
-type Tab = 'chat' | 'notifications' | 'clan';
+type Tab = 'chat' | 'notifications' | 'clan' | 'dms';
 
 export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
-    const { notifications, markNotificationRead, deleteNotification, oracleMessages, clan } = useGame();
+    const { notifications, markNotificationRead, deleteNotification, oracleMessages, clan, dmConversations } = useGame();
     const [activeTab, setActiveTab] = useState<Tab>('chat');
     
     // Calculate unread counts for badges
     const unreadNotifications = notifications.filter(n => !n.read).length;
+    const unreadDMs = dmConversations.reduce((acc, conv) => acc + conv.unreadCount, 0);
     // For chat, we might want to check if there's a new planted message or just use the general unread
     // But per instructions, the badge on the header is for notifications. 
     // Inside the modal, we can show a dot for unread chat messages too.
@@ -34,30 +36,43 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
             >
                 {/* Header / Tabs */}
                 <div className="flex-none flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 gap-4">
-                    <div className="flex-1 flex p-1 bg-white/5 rounded-xl overflow-hidden">
+                    <div className="flex-1 flex p-1 bg-white/5 rounded-xl overflow-hidden overflow-x-auto no-scrollbar">
                         <button 
                             onClick={() => setActiveTab('chat')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
+                            className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
                             <SparklesIcon className="w-4 h-4" />
-                            <span className="text-[10px] sm:text-xs font-bold tracking-wider">ORÁCULO</span>
+                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">ORÁCULO</span>
                             {unreadChat && activeTab !== 'chat' && <div className="w-2 h-2 rounded-full bg-amber-400 ml-1" />}
                         </button>
 
                         <button 
                             onClick={() => setActiveTab('clan')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all relative ${activeTab === 'clan' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
+                            className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'clan' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
                             <UsersIcon className="w-4 h-4" />
-                            <span className="text-[10px] sm:text-xs font-bold tracking-wider">CLÃ</span>
+                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">CLÃ</span>
+                        </button>
+
+                        <button 
+                            onClick={() => setActiveTab('dms')}
+                            className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'dms' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <MessageIcon className="w-4 h-4" />
+                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">MENSAGENS</span>
+                            {unreadDMs > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white shadow-lg border border-black/20 animate-in zoom-in-50 duration-300">
+                                  {unreadDMs}
+                                </span>
+                            )}
                         </button>
                         
                         <button 
                             onClick={() => setActiveTab('notifications')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all relative ${activeTab === 'notifications' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
+                            className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'notifications' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
                             <MessageIcon className="w-4 h-4" />
-                            <span className="text-[10px] sm:text-xs font-bold tracking-wider">NOTIFICAÇÕES</span>
+                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">AVISOS</span>
                             {unreadNotifications > 0 && (
                                 <span className="absolute top-1 right-1 flex h-2 w-2">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -85,6 +100,12 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
                     {activeTab === 'clan' && (
                         <div className="absolute inset-0 animate-in slide-in-from-right-4 duration-200 bg-black/20 p-2">
                              <ClanChat />
+                        </div>
+                    )}
+
+                    {activeTab === 'dms' && (
+                        <div className="absolute inset-0 animate-in slide-in-from-right-4 duration-200">
+                             <DirectMessages />
                         </div>
                     )}
                     

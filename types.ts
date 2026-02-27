@@ -634,6 +634,25 @@ export interface Notification {
     createdAt: string;
 }
 
+// --- Direct Messages ---
+
+export interface DirectMessage {
+    id: string;
+    senderId: string;
+    recipientId: string;
+    content: string;
+    read: boolean;
+    createdAt: string;
+    senderProfile?: UserProfile;
+}
+
+export interface DMConversation {
+    participantId: string;
+    profile: UserProfile;
+    lastMessage?: DirectMessage;
+    unreadCount: number;
+}
+
 // --- Aldeia System ---
 export type AldeiaSlotId = 'fogueira' | 'forja' | 'torre' | 'horta' | 'altar' | 'trono';
 

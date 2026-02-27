@@ -26,7 +26,7 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
         if (!r) return null;
         const lower = r.toLowerCase();
         if (lower === 'uncommon' || lower === 'incomum') return 'bg-white';
-        if (lower === 'rare' || lower === 'raro') return 'bg-[#CD7F32]';
+        if (lower === 'rare' || lower === 'raro') return 'bg-[var(--accent-bronze)]';
         if (lower === 'epic' || lower === 'épico' || lower === 'epico') return 'bg-[#C0C0C0]';
         if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return 'bg-[#F0C843]';
         return null;

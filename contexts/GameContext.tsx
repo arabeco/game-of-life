@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, DirectMessage, DMConversation } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef } from '../constants/items';
 import { supabase } from '../supabaseClient';
@@ -317,6 +317,13 @@ export interface GameContextType {
   markNotificationRead: (id: string) => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
   fetchNotifications: () => Promise<void>;
+  
+  // Direct Messages
+  directMessages: DirectMessage[];
+  dmConversations: DMConversation[];
+  sendDirectMessage: (recipientId: string, content: string) => Promise<void>;
+  markDMAsRead: (senderId: string) => Promise<void>;
+  fetchDMs: () => Promise<void>;
 
   // Aldeia
   getAldeiaSlots: (clanId: string) => Promise<AldeiaSlot[]>;
@@ -441,6 +448,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const [oraclePreferences, setOraclePreferences] = useState<OraclePreferences | null>(null);
   const [oracleMessages, setOracleMessages] = useState<OracleMessage[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
+  const [dmConversations, setDMConversations] = useState<DMConversation[]>([]);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
 
   // PWA Installation State
@@ -5076,6 +5085,160 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     setClanJoinRequestsIncoming(prev => prev.filter(r => r.id !== request.id));
   };
   
+  const fetchDMs = useCallback(async () => {
+    const userId = session?.user.id;
+    if (!userId) return;
+
+    const { data, error } = await supabase
+      .from('direct_messages')
+      .select(`
+        *,
+        sender_profile:user_profiles!direct_messages_sender_id_fkey(*)
+      `)
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching DMs:', error);
+      return;
+    }
+
+    const mapped = mapToCamelCase(data || []) as DirectMessage[];
+    setDirectMessages(mapped);
+
+    // Group into conversations
+    const convsMap = new Map<string, DMConversation>();
+    mapped.forEach(msg => {
+      const otherId = msg.senderId === userId ? msg.recipientId : msg.senderId;
+      if (!convsMap.has(otherId)) {
+        // Find profile for this conversation
+        let profile = msg.senderId === otherId ? msg.senderProfile : undefined;
+        // If profile not in message (sent by us), we might need to fetch it or find it in friends
+        if (!profile) {
+           const friend = friends.find(f => f.id === otherId);
+           if (friend) profile = friend;
+        }
+
+        if (profile) {
+          convsMap.set(otherId, {
+            participantId: otherId,
+            profile,
+            lastMessage: msg,
+            unreadCount: msg.recipientId === userId && !msg.read ? 1 : 0
+          });
+        }
+      } else if (msg.recipientId === userId && !msg.read) {
+        const conv = convsMap.get(otherId)!;
+        conv.unreadCount += 1;
+      }
+    });
+    setDMConversations(Array.from(convsMap.values()));
+  }, [session?.user.id, friends]);
+
+  const sendDirectMessage = async (recipientId: string, content: string) => {
+    const userId = session?.user.id;
+    if (!userId) return;
+
+    const newMessage = {
+      sender_id: userId,
+      recipient_id: recipientId,
+      content,
+      read: false,
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('direct_messages')
+      .insert(newMessage)
+      .select(`
+        *,
+        sender_profile:user_profiles!direct_messages_sender_id_fkey(*)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error sending DM:', error);
+      showToast('Erro ao enviar mensagem');
+      return;
+    }
+
+    const mapped = mapToCamelCase(data) as DirectMessage;
+    setDirectMessages(prev => [mapped, ...prev]);
+    
+    // Update conversation list locally
+    setDMConversations(prev => {
+      const index = prev.findIndex(c => c.participantId === recipientId);
+      if (index === -1) {
+        // New conversation, need to fetch profile if not in friends
+        const friend = friends.find(f => f.id === recipientId);
+        if (friend) {
+          return [{
+            participantId: recipientId,
+            profile: friend,
+            lastMessage: mapped,
+            unreadCount: 0
+          }, ...prev];
+        }
+        return prev;
+      }
+      const updated = [...prev];
+      const [conv] = updated.splice(index, 1);
+      updated.unshift({
+        ...conv,
+        lastMessage: mapped
+      });
+      return updated;
+    });
+  };
+
+  const markDMAsRead = async (senderId: string) => {
+    const userId = session?.user.id;
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('direct_messages')
+      .update({ read: true })
+      .eq('sender_id', senderId)
+      .eq('recipient_id', userId)
+      .eq('read', false);
+
+    if (error) {
+      console.error('Error marking DMs as read:', error);
+      return;
+    }
+
+    setDirectMessages(prev => prev.map(msg => 
+      msg.senderId === senderId && msg.recipientId === userId ? { ...msg, read: true } : msg
+    ));
+
+    setDMConversations(prev => prev.map(c => 
+      c.participantId === senderId ? { ...c, unreadCount: 0 } : c
+    ));
+  };
+
+  useEffect(() => {
+    if (session?.user.id) {
+      fetchDMs();
+      
+      // Subscribe to new DMs
+      const subscription = supabase
+        .channel('direct_messages_realtime')
+        .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'direct_messages',
+          filter: `recipient_id=eq.${session.user.id}`
+        }, (payload) => {
+          fetchDMs(); // Refetch all for simplicity and consistency
+        })
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [session?.user.id, fetchDMs]);
+
   // --- Season Functions ---
   const addSeason = async (seasonData: Omit<Season, 'id'>) => {
     const { data, error } = await supabase.from('seasons').insert(mapToSnakeCase(seasonData)).select().single();
@@ -5125,7 +5288,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, appMode, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, 
+      directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
+      addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, appMode, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
       {children}
     </GameContext.Provider>
   );

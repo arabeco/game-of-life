@@ -27,7 +27,7 @@ const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
     const getColors = (t: ChestType) => {
         switch (t) {
             case 'Incomum': return { base: '#FFFFFF', highlight: '#F0F0F0', glow: 'rgba(255, 255, 255, 0.6)' };
-            case 'Raro': return { base: '#CD7F32', highlight: '#F4A460', glow: 'rgba(205, 127, 50, 0.6)' };
+            case 'Raro': return { base: 'var(--accent-bronze)', highlight: '#F4A460', glow: 'var(--accent-bronze-soft)' };
             case 'Épico': return { base: '#C0C0C0', highlight: '#E0E0E0', glow: 'rgba(192, 192, 192, 0.6)' };
             case 'Lendário': return { base: '#F0C843', highlight: '#FFD700', glow: 'rgba(240, 200, 67, 0.6)' };
             default: return { base: '#4B5563', highlight: '#6B7280', glow: 'rgba(75, 85, 99, 0.6)' };

@@ -144,7 +144,7 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
         if (!r) return null;
         const lower = r.toLowerCase();
         if (lower === 'uncommon' || lower === 'incomum') return { bg: 'bg-white', color: '#FFFFFF' };
-        if (lower === 'rare' || lower === 'raro') return { bg: 'bg-[#CD7F32]', color: '#CD7F32' };
+        if (lower === 'rare' || lower === 'raro') return { bg: 'bg-[var(--accent-bronze)]', color: 'var(--accent-bronze)' };
         if (lower === 'epic' || lower === 'épico' || lower === 'epico') return { bg: 'bg-[#C0C0C0]', color: '#C0C0C0' };
         if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return { bg: 'bg-[#F0C843]', color: '#F0C843' };
         return null;

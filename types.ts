@@ -150,6 +150,9 @@ export interface ClanCustomQuest {
   reward_gold: number;
   created_at: string;
   assigned_user_id?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  category?: 'work' | 'meeting' | 'report' | 'development' | 'other';
+  due_date?: string;
 }
 
 export interface Nobility {

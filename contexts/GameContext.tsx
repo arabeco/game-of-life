@@ -3959,21 +3959,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                    
                    if (error) {
                        console.error("Error deleting clan mission participation:", error.message);
-                       // If RLS prevents delete, we might be stuck. But usually users can delete their own rows if policy allows.
-                       // Based on SQL analysis, there is NO explicit DELETE policy for clan_mission_participants in the main file!
-                       // Wait, looking at `clan_missions_optin.sql`, there is NO DELETE POLICY!
-                       // That explains why "deve ter q permitir no supabase".
-                       // We need to use an RPC or just fail gracefully? 
-                       // If I can't add policy, I can't fix it via code only... UNLESS there is a generic "service role" function I can call?
-                       // No, I am client side.
-                       // BUT, `fix_sanctuary_rls.sql` added delete policies. Maybe `clan_missions_optin.sql` was incomplete?
-                       // If the user is right and they can't delete, I must inform them to ask the dev (me) to fix the DB.
-                       // But I AM the dev.
-                       // Since I cannot run SQL, I will try to use `rpc` if available, or just acknowledge the issue.
-                       // However, wait! If I can't delete, maybe I can Update to "inactive"? No column for that.
-                       
-                       // LET'S ASSUME there might be a delete policy I missed or I can't see.
-                       // If it fails, we should at least update local state so the user isn't blocked LOCALLY.
+                       // If RLS prevents delete, it must be fixed in Supabase policies.
+                       // Using migrations/20260219_fix_clan_mission_rls_v2.sql should resolve this.
                    } else {
                        console.log("Successfully deleted clan mission participation");
                    }

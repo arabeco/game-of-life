@@ -439,6 +439,49 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                     </div>
                                 </div>
                             )}
+
+                            {isOffice && (
+                                <div className="space-y-3 pt-2 border-t border-white/5 mt-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Prioridade</label>
+                                            <select 
+                                                className="w-full p-2 bg-black/30 border border-white/10 rounded-lg text-xs text-white outline-none"
+                                                value={questPriority}
+                                                onChange={e => setQuestPriority(e.target.value as any)}
+                                            >
+                                                <option value="low">Baixa</option>
+                                                <option value="medium">Média</option>
+                                                <option value="high">Alta</option>
+                                                <option value="urgent">Urgente</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Categoria</label>
+                                            <select 
+                                                className="w-full p-2 bg-black/30 border border-white/10 rounded-lg text-xs text-white outline-none"
+                                                value={questCategory}
+                                                onChange={e => setQuestCategory(e.target.value)}
+                                            >
+                                                <option value="work">💼 Trabalho</option>
+                                                <option value="meeting">📅 Reunião</option>
+                                                <option value="report">📊 Relatório</option>
+                                                <option value="development">👨‍💻 Dev</option>
+                                                <option value="other">✨ Outro</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Prazo (Deadline)</label>
+                                        <input 
+                                            type="datetime-local" 
+                                            className="w-full p-2 bg-black/30 border border-white/10 rounded-lg text-xs text-white outline-none"
+                                            value={questDeadline}
+                                            onChange={e => setQuestDeadline(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex gap-2 pt-2">

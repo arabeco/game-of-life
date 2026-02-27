@@ -657,3 +657,6 @@ export interface AldeiaPresence {
     startedAt: string;
     hoursCounted: number;
 }
+
+export type AppMode = 'GAME' | 'OFFICE';
+export type ThemePreference = 'DARK' | 'LIGHT';

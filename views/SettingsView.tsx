@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
-import { GM_CONFIG } from '../constants';
+import { GM_CONFIG, SKINS_DATA } from '../constants';
 import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, Arena, Action, ScheduledTask } from '../types';
 import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon, SendIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
@@ -856,7 +856,7 @@ const NobrezaHierarchyView: React.FC = () => {
 };
 
 const GeralTab: React.FC = () => {
-    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall } = useGame();
+    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall, appMode, setAppMode, activeTheme, toggleTheme } = useGame();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -913,6 +913,59 @@ const GeralTab: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            {/* APP MODE SELECTOR */}
+            <GlassCard variant="neutral" className="p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo de Operação</h3>
+                    <div className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono">EXPERIMENTAL</div>
+                </div>
+                
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => setAppMode('GAME')} 
+                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden group ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_var(--sephirot-glow-color)] ring-1 ring-white/20' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                    >
+                        <div className="relative z-10 flex flex-col items-center">
+                            <span className="text-xl mb-1">🎮</span>
+                            <span className="text-xs tracking-widest">GAME</span>
+                        </div>
+                        {appMode === 'GAME' && <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" />}
+                    </button>
+                    
+                    <button 
+                        onClick={() => setAppMode('OFFICE')} 
+                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'OFFICE' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                    >
+                         <div className="relative z-10 flex flex-col items-center">
+                            <span className="text-xl mb-1">💼</span>
+                            <span className="text-xs tracking-widest">OFFICE</span>
+                        </div>
+                    </button>
+                </div>
+                
+                {appMode === 'OFFICE' && (
+                    <div className="pt-3 border-t border-white/5 animate-fade-in">
+                         <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>
+                         </div>
+                         <div className="flex gap-2 p-1 bg-black/20 rounded-lg mb-4">
+                            <button 
+                                onClick={() => activeTheme !== 'LIGHT' && toggleTheme()} 
+                                className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'LIGHT' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                LIGHT
+                            </button>
+                            <button 
+                                onClick={() => activeTheme !== 'DARK' && toggleTheme()} 
+                                className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'DARK' ? 'bg-slate-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                DARK
+                            </button>
+                         </div>
+                    </div>
+                )}
+            </GlassCard>
+
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group" onClick={() => setIsHierarchyVisible(true)}>
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color)] to-black/60 pointer-events-none" />
                 <div className="relative z-10">

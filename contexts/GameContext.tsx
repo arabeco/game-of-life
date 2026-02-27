@@ -347,6 +347,12 @@ export interface GameContextType {
   addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>) => Campaign;
   updateCampaign: (id: string, updates: Partial<Campaign>) => void;
   deleteCampaign: (id: string) => void;
+
+  // App Mode & Theme
+  appMode: AppMode;
+  setAppMode: (mode: AppMode) => void;
+  activeTheme: ThemePreference;
+  toggleTheme: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -501,6 +507,51 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const deleteCampaign = (id: string) => {
       setCampaigns(prev => prev.filter(c => c.id !== id));
   };
+
+  // App Mode & Theme Implementation
+  const [appMode, setAppModeState] = useState<AppMode>('GAME');
+  const [activeTheme, setActiveTheme] = useState<ThemePreference>('DARK');
+
+  useEffect(() => {
+    if (userProfile?.appMode) {
+        setAppModeState(userProfile.appMode);
+    }
+    if (userProfile?.themePreference) {
+        setActiveTheme(userProfile.themePreference);
+    }
+  }, [userProfile?.appMode, userProfile?.themePreference]);
+
+  const setAppMode = useCallback(async (mode: AppMode) => {
+      setAppModeState(mode);
+      if (userProfile) {
+          // Optimistic update
+          updateUserProfile({ appMode: mode });
+          
+          // Persist
+          const { error } = await supabase
+              .from('user_profiles')
+              .update({ app_mode: mode })
+              .eq('id', userProfile.id);
+              
+          if (error) console.error('Error updating app mode:', error);
+      }
+  }, [userProfile]);
+
+  const toggleTheme = useCallback(async () => {
+      const newTheme = activeTheme === 'DARK' ? 'LIGHT' : 'DARK';
+      setActiveTheme(newTheme);
+      
+      if (userProfile) {
+          updateUserProfile({ themePreference: newTheme });
+          
+          const { error } = await supabase
+              .from('user_profiles')
+              .update({ theme_preference: newTheme })
+              .eq('id', userProfile.id);
+              
+          if (error) console.error('Error updating theme:', error);
+      }
+  }, [activeTheme, userProfile]);
 
   const showToast = useCallback((message: string) => {
       setToast({ message, visible: true });
@@ -2927,7 +2978,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             'unlockedSkins',
             'completedSeasonMissions',
             'role',
-            'isPremium'
+            'isPremium',
+            'appMode',
+            'themePreference'
         ];
         const entries = Object.entries(profileData).filter(([key, value]) => {
             if (!allowedKeys.includes(key as keyof UserProfile)) return false;
@@ -5072,7 +5125,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
   return (
-    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
+    <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest, addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, updateCustomClanMissionProgress, appMode, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
       {children}
     </GameContext.Provider>
   );

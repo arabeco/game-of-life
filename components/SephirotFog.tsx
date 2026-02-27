@@ -3,7 +3,7 @@ import React, { useRef, useEffect } from 'react';
 interface SephirotFogProps {
   points: { x: number; y: number; level: number }[];
   color: string;
-  mode?: 'sephirot' | 'arena';
+  mode?: 'sephirot' | 'arena' | 'office';
 }
 
 const vertexShaderSource = `
@@ -373,10 +373,11 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
     }
 
     const arenaMode = mode === 'arena';
+    const officeMode = mode === 'office';
     const windStrength = arenaMode ? 0.35 : 0.0;
     const pointDrift = arenaMode ? 0.03 : 0.0;
     const fieldDrift = arenaMode ? 1.0 : 0.0;
-    const alphaMax = arenaMode ? 0.28 : 0.15;
+    const alphaMax = officeMode ? 0.0 : (arenaMode ? 0.28 : 0.15);
     const coreBoost = arenaMode ? 1.0 : 0.0;
 
     if (uWindStrengthLoc.current) {

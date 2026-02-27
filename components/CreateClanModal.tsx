@@ -11,11 +11,12 @@ const clanTypes: ClanType[] = ['Casual', 'Office'];
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
 
 export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { createClan } = useGame();
+    const { createClan, appMode } = useGame();
+    const isOffice = appMode === 'OFFICE';
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('🏛️');
-    const [clanType, setClanType] = useState<ClanType>('Casual');
+    const [clanType, setClanType] = useState<ClanType>(isOffice ? 'Office' : 'Casual');
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [backgroundUrl, setBackgroundUrl] = useState(DEFAULT_SANCTUARY_BACKGROUND);
@@ -57,9 +58,13 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                             <div>
                                 <label className="text-xs font-bold text-gray-400">Tipo de Clã</label>
                                 <div className="flex bg-black/20 p-1 rounded-xl mt-1">
-                                    {clanTypes.map(type => (
-                                        <button key={type} onClick={() => setClanType(type)} className={`w-full py-1 text-sm rounded-lg ${clanType === type ? 'bg-white/10' : 'text-gray-400'}`}>{type}</button>
-                                    ))}
+                                    {isOffice ? (
+                                        <button className="w-full py-1 text-sm rounded-lg bg-white/10 text-gray-200 cursor-default">Office</button>
+                                    ) : (
+                                        clanTypes.map(type => (
+                                            <button key={type} onClick={() => setClanType(type)} className={`w-full py-1 text-sm rounded-lg ${clanType === type ? 'bg-white/10' : 'text-gray-400'}`}>{type}</button>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                              <div>

@@ -276,15 +276,30 @@ const SocialTab: React.FC = () => {
 // --- Main View ---
 
 const MundoView: React.FC = () => {
+    const { appMode } = useGame();
     const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>('social');
+    const isOffice = appMode === 'OFFICE';
 
-    const tabs = [
-        { id: 'social', label: 'Social', icon: <UsersIcon className="w-5 h-5" /> },
-        { id: 'loja', label: 'Loja', icon: <ShoppingBagIcon className="w-5 h-5" /> },
-        { id: 'arsenal', label: 'Arsenal', icon: <ArchiveBoxIcon className="w-5 h-5" /> },
-        { id: 'hall', label: 'Hall da Fama', icon: <TrophyIcon className="w-5 h-5" /> },
-        { id: 'temporada', label: 'Temporada', icon: <CalendarIcon className="w-5 h-5" /> },
-    ] as const;
+    const tabs = useMemo(() => {
+        const allTabs = [
+            { id: 'social', label: 'Social', icon: <UsersIcon className="w-5 h-5" /> },
+            { id: 'loja', label: 'Loja', icon: <ShoppingBagIcon className="w-5 h-5" /> },
+            { id: 'arsenal', label: 'Arsenal', icon: <ArchiveBoxIcon className="w-5 h-5" /> },
+            { id: 'hall', label: 'Hall da Fama', icon: <TrophyIcon className="w-5 h-5" /> },
+            { id: 'temporada', label: 'Temporada', icon: <CalendarIcon className="w-5 h-5" /> },
+        ] as const;
+
+        if (isOffice) {
+            return allTabs.filter(t => t.id === 'social' || t.id === 'temporada');
+        }
+        return allTabs;
+    }, [isOffice]);
+
+    useEffect(() => {
+        if (isOffice && (activeTab === 'loja' || activeTab === 'arsenal' || activeTab === 'hall')) {
+            setActiveTab('social');
+        }
+    }, [isOffice, activeTab]);
 
     return (
         <div id="social-container" className="flex flex-col h-full">

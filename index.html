@@ -78,8 +78,41 @@
           --logo-edge-3: #FCEFB0;
       }
 
-      [data-skin="GOLD"],
-      [data-skin="default"] {
+      .mode-office {
+        --skin-accent-color: #ffffff !important;
+        --skin-line-color: rgba(255, 255, 255, 0.2) !important;
+        --metal-gold: linear-gradient(135deg, #e5e5e5 0%, #ffffff 50%, #e5e5e5 100%) !important;
+        --sephirot-glow-color: rgba(255, 255, 255, 0.2) !important;
+        --sephirot-text-color: #ffffff !important;
+        --sephirot-border-color: #ffffff !important;
+        --sephirot-bg-image: none !important;
+        
+        /* Neutral Gradients for Assets */
+        --asset-grad-consciencia: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-espiritualidade: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-espaco-mental: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-projetos: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-proposito: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-conexoes: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-trabalho: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-financas: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-hobbies: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-fisico: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        --asset-grad-default: linear-gradient(135deg, #333 0%, #555 100%) !important;
+        
+        /* Navigation Bar Overrides */
+        --nav-bg: #000000 !important;
+        --nav-border: rgba(255, 255, 255, 0.1) !important;
+      }
+      
+      .mode-office [class*="gradient-border"]::before {
+        background: var(--metal-gold) !important;
+      }
+
+      .mode-office .gold-text { color: #ffffff !important; }
+      .mode-office .accent-text { color: #ffffff !important; }
+
+      [data-skin="GOLD"] {
         --skin-accent-color: #C5A059;
         --skin-line-color: rgba(197, 160, 89, 0.3);
         --metal-gold: linear-gradient(135deg, #5c4a1f 0%, #d4af37 50%, #5c4a1f 100%);
@@ -88,6 +121,16 @@
         --sephirot-border-color: #C5A059;
         --sephirot-glow-color: rgba(197, 160, 89, 0.45);
         --sephirot-text-color: #F6EBD1;
+      }
+      [data-skin="default"] {
+        --skin-accent-color: #e5e5e5;
+        --skin-line-color: rgba(255, 255, 255, 0.2);
+        --metal-gold: linear-gradient(135deg, #999 0%, #eee 50%, #999 100%);
+        --sephirot-bg-gradient: radial-gradient(circle, #222 0%, #000 100%);
+        --sephirot-bg-image: none;
+        --sephirot-border-color: #fff;
+        --sephirot-glow-color: rgba(255, 255, 255, 0.2);
+        --sephirot-text-color: #fff;
       }
       [data-skin="CYBER"] {
         --skin-accent-color: #00d9ff;

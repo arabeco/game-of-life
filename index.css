@@ -11,6 +11,52 @@
   --tier-4-epico:     #8B5CF6;
   --tier-5-lendario:  #F59E0B;
   --tier-season-gradient: linear-gradient(45deg, #FF0080, #7928CA, #00DFD8);
+
+  /* Default Game Mode Colors (Dark/Neon/Gold) */
+  --bg-primary: #000000;
+  --bg-secondary: rgba(255, 255, 255, 0.05);
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --skin-accent-color: #ffd700;
+  --skin-line-color: rgba(255, 215, 0, 0.3);
+  --sephirot-glow-color: rgba(255, 215, 0, 0.5);
+  --font-heading: "Cinzel Decorative", serif;
+  --font-body: "Inter", sans-serif;
+  --card-border: 1px solid rgba(255, 255, 255, 0.1);
+  --nav-bg: rgba(0, 0, 0, 0.8);
+  --nav-border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Office Mode Variables - Light Theme */
+.mode-office.theme-light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --skin-accent-color: #2563eb; /* Blue professional */
+  --skin-line-color: #e5e7eb;
+  --sephirot-glow-color: rgba(37, 99, 235, 0.1);
+  --font-heading: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --card-border: 1px solid #e5e7eb;
+  --nav-bg: #ffffff;
+  --nav-border: 1px solid #e5e7eb;
+}
+
+/* Office Mode Variables - Dark Theme */
+.mode-office.theme-dark {
+  --bg-primary: #0f172a; /* Slate 900 */
+  --bg-secondary: #1e293b; /* Slate 800 */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --skin-accent-color: #38bdf8; /* Sky 400 */
+  --skin-line-color: #334155;
+  --sephirot-glow-color: rgba(56, 189, 248, 0.1);
+  --font-heading: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --card-border: 1px solid #334155;
+  --nav-bg: #0f172a;
+  --nav-border: 1px solid #334155;
 }
 
 html, body, #root {
@@ -24,6 +70,41 @@ html, body {
 body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Global Font Overrides for Office Mode */
+.mode-office h1, .mode-office h2, .mode-office h3, .mode-office h4, .mode-office h5, .mode-office h6 {
+  font-family: var(--font-heading) !important;
+  text-transform: none !important; /* Remove uppercase force if any */
+  letter-spacing: normal !important;
+}
+
+.mode-office .uppercase {
+    text-transform: none !important;
+}
+
+/* Hide Gaming Elements in Office Mode */
+.mode-office .gaming-only {
+  display: none !important;
+}
+
+/* Force solid backgrounds in Office Mode */
+.mode-office .glass-card, 
+.mode-office .glass-panel {
+  background: var(--bg-secondary) !important;
+  border: var(--card-border) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.mode-office .nav-bar {
+  background: var(--nav-bg) !important;
+  border-top: var(--nav-border) !important;
+  backdrop-filter: none !important;
 }
 
 .safe-area-top {
@@ -98,47 +179,16 @@ body {
 
 @keyframes plasma-rotate {
     0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.1); }
     100% { transform: rotate(360deg) scale(1); }
 }
 
-/* Rarity Colors for Plasma */
-.plasma-legendary {
-    --plasma-color-1: rgba(245, 158, 11, 0.6);
-    --plasma-color-2: rgba(251, 191, 36, 0.4);
-    --plasma-color-3: rgba(180, 83, 9, 0.5);
-    box-shadow: 0 0 30px rgba(245, 158, 11, 0.2), inset 0 0 20px rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.3);
+/* Office Mode - Disable Plasma */
+.mode-office .plasma-bg::before,
+.mode-office .plasma-bg::after {
+    display: none !important;
 }
 
-.plasma-epic {
-    --plasma-color-1: rgba(139, 92, 246, 0.6);
-    --plasma-color-2: rgba(167, 139, 250, 0.4);
-    --plasma-color-3: rgba(109, 40, 217, 0.5);
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-}
-
-.plasma-rare {
-    --plasma-color-1: rgba(59, 130, 246, 0.6);
-    --plasma-color-2: rgba(96, 165, 250, 0.4);
-    --plasma-color-3: rgba(29, 78, 216, 0.5);
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.2), inset 0 0 20px rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.plasma-uncommon {
-    --plasma-color-1: rgba(16, 185, 129, 0.6);
-    --plasma-color-2: rgba(52, 211, 153, 0.4);
-    --plasma-color-3: rgba(4, 120, 87, 0.5);
-    box-shadow: 0 0 30px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.plasma-common {
-    --plasma-color-1: rgba(156, 163, 175, 0.4);
-    --plasma-color-2: rgba(209, 213, 219, 0.3);
-    --plasma-color-3: rgba(107, 114, 128, 0.3);
-    box-shadow: 0 0 20px rgba(156, 163, 175, 0.1), inset 0 0 10px rgba(156, 163, 175, 0.05);
-    border: 1px solid rgba(156, 163, 175, 0.2);
+.mode-office .plasma-card {
+    background: var(--bg-secondary) !important;
+    border: var(--card-border) !important;
 }

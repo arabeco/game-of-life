@@ -213,10 +213,15 @@ export interface ClanMissionState {
   completedAt?: string;
 }
 
+export type AppMode = 'GAME' | 'OFFICE';
+export type ThemePreference = 'LIGHT' | 'DARK';
+
 export interface UserProfile {
   id: string;
   // FIX: Added optional email property to align with database schema and fix typing errors.
   email?: string;
+  appMode?: AppMode;
+  themePreference?: ThemePreference;
   sovereign?: SovereignConfig;
   avatarUrl: string; // The circular profile picture
   border: string; // Corresponds to a Skin ID or 'default'

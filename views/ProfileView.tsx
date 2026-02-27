@@ -290,10 +290,11 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, updateUserProfile, clan, clanRanks, getUserPublicData } = useGame();
+    const { userProfile, assets, updateUserProfile, clan, clanRanks, getUserPublicData, appMode } = useGame();
     
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
+    const isOffice = appMode === 'OFFICE';
 
     const [isEditing, setIsEditing] = useState(false);
     const [editableProfile, setEditableProfile] = useState<UserProfile>(baseProfile);
@@ -508,6 +509,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         </div>
                                     </button>
 
+                                    {!isOffice && (
                                     <div
                                         className="absolute -inset-1 pointer-events-none z-40"
                                         style={
@@ -524,6 +526,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             }
                                         }
                                     />
+                                    )}
                                     
                                     <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-10" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
                                         <span className="text-lg font-black text-white">{displayProfile.level}</span>
@@ -545,7 +548,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             </div>
                             
                             <div className="px-4 pb-8 w-full">
-                                {displayProfile.bannerUrl ? (
+                                {!isOffice && displayProfile.bannerUrl ? (
                                     <div className="relative group mb-4">
                                         <img src={displayProfile.bannerUrl} alt="Banner" className="mx-auto h-16 object-contain" />
                                         {isEditing && isOwnProfile && (
@@ -554,7 +557,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </div>
                                         )}
                                     </div>
-                                ) : isEditing && isOwnProfile ? (
+                                ) : !isOffice && isEditing && isOwnProfile ? (
                                     <div className="mb-4 w-full cursor-pointer group" onClick={() => setBannerModalOpen(true)}>
                                         <div className="border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center p-4 group-hover:bg-white/5 group-hover:border-white/40 transition-all">
                                             <PlusIcon className="w-6 h-6 text-gray-400 mb-1 group-hover:text-white" />
@@ -564,38 +567,44 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 ) : null}
 
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-center space-x-4 mb-2">
+                                    <div className="flex bg-black/30 backdrop-blur-sm rounded-xl p-1 border border-white/5 mb-4 relative z-20">
                                         <button 
-                                            onClick={() => setActiveWidgetTab('mural')}
-                                            className={`text-[10px] font-bold uppercase tracking-widest transition-all ${activeWidgetTab === 'mural' ? 'text-white border-b-2 border-[var(--skin-accent-color)] pb-1' : 'text-gray-500 hover:text-gray-300'}`}
+                                            onClick={() => setActiveWidgetTab('mural')} 
+                                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'mural' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                         >
-                                            Mural
+                                            {isOffice ? 'Métricas' : 'Mural'}
                                         </button>
-                                        <button 
-                                            onClick={() => setActiveWidgetTab('ativos')}
-                                            className={`text-[10px] font-bold uppercase tracking-widest transition-all ${activeWidgetTab === 'ativos' ? 'text-white border-b-2 border-[var(--skin-accent-color)] pb-1' : 'text-gray-500 hover:text-gray-300'}`}
-                                        >
-                                            Ativos
-                                        </button>
+                                        {!isOffice && (
+                                            <button 
+                                                onClick={() => setActiveWidgetTab('ativos')} 
+                                                className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'ativos' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                            >
+                                                Ativos
+                                            </button>
+                                        )}
                                     </div>
 
-                                    {activeWidgetTab === 'mural' ? (
+                                    {/* Tab Content */}
+                                    {activeWidgetTab === 'mural' || isOffice ? (
                                         isEditing && isOwnProfile ? (
-                                            <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-inner w-full">
-                                                <h3 className="text-sm font-bold text-gray-300 mb-3 text-left flex items-center gap-2">
-                                                    <PlusIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                                    Gerenciar Widgets
-                                                </h3>
-                                                <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                            <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <span className="text-xs font-bold text-gray-400 uppercase">Widgets Visíveis ({editableProfile.visibleWidgets?.length || 0}/6)</span>
+                                                </div>
+                                                <div className="grid grid-cols-6 gap-2">
                                                 {assets.flatMap(a => a.slots).map(slot => {
                                                     const isSelected = editableProfile.visibleWidgets?.includes(slot.id);
                                                     return (
                                                         <button
                                                             key={slot.id}
                                                             onClick={() => handleWidgetToggle(slot.id)}
-                                                            className={`p-2 rounded-xl text-left text-sm transition-all flex items-center justify-between ${isSelected ? 'bg-white/10 ring-1 ring-[var(--skin-accent-color)] text-white' : 'bg-black/20 text-gray-400 hover:bg-white/5'}`}
+                                                            className={`col-span-2 aspect-square rounded-xl border flex flex-col items-center justify-center p-2 gap-1 transition-all ${
+                                                                isSelected 
+                                                                ? 'bg-white/10 border-[var(--skin-accent-color)] text-white' 
+                                                                : 'bg-black/20 border-white/5 text-gray-500 hover:bg-white/5'
+                                                            }`}
                                                         >
-                                                            <span className="truncate">{slot.label}</span>
+                                                            <span className="text-[8px] font-bold uppercase tracking-wider">{slot.label}</span>
                                                             {isSelected && <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] shadow-[0_0_5px_var(--skin-accent-color)]" />}
                                                         </button>
                                                     );
@@ -604,13 +613,35 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </div>
                                         ) : (
                                             <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
-                                                {displayProfile.visibleWidgets.length > 0 ? (
+                                                {displayProfile.visibleWidgets.length > 0 && !isOffice ? (
                                                     <div className="grid grid-cols-6 gap-2">
                                                     {displayProfile.visibleWidgets.map(slotId => {
                                                         const slot = getSlotById(slotId);
                                                         if (!slot) return null;
                                                         return <ProfileSlotWidget key={slotId} slot={slot} />
                                                     })}
+                                                    </div>
+                                                ) : isOffice ? (
+                                                    <div className="space-y-4">
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="bg-black/20 p-3 rounded-xl border border-white/5 text-center">
+                                                                <div className="text-[10px] uppercase tracking-wider text-gray-500">Nível Geral</div>
+                                                                <div className="text-3xl font-bold text-[var(--skin-accent-color)]">{displayProfile.level}</div>
+                                                            </div>
+                                                            <div className="bg-black/20 p-3 rounded-xl border border-white/5 text-center">
+                                                                <div className="text-[10px] uppercase tracking-wider text-gray-500">Fidelidade</div>
+                                                                <div className="text-3xl font-bold text-white">94%</div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <span className="text-xs font-bold text-gray-400">Progresso do Ciclo</span>
+                                                                <span className="text-xs font-bold text-white">12/30 dias</span>
+                                                            </div>
+                                                            <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden">
+                                                                <div className="h-full bg-[var(--skin-accent-color)] w-[40%]"></div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <p className="text-center text-sm text-gray-500 py-4">Nenhum widget visível.</p>
@@ -630,8 +661,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             </div>
                         </div>
 
-                        {/* Unified Sovereign Display */}
-                        {displayProfile.sovereign && (
+                        {/* Unified Sovereign Display - Hidden in Office Mode */}
+                        {!isOffice && displayProfile.sovereign && (
                              <UnifiedSovereignDisplay 
                                 sovereignConfig={displayProfile.sovereign} 
                                 onClick={() => setIsSovereignModalOpen(true)}

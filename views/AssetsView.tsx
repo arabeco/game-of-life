@@ -35,7 +35,7 @@ const SEPHIROT_COORDS = [
 ];
 
 export const AssetsView: React.FC = () => {
-  const { assets, userProfile } = useGame();
+  const { assets, userProfile, appMode } = useGame();
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -111,7 +111,11 @@ export const AssetsView: React.FC = () => {
         {/* Background Fog Shader */}
         <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-black" />
-            <SephirotFog points={fogPoints} color={skinColor} />
+            <SephirotFog 
+                points={fogPoints} 
+                color={appMode === 'OFFICE' ? '#ffffff' : skinColor} 
+                mode={appMode === 'OFFICE' ? 'office' : 'sephirot'}
+            />
         </div>
         
         <div className="relative z-10 w-full h-full">

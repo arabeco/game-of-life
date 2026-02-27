@@ -7,9 +7,10 @@ import { OracleFeed } from './OracleFeed';
 import { SparklesIcon } from './Icons';
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
-    const { userProfile, oracleMessages, notifications } = useGame();
+    const { userProfile, oracleMessages, notifications, appMode } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
+    const isOffice = appMode === 'OFFICE';
     
     const unreadNotificationsCount = notifications.filter(n => !n.read).length;
     const hasUnreadMessages = oracleMessages.some(m => !m.read);
@@ -91,6 +92,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         </div>
 
                                         {/* Border as Overlay */}
+                                        {!isOffice && (
                                         <div 
                                             className="absolute inset-0 w-full h-full pointer-events-none z-40"
                                             style={
@@ -107,6 +109,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                                 }
                                             }
                                         />
+                                        )}
                                     </div>
                                     <div className="absolute top-[3.3rem] bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border group-hover:scale-110 transition-transform z-10" style={{borderColor: 'var(--skin-accent-color)'}}>
                                         <span className="text-[11px] font-black text-white">{userProfile.level}</span>

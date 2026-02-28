@@ -193,7 +193,7 @@ CurrentTimeIndicator.displayName = 'CurrentTimeIndicator';
 const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, dropIndicator: { top: number, height: number } | null, isToday: boolean, currentTime: Date, timeIndicatorRef: React.Ref<HTMLDivElement> }> = ({ tasks, actions, scaleFactor, onCustomDragStart, dropIndicator, isToday, currentTime, timeIndicatorRef }) => {
     const hours = Array.from({ length: 21 }, (_, i) => i + 4);
     const getActionById = (id: string) => actions.find(a => a.id === id);
-    const [actionToView, setActionToView] = useState<Action | null>(null);
+    const [modalData, setModalData] = useState<{ action: Action, taskId?: string } | null>(null);
 
     let timeIndicatorTop = -1;
     if (isToday) {
@@ -204,7 +204,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
     const handleTaskClick = (task: ScheduledTask) => {
         const action = getActionById(task.actionId);
         if (action) {
-            setActionToView(action);
+            setModalData({ action, taskId: task.id });
         }
     };
 
@@ -221,12 +221,13 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
                     {isToday && timeIndicatorTop >= 0 && <CurrentTimeIndicator ref={timeIndicatorRef} top={timeIndicatorTop} />}
                 </div>
             </div>
-            {actionToView && (
+            {modalData && (
                 <ActionModal 
-                    action={actionToView} 
-                    arenaId={actionToView.arenaId} 
+                    action={modalData.action} 
+                    taskId={modalData.taskId}
+                    arenaId={modalData.action.arenaId} 
                     initialMode="view" 
-                    onClose={() => setActionToView(null)} 
+                    onClose={() => setModalData(null)} 
                 />
             )}
         </div>
@@ -665,7 +666,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const weeklyTimeIndicatorRef = useRef<HTMLDivElement>(null);
     const [zoomLevel, setZoomLevel] = useState<3 | 2 | 1>(3);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
-    const [actionToView, setActionToView] = useState<Action | null>(null);
+    const [modalData, setModalData] = useState<{ action: Action, taskId?: string } | null>(null);
+
+    const handleTaskClick = (task: ScheduledTask) => {
+        const action = getActionById(task.actionId);
+        if (action) {
+            setModalData({ action, taskId: task.id });
+        }
+    };
     const lastPointerPosRef = useRef<{ x: number; y: number } | null>(null);
     const lastScrollTopRef = useRef<number>(0);
     const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -1025,13 +1033,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             {Object.entries(groupedTaskPool).length > 0 ? (Object.entries(groupedTaskPool) as [string, { count: number; isUnlimited: boolean }][]).map(([actionId, payload]) => {
                                 const action = getActionById(actionId);
                                 if (!action) return null;
-                                return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} onActionClick={setActionToView} />);
+                                return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a })} />);
                             }) : (<div className="w-full h-full flex items-center justify-center text-sm text-gray-500">Sem ações no pool.</div>)}
                         </div>
                     </div>
                     <div className="relative flex-shrink-0">
                         <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-14 h-[60px] bg-black/20 border border-white/10 rounded-3xl flex items-center justify-center hover:border-white/20 transition-colors"><svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--accent-silver)] transform rotate-45"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/></svg></button>
-                        {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-2 space-y-1 z-20 animate-fade-in"><h4 className="text-xs font-bold text-center text-gray-400 pb-1 border-b border-white/10">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={setActionToView}/>)) : (<p className="text-xs text-center text-gray-500 py-2">Nenhum marco disponível.</p>)}</div>)}
+                        {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-2 space-y-1 z-20 animate-fade-in"><h4 className="text-xs font-bold text-center text-gray-400 pb-1 border-b border-white/10">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })}/>)) : (<p className="text-xs text-center text-gray-500 py-2">Nenhum marco disponível.</p>)}</div>)}
                     </div>
                 </div>
             </div>
@@ -1044,17 +1052,18 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             <DailyView tasks={dailyTasks} actions={actions} scaleFactor={scaleFactor} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
                         </div>
                     ) : (
-                        <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} scaleFactor={scaleFactor} stickyHeaderOffset={'0rem'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
+                        <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} onTaskClick={handleTaskClick} scaleFactor={scaleFactor} stickyHeaderOffset={'0rem'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
                     )}
                 </div>
             </div>
             
-            {actionToView && (
+            {modalData && (
                 <ActionModal 
-                    action={actionToView} 
-                    arenaId={actionToView.arenaId} 
+                    action={modalData.action} 
+                    taskId={modalData.taskId}
+                    arenaId={modalData.action.arenaId} 
                     initialMode="view" 
-                    onClose={() => setActionToView(null)} 
+                    onClose={() => setModalData(null)} 
                 />
             )}
 

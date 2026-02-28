@@ -12,6 +12,7 @@ interface WeeklyPlannerGridProps {
     tasks: ScheduledTask[];
     actions: Action[];
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
+    onTaskClick: (task: ScheduledTask) => void;
     scaleFactor: number;
     stickyHeaderOffset: string;
     currentTime: Date;
@@ -48,7 +49,7 @@ const CurrentTimeIndicator = React.forwardRef<HTMLDivElement, { top: number }>((
 ));
 CurrentTimeIndicator.displayName = 'CurrentTimeIndicator';
 
-const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: number; onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void; }> = ({ task, action, scaleFactor, onCustomDragStart }) => {
+const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: number; onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void; onTaskClick: (task: ScheduledTask) => void; }> = ({ task, action, scaleFactor, onCustomDragStart, onTaskClick }) => {
     const { getAssetForAction, toggleTaskCompletion } = useGame();
     const [isHolding, setIsHolding] = React.useState(false);
     const [showSparkles, setShowSparkles] = React.useState(false);
@@ -88,7 +89,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
             toggleTaskCompletion(task.id);
             setIsHolding(false);
             setIsTransitioning(false);
-        }, 3000);
+        }, 1000); // Changed to 1s for consistency
     };
 
     const cancelLongPress = () => {
@@ -102,9 +103,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
 
     const handleClick = () => {
         if (isTransitioning) return;
-        if (task.completed) {
-            toggleTaskCompletion(task.id);
-        }
+        onTaskClick(task);
     };
 
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
@@ -242,6 +241,7 @@ export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDat
                                             action={action}
                                             scaleFactor={scaleFactor}
                                             onCustomDragStart={onCustomDragStart}
+                                            onTaskClick={onTaskClick}
                                         />
                                     );
                                 })}

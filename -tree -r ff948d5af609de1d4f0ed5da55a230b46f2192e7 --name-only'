@@ -1,0 +1,193 @@
+warning: in the working copy of 'components/SephirotFog.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/components/SephirotFog.tsx b/temp_sephirotfog_original.tsx[m
+[1mindex 26b9b84..cabcf8f 100644[m
+[1m--- a/components/SephirotFog.tsx[m
+[1m+++ b/temp_sephirotfog_original.tsx[m
+[36m@@ -1,437 +1,438 @@[m
+[31m-import React, { useRef, useEffect } from 'react';[m
+[31m-[m
+[31m-interface SephirotFogProps {[m
+[31m-  points: { x: number; y: number; level: number }[];[m
+[31m-  color: string;[m
+[31m-  mode?: 'sephirot' | 'arena' | 'office';[m
+[31m-}[m
+[31m-[m
+[31m-const vertexShaderSource = `[m
+[31m-  attribute vec2 position;[m
+[31m-  varying vec2 vUv;[m
+[31m-  void main() {[m
+[31m-    vUv = position * 0.5 + 0.5;[m
+[31m-    gl_Position = vec4(position, 0.0, 1.0);[m
+[31m-  }[m
+[31m-`;[m
+[31m-[m
+[31m-const fragmentShaderSource = `[m
+[31m-  precision highp float;[m
+[31m-  [m
+[31m-  uniform vec2 uResolution;[m
+[31m-  uniform float uTime;[m
+[31m-  uniform vec2 uPoints[10];[m
+[31m-  uniform float uLevels[10];[m
+[31m-  uniform vec3 uColor;[m
+[31m-  uniform float uWindStrength;[m
+[31m-  uniform float uPointDrift;[m
+[31m-  uniform float uFieldDrift;[m
+[31m-  uniform float uAlphaMax;[m
+[31m-  uniform float uCoreBoost;[m
+[31m-  [m
+[31m-  varying vec2 vUv;[m
+[31m-[m
+[31m-  // Random function[m
+[31m-  float random(in vec2 _st) {[m
+[31m-    return fract(sin(dot(_st.xy, vec2(12.9898,78.233))) * 43758.5453123);[m
+[31m-  }[m
+[31m-[m
+[31m-  // Noise function[m
+[31m-  float noise(in vec2 _st) {[m
+[31m-    vec2 i = floor(_st);[m
+[31m-    vec2 f = fract(_st);[m
+[31m-[m
+[31m-    // Cubic Hermite Curve[m
+[31m-    f = f * f * (3.0 - 2.0 * f);[m
+[31m-[m
+[31m-    float a = random(i);[m
+[31m-    float b = random(i + vec2(1.0, 0.0));[m
+[31m-    float c = random(i + vec2(0.0, 1.0));[m
+[31m-    float d = random(i + vec2(1.0, 1.0));[m
+[31m-[m
+[31m-    return mix(a, b, f.x) +[m
+[31m-            (c - a)* f.y * (1.0 - f.x) +[m
+[31m-            (d - b) * f.x * f.y;[m
+[31m-  }[m
+[31m-[m
+[31m-  // FBM for "Swirling Ethereal Plasma"[m
+[31m-  #define OCTAVES 4[m
+[31m-  [m
+[31m-  float fbm(in vec2 _st) {[m
+[31m-    float v = 0.0;[m
+[31m-    float a = 0.5;[m
+[31m-    vec2 shift = vec2(100.0);[m
+[31m-    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));[m
+[31m-    for (int i = 0; i < OCTAVES; ++i) {[m
+[31m-        v += a * noise(_st);[m
+[31m-        _st = rot * _st * 2.0 + shift;[m
+[31m-        a *= 0.5;[m
+[31m-    }[m
+[31m-    return v;[m
+[31m-  }[m
+[31m-  [m
+[31m-  // Domain Warping Pattern (Simplified for performance)[m
+[31m-  float pattern(in vec2 p, in float t, out vec2 q, out vec2 r) {[m
+[31m-      q.x = fbm( p + vec2(0.0,0.0) + t );[m
+[31m-      q.y = fbm( p + vec2(5.2,1.3) + t );[m
+[31m-[m
+[31m-      r.x = fbm( p + 4.0*q + vec2(1.7,9.2) + t );[m
+[31m-      r.y = fbm( p + 4.0*q + vec2(8.3,2.8) + t );[m
+[31m-[m
+[31m-      return fbm( p + 4.0*r );[m
+[31m-  }[m
+[31m-[m
+[31m-  void main() {[m
+[31m-    vec2 st = gl_FragCoord.xy / uResolution.xy;[m
+[31m-    float aspect = uResolution.x / uResolution.y;[m
+[31m-    vec2 st_aspect = vec2(st.x * aspect, st.y);[m
+[31m-[m
+[31m-    float totalDensity = 0.0;[m
+[31m-    [m
+[31m-    // Global Time for animation (Pre-warmed to avoid t=0 static look)[m
+[31m-    float t = (uTime + 100.0) * 0.2; [m
+[31m-    [m
+[31m-    for (int i = 0; i < 10; i++) {[m
+[31m-        float level = uLevels[i];[m
+[31m-        if (level < 0.1) continue;[m
+[31m-[m
+[31m-        vec2 pt = uPoints[i];[m
+[31m-        pt.y = 1.0 - pt.y; [m
+[31m-        pt.x += sin(uTime * 0.18 + float(i) * 1.7) * uPointDrift;[m
+[31m-        pt.y += cos(uTime * 0.16 + float(i) * 1.3) * uPointDrift;[m
+[31m-        vec2 pt_aspect = vec2(pt.x * aspect, pt.y);[m
+[31m-        [m
+[31m-        vec2 toPixel = st_aspect - pt_aspect;[m
+[31m-        float dist = length(toPixel);[m
+[31m-        [m
+[31m-        // Influence radius (FIXED MAX RADIUS)[m
+[31m-        float radiusBase = 0.35; [m
+[31m-        [m
+[31m-        if (dist < radiusBase) {[m
+[31m-             // --- VISIBLE ELECTRICITY LOGIC ---[m
+[31m-             // "Nao sai nada nivel 1" -> Reduced contrast exponent, increased brightness.[m
+[31m-             // "Nivel 6 muito fraco" -> Boosted mid-range intensity.[m
+[31m-             [m
+[31m-             // 1. Local Coordinates[m
+[31m-             vec2 wind = vec2(sin(uTime * 0.1), cos(uTime * 0.08)) * uWindStrength;[m
+[31m-             vec2 localP = toPixel * 3.5 + vec2(uTime * 0.08, -uTime * 0.06) * uFieldDrift + wind;[m
+[31m-[m
+[31m-             // 2. Periodic Flow (Very Slow)[m
+[31m-             float cycleSpeed = 0.05 + (level / 10.0) * 0.1; [m
+[31m-             float phase = uTime * cycleSpeed;[m
+[31m-             [m
+[31m-             float t1 = fract(phase);[m
+[31m-             float t2 = fract(phase + 0.5);[m
+[31m-             float blend = abs(2.0 * t1 - 1.0); [m
+[31m-[m
+[31m-             // 3. Domain Warping[m
+[31m-             vec2 warpP = localP;[m
+[31m-             [m
+[31m-             // Swirl[m
+[31m-             float angle = length(toPixel) * 3.0; [m
+[31m-             float c = cos(angle);[m
+[31m-             float s = sin(angle);[m
+[31m-             mat2 rot = mat2(c, -s, s, c);[m
+[31m-             warpP = rot * warpP;[m
+[31m-[m
+[31m-             // 4. Sample Noise Twice[m
+[31m-             vec2 offset1 = normalize(toPixel) * (t1 * 1.8); [m
+[31m-             vec2 timeOffset = vec2(cos(uTime * 0.07), sin(uTime * 0.05)) * 0.6;[m
+[31m-             float n1 = fbm(warpP - offset1 + timeOffset);[m
+[31m-[m
+[31m-             vec2 offset2 = normalize(toPixel) * ((t2 - 0.5) * 1.8); [m
+[31m-             float n2 = fbm(warpP - offset2 - timeOffset + wind);[m
+[31m-[m
+[31m-             float noiseVal = mix(n1, n2, blend);[m
+[31m-             [m
+[31m-             // 5. Shaping (CRITICAL FIX)[m
+[31m-             // Lower exponents = Thicker, more visible lines.[m
+[31m-             [m
+[31m-             // A. Electric Sparks[m
+[31m-             // Level 1: was 7.0 (invisible). Now 4.5 (Thin but solid).[m
+[31m-             // Level 10: 1.5 (Thick plasma).[m
+[31m-             float electricExp = 4.5 - (level / 10.0) * 3.0; [m
+[31m-             float electric = pow(noiseVal, electricExp);[m
+[31m-             [m
+[31m-             // B. Smoke Body[m
+[31m-             // Level 1: 0.1 opacity (faint background).[m
+[31m-             // Level 6: 0.6 opacity (visible cloud).[m
+[31m-             float smokeExp = 3.0 - (level / 10.0) * 1.5;[m
+[31m-             float smoke = pow(noiseVal, smokeExp) * (0.1 + (level / 10.0) * 0.9);[m
+[31m-[m
+[31m-             // Combine[m
+[31m-             float combinedShape = electric + smoke;[m
+[31m-[m
+[31m-             // 6. Intensity & Reach[m
+[31m-             // "Nivel 6 fraco" -> Boosted intensity significantly.[m
+[31m-             [m
+[31m-             // Reach: Even level 1 needs to go a bit further to be seen.[m
+[31m-             // Level 1: 60% reach. Level 10: 100%.[m
+[31m-             float reach = 0.6 + (level / 10.0) * 0.4;[m
+[31m-             [m
+[31m-             // Radial Fade[m
+[31m-             float fade = 1.0 - smoothstep(0.0, radiusBase * reach, dist);[m
+[31m-             fade = pow(fade, 1.2); // Softer fade, stays visible longer[m
+[31m-[m
+[31m-             // Intensity: Much brighter base.[m
+[31m-             // Level 1: 1.0 (Visible but soft). Level 10: 2.0 (Strong).[m
+[31m-             float intensityMult = 1.0 + (level / 10.0) * 1.0;[m
+[31m-[m
+[31m-             // 7. Core Glow[m
+[31m-             // Tiny anchor point[m
+[31m-             float corePulse = 0.5 + 0.5 * sin(uTime * 0.8);[m
+[31m-             float coreBase = smoothstep(0.03, 0.0, dist);[m
+[31m-             float coreBoosted = smoothstep(0.05, 0.0, dist) * (1.2 + corePulse * 0.6);[m
+[31m-             float core = mix(coreBase, coreBoosted, uCoreBoost);[m
+[31m-[m
+[31m-             /

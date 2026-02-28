@@ -16,6 +16,7 @@ import { Portal } from './Portal';
 interface ActionModalProps {
   arenaId: string;
     action: Action | null;
+    taskId?: string; // NEW: support for specific task override
     initialMode: 'view' | 'edit';
     onClose: () => void;
     isPreview?: boolean;
@@ -47,8 +48,8 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
     </button>
 );
 
-export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initialMode, onClose, isPreview, customThemeColor }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask } = useGame();
+export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskId, initialMode, onClose, isPreview, customThemeColor }) => {
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask } = useGame();
     
     const isNew = !action;
     
@@ -56,6 +57,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
         action || { arenaId: arenaId, name: '', description: '', icon: '🏆', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 }
     );
+    
+    // NEW: Task duration override state
+    const currentTask = tasks.find(t => t.id === taskId);
+    const [editableTaskDuration, setEditableTaskDuration] = useState<number>(currentTask?.duration || action?.duration || 60);
+
     // New View Mode State
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
     const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'note' | 'checklist' | 'context'>('media');
@@ -82,9 +88,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(action?.scheduledDays || []);
     const [startTime, setStartTime] = useState<string | null>(() => {
-        if (action?.scheduledStartTime !== undefined && action?.scheduledStartTime !== null) {
-            const h = Math.floor(action.scheduledStartTime / 60);
-            const m = action.scheduledStartTime % 60;
+        const timeValue = taskId && currentTask ? currentTask.startTime : (action?.scheduledStartTime ?? null);
+        if (timeValue !== null) {
+            const h = Math.floor(timeValue / 60);
+            const m = timeValue % 60;
             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         }
         return null;
@@ -147,7 +154,19 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
         }
 
         const executeSave = async () => {
-            if (isNew) {
+            if (taskId) {
+                // If we are editing a specific task from the planner
+                let scheduledStartTime: number | undefined;
+                if (startTime && startTime !== 'Sem Horário') {
+                    const [h, m] = startTime.split(':').map(Number);
+                    scheduledStartTime = h * 60 + m;
+                }
+                
+                updateTask(taskId, { 
+                    duration: editableTaskDuration,
+                    startTime: scheduledStartTime
+                });
+            } else if (isNew) {
                 // Let the context generate the ID to ensure consistency
                 const newAction = await addAction(actionData);
                 await scheduleTasks(newAction.id);
@@ -218,6 +237,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
     }, [action?.id, arenaId, initialMode]);
 
     const displayAction = mode === 'view' ? action : editableAction;
+    
+    // Merge task duration if editing a specific task
+    const effectiveDuration = taskId && currentTask ? currentTask.duration : (displayAction?.duration || 60);
+    
     const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÍCIL', 'EXTREMO'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
@@ -313,7 +336,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                             </div>
                                             <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Duração</div>
-                                                <div className="text-xs font-bold text-white">{displayAction.duration} min</div>
+                                                <div className="text-xs font-bold text-white">{effectiveDuration} min</div>
                                             </div>
                                             {displayAction.actionType === 'Ação Recorrente' && (
                                             <div className="bg-white/5 rounded-xl p-3 border border-white/5 backdrop-blur-sm">
@@ -389,7 +412,22 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, initi
                                             </div>
 
                                             {/* Sliders */}
-                                            <StyledRangeInput inputRef={durationInputRef} label="Duração" value={editableAction.duration || 60} min={15} max={240} step={15} unit="min" onChange={val => { setEditableAction(p => ({...p, duration: val})); handleTutorialNextFormStep(); }} />
+                                            {taskId ? (
+                                                <StyledRangeInput 
+                                                    label="Duração desta Instância" 
+                                                    value={editableTaskDuration} 
+                                                    min={15} max={480} step={15} unit="min" 
+                                                    onChange={val => setEditableTaskDuration(val)} 
+                                                />
+                                            ) : (
+                                                <StyledRangeInput 
+                                                    inputRef={durationInputRef} 
+                                                    label="Duração (Base)" 
+                                                    value={editableAction.duration || 60} 
+                                                    min={15} max={240} step={15} unit="min" 
+                                                    onChange={val => { setEditableAction(p => ({...p, duration: val})); handleTutorialNextFormStep(); }} 
+                                                />
+                                            )}
                                             
                                             {editableAction.actionType === 'Ação Recorrente' && (
                                                 <StyledRangeInput inputRef={repsInputRef} label="Repetições" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({...p, repetitions: val})); handleTutorialNextFormStep(); }} />

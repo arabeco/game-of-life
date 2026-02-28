@@ -262,6 +262,7 @@ export interface GameContextType {
   deleteTask: (taskId: string) => void;
   getTasksForDate: (date: Date) => ScheduledTask[];
   rescheduleTask: (taskId: string, newDate: string, newStartTime: number) => void;
+  updateTask: (taskId: string, updates: Partial<ScheduledTask>) => void;
   toggleTaskCompletion: (taskId: string) => void;
   completeTutorialMission: () => void;
   toggleChecklistItem: (id: string) => void;
@@ -2557,32 +2558,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const endDailyBattle = () => {
     // Modified to include ALL tasks in the battle calculation (including Clan Quests)
     const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date);
-    const committedCounts = committedTasks.reduce((acc, task) => {
-        acc[task.actionId] = (acc[task.actionId] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-    const completedCounts = tasks.reduce((acc, task) => {
-        if (task.date !== dailyCommitment.date) return acc;
-        if (!committedCounts[task.actionId]) return acc;
-        // Removed isQuestActionId filter to allow all types of tasks to count
-        if (task.completed) acc[task.actionId] = (acc[task.actionId] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-    const completedCount = Object.keys(committedCounts).reduce((sum, actionId) => {
-        const committed = committedCounts[actionId] || 0;
-        const completed = completedCounts[actionId] || 0;
-        return sum + Math.min(committed, completed);
-    }, 0);
+    const completedCount = committedTasks.filter(t => t.completed).length;
     const totalCount = committedTasks.length;
     const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
-    const expDepositBase = Object.keys(committedCounts).reduce((sum, actionId) => {
-        const committed = committedCounts[actionId] || 0;
-        const completed = completedCounts[actionId] || 0;
-        const count = Math.min(committed, completed);
-        if (count === 0) return sum;
-        const action = actions.find(a => a.id === actionId);
-        const duration = Number.isFinite(action?.duration) ? (action?.duration || 0) : 0;
-        return sum + (duration * count);
+
+    const expDepositBase = committedTasks.reduce((sum, task) => {
+        if (!task.completed) return sum;
+        const action = actions.find(a => a.id === task.actionId);
+        const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
+        return sum + duration;
     }, 0);
     const sitrepBonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
     const expDeposited = expDepositBase + sitrepBonus;
@@ -4907,21 +4891,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const returnTaskToPool = (taskId: string) => {
     deleteTask(taskId);
   };
-  const rescheduleTask = (taskId: string, newDate: string, newStartTime: number) => {
+  const updateTask = (taskId: string, updates: Partial<ScheduledTask>) => {
     setTasks(prevTasks => prevTasks.map(task => 
-      task.id === taskId 
-        ? { ...task, date: newDate, startTime: newStartTime }
-        : task
+      task.id === taskId ? { ...task, ...updates } : task
     ));
     const userId = getSupabaseUserId();
     if (userId) {
-        supabase.from('scheduled_tasks')
-            .update({ date: newDate, start_time: newStartTime })
-            .eq('id', taskId)
-            .then(({ error }) => {
-                if (error) console.error("Supabase reschedule task error:", error.message);
-            });
+        // Map camelCase updates to snake_case for Supabase if needed
+        const snakeCaseUpdates: any = {};
+        if (updates.date !== undefined) snakeCaseUpdates.date = updates.date;
+        if (updates.startTime !== undefined) snakeCaseUpdates.start_time = updates.startTime;
+        if (updates.duration !== undefined) snakeCaseUpdates.duration = updates.duration;
+        if (updates.completed !== undefined) snakeCaseUpdates.completed = updates.completed;
+
+        if (Object.keys(snakeCaseUpdates).length > 0) {
+            supabase.from('scheduled_tasks')
+                .update(snakeCaseUpdates)
+                .eq('id', taskId)
+                .then(({ error }) => {
+                    if (error) console.error("Supabase update task error:", error.message);
+                });
+        }
     }
+  };
+
+  const rescheduleTask = (taskId: string, newDate: string, newStartTime: number) => {
+    updateTask(taskId, { date: newDate, startTime: newStartTime });
   };
   const toggleTaskCompletion = (taskId: string) => {
     setTasks(prevTasks => {
@@ -4939,7 +4934,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (updatedTask.completed) {
                     const action = getActionById(task.actionId);
                     if (action) {
-                        showToast(`+${action.expAward || 10} EXP: ${action.name}`, 'success');
+                        const expValue = task.duration > 0 ? task.duration : (action.duration || 10);
+                        showToast(`+${expValue} EXP: ${action.name}`, 'success');
                         if (action.actionType === 'Marco') {
                             setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
                             addFeedEvent({
@@ -5406,7 +5402,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         abortSeasonQuest,
         claimSeasonQuestReward,
         claimSeasonMission,
-        addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, 
+        addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, updateTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, 
       directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
       addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
       {children}

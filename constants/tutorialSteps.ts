@@ -46,10 +46,10 @@ export const TUTORIAL_STEPS_GAME: TutorialStep[] = [
     }
 ];
 
-export const TUTORIAL_STEPS_OFFICE: TutorialStep[] = [
+export const TUTORIAL_STEPS_BASIC: TutorialStep[] = [
     {
-        title: "BEM-VINDO AO OFFICE",
-        text: "Este é o seu centro de comando profissional. O Life OS foi adaptado para focar em produtividade e gestão de projetos corporativos.",
+        title: "BEM-VINDO AO BÁSICO",
+        text: "Este é o seu centro de comando. O Life OS foi simplificado para focar em produtividade e organização pessoal.",
         view: 'assets',
         targetId: 'header-oracle' 
     },

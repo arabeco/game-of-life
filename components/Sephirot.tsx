@@ -10,7 +10,7 @@ interface SephirotProps {
 
 export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style }) => {
   const isConsciencia = asset.id === 'consciencia';
-  const sphereSize = isConsciencia ? '60px' : '54px';
+  const sphereSize = `var(--sephirot-size-${isConsciencia ? 'keter' : 'standard'}, ${isConsciencia ? '60px' : '54px'})`;
   const titleMargin = isConsciencia ? '-mb-2.5' : '-mb-4';
 
   return (
@@ -31,7 +31,7 @@ export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style }) => 
                 className="relative w-full h-full rounded-full flex items-center justify-center text-center transition-all"
                 style={{ 
                     backgroundImage: `var(--sephirot-bg-image), var(--sephirot-bg-gradient)`,
-                    backgroundSize: '135%, cover',
+                    backgroundSize: 'var(--sephirot-image-size, 135%), cover',
                     backgroundPosition: 'center, center',
                     backgroundRepeat: 'no-repeat, no-repeat',
                     boxShadow: `inset 0 0 0 1px var(--sephirot-border-color)`

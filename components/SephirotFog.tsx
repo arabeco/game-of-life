@@ -92,8 +92,9 @@ const fragmentShaderSource = `
     float t = (uTime + 100.0) * 0.2; 
     
     for (int i = 0; i < 10; i++) {
-        float level = uLevels[i];
-        if (level < 0.1) continue;
+        float rawLevel = uLevels[i];
+        // Restore progression: 0.1 baseline so level 0 is faint but exists
+        float level = max(0.1, rawLevel);
 
         vec2 pt = uPoints[i];
         pt.y = 1.0 - pt.y; 
@@ -148,33 +149,27 @@ const fragmentShaderSource = `
              // Lower exponents = Thicker, more visible lines.
              
              // A. Electric Sparks
-             // Level 1: was 7.0 (invisible). Now 4.5 (Thin but solid).
-             // Level 10: 1.5 (Thick plasma).
-             float electricExp = 4.5 - (level / 10.0) * 3.0; 
+             // Restore: Level 10 is thick plasma, level 0 is thin/faint.
+             float electricExp = 5.0 - (level / 10.0) * 3.5; 
              float electric = pow(noiseVal, electricExp);
              
              // B. Smoke Body
-             // Level 1: 0.1 opacity (faint background).
-             // Level 6: 0.6 opacity (visible cloud).
-             float smokeExp = 3.0 - (level / 10.0) * 1.5;
+             // Baseline 0.1 for very faint smoke at level 0.
+             float smokeExp = 3.5 - (level / 10.0) * 2.0;
              float smoke = pow(noiseVal, smokeExp) * (0.1 + (level / 10.0) * 0.9);
 
              // Combine
              float combinedShape = electric + smoke;
 
              // 6. Intensity & Reach
-             // "Nivel 6 fraco" -> Boosted intensity significantly.
-             
-             // Reach: Even level 1 needs to go a bit further to be seen.
-             // Level 1: 60% reach. Level 10: 100%.
+             // Reach: Level 0: 60%. Level 10: 100%.
              float reach = 0.6 + (level / 10.0) * 0.4;
              
              // Radial Fade
              float fade = 1.0 - smoothstep(0.0, radiusBase * reach, dist);
-             fade = pow(fade, 1.2); // Softer fade, stays visible longer
+             fade = pow(fade, 1.2); // Softer fade
 
-             // Intensity: Much brighter base.
-             // Level 1: 1.0 (Visible but soft). Level 10: 2.0 (Strong).
+             // Intensity: Balanced progression.
              float intensityMult = 1.0 + (level / 10.0) * 1.0;
 
              // 7. Core Glow
@@ -205,7 +200,8 @@ const fragmentShaderSource = `
     float alpha = smoothstep(0.0, 1.0, totalDensity);
     alpha = clamp(alpha, 0.0, uAlphaMax); 
     
-    gl_FragColor = vec4(finalColor, alpha);
+    // Final Color
+    gl_FragColor = vec4(energyColor * alpha, alpha);
   }
 `;
 
@@ -374,11 +370,11 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
 
     const arenaMode = mode === 'arena';
     const officeMode = mode === 'office';
-    const windStrength = arenaMode ? 0.35 : 0.0;
-    const pointDrift = arenaMode ? 0.03 : 0.0;
-    const fieldDrift = arenaMode ? 1.0 : 0.0;
-    const alphaMax = officeMode ? 0.0 : (arenaMode ? 0.28 : 0.15);
-    const coreBoost = arenaMode ? 1.0 : 0.0;
+    const windStrength = arenaMode ? 0.35 : (officeMode ? 0.15 : 0.0);
+    const pointDrift = arenaMode ? 0.03 : (officeMode ? 0.01 : 0.0);
+    const fieldDrift = arenaMode ? 1.0 : (officeMode ? 0.5 : 0.0);
+    const alphaMax = officeMode ? 0.25 : (arenaMode ? 0.28 : 0.15);
+    const coreBoost = arenaMode ? 1.0 : (officeMode ? 0.5 : 0.0);
 
     if (uWindStrengthLoc.current) {
         gl.uniform1f(uWindStrengthLoc.current, windStrength);

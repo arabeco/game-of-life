@@ -10,7 +10,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const { userProfile, oracleMessages, notifications, appMode, clan } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
-    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
+    const isBasicMode = appMode === 'BASIC';
     
     const unreadNotificationsCount = notifications.filter(n => !n.read).length;
     const hasUnreadMessages = oracleMessages.some(m => !m.read);
@@ -92,7 +92,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         </div>
 
                                         {/* Border as Overlay */}
-                                        {!isOffice && (
+                                        {!isBasicMode && (
                                         <div 
                                             className="absolute inset-0 w-full h-full pointer-events-none z-40"
                                             style={
@@ -104,7 +104,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                                     backgroundRepeat: 'no-repeat',
                                                 }
                                                 : {
-                                                    border: `2px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
+                                                    border: '2px solid var(--skin-accent-color)',
                                                     borderRadius: '50%',
                                                 }
                                             }

@@ -40,10 +40,16 @@ export const AssetsView: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   
-  const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
+  const isBasicMode = appMode === 'BASIC';
+  const isBasicSkin = userProfile.skin === 'BASIC' || userProfile.skin === 'default' || !userProfile.skin;
+  const showWhiteSmoke = isBasicMode || isBasicSkin;
 
   // Get user skin color or default to GOLD
   const skinColor = SKINS_DATA.find(s => s.id === userProfile.skin)?.color || '#d4af37';
+  
+  // Use white color and office mode for BASIC mode or BASIC skin
+  const finalSmokeColor = showWhiteSmoke ? '#ffffff' : skinColor;
+  const finalSmokeMode = showWhiteSmoke ? 'office' : 'sephirot';
 
   // Prepare points with levels for the shader
   const baseAspect = 9 / 16;
@@ -115,8 +121,8 @@ export const AssetsView: React.FC = () => {
             <div className="absolute inset-0 bg-black" />
             <SephirotFog 
                 points={fogPoints} 
-                color={isOffice ? '#ffffff' : skinColor} 
-                mode={isOffice ? 'office' : 'sephirot'}
+                color={finalSmokeColor} 
+                mode={finalSmokeMode}
             />
         </div>
         

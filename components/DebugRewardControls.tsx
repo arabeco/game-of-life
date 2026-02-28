@@ -52,7 +52,7 @@ export const DebugRewardControls: React.FC = () => {
     const addChests = async () => {
         setLoading(true);
         try {
-            const types: ChestType[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendário'];
+            const types: ChestType[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendário', 'Ciclo'];
             
             // 1. Add to user_chests table (if exists)
             const newChests = [];

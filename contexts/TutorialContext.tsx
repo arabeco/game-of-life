@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useGame, PROFILE_FLAG_TUTORIAL_COMPLETED } from './GameContext';
-import { TUTORIAL_STEPS_GAME, TUTORIAL_STEPS_OFFICE, TutorialStep } from '../constants/tutorialSteps';
+import { TUTORIAL_STEPS_GAME, TUTORIAL_STEPS_BASIC, TutorialStep } from '../constants/tutorialSteps';
 
 interface TooltipContent {
     title: string;
@@ -34,7 +34,7 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     // Select tutorial steps based on app mode
     const tutorialSteps = useMemo(() => {
-        return appMode === 'OFFICE' ? TUTORIAL_STEPS_OFFICE : TUTORIAL_STEPS_GAME;
+        return appMode === 'BASIC' ? TUTORIAL_STEPS_BASIC : TUTORIAL_STEPS_GAME;
     }, [appMode]);
 
     const startTutorial = useCallback(() => {

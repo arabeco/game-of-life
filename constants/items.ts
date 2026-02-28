@@ -201,6 +201,8 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_plate_5_002', name: 'Placa Gelo', category: 'plate', tier: 5, rarity: 'legendary', icon: '❄️', imageUrl: `${GLYPHS_BASE_URL}/PLACA_GELO.png` },
 
     // --- UI SKINS (Temas) ---
+    // T1
+    { id: 'BASIC', name: 'Tema: Básico Profissional', category: 'ui_skin', tier: 1, rarity: 'common', icon: '◻️' },
     // T3
     { id: 'GOLD', name: 'Tema: Ouro Soberano', category: 'ui_skin', tier: 3, rarity: 'rare', icon: '⚜️' },
     { id: 'FROST', name: 'Tema: Gelo Eterno', category: 'ui_skin', tier: 3, rarity: 'rare', icon: '❄️' },

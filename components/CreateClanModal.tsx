@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
 import { IconPickerModal } from './IconPickerModal';
+import { PlusIcon, XIcon, CheckIcon } from './Icons';
 import { ClanType, RecruitmentStatus } from '../types';
 import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
 import { Portal } from './Portal';
@@ -12,21 +13,33 @@ const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
 
 export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { createClan, appMode } = useGame();
-    const isOffice = appMode === 'OFFICE';
+    const isBasicMode = appMode === 'BASIC';
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('🏛️');
-    const [clanType, setClanType] = useState<ClanType>(isOffice ? 'Office' : 'Casual');
+    const [clanType, setClanType] = useState<ClanType>(isBasicMode ? 'Office' : 'Casual');
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [backgroundUrl, setBackgroundUrl] = useState(DEFAULT_SANCTUARY_BACKGROUND);
+
+    const officeBackgrounds = [
+        { id: 'office1', label: 'Escritório 1', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office1.jpg' },
+        { id: 'office2', label: 'Escritório 2', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office2.jpg' },
+        { id: 'office3', label: 'Escritório 3', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office3.jpg' },
+    ];
 
     const handleSave = async () => {
         if (!name.trim()) {
             alert("O nome do clã não pode estar vazio.");
             return;
         }
-        await createClan({ name, icon, description, clanType, recruitmentStatus, backgroundUrl });
+
+        let finalBackgroundUrl = backgroundUrl;
+        if (clanType.toLowerCase() === 'office' && !officeBackgrounds.some(bg => bg.value === backgroundUrl)) {
+            finalBackgroundUrl = officeBackgrounds[0].value;
+        }
+
+        await createClan({ name, icon, description, clanType, recruitmentStatus, backgroundUrl: finalBackgroundUrl });
         onClose();
     };
 
@@ -58,7 +71,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                             <div>
                                 <label className="text-xs font-bold text-gray-400">Tipo de Clã</label>
                                 <div className="flex bg-black/20 p-1 rounded-xl mt-1">
-                                    {isOffice ? (
+                                    {isBasicMode ? (
                                         <button className="w-full py-1 text-sm rounded-lg bg-white/10 text-gray-200 cursor-default">Office</button>
                                     ) : (
                                         clanTypes.map(type => (
@@ -67,7 +80,34 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     )}
                                 </div>
                             </div>
-                             <div>
+                            {/* Background Selection */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-400 uppercase">Fundo do Escritório</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {(clanType.toLowerCase() === 'office' ? officeBackgrounds : []).map(option => {
+                                        const isSelected = backgroundUrl === option.value;
+                                        return (
+                                            <button
+                                                key={option.id}
+                                                onClick={() => setBackgroundUrl(option.value)}
+                                                className={`relative rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-[var(--skin-accent-color)] scale-105' : 'border-white/10 opacity-60 hover:opacity-100'}`}
+                                            >
+                                                <div
+                                                    className="aspect-square w-full bg-cover bg-center"
+                                                    style={{ backgroundImage: `url(${option.value})` }}
+                                                />
+                                                {isSelected && (
+                                                    <div className="absolute inset-0 bg-[var(--skin-accent-color)]/10 flex items-center justify-center">
+                                                        <CheckIcon className="w-6 h-6 text-[var(--skin-accent-color)]" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div>
                                 <label className="text-xs font-bold text-gray-400">Recrutamento</label>
                                 <div className="flex bg-black/20 p-1 rounded-xl mt-1">
                                     {recruitmentOptions.map(opt => (

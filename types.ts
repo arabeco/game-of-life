@@ -2,7 +2,7 @@
 
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
 export type SlotLayoutType = 1 | 2 | 3; // 1: wide, 2: square, 3: rect
-export type ChestType = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário';
+export type ChestType = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' | 'Ciclo';
 
 export interface SlotValueImage {
   imageUrl: string;
@@ -216,7 +216,7 @@ export interface ClanMissionState {
   completedAt?: string;
 }
 
-export type AppMode = 'GAME' | 'OFFICE';
+export type AppMode = 'GAME' | 'BASIC';
 export type ThemePreference = 'LIGHT' | 'DARK';
 
 export interface UserProfile {
@@ -247,6 +247,8 @@ export interface UserProfile {
   completedSeasonMissions?: string[];
   role: 'admin' | 'gm' | 'user';
   isPremium?: boolean;
+  clanName?: string;
+  clanIcon?: string;
 }
 
 export type FriendRequestStatus = 'pending' | 'accepted' | 'declined' | 'revoked';

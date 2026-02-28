@@ -32,6 +32,7 @@ const getRandomReward = (chestType: ChestType): Reward => {
         'Raro': 'rare',
         'Épico': 'epic',
         'Lendário': 'legendary',
+        'Ciclo': 'rare', // Cycle chests give rare items for now
         // Fallbacks for lowercase or typos
         'comum': 'common',
         'incomum': 'uncommon',
@@ -103,6 +104,7 @@ const RARITY_COLORS: Record<string, string> = {
     'Raro': '#60a5fa', // blue-400
     'Épico': '#a78bfa', // purple-400
     'Lendário': '#fbbf24', // amber-400
+    'Ciclo': '#22d3ee', // cyan-400
 };
 
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose, predefinedReward }) => {

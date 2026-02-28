@@ -424,25 +424,25 @@ const AppWithTutorial: React.FC = () => {
         ? 'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
 
-    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
-    const themeClass = isOffice ? `mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
+    const isBasicMode = appMode === 'BASIC';
+    const themeClass = isBasicMode ? `mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
 
     useEffect(() => {
-        if (isOffice && currentView === 'assets') {
+        if (isBasicMode && currentView === 'assets') {
             setCurrentView('arenas');
         }
-    }, [isOffice, currentView]);
+    }, [isBasicMode, currentView]);
 
     useEffect(() => {
-        const skin = isOffice ? 'default' : userProfile.skin;
+        const skin = isBasicMode ? 'default' : userProfile.skin;
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);
-    }, [isOffice, userProfile.skin]);
+    }, [isBasicMode, userProfile.skin]);
 
     return (
         <div 
             className={`min-h-screen text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''} ${themeClass}`}
-            data-skin={isOffice ? 'default' : userProfile.skin}
+            data-skin={isBasicMode ? 'default' : userProfile.skin}
         >
             <OracleTutorialOverlay />
             {isBuilderMode && (
@@ -481,13 +481,13 @@ const AppWithTutorial: React.FC = () => {
             {isProfileVisible && <ProfileView onClose={() => setProfileVisible(false)} />}
             {isReportsVisible && <ReportsView onClose={() => setReportsVisible(false)} />}
             
-            <footer className={`fixed bottom-0 left-0 right-0 z-30 ${isOffice ? 'bg-[var(--nav-bg)] border-t border-[var(--nav-border)]' : 'bg-black/50 backdrop-blur-lg border-t border-[var(--glass-border)]'} safe-area-bottom`} style={{ paddingBottom: 'var(--safe-area-bottom)' }}>
+            <footer className={`fixed bottom-0 left-0 right-0 z-30 ${isBasicMode ? 'bg-[var(--nav-bg)] border-t border-[var(--nav-border)]' : 'bg-black/50 backdrop-blur-lg border-t border-[var(--glass-border)]'} safe-area-bottom`} style={{ paddingBottom: 'var(--safe-area-bottom)' }}>
                 <div className="max-w-7xl mx-auto">
                     <div className="flex justify-around items-center h-16">
-                        {!isOffice && <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />}
-                        <NavItem view="arenas" label={isOffice ? "ÁREAS" : "ARENAS"} icon={<ArenaIcon />} id="nav-arenas" />
+                        {!isBasicMode && <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />}
+                        <NavItem view="arenas" label={isBasicMode ? "ÁREAS" : "ARENAS"} icon={<ArenaIcon />} id="nav-arenas" />
                         <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} id="nav-planner" />
-                        <NavItem view="social" label={isOffice ? "EQUIPE" : "MUNDO"} icon={<SocialIcon />} id="nav-mundo" />
+                        <NavItem view="social" label={isBasicMode ? "EQUIPE" : "MUNDO"} icon={<SocialIcon />} id="nav-mundo" />
                         <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} id="nav-settings" />
                     </div>
                 </div>

@@ -933,17 +933,17 @@ const GeralTab: React.FC = () => {
                     </button>
                     
                     <button 
-                        onClick={() => setAppMode('OFFICE')} 
-                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'OFFICE' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                        onClick={() => setAppMode('BASIC')} 
+                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'BASIC' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
                     >
                          <div className="relative z-10 flex flex-col items-center">
                             <span className="text-xl mb-1">💼</span>
-                            <span className="text-xs tracking-widest">OFFICE</span>
+                            <span className="text-xs tracking-widest">BÁSICO</span>
                         </div>
                     </button>
                 </div>
                 
-                {appMode === 'OFFICE' && (
+                {appMode === 'BASIC' && (
                     <div className="pt-3 border-t border-white/5 animate-fade-in">
                          <div className="flex justify-between items-center mb-2">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>

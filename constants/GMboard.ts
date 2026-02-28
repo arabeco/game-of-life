@@ -281,6 +281,7 @@ export const GM_CONFIG = {
     skins: [
       ...ITEMS_DB.filter(i => i.category === 'ui_skin').map(i => {
           let color = '#ffffff';
+          if (i.id === 'BASIC') color = '#ffffff';
           if (i.id === 'GOLD') color = '#FFD700';
           if (i.id === 'FROST') color = '#00FFFF';
           if (i.id === 'EMBER') color = '#FF4500';

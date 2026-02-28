@@ -12,7 +12,9 @@ interface ClanMemberCardProps {
 }
 
 export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeaderView, onKick }) => {
-    const { nobilityRanks, userProfile } = useGame();
+    const { nobilityRanks, userProfile, clan, appMode } = useGame();
+    const isBasicMode = appMode === 'BASIC';
+    const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     const rank = nobilityRanks.find(r => r.id === member.nobility.rankId);
     const isSelf = member.id === userProfile.id;
     
@@ -35,12 +37,12 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
                     {isSelf && <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] bg-[var(--gold)]/10 px-2 py-0.5 rounded-full">Você</span>}
                     {member.role === 'leader' && (
                         <span className="flex items-center space-x-1 text-[10px] font-bold uppercase tracking-wider text-yellow-300 bg-yellow-400/10 px-2 py-0.5 rounded-full">
-                            <CrownIcon className="w-3 h-3" />
-                            <span>Líder</span>
+                            {isOfficeClan || isBasicMode ? null : <CrownIcon className="w-3 h-3" />}
+                            <span>{isOfficeClan || isBasicMode ? 'Diretor' : 'Líder'}</span>
                         </span>
                     )}
                 </div>
-                <p className="text-xs text-gray-400">Nível {member.level} • Membro há {timeSince(member.joined_at)}</p>
+                <p className="text-xs text-gray-400">Nível {member.level} • {isOfficeClan || isBasicMode ? 'Na equipe' : 'Membro'} há {timeSince(member.joined_at)}</p>
             </div>
              {isLeaderView && member.role !== 'leader' && onKick && (
                 <button onClick={() => onKick(member)} className="p-1 text-red-500 hover:text-red-400">
@@ -49,7 +51,7 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
             )}
             <div className="text-right flex-shrink-0">
                 <p className="font-bold text-sm text-[var(--gold)]">{rank?.name || 'N/A'}</p>
-                 <p className="text-xs text-gray-500">Patente</p>
+                 <p className="text-xs text-gray-500">{isOfficeClan || isBasicMode ? 'Cargo' : 'Patente'}</p>
             </div>
         </div>
     );

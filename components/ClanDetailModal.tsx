@@ -30,14 +30,15 @@ const getTierInfo = (rankIndex: number) => {
     return { name: 'Acampamento', tier: 1, description: 'Um refúgio temporário para guerreiros em jornada.' };
 };
 
-const getClanBackgroundUrl = (rankIndex: number, clanType: string = 'Casual') => {
+const getClanBackgroundUrl = (rankIndex: number, isOfficeClan: boolean = false, customBackground?: string) => {
     const baseUrl = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/';
     
-    // Normalize to handle potential nulls from DB and case sensitivity
-    const type = (clanType || 'Casual');
-
-    if (type.toLowerCase() === 'office') {
-        // Dynamic Office Background: ALWAYS use office1.jpg as requested
+    if (isOfficeClan) {
+        // Se houver um fundo customizado (office1, office2, office3), use-o
+        if (customBackground) {
+            return customBackground.startsWith('http') ? customBackground : `${baseUrl}${customBackground}`;
+        }
+        // Default Office Background
         return `${baseUrl}office1.jpg`;
     }
 
@@ -83,6 +84,8 @@ const Sparkles: React.FC = () => (
 );
 
 const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () => void }> = ({ member, onClose }) => {
+    const { isBasicMode, clan } = useGame();
+    const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     if (!member.sovereign) return null;
     return (
         <Portal>
@@ -103,7 +106,7 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
                     <h2 className="text-2xl font-black text-white luxe-title-shadow uppercase tracking-wider">{member.nickname}</h2>
                     <div className="flex items-center justify-center space-x-2">
                         <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider accent-text border border-[var(--skin-accent-color)]/30">
-                            {member.role === 'leader' ? 'Líder' : 'Membro'}
+                            {member.role === 'leader' ? (isOfficeClan || isBasicMode ? 'Diretor' : 'Líder') : (isOfficeClan || isBasicMode ? 'Equipe' : 'Membro')}
                         </span>
                         <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-gray-300 border border-white/10">
                             Nível {member.level}
@@ -310,8 +313,9 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode } = useGame();
-    const isOffice = clan?.clanType?.toLowerCase() === 'office';
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode } = useGame();
+    const isBasicMode = appMode === 'BASIC';
+    const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
 
     const { trigger } = useSensoryFeedback();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
@@ -521,12 +525,15 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             // Create Planner Action with Link
             const newAction = await addAction({
                 arenaId: 'geral',
-                name: `[${quest.priority === 'urgent' ? 'URGENTE' : (isOffice ? 'AÇÃO' : 'CLÃ')}] ${quest.title}`,
-                description: quest.description || (isOffice ? 'Ação de Clã' : 'Missão de Clã'),
-                icon: quest.category === 'work' ? '💼' : (quest.category === 'meeting' ? '📅' : '⚔️'),
+                name: `[${quest.priority === 'urgent' ? 'URGENTE' : (isOfficeClan || isBasicMode ? 'AÇÃO' : 'CLÃ')}] ${quest.title}`,
+                description: quest.description || (isOfficeClan || isBasicMode ? 'Ação de Clã' : 'Missão de Clã'),
+                icon: quest.category === 'work' ? '💼' : 
+                      quest.category === 'meeting' ? '📅' : 
+                      quest.category === 'report' ? '📊' : 
+                      quest.category === 'development' ? '👨‍💻' : '⚔️',
                 duration: 30,
                 repetitions: 1,
-                actionType: 'Marco',
+                actionType: 'Compromisso',
                 originCodexId: `clan_quest:${quest.id}`
             });
             
@@ -536,9 +543,9 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 const dateString = date.toISOString().split('T')[0];
                 const timeInMinutes = date.getHours() * 60 + date.getMinutes();
                 scheduleTask(newAction.id, dateString, timeInMinutes);
-                showToast(isOffice ? "Ação aceita e agendada no Planner!" : "Missão aceita e agendada no Planner!");
+                showToast(isOfficeClan || isBasicMode ? "Ação aceita e agendada no Planner!" : "Missão aceita e agendada no Planner!");
             } else {
-                showToast(isOffice ? "Ação aceita! Verifique seu Planner." : "Missão aceita! Verifique seu Planner.");
+                showToast(isOfficeClan || isBasicMode ? "Ação aceita! Verifique seu Planner." : "Missão aceita! Verifique seu Planner.");
             }
 
             setMyParticipations(prev => [...prev, quest.id]);
@@ -573,7 +580,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 if (unlockError) throw unlockError;
             }
 
-            showToast("Missão devolvida/abortada com sucesso.");
+            showToast(isOfficeClan || isBasicMode ? "Ação devolvida com sucesso." : "Missão devolvida/abortada com sucesso.");
             setMyParticipations(prev => prev.filter(id => id !== quest.id));
             
             // Refresh quests
@@ -637,23 +644,31 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         if (aldeiaSlots.length === 0) return 0;
         const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
         if (mainSlots.length === 0) return 0;
+        
+        if (isOfficeClan) {
+            // No clã Office, a produtividade é a SOMA das saúdes das mesas (máximo 500 se houver 5 mesas)
+            // No entanto, para a barra visual, talvez o usuário queira uma média ou um valor escalonado.
+            // "produtividade seja a soma de cada mesa" -> Vamos calcular a soma real.
+            return mainSlots.reduce((acc, s) => acc + s.health, 0);
+        }
+        
         const totalHealth = mainSlots.reduce((acc, s) => acc + s.health, 0);
         return Math.floor(totalHealth / mainSlots.length);
-    }, [aldeiaSlots]);
+    }, [aldeiaSlots, isOfficeClan]);
 
     // Slots Configuration (Dynamic based on Type and Customization)
     const slotsConfig = useMemo(() => {
-        const base = isOffice ? [
+        const base = isOfficeClan ? [
             { id: 'fogueira', label: 'Mesa Central', emoji: '🏢', x: 42, y: 51 },
-            { id: 'torre',    label: 'Recepção',     emoji: '🛎️', x: 23, y: 24 },
-            { id: 'altar',    label: 'Café',          emoji: '☕', x: 70, y: 40 },
+            { id: 'torre',    label: 'Café',          emoji: '☕', x: 70, y: 40 },
+            { id: 'altar',    label: 'Recepção',     emoji: '🛎️', x: 23, y: 24 },
             { id: 'forja',    label: 'Mesa 1',       emoji: '💻', x: 75, y: 70 },
             { id: 'horta',    label: 'Mesa 2',       emoji: '💻', x: 25, y: 70 },
             { id: 'trono',    label: 'Sala Diretor', emoji: '💼', x: 49, y: 32 },
         ] : ALDEIA_SLOTS;
         
-        // No modo Office, ignoramos configurações customizadas do banco para garantir os nomes de escritório
-        if (isOffice) return base;
+        // Para Clã Office, ignoramos configurações customizadas do banco para garantir os nomes de escritório
+        if (isOfficeClan) return base;
         
         const customConfig = clan?.slotConfig || clan?.slot_config;
         if (!customConfig) return base;
@@ -662,7 +677,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             const custom = customConfig[s.id];
             return custom ? { ...s, label: custom.label, emoji: custom.emoji } : s;
         });
-    }, [isOffice, clan?.slotConfig, clan?.slot_config]);
+    }, [isOfficeClan, clan?.slotConfig, clan?.slot_config]);
 
     // Update clan exp/order if needed (Optional: sync with DB if this calculation is authoritative)
     // Note: Ideally the backend calculates this, but for visual feedback we do it here.
@@ -677,12 +692,20 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             return;
         }
         
-        // If it's the Throne, check if user is leader and Order is 90%
+        // If it's the Throne, check if user is leader
         if (slotId === 'trono') {
-            // Restored restriction: Throne only accessible if Aldeia Order >= 90%
-            if (aldeiaOrder < 90) {
-                showToast("A ordem da aldeia deve ser de pelo menos 90% para acessar o trono.");
+            // Se for clã office, apenas o líder pode entrar na Sala do Diretor
+            if (isOfficeClan && userClanRole !== 'leader') {
+                showToast(isBasicMode ? "Apenas o diretor pode acessar a Sala do Diretor." : "Apenas o líder do clã pode acessar a Sala do Diretor.");
                 return;
+            }
+
+            // Clã Office não tem trava de produtividade para o líder sentar
+            if (!isOfficeClan) {
+                if (aldeiaOrder < 90) {
+                    showToast(isBasicMode ? "A ordem da aldeia deve ser de pelo menos 90% para acessar o trono." : "A ordem da aldeia deve ser de pelo menos 90% para acessar o trono.");
+                    return;
+                }
             }
         }
 
@@ -744,15 +767,15 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     
     useEffect(() => {
         setBgError(false);
-    }, [clan?.rankId, isOffice]);
+    }, [clan?.rankId, isBasicMode]);
 
     const backgroundUrl = useMemo(() => {
-        const url = getClanBackgroundUrl(rankIndex !== -1 ? rankIndex : 0, isOffice ? 'Office' : 'Casual');
-        if (isOffice) {
+        const url = getClanBackgroundUrl(rankIndex !== -1 ? rankIndex : 0, isOfficeClan, clan?.backgroundUrl);
+        if (isOfficeClan) {
             console.log('[ClanDetailModal] Office BG URL:', url);
         }
         return url;
-    }, [isOffice, rankIndex]);
+    }, [isOfficeClan, rankIndex, clan?.backgroundUrl]);
 
     const handleBgError = () => {
         console.log(`[BG_ERROR] Failed to load background: ${backgroundUrl}`);
@@ -835,10 +858,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     <div className="relative w-full h-full rounded-3xl overflow-hidden border border-white/10 flex flex-col isolate bg-black"> 
                         {/* Background Image Layer */}
                         <div className="absolute inset-0 z-0 select-none pointer-events-none">
-                            {isOffice && bgError ? (
+                            {isBasicMode && bgError ? (
                                 <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 flex items-center justify-center border-4 border-dashed border-white/10">
                                     <div className="text-white/20 text-4xl font-black uppercase tracking-widest rotate-[-15deg] select-none text-center">
-                                        <div>Office Mode</div>
+                                        <div>Modo Básico</div>
                                         <div className="text-xs mt-2 tracking-normal opacity-50 font-mono">office{Math.ceil(Math.max(1, rankIndex + 1) / 2)}.jpg not found</div>
                                     </div>
                                 </div>
@@ -851,7 +874,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                 />
                             )}
                             {/* Overlay only for Casual mode */}
-                            {!isOffice && (
+                            {!isBasicMode && (
                                 <div className={`absolute inset-0 mix-blend-overlay ${tierInfo.tier === 1 ? 'bg-amber-900/30' : tierInfo.tier === 2 ? 'bg-emerald-900/30' : 'bg-purple-900/30'}`} />
                             )}
                         </div>
@@ -902,7 +925,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                             
                                             // Special Logic for Casual Clan Bonfire (Presence based health)
                                             let health = slotData?.health ?? 100;
-                                            if (!isOffice && slot.id === 'fogueira') {
+                                            if (!isBasicMode && slot.id === 'fogueira') {
                                                 // 1 person = 33%, 2 = 66%, 3+ = 100%
                                                 health = Math.min(100, occupants.length * 33.33);
                                             }
@@ -915,8 +938,12 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                             else if (health >= 20) opacity = 0.6;
                                             else if (health > 0) opacity = 0.4;
 
-                                            // Restored strict check for Order < 90
-                                            const isThroneDisabled = slot.id === 'trono' && aldeiaOrder < 90;
+                                            // Restored strict check for Order < 90, and leader-only for Office
+                                            // No clã Office, o trono nunca fica desabilitado para o líder (independente da produtividade)
+                                            const isThroneDisabled = slot.id === 'trono' && (
+                                                (isOfficeClan && userClanRole !== 'leader') || 
+                                                (!isOfficeClan && aldeiaOrder < 90)
+                                            );
                                             
                                             if (slot.id === 'trono') {
                                                 console.log(`[RENDER_SLOT] Throne: Order=${aldeiaOrder}, Disabled=${isThroneDisabled}`);
@@ -996,13 +1023,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                         // Calculate Planner Progress based on active singular quests
                                                         let plannerProgress = 0;
                                                         
-                                                        // Only calculate for Casual mode (or if requested later). For now Office is 0.
-                                                        if (!isOffice) {
-                                                            const memberActiveQuests = clanQuests.filter(q => q.assigned_user_id === member.id && q.status === 'locked');
-                                                            if (memberActiveQuests.length > 0) {
-                                                                const totalProgress = memberActiveQuests.reduce((acc, q) => acc + (q.current_value / Math.max(1, q.target_value)), 0);
-                                                                plannerProgress = Math.min(100, (totalProgress / memberActiveQuests.length) * 100);
-                                                            }
+                                                        const memberActiveQuests = clanQuests.filter(q => q.assigned_user_id === member.id && q.status === 'locked');
+                                                        if (memberActiveQuests.length > 0) {
+                                                            const totalProgress = memberActiveQuests.reduce((acc, q) => acc + (q.current_value / Math.max(1, q.target_value)), 0);
+                                                            plannerProgress = Math.min(100, (totalProgress / memberActiveQuests.length) * 100);
                                                         }
 
                                                         return (
@@ -1059,7 +1083,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                                 className="h-full transition-all duration-500"
                                                                 style={{ 
                                                                     width: `${health}%`, 
-                                                                    background: isOffice ? 'var(--skin-accent-color)' : 'var(--metal-gold)', 
+                                                                    background: isBasicMode ? 'var(--skin-accent-color)' : 'var(--metal-gold)', 
                                                                     opacity: 0.9 
                                                                 }}
                                                             />
@@ -1075,14 +1099,16 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                     <div className="absolute bottom-4 left-4 right-4 z-20">
                                         <div className="p-1">
                                             <div className="flex items-center justify-between mb-1 px-1">
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-white shadow-black drop-shadow-md">{isOffice ? 'Produtividade' : 'Ordem da Aldeia'}</span>
-                                                <span className="text-xs font-mono font-bold shadow-black drop-shadow-md text-[var(--metal-gold)]">{aldeiaOrder}%</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-white shadow-black drop-shadow-md">{isOfficeClan ? 'Produtividade Total' : (isBasicMode ? 'Ordem da Aldeia' : 'Ordem da Aldeia')}</span>
+                                                <span className="text-xs font-mono font-bold shadow-black drop-shadow-md text-[var(--metal-gold)]">
+                                                    {isOfficeClan ? `${aldeiaOrder} pts` : `${aldeiaOrder}%`}
+                                                </span>
                                             </div>
                                             <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden backdrop-blur-sm">
                                                 <div 
                                                     className="h-full rounded-full transition-all duration-500" 
                                                     style={{ 
-                                                        width: `${aldeiaOrder}%`, 
+                                                        width: `${isOfficeClan ? Math.min(100, (aldeiaOrder / 500) * 100) : aldeiaOrder}%`, 
                                                         background: 'var(--metal-gold)' 
                                                     }}
                                                 />
@@ -1103,7 +1129,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                     {userClanRole === 'leader' && clanJoinRequestsIncoming.length > 0 && (
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between px-2 text-xs text-gray-300">
-                                                <span className="font-bold uppercase tracking-wider">Pedidos</span>
+                                                <span className="font-bold uppercase tracking-wider">{isOfficeClan || isBasicMode ? 'Candidatos' : 'Pedidos'}</span>
                                                 <span>{clanJoinRequestsIncoming.length} pendentes</span>
                                             </div>
                                             {clanJoinRequestsIncoming.map(request => {
@@ -1134,7 +1160,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         </div>
                                     )}
                                     <div className="flex items-center justify-between px-2 text-xs text-gray-300">
-                                        <span className="font-bold uppercase tracking-wider">Membros</span>
+                                        <span className="font-bold uppercase tracking-wider">{isOfficeClan || isBasicMode ? 'Equipe' : 'Membros'}</span>
                                         <span>{enrichedClanMembers.length} total</span>
                                     </div>
                                     {enrichedClanMembers.map(member => (
@@ -1151,16 +1177,16 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                 </div>
                             )}
 
-                            {activeTab === 'missoes' && !isOffice && (
+                            {activeTab === 'missoes' && !isBasicMode && (
                                 <div className="absolute inset-0 px-4 overflow-y-auto hide-scrollbar pt-4 pb-20">
                                     <div className="space-y-3">
                                         <div className="text-center text-xs font-bold uppercase tracking-wider text-gray-300">
-                                            Missões da Temporada
+                                            {isOfficeClan || isBasicMode ? 'Ações da Temporada' : 'Missões da Temporada'}
                                         </div>
                                         
                                         {seasonClanQuests.length === 0 && (
                                             <GlassCard variant="neutral" className="p-4 text-center text-sm text-gray-300">
-                                                Nenhuma missão de temporada ativa.
+                                                {isOfficeClan || isBasicMode ? 'Nenhuma ação de temporada ativa.' : 'Nenhuma missão de temporada ativa.'}
                                             </GlassCard>
                                         )}
                                         
@@ -1218,12 +1244,12 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         })}
 
                                         <div className="pt-4 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500 border-t border-white/5 mt-4">
-                                            Outras Missões do Clã
+                                            {isOfficeClan || isBasicMode ? 'Outras Ações do Clã' : 'Outras Missões do Clã'}
                                         </div>
                                     </div>
                                     {clanQuests.length === 0 && (
                                         <GlassCard variant="neutral" className="p-4 text-center text-sm text-gray-300 mt-2">
-                                            Nenhuma missão customizada ativa.
+                                            {isOfficeClan || isBasicMode ? 'Nenhuma ação customizada ativa.' : 'Nenhuma missão customizada ativa.'}
                                         </GlassCard>
                                     )}
                                     {clanQuests.map((quest: ClanCustomQuest) => {
@@ -1317,7 +1343,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                             onClick={() => handleOptIn(quest)}
                                                             className="w-full py-2 rounded-lg bg-gradient-to-r from-amber-700/80 to-amber-900/80 hover:from-amber-600 hover:to-amber-800 text-amber-100 text-xs font-bold uppercase tracking-wider transition-colors border border-amber-500/30 shadow-md"
                                                         >
-                                                            Aceitar Missão
+                                                            {isOfficeClan || isBasicMode ? 'Aceitar Ação' : 'Aceitar Missão'}
                                                         </button>
                                                     ) : (
                                                         <div className="space-y-2">
@@ -1331,7 +1357,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                                 onClick={() => handleAbortMission(quest)}
                                                                 className="w-full py-2 rounded-lg bg-red-900/40 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase tracking-wider hover:bg-red-900/60"
                                                             >
-                                                                Devolver Missão
+                                                                {isOfficeClan || isBasicMode ? 'Devolver Ação' : 'Devolver Missão'}
                                                             </button>
                                                         </div>
                                                     )}
@@ -1348,10 +1374,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                             <GlassCard variant="neutral" className="p-1">
                                 <div className="flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
                                     <button onClick={() => setActiveTab('santuario')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'santuario' ? 'bg-white/10' : 'text-gray-400'}`}>
-                                        {isOffice ? 'Escritório' : 'Santuário'}
+                                        {isOfficeClan || isBasicMode ? 'Escritório' : 'Santuário'}
                                     </button>
-                                    <button onClick={() => setActiveTab('membros')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'membros' ? 'bg-white/10' : 'text-gray-400'}`}>Membros</button>
-                                    <button onClick={() => setActiveTab('missoes')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'missoes' ? 'bg-white/10' : 'text-gray-400'}`}>{isOffice ? 'Ações' : 'Quests'}</button>
+                                    <button onClick={() => setActiveTab('membros')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'membros' ? 'bg-white/10' : 'text-gray-400'}`}>{isOfficeClan || isBasicMode ? 'Equipe' : 'Membros'}</button>
+                                    <button onClick={() => setActiveTab('missoes')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'missoes' ? 'bg-white/10' : 'text-gray-400'}`}>{isOfficeClan || isBasicMode ? 'Ações' : 'Quests'}</button>
                                 </div>
                             </GlassCard>
                         </div>
@@ -1374,7 +1400,14 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             )}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
             {subModal === 'manage' && <ClanManagementModal onClose={() => setSubModal(null)} />}
-            {memberToKick && <ConfirmationModal title="Expulsar Membro" message={`Tem certeza que deseja expulsar ${memberToKick.nickname} do clã?`} onConfirm={handleKickMember} onCancel={() => setMemberToKick(null)} />}
+            {memberToKick && (
+                <ConfirmationModal 
+                    title={isOfficeClan || isBasicMode ? 'Remover da Equipe' : 'Expulsar Membro'} 
+                    message={isOfficeClan || isBasicMode ? `Tem certeza que deseja remover ${memberToKick.nickname} da equipe?` : `Tem certeza que deseja expulsar ${memberToKick.nickname} do clã?`} 
+                    onConfirm={handleKickMember} 
+                    onCancel={() => setMemberToKick(null)} 
+                />
+            )}
             {subModal === 'leave' && (
                 <ConfirmationModal 
                     title="Sair do Clã" 

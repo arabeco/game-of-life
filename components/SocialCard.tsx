@@ -5,8 +5,6 @@ import { useGame } from '../contexts/GameContext';
 import { UserAvatar } from './UserAvatar';
 
 export const SocialCard: React.FC<{ profile: UserProfile; subtitle?: string; actions?: React.ReactNode; onClick?: () => void }> = ({ profile, subtitle, actions, onClick }) => {
-    const { clan } = useGame();
-    
     return (
         <div 
             className={`h-24 rounded-3xl bg-cover bg-center relative p-3 flex items-center space-x-4 overflow-hidden border border-[var(--glass-border)] ${onClick ? 'cursor-pointer hover:border-white/30 transition-colors' : ''}`}
@@ -19,7 +17,7 @@ export const SocialCard: React.FC<{ profile: UserProfile; subtitle?: string; act
                     <h3 className="font-bold text-lg">{profile.nickname}</h3>
                     {profile.bannerUrl && <img src={profile.bannerUrl} alt="Banner" className="h-6 object-contain" />}
                 </div>
-                <p className="text-sm text-gray-300">{subtitle ?? `Level ${profile.level} - ${clan?.name || 'Sem Clã'}`}</p>
+                <p className="text-sm text-gray-300">{subtitle ?? `Level ${profile.level} - ${profile.clanIcon ? profile.clanIcon + ' ' : ''}${profile.clanName || 'Sem Clã'}`}</p>
             </div>
             {actions && <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>{actions}</div>}
         </div>

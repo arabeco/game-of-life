@@ -294,7 +294,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
-    const isOffice = clan?.clanType?.toLowerCase() === 'office' || appMode === 'OFFICE';
+    const isBasicMode = appMode === 'BASIC';
+    const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
 
     const [isEditing, setIsEditing] = useState(false);
     const [editableProfile, setEditableProfile] = useState<UserProfile>(baseProfile);
@@ -509,7 +510,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         </div>
                                     </button>
 
-                                    {!isOffice && (
+                                    {!isBasicMode && (
                                     <div
                                         className="absolute -inset-1 pointer-events-none z-40"
                                         style={
@@ -548,7 +549,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             </div>
                             
                             <div className="px-4 pb-8 w-full">
-                                {!isOffice && displayProfile.bannerUrl ? (
+                                {!isBasicMode && displayProfile.bannerUrl ? (
                                     <div className="relative group mb-4">
                                         <img src={displayProfile.bannerUrl} alt="Banner" className="mx-auto h-16 object-contain" />
                                         {isEditing && isOwnProfile && (
@@ -557,7 +558,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </div>
                                         )}
                                     </div>
-                                ) : !isOffice && isEditing && isOwnProfile ? (
+                                ) : !isBasicMode && isEditing && isOwnProfile ? (
                                     <div className="mb-4 w-full cursor-pointer group" onClick={() => setBannerModalOpen(true)}>
                                         <div className="border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center p-4 group-hover:bg-white/5 group-hover:border-white/40 transition-all">
                                             <PlusIcon className="w-6 h-6 text-gray-400 mb-1 group-hover:text-white" />
@@ -572,9 +573,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             onClick={() => setActiveWidgetTab('mural')} 
                                             className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'mural' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                         >
-                                            {isOffice ? 'Métricas' : 'Mural'}
+                                            {isBasicMode ? 'Métricas' : 'Mural'}
                                         </button>
-                                        {!isOffice && (
+                                        {!isBasicMode && (
                                             <button 
                                                 onClick={() => setActiveWidgetTab('ativos')} 
                                                 className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'ativos' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
@@ -585,7 +586,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     </div>
 
                                     {/* Tab Content */}
-                                    {activeWidgetTab === 'mural' || isOffice ? (
+                                    {activeWidgetTab === 'mural' || isBasicMode ? (
                                         isEditing && isOwnProfile ? (
                                             <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
                                                 <div className="flex justify-between items-center mb-4">
@@ -613,7 +614,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </div>
                                         ) : (
                                             <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
-                                                {displayProfile.visibleWidgets.length > 0 && !isOffice ? (
+                                                {displayProfile.visibleWidgets.length > 0 && !isBasicMode ? (
                                                     <div className="grid grid-cols-6 gap-2">
                                                     {displayProfile.visibleWidgets.map(slotId => {
                                                         const slot = getSlotById(slotId);
@@ -621,7 +622,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                         return <ProfileSlotWidget key={slotId} slot={slot} />
                                                     })}
                                                     </div>
-                                                ) : isOffice ? (
+                                                ) : isBasicMode ? (
                                                     <div className="space-y-4">
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <div className="bg-black/20 p-3 rounded-xl border border-white/5 text-center">
@@ -661,8 +662,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             </div>
                         </div>
 
-                        {/* Unified Sovereign Display - Hidden in Office Mode */}
-                        {!isOffice && displayProfile.sovereign && (
+                        {/* Unified Sovereign Display - Hidden in Basic Mode */}
+                        {!isBasicMode && displayProfile.sovereign && (
                              <UnifiedSovereignDisplay 
                                 sovereignConfig={displayProfile.sovereign} 
                                 onClick={() => setIsSovereignModalOpen(true)}

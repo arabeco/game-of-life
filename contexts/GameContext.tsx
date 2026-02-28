@@ -531,7 +531,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const saved = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${userId}`);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                return parsed.appMode || 'GAME';
+                const val = parsed.appMode;
+                if (val === 'GAME' || val === 'BASIC') return val;
+                if (val === 'OFFICE') return 'BASIC';
+                return 'GAME';
             }
         } catch (e) {}
     }
@@ -1628,20 +1631,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     uniqueIds = uniqueIds.filter(id => isUuid(id));
     if (uniqueIds.length === 0) return {} as Record<string, UserProfile>;
 
-        const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', uniqueIds);
-        if (profilesError || !profilesData) {
-            console.error('Error fetching profiles:', profilesError?.message);
-            return {} as Record<string, UserProfile>;
-        }
+    const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*, clan_members(clans(name, icon))').in('id', uniqueIds);
+    if (profilesError || !profilesData) {
+        console.error('Error fetching profiles:', profilesError?.message);
+        return {} as Record<string, UserProfile>;
+    }
 
-        const mapped = mapToCamelCase(profilesData) as any[];
-        return mapped.reduce((acc, profileData) => {
-            // Ensure wallet and inventory exist in profile
-            const profile = {
-                ...profileData,
-                wallet: { gold: profileData.gold || 0, fragments: profileData.fragments || 0 },
-                inventory: [] // We don't fetch inventory for others usually, saves bandwidth
-            } as UserProfile;
+    const mapped = mapToCamelCase(profilesData) as any[];
+    return mapped.reduce((acc, profileData) => {
+        // Extrair informações do clã se existirem
+        const clanInfo = profileData.clanMembers?.[0]?.clans;
+        
+        const profile = {
+            ...profileData,
+            clanName: clanInfo?.name,
+            clanIcon: clanInfo?.icon,
+            wallet: { gold: profileData.gold || 0, fragments: profileData.fragments || 0 },
+            inventory: [] 
+        } as UserProfile;
             
             acc[profile.id] = profile;
             return acc;
@@ -1856,6 +1863,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const performAldeiaDailyUpdate = async (clanId: string) => {
       let slots = await getAldeiaSlots(clanId);
       const today = new Date().toISOString().split('T')[0];
+      
+      // Get clan type to check if it's Office
+      const { data: clanData } = await supabase.from('clans').select('clan_type').eq('id', clanId).single();
+      const isOfficeClan = clanData?.clan_type?.toLowerCase() === 'office';
 
       // Initialize slots if missing
       const REQUIRED_SLOTS: AldeiaSlotId[] = ['fogueira', 'forja', 'torre', 'horta', 'altar', 'trono'];
@@ -1882,6 +1893,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       for (const slot of slots) {
           // If already updated today, skip
           if (slot.lastDecayCalculation === today) continue;
+
+          // OFFICE CLAN: No automatic decay or gain. Leader sets manually.
+          if (isOfficeClan) {
+              await updateAldeiaSlot(clanId, slot.slotId, {
+                  lastDecayCalculation: today
+              });
+              continue;
+          }
 
           // Calculate days passed since last visited
           const lastVisit = slot.lastVisitedAt ? new Date(slot.lastVisitedAt) : null;
@@ -4614,7 +4633,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     addFeedEvent({
         type: 'MILESTONE_COMPLETED',
-        content: { title: `Missão de Temporada: ${mission.title}`, icon: '🌟', score: addedExp }
+        content: { title: `Missão de Temporada: ${mission.title}`, icon: '🌟', score: Number(addedExp) }
     });
 
     showToast(`Recompensa resgatada! +${addedExp} XP`);

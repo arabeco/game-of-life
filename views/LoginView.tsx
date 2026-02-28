@@ -466,15 +466,15 @@ export const LoginView: React.FC = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setAppMode('OFFICE')}
+                                    onClick={() => setAppMode('BASIC')}
                                     className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${
-                                        appMode === 'OFFICE' 
+                                        appMode === 'BASIC' 
                                         ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
                                         : 'bg-black/30 border-[var(--glass-border)] text-gray-500 hover:border-gray-400'
                                     }`}
                                 >
                                     <ConfigIcon className="w-4 h-4" />
-                                    <span className="font-bold text-sm">OFFICE</span>
+                                    <span className="font-bold text-sm">BÁSICO</span>
                                 </button>
                             </div>
                         </div>

@@ -9,7 +9,10 @@ import { CanvasAvatar } from './CanvasAvatar';
 import { ImagePreloader } from './ImagePreloader';
 import { AchievementModal } from './AchievementModal';
 import { MissionCompletionModal } from './MissionCompletionModal';
+import { ChestOpeningModal } from './ChestOpeningModal';
+import { ReportResultCarousel } from './ReportResultCarousel';
 import { Portal } from './Portal';
+import { Report } from '../types';
 
 interface SovereignCustomizerProps {
     initialConfig?: SovereignConfig;
@@ -52,15 +55,50 @@ const Selector: React.FC<{
 );
 
 export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initialConfig, onSave, onClose }) => {
-    const { userProfile } = useGame();
+    const { userProfile, showToast } = useGame();
     const [config, setConfig] = useState<SovereignConfig>({
         ...DEFAULT_SOVEREIGN_CONFIG,
         ...(initialConfig || {}),
     });
     const [activeMode, setActiveMode] = useState<EditMode>('sovereign');
     const [sovereignSubTab, setSovereignSubTab] = useState<SovereignSubTab>('Corpo');
+    
+    // Testing State
     const [testLevelUp, setTestLevelUp] = useState(false);
     const [testMission, setTestMission] = useState(false);
+    const [testChest, setTestChest] = useState(false);
+    const [testReport, setTestReport] = useState(false);
+
+    // Mock Report for Testing
+    const mockReport: Report = {
+        id: 'test-report',
+        userId: userProfile.id,
+        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        endDate: new Date().toISOString(),
+        performanceScore: 95,
+        metrics: {
+            totalHours: 42,
+            arenasInvolved: 5,
+            actionsCompleted: 150,
+            totalPlannedActions: 160,
+            goalsMet: 8,
+            questsCompleted: 3,
+            plannedEndDate: new Date().toISOString()
+        },
+        highlight: {
+            mostFocusedArena: 'Coding',
+            mostRepeatedAction: 'Debug',
+            mostRepeatedActionCount: 50
+        },
+        assetProgress: [
+            { asset: 'Corpo', value: 80 },
+            { asset: 'Mente', value: 90 },
+            { asset: 'Alma', value: 70 }
+        ],
+        clanPoints: 120,
+        expGained: 500,
+        generatedAt: new Date().toISOString()
+    };
 
     // Parse initial body state for selectors
     useEffect(() => {
@@ -451,21 +489,33 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             )}
 
                             {sovereignSubTab === 'Testes' && (
-                                <div className="space-y-4">
-                                    <button
-                                        onClick={() => setTestLevelUp(true)}
-                                        className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
-                                    >
-                                        Testar Level Up
-                                    </button>
-                                    <button
-                                        onClick={() => setTestMission(true)}
-                                        className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
-                                    >
-                                        Testar Missão Completa
-                                    </button>
-                                </div>
-                            )}
+                    <div className="space-y-4">
+                        <button
+                            onClick={() => setTestLevelUp(true)}
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                        >
+                            Testar Level Up
+                        </button>
+                        <button
+                            onClick={() => setTestMission(true)}
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                        >
+                            Testar Missão Completa
+                        </button>
+                        <button
+                            onClick={() => setTestChest(true)}
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                        >
+                            Testar Baú (Lendário)
+                        </button>
+                        <button
+                            onClick={() => setTestReport(true)}
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                        >
+                            Testar Relatório
+                        </button>
+                    </div>
+                )}
                         </div>
                     )}
 
@@ -569,33 +619,61 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                 </div>
             </GlassCard>
 
+            {/* Test Modals */}
             {testLevelUp && (
-                <AchievementModal
+                <AchievementModal 
                     achievement={{
                         type: 'PLAYER_RANK_UP',
-                        data: { name: 'Soberano Supremo' }
+                        data: {
+                            name: 'Soberano',
+                            icon: '👑',
+                            rewards: {
+                                exp: 1000,
+                                chest: 'Baú Lendário',
+                                ornament: 'Medalha de Honra'
+                            }
+                        }
                     }}
                     onClose={() => setTestLevelUp(false)}
                 />
             )}
-
             {testMission && (
-                <MissionCompletionModal
+                <MissionCompletionModal 
                     mission={{
                         id: 'test-mission',
-                        season_id: 'test',
                         title: 'Missão de Teste',
-                        description: 'Esta é uma missão de teste.',
-                        goal_type: 'actions_completed',
-                        goal_value: 10,
-                        reward_type: 'exp',
-                        reward_value: 100,
-                        action_name: 'Teste',
-                        icon: '⚔️',
-                        type: 'individual'
+                        description: 'Complete uma missão para testar o modal.',
+                        type: 'daily',
+                        requirements: { type: 'action', target: 'any', count: 1 },
+                        reward_type: 'item',
+                        reward_value: 'Baú Lendário',
+                        status: 'completed',
+                        progress: 1,
+                        total_required: 1,
+                        created_at: new Date().toISOString(),
+                        expires_at: new Date().toISOString(),
+                        icon: '🧪'
                     }}
-                    onOpen={() => alert('Abrir Recompensa Clicked')}
+                    onOk={() => setTestMission(false)}
                     onClose={() => setTestMission(false)}
+                />
+            )}
+            {testChest && (
+                <ChestOpeningModal 
+                    chestType="Lendário"
+                    onClose={() => setTestChest(false)}
+                />
+            )}
+            {testReport && (
+                <ReportResultCarousel 
+                    report={mockReport}
+                    onOk={() => setTestReport(false)}
+                    onShare={() => showToast("Compartilhado com sucesso!")}
+                    onCompare={() => showToast("Comparar não implementado no teste")}
+                    onPostToFeed={() => showToast("Postado no feed com sucesso!")}
+                    chest="Lendário"
+                    expGained={1000}
+                    onStartNewCycle={() => setTestReport(false)}
                 />
             )}
         </div>

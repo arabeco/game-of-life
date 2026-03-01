@@ -28,10 +28,27 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
 };
 
 export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement, onClose }) => {
-    const { addFeedEvent, userProfile, showToast } = useGame();
+    const { addFeedEvent, userProfile, showToast, appMode } = useGame();
     const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data);
     const [showContent, setShowContent] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
+
+    // Only show in GAME mode if requested (User requirement: "notificações de bau e nivel de patente sao aenas no modo game")
+    // Note: AchievementModal is mounted in App.tsx or MainApp based on achievementUnlocked state.
+    // If we return null here, it effectively hides it.
+    if (appMode !== 'GAME') {
+        // We should probably close it automatically so it doesn't get stuck in state
+        // But we can't call onClose inside render. 
+        // We'll handle this with a useEffect.
+    }
+
+    useEffect(() => {
+        if (appMode !== 'GAME') {
+            onClose();
+        }
+    }, [appMode, onClose]);
+
+    if (appMode !== 'GAME') return null;
 
     // Get user skin color
     const userSkinId = userProfile.skin;

@@ -301,7 +301,28 @@ export const GM_CONFIG = {
   unlocks: {
     itemUnlockBasis: 'nobility' as 'level' | 'nobility',
   },
-  goldenInvites: { codePrefix: 'ouro', seedCount: 5, seedCodes: ['ouro2026-001', 'ouro2026-002', 'ouro2026-003', 'ouro2026-004', 'ouro2026-005'], multiUseCodes: ['TEMP123'] },
+  goldenInvites: { 
+    codePrefix: 'ouro', 
+    seedCount: 5, 
+    seedCodes: [
+      'ouro2026-001', 
+      'ouro2026-002', 
+      'ouro2026-003', 
+      'ouro2026-004', 
+      'ouro2026-005',
+      'ouro2026-DESTINO',
+      'ouro2026-GLORIA',
+      'ouro2026-SABEDORIA',
+      'ouro2026-PODER',
+      'ouro2026-EQUILIBRIO',
+      'ouro2026-VISIONARIO',
+      'ouro2026-IMPULSO',
+      'ouro2026-MAESTRIA',
+      'ouro2026-LEGADO', 
+      'ouro2026-RENASCER'
+    ], 
+    multiUseCodes: ['TEMP123'] 
+  },
 };
 
 export const SKINS_DATA: Skin[] = GM_CONFIG.cosmetics.skins;

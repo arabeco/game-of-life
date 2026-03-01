@@ -5,6 +5,7 @@ import { Portal } from './Portal';
 import { SKINS_DATA } from '../constants/GMboard';
 import { Report, ChestType } from '../types';
 import { getScoreGrade } from '../utils/dateUtils';
+import { VideoPlayer } from './VideoPlayer';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon } from './Icons';
 
 // Helper functions (duplicated to avoid circular dependencies)
@@ -76,10 +77,36 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const skinColor = userSkin?.color || '#ffffff';
 
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [showVideo, setShowVideo] = useState(true); // Start with video
     const totalSlides = 5;
 
     const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, totalSlides - 1));
     const prevSlide = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
+
+    if (showVideo) {
+        return (
+            <Portal>
+                <div className="fixed inset-0 bg-black z-[10001] flex items-center justify-center animate-fade-in">
+                    <div className="relative w-full h-full max-w-md max-h-[800px] bg-black">
+                        <VideoPlayer
+                            src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/mission_complete.mp4`}
+                            className="w-full h-full object-cover"
+                            placeholderLabel="Gerando Relatório..."
+                            duration={4000}
+                            playbackRate={1.0}
+                            onEnd={() => setShowVideo(false)}
+                        />
+                        <button 
+                            onClick={() => setShowVideo(false)}
+                            className="absolute top-4 right-4 text-white/50 hover:text-white text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm"
+                        >
+                            Pular
+                        </button>
+                    </div>
+                </div>
+            </Portal>
+        );
+    }
 
     const { metrics, highlight, assetProgress } = report;
     const scoreInfo = getScoreGrade(report.performanceScore);

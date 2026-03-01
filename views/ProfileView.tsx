@@ -284,7 +284,7 @@ export const ShareableProfileCard: React.FC<{
             </div>
 
             {/* UNIFIED POSITIONING: Match the Live Profile View */}
-            {userProfile.sovereign && (
+            {userProfile.sovereign && !isBasicMode && (
                  <UnifiedSovereignDisplay 
                     sovereignConfig={userProfile.sovereign} 
                     className="absolute top-[60px] right-4 w-[70px] h-[95px]"

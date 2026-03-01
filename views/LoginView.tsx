@@ -78,7 +78,7 @@ export const LoginView: React.FC = () => {
                     appMode: appMode,
                     avatarUrl: `https://picsum.photos/seed/${data.user.id}/100/100`,
                     border: 'default',
-                    level: 0,
+                    level: 1,
                     backgroundUrl: `https://picsum.photos/seed/bg-${data.user.id}/400/150`,
                     isOnline: true,
                     visibleWidgets: ['consciencia.lema'],
@@ -101,18 +101,33 @@ export const LoginView: React.FC = () => {
                         orbs: {},
                         plates: {},
                         ornament: {},
+                        ui_skins: { 'BASIC': true },
                     },
                     completedSeasonMissions: [PROFILE_FLAG_TERMS_PENDING],
                     nobility: { exp: 0, rankId: 'vagante' },
                     wallet: { gold: 0, fragments: 0 },
                     mood: 50,
                     chests: [
-                        { type: 'Incomum', count: 1 },
-                        { type: 'Ciclo', count: 1 }
+                        { type: 'Comum', count: 1 },
+                        { type: 'Skin Comum', count: 1 }
                     ],
                     inventory: [],
                     role: 'user',
                     isPremium: false
+                };
+
+                // Initialize unlocked items with Starter Kit
+                newProfile.unlockedItems.hairStyles = {
+                    'cachos': true,
+                    'medio_reto': true,
+                    'grunge_longo': true,
+                    'textured_crop': true
+                };
+                newProfile.unlockedItems.orbs = {
+                    'item_orb_1_002': true // Orbe de Cobre
+                };
+                newProfile.unlockedItems.plates = {
+                    'item_plate_1_001': true // Placa Madeira
                 };
 
                 const { error: profileError } = await supabase

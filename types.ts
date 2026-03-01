@@ -2,7 +2,7 @@
 
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
 export type SlotLayoutType = 1 | 2 | 3; // 1: wide, 2: square, 3: rect
-export type ChestType = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' | 'Ciclo';
+export type ChestType = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' | 'Ciclo' | 'Skin Comum';
 
 export interface SlotValueImage {
   imageUrl: string;
@@ -191,7 +191,7 @@ export interface SovereignConfig {
     primaryDisplay?: 'sovereign' | 'item' | 'glyph'; // Preferred miniature display
 }
 
-export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament';
+export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 

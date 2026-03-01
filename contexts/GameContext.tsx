@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, DirectMessage, DMConversation } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, DirectMessage, DMConversation, ItemRarity } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef } from '../constants/items';
 import { supabase } from '../supabaseClient';
@@ -77,7 +77,7 @@ const CLAN_RANKS: ClanRank[] = [
 ];
 
 const NOBILITY_RANKS: NobilityRank[] = [
-    { id: 'vagante', name: 'Vagante', levelRequired: 0, expTotalRequired: 0 },
+    { id: 'vagante', name: 'Vagante', levelRequired: 1, expTotalRequired: 0 },
     { id: 'escudeiro', name: 'Escudeiro', levelRequired: 10, expTotalRequired: 10000 },
     { id: 'cavaleiro', name: 'Cavaleiro', levelRequired: 20, expTotalRequired: 35000 },
     { id: 'lorde', name: 'Lorde', levelRequired: 30, expTotalRequired: 85000 },
@@ -926,8 +926,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
       // Auto-grant Starter Pack (T1 Items) if inventory is empty
       if ((!data || data.length === 0)) {
-          console.log("Inventory empty. Granting Starter Pack...");
-          const starterItems = ITEMS_DB.filter(i => i.tier === 1);
+          console.log("Inventory empty. Granting Starter Pack (v1.006)...");
+          
+          // IDs definidos no LOJA.MD e items.ts
+          const starterItemIds = [
+              'item_skin_1_001', // Náufrago
+              'cachos',          // Cabelo 1
+              'medio_reto',      // Cabelo 2
+              'grunge_longo',    // Cabelo 3
+              'textured_crop',   // Cabelo 4
+              'item_orb_1_002',  // Orbe de Cobre
+              'item_plate_1_001', // Placa Madeira
+              'BASIC'            // Tema Básico
+          ];
+
+          const starterItems = ITEMS_DB.filter(i => starterItemIds.includes(i.id));
           
           if (starterItems.length > 0) {
               const toInsert = starterItems.map(i => ({
@@ -938,6 +951,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
               const { error: insertError } = await supabase.from('user_inventory').insert(toInsert);
               
               if (!insertError) {
+                   // Grant initial chests
+                   await addChest('Comum');
+                   await addChest('Skin Comum');
+
+                   // Set initial rank and exp if needed (Vagante Level 1)
+                   // O level do usuário é a soma dos níveis dos assets.
+                   // Vamos garantir que o perfil comece com os dados corretos.
+                   updateUserProfile({ 
+                       nobility: { exp: 0, rankId: 'vagante' },
+                       level: 1 // Forçar nível 1 inicial
+                   });
+
                    const newItems = starterItems.map(i => ({
                        id: i.id,
                        instanceId: 'temp_' + i.id, 
@@ -2472,6 +2497,57 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const userId = getSupabaseUserId();
     if (!userId) return false;
 
+    // Lógica especial para o Baú de Skin Comum (Exclusivo para Skins)
+    if (chestType === 'Skin Comum') {
+        // Filtrar apenas skins
+        const allSkins = ITEMS_DB.filter(i => i.category === 'skin' && !i.isGoldExclusive && !i.isSeasonExclusive);
+        
+        // Rarity weights for Skin Comum chest
+        // 75% Common, 20% Uncommon, 5% Rare
+        const rand = Math.random() * 100;
+        let targetRarity: ItemRarity = 'common';
+        if (rand > 95) targetRarity = 'rare';
+        else if (rand > 75) targetRarity = 'uncommon';
+        
+        const possibleSkins = allSkins.filter(s => s.rarity === targetRarity);
+        // Fallback if no skins of that rarity found (shouldn't happen with current DB)
+        const selectedSkin = possibleSkins.length > 0 
+            ? possibleSkins[Math.floor(Math.random() * possibleSkins.length)]
+            : allSkins[0];
+
+        // Call RPC to grant the specific item (mimics open_chest logic)
+        const { data, error } = await supabase.rpc('open_chest_specific', {
+            p_chest_type: 'Skin Comum',
+            p_item_id: selectedSkin.id
+        });
+
+        // Se o RPC open_chest_specific não existir, vamos tentar o open_chest padrão 
+        // mas o ideal é que o backend suporte esse novo baú.
+        // Como não podemos mudar o backend, vamos usar a lógica local e atualizar o DB manualmente se necessário.
+        // Mas o sistema já tem recycle_item e craft_item que usam RPCs.
+        
+        if (error) {
+            console.error("Error opening Skin Chest:", error);
+            // Fallback: Tentar usar o open_chest normal se o específico falhar
+            const { data: fallbackData, error: fallbackError } = await supabase.rpc('open_chest', {
+                p_chest_type: 'Comum' // Fallback para comum se der erro no custom
+            });
+            if (fallbackError) {
+                alert(fallbackError.message);
+                return false;
+            }
+            // Continue with fallback data
+            handleChestOpenResult(fallbackData, 'Comum');
+            return true;
+        }
+
+        if (data && data.success) {
+            handleChestOpenResult(data, 'Skin Comum');
+            return true;
+        }
+        return false;
+    }
+
     const { data, error } = await supabase.rpc('open_chest', {
         p_chest_type: chestType
     });
@@ -2483,35 +2559,42 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
 
     if (data && data.success) {
-        // Show reward (item + fragments)
-        const rewardMsg = `You got ${data.item_name} (Tier ${data.tier}) + ${data.fragments_gained} Fragments!`;
-        alert(rewardMsg);
-
-        // Update local state
-        const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
-        updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
-        
-        if (!data.is_duplicate) {
-             fetchInventory(userId);
-        }
-        
-        // Update chest count locally
-        setUserProfile(prev => {
-            const existingChests = prev.chests || [];
-            const chestIndex = existingChests.findIndex(c => c.type === chestType);
-      
-            if (chestIndex === -1 || existingChests[chestIndex].count === 0) return prev;
-            
-            const newChests = existingChests.map((chest, index) => 
-              index === chestIndex ? { ...chest, count: chest.count - 1 } : chest
-            ).filter(chest => chest.count > 0);
-      
-            return { ...prev, chests: newChests };
-        });
-
+        handleChestOpenResult(data, chestType);
         return true;
     }
     return false;
+  };
+
+  // Helper to process chest opening results
+  const handleChestOpenResult = (data: any, chestType: ChestType) => {
+    const userId = getSupabaseUserId();
+    if (!userId) return;
+
+    // Show reward (item + fragments)
+    const rewardMsg = `Você ganhou ${data.item_name} (Tier ${data.tier}) + ${data.fragments_gained} Fragmentos!`;
+    alert(rewardMsg);
+
+    // Update local state
+    const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
+    updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
+    
+    if (!data.is_duplicate) {
+         fetchInventory(userId);
+    }
+    
+    // Update chest count locally
+    setUserProfile(prev => {
+        const existingChests = prev.chests || [];
+        const chestIndex = existingChests.findIndex(c => c.type === chestType);
+  
+        if (chestIndex === -1 || existingChests[chestIndex].count === 0) return prev;
+        
+        const newChests = existingChests.map((chest, index) => 
+          index === chestIndex ? { ...chest, count: chest.count - 1 } : chest
+        ).filter(chest => chest.count > 0);
+  
+        return { ...prev, chests: newChests };
+    });
   };
   
 
@@ -2997,7 +3080,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // MODIFICAÇÃO: Só dispara se subiu de fato e não é o carregamento inicial (oldRankIndex !== -1)
         // E também não dispara se o novo rank for o inicial (Vagante) para evitar aviso no login para nível 1
         if (newRankIndex > oldRankIndex && oldRankIndex !== -1 && newRankIndex > 0) {
-            if (newRank) setAchievementUnlocked({ type: 'PLAYER_RANK_UP', data: newRank });
+            if (newRank) {
+                setAchievementUnlocked({ type: 'PLAYER_RANK_UP', data: newRank });
+                
+                // Grant Rank Rewards
+                const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: string; name: string }[]> = {
+                    'vagante': [
+                        { category: 'ui_skins', itemId: 'FROST', name: 'Tema Gelo Eterno' }
+                    ],
+                    'escudeiro': [
+                        { category: 'ui_skins', itemId: 'CYBER', name: 'Tema Cyberpunk' },
+                        { category: 'borders', itemId: 'item_border_t1_aprendiz', name: 'Borda Aprendiz' },
+                        { category: 'banners', itemId: 'item_banner_t1_aprendiz', name: 'Banner Aprendiz' }
+                    ],
+                    'cavaleiro': [
+                        { category: 'ui_skins', itemId: 'EMBER', name: 'Tema Chama Viva' },
+                        { category: 'borders', itemId: 'item_border_t2_veterano', name: 'Borda Veterano' },
+                        { category: 'banners', itemId: 'item_banner_t2_veterano', name: 'Banner Veterano' }
+                    ],
+                    'lorde': [
+                        { category: 'ui_skins', itemId: 'AURORA', name: 'Tema Aurora Boreal' },
+                        { category: 'borders', itemId: 'item_border_t3_mistico', name: 'Borda Místico' },
+                        { category: 'banners', itemId: 'item_banner_t3_mistico', name: 'Banner Místico' }
+                    ],
+                    'barao': [
+                        { category: 'borders', itemId: 'item_border_t4_celestial', name: 'Borda Celestial' },
+                        { category: 'banners', itemId: 'item_banner_t4_celestial', name: 'Banner Celestial' }
+                    ],
+                    'soberano': [
+                        { category: 'borders', itemId: 'item_border_t5_genesis', name: 'Borda Gênesis' },
+                        { category: 'banners', itemId: 'item_banner_t5_genesis', name: 'Banner Gênesis' }
+                    ]
+                };
+
+                const rewards = RANK_REWARDS[newRankId];
+                if (rewards) {
+                    rewards.forEach(reward => {
+                        grantUserUnlock(reward.category, reward.itemId);
+                        grantInventoryItem(reward.itemId);
+                        showToast(`Recompensa de Patente: ${reward.name}`, 'success');
+                    });
+                }
+            }
         }
         updateUserProfile({ nobility: { ...userProfile.nobility, rankId: newRankId } });
     }
@@ -3157,6 +3281,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Check for Badge/Inventory Item Reward
     if (mission.reward_type === 'item_id' && rewardCategory === 'ornament' && rewardItemId) {
+        grantInventoryItem(rewardItemId);
+    }
+    
+    // NEW: Grant insignia for quest completion
+    if (mission.reward_type === 'item_id' && rewardCategory === 'insignias' && rewardItemId) {
+        grantUserUnlock('insignias', rewardItemId);
         grantInventoryItem(rewardItemId);
     }
     

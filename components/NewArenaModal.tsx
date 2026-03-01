@@ -53,7 +53,38 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             alert("Por favor, selecione um Ativo e dê um nome à Arena.");
             return;
         };
-        const newArena = await addArena(assetId, { name, description, icon: '🏆' });
+
+        // Mapping asset IDs to specific emojis
+        const assetEmojiMap: Record<string, string> = {
+        'saude': '🧘',
+        'financas': '💰',
+        'trabalho': '💼',
+        'hobbies': '🎨',
+        'fisico': '💪',
+        'geral': '🏆',
+        'intelectual': '🧠',
+        'social': '🤝',
+        'emocional': '❤️',
+        'espiritual': '🙏',
+        'carreira': '🚀',
+        'lazer': '🎮',
+        'familia': '👨‍👩‍👧‍👦',
+        'estudos': '📚',
+        'relacionamento': '💑',
+        'criatividade': '🎭',
+        'aventura': '🧗',
+        'natureza': '🌲',
+        'tecnologia': '💻',
+        'viagem': '✈️',
+        'culinaria': '🍳',
+        'musica': '🎵',
+        'esportes': '⚽',
+        'leitura': '📖',
+        'autoconhecimento': '🪞'
+    };
+
+        const defaultIcon = assetEmojiMap[assetId] || '🏆';
+        const newArena = await addArena(assetId, { name, description, icon: defaultIcon });
 
         if (onArenaCreated) {
             onArenaCreated(newArena);

@@ -129,17 +129,17 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
 
     const handleDonate = () => {
         // eslint-disable-next-line no-alert
-        alert(`Você doou ${item.name}! (Simulação)`);
+        alert(`Você doou ${currentItem.name}! (Simulação)`);
         // Logic to donate would go here
     };
 
     const handleRecycle = () => {
         // eslint-disable-next-line no-alert
-        const confirm = window.confirm(`Tem certeza que deseja reciclar ${item.name}? Esta ação não pode ser desfeita.`);
+        const confirm = window.confirm(`Tem certeza que deseja reciclar ${currentItem.name}? Esta ação não pode ser desfeita.`);
         if (confirm) {
             // Logic to remove from inventory
             // eslint-disable-next-line no-alert
-            alert(`Você reciclou ${item.name}! (Simulação)`);
+            alert(`Você reciclou ${currentItem.name}! (Simulação)`);
             onClose();
         }
     };

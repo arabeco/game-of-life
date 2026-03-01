@@ -173,9 +173,8 @@ const fragmentShaderSource = `
              float fade = 1.0 - smoothstep(0.0, radiusBase * reach, dist);
              fade = pow(fade, 1.2); // Softer fade, stays visible longer
 
-             // Intensity: Much brighter base.
-             // Level 1: 1.0 (Visible but soft). Level 10: 2.0 (Strong).
-             float intensityMult = 1.0 + (level / 10.0) * 1.0;
+             // Intensity: Muito mais foda (Level 10: 5.5, Level 1: 2.5)
+             float intensityMult = 2.5 + (level / 10.0) * 3.0;
 
              // 7. Core Glow
              // Tiny anchor point

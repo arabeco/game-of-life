@@ -52,6 +52,7 @@ O "feeling" de cada categoria para guiar a criação visual e o design.
 Abaixo estão todos os itens implementados no sistema (`ITEMS_DB`), organizados por categoria e tier.
 
 ### 👕 Skins (Trajes)
+*Nota: No momento temos apenas **1 skin lendária** disponível.*
 | ID | Nome | Tier | Raridade | Ícone | Notas |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `item_skin_1_001` | Náufrago | 1 | Comum | 🏝️ | Inicial |
@@ -68,7 +69,7 @@ Abaixo estão todos os itens implementados no sistema (`ITEMS_DB`), organizados 
 | `item_skin_4_002` | Mago Círculo | 4 | Épico | 🧙‍♂️ | |
 | `item_skin_exclusive_001`| Empreendedor | 4 | Épico | 💼 | **Loja (500 Ouro)** |
 | `item_skin_season_001` | O Criador | 4 | Épico | 🎨 | **Season** |
-| `item_skin_5_001` | Entidade de Luz | 5 | Lendário | ✨ | |
+| `item_skin_5_001` | Entidade de Luz | 5 | Lendário | ✨ | **Lendária Única** |
 
 ### 💇 Cabelos (Hairstyles)
 | ID | Nome | Tier | Raridade | Ícone |
@@ -138,7 +139,8 @@ Abaixo estão todos os itens implementados no sistema (`ITEMS_DB`), organizados 
 | `item_glyph_5_001` | A FORJA - Losango 3D| 5 | Lendário | 💠 |
 | `item_glyph_5_002` | Artefato Sombrio | 5 | Lendário | 🕳️ |
 
-### ✨ Auras
+### ✨ Auras (⚠️ EM BREVE / NÃO IMPLEMENTADO)
+*Nota: O sistema de Auras está documentado mas ainda não foi implementado no renderizador de avatar.*
 | ID | Nome | Tier | Raridade | Ícone | Notas |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `item_aura_1_001` | Bruma | 1 | Comum | 🌫️ | |
@@ -303,7 +305,7 @@ A "Fórmula da Sorte" define exatamente o que pode vir em cada baú. O sistema u
 
 ## 🎖️ 7. Recompensas de Missões
 
-As missões são a principal forma de progressão e obtenção de baús por mérito.
+As missões são a principal forma de progressão e obtenção de baús por mérito. Todas as missões individuais e de clã agora recompensam com **Baú Comum**.
 
 ### 🌟 Missões Especiais (Season Meta)
 | Missão | Objetivo | Recompensa |
@@ -324,8 +326,6 @@ As missões são a principal forma de progressão e obtenção de baús por mér
 | **Unidade do Clã** | Somar 50h de atividades em equipe | **Baú Comum** + 4500 XP |
 
 ### 🐣 Missões de Introdução (Boas-vindas)
-*Estas missões são únicas e servem para configurar o perfil inicial.*
-
 | Missão | Recompensa |
 | :--- | :--- |
 | Criar seu primeiro Ciclo | **Baú Comum** + 100 XP |
@@ -338,28 +338,7 @@ As missões são a principal forma de progressão e obtenção de baús por mér
 
 ---
 
-## 🛠️ 8. Notas Técnicas de Implementação
-
-### Como funciona o sorteio:
-1.  Você abre um baú (ex: Baú Incomum).
-2.  O sistema roda um dado de 100 lados (d100) para definir a **Raridade (Tier)** do item.
-    *   *Exemplo Baú Incomum: 1-70 (Comum), 71-95 (Incomum), 96-100 (Raro).*
-3.  Definida a raridade, o sistema sorteia um item aleatório daquela lista (Skin, Aura, etc.).
-4.  Se você já tem o item, ele vira **Fragmentos** automaticamente (Reciclagem).
-
-### Tabelas de Probabilidade (Drop Rates)
-| Baú | T1 (Comum) | T2 (Incomum) | T3 (Raro) | T4 (Épico) | T5 (Lendário) | Frag. Bônus |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Comum** | 90% | 9% | 1% | - | - | 1-5 |
-| **Incomum** | 70% | 25% | 5% | - | - | 5-15 |
-| **Ciclo** | 40% | 35% | 20% | 5% | - | 10-30 |
-| **Radiante** | - | 45% | 40% | 10% | 5% | 30-80 |
-| **Épico** | - | - | 50% | 35% | 15% | 80-200 |
-| **Season** | - | - | - | 60% | 30% | 200-500 |
-
----
-
-## 📊 7. Recompensas de Relatório (Fim de Ciclo)
+## 📊 8. Recompensas de Relatório (Fim de Ciclo)
 
 Ao fechar um ciclo (Sexta-feira), o Oráculo calcula seu XP total ganho e sua Nota de Performance.
 **Nova Lógica (Economia de Minutos):** Agora, o tempo é a moeda principal.
@@ -382,93 +361,50 @@ Para ganhar os melhores baús, você precisa de **Volume (XP/Tempo)** E **Qualid
 2.  **Duração Mínima**: Ciclos com menos de 7 dias **NÃO DÃO BAÚS**, independente do XP ou Nota. Isso previne o "spam" de mini-ciclos.
 3.  **Nota do Ciclo**: A nota (0 a 100+) é composta por Fidelidade (40%), Metas (+15pts), Consistência (+20pts) e Volume (+1pt/2h).
 
-*Exemplo: Um ciclo de 1000 XP (15h úteis) com nota 95 será um **Baú Comum** (pois passou de 750 mas não chegou em 2250), com 5% de chance de virar Incomum.*
-
 ---
 
-## 🎒 8. Inventário Inicial (Heroi Básico)
+## 🎒 9. Inventário Inicial (Kit Boas-vindas v1.006)
 
 Todo novo usuário começa sua jornada com o seguinte "Kit de Sobrevivência":
 
 | Item | Qtd | Detalhes |
 | :--- | :---: | :--- |
-| **Skin Base** | 1 | "Humano" (Gold Default) |
-| **Baú Incomum** | 1 | Para sentir o gosto da sorte |
-| **Baú de Ciclo** | 1 | Recompensa de boas-vindas |
+| **Skin Base** | 1 | "Náufrago" (Skin padrão T1) |
+| **Baú Comum** | 1 | Pode vir qualquer item (Comum a Raro) |
+| **Baú de Skin Comum**| 1 | **NOVO!** Exclusivo para Skins (Comum a Raro) |
+| **Placa Madeira** | 1 | Placa básica de iniciante |
+| **Cabelos Iniciais** | 4 | Os 4 estilos mais básicos liberados |
+| **Orbe de Cobre** | 1 | Primeiro item de orbe |
+| **Tema Básico** | 1 | Interface profissional padrão |
 | **Ouro** | 0 | A economia começa do zero |
 | **Fragmentos** | 0 | Recicle para ganhar |
-| **Patente** | 0 | "Vagante" (Rank Inicial) |
+| **Patente** | 1 | **Vagante** (Nível 1) |
 
 ---
 
-## 🎯 9. Missões e Recompensas
+## 🎖️ 10. Desbloqueios por Patente (Nobiliarquia)
 
-As missões são a principal fonte de XP e itens garantidos (sem sorteio).
+O sistema de patentes recompensa o jogador por sua evolução constante, liberando cosméticos exclusivos conforme o nível de maestria aumenta.
 
-### Missões Introdutórias (Tutorial)
-| Missão | Objetivo | Recompensa |
-| :--- | :--- | :--- |
-| **Primeiro Ciclo** | Criar seu primeiro ciclo de foco | 100 XP + **Baú Comum** |
-| **Autoconhecimento** | Preencher o Perfil de Ativos | 100 XP + **Baú Comum** |
-| **Soberano** | Customizar sua aparência | 100 XP + **Baú Comum** |
-| **Arenas** | Criar seus primeiros palcos | 100 XP + **Baú Comum** |
-| **Ações** | Definir seus primeiros movimentos | 100 XP + **Baú Comum** |
-| **Vitória** | Completar sua primeira ação | 200 XP + **Baú Comum** |
-| **Tutorial Completo** | Concluir o guia de iniciação | **1000 XP + Baú Comum** |
+| Nível | Patente | XP Total | Desbloqueios Exclusivos |
+| :--- | :--- | :--- | :--- |
+| 1 | **Vagante** | 0 | Tema de UI "FROST" |
+| 10 | **Escudeiro** | 10.000 | Tema de UI "CYBER", Bordas Tier 1, Banners Tier 1 |
+| 20 | **Cavaleiro** | 35.000 | Tema de UI "EMBER", Bordas Tier 2, Banners Tier 2 |
+| 30 | **Lorde** | 85.000 | Tema de UI "AURORA", Bordas Tier 3, Banners Tier 3 |
+| 40 | **Barão** | 185.000 | Bordas Tier 4, Banners Tier 4 |
+| 50 | **Conde** | 350.000 | *Novas recompensas em breve* |
+| 60 | **Duque** | 512.500 | *Novas recompensas em breve* |
+| 70 | **Príncipe** | 675.000 | *Novas recompensas em breve* |
+| 80 | **Rei** | 837.500 | *Novas recompensas em breve* |
+| 90 | **Soberano** | 1.000.000| Bordas Tier 5, Banners Tier 5 |
 
-### Missões de Temporada (Season)
-| Missão | Objetivo | Recompensa |
-| :--- | :--- | :--- |
-| **Meta Quest** | Completar 3 Quests da Season | **5000 XP + Baú Raro** |
-| **O Andarilho** | Caminhar 20km no total | 2250 XP + **Baú Comum** |
-| **O Erudito** | Dedicar tempo à leitura | 1800 XP + **Baú Comum** |
-| **O Guerreiro** | Completar 50 flexões | 1125 XP + **Baú Comum** |
-| **Unidade do Clã** | 50 horas de atividades conjuntas | 4500 XP + **Baú Comum** |
+### 📍 Pointers para Implementação (IA)
+*   **Lógica de Recompensa de Nível**: `GameContext.tsx` -> Procure por `checkLevelUp` ou onde `nobility` é atualizado.
+*   **Definição de Itens**: `constants/items.ts` -> `ITEMS_DB`.
+*   **Componente de Visualização**: `AchievementModal.tsx` (exibe o Level Up e recompensas).
+*   **Tabela de XP**: `GameContext.tsx` -> `NOBILITY_RANKS`.
 
 ---
 
-## 🛠️ 10. Aspectos Técnicos (SQL Schema)
-
-### Schema Resumido
-```sql
--- Itens
-CREATE TABLE items (
-  id VARCHAR(50) PRIMARY KEY,
-  name VARCHAR(100),
-  category ENUM('skin', 'hair', 'border', 'glyph', 'aura', 'orb', 'plate', 'artifact', 'ui_skin') NOT NULL,
-  tier INT CHECK (tier BETWEEN 1 AND 5),
-  rarity ENUM('common', 'uncommon', 'rare', 'epic', 'legendary'),
-  is_season_exclusive BOOLEAN DEFAULT FALSE,
-  is_gold_exclusive BOOLEAN DEFAULT FALSE,
-  recycle_value INT,
-  craft_cost INT,
-  gold_price INT
-);
-
--- Inventário
-CREATE TABLE user_inventory (
-  user_id VARCHAR(50),
-  item_id VARCHAR(50),
-  quantity INT DEFAULT 1,
-  acquired_at TIMESTAMP,
-  PRIMARY KEY (user_id, item_id)
-);
-
--- Moedas
-CREATE TABLE user_currency (
-  user_id VARCHAR(50) PRIMARY KEY,
-  gold INT DEFAULT 0,
-  fragments INT DEFAULT 0
-);
-
--- Pity
-CREATE TABLE user_pity_counters (
-  user_id VARCHAR(50),
-  chest_type VARCHAR(20),
-  counter INT DEFAULT 0,
-  PRIMARY KEY (user_id, chest_type)
-);
-```
-
-### Lógica de Stored Procedures
-As procedures `open_chest`, `craft_item`, `recycle_item` e `purchase_gold_product` gerenciam a lógica transacional no banco de dados para evitar fraudes e garantir consistência.
+## 🛠️ 11. Notas Técnicas de Implementação

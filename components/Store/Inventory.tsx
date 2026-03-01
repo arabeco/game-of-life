@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { ITEMS_DB, ItemDef, resolveItemDef } from '../../constants/items';
@@ -20,7 +20,7 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
 ];
 
 export const Inventory: React.FC = () => {
-    const { inventory, userProfile, updateUserProfile } = useGame();
+    const { inventory, userProfile, updateUserProfile, appMode } = useGame();
     const [activeTab, setActiveTab] = useState<InventoryTab>('all');
     
     // --- Editors State ---
@@ -31,6 +31,22 @@ export const Inventory: React.FC = () => {
 
     const normalizedRole = userProfile?.role?.toLowerCase?.() || '';
     const isGM = normalizedRole === 'admin' || normalizedRole === 'gm';
+
+    // Filter Tabs based on App Mode
+    const visibleTabs = useMemo(() => {
+        if (appMode === 'BASIC') {
+            // Hide cosmetic tabs and chests in BASIC mode (Focus on productivity)
+            return TABS.filter(t => !['skins', 'character', 'ui', 'glyphs', 'chests'].includes(t.id));
+        }
+        return TABS;
+    }, [appMode]);
+
+    // Reset active tab if it becomes invisible
+    useEffect(() => {
+        if (appMode === 'BASIC' && ['skins', 'character', 'ui', 'glyphs', 'chests'].includes(activeTab)) {
+            setActiveTab('all');
+        }
+    }, [appMode, activeTab]);
 
     const sourceItems = useMemo(() => {
         // Normal user sees their inventory
@@ -141,7 +157,7 @@ export const Inventory: React.FC = () => {
 
             {/* Filter Tabs */}
             <div className="flex-none flex space-x-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700">
-                {TABS.map(tab => (
+                {visibleTabs.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}

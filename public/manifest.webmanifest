@@ -1,7 +1,7 @@
 {
-  "name": "Elite 2050",
-  "short_name": "Elite2050",
-  "description": "Elite 2050",
+  "name": "Glyph App",
+  "short_name": "Glyph",
+  "description": "Glyph App",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

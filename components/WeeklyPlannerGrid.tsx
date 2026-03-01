@@ -173,7 +173,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
 };
 
 
-export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDate, tasks, actions, onCustomDragStart, scaleFactor, stickyHeaderOffset, currentTime, timeIndicatorRef, dropIndicator }) => {
+export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDate, tasks, actions, onCustomDragStart, onTaskClick, scaleFactor, stickyHeaderOffset, currentTime, timeIndicatorRef, dropIndicator }) => {
     const gridRef = useRef<HTMLDivElement>(null);
 
     const startOfWeek = new Date(currentDate);

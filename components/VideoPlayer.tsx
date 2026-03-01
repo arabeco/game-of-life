@@ -50,9 +50,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div className={`flex flex-col items-center justify-center bg-black text-gray-400 ${className}`}>
                 <div className="w-16 h-16 border-4 border-gray-600 border-t-white rounded-full animate-spin mb-4"></div>
                 <p className="text-sm font-mono animate-pulse">{placeholderLabel}</p>
-                <button onClick={onEnd} className="mt-8 text-xs text-gray-600 hover:text-white transition-colors">
-                    (Skip - Placeholder)
-                </button>
             </div>
         );
     }
@@ -69,13 +66,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 onError={handleError}
                 controls={false}
             />
-            {/* Hidden skip for dev/emergency */}
-            <button 
-                onClick={onEnd}
-                className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/60 rounded-full text-white/20 hover:text-white transition-colors z-50"
-            >
-                <XIcon className="w-4 h-4" />
-            </button>
         </div>
     );
 };

@@ -4,12 +4,14 @@ import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { MoodModal } from './MoodModal';
 import { OracleFeed } from './OracleFeed';
-import { SparklesIcon } from './Icons';
+import { RestScreen } from './RestScreen';
+import { SparklesIcon, LockIcon } from './Icons';
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
     const { userProfile, oracleMessages, notifications, appMode, clan } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
+    const [isRestScreenOpen, setRestScreenOpen] = useState(false);
     const isBasicMode = appMode === 'BASIC';
     
     const unreadNotificationsCount = notifications.filter(n => !n.read).length;
@@ -84,6 +86,15 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
                             {/* Avatar and Level Button (on top of the bar) */}
                             <div className="relative z-30 flex items-center justify-center">
+                                {/* Rest Screen Button (Left) */}
+                                <button
+                                    onClick={() => setRestScreenOpen(true)}
+                                    className="absolute right-full mr-4 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-[var(--skin-accent-color)] transition-all group shadow-lg backdrop-blur-sm"
+                                    aria-label="Tela de Descanso"
+                                >
+                                    <LockIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                                </button>
+
                                 <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0">
                                     <div className="relative w-16 h-16 group-hover:scale-105 transition-transform">
                                         {/* Avatar Image */}
@@ -139,6 +150,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
             </header>
             {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
             {isOracleOpen && <OracleFeed onClose={() => setOracleOpen(false)} />}
+            {isRestScreenOpen && <RestScreen onClose={() => setRestScreenOpen(false)} />}
         </>
     );
 };

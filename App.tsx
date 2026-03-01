@@ -699,10 +699,28 @@ const MainApp: React.FC = () => {
     );
 }
 
+import { SplashScreen } from './components/SplashScreen';
+
 const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [showBootRitual, setShowBootRitual] = useState(false);
+    // Inicia mostrando o splash apenas se não foi visto nesta sessão
+    const [showSplash, setShowSplash] = useState(() => {
+        return !sessionStorage.getItem('hasSeenSplash');
+    });
+
+    const handleSplashComplete = () => {
+        setShowSplash(false);
+        sessionStorage.setItem('hasSeenSplash', 'true');
+    };
+
+    // Auto-dismiss splash if session is restored (Only show before login)
+    useEffect(() => {
+        if (session && showSplash) {
+            handleSplashComplete();
+        }
+    }, [session, showSplash]);
 
     useEffect(() => {
         const checkSession = async () => {
@@ -767,7 +785,12 @@ const App: React.FC = () => {
     }, []);
 
     if (loading) {
-        return <div className="w-screen h-screen flex items-center justify-center bg-black">Carregando...</div>;
+        return (
+            <>
+                {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+                <div className="w-screen h-screen flex items-center justify-center bg-black">Carregando...</div>
+            </>
+        );
     }
 
     const renderContent = () => {
@@ -780,6 +803,7 @@ const App: React.FC = () => {
                 <TutorialProvider>
                     {renderContent()}
                     <BootRitualOverlay open={showBootRitual} />
+                    {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
                 </TutorialProvider>
             </GameProvider>
         </CodexBuilderProvider>

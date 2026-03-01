@@ -7,6 +7,7 @@ interface UserAvatarProps {
     isOnline?: boolean;
     borderColor?: string;
     showBorder?: boolean;
+    level?: number;
     imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
 }
 
@@ -17,6 +18,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     isOnline, 
     borderColor,
     showBorder = true,
+    level,
     imgProps
 }) => {
     return (
@@ -35,6 +37,11 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
             </div>
             {isOnline && (
                 <div className="absolute bottom-0 right-0 w-[20%] h-[20%] bg-green-500 rounded-full border-2 border-gray-800" />
+            )}
+            {level !== undefined && (
+                <div className="absolute -bottom-1 -right-1 bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border border-[var(--skin-accent-color)] z-10 shadow-lg group-hover:scale-110 transition-transform">
+                    <span className="text-[11px] font-black text-white">{level}</span>
+                </div>
             )}
         </div>
     );

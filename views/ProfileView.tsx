@@ -143,10 +143,16 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
     const getRarityColor = (r?: string) => {
         if (!r) return null;
         const lower = r.toLowerCase();
-        if (lower === 'uncommon' || lower === 'incomum') return { bg: 'bg-white', color: '#FFFFFF' };
-        if (lower === 'rare' || lower === 'raro') return { bg: 'bg-[var(--accent-bronze)]', color: 'var(--accent-bronze)' };
-        if (lower === 'epic' || lower === 'épico' || lower === 'epico') return { bg: 'bg-[#C0C0C0]', color: '#C0C0C0' };
-        if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return { bg: 'bg-[#F0C843]', color: '#F0C843' };
+        // Comum: Marrom
+        if (lower === 'common' || lower === 'comum') return { bg: 'bg-[#A0522D]', color: '#A0522D' };
+        // Incomum: Prata
+        if (lower === 'uncommon' || lower === 'incomum') return { bg: 'bg-[#C0C0C0]', color: '#C0C0C0' };
+        // Raro: Ouro
+        if (lower === 'rare' || lower === 'raro') return { bg: 'bg-[#FFD700]', color: '#FFD700' };
+        // Épico: Azul
+        if (lower === 'epic' || lower === 'épico' || lower === 'epico') return { bg: 'bg-blue-500', color: '#3B82F6' };
+        // Lendário: Roxo
+        if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return { bg: 'bg-purple-500', color: '#A855F7' };
         return null;
     };
     

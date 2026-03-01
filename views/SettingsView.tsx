@@ -1517,10 +1517,11 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         
                                         {/* Rarity Dot */}
                                         <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${
-                                            codex.rarity === 'legendary' ? 'bg-yellow-500 shadow-[0_0_5px_#eab308]' :
-                                            codex.rarity === 'epic' ? 'bg-purple-500 shadow-[0_0_5px_#a855f7]' :
-                                            codex.rarity === 'rare' ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' :
-                                            'bg-gray-600'
+                                            codex.rarity === 'legendary' ? 'bg-purple-500 shadow-[0_0_5px_#a855f7]' :
+                                            codex.rarity === 'epic' ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' :
+                                            codex.rarity === 'rare' ? 'bg-[#FFD700] shadow-[0_0_5px_#FFD700]' :
+                                            codex.rarity === 'uncommon' ? 'bg-[#C0C0C0] shadow-[0_0_5px_#C0C0C0]' :
+                                            'bg-[#A0522D]' // Comum (Marrom)
                                         }`} />
                                     </button>
                                 ))}

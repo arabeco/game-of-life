@@ -1,0 +1,326 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Arena, Action, UserProfile } from '../types';
+import { useGame } from '../contexts/GameContext';
+import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIcon } from './Icons';
+import { ActionModal } from './ActionModal';
+import { IconPickerModal } from './IconPickerModal';
+import { ConfirmationModal } from './ConfirmationModal';
+import { Portal } from './Portal';
+import { supabase } from '../supabaseClient';
+
+const hexToRgb = (hex: string) => {
+    const trimmed = hex.trim();
+    if (trimmed.startsWith('rgb')) {
+        const values = trimmed.replace(/rgba?\(|\)/g, '').split(',').map(val => Number.parseFloat(val.trim()));
+        return { r: values[0] || 0, g: values[1] || 0, b: values[2] || 0 };
+    }
+    const normalized = trimmed.replace('#', '');
+    const value = normalized.length === 3
+        ? normalized.split('').map(ch => ch + ch).join('')
+        : normalized;
+    const intValue = Number.parseInt(value, 16);
+    return {
+        r: (intValue >> 16) & 255,
+        g: (intValue >> 8) & 255,
+        b: intValue & 255,
+    };
+};
+
+const PlasmaCanvas: React.FC<{ color: string; opacity: number; className?: string; }> = ({ color, opacity, className }) => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const sizeRef = useRef({ width: 0, height: 0 });
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const resize = () => {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const nextWidth = Math.max(1, Math.floor(rect.width * dpr));
+            const nextHeight = Math.max(1, Math.floor(rect.height * dpr));
+            if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+                canvas.width = nextWidth;
+                canvas.height = nextHeight;
+                sizeRef.current = { width: nextWidth, height: nextHeight };
+            }
+        };
+        resize();
+        const observer = new ResizeObserver(resize);
+        observer.observe(canvas);
+        window.addEventListener('resize', resize);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', resize);
+        };
+    }, []);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const { r, g, b } = hexToRgb(color);
+        let frame = 0;
+        const draw = () => {
+            const { width, height } = sizeRef.current;
+            if (!width || !height) {
+                requestAnimationFrame(draw);
+                return;
+            }
+            frame += 0.006;
+            ctx.clearRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'lighter';
+            const pulse = (Math.sin(frame * 0.7) + 1) * 0.5;
+            const blobs = [
+                { x: width * (0.3 + Math.sin(frame * 1.2) * 0.18), y: height * (0.4 + Math.cos(frame * 0.9) * 0.2), radius: width * 0.5 },
+                { x: width * (0.65 + Math.cos(frame * 1.1) * 0.22), y: height * (0.35 + Math.sin(frame * 1.3) * 0.18), radius: width * 0.45 },
+                { x: width * (0.5 + Math.sin(frame * 0.8) * 0.16), y: height * (0.65 + Math.cos(frame * 1.05) * 0.16), radius: width * 0.55 },
+            ];
+            const centerGradient = ctx.createRadialGradient(width * 0.5, height * 0.5, 0, width * 0.5, height * 0.5, width * 0.45);
+            centerGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity * (0.7 + pulse * 0.6)})`);
+            centerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = centerGradient;
+            ctx.fillRect(0, 0, width, height);
+            ctx.save();
+            ctx.translate(width * 0.5, height * 0.5);
+            ctx.rotate(frame * 0.35);
+            const beamGradient = ctx.createLinearGradient(-width * 0.5, 0, width * 0.5, 0);
+            beamGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            beamGradient.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, ${opacity * 0.6})`);
+            beamGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${opacity * 0.9})`);
+            beamGradient.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, ${opacity * 0.6})`);
+            beamGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = beamGradient;
+            ctx.fillRect(-width * 0.75, -height * 0.08, width * 1.5, height * 0.16);
+            ctx.restore();
+            blobs.forEach(blob => {
+                const gradient = ctx.createRadialGradient(blob.x, blob.y, 0, blob.x, blob.y, blob.radius);
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity})`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            });
+            ctx.globalCompositeOperation = 'source-over';
+            requestAnimationFrame(draw);
+        };
+        const id = requestAnimationFrame(draw);
+        return () => cancelAnimationFrame(id);
+    }, [color, opacity]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            className={className}
+        />
+    );
+};
+
+const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: string }> = ({ action, onClick, skinColor }) => {
+    const { getActionBackgroundStyle, tasks, getArenas, getClanQuestProgress, getClanQuestForActionName } = useGame();
+    const backgroundStyle = getActionBackgroundStyle(action.id);
+    
+    const completedCount = tasks.filter(t => t.actionId === action.id && t.completed).length;
+    const totalProposed = action.repetitions;
+    const arena = getArenas().find(ar => ar.id === action.arenaId);
+    const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+    const isSeasonQuest = normalizedArena.includes('quests - season');
+    
+    const clanQuest = getClanQuestForActionName(action.name);
+    const isClanQuest = !!clanQuest;
+    
+    const clanProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
+    const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
+    const displayProgress = clanQuest ? `${clanProgress}/${target}` : `${completedCount}/${totalProposed}`;
+    const displayIcon = action.icon || '🏆';
+
+    return (
+        <div className="relative flex-shrink-0">
+            <button 
+                onClick={onClick}
+                style={isClanQuest ? {
+                    backgroundColor: 'rgba(88, 28, 135, 0.4)', // Purple-900/40
+                    borderColor: '#a855f7', // Purple-500
+                    boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)'
+                } : backgroundStyle}
+                className={`relative w-24 h-24 border rounded-xl hover:opacity-80 transition-all overflow-hidden ${isClanQuest ? 'border-purple-500' : 'border-[var(--skin-accent-color)]'}`}
+            >
+                <div className="arena-plasma">
+                    <PlasmaCanvas color={isClanQuest ? '#a855f7' : skinColor} opacity={isClanQuest ? 0.3 : 0.189} className="arena-plasma-canvas" />
+                </div>
+                <div className="relative z-10 flex flex-col items-center justify-center text-center p-1 space-y-1">
+                    <span className="text-3xl">{displayIcon}</span>
+                    <p className="text-xs font-bold leading-tight line-clamp-2 text-white">{action.name}</p>
+                </div>
+            </button>
+            <div className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border ${isClanQuest ? 'bg-purple-900/80 text-purple-200 border-purple-500/30' : 'bg-black/50 text-white border-white/10'}`}>
+                <span>{displayProgress}</span>
+            </div>
+        </div>
+    );
+};
+
+export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
+    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests } = useGame();
+    const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editableArena, setEditableArena] = useState({ name: arena.name, description: arena.description, icon: arena.icon });
+    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+    const [isLinkingObserver, setIsLinkingObserver] = useState(false);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [linkStatus, setLinkStatus] = useState<string | null>(null);
+    const newActionRef = useRef<HTMLButtonElement>(null);
+    const [skinColor, setSkinColor] = useState('#F0C843');
+
+    const parentAsset = assets.find(a => a.id === arena.assetId);
+    const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const allActions = getActionsForArena(arena.id);
+    const clanQuests = getClanQuestsForArena(arena, allActions);
+    const isClanQuestArena = clanQuests.length > 0 || normalizedArena.includes('quests - cla');
+
+    const isSeasonQuestArena = normalizedArena.includes('quests - season');
+    const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
+
+    useEffect(() => {
+        const value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
+        if (value) setSkinColor(value);
+    }, []);
+
+    useEffect(() => {
+        if (!isClanQuestArena || clanQuests.length === 0) return;
+        clanQuests.forEach(quest => {
+            if (quest.actionTemplate?.name) {
+                fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
+            }
+            joinClanMission(quest.id);
+        });
+    }, [isClanQuestArena, clanQuests, fetchClanQuestParticipants, joinClanMission]);
+
+    const milestoneActions = allActions.filter(a => a.actionType === 'Marco');
+    const bronzeActions = allActions.filter(a => a.actionType !== 'Marco');
+
+    const clanQuestTotals = clanQuests.reduce((acc, quest) => {
+        const progressValue = getClanQuestProgress(quest.id);
+        const goal = quest.requirements?.clanGoal || quest.goal_value || 50;
+        return {
+            totalProgress: acc.totalProgress + progressValue,
+            totalGoal: acc.totalGoal + goal
+        };
+    }, { totalProgress: 0, totalGoal: 0 });
+    const allActionInstances = allActions.reduce((acc, action) => acc + action.repetitions, 0);
+    const allCompletedInstances = allActions.reduce((acc, action) => {
+        const completed = tasks.filter(t => t.actionId === action.id && t.completed).length;
+        return acc + completed;
+    }, 0);
+
+    const progress = isClanQuestArena
+        ? (clanQuestTotals.totalGoal > 0
+            ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
+            : Math.min(100, clanQuestTotals.totalProgress))
+        : (allActionInstances > 0 ? (allCompletedInstances / allActionInstances) * 100 : 0);
+    const handleEditToggle = () => {
+        if (isSpecialArena) return; // Disable editing for special arenas
+        if (isEditing) {
+            updateArena(arena.id, { name: editableArena.name, description: editableArena.description, icon: editableArena.icon });
+        }
+        setIsEditing(!isEditing);
+    };
+
+    const handleDeleteArena = () => {
+        deleteArena(arena.id);
+        onClose();
+    };
+
+    const handleIconSelect = (selectedIcon: string) => {
+        setEditableArena(prev => ({ ...prev, icon: selectedIcon }));
+        setIsIconPickerOpen(false);
+    }
+    
+    const openActionDetails = (action: Action) => {
+        setActionModalState({ action, mode: 'view', key: `action-modal-${action.id}-${Date.now()}` });
+    };
+
+    const openNewAction = () => {
+        if (isSpecialArena) {
+            alert("Para adicionar novas missões, acesse a aba Missões no Menu de Configurações ou no Clã.");
+            return;
+        }
+        setActionModalState({ action: null, mode: 'edit', key: `new-action-modal-${Date.now()}` });
+    };
+
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
+    const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
+    const availableFriends = friends.filter(f => isUuid(f.id));
+
+    const sendObserverInvite = async (friend: UserProfile) => {
+        setLinkStatus(null);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData.session?.user.id;
+        if (!uid || !isUuid(uid)) {
+            setLinkStatus('Faça login para enviar convites.');
+            return;
+        }
+        if (!isUuid(friend.id)) {
+            setLinkStatus('Este aliado não possui ID válido.');
+            return;
+        }
+
+        const { error } = await supabase.from('relationship_link_invites').insert({
+            sender_id: uid,
+            recipient_id: friend.id,
+            link_type: 'mentoria',
+            arena_id: arena.id,
+            arena_snapshot: { name: editableArena.name || arena.name, icon: editableArena.icon || arena.icon },
+            status: 'pending',
+        });
+        if (error) {
+            setLinkStatus(error.message);
+            return;
+        }
+        setLinkStatus(`Convite enviado para ${friend.nickname}.`);
+        window.setTimeout(() => {
+            setIsLinkingObserver(false);
+            setLinkStatus(null);
+        }, 1200);
+    };
+
+    // Removed SharedArenaView block to use standard render as requested
+    
+    return (
+        <Portal>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
+                <div 
+                    className="dossier-bg arena-plate border w-full max-w-sm m-4 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
+                    style={{ borderColor: 'var(--skin-accent-color)', backgroundImage: 'linear-gradient(135deg, rgba(20,20,20,0.96) 0%, rgba(10,10,10,1) 58%, rgba(18,18,18,0.9) 100%)' }}
+                >
+                    <div className="arena-plasma" style={{ opacity: 0.45 }}>
+                        <PlasmaCanvas color={skinColor} opacity={0.189} className="arena-plasma-canvas" />
+                    </div>
+                    <div className="relative z-10 flex flex-col space-y-3">
+                    <div className="arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
+                        <div className="flex flex-col items-center gap-1">
+                            {/* Allow editing for all arenas, EXCEPT special ones */}
+                            {!isSpecialArena && (
+                                <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
+                                    <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
+                                </button>
+                            )}
+                            
+                            {isSpecialArena && !isEditing && (
+                                <button 
+                                    onClick={() => setShowDeleteConfirmation(true)}
+                                    className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
+                                    title="Abandonar Missão"
+                                >
+                                    <Trash2Icon className="w-5 h-5 text-red-500" />
+                                </button>
+                            )}
+                            {isEditing && (
+                                <button
+                                    onClick={() => setIsLinkingObserver(true)}
+                                    className="p-2 rounded-full tra

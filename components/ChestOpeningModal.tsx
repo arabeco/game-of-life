@@ -99,12 +99,12 @@ const CHEST_VIDEOS: Record<string, string> = {
 };
 
 const RARITY_COLORS: Record<string, string> = {
-    'Comum': '#9ca3af', // gray-400
-    'Incomum': '#4ade80', // green-400
-    'Raro': '#60a5fa', // blue-400
-    'Épico': '#a78bfa', // purple-400
-    'Lendário': '#fbbf24', // amber-400
-    'Ciclo': '#22d3ee', // cyan-400
+    'Comum': '#A0522D', // Marrom
+    'Incomum': '#C0C0C0', // Prata
+    'Raro': '#FFD700', // Ouro
+    'Épico': '#3B82F6', // Azul
+    'Lendário': '#A855F7', // Roxo
+    'Ciclo': '#FFD700', // Ouro (same as Rare)
 };
 
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose, predefinedReward }) => {

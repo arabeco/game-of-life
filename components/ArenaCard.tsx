@@ -50,10 +50,30 @@ const hexToRgb = (hex: string) => {
     return { r: 240, g: 200, b: 67 };
 };
 
-const PlasmaCanvas: React.FC<{ opacity: number; className?: string; width: number; height: number; }> = ({ opacity, className, width, height }) => {
+const PlasmaCanvas: React.FC<{ color?: string; opacity: number; className?: string; width: number; height: number; }> = ({ color, opacity, className, width, height }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsVisible(entry.isIntersecting);
+            },
+            { threshold: 0.1 }
+        );
+
+        if (canvasRef.current) {
+            observer.observe(canvasRef.current);
+        }
+
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isVisible) return;
+
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -62,10 +82,15 @@ const PlasmaCanvas: React.FC<{ opacity: number; className?: string; width: numbe
         let frame = 0;
         let lastColor = '';
         let r = 240, g = 200, b = 67; // Default gold
+        let animationId: number;
 
         const draw = () => {
-            // Update color from CSS variables in real-time
-            const currentColor = getComputedStyle(canvas).getPropertyValue('--skin-accent-color').trim();
+            // Update color from CSS variables in real-time or use prop
+            let currentColor = color;
+            if (!currentColor) {
+                currentColor = getComputedStyle(canvas).getPropertyValue('--skin-accent-color').trim();
+            }
+            
             if (currentColor && currentColor !== lastColor) {
                 lastColor = currentColor;
                 const rgb = hexToRgb(currentColor);
@@ -113,12 +138,12 @@ const PlasmaCanvas: React.FC<{ opacity: number; className?: string; width: numbe
             });
 
             ctx.globalCompositeOperation = 'source-over';
-            requestAnimationFrame(draw);
+            animationId = requestAnimationFrame(draw);
         };
         
-        const id = requestAnimationFrame(draw);
-        return () => cancelAnimationFrame(id);
-    }, [opacity, width, height]);
+        draw();
+        return () => cancelAnimationFrame(animationId);
+    }, [color, opacity, width, height, isVisible]);
 
     return (
         <canvas
@@ -196,7 +221,7 @@ interface ArenaCardProps {
 }
 
 export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ arena, actions, onClick, assetName, variant, tasks: propTasks }) => {
-    const { tasks: contextTasks, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, reorderAction } = useGame();
+    const { appMode, tasks: contextTasks, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, reorderAction } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const [skinTone, setSkinTone] = useState('#F0C843');
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);

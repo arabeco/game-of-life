@@ -99,21 +99,24 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
         const action = actions.find(a => a.id === t.actionId);
         return action?.actionType === 'Marco';
     }).length;
-    const milestoneBonus = milestonesCompleted * 10;
+    const milestoneBonus = milestonesCompleted * 15;
 
     // Quests
     const questsCompletedCount = completedQuests.length;
-    const questBonus = questsCompletedCount * 5;
+    const questBonus = questsCompletedCount * 10;
 
     // Consistency
     const uniqueDays = new Set([...completedTasks, ...completedQuests].map(t => t.date)).size;
-    const consistencyBonus = uniqueDays >= 4 ? 5 : 0;
+    const consistencyRatio = uniqueDays / totalDays;
+    const consistencyBonus = consistencyRatio >= 0.8 ? 20 : (consistencyRatio >= 0.5 ? 10 : 0);
 
-    // Total Fidelity
-    const totalFidelityBonus = (cycleTasks.length > 0 && completedTasks.length === cycleTasks.length) ? 5 : 0;
+    // Volume Bonus
+    const totalMinutes = completedTasks.reduce((sum, t) => sum + (t.duration || 0), 0);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const volumeBonus = Math.min(30, Math.floor(totalHours / 2));
 
     // Score
-    const currentScore = Math.round(fidelity + milestoneBonus + questBonus + consistencyBonus + totalFidelityBonus);
+    const currentScore = Math.round((fidelity * 0.4) + milestoneBonus + questBonus + consistencyBonus + volumeBonus);
     const scoreInfo = getScoreGrade(currentScore);
 
     // Arenas e Ações envolvidas (seguindo a mesma lógica do endCycle)
@@ -377,11 +380,50 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setSelectedReport(report);
             setExpGained(expGained);
 
-            let chestType: ChestType = 'Comum';
-            if (expGained > 5000) chestType = 'Lendário';
-            else if (expGained > 2000) chestType = 'Épico';
-            else if (expGained > 800) chestType = 'Raro';
-            else if (expGained > 300) chestType = 'Incomum';
+            // New Chest Logic based on User Feedback (Minute-based Economy)
+            // 1 XP = 1 Minute of Focus
+            // Thresholds:
+            // - Legendary: 25,000 XP (Month) + Grade S
+            // - Epic: 12,000 XP (~2.5 Weeks) + Grade A
+            // - Rare: 5,000 XP (Week) + Grade B
+            // - Uncommon: 2,250 XP (3 Days) + Grade C
+            // - Common: 750 XP (1 Day) + Grade D
+            // - None: < 750 XP
+
+            const startD = parseDate(report.startDate);
+            const endD = parseDate(report.endDate);
+            const durationDays = Math.max(1, daysBetween(startD, endD) + 1);
+            const score = report.performanceScore;
+
+            let chestType: ChestType | null = null;
+
+            // Base Tier Determination
+            if (expGained >= 25000 && score >= 90) chestType = 'Lendário';
+            else if (expGained >= 12000 && score >= 80) chestType = 'Épico';
+            else if (expGained >= 5000 && score >= 70) chestType = 'Raro';
+            else if (expGained >= 2250 && score >= 60) chestType = 'Incomum';
+            else if (expGained >= 750) chestType = 'Comum';
+            
+            // Luck Roll (5% Chance to Upgrade)
+            // Only if chest is earned and not already Legendary
+            if (chestType && chestType !== 'Lendário') {
+                const roll = Math.random();
+                if (roll < 0.05) { // 5% chance
+                    console.log("Luck Roll Success! Upgrading Chest...");
+                    if (chestType === 'Comum') chestType = 'Incomum';
+                    else if (chestType === 'Incomum') chestType = 'Raro';
+                    else if (chestType === 'Raro') chestType = 'Épico';
+                    else if (chestType === 'Épico') chestType = 'Lendário';
+                }
+            }
+
+            // Duration Cap (Strict Anti-Exploit)
+            // Cycles shorter than 7 days yield NO chest to prevent mini-cycle spamming.
+            if (durationDays < 7) {
+                chestType = null;
+                console.log("Ciclo curto detectado (< 7 dias). Recompensa anulada.");
+            }
+
             setEarnedChest(chestType);
 
             setIsPostCycleFlow(true);
@@ -474,7 +516,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const handlePostCycleResultsOk = () => {
         applyExp(expGained);
-        if (earnedChest) {
+            if (earnedChest) {
             addChest(earnedChest);
             showToast(`✦ Baú ${earnedChest} adicionado ao inventário · +${expGained} XP computados`);
         } else {

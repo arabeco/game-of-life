@@ -66,15 +66,15 @@ export const Inventory: React.FC = () => {
 
     const getRarityStyles = (tier: number) => {
         switch(tier) {
-            case 1: return { text: 'text-gray-400', bg: 'bg-gray-400', shadow: '' };
-            case 2: return { text: 'text-green-400', bg: 'bg-green-400', shadow: '' };
-            case 3: return { text: 'text-blue-400', bg: 'bg-blue-400', shadow: '' };
-            case 4: return { text: 'text-purple-400', bg: 'bg-purple-400', shadow: '' };
+            case 1: return { text: 'text-[#A0522D]', bg: 'bg-[#A0522D]', shadow: '' }; // Comum: Marrom
+            case 2: return { text: 'text-[#C0C0C0]', bg: 'bg-[#C0C0C0]', shadow: '' }; // Incomum: Prata
+            case 3: return { text: 'text-[#FFD700]', bg: 'bg-[#FFD700]', shadow: '' }; // Raro: Ouro
+            case 4: return { text: 'text-blue-500', bg: 'bg-blue-500', shadow: '' };   // Épico: Azul
             case 5: return { 
-                text: 'text-yellow-400', 
-                bg: 'bg-yellow-400', 
-                shadow: 'shadow-[0_0_15px_rgba(250,204,21,0.4)]' 
-            };
+                text: 'text-purple-500', 
+                bg: 'bg-purple-500', 
+                shadow: 'shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
+            }; // Lendário: Roxo
             default: return { text: 'text-gray-400', bg: 'bg-gray-400', shadow: '' };
         }
     };
@@ -93,10 +93,11 @@ export const Inventory: React.FC = () => {
 
     const getChestColor = (type: string) => {
         const normalized = type.toLowerCase();
-        if (normalized.includes('comum') || normalized === 'incomum') return 'text-green-400';
-        if (normalized.includes('ciclo') || normalized === 'raro') return 'text-amber-400';
-        if (normalized.includes('radiante') || normalized === 'épico' || normalized === 'epico') return 'text-purple-400';
-        if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) return 'text-yellow-400';
+        if (normalized.includes('comum')) return 'text-[#A0522D]'; // Marrom
+        if (normalized.includes('incomum')) return 'text-[#C0C0C0]'; // Prata
+        if (normalized.includes('ciclo') || normalized.includes('raro')) return 'text-[#FFD700]'; // Ouro
+        if (normalized.includes('radiante') || normalized.includes('épico') || normalized.includes('epico')) return 'text-blue-500'; // Azul
+        if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) return 'text-purple-500'; // Roxo
         return 'text-gray-400';
     };
 

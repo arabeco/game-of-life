@@ -5,11 +5,11 @@
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
-  --tier-1-comum:     #9CA3AF;
-  --tier-2-incomum:   #10B981;
-  --tier-3-raro:      #3B82F6;
-  --tier-4-epico:     #8B5CF6;
-  --tier-5-lendario:  #F59E0B;
+  --tier-1-comum:     #A0522D;
+  --tier-2-incomum:   #C0C0C0;
+  --tier-3-raro:      #FFD700;
+  --tier-4-epico:     #3B82F6;
+  --tier-5-lendario:  #A855F7;
   --tier-season-gradient: linear-gradient(45deg, #FF0080, #7928CA, #00DFD8);
 
   /* Default Game Mode Colors (Dark/Neon/Gold) */
@@ -98,97 +98,65 @@ body {
   background: var(--bg-secondary) !important;
   border: var(--card-border) !important;
   backdrop-filter: none !important;
-  box-shadow: none !important;
 }
 
-.mode-office .nav-bar {
-  background: var(--nav-bg) !important;
-  border-top: var(--nav-border) !important;
-  backdrop-filter: none !important;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
-.safe-area-top {
-  padding-top: var(--safe-area-top);
+/* Animation Keyframes */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
 }
 
-.safe-area-bottom {
-  padding-bottom: var(--safe-area-bottom);
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-
-@keyframes particle-explode {
-  0% {
-    transform: rotate(var(--rot)) translateY(0) scale(0.5);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(var(--rot)) translateY(-100px) scale(0);
-    opacity: 0;
-  }
+/* Plasma Rarity Colors */
+.plasma-common {
+    border: 1px solid var(--tier-1-comum);
+    box-shadow: 0 0 10px rgba(160, 82, 45, 0.2);
+}
+.plasma-uncommon {
+    border: 1px solid var(--tier-2-incomum);
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.3);
+}
+.plasma-rare {
+    border: 1px solid var(--tier-3-raro);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+.plasma-epic {
+    border: 1px solid var(--tier-4-epico);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
+}
+.plasma-legendary {
+    border: 1px solid var(--tier-5-lendario);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px) rotate(-5deg); }
-  75% { transform: translateX(5px) rotate(5deg); }
-}
-
-@keyframes ping-slow {
-  75%, 100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-
-.animate-shake {
-  animation: shake 0.5s ease-in-out infinite;
-}
-
-/* Plasma / Smoke Effect for Item Cards */
-.plasma-card {
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.6);
-}
-
-.plasma-bg::before,
-.plasma-bg::after {
-    content: '';
-    position: absolute;
-    width: 200%;
-    height: 200%;
-    top: -50%;
-    left: -50%;
-    background: radial-gradient(circle at 50% 50%, var(--plasma-color-1, rgba(255,255,255,0.1)), transparent 60%),
-                radial-gradient(circle at 20% 80%, var(--plasma-color-2, rgba(255,255,255,0.05)), transparent 50%);
-    filter: blur(60px);
-    opacity: 0.6;
-    animation: plasma-rotate 15s linear infinite;
-    z-index: 0;
-    pointer-events: none;
-    mix-blend-mode: screen;
-}
-
-.plasma-bg::after {
-    background: radial-gradient(circle at 80% 20%, var(--plasma-color-3, rgba(255,255,255,0.1)), transparent 60%);
-    animation: plasma-rotate 20s linear infinite reverse;
-    opacity: 0.4;
-}
-
-@keyframes plasma-rotate {
-    0% { transform: rotate(0deg) scale(1); }
-    100% { transform: rotate(360deg) scale(1); }
-}
-
-/* Office Mode - Disable Plasma */
-.mode-office .plasma-bg::before,
-.mode-office .plasma-bg::after {
-    display: none !important;
-}
-
-.mode-office .plasma-card {
-    background: var(--bg-secondary) !important;
-    border: var(--card-border) !important;
+/* Utility Classes */
+.mask-linear-fade {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }

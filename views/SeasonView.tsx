@@ -130,6 +130,7 @@ export const SeasonView: React.FC = () => {
     const [selectedQuest, setSelectedQuest] = useState<ConfigSeasonQuest | null>(null);
     const [isSeasonDetailOpen, setSeasonDetailOpen] = useState(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeSeason = seasons.find(s => s.is_active) || (SEASONS[ACTIVE_SEASON_ID] as any);
     const quests = seasonQuests;
     
@@ -175,7 +176,7 @@ export const SeasonView: React.FC = () => {
     // Introductory Missions logic - Enriched
     const introMissions: ConfigSeasonQuest[] = [
         { 
-            id: 'intro-1', title: 'Criar seu primeiro Ciclo', description: 'Comece sua jornada definindo um ciclo de foco e evolução.', 
+            id: 'intro-1', title: 'Criar seu primeiro Ciclo', description: 'Comece sua jornada definindo um ciclo de foco e evolução. (Recompensa: 1 Baú Comum)', 
             type: 'individual', category: 'intellectual',
             actionTemplate: { name: 'Criar Ciclo', description: 'Criar um novo ciclo.', icon: '🔄', duration: 0, repetitions: 1 },
             requirements: { totalReps: 1 }, rewards: { xp: 100 },
@@ -183,42 +184,42 @@ export const SeasonView: React.FC = () => {
             goal_value: 1
         },
         { 
-            id: 'intro-2', title: 'Preencher Perfil de Ativos', description: 'Defina seus níveis atuais em cada área da vida.', 
+            id: 'intro-2', title: 'Preencher Perfil de Ativos', description: 'Defina seus níveis atuais em cada área da vida. (Recompensa: 1 Baú Comum)', 
             type: 'individual', category: 'intellectual',
             actionTemplate: { name: 'Perfil de Ativos', description: 'Preencher ativos.', icon: '📊', duration: 0, repetitions: 1 },
             requirements: { totalReps: 1 }, rewards: { xp: 100 },
             goal_value: 1
         },
         { 
-            id: 'intro-3', title: 'Preencher Níveis de Soberano', description: 'Configure sua aparência e identidade no mundo.', 
+            id: 'intro-3', title: 'Preencher Níveis de Soberano', description: 'Configure sua aparência e identidade no mundo. (Recompensa: 1 Baú Comum)', 
             type: 'individual', category: 'social',
             actionTemplate: { name: 'Soberano', description: 'Customizar soberano.', icon: '👑', duration: 0, repetitions: 1 },
             requirements: { totalReps: 1 }, rewards: { xp: 100 },
             goal_value: 1
         },
         { 
-            id: 'intro-4', title: 'Criar suas primeiras Arenas', description: 'Defina os palcos onde sua vida acontece.', 
+            id: 'intro-4', title: 'Criar suas primeiras Arenas', description: 'Defina os palcos onde sua vida acontece. (Recompensa: 1 Baú Comum)', 
             type: 'individual', category: 'intellectual',
             actionTemplate: { name: 'Arenas', description: 'Criar arenas.', icon: '🏟️', duration: 0, repetitions: 1 },
             requirements: { totalReps: 1 }, rewards: { xp: 100 },
             goal_value: 1
         },
         { 
-            id: 'intro-5', title: 'Criar suas primeiras Ações', description: 'Transforme intenção em movimento.', 
+            id: 'intro-5', title: 'Criar suas primeiras Ações', description: 'Transforme intenção em movimento. (Recompensa: 1 Baú Comum)', 
             type: 'individual', category: 'physical',
             actionTemplate: { name: 'Ações', description: 'Criar ações.', icon: '⚡', duration: 0, repetitions: 1 },
             requirements: { totalReps: 1 }, rewards: { xp: 100 },
             goal_value: 1
         },
         { 
-            id: 'intro-6', title: 'Completar uma Ação', description: 'Realize e registre sua primeira vitória.', 
+            id: 'intro-6', title: 'Completar uma Ação', description: 'Realize e registre sua primeira vitória. (Recompensa: 1 Baú Comum)', 
             type: 'individual', category: 'physical',
             actionTemplate: { name: 'Completar Ação', description: 'Completar ação.', icon: '✅', duration: 0, repetitions: 1 },
             requirements: { totalReps: 1 }, rewards: { xp: 200 },
             goal_value: 1
         },
         { 
-            id: 'intro-10', title: 'Compartilhe seu Score', description: 'Mostre seu progresso para o mundo.', 
+            id: 'intro-10', title: 'Compartilhe seu Score', description: 'Mostre seu progresso para o mundo. (Recompensa: 1 Baú Comum)', 
             type: 'individual', category: 'social',
             actionTemplate: { name: 'Compartilhar', description: 'Compartilhar score.', icon: '📢', duration: 0, repetitions: 1 },
             requirements: { totalReps: 1 }, rewards: { xp: 150 },
@@ -249,7 +250,7 @@ export const SeasonView: React.FC = () => {
             category: 'spiritual',
             actionTemplate: { name: 'Meta Quest', description: 'Completar 3 quests.', icon: '🏆', duration: 0, repetitions: 3, isMilestone: true },
             requirements: { totalReps: 3, milestone: true },
-            rewards: { xp: 5000, items: ['Baú Épico'] }
+            rewards: { xp: 5000, items: ['Baú Raro'] }
         },
         {
             id: 'tutorial-quest',
@@ -270,8 +271,8 @@ export const SeasonView: React.FC = () => {
     const handleClaimSpecial = (questId: string) => {
         if (questId === 'meta-quest-3') {
             addProfileFlag(questId);
-            addChest('Épico');
-            showToast("✦ Baú Épico adicionado ao inventário · +5000 XP computados");
+            addChest('Raro');
+            showToast("✦ Baú Raro adicionado ao inventário · +5000 XP computados");
         } else if (questId === 'tutorial-quest') {
             addProfileFlag(questId);
             addChest('Comum');
@@ -294,7 +295,8 @@ export const SeasonView: React.FC = () => {
                     requirements: quest.requirements
                 };
                 addCompletedMission(mission);
-                showToast(`✦ +${quest.rewards.xp} XP computados`);
+                addChest('Comum');
+                showToast(`✦ Baú Comum adicionado ao inventário · +${quest.rewards.xp} XP computados`);
             }
         }
         setSelectedQuest(null);

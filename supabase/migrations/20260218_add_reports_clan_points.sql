@@ -1,2 +1,0 @@
-ALTER TABLE public.reports
-ADD COLUMN IF NOT EXISTS clan_points INTEGER DEFAULT 0;

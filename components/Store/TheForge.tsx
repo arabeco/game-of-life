@@ -87,11 +87,11 @@ export const TheForge: React.FC = () => {
 
     const getRarityColor = (tier: number) => {
         switch(tier) {
-            case 1: return 'text-gray-400 border-gray-400/30';
-            case 2: return 'text-green-400 border-green-400/30';
-            case 3: return 'text-blue-400 border-blue-400/30';
-            case 4: return 'text-purple-400 border-purple-400/30';
-            case 5: return 'text-yellow-400 border-yellow-400/30';
+            case 1: return 'text-[#A0522D] border-[#A0522D]/30'; // Comum: Marrom
+            case 2: return 'text-[#C0C0C0] border-[#C0C0C0]/30'; // Incomum: Prata
+            case 3: return 'text-[#FFD700] border-[#FFD700]/30'; // Raro: Ouro
+            case 4: return 'text-blue-500 border-blue-500/30';   // Épico: Azul
+            case 5: return 'text-purple-500 border-purple-500/30'; // Lendário: Roxo
             default: return 'text-gray-400 border-gray-400/30';
         }
     };

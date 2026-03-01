@@ -99,12 +99,19 @@ const fragmentShaderSource = `
 
     // Color Grading similar to SephirotFog
     vec3 baseColor = uColor;
-    vec3 energyColor = mix(vec3(0.5, 0.9, 1.0), baseColor, 0.7);
+    vec3 energyColor = mix(vec3(1.0, 1.0, 1.0), baseColor, 0.5); // Mix with white for energy
     
     // Sophisticated color mixing based on domain warping
+    // Use variations of baseColor instead of hardcoded colors to respect theme
     vec3 color = mix(baseColor, energyColor, clamp((f*f)*4.0, 0.0, 1.0));
-    color = mix(color, vec3(0.2, 0.5, 0.6), clamp(length(q), 0.0, 1.0));
-    color = mix(color, vec3(0.5, 0.1, 0.3), clamp(length(r), 0.0, 1.0));
+    
+    // Mix with a darker version of baseColor for depth
+    vec3 depthColor = baseColor * 0.5;
+    color = mix(color, depthColor, clamp(length(q), 0.0, 1.0));
+    
+    // Mix with a complementary or highlight version (shifted hue or just brighter)
+    vec3 highlightColor = baseColor * 1.2;
+    color = mix(color, highlightColor, clamp(length(r), 0.0, 1.0));
 
     // Shaping (Electric + Smoke Body)
     // VOLTAMOS A FORMULA FODA: Menos contraste, mais brilho, mais "alma"
@@ -225,6 +232,13 @@ export const PlasmaCanvas: React.FC<PlasmaCanvasProps> = ({ color, opacity, clas
             window.removeEventListener('resize', resize);
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
+            }
+            // WebGL Cleanup
+            if (gl) {
+                gl.deleteProgram(program);
+                gl.deleteShader(vertexShader);
+                gl.deleteShader(fragmentShader);
+                gl.deleteBuffer(buffer);
             }
         };
     }, [color, opacity]);

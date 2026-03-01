@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Portal } from './components/Portal';
 import { AssetsView } from './views/AssetsView';
 import { ArenasView } from './views/ArenasView';
@@ -270,6 +270,85 @@ const AppWithTutorial: React.FC = () => {
     const { userProfile, appMode, activeTheme, clan } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
     const historyReady = useRef(false);
+    
+    // Bottom Nav Swipe Logic
+    const navContainerRef = useRef<HTMLDivElement>(null);
+    const navItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+    const [navIndicatorStyle, setNavIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
+    const touchStartRef = useRef<number | null>(null);
+    const indicatorRef = useRef<HTMLDivElement>(null);
+    const currentDeltaRef = useRef<number>(0);
+
+    const updateNavIndicator = useCallback(() => {
+        const currentRef = navItemRefs.current.get(currentView);
+        if (currentRef && navContainerRef.current) {
+            const containerRect = navContainerRef.current.getBoundingClientRect();
+            const itemRect = currentRef.getBoundingClientRect();
+            // Center a 32px indicator
+            const indicatorWidth = 32; 
+            const left = (itemRect.left - containerRect.left) + (itemRect.width / 2) - (indicatorWidth / 2);
+            setNavIndicatorStyle({ left, width: indicatorWidth, opacity: 1 });
+        }
+    }, [currentView]);
+
+    useEffect(() => {
+        // Small delay to ensure layout is stable
+        const timer = setTimeout(updateNavIndicator, 50);
+        window.addEventListener('resize', updateNavIndicator);
+        return () => {
+            window.removeEventListener('resize', updateNavIndicator);
+            clearTimeout(timer);
+        };
+    }, [updateNavIndicator]);
+
+    const handleNavTouchStart = (e: React.TouchEvent) => {
+        touchStartRef.current = e.touches[0].clientX;
+        currentDeltaRef.current = 0;
+        if (indicatorRef.current) {
+            indicatorRef.current.style.transition = 'none';
+        }
+    };
+
+    const handleNavTouchMove = (e: React.TouchEvent) => {
+        if (touchStartRef.current === null || !indicatorRef.current) return;
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - touchStartRef.current;
+        currentDeltaRef.current = diff;
+        
+        // Invert direction: Drag Right (positive diff) moves indicator Left (negative transform)
+        indicatorRef.current.style.transform = `translateX(${-diff}px)`;
+    };
+
+    const handleNavTouchEnd = (e: React.TouchEvent) => {
+        if (touchStartRef.current === null) return;
+        
+        const diff = currentDeltaRef.current;
+        const threshold = 40; // Swipe threshold
+
+        // Restore transition and clear transform
+        if (indicatorRef.current) {
+            indicatorRef.current.style.transition = '';
+            indicatorRef.current.style.transform = '';
+        }
+        
+        if (Math.abs(diff) > threshold) {
+            const views: View[] = isBasicMode 
+                ? ['arenas', 'planner', 'social', 'settings']
+                : ['assets', 'arenas', 'planner', 'social', 'settings'];
+            const currentIndex = views.indexOf(currentView);
+            
+            // Inverted Logic:
+            // Drag Right (diff > 0) -> Previous Item (Index - 1)
+            // Drag Left (diff < 0) -> Next Item (Index + 1)
+            if (diff > 0 && currentIndex > 0) {
+                handleSetView(views[currentIndex - 1]);
+            } else if (diff < 0 && currentIndex < views.length - 1) {
+                handleSetView(views[currentIndex + 1]);
+            }
+        }
+        touchStartRef.current = null;
+        currentDeltaRef.current = 0;
+    };
 
     // Keyboard Shortcuts
     useEffect(() => {
@@ -402,18 +481,17 @@ const AppWithTutorial: React.FC = () => {
         }
     };
 
-    const NavItem: React.FC<{ view: View; label: string; icon: React.ReactNode; navRef?: React.Ref<HTMLButtonElement>; id?: string }> = ({ view, label, icon, navRef, id }) => (
+    const NavItem: React.FC<{ view: View; label: string; icon: React.ReactNode; id?: string }> = ({ view, label, icon, id }) => (
         <button
             id={id}
-            ref={navRef}
+            ref={(el) => { if (el) navItemRefs.current.set(view, el); }}
             onClick={() => handleSetView(view)}
-            className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${
+            className={`flex flex-col items-center justify-center w-full transition-colors duration-200 relative z-10 ${
                 currentView === view ? 'accent-text' : 'text-gray-500 hover:text-gray-300'
             }`}
         >
             {icon}
-            <span className="text-xs font-bold tracking-wider mt-1">{label}</span>
-            {currentView === view && <div className="w-4 h-0.5 bg-current rounded-full mt-1"></div>}
+            <span className="text-[10px] font-bold tracking-wider mt-1">{label}</span>
         </button>
     );
 
@@ -481,8 +559,26 @@ const AppWithTutorial: React.FC = () => {
             {isProfileVisible && <ProfileView onClose={() => setProfileVisible(false)} />}
             {isReportsVisible && <ReportsView onClose={() => setReportsVisible(false)} />}
             
-            <footer className={`fixed bottom-0 left-0 right-0 z-30 ${isBasicMode ? 'bg-[var(--nav-bg)] border-t border-[var(--nav-border)]' : 'bg-black/50 backdrop-blur-lg border-t border-[var(--glass-border)]'} safe-area-bottom`} style={{ paddingBottom: 'var(--safe-area-bottom)' }}>
-                <div className="max-w-7xl mx-auto">
+            <footer 
+                className={`fixed bottom-0 left-0 right-0 z-30 ${isBasicMode ? 'bg-[var(--nav-bg)] border-t border-[var(--nav-border)]' : 'bg-black/80 backdrop-blur-xl border-t border-[var(--glass-border)]'} safe-area-bottom`} 
+                style={{ paddingBottom: 'var(--safe-area-bottom)' }}
+            >
+                <div 
+                    className="max-w-7xl mx-auto relative" 
+                    ref={navContainerRef}
+                    onTouchStart={handleNavTouchStart}
+                    onTouchMove={handleNavTouchMove}
+                    onTouchEnd={handleNavTouchEnd}
+                >
+                    <div 
+                        ref={indicatorRef}
+                        className="absolute bottom-1 h-1 bg-[var(--skin-accent-color)] rounded-full transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] shadow-[0_0_10px_var(--skin-accent-color)]"
+                        style={{ 
+                            left: navIndicatorStyle.left, 
+                            width: navIndicatorStyle.width,
+                            opacity: navIndicatorStyle.opacity 
+                        }}
+                    />
                     <div className="flex justify-around items-center h-16">
                         {!isBasicMode && <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />}
                         <NavItem view="arenas" label={isBasicMode ? "ÁREAS" : "ARENAS"} icon={<ArenaIcon />} id="nav-arenas" />

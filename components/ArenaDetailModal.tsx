@@ -75,9 +75,25 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
 
     useEffect(() => {
-        const value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
-        if (value) setSkinColor(value);
-    }, []);
+        const updateSkinColor = () => {
+            const style = getComputedStyle(document.body);
+            let value = style.getPropertyValue('--skin-accent-color').trim();
+            if (!value) {
+                value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
+            }
+            if (value && value !== skinColor) {
+                setSkinColor(value);
+            }
+        };
+
+        updateSkinColor();
+
+        const observer = new MutationObserver(updateSkinColor);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class', 'data-skin'] });
+        observer.observe(document.body, { attributes: true, attributeFilter: ['style', 'class', 'data-skin'] });
+
+        return () => observer.disconnect();
+    }, [skinColor]);
 
     useEffect(() => {
         if (!isClanQuestArena || clanQuests.length === 0) return;

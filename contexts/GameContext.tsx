@@ -3311,22 +3311,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Since cycleTasks now includes quests, we only need to count milestones from completedTasks
     const milestonesCompleted = getMilestones(completedTasks);
-    const milestoneBonus = milestonesCompleted * 10;
+    // Weighted Milestone Bonus: Metas are critical for a good cycle
+    const milestoneBonus = milestonesCompleted * 15;
 
     // +5 per quest
     const questsCompletedCount = completedQuests.length;
-    const questBonus = questsCompletedCount * 5;
+    const questBonus = questsCompletedCount * 10; // Increased importance of quests
 
-    // +5 consistency (4+ unique days with completed actions)
+    // Consistency (Unique Days)
     const uniqueDays = new Set([...completedTasks, ...completedQuests].map(t => t.date)).size;
-    const consistencyBonus = uniqueDays >= 4 ? 5 : 0;
+    const startD = new Date(startDate);
+    const endD = new Date(endDate);
+    const durationDays = Math.max(1, Math.ceil((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    
+    // Consistency Bonus: 20 points if consistent (>80% of days active), scaled down
+    const consistencyRatio = uniqueDays / durationDays;
+    const consistencyBonus = consistencyRatio >= 0.8 ? 20 : (consistencyRatio >= 0.5 ? 10 : 0);
 
-    // +5 total fidelity (zero abandoned actions)
-    // Only if there were planned actions
-    const totalFidelityBonus = (cycleTasks.length > 0 && completedTasks.length === cycleTasks.length) ? 5 : 0;
+    // Volume Bonus (Hours of deep work)
+    // User insight: 15h = 1000 XP. Good cycle needs "many hours".
+    const totalMinutes = completedTasks.reduce((sum, t) => sum + (t.duration || 0), 0);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const volumeBonus = Math.min(30, Math.floor(totalHours / 2)); // Max 30 points for 60 hours
 
-    // Final Performance Score
-    let performanceScore = Math.round(fidelity + milestoneBonus + questBonus + consistencyBonus + totalFidelityBonus);
+    // Final Performance Score (0-100+)
+    // Base: Fidelity (0-100)
+    // Plus: Metas, Quests, Consistency, Volume
+    // We normalize to ensure it's a 0-100 grade mostly, but can exceed for S+
+    let performanceScore = Math.round(
+        (fidelity * 0.4) + // Fidelity is 40% of the grade
+        milestoneBonus + 
+        questBonus + 
+        consistencyBonus + 
+        volumeBonus
+    );
 
     // Arenas e Ações envolvidas (baseado nas tarefas do ciclo)
     const actionIdsInCycle = new Set(cycleTasks.map(t => t.actionId));
@@ -4568,6 +4586,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const nextExp = currentExp + addedExp;
 
     // Check for chest rewards in description
+    if (quest.description.includes("Baú Comum")) await addChest('Comum');
     if (quest.description.includes("Baú Incomum")) await addChest('Incomum');
     if (quest.description.includes("Baú Ciclo")) await addChest('Ciclo');
     if (quest.description.includes("Baú Raro")) await addChest('Raro');
@@ -4603,6 +4622,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const nextExp = currentExp + addedExp;
 
     // Check for chest rewards in description
+    if (mission.description.includes("Baú Comum")) await addChest('Comum');
     if (mission.description.includes("Baú Incomum")) await addChest('Incomum');
     if (mission.description.includes("Baú Ciclo")) await addChest('Ciclo');
     if (mission.description.includes("Baú Raro")) await addChest('Raro');
@@ -4919,6 +4939,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     updateTask(taskId, { date: newDate, startTime: newStartTime });
   };
   const toggleTaskCompletion = (taskId: string) => {
+    // Check for future task completion (Anti-Exploit)
+    const taskToCheck = tasks.find(t => t.id === taskId);
+    if (taskToCheck && !taskToCheck.completed) {
+        const now = new Date();
+        const todayString = now.toISOString().split('T')[0];
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        
+        if (taskToCheck.date > todayString) {
+             showToast("Você não pode completar uma tarefa do futuro!", "error");
+             return;
+        }
+        
+        if (taskToCheck.date === todayString && taskToCheck.startTime > currentMinutes) {
+             showToast("Aguarde o horário da tarefa para completá-la.", "error");
+             return;
+        }
+    }
+
     setTasks(prevTasks => {
         const newTasks = prevTasks.map(task => {
             if (task.id === taskId) {

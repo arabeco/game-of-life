@@ -36,7 +36,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
       {
         id: 'quest-wanderer',
         title: 'O Andarilho',
-        description: 'Caminhe 20km no total para fortalecer suas pernas e espírito. (Recompensa: 1 Baú Incomum)',
+        description: 'Caminhe 20km no total para fortalecer suas pernas e espírito. (Recompensa: 1 Baú Comum)',
         type: 'individual',
         category: 'physical',
         actionTemplate: { name: 'Caminhada (1km)', description: 'Caminhar 1km em ritmo constante.', duration: 15, icon: '🥾', repetitions: 20 },
@@ -46,7 +46,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
       {
         id: 'quest-scholar',
         title: 'O Erudito',
-        description: 'Leia um livro inteiro ou dedique tempo consistente à leitura. (Recompensa: 1 Baú Ciclo)',
+        description: 'Leia um livro inteiro ou dedique tempo consistente à leitura. (Recompensa: 1 Baú Comum)',
         type: 'individual',
         category: 'intellectual',
         actionTemplate: { name: 'Leitura Focada', description: 'Ler um livro com atenção plena.', duration: 30, icon: '📖', repetitions: 15, isMilestone: true },
@@ -56,7 +56,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
       {
         id: 'quest-warrior',
         title: 'O Guerreiro',
-        description: 'Complete 50 flexões (total acumulado) para fortalecer seu corpo. (Recompensa: 1 Baú Raro)',
+        description: 'Complete 50 flexões (total acumulado) para fortalecer seu corpo. (Recompensa: 1 Baú Comum)',
         type: 'individual',
         category: 'physical',
         actionTemplate: { name: 'Flexões (x10)', description: 'Fazer 10 flexões com boa forma.', duration: 5, icon: '⚔️', repetitions: 5 },
@@ -66,7 +66,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
       {
         id: 'quest-clan-unity',
         title: 'Unidade do Clã',
-        description: 'O Clã deve acumular 50 horas de atividades conjuntas. (Recompensa: 1 Baú Épico)',
+        description: 'O Clã deve acumular 50 horas de atividades conjuntas. (Recompensa: 1 Baú Comum)',
         type: 'clan',
         category: 'social',
         actionTemplate: { name: 'Socializar (1h)', description: 'Uma hora de presença e vínculo.', duration: 60, icon: '🗣️', repetitions: 50 },
@@ -200,15 +200,15 @@ export const GM_CONFIG = {
     { id: 'season_0', name: 'Season 0 - Aquário', start_date: '2024-01-01', end_date: '2026-02-18', background_png_url: 'https://i.imgur.com/6c2z3uH.jpeg', lore_text: 'Um tempo de purificação...', is_active: true }
   ] as Season[],
   seasonMissions: [
-    { id: 'sm_1', season_id: 'season_0', title: 'O Peregrino', description: 'Correr um total de 50km. (Recompensa: 1 Baú Incomum)', goal_type: 'km_run', goal_value: 50, reward_type: 'exp', reward_value: 2250 },
-    { id: 'sm_2', season_id: 'season_0', title: 'O Sábio', description: 'Ler 1 livro completo. (Recompensa: 1 Baú Ciclo)', goal_type: 'books_read', goal_value: 1, reward_type: 'exp', reward_value: 1125 },
-    { id: 'sm_3', season_id: 'season_0', title: 'O Monge', description: 'Meditar por 20 dias. (Recompensa: 1 Baú Raro)', goal_type: 'meditation_days', goal_value: 20, reward_type: 'exp', reward_value: 1800 },
+    { id: 'sm_1', season_id: 'season_0', title: 'O Peregrino', description: 'Correr um total de 50km. (Recompensa: 1 Baú Comum)', goal_type: 'km_run', goal_value: 50, reward_type: 'exp', reward_value: 2250 },
+    { id: 'sm_2', season_id: 'season_0', title: 'O Sábio', description: 'Ler 1 livro completo. (Recompensa: 1 Baú Comum)', goal_type: 'books_read', goal_value: 1, reward_type: 'exp', reward_value: 1125 },
+    { id: 'sm_3', season_id: 'season_0', title: 'O Monge', description: 'Meditar por 20 dias. (Recompensa: 1 Baú Comum)', goal_type: 'meditation_days', goal_value: 20, reward_type: 'exp', reward_value: 1800 },
   ] as SeasonMission[],
   seasonQuests: [
     {
       id: 'sq_1',
       title: 'O Andarilho',
-      description: 'Andar 20 km no total. (Recompensa: 1 Baú Incomum)',
+      description: 'Andar 20 km no total. (Recompensa: 1 Baú Comum)',
       type: 'individual',
       category: 'physical',
       actionTemplate: {
@@ -224,7 +224,7 @@ export const GM_CONFIG = {
     {
       id: 'sq_2',
       title: 'O Leitor',
-      description: 'Ler 1 livro inteiro. (Recompensa: 1 Baú Ciclo)',
+      description: 'Ler 1 livro inteiro. (Recompensa: 1 Baú Comum)',
       type: 'individual',
       category: 'intellectual',
       actionTemplate: {
@@ -240,7 +240,7 @@ export const GM_CONFIG = {
     {
       id: 'sq_3',
       title: 'O Forte',
-      description: 'Não perder um dia de academia. (Recompensa: 1 Baú Raro)',
+      description: 'Não perder um dia de academia. (Recompensa: 1 Baú Comum)',
       type: 'individual',
       category: 'physical',
       actionTemplate: {
@@ -257,7 +257,7 @@ export const GM_CONFIG = {
     {
       id: 'sq_clan_1',
       title: 'Socializar 50 horas',
-      description: 'Somar 50 horas em equipe. (Recompensa: 1 Baú Épico)',
+      description: 'Somar 50 horas em equipe. (Recompensa: 1 Baú Comum)',
       type: 'clan',
       category: 'social',
       actionTemplate: {

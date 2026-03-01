@@ -1,881 +1,474 @@
-PROMPT FINAL: ENGENHARIA COMPLETA "A FORJA" – DATABASE, ECONOMIA E UI
-CONTEXTO
-Atue como Engenheiro de Sistemas e Game Designer Sênior. Projete a infraestrutura de dados, scripts SQL e lógica de backend para o ecossistema gamificado "O Jogo da Vida".
+# 🏪 A FORJA - Documentação Mestra (Loja, Itens e Economia)
 
-0. INPUT DE DADOS ESTABELECIDOS (OBRIGATÓRIO)
-ITEMS E RARIDADES:
-Skins (12+1):
-
-T1 (Comum): Náufrago, Casual, Gym Rat, Street
-T2 (Incomum): Executivo, Tático, Acadêmico
-T3 (Raro): Nômade, Alquimista, Híbrido
-T4 (Épico): Armadura Placa, Mago Círculo
-T5 (Lendário): Entidade de Luz
-Season: O Criador
-
-Cabelos (10):
-
-T1: Recruta, Cachos, Mullet, Rabo de Cavalo
-T2: Dreads, Coque, Curto Fem
-T3: Princesa, Goku
-T4: Fluxo Espiritual Anime
-
-Bordas/Banners (11):
-
-T1: Pupilo (Beta), Disciplinado, Vanguardista, Rústico
-T2: Popular, Protetor
-T3: Imparável, Arquétipo
-T4: Lenda Viva, Soberano
-T5: GM - Grande Mestre
-
-Moldes de Glifo (7):
-
-T1: Tábua Aprendiz, Manuscrito, Lajota
-T2: Totem Obelisco, Granito Rúnico
-T3: Monólito Aço
-T5: A FORJA - Losango 3D
-
-Auras & Orbes (7):
-
-T1: Bruma, Safira, Rubi
-T2: Esmeralda, Prata
-T3: Ouro
-T5: Pedra da Lua, Multiverso
-
-
-1. DATABASE E NOMENCLATURA (IDs)
-Gere a lista JSON completa de IDs seguindo o padrão:
-item_[categoria]_[raridade_1_a_5]_[id_sequencial]
-Exemplo:
-json{
-  "id": "item_skin_1_001",
-  "name": "Náufrago",
-  "category": "skin",
-  "tier": 1,
-  "rarity": "comum"
-}
-```
-
-**Respeite a distribuição 4-3-3-2-1** para garantir escassez progressiva.
+Este documento centraliza toda a lógica de itens, catálogo, economia, sistema de baús e implementação técnica do ecossistema "O Jogo da Vida".
+**Fonte da Verdade:** `constants/items.ts`
 
 ---
 
-## 2. ECONOMIA DUAL E CÂMBIO
+## 🎨 1. Identidade Visual e Raridades
 
-### MOEDAS:
+O "feeling" de cada categoria para guiar a criação visual e o design.
+**Novas Cores (v1.006):**
 
-**💰 OURO (Hard Currency):**
-- Câmbio: **10 Ouro = R$ 1,00**
-- Adquirido via: Compra direta com dinheiro real
-- **USADO PARA:**
-  - ✅ Premium (200 ouro/mês)
-  - ✅ Codexes educacionais (150 ouro cada)
-  - ✅ Items exclusivos da loja (500-800 ouro)
-  - ✅ Boost de XP temporário (50-200 ouro)
+### 🟤 COMUM (Marrom) (Nível 1-2)
+*   **Cor**: Marrom (`#A0522D`)
+*   **Conceito**: Rústico, natural, terra, madeira, couro desgastado.
+*   **Roupa**: Túnica de linho, calça de treino, roupas civis.
+*   **Artefato**: Amuleto de pedra, cajado de madeira.
+*   **Chapéu**: Gorro, faixa de testa.
 
-**💎 FRAGMENTOS (Soft Currency):**
-- Adquirido via:
-  - Reciclagem de itens duplicados
-  - Abrir baús (bônus extra sempre)
-- **USADO PARA:**
-  - ✅ Crafting de itens específicos
+### ⚪ INCOMUM (Prata) (Nível 3-4)
+*   **Cor**: Prata (`#C0C0C0`)
+*   **Conceito**: Metálico, industrial, aço polido, precisão.
+*   **Roupa**: Traje de couro com detalhes prateados, armadura leve.
+*   **Acessório**: Correntes de prata, luvas com placas de metal.
+*   **Artefato**: Compasso de aço, adaga prateada.
 
-### RECICLAGEM (Conversão Item → Fragmentos):
-```
-T1 (Comum)      = 10 fragmentos
-T2 (Incomum)    = 30 fragmentos  
-T3 (Raro)       = 100 fragmentos
-T4 (Épico)      = 300 fragmentos
-T5 (Lendário)   = 1000 fragmentos
-```
+### 🟡 RARO (Ouro) (Nível 5-6)
+*   **Cor**: Ouro (`#FFD700`)
+*   **Conceito**: Nobreza, riqueza, prestígio, realeza.
+*   **Roupa**: Armadura dourada, mantos com bordados de ouro.
+*   **Chapéu**: Coroa simples, tiara dourada.
+*   **Artefato**: Cálice de ouro, moedas antigas.
 
-### CRAFTING (Fragmentos → Item):
+### 🔵 ÉPICO (Azul) (Nível 7-8)
+*   **Cor**: Azul (`#3B82F6`)
+*   **Conceito**: Mágico, etéreo, arcano, energia pura, eletricidade.
+*   **Roupa**: Túnicas de mago azuladas, armadura de cristal.
+*   **Aura**: Partículas de mana, brilho azul neon.
+*   **Artefato**: Orbe de energia, cristal de safira.
 
-**T1-T3 (Escolha EXATA - Player tem controle total):**
-```
-T1 = 40 fragmentos   → Escolhe EXATAMENTE qual item T1 quer
-T2 = 120 fragmentos  → Escolhe EXATAMENTE qual item T2 quer
-T3 = 400 fragmentos  → Escolhe EXATAMENTE qual item T3 quer
-```
-
-**T4-T5 (Aleatório dentro da categoria - Mantém exclusividade):**
-```
-T4 = 1200 fragmentos → Escolhe CATEGORIA (ex: "Skin T4")
-                     → Sistema sorteia: Armadura Placa OU Mago Círculo
-                     
-T5 = 4000 fragmentos → Escolhe CATEGORIA (ex: "Aura T5")  
-                     → Sistema sorteia: Pedra da Lua OU Multiverso
-LÓGICA: Precisa reciclar 4 duplicatas do mesmo tier pra craftar 1 item novo desse tier.
-LOJA DE OURO - PACOTES DE COMPRA:
-json{
-  "pacotes_ouro": [
-    {
-      "nome": "Pepita",
-      "preco_brl": 5.00,
-      "ouro_base": 50,
-      "bonus": 0,
-      "total": 50
-    },
-    {
-      "nome": "Barra Pequena",
-      "preco_brl": 10.00,
-      "ouro_base": 100,
-      "bonus": 10,
-      "total": 110
-    },
-    {
-      "nome": "Barra Grande",
-      "preco_brl": 20.00,
-      "ouro_base": 200,
-      "bonus": 30,
-      "total": 230
-    },
-    {
-      "nome": "Cofre",
-      "preco_brl": 50.00,
-      "ouro_base": 500,
-      "bonus": 100,
-      "total": 600
-    },
-    {
-      "nome": "Tesouro",
-      "preco_brl": 100.00,
-      "ouro_base": 1000,
-      "bonus": 300,
-      "total": 1300
-    }
-  ],
-  
-  "produtos_premium": {
-    "premium_mensal": {
-      "custo": 200,
-      "duracao_dias": 30,
-      "beneficios": [
-        "XP +50% em todas atividades",
-        "1 Baú Radiante grátis por semana",
-        "Emblema Premium exclusivo",
-        "Acesso antecipado a itens de Season"
-      ]
-    }
-  },
-  
-  "codexes": [
-    {"id": "codex_financas", "nome": "Codex: Finanças Pessoais", "custo": 150},
-    {"id": "codex_produtividade", "nome": "Codex: Produtividade Extrema", "custo": 150},
-    {"id": "codex_saude", "nome": "Codex: Saúde & Fitness", "custo": 150},
-    {"id": "codex_mindset", "nome": "Codex: Mindset de Sucesso", "custo": 150}
-  ],
-  
-  "items_exclusivos": [
-    {"id": "skin_exclusive_001", "nome": "Skin: Empreendedor", "tier": 4, "custo": 500},
-    {"id": "aura_exclusive_001", "nome": "Aura: Fênix Dourada", "tier": 5, "custo": 800},
-    {"id": "border_exclusive_001", "nome": "Borda: Fundador", "tier": 4, "custo": 400}
-  ],
-  
-  "boosts": [
-    {"id": "boost_xp_24h", "nome": "Boost XP 2x (24h)", "custo": 50, "duracao_horas": 24},
-    {"id": "boost_xp_7d", "nome": "Boost XP 2x (7 dias)", "custo": 200, "duracao_horas": 168}
-  ]
-}
-```
+### 🟣 LENDÁRIO (Roxo) (Nível 9-10)
+*   **Cor**: Roxo (`#A855F7`)
+*   **Conceito**: Cósmico, vazio, dimensão sombria, mistério supremo.
+*   **Visual**: Energia do vazio, buraco negro, nebulosa roxa.
+*   **Chapéu**: Coroa do vazio, olhos brilhantes roxos.
+*   **Artefato**: Cubo cósmico, fragmento de realidade.
 
 ---
 
-## 3. SISTEMA DE BAÚS (GRÁTIS - MÉRITO)
+## 📚 2. Catálogo de Itens (Database Atual)
 
-### ⚠️ IMPORTANTE: BAÚS NÃO SÃO COMPRADOS COM OURO!
+Abaixo estão todos os itens implementados no sistema (`ITEMS_DB`), organizados por categoria e tier.
 
-**Como ganhar baús:**
-- ✅ Subir de Patente (level up)
-- ✅ Gerar Relatórios de Ações com bons resultados
-- ✅ **Limite: Máximo 1 baú por dia** (anti-farming)
+### 👕 Skins (Trajes)
+| ID | Nome | Tier | Raridade | Ícone | Notas |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `item_skin_1_001` | Náufrago | 1 | Comum | 🏝️ | Inicial |
+| `item_skin_1_002` | Casual | 1 | Comum | 👕 | Inicial |
+| `item_skin_1_003` | Gym Rat | 1 | Comum | 💪 | Inicial |
+| `item_skin_1_004` | Street | 1 | Comum | 🛹 | Inicial |
+| `item_skin_2_001` | Executivo | 2 | Incomum | 💼 | |
+| `item_skin_2_002` | Tático | 2 | Incomum | 🕶️ | |
+| `item_skin_2_003` | Acadêmico | 2 | Incomum | 🎓 | |
+| `item_skin_3_001` | Nômade | 3 | Raro | 🐪 | |
+| `item_skin_3_002` | Alquimista | 3 | Raro | ⚗️ | |
+| `item_skin_3_003` | Híbrido | 3 | Raro | 🤖 | |
+| `item_skin_4_001` | Armadura Placa | 4 | Épico | 🛡️ | |
+| `item_skin_4_002` | Mago Círculo | 4 | Épico | 🧙‍♂️ | |
+| `item_skin_exclusive_001`| Empreendedor | 4 | Épico | 💼 | **Loja (500 Ouro)** |
+| `item_skin_season_001` | O Criador | 4 | Épico | 🎨 | **Season** |
+| `item_skin_5_001` | Entidade de Luz | 5 | Lendário | ✨ | |
 
-**Distribuição por nível de Patente:**
-```
-Patente 1-10   → Baú Incomum
-Patente 11-25  → Baú de Ciclo
-Patente 26-50  → Baú Radiante
-Patente 51-75  → Baú Épico
-Patente 76+    → Baú Season (eventos especiais)
-TIPOS DE BAÚS E LOOT TABLES:
-BaúComo GanharFoco PrincipalGarantia MínimaIncomumPatente 1-10T1 (70%) + T2 (25%)T1+De CicloPatente 11-25T1 (40%) + T2 (35%) + T3 (20%)T1+RadiantePatente 26-50T2 (45%) + T3 (40%) + T4 (10%)T2+ÉpicoPatente 51-75T3 (50%) + T4 (35%) + T5 (5%)T3+SeasonEventos/76+T4 (60%) + T5 (30%) + ExclusivosT4+
-LOOT TABLES (JSON - Somatória 100%):
-json{
-  "incomum": {
-    "tier_1": 70,
-    "tier_2": 25,
-    "tier_3": 5
-  },
-  "ciclo": {
-    "tier_1": 40,
-    "tier_2": 35,
-    "tier_3": 20,
-    "tier_4": 5
-  },
-  "radiante": {
-    "tier_2": 45,
-    "tier_3": 40,
-    "tier_4": 10,
-    "tier_5": 5
-  },
-  "epico": {
-    "tier_3": 50,
-    "tier_4": 35,
-    "tier_5": 15
-  },
-  "season": {
-    "tier_4": 60,
-    "tier_5": 30,
-    "season_exclusive": 10
-  }
-}
-```
+### 💇 Cabelos (Hairstyles)
+| ID | Nome | Tier | Raridade | Ícone |
+| :--- | :--- | :--- | :--- | :--- |
+| `cachos` | Cachos | 1 | Comum | ➰ |
+| `medio_reto` | Médio Reto | 1 | Comum | 💇 |
+| `grunge_longo` | Grunge Longo | 2 | Incomum | 🎸 |
+| `textured_crop` | Texturizado | 2 | Incomum | ✂️ |
+| `dreads` | Dreads | 3 | Raro | 🧶 |
+| `mullet_topete` | Mullet Top | 3 | Raro | 🔥 |
+| `anime_spikes` | Anime Spiky | 4 | Épico | ⚡ |
+| `princesa` | Princesa | 4 | Épico | 👸 |
+| `fluxo_espiritual` | Fluxo Espiritual | 5 | Lendário | ✨ |
 
-### FRAGMENTOS BÔNUS POR BAÚ:
-Todo baú SEMPRE dá fragmentos extras (além do item):
-```
-Incomum  → 5-15 fragmentos extras
-Ciclo    → 10-30 fragmentos extras
-Radiante → 30-80 fragmentos extras
-Épico    → 80-200 fragmentos extras
-Season   → 200-500 fragmentos extras
-```
+### 🖼️ Bordas (Borders)
+| ID | Nome | Tier | Raridade | Ícone | Notas |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `item_border_1_001` | Pupilo (Beta) | 1 | Comum | 🔰 | |
+| `item_border_1_002` | Disciplinado | 1 | Comum | 📏 | |
+| `item_border_1_003` | Vanguardista | 1 | Comum | 🚩 | |
+| `item_border_1_004` | Rústico | 1 | Comum | 🪵 | |
+| `item_border_t1_aprendiz`| Aprendiz | 1 | Comum | 🎓 | Novo |
+| `item_border_2_001` | Popular | 2 | Incomum | 🌟 | |
+| `item_border_2_002` | Protetor | 2 | Incomum | 🛡️ | |
+| `item_border_t2_veterano`| Veterano | 2 | Incomum | 🎖️ | Novo |
+| `item_border_3_001` | Imparável | 3 | Raro | 🚀 | |
+| `item_border_3_002` | Arquétipo | 3 | Raro | 🎭 | |
+| `item_border_t3_mistico` | Místico | 3 | Raro | 🔮 | Novo |
+| `item_border_t3_transcendente`| Transcendente | 3 | Raro | ✨ | Novo |
+| `item_border_4_001` | Lenda Viva | 4 | Épico | 🦁 | |
+| `item_border_4_002` | Soberano | 4 | Épico | 👑 | |
+| `item_border_t4_celestial`| Celestial | 4 | Épico | 👼 | Novo |
+| `item_border_t4_guardia` | Guardiã | 4 | Épico | 🛡️ | Novo |
+| `item_border_t4_oraculo` | Oráculo | 4 | Épico | 👁️ | Novo |
+| `item_border_exclusive_001`| Fundador | 4 | Épico | 🏛️ | **Loja (400 Ouro)** |
+| `item_border_5_001` | GM - Grande Mestre| 5 | Lendário | 🐲 | |
+| `item_border_t5_genesis` | Gênesis | 5 | Lendário | 🌋 | Novo |
+
+### 🚩 Banners (Flamulas)
+| ID | Nome | Tier | Raridade | Ícone |
+| :--- | :--- | :--- | :--- | :--- |
+| `item_banner_disciplinado`| Disciplinado | 1 | Comum | 📏 |
+| `item_banner_t1_aprendiz` | Aprendiz | 1 | Comum | 🎓 |
+| `item_banner_popular` | Popular | 2 | Incomum | 🌟 |
+| `item_banner_t2_veterano` | Veterano | 2 | Incomum | 🎖️ |
+| `item_banner_imparavel` | Imparável | 3 | Raro | 🚀 |
+| `item_banner_t3_mistico` | Místico | 3 | Raro | 🔮 |
+| `item_banner_lendaviva` | Lenda Viva | 4 | Épico | 🦁 |
+| `item_banner_t4_celestial`| Celestial | 4 | Épico | 👼 |
+| `item_banner_t4_guardia` | Guardiã | 4 | Épico | 🛡️ |
+| `item_banner_t4_oraculo` | Oráculo | 4 | Épico | 👁️ |
+| `item_banner_t4_transcendente`| Transcendente| 4 | Épico | ✨ |
+| `item_banner_gm` | Grão Mestre | 5 | Lendário | 🐲 |
+| `item_banner_t5_genesis` | Gênesis | 5 | Lendário | 🌋 |
+
+### 🗿 Glifos (Glyphs)
+| ID | Nome | Tier | Raridade | Ícone |
+| :--- | :--- | :--- | :--- | :--- |
+| `item_glyph_1_001` | Tábua Aprendiz | 1 | Comum | 🪵 |
+| `item_glyph_1_002` | Manuscrito | 1 | Comum | 📜 |
+| `item_glyph_1_003` | Lajota | 1 | Comum | 🧱 |
+| `item_glyph_2_002` | Granito Rúnico | 2 | Incomum | 🪨 |
+| `item_glyph_3_002` | Mecanismo Bronze | 3 | Raro | ⚙️ |
+| `item_glyph_3_003` | Mecanismo Rúnico | 3 | Raro | ⚙️ |
+| `item_glyph_4_001` | Crisol Geomântico| 4 | Épico | 🔷 |
+| `item_glyph_4_002` | Cristal Branco | 4 | Épico | 💎 |
+| `item_glyph_5_001` | A FORJA - Losango 3D| 5 | Lendário | 💠 |
+| `item_glyph_5_002` | Artefato Sombrio | 5 | Lendário | 🕳️ |
+
+### ✨ Auras
+| ID | Nome | Tier | Raridade | Ícone | Notas |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `item_aura_1_001` | Bruma | 1 | Comum | 🌫️ | |
+| `item_aura_1_002` | Safira | 1 | Comum | 🔹 | |
+| `item_aura_1_003` | Rubi | 1 | Comum | 🔻 | |
+| `item_aura_2_001` | Esmeralda | 2 | Incomum | ❇️ | |
+| `item_aura_2_002` | Prata | 2 | Incomum | ⚪ | |
+| `item_aura_3_001` | Ouro | 3 | Raro | 🟡 | |
+| `item_aura_exclusive_001`| Fênix Dourada | 5 | Lendário | 🐦 | **Loja (800 Ouro)** |
+| `item_aura_5_001` | Pedra da Lua | 5 | Lendário | 🌙 | |
+| `item_aura_5_002` | Multiverso | 5 | Lendário | 🌌 | |
+
+### 🔮 Orbes (Orbs)
+| ID | Nome | Tier | Raridade | Ícone |
+| :--- | :--- | :--- | :--- | :--- |
+| `item_orb_1_002` | Orbe de Cobre | 1 | Comum | 🟤 |
+| `item_orb_2_002` | Orbe Sombrio | 2 | Incomum | 🌑 |
+| `item_orb_2_003` | Orbe Tempestade | 2 | Incomum | 🌩️ |
+| `item_orb_3_001` | Orbe de Ouro | 3 | Raro | 🪙 |
+| `item_orb_4_001` | Orbe de Diamante | 4 | Épico | 💎 |
+| `item_orb_5_001` | Orbe Gênese | 5 | Lendário | ⚛️ |
+| `item_orb_5_002` | Orbe Soberano | 5 | Lendário | 👑 |
+
+### 🛡️ Placas (Plates)
+| ID | Nome | Tier | Raridade | Ícone |
+| :--- | :--- | :--- | :--- | :--- |
+| `item_plate_1_001` | Placa Madeira | 1 | Comum | 🪵 |
+| `item_plate_2_001` | Placa Pedra | 2 | Incomum | 🪨 |
+| `item_plate_3_001` | Placa Prata | 3 | Raro | 🥈 |
+| `item_plate_4_001` | Placa Roxa | 4 | Épico | 🟪 |
+| `item_plate_5_001` | Placa Ouro | 5 | Lendário | 🥇 |
+| `item_plate_5_002` | Placa Gelo | 5 | Lendário | ❄️ |
+
+### 📜 Artefatos (Companions & Tools)
+| ID | Nome | Tier | Raridade | Ícone |
+| :--- | :--- | :--- | :--- | :--- |
+| `item_artifact_1_001` | Adaga Aprendiz | 1 | Comum | 🗡️ |
+| `item_artifact_1_002` | Cachorro Beagle | 1 | Comum | 🐕 |
+| `item_artifact_1_003` | Gato Laranja | 1 | Comum | 🐈 |
+| `item_artifact_1_004` | Halteres | 1 | Comum | 🏋️ |
+| `item_artifact_1_005` | Trio Café | 1 | Comum | ☕ |
+| `item_artifact_2_001` | Cachorro Husky | 2 | Incomum | 🐺 |
+| `item_artifact_2_002` | Gato Siamês | 2 | Incomum | 🐱 |
+| `item_artifact_2_003` | Setup | 2 | Incomum | 💻 |
+| `item_artifact_3_001` | Cachorro Jack | 3 | Raro | 🐶 |
+| `item_artifact_3_002` | Caixa Mágica | 3 | Raro | 📦 |
+| `item_artifact_3_003` | Cetro Esmeralda | 3 | Raro | 🪄 |
+| `item_artifact_3_004` | Coroa Prata | 3 | Raro | 👑 |
+| `item_artifact_3_005` | Divine Scepter | 3 | Raro | ⚜️ |
+| `item_artifact_3_006` | Espada Runas | 3 | Raro | ⚔️ |
+| `item_artifact_4_001` | Coroa de Espinhos| 4 | Épico | 🌵 |
+| `item_artifact_4_002` | Dragão Bebê | 4 | Épico | 🐉 |
+| `item_artifact_4_003` | Grimório Arcano | 4 | Épico | 📖 |
+| `item_artifact_5_001` | Fênix Cósmico | 5 | Lendário | 🐦 |
+| `item_artifact_5_002` | Tesseract | 5 | Lendário | 🧊 |
+
+### 🎨 UI Skins (Temas)
+| ID | Nome | Tier | Raridade | Ícone |
+| :--- | :--- | :--- | :--- | :--- |
+| `BASIC` | Básico Profissional | 1 | Comum | ◻️ |
+| `GOLD` | Ouro Soberano | 3 | Raro | ⚜️ |
+| `FROST` | Gelo Eterno | 3 | Raro | ❄️ |
+| `EMBER` | Chama Viva | 4 | Épico | 🔥 |
+| `CYBER` | Cyberpunk | 4 | Épico | 🦾 |
+| `AURORA` | Aurora Boreal | 4 | Épico | 🌌 |
+| `VOID` | Vazio Primordial | 5 | Lendário | 🔮 |
 
 ---
 
-## 4. PITY SYSTEM (Bad Luck Protection)
+## 🏆 3. Progressão e Recompensas por Patente
 
-### CONTADORES SEPARADOS POR TIPO DE BAÚ:
-```
-Baú Incomum:  SEM pity (muito comum)
-Baú de Ciclo: Pity em 15 baús → Garante T3 no 15º
-Baú Radiante: Pity em 10 baús → Garante T3 no 10º
-Baú Épico:    Pity em 8 baús  → Garante T4 no 8º
-Baú Season:   Pity em 5 baús  → Garante T5 no 5º
-```
+Distribuição híbrida: 50% das recompensas são fixas por nível (progressão) e 50% vêm exclusivamente de Baús (sorte/mérito).
 
-### LÓGICA DE RESET:
-- Contador **ZERA** ao dropar o tier garantido (ou superior)
-- Exemplo: Abriu 7 Baús Épicos sem T4 → No 8º GARANTE T4 → Contador volta pra 0
+| Nível | Patente | Recompensa Fixa (Garantida) | Drop Pool de Baús (Sorte) | Raridade Predominante |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Iniciado | 2 Roupas Base, 4 Cabelos Base | - | Comum |
+| 2 | Neófito | 1 Cabelo, 1 Artefato, 1 Chapéu | 1 Cabelo, 1 Artefato, 1 Chapéu | Comum |
+| 3 | Praticante | 1 Roupa, 1 Acessório, 1 Borda | 1 Roupa, 1 Acessório, 1 Borda | Incomum |
+| 4 | Guardião | 1 Cabelo, 2 Artefatos, 2 Chapéus | 1 Cabelo, 2 Artefatos, 2 Chapéus | Incomum |
+| 5 | Adepto | 1 Roupa, 2 Acessórios, 1 Borda | 1 Roupa, 2 Acessórios, 1 Borda | Raro |
+| 6 | Arquiteto | 1 Cabelo, 2 Artefatos, 2 Chapéus | 1 Cabelo, 2 Artefatos, 2 Chapéus | Raro |
+| 7 | Magistrado | 1 Roupa Épica, 1 Artefato Místico | 1 Roupa Épica, 1 Acessório Animado | Épico |
+| 8 | Soberano | 1 Aura de Plasma, 1 Chapéu Majestoso | 1 Skin UI, 1 Artefato Relíquia | Épico |
+| 9 | Iluminado | 1 Set Completo (Roupa+Cabelo+Aura) | 1 Mascote Espiritual (Helper) | Lendário |
+| 10 | Avatar | O Cálice/Coroa da Unidade | Skin de Deus Ex Machina | Lendário |
 
 ---
 
-## 5. ITEMS DE SEASON (Exclusividade)
+## 💰 4. Economia e Loja
 
-### CICLO DE VIDA:
-- Items de Season **ficam como LEGACY** após a temporada
-- Não dropam mais de baús normais
-- **Podem voltar em eventos especiais** (aniversário, datas comemorativas)
-- Cria FOMO sem frustração permanente
+O sistema utiliza uma economia dual para equilibrar monetização e mérito.
 
-### ROTAÇÃO:
-```
-Season 1 (3 meses) → "O Criador" (Skin exclusiva)
-Season 2 (3 meses) → Novo item exclusivo
-...
-Evento Aniversário → "O Criador" volta temporariamente
+### Moedas
+1.  **💰 OURO (Hard Currency)**
+    *   **Origem**: Compra com dinheiro real (R$).
+    *   **Câmbio**: 10 Ouro ≈ R$ 1,00.
+    *   **Uso**: Premium, Codexes, Skins Exclusivas, Boosts.
+    *   **Nota**: NÃO compra poder, apenas cosméticos e conveniência.
 
-6. SQL - SCHEMA COMPLETO
-6.1. TABELA DE ITEMS
-sqlCREATE TABLE items (
+2.  **💎 FRAGMENTOS (Soft Currency)**
+    *   **Origem**: Reciclagem de itens repetidos, abertura de baús.
+    *   **Uso**: Crafting (criação) de itens.
+
+### Reciclagem (Item → Fragmentos)
+*   **T1 (Comum)**: 10 fragmentos
+*   **T2 (Incomum)**: 30 fragmentos
+*   **T3 (Raro)**: 100 fragmentos
+*   **T4 (Épico)**: 300 fragmentos
+*   **T5 (Lendário)**: 1000 fragmentos
+
+### Crafting (Fragmentos → Item)
+*   **T1 (40 frag)**: Escolha EXATA do item.
+*   **T2 (120 frag)**: Escolha EXATA do item.
+*   **T3 (400 frag)**: Escolha EXATA do item.
+*   **T4 (1200 frag)**: Escolha a CATEGORIA -> Sorteio aleatório (Gacha).
+*   **T5 (4000 frag)**: Escolha a CATEGORIA -> Sorteio aleatório (Gacha).
+*   *Lógica: Precisa reciclar 4 duplicatas do mesmo tier para criar 1 novo.*
+
+### Pacotes de Loja (Ouro)
+| Pacote | Preço (BRL) | Ouro Base | Bônus | Total |
+| :--- | :--- | :--- | :--- | :--- |
+| Pepita | R$ 5,00 | 50 | 0 | 50 |
+| Barra Peq. | R$ 10,00 | 100 | 10 | 110 |
+| Barra Gde. | R$ 20,00 | 200 | 30 | 230 |
+| Cofre | R$ 50,00 | 500 | 100 | 600 |
+| Tesouro | R$ 100,00 | 1000 | 300 | 1300 |
+
+### Produtos Premium
+*   **Premium Mensal (200 Ouro)**: XP +50%, 1 Baú Radiante/semana, Emblema, Acesso antecipado.
+*   **Codexes (150 Ouro)**: Módulos de conhecimento (Finanças, Produtividade, etc.).
+*   **Itens Exclusivos**: Skins e Auras que não dropam em baús (500-800 Ouro).
+
+---
+
+## 📦 5. Sistema de Baús (Loot Boxes)
+
+Baús são recompensas de mérito e **não podem ser comprados com Ouro**.
+
+### Tipos e Drop Rates
+| Tipo de Baú | Origem (Patente) | T1 | T2 | T3 | T4 | T5 | Fragmentos Bônus |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Incomum** | 1-10 | 70% | 25% | 5% | - | - | 5-15 |
+| **Ciclo** | 11-25 | 40% | 35% | 20% | 5% | - | 10-30 |
+| **Radiante** | 26-50 | - | 45% | 40% | 10% | 5% | 30-80 |
+| **Épico** | 51-75 | - | - | 50% | 35% | 15% | 80-200 |
+| **Season** | 76+ / Eventos | - | - | - | 60% | 30% | 200-500 |
+
+### Pity System (Proteção contra Má Sorte)
+Garante um item de raridade superior após X aberturas sem sucesso. O contador reseta ao conseguir o item.
+*   **Baú de Ciclo**: Garante T3 no 15º baú.
+*   **Baú Radiante**: Garante T3 no 10º baú.
+*   **Baú Épico**: Garante T4 no 8º baú.
+*   **Baú Season**: Garante T5 no 5º baú.
+
+---
+
+##### 🎲 6. Fórmula de Drop e Aleatoriedade
+
+A "Fórmula da Sorte" define exatamente o que pode vir em cada baú. O sistema usa um algoritmo de **Drop Table Ponderado**.
+
+---
+
+## 🎖️ 7. Recompensas de Missões
+
+As missões são a principal forma de progressão e obtenção de baús por mérito.
+
+### 🌟 Missões Especiais (Season Meta)
+| Missão | Objetivo | Recompensa |
+| :--- | :--- | :--- |
+| **Meta Quest** | Completar 3 Quests da Season | **Baú Raro** + 5000 XP |
+| **Tutorial de Iniciação** | Concluir o guia básico do sistema | **Baú Comum** + 1000 XP |
+
+### 🏃 Missões de Temporada (Season)
+| Missão | Objetivo | Recompensa |
+| :--- | :--- | :--- |
+| **O Andarilho** | Caminhar 20km no total | **Baú Comum** + 2250 XP |
+| **O Erudito** | Dedicar tempo à leitura | **Baú Comum** + 1800 XP |
+| **O Guerreiro** | Acumular 50 flexões | **Baú Comum** + 1125 XP |
+| **O Peregrino** | Correr um total de 50km | **Baú Comum** + 2250 XP |
+| **O Sábio** | Ler 1 livro completo | **Baú Comum** + 1125 XP |
+| **O Monge** | Meditar por 20 dias | **Baú Comum** + 1800 XP |
+| **O Forte** | Não perder dia de academia | **Baú Comum** + 1125 XP |
+| **Unidade do Clã** | Somar 50h de atividades em equipe | **Baú Comum** + 4500 XP |
+
+### 🐣 Missões de Introdução (Boas-vindas)
+*Estas missões são únicas e servem para configurar o perfil inicial.*
+
+| Missão | Recompensa |
+| :--- | :--- |
+| Criar seu primeiro Ciclo | **Baú Comum** + 100 XP |
+| Preencher Perfil de Ativos | **Baú Comum** + 100 XP |
+| Configurar Soberano | **Baú Comum** + 100 XP |
+| Criar suas primeiras Arenas | **Baú Comum** + 100 XP |
+| Criar suas primeiras Ações | **Baú Comum** + 100 XP |
+| Completar uma Ação | **Baú Comum** + 200 XP |
+| Compartilhar seu Score | **Baú Comum** + 150 XP |
+
+---
+
+## 🛠️ 8. Notas Técnicas de Implementação
+
+### Como funciona o sorteio:
+1.  Você abre um baú (ex: Baú Incomum).
+2.  O sistema roda um dado de 100 lados (d100) para definir a **Raridade (Tier)** do item.
+    *   *Exemplo Baú Incomum: 1-70 (Comum), 71-95 (Incomum), 96-100 (Raro).*
+3.  Definida a raridade, o sistema sorteia um item aleatório daquela lista (Skin, Aura, etc.).
+4.  Se você já tem o item, ele vira **Fragmentos** automaticamente (Reciclagem).
+
+### Tabelas de Probabilidade (Drop Rates)
+| Baú | T1 (Comum) | T2 (Incomum) | T3 (Raro) | T4 (Épico) | T5 (Lendário) | Frag. Bônus |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Comum** | 90% | 9% | 1% | - | - | 1-5 |
+| **Incomum** | 70% | 25% | 5% | - | - | 5-15 |
+| **Ciclo** | 40% | 35% | 20% | 5% | - | 10-30 |
+| **Radiante** | - | 45% | 40% | 10% | 5% | 30-80 |
+| **Épico** | - | - | 50% | 35% | 15% | 80-200 |
+| **Season** | - | - | - | 60% | 30% | 200-500 |
+
+---
+
+## 📊 7. Recompensas de Relatório (Fim de Ciclo)
+
+Ao fechar um ciclo (Sexta-feira), o Oráculo calcula seu XP total ganho e sua Nota de Performance.
+**Nova Lógica (Economia de Minutos):** Agora, o tempo é a moeda principal.
+**1 XP = 1 Minuto de Foco/Ação.**
+
+### Tabela de Requisitos e Equivalência de Tempo
+Para ganhar os melhores baús, você precisa de **Volume (XP/Tempo)** E **Qualidade (Nota)**.
+
+| Baú Recebido | Requisito de XP (Volume) | Equivalência de Tempo | Requisito de Nota (Qualidade) | Chance de Sorte (Upgrade) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Nada / Apenas XP** | < 750 XP | Menos de 1 Dia | Qualquer Nota | 0% |
+| **Baú Comum 🟤** | **750 XP** | **~1 Dia Cheio** (12h+) | Nota D (Minímo) | 5% p/ Incomum |
+| **Baú Incomum ⚪** | **2.250 XP** | **~3 Dias** (37h+) | Nota C (60+) | 5% p/ Raro |
+| **Baú Raro 🟡** | **5.000 XP** | **~1 Semana** (83h+) | Nota B (70+) | 5% p/ Épico |
+| **Baú Épico 🔵** | **12.000 XP** | **~2.5 Semanas** (200h+) | Nota A (80+) | 5% p/ Lendário |
+| **Baú Lendário 🟣** | **25.000 XP** | **~1 Mês Foda** (416h+) | Nota S (90+) | - |
+
+### Regras Adicionais
+1.  **Sorte de Principiante (RNG Upgrade)**: Mesmo que você atinja apenas o requisito de um baú, existe uma chance fixa de **5%** de o sistema "critar" e te dar um baú de tier superior (ex: Comum -> Incomum).
+2.  **Duração Mínima**: Ciclos com menos de 7 dias **NÃO DÃO BAÚS**, independente do XP ou Nota. Isso previne o "spam" de mini-ciclos.
+3.  **Nota do Ciclo**: A nota (0 a 100+) é composta por Fidelidade (40%), Metas (+15pts), Consistência (+20pts) e Volume (+1pt/2h).
+
+*Exemplo: Um ciclo de 1000 XP (15h úteis) com nota 95 será um **Baú Comum** (pois passou de 750 mas não chegou em 2250), com 5% de chance de virar Incomum.*
+
+---
+
+## 🎒 8. Inventário Inicial (Heroi Básico)
+
+Todo novo usuário começa sua jornada com o seguinte "Kit de Sobrevivência":
+
+| Item | Qtd | Detalhes |
+| :--- | :---: | :--- |
+| **Skin Base** | 1 | "Humano" (Gold Default) |
+| **Baú Incomum** | 1 | Para sentir o gosto da sorte |
+| **Baú de Ciclo** | 1 | Recompensa de boas-vindas |
+| **Ouro** | 0 | A economia começa do zero |
+| **Fragmentos** | 0 | Recicle para ganhar |
+| **Patente** | 0 | "Vagante" (Rank Inicial) |
+
+---
+
+## 🎯 9. Missões e Recompensas
+
+As missões são a principal fonte de XP e itens garantidos (sem sorteio).
+
+### Missões Introdutórias (Tutorial)
+| Missão | Objetivo | Recompensa |
+| :--- | :--- | :--- |
+| **Primeiro Ciclo** | Criar seu primeiro ciclo de foco | 100 XP + **Baú Comum** |
+| **Autoconhecimento** | Preencher o Perfil de Ativos | 100 XP + **Baú Comum** |
+| **Soberano** | Customizar sua aparência | 100 XP + **Baú Comum** |
+| **Arenas** | Criar seus primeiros palcos | 100 XP + **Baú Comum** |
+| **Ações** | Definir seus primeiros movimentos | 100 XP + **Baú Comum** |
+| **Vitória** | Completar sua primeira ação | 200 XP + **Baú Comum** |
+| **Tutorial Completo** | Concluir o guia de iniciação | **1000 XP + Baú Comum** |
+
+### Missões de Temporada (Season)
+| Missão | Objetivo | Recompensa |
+| :--- | :--- | :--- |
+| **Meta Quest** | Completar 3 Quests da Season | **5000 XP + Baú Raro** |
+| **O Andarilho** | Caminhar 20km no total | 2250 XP + **Baú Comum** |
+| **O Erudito** | Dedicar tempo à leitura | 1800 XP + **Baú Comum** |
+| **O Guerreiro** | Completar 50 flexões | 1125 XP + **Baú Comum** |
+| **Unidade do Clã** | 50 horas de atividades conjuntas | 4500 XP + **Baú Comum** |
+
+---
+
+## 🛠️ 10. Aspectos Técnicos (SQL Schema)
+
+### Schema Resumido
+```sql
+-- Itens
+CREATE TABLE items (
   id VARCHAR(50) PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  category ENUM('skin', 'hair', 'border', 'glyph', 'aura') NOT NULL,
+  name VARCHAR(100),
+  category ENUM('skin', 'hair', 'border', 'glyph', 'aura', 'orb', 'plate', 'artifact', 'ui_skin') NOT NULL,
   tier INT CHECK (tier BETWEEN 1 AND 5),
-  rarity ENUM('comum', 'incomum', 'raro', 'epico', 'lendario') NOT NULL,
+  rarity ENUM('common', 'uncommon', 'rare', 'epic', 'legendary'),
   is_season_exclusive BOOLEAN DEFAULT FALSE,
   is_gold_exclusive BOOLEAN DEFAULT FALSE,
-  recycle_value INT NOT NULL,
-  craft_cost INT NOT NULL,
-  gold_price INT DEFAULT NULL,
-  image_url VARCHAR(255),
-  description TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_category_tier (category, tier),
-  INDEX idx_season (is_season_exclusive)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-6.2. INVENTÁRIO DO USUÁRIO
-sqlCREATE TABLE user_inventory (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  user_id VARCHAR(50) NOT NULL,
-  item_id VARCHAR(50) NOT NULL,
+  recycle_value INT,
+  craft_cost INT,
+  gold_price INT
+);
+
+-- Inventário
+CREATE TABLE user_inventory (
+  user_id VARCHAR(50),
+  item_id VARCHAR(50),
   quantity INT DEFAULT 1,
-  is_equipped BOOLEAN DEFAULT FALSE,
-  acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
-  UNIQUE KEY unique_user_item (user_id, item_id),
-  INDEX idx_user (user_id),
-  INDEX idx_equipped (user_id, is_equipped)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-6.3. MOEDAS DO USUÁRIO
-sqlCREATE TABLE user_currency (
+  acquired_at TIMESTAMP,
+  PRIMARY KEY (user_id, item_id)
+);
+
+-- Moedas
+CREATE TABLE user_currency (
   user_id VARCHAR(50) PRIMARY KEY,
-  gold INT DEFAULT 0 CHECK (gold >= 0),
-  fragments INT DEFAULT 0 CHECK (fragments >= 0),
-  lifetime_gold_spent INT DEFAULT 0,
-  lifetime_fragments_spent INT DEFAULT 0,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_gold (gold),
-  INDEX idx_fragments (fragments)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-6.4. CONTADORES DE PITY
-sqlCREATE TABLE user_pity_counters (
-  user_id VARCHAR(50) NOT NULL,
-  chest_type ENUM('ciclo', 'radiante', 'epico', 'season') NOT NULL,
-  counter INT DEFAULT 0 CHECK (counter >= 0),
-  last_reset TIMESTAMP NULL,
-  PRIMARY KEY (user_id, chest_type),
-  INDEX idx_counter (chest_type, counter)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-6.5. BAÚS DISPONÍVEIS DO USUÁRIO
-sqlCREATE TABLE user_chests (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  user_id VARCHAR(50) NOT NULL,
-  chest_type ENUM('incomum', 'ciclo', 'radiante', 'epico', 'season') NOT NULL,
-  earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  opened_at TIMESTAMP NULL,
-  is_opened BOOLEAN DEFAULT FALSE,
-  INDEX idx_user_unopened (user_id, is_opened),
-  INDEX idx_earned_date (earned_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-6.6. LOG DE TRANSAÇÕES
-sqlCREATE TABLE transaction_log (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  user_id VARCHAR(50) NOT NULL,
-  action ENUM('open_chest', 'craft_item', 'recycle_item', 'purchase_gold', 'purchase_premium', 'purchase_codex', 'purchase_boost') NOT NULL,
-  item_id VARCHAR(50) NULL,
-  chest_type VARCHAR(50) NULL,
-  gold_spent INT DEFAULT 0,
-  fragments_spent INT DEFAULT 0,
-  gold_gained INT DEFAULT 0,
-  fragments_gained INT DEFAULT 0,
-  metadata JSON NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_user_action (user_id, action),
-  INDEX idx_created_at (created_at),
-  INDEX idx_action (action)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-6.7. PRODUTOS PREMIUM/CODEXES
-sqlCREATE TABLE user_purchases (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  user_id VARCHAR(50) NOT NULL,
-  product_type ENUM('premium', 'codex', 'boost', 'item_exclusive') NOT NULL,
-  product_id VARCHAR(50) NOT NULL,
-  gold_spent INT NOT NULL,
-  expires_at TIMESTAMP NULL,
-  is_active BOOLEAN DEFAULT TRUE,
-  purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_user_active (user_id, is_active),
-  INDEX idx_expiration (expires_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  gold INT DEFAULT 0,
+  fragments INT DEFAULT 0
+);
 
-7. STORED PROCEDURES
-7.1. ABRIR BAÚ (GRÁTIS - com Pity e Duplicata)
-sqlDELIMITER //
-
-CREATE PROCEDURE open_chest(
-  IN p_user_id VARCHAR(50),
-  IN p_chest_id BIGINT,
-  OUT p_item_id VARCHAR(50),
-  OUT p_fragments_gained INT,
-  OUT p_is_duplicate BOOLEAN
-)
-BEGIN
-  DECLARE v_chest_type VARCHAR(20);
-  DECLARE v_pity_counter INT DEFAULT 0;
-  DECLARE v_guaranteed_tier INT DEFAULT 0;
-  DECLARE v_bonus_fragments INT;
-  DECLARE v_dropped_tier INT;
-  
-  -- 1. Verificar se o baú existe e pertence ao usuário
-  SELECT chest_type INTO v_chest_type
-  FROM user_chests
-  WHERE id = p_chest_id AND user_id = p_user_id AND is_opened = FALSE;
-  
-  IF v_chest_type IS NULL THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Baú não encontrado ou já aberto';
-  END IF;
-  
-  -- 2. Verificar pity counter
-  IF v_chest_type IN ('ciclo', 'radiante', 'epico', 'season') THEN
-    SELECT COALESCE(counter, 0) INTO v_pity_counter 
-    FROM user_pity_counters 
-    WHERE user_id = p_user_id AND chest_type = v_chest_type;
-    
-    -- Se não existe, criar
-    IF v_pity_counter IS NULL THEN
-      INSERT INTO user_pity_counters (user_id, chest_type, counter) 
-      VALUES (p_user_id, v_chest_type, 0);
-      SET v_pity_counter = 0;
-    END IF;
-    
-    -- Incrementar contador
-    SET v_pity_counter = v_pity_counter + 1;
-    
-    -- Definir tier garantido por pity
-    SET v_guaranteed_tier = CASE 
-      WHEN v_chest_type = 'ciclo' AND v_pity_counter >= 15 THEN 3
-      WHEN v_chest_type = 'radiante' AND v_pity_counter >= 10 THEN 3
-      WHEN v_chest_type = 'epico' AND v_pity_counter >= 8 THEN 4
-      WHEN v_chest_type = 'season' AND v_pity_counter >= 5 THEN 5
-      ELSE 0
-    END;
-  END IF;
-  
-  -- 3. Sortear item (usar loot table + pity)
-  -- [LÓGICA DE SORTEIO - implementar baseado nas tabelas JSON]
-  -- Se v_guaranteed_tier > 0, forçar esse tier ou superior
-  -- Guardar o tier dropado em v_dropped_tier
-  
-  -- 4. Verificar se é duplicata
-  SET p_is_duplicate = EXISTS(
-    SELECT 1 FROM user_inventory 
-    WHERE user_id = p_user_id AND item_id = p_item_id
-  );
-  
-  IF p_is_duplicate THEN
-    -- Converter em fragmentos
-    SELECT recycle_value INTO p_fragments_gained 
-    FROM items WHERE id = p_item_id;
-    
-    UPDATE user_currency 
-    SET fragments = fragments + p_fragments_gained
-    WHERE user_id = p_user_id;
-  ELSE
-    -- Adicionar ao inventário
-    INSERT INTO user_inventory (user_id, item_id) 
-    VALUES (p_user_id, p_item_id);
-    SET p_fragments_gained = 0;
-  END IF;
-  
-  -- 5. Adicionar fragmentos bônus
-  SET v_bonus_fragments = CASE v_chest_type
-    WHEN 'incomum' THEN FLOOR(5 + RAND() * 11)
-    WHEN 'ciclo' THEN FLOOR(10 + RAND() * 21)
-    WHEN 'radiante' THEN FLOOR(30 + RAND() * 51)
-    WHEN 'epico' THEN FLOOR(80 + RAND() * 121)
-    WHEN 'season' THEN FLOOR(200 + RAND() * 301)
-  END;
-  
-  SET p_fragments_gained = p_fragments_gained + v_bonus_fragments;
-  
-  UPDATE user_currency 
-  SET fragments = fragments + v_bonus_fragments
-  WHERE user_id = p_user_id;
-  
-  -- 6. Atualizar pity counter
-  IF v_chest_type IN ('ciclo', 'radiante', 'epico', 'season') THEN
-    IF v_dropped_tier >= v_guaranteed_tier AND v_guaranteed_tier > 0 THEN
-      -- Resetar pity
-      UPDATE user_pity_counters 
-      SET counter = 0, last_reset = NOW()
-      WHERE user_id = p_user_id AND chest_type = v_chest_type;
-    ELSE
-      -- Incrementar pity
-      UPDATE user_pity_counters 
-      SET counter = v_pity_counter
-      WHERE user_id = p_user_id AND chest_type = v_chest_type;
-    END IF;
-  END IF;
-  
-  -- 7. Marcar baú como aberto
-  UPDATE user_chests 
-  SET is_opened = TRUE, opened_at = NOW()
-  WHERE id = p_chest_id;
-  
-  -- 8. Log
-  INSERT INTO transaction_log (
-    user_id, action, item_id, chest_type, fragments_gained,
-    metadata
-  ) VALUES (
-    p_user_id, 'open_chest', p_item_id, v_chest_type, p_fragments_gained,
-    JSON_OBJECT('chest_id', p_chest_id, 'is_duplicate', p_is_duplicate, 'pity_counter', v_pity_counter)
-  );
-  
-  COMMIT;
-END //
-
-DELIMITER ;
-7.2. CRAFTAR ITEM
-sqlDELIMITER //
-
-CREATE PROCEDURE craft_item(
-  IN p_user_id VARCHAR(50),
-  IN p_item_id VARCHAR(50),  -- Para T1-T3 (específico), NULL para T4-T5
-  IN p_category VARCHAR(20), -- Para T4-T5: 'skin', 'hair', etc
-  IN p_tier INT,
-  OUT p_crafted_item_id VARCHAR(50),
-  OUT p_is_duplicate BOOLEAN
-)
-BEGIN
-  DECLARE v_craft_cost INT;
-  DECLARE v_user_fragments INT;
-  DECLARE v_recycle_value INT;
-  
-  -- 1. Validar tier
-  IF p_tier NOT BETWEEN 1 AND 5 THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Tier inválido';
-  END IF;
-  
-  -- 2. Obter custo de craft
-  SET v_craft_cost = CASE p_tier
-    WHEN 1 THEN 40
-    WHEN 2 THEN 120
-    WHEN 3 THEN 400
-    WHEN 4 THEN 1200
-    WHEN 5 THEN 4000
-  END;
-  
-  -- 3. Verificar saldo
-  SELECT fragments INTO v_user_fragments 
-  FROM user_currency 
-  WHERE user_id = p_user_id;
-  
-  IF v_user_fragments < v_craft_cost THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fragmentos insuficientes';
-  END IF;
-  
-  -- 4. Determinar item
-  IF p_tier <= 3 THEN
-    -- T1-T3: Item específico escolhido
-    IF p_item_id IS NULL THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Item ID obrigatório para T1-T3';
-    END IF;
-    SET p_crafted_item_id = p_item_id;
-  ELSE
-    -- T4-T5: Sortear aleatório dentro da categoria
-    IF p_category IS NULL THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Categoria obrigatória para T4-T5';
-    END IF;
-    
-    SELECT id INTO p_crafted_item_id 
-    FROM items 
-    WHERE category = p_category 
-      AND tier = p_tier
-      AND is_gold_exclusive = FALSE
-    ORDER BY RAND() 
-    LIMIT 1;
-    
-    IF p_crafted_item_id IS NULL THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Nenhum item disponível nessa categoria/tier';
-    END IF;
-  END IF;
-  
-  -- 5. Verificar se já possui
-  SET p_is_duplicate = EXISTS(
-    SELECT 1 FROM user_inventory 
-    WHERE user_id = p_user_id AND item_id = p_crafted_item_id
-  );
-  
-  IF p_is_duplicate THEN
-    -- Devolver fragmentos de reciclagem
-    SELECT recycle_value INTO v_recycle_value 
-    FROM items WHERE id = p_crafted_item_id;
-    
-    UPDATE user_currency 
-    SET 
-      fragments = fragments - v_craft_cost + v_recycle_value,
-      lifetime_fragments_spent = lifetime_fragments_spent + v_craft_cost
-    WHERE user_id = p_user_id;
-  ELSE
-    -- Adicionar ao inventário
-    INSERT INTO user_inventory (user_id, item_id) 
-    VALUES (p_user_id, p_crafted_item_id);
-    
-    -- Deduzir fragmentos
-    UPDATE user_currency 
-    SET 
-      fragments = fragments - v_craft_cost,
-      lifetime_fragments_spent = lifetime_fragments_spent + v_craft_cost
-    WHERE user_id = p_user_id;
-  END IF;
-  
-  -- 6. Log
-  INSERT INTO transaction_log (
-    user_id, action, item_id, fragments_spent,
-    metadata
-  ) VALUES (
-    p_user_id, 'craft_item', p_crafted_item_id, v_craft_cost,
-    JSON_OBJECT('tier', p_tier, 'category', p_category, 'is_duplicate', p_is_duplicate)
-  );
-  
-  COMMIT;
-END //
-
-DELIMITER ;
-7.3. RECICLAR ITEM
-sqlDELIMITER //
-
-CREATE PROCEDURE recycle_item(
-  IN p_user_id VARCHAR(50),
-  IN p_item_id VARCHAR(50),
-  OUT p_fragments_gained INT
-)
-BEGIN
-  -- 1. Verificar posse
-  IF NOT EXISTS (
-    SELECT 1 FROM user_inventory 
-    WHERE user_id = p_user_id AND item_id = p_item_id
-  ) THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Item não encontrado no inventário';
-  END IF;
-  
-  -- 2. Verificar se está equipado
-  IF EXISTS (
-    SELECT 1 FROM user_inventory 
-    WHERE user_id = p_user_id AND item_id = p_item_id AND is_equipped = TRUE
-  ) THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não pode reciclar item equipado';
-  END IF;
-  
-  -- 3. Obter valor
-  SELECT recycle_value INTO p_fragments_gained 
-  FROM items WHERE id = p_item_id;
-  
-  -- 4. Remover do inventário
-  DELETE FROM user_inventory 
-  WHERE user_id = p_user_id AND item_id = p_item_id;
-  
-  -- 5. Adicionar fragmentos
-  UPDATE user_currency 
-  SET fragments = fragments + p_fragments_gained
-  WHERE user_id = p_user_id;
-  
-  -- 6. Log
-  INSERT INTO transaction_log (
-    user_id, action, item_id, fragments_gained
-  ) VALUES (
-    p_user_id, 'recycle_item', p_item_id, p_fragments_gained
-  );
-  
-  COMMIT;
-END //
-
-DELIMITER ;
-7.4. COMPRAR PREMIUM/CODEX/BOOST
-sqlDELIMITER //
-
-CREATE PROCEDURE purchase_gold_product(
-  IN p_user_id VARCHAR(50),
-  IN p_product_type ENUM('premium', 'codex', 'boost', 'item_exclusive'),
-  IN p_product_id VARCHAR(50),
-  IN p_gold_cost INT,
-  IN p_duration_days INT,
-  OUT p_success BOOLEAN
-)
-BEGIN
-  DECLARE v_user_gold INT;
-  DECLARE v_expires_at TIMESTAMP;
-  
-  -- 1. Verificar saldo
-  SELECT gold INTO v_user_gold 
-  FROM user_currency 
-  WHERE user_id = p_user_id;
-  
-  IF v_user_gold < p_gold_cost THEN
-    SET p_success = FALSE;
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ouro insuficiente';
-  END IF;
-  
-  -- 2. Calcular expiração (se aplicável)
-  IF p_duration_days > 0 THEN
-    SET v_expires_at = DATE_ADD(NOW(), INTERVAL p_duration_days DAY);
-  ELSE
-    SET v_expires_at = NULL;
-  END IF;
-  
-  -- 3. Registrar compra
-  INSERT INTO user_purchases (
-    user_id, product_type, product_id, gold_spent, expires_at
-  ) VALUES (
-    p_user_id, p_product_type, p_product_id, p_gold_cost, v_expires_at
-  );
-  
-  -- 4. Deduzir ouro
-  UPDATE user_currency 
-  SET 
-    gold = gold - p_gold_cost,
-    lifetime_gold_spent = lifetime_gold_spent + p_gold_cost
-  WHERE user_id = p_user_id;
-  
-  -- 5. Se for item exclusivo, adicionar ao inventário
-  IF p_product_type = 'item_exclusive' THEN
-    INSERT INTO user_inventory (user_id, item_id)
-    VALUES (p_user_id, p_product_id)
-    ON DUPLICATE KEY UPDATE quantity = quantity + 1;
-  END IF;
-  
-  -- 6. Log
-  INSERT INTO transaction_log (
-    user_id, action, gold_spent,
-    metadata
-  ) VALUES (
-    p_user_id, CONCAT('purchase_', p_product_type), p_gold_cost,
-    JSON_OBJECT('product_id', p_product_id, 'expires_at', v_expires_at)
-  );
-  
-  SET p_success = TRUE;
-  COMMIT;
-END //
-
-DELIMITER ;
+-- Pity
+CREATE TABLE user_pity_counters (
+  user_id VARCHAR(50),
+  chest_type VARCHAR(20),
+  counter INT DEFAULT 0,
+  PRIMARY KEY (user_id, chest_type)
+);
 ```
 
----
-
-## 8. INTERFACE (UI/UX) E HARMONIA VISUAL
-
-### 8.1. POSICIONAMENTO DE MOEDAS
-
-**TOP BAR:**
-```
-┌──────────────────────────────────────────────┐
-│ [Logo]    [Abas]         🪙 1,250  💎 3,450 │
-│                              [+]     [ℹ️]    │
-└──────────────────────────────────────────────┘
-```
-
-**TELA DE LOJA:**
-```
-┌──────────────────────────────────────────────┐
-│          💰 LOJA DE OURO                     │
-│                             🪙 1,250    [+]  │
-├──────────────────────────────────────────────┤
-│ PACOTES DE OURO:                             │
-│ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐   │
-│ │ 50  │ │ 110 │ │ 230 │ │ 600 │ │1.3K │   │
-│ │ 🪙  │ │ 🪙  │ │ 🪙  │ │ 🪙  │ │ 🪙  │   │
-│ │ R$5 │ │R$10 │ │R$20 │ │R$50 │ │R$100│   │
-│ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘   │
-│                                              │
-│ PREMIUM & PRODUTOS:                          │
-│ ┌──────────────────────────────────────────┐│
-│ │ 👑 Premium (30 dias) - 200 🪙           ││
-│ │ • XP +50% • Baú grátis semanal          ││
-│ └──────────────────────────────────────────┘│
-└──────────────────────────────────────────────┘
-```
-
-**TELA DE CRAFTING (A FORJA):**
-```
-┌──────────────────────────────────────────────┐
-│          🔨 A FORJA                          │
-│                      💎 3,450 Fragmentos     │
-├──────────────────────────────────────────────┤
-│ ┌────────────────┐ ┌────────────────┐       │
-│ │ 🧙 Alquimista  │ │ 🗡️ Tático      │       │
-│ │ [Skin T3]      │ │ [Skin T2]      │       │
-│ │ 💎 400         │ │ 💎 120         │       │
-│ │ [CRAFTAR]      │ │ [CRAFTAR]      │       │
-│ └────────────────┘ └────────────────┘       │
-└──────────────────────────────────────────────┘
-8.2. CORES DE RARIDADE
-css:root {
-  --tier-1-comum:     #9CA3AF;
-  --tier-2-incomum:   #10B981;
-  --tier-3-raro:      #3B82F6;
-  --tier-4-epico:     #8B5CF6;
-  --tier-5-lendario:  #F59E0B;
-  --tier-season:      linear-gradient(45deg, #FF0080, #7928CA, #00DFD8);
-}
-8.3. ANIMAÇÕES
-QUEBRA DE ITEM (Duplicata/Reciclagem):
-
-Item pulsa 2x
-Rachaduras aparecem (cor da raridade)
-Explosão de partículas
-Partículas voam para contador de Fragmentos
-Contador aumenta com efeito numérico
-Som: cristal quebrando + moedas
-
-CRAFT BEM-SUCEDIDO:
-
-Círculo de energia (cor da raridade)
-Item surge com rotação 360°
-Flash de luz (bloom)
-Partículas flutuantes
-Som épico (harpa para T5)
-
-ABERTURA DE BAÚ:
-
-Baú chacoalha 3x
-Tampa abre devagar
-Raio de luz (cor do item)
-Item flutua com rotação
-Reveal do nome + tier
-Se duplicata: animação de quebra automática
-
-
-9. GMBOARD - PAINEL DE ADMIN
-Crie config/economy.json:
-json{
-  "version": "1.0.0",
-  "last_updated": "2025-02-19",
-  
-  "currency": {
-    "gold_to_brl_rate": 10
-  },
-  
-  "recycle_values": {
-    "tier_1": 10,
-    "tier_2": 30,
-    "tier_3": 100,
-    "tier_4": 300,
-    "tier_5": 1000
-  },
-  
-  "craft_costs": {
-    "tier_1": 40,
-    "tier_2": 120,
-    "tier_3": 400,
-    "tier_4": 1200,
-    "tier_5": 4000
-  },
-  
-  "chest_bonus_fragments": {
-    "incomum": { "min": 5, "max": 15 },
-    "ciclo": { "min": 10, "max": 30 },
-    "radiante": { "min": 30, "max": 80 },
-    "epico": { "min": 80, "max": 200 },
-    "season": { "min": 200, "max": 500 }
-  },
-  
-  "pity_system": {
-    "ciclo": 15,
-    "radiante": 10,
-    "epico": 8,
-    "season": 5
-  },
-  
-  "loot_tables": {
-    "incomum": { "tier_1": 70, "tier_2": 25, "tier_3": 5 },
-    "ciclo": { "tier_1": 40, "tier_2": 35, "tier_3": 20, "tier_4": 5 },
-    "radiante": { "tier_2": 45, "tier_3": 40, "tier_4": 10, "tier_5": 5 },
-    "epico": { "tier_3": 50, "tier_4": 35, "tier_5": 15 },
-    "season": { "tier_4": 60, "tier_5": 30, "season_exclusive": 10 }
-  },
-  
-  "gold_products": {
-    "premium_monthly": 200,
-    "codex": 150,
-    "boost_24h": 50,
-    "boost_7d": 200
-  }
-}
-Crie gmboard.html com:
-
-Editor visual de economy.json
-Validador de loot tables (soma 100%)
-Simulador de baús
-Gráficos de probabilidade
-
-
-10. DELIVERABLES
-Gere na ordem:
-
-✅ items.json (todos os items com IDs)
-✅ schema.sql (DDL completo)
-✅ procedures.sql (todas as procedures)
-✅ economy.json (config editável)
-✅ gmboard.html (painel admin standalone)
-✅ README.md (documentação de integração)
+### Lógica de Stored Procedures
+As procedures `open_chest`, `craft_item`, `recycle_item` e `purchase_gold_product` gerenciam a lógica transacional no banco de dados para evitar fraudes e garantir consistência.

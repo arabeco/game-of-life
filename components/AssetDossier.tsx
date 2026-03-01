@@ -25,10 +25,16 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
     const getRarityDotColor = (r?: string) => {
         if (!r) return null;
         const lower = r.toLowerCase();
-        if (lower === 'uncommon' || lower === 'incomum') return 'bg-white';
-        if (lower === 'rare' || lower === 'raro') return 'bg-[var(--accent-bronze)]';
-        if (lower === 'epic' || lower === 'épico' || lower === 'epico') return 'bg-[#C0C0C0]';
-        if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return 'bg-[#F0C843]';
+        // Comum: Marrom
+        if (lower === 'common' || lower === 'comum') return 'bg-[#A0522D]';
+        // Incomum: Prata
+        if (lower === 'uncommon' || lower === 'incomum') return 'bg-[#C0C0C0]';
+        // Raro: Ouro
+        if (lower === 'rare' || lower === 'raro') return 'bg-[#FFD700]';
+        // Épico: Azul
+        if (lower === 'epic' || lower === 'épico' || lower === 'epico') return 'bg-blue-500';
+        // Lendário: Roxo
+        if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return 'bg-purple-500';
         return null;
     };
     const rarityDotColor = getRarityDotColor(rarity);

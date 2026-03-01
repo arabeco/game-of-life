@@ -664,7 +664,19 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const [currentTime, setCurrentTime] = useState(new Date());
     const dailyTimeIndicatorRef = useRef<HTMLDivElement>(null);
     const weeklyTimeIndicatorRef = useRef<HTMLDivElement>(null);
-    const [zoomLevel, setZoomLevel] = useState<3 | 2 | 1>(3);
+    const [zoomLevel, setZoomLevel] = useState<3 | 2 | 1>(() => {
+        if (typeof window === 'undefined') return 2;
+        try {
+            const saved = localStorage.getItem('planner_zoom_v3');
+            return saved ? (Number(saved) as 3 | 2 | 1) : 2;
+        } catch {
+            return 2;
+        }
+    });
+
+    useEffect(() => {
+        localStorage.setItem('planner_zoom_v3', String(zoomLevel));
+    }, [zoomLevel]);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [modalData, setModalData] = useState<{ action: Action, taskId?: string } | null>(null);
 
@@ -1011,7 +1023,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const isToday = currentDate.toDateString() === new Date().toDateString();
 
     return (
-        <div id="planner-container" className="p-2 flex flex-col flex-1 min-h-0 relative">
+        <div id="planner-container" className="px-1 pb-1 pt-0 flex flex-col flex-1 min-h-0 relative bg-black">
             {dragState.isDragging && (
                 <div style={{ position: 'fixed', top: dragState.currentPosition.y, left: dragState.currentPosition.x, transform: `translate(-${dragState.pointerOffset.x}px, -${dragState.pointerOffset.y}px)`, pointerEvents: 'none', zIndex: 1000 }}>
                     {dragState.ghostElement}
@@ -1044,7 +1056,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             </div>
 
-            <div ref={scrollContainerRef} className={`flex-grow overflow-y-auto ${dragState.isDragging ? 'touch-none select-none' : ''} relative min-h-0`}>
+            <div ref={scrollContainerRef} className={`flex-grow overflow-y-auto overflow-x-hidden ${dragState.isDragging ? 'touch-none select-none' : ''} relative min-h-0`}>
                 <div className={dragState.isDragging ? 'pointer-events-auto' : ''}>
                     {viewMode === 'day' ? (
                         <div>

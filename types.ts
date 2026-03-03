@@ -48,7 +48,7 @@ export interface UserCodex {
 }
 
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
-export type SlotLayoutType = 1 | 2 | 3; // 1: wide, 2: square, 3: rect
+export type SlotLayoutType = 1 | 2 | 3 | 4; // 1: wide, 2: square, 3: rect, 4: centered-wide
 export type ChestType = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' | 'Ciclo' | 'Skin Comum';
 
 export interface SlotValueImage {

@@ -7,9 +7,15 @@ import { Portal } from './Portal';
 import { ArenaSelectionModal } from './ArenaSelectionModal'; // Re-using for asset selection
 
 interface NewArenaModalProps {
-    assetId: string;
+    assetId?: string; // Optional now
+    isOpen: boolean;
     onClose: () => void;
     onArenaCreated?: (newArena: Arena) => void;
+    initialRelationship?: {
+        type: 'competition' | 'mentorship' | 'partnership';
+        friendId: string;
+        friendName: string;
+    };
 }
 
 const AssetSelectionModal: React.FC<{currentAssetId: string, onSelect: (assetId: string) => void, onClose: () => void}> = ({ onSelect, onClose }) => {
@@ -18,7 +24,7 @@ const AssetSelectionModal: React.FC<{currentAssetId: string, onSelect: (assetId:
     const assetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
     return (
          <Portal>
-             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
+             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[220] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                  <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Ativo</h2>
                  <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -40,12 +46,15 @@ const AssetSelectionModal: React.FC<{currentAssetId: string, onSelect: (assetId:
 }
 
 
-export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAssetId, onClose, onArenaCreated }) => {
-    const { addArena, assets } = useGame();
+export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAssetId, isOpen, onClose, onArenaCreated, initialRelationship }) => {
+    const { addArena, assets, inviteLink, showToast } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [assetId, setAssetId] = useState(initialAssetId);
+    const [assetId, setAssetId] = useState(initialAssetId || 'geral');
     const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
+    
+    if (!isOpen) return null;
+
     const modalCardRef = useRef<HTMLDivElement>(null);
 
     const handleSave = async () => {
@@ -83,8 +92,25 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         'autoconhecimento': '🪞'
     };
 
-        const defaultIcon = assetEmojiMap[assetId] || '🏆';
-        const newArena = await addArena(assetId, { name, description, icon: defaultIcon });
+        const defaultIcon = initialRelationship?.type === 'competition' ? '⚔️' : (assetEmojiMap[assetId] || '🏆');
+        
+        // Se houver relacionamento, adicionar metadados na descrição ou tratar depois
+        const finalDescription = initialRelationship 
+            ? `${description}\n\n[${initialRelationship.type === 'competition' ? 'DESAFIO' : 'VÍNCULO'}: ${initialRelationship.friendName}]`
+            : description;
+
+        const newArena = await addArena(assetId, { 
+            name, 
+            description: finalDescription, 
+            icon: defaultIcon 
+        });
+
+        // Se tiver initialRelationship, criar o convite automaticamente
+        if (initialRelationship) {
+            // Convite automático
+            inviteLink(newArena.id, initialRelationship.friendId, initialRelationship.type as any);
+            showToast(`Convite de ${initialRelationship.type === 'competition' ? 'Desafio' : 'Vínculo'} enviado para ${initialRelationship.friendName}!`);
+        }
 
         if (onArenaCreated) {
             onArenaCreated(newArena);
@@ -92,18 +118,27 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             onClose();
         }
     };
-    
+
     const selectedAsset = assets.find(a => a.id === assetId);
     const selectedAssetLabel = selectedAsset?.id === 'geral' ? 'OUTROS / SIDEQUEST' : selectedAsset?.name;
 
     return (
         <>
             <Portal>
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <GlassCard ref={ modalCardRef } variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard ref={ modalCardRef } variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl relative" onClick={e => e.stopPropagation()}>
+                    {initialRelationship && (
+                        <div className="absolute top-0 left-0 right-0 -mt-8 text-center">
+                             <span className="px-3 py-1 bg-[var(--skin-accent-color)] text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_0_10px_var(--sephirot-glow-color)]">
+                                {initialRelationship.type === 'competition' ? '⚔️ NOVO DESAFIO' : '🤝 NOVO VÍNCULO'}
+                             </span>
+                        </div>
+                    )}
+                    
                     <div className="text-center">
                         <CrownIcon className="w-8 h-8 mx-auto text-[var(--skin-accent-color)]" />
                         <h2 className="text-lg font-bold uppercase tracking-wider mt-2">Nova Arena</h2>
+                        {initialRelationship && <p className="text-xs text-gray-400 mt-1">Com: {initialRelationship.friendName}</p>}
                     </div>
                     
                     <div className="space-y-2">
@@ -123,7 +158,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                             CANCELAR
                         </button>
                         <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
-                            CRIAR ARENA
+                            {initialRelationship ? 'CRIAR E CONVIDAR' : 'CRIAR ARENA'}
                         </button>
                     </div>
                 </GlassCard>

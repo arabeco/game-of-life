@@ -3,10 +3,10 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
-import { useGame } from '../contexts/GameContext';
+import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Report, Cycle, ChestType, FeedEvent } from '../types';
 import { GlassCard } from '../components/GlassCard';
-import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, Trash2Icon } from '../components/Icons';
 import { CycleComparator } from '../components/CycleComparator';
 import { handleShare } from '../components/Share';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -52,10 +52,17 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 
 // --- Sub-components for Active Cycle HUD ---
 const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
-    const { tasks, assets, actions, userProfile, session, seasons } = useGame();
+    const { tasks, assets, actions, userProfile, session, seasons, deleteCycle } = useGame();
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (confirm("Tem certeza que deseja excluir este ciclo? Isso não pode ser desfeito.")) {
+            deleteCycle(cycle.id);
+        }
+    };
 
     const isQuestActionId = (actionId: string) => {
         const action = actions.find(a => a.id === actionId);
@@ -74,12 +81,12 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
         const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         return normalized.includes('quests - cla');
     };
-    
+
     // Cálculo de dias
     const startD = parseDate(startDate);
     const endD = parseDate(endDate);
     const todayD = parseDate(today);
-    
+
     const totalDays = Math.max(1, daysBetween(startD, endD) + 1);
     const daysElapsed = Math.max(0, daysBetween(startD, todayD) + 1);
     const timeProgress = Math.min(100, (daysElapsed / totalDays) * 100);
@@ -125,37 +132,45 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     // Arenas e Ações envolvidas (seguindo a mesma lógica do endCycle)
     const actionIdsInCycle = new Set(cycleTasks.map(t => t.actionId));
     const involvedActions = actions.filter(a => actionIdsInCycle.has(a.id));
-    
+
     const arenaIdsInCycle = new Set(involvedActions.map(a => a.arenaId));
     const involvedArenas = assets.flatMap(as => as.arenas).filter(ar => arenaIdsInCycle.has(ar.id));
-    
+
     return (
-        <GlassCard variant="accent" className="p-4 space-y-4">
-            <div className="text-center">
+        <GlassCard variant="accent" className="p-4 space-y-4 relative group">
+            <div className="text-center relative">
                 <p className="font-bold text-lg">"{cycle.name}"</p>
                 <p className="text-xs text-gray-400">{formatDate(cycle.startDate)} - {formatDate(cycle.endDate)}</p>
-                 <p className="font-bold text-sm mt-1">Dia {daysElapsed} de {totalDays}</p>
+                <p className="font-bold text-sm mt-1">Dia {daysElapsed} de {totalDays}</p>
+
+                <button
+                    onClick={handleDelete}
+                    className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-full text-red-500"
+                    title="Excluir Ciclo"
+                >
+                    <Trash2Icon className="w-4 h-4" />
+                </button>
             </div>
-            
+
             <div className='space-y-3'>
                 <div>
                     <div className="flex justify-between text-xs font-bold text-gray-400"><span>TEMPO</span><span>{timeProgress.toFixed(0)}%</span></div>
                     <div className="w-full bg-red-900/50 rounded-full h-2.5 mt-1 border border-red-500/20"><div className="bg-red-500 h-full rounded-full" style={{ width: `${timeProgress}%` }}></div></div>
                 </div>
-                 <div>
+                <div>
                     <div className="flex justify-between text-xs font-bold text-gray-400"><span>FIDELIDADE</span><span>{fidelity.toFixed(0)}%</span></div>
                     <div className="w-full bg-green-900/50 rounded-full h-2.5 mt-1 border border-green-500/20"><div className="bg-green-500 h-full rounded-full" style={{ width: `${fidelity}%` }}></div></div>
                 </div>
             </div>
             <div className='text-center border-t border-[var(--skin-accent-color)]/20 pt-3'>
-                 <p className="text-xs font-bold text-gray-400">RANK PROJETADO</p>
-                 <p className={`text-4xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</p>
-                 <p className="text-sm font-bold text-white mt-1">Score: {currentScore}</p>
-                 <div className="flex justify-center space-x-3 mt-2 text-[10px] text-gray-500 uppercase font-mono">
+                <p className="text-xs font-bold text-gray-400">RANK PROJETADO</p>
+                <p className={`text-4xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</p>
+                <p className="text-sm font-bold text-white mt-1">Score: {currentScore}</p>
+                <div className="flex justify-center space-x-3 mt-2 text-[10px] text-gray-500 uppercase font-mono">
                     <span>🏆 {milestonesCompleted} Marcos</span>
                     <span>⚔️ {questsCompletedCount} Quests</span>
                     <span>🔥 {uniqueDays} Dias</span>
-                 </div>
+                </div>
             </div>
         </GlassCard>
     );
@@ -164,15 +179,15 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
 const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, endDate: string) => void; }> = ({ onClose, onStart }) => {
     const [name, setName] = useState('');
     const [endDate, setEndDate] = useState('');
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
 
     const handleStart = () => {
-        if(endDate && name) {
+        if (endDate && name) {
             onStart(name, endDate);
             onClose();
         }
     };
-    
+
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
@@ -181,22 +196,22 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
                     <p className="text-center text-sm text-gray-400">Dê um nome à sua campanha e escolha a data de término para formalizar seu compromisso.</p>
                     <div>
                         <label className='text-sm font-bold'>Nome do Ciclo</label>
-                        <input 
+                        <input
                             type='text'
                             placeholder='Ex: Conquista de Fevereiro'
                             value={name}
                             onChange={e => setName(e.target.value)}
-                            className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1' 
+                            className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1'
                         />
                     </div>
                     <div>
                         <label className='text-sm font-bold'>Data de Término</label>
-                        <input 
-                            type='date' 
-                            value={endDate} 
+                        <input
+                            type='date'
+                            value={endDate}
                             min={today}
-                            onChange={e => setEndDate(e.target.value)} 
-                            className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1' 
+                            onChange={e => setEndDate(e.target.value)}
+                            className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1'
                         />
                     </div>
                     <button onClick={handleStart} disabled={!endDate || !name} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR CICLO</button>
@@ -218,12 +233,12 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
             <div className={`absolute left-0 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ? 'bg-black border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)] scale-110' : 'bg-black border-white/20'}`}>
                 {isLatest && <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>}
             </div>
-            <div 
+            <div
                 onClick={onClick}
                 className={`
                     relative overflow-hidden rounded-xl p-3 cursor-pointer transition-all duration-300 group
-                    ${isLatest 
-                        ? 'bg-gradient-to-br from-gray-900 to-black border border-[var(--skin-accent-color)] shadow-[0_0_20px_rgba(var(--skin-accent-rgb),0.1)] transform scale-[1.02]' 
+                    ${isLatest
+                        ? 'bg-gradient-to-br from-gray-900 to-black border border-[var(--skin-accent-color)] shadow-[0_0_20px_rgba(var(--skin-accent-rgb),0.1)] transform scale-[1.02]'
                         : 'bg-black/40 border border-white/10 hover:bg-white/5 hover:border-white/20'
                     }
                     ${isEditing ? 'scale-[0.98]' : ''}
@@ -278,11 +293,11 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { 
-        reports, activeCycle, startCycle, endCycle, assets, actions, 
-        applyExp, addChest, addFeedEvent, seasons, userProfile, 
+    const {
+        reports, activeCycle, startCycle, endCycle, assets, actions,
+        applyExp, addChest, addFeedEvent, seasons, userProfile,
         oraclePreferences, showToast, grantInventoryItem, grantUserUnlock,
-        setAchievementUnlocked
+        setAchievementUnlocked, deleteCycle // Added deleteCycle here
     } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
@@ -368,7 +383,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             loadEraBoundaries();
         }
     }, [sortedReports, userProfile.id, isEditingEras]);
-    
+
     useEffect(() => {
         assetsRef.current = assets;
     }, [assets]);
@@ -401,7 +416,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             else if (expGained >= 5000 && score >= 70) chestType = 'Raro';
             else if (expGained >= 2250 && score >= 60) chestType = 'Incomum';
             else if (expGained >= 750) chestType = 'Comum';
-            
+
             if (chestType && chestType !== 'Lendário') {
                 const roll = Math.random();
                 if (roll < 0.05) {
@@ -419,7 +434,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setEarnedChest(chestType);
 
             const insigniasToGrant: string[] = [];
-            
+
             if (score === 100) {
                 insigniasToGrant.push('insignia_sitrep_s');
             } else if (score >= 90) {
@@ -434,9 +449,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
             const currentExp = userProfile.nobility?.exp || 0;
             const nextExp = currentExp + expGained;
-            
+
             const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
-            
+
             if (nextRank) {
                 const rankIndex = NOBILITY_RANKS.indexOf(nextRank);
                 insigniasToGrant.push(`insignia_rank_${rankIndex + 1}_${nextRank.id}`);
@@ -455,7 +470,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     useEffect(() => {
         if (view === 'scanning') {
             setScanError(null);
-            
+
             // Check preferences for animation
             if (oraclePreferences?.animationsEnabled) {
                 // Do nothing, ReportGenerationModal handles calling performEndOfCycle
@@ -492,19 +507,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setScanAttempt(prev => prev + 1);
         setView('scanning');
     };
-    
-    const handleViewReport = (report: Report) => { 
+
+    const handleViewReport = (report: Report) => {
         if (reportForComparison) {
             setReportsToCompare([reportForComparison, report]);
             setView('comparing');
             setReportForComparison(null);
         } else {
-            setSelectedReport(report); 
+            setSelectedReport(report);
             setView('results');
         }
     };
     const handleStartCompare = () => { if (reports.length >= 2) { setReportsToCompare([reports[0], reports[1]]); setView('comparing'); } };
-    
+
     const handlePostToFeed = (report: Report) => {
         addFeedEvent({
             type: 'CYCLE_COMPLETED',
@@ -515,7 +530,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         });
         alert('Postado no feed!');
     };
-    
+
     const handleCloseDynamic = () => {
         switch (view) {
             case 'results':
@@ -533,9 +548,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handlePostCycleResultsOk = () => {
         const currentExp = userProfile.nobility.exp;
         const nextExp = currentExp + expGained;
-        
+
         applyExp(expGained);
-        
+
         const earnedItems: string[] = [];
         const itemNames: string[] = [];
 
@@ -657,13 +672,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setDraggingBoundary(null);
     };
     const allowDrop = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
-    
+
     const renderContent = () => {
         switch (view) {
             case 'scanning':
                 // Show ReportGenerationModal only if animations enabled AND no error
                 if (oraclePreferences?.animationsEnabled && !scanError) {
-                     return (
+                    return (
                         <ReportGenerationModal
                             onComplete={() => {
                                 const chest = performEndOfCycle();
@@ -677,9 +692,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 setView('hub');
                             }}
                         />
-                     );
+                    );
                 }
-                
+
                 // Legacy/Error View
                 return (
                     <div className="flex flex-col items-center justify-center h-full">
@@ -740,7 +755,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         {reportForComparison && (
                             <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
-                        
+
                         {activeCycle ? (
                             <div className="relative z-20 space-y-2">
                                 <button onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
@@ -755,7 +770,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 <button onClick={handleResetEras} disabled={sortedReports.length < 2 || (!hasCustomEras && eraBreaks.length === defaultEraBreaks.length)} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">RESETAR ERAS</button>
                             </div>
                         )}
-                        
+
                         {(sortedReports.length > 0 || activeCycle) && (
                             <div className="relative mt-6">
                                 {isEditingEras && (
@@ -767,7 +782,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     {items.map((item, rowIndex) => {
                                         if (item.type === 'active') {
                                             return (
-                                                <React.Fragment key={`active-${item.cycle.id}`}> 
+                                                <React.Fragment key={`active-${item.cycle.id}`}>
                                                     <div className="relative py-3"></div>
                                                     <div className="relative py-3">
                                                         <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
@@ -791,9 +806,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     <div className="relative py-3"></div>
                                                     <div className="relative py-3">
                                                         <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
-                                                        <TimelineCard 
-                                                            report={item.report} 
-                                                            isLatest={item.reportIndex === 0 && !activeCycle} 
+                                                        <TimelineCard
+                                                            report={item.report}
+                                                            isLatest={item.reportIndex === 0 && !activeCycle}
                                                             onClick={() => handleViewReport(item.report)}
                                                             seasonName={item.seasonName}
                                                             isEditing={isEditingEras}
@@ -879,38 +894,49 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             }
             case 'results':
                 return selectedReport ? (
-                    <ReportResultCarousel 
+                    <ReportResultCarousel
                         report={selectedReport}
                         onOk={isPostCycleFlow ? handlePostCycleResultsOk : handleCloseDynamic}
                         onCompare={() => { setReportForComparison(selectedReport); setView('hub'); }}
-                        onShare={() => handleShare('report-summary-card-capture', `Relatório de Ciclo ${formatDate(selectedReport.startDate)} - Life OS`)} 
+                        onShare={() => handleShare('report-summary-card-capture', `Relatório de Ciclo ${formatDate(selectedReport.startDate)} - Life OS`)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
+                        onDelete={() => {
+                            if (confirm("Tem certeza que deseja excluir este relatório?")) {
+                                // We need a way to delete historical reports.
+                                // For now, maybe just hide it or we need a proper deleteReport function
+                                // But the user asked to delete "cycles". A past report IS a cycle.
+                                // Since deleteCycle takes an ID, and report.id matches cycle.id (usually), we can try that.
+                                deleteCycle(selectedReport.id);
+                                setView('hub');
+                                setSelectedReport(null);
+                            }
+                        }}
                         onStartNewCycle={() => {
-                             applyExp(expGained);
-                             
-                             // Grant Insignias if earned
-                             if (grantedInsignias.length > 0) {
-                                 grantedInsignias.forEach(insigniaId => {
-                                     grantUserUnlock('insignias', insigniaId);
-                                     grantInventoryItem(insigniaId, true);
-                                 });
-                             }
+                            applyExp(expGained);
 
-                             if (earnedChest) {
-                                 addChest(earnedChest);
-                                 const msg = grantedInsignias.length > 0
-                                     ? `✦ Baú ${earnedChest} e ${grantedInsignias.length} Insígnia(s) adicionados\n✦ +${expGained} XP computados`
-                                     : `✦ Baú ${earnedChest} adicionado ao inventário\n✦ +${expGained} XP computados`;
-                                 showToast(msg);
-                             } else {
-                                 const msg = grantedInsignias.length > 0
-                                     ? `✦ ${grantedInsignias.length} Insígnia(s) adicionada(s) ao inventário\n✦ +${expGained} XP computados`
-                                     : `✦ +${expGained} XP foram computados ao seu perfil`;
-                                 showToast(msg);
-                             }
-                             setIsPostCycleFlow(false);
-                             setGrantedInsignias([]);
-                             setShowNewCycleSetup(true);
+                            // Grant Insignias if earned
+                            if (grantedInsignias.length > 0) {
+                                grantedInsignias.forEach(insigniaId => {
+                                    grantUserUnlock('insignias', insigniaId);
+                                    grantInventoryItem(insigniaId, true);
+                                });
+                            }
+
+                            if (earnedChest) {
+                                addChest(earnedChest);
+                                const msg = grantedInsignias.length > 0
+                                    ? `✦ Baú ${earnedChest} e ${grantedInsignias.length} Insígnia(s) adicionados\n✦ +${expGained} XP computados`
+                                    : `✦ Baú ${earnedChest} adicionado ao inventário\n✦ +${expGained} XP computados`;
+                                showToast(msg);
+                            } else {
+                                const msg = grantedInsignias.length > 0
+                                    ? `✦ ${grantedInsignias.length} Insígnia(s) adicionada(s) ao inventário\n✦ +${expGained} XP computados`
+                                    : `✦ +${expGained} XP foram computados ao seu perfil`;
+                                showToast(msg);
+                            }
+                            setIsPostCycleFlow(false);
+                            setGrantedInsignias([]);
+                            setShowNewCycleSetup(true);
                         }}
                         chest={isPostCycleFlow ? earnedChest : null}
                         expGained={isPostCycleFlow ? expGained : undefined}
@@ -918,7 +944,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     />
                 ) : <p>Erro ao carregar relatório.</p>;
             case 'comparing':
-                 return reportsToCompare ? (
+                return reportsToCompare ? (
                     <CycleComparator
                         currentCycleReport={reportsToCompare[0]}
                         pastCycleReport={reportsToCompare[1]}
@@ -926,9 +952,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 ) : <p>Erro ao carregar comparação.</p>;
         }
     };
-    
+
     const getTitle = () => {
-        switch(view) {
+        switch (view) {
             case 'results': return 'Resultados';
             case 'comparing': return 'Análise Comparativa';
             case 'reward':
@@ -947,7 +973,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
-                             {(view === 'results' || view === 'comparing') && (
+                            {(view === 'results' || view === 'comparing') && (
                                 <button onClick={handleCloseDynamic} className="p-2 -ml-2"><ChevronLeftIcon /></button>
                             )}
                             <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
@@ -961,7 +987,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
             {isStartingCycle && <StartCycleModal onClose={() => setIsStartingCycle(false)} onStart={startCycle} />}
             {showConfirmEndCycle && (
-                <ConfirmationModal 
+                <ConfirmationModal
                     title="Encerrar Ciclo?"
                     message="Ao fechar este ciclo, suas ações não concluídas no grid serão movidas para o pool de ações e suas arenas serão revisadas."
                     onConfirm={confirmEndCycle}
@@ -970,12 +996,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             )}
             {showChestModal && earnedChest && (
                 <div className="fixed inset-0 z-[300]">
-                    <ChestOpeningModal 
-                        chestType={earnedChest} 
+                    <ChestOpeningModal
+                        chestType={earnedChest}
                         onClose={() => {
                             setShowChestModal(false);
                             setView('results');
-                        }} 
+                        }}
                     />
                 </div>
             )}

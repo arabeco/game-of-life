@@ -266,6 +266,17 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 export const useCodexBuilder = () => {
   const context = useContext(CodexBuilderContext);
-  if (!context) throw new Error('useCodexBuilder must be used within a CodexBuilderProvider');
+  if (!context) {
+      // Return a dummy context if used outside provider, to allow graceful degradation in GameContext
+      return {
+          isBuilderMode: false,
+          draftName: '',
+          setDraftName: () => {},
+          enterBuilderMode: () => {},
+          exitBuilderMode: () => {},
+          packDraftToJson: () => '',
+          gameOverrides: {} as any
+      };
+  }
   return context;
 };

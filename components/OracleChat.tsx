@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
-import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon } from './Icons';
+import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 import { OracleContext, OracleMode } from '../types';
 import { Portal } from './Portal';
@@ -24,10 +24,10 @@ interface Message {
 
 const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>, color: string, bg: string, border: string }> = {
     neutro: { 
-        icon: SparklesIcon, 
-        color: "text-amber-200", 
-        bg: "bg-black/40", 
-        border: "border-white/5" 
+        icon: GameLogoIcon, 
+        color: "text-[var(--skin-accent-color)]", 
+        bg: "bg-black/60", 
+        border: "border-[var(--skin-accent-color)]/30" 
     },
     coach: { 
         icon: ZapIcon, 
@@ -114,8 +114,11 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Focus input on mount
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    // Only focus if NOT embedded to avoid keyboard popping up on mobile feed open
+    if (!isEmbedded) {
+        inputRef.current?.focus();
+    }
+  }, [isEmbedded]);
 
   // Build System Prompt based on Mode
   const systemPrompt = useMemo(() => {
@@ -299,21 +302,25 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   };
 
-  const HeaderIcon = MODE_VISUALS[currentMode].icon || SparklesIcon;
+  const HeaderIcon = MODE_VISUALS[currentMode].icon || GameLogoIcon;
   
+  // Custom header for Embedded mode (since default header might be hidden)
+  // If isEmbedded is true, we render a smaller status bar inside the chat area if header is hidden
+  const showStatusPill = isEmbedded || hideHeader;
+
   const content = (
       <>
-        {/* Header */}
+        {/* Main Header (Only if NOT hidden) */}
         {!hideHeader && (
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${MODE_VISUALS[currentMode].border} ${MODE_VISUALS[currentMode].bg}`}>
-               <HeaderIcon className={`w-4 h-4 ${MODE_VISUALS[currentMode].color}`} />
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${MODE_VISUALS[currentMode].border} ${MODE_VISUALS[currentMode].bg} shadow-lg`}>
+               <HeaderIcon className={`w-6 h-6 ${MODE_VISUALS[currentMode].color}`} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-200 tracking-wider">ORÁCULO</h3>
+              <h3 className="text-sm font-bold text-[var(--skin-accent-color)] tracking-wider">ORÁCULO</h3>
               <div className="flex flex-col">
-                  <span className={`text-[10px] uppercase tracking-widest ${MODE_VISUALS[currentMode].color}`}>{ORACLE_MODES[currentMode].name}</span>
+                  <span className={`text-[10px] uppercase tracking-widest text-gray-400`}>{ORACLE_MODES[currentMode].name}</span>
                   <div className="flex items-center gap-1.5">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -333,12 +340,30 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         </div>
         )}
 
+        {/* Embedded Status Bar (If header is hidden) */}
+        {showStatusPill && (
+            <div className="flex-none px-4 py-2 bg-black/20 border-b border-white/5 flex items-center justify-between">
+                 <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)] animate-pulse"></div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                        Modo: <span className={`${MODE_VISUALS[currentMode].color}`}>{ORACLE_MODES[currentMode].name}</span>
+                    </span>
+                 </div>
+                 {isEmbedded && (
+                     <div className="flex items-center gap-1 text-[9px] text-gray-600">
+                         <HeaderIcon className={`w-3 h-3 ${MODE_VISUALS[currentMode].color}`} />
+                         <span>v2.0</span>
+                     </div>
+                 )}
+            </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-50">
-              <SparklesIcon className="w-12 h-12 mb-4 text-gray-600" />
-              <p className="text-sm text-gray-500">O Oráculo aguarda sua consulta, Soberano.</p>
+              <HeaderIcon className={`w-16 h-16 mb-4 ${MODE_VISUALS[currentMode].color} drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]`} />
+              <p className="text-sm text-gray-400 font-bold">O Oráculo aguarda sua consulta, Soberano.</p>
               <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[currentMode].description}</p>
             </div>
           )}
@@ -394,7 +419,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-white/10 bg-black/40">
+        <div className="p-4 border-t border-white/10 bg-black/40 flex-shrink-0">
           <div className="relative flex items-center">
             <input
               ref={inputRef}
@@ -404,12 +429,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
               onKeyDown={handleKeyDown}
               placeholder="Consulte o Oráculo..."
               disabled={isLoading}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all"
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[var(--skin-accent-color)]/50 focus:ring-1 focus:ring-[var(--skin-accent-color)]/20 transition-all"
             />
             <button
               onClick={handleSendMessage}
               disabled={!input.trim() || isLoading}
-              className="absolute right-2 p-2 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10 rounded-lg transition-colors text-amber-200"
+              className="absolute right-2 p-2 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10 rounded-lg transition-colors text-[var(--skin-accent-color)]"
             >
               <SendIcon className="w-4 h-4" />
             </button>

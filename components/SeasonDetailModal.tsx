@@ -6,6 +6,7 @@ import { useGame } from '../contexts/GameContext';
 import { Arena, Season, SeasonMission, SeasonQuest } from '../types';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { MissionCompletionModal } from './MissionCompletionModal';
+import { resolveItemDef } from '../constants/items';
 
 import { Portal } from './Portal';
 
@@ -325,16 +326,26 @@ export const QuestDetailModal: React.FC<QuestDetailModalProps> = ({ quest, progr
                                 <span className="text-[10px] uppercase font-bold text-gray-500">XP</span>
                                 <span className="text-lg font-bold text-white">+{quest.rewards.xp}</span>
                             </div>
-                            {quest.rewards.gold && (
+                            {quest.rewards.items && quest.rewards.items.length > 0 && (
                                 <div className="bg-black/40 p-3 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1 backdrop-blur-md">
-                                    <span className="text-[10px] uppercase font-bold text-gray-500">Gold</span>
-                                    <span className="text-lg font-bold text-[var(--gold)]">+{quest.rewards.gold}</span>
+                                    <span className="text-[10px] uppercase font-bold text-gray-500">Recompensas</span>
+                                    <div className="flex flex-col items-center gap-1">
+                                        {quest.rewards.items.map(itemId => {
+                                            const itemDef = resolveItemDef(itemId);
+                                            return (
+                                                <span key={itemId} className="text-xs font-bold text-purple-300 text-center leading-tight flex items-center gap-1">
+                                                    {itemDef?.icon && <span>{itemDef.icon}</span>}
+                                                    {itemDef?.name || itemId}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
-                            {quest.rewards.items && quest.rewards.items.length > 0 && (
+                            {quest.rewards.gold && (
                                 <div className="col-span-2 bg-black/40 p-3 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1 backdrop-blur-md">
-                                    <span className="text-[10px] uppercase font-bold text-gray-500">Item</span>
-                                    <span className="text-sm font-bold text-purple-300">{quest.rewards.items.join(', ')}</span>
+                                    <span className="text-[10px] uppercase font-bold text-gray-500">Gold</span>
+                                    <span className="text-lg font-bold text-[var(--gold)]">+{quest.rewards.gold}</span>
                                 </div>
                             )}
                         </div>
@@ -348,9 +359,16 @@ export const QuestDetailModal: React.FC<QuestDetailModalProps> = ({ quest, progr
                         ) : (
                             <>
                                 {!isActive ? (
-                                    <button onClick={onTake} className="w-full py-4 rounded-xl text-sm font-black tracking-[0.2em] luxe-skin-button text-black shadow-[0_0_20px_var(--sephirot-glow-color)] transition-all hover:scale-[1.02]">
-                                        {quest.type === 'clan' ? 'JUNTAR-SE À FESTA' : 'ACEITAR MISSÃO'}
-                                    </button>
+                                    quest.type === 'clan' ? (
+                                        <div className="w-full py-4 rounded-xl text-xs font-bold bg-white/5 text-gray-400 text-center border border-white/10 uppercase tracking-widest flex flex-col items-center gap-1">
+                                            <span>JUNTAR-SE À FESTA</span>
+                                            <span className="text-[9px] opacity-60 normal-case">Acesse o Menu do Clã para participar</span>
+                                        </div>
+                                    ) : (
+                                        <button onClick={onTake} className="w-full py-4 rounded-xl text-sm font-black tracking-[0.2em] luxe-skin-button text-black shadow-[0_0_20px_var(--sephirot-glow-color)] transition-all hover:scale-[1.02]">
+                                            ACEITAR MISSÃO
+                                        </button>
+                                    )
                                 ) : (
                                     <div className="grid grid-cols-2 gap-3">
                                         <button className="py-4 rounded-xl text-xs font-bold bg-white/10 text-gray-400 cursor-not-allowed border border-white/5">

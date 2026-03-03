@@ -280,6 +280,52 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     // Determine if it's a Codex campaign for visual cue
                                     const isCodex = campaign.arenaIds.some(id => getArenas().find(a => a.id === id)?.originCodexId);
                                     
+                                    // Check if it's the "Máquina Biológica" campaign
+                                    const isBioMachine = campaign.title.toLowerCase().includes('máquina biológica') || campaign.title.toLowerCase().includes('maquina biologica');
+                                    
+                                    if (isBioMachine) {
+                                        return (
+                                            <div 
+                                                key={campaign.id}
+                                                onClick={() => setSelectedCampaignId(campaign.id)}
+                                                className="aspect-[4/3] relative rounded-2xl cursor-pointer flex flex-col overflow-hidden group transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(0,255,127,0.3)] border border-white/10 hover:border-emerald-500/50"
+                                            >
+                                                {/* Animated Background */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/40 via-black to-black z-0" />
+                                                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1518531933037-9a82bf558667?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80')] opacity-20 mix-blend-overlay bg-cover bg-center z-0 transition-transform duration-700 group-hover:scale-110" />
+                                                
+                                                {/* Codex Badge */}
+                                                <div className="absolute top-3 right-3 px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/50 rounded text-[9px] font-black text-emerald-400 uppercase tracking-widest backdrop-blur-sm z-10 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                                    SYSTEM CODEX
+                                                </div>
+
+                                                <div className="absolute top-3 left-3 z-10">
+                                                    <div className="w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center text-lg shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                                        🧬
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex-1 p-5 flex flex-col justify-end relative z-10">
+                                                    <h3 className="text-xl font-black text-white leading-tight mb-1 group-hover:text-emerald-400 transition-colors drop-shadow-md tracking-wide font-mono">
+                                                        MÁQUINA<br/>BIOLÓGICA
+                                                    </h3>
+                                                    <p className="text-[10px] text-emerald-200/70 line-clamp-2 font-mono border-l-2 border-emerald-500/30 pl-2">
+                                                        {campaign.description || "Reconfiguração do sistema biológico."}
+                                                    </p>
+                                                </div>
+                                                
+                                                {/* Tech footer */}
+                                                <div className="px-4 py-2 bg-emerald-900/20 border-t border-emerald-500/10 flex items-center justify-between relative z-10 backdrop-blur-sm">
+                                                    <div className="text-[9px] text-emerald-400/60 font-mono flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>
+                                                        {campaign.arenaIds.length} MÓDULOS
+                                                    </div>
+                                                    <ChevronRightIcon className="w-3 h-3 text-emerald-500/50 group-hover:translate-x-1 transition-transform" />
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
                                     return (
                                         <div 
                                             key={campaign.id}
@@ -331,13 +377,21 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                     {/* Header */}
                     <div className="p-4 border-b border-white/10 flex justify-between items-start shrink-0 bg-black/20">
                         <div className="flex items-start gap-4 flex-1">
-                            <button 
-                                onClick={() => setSelectedCampaignId(null)}
-                                className="mt-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-                                title="Voltar"
-                            >
-                                <ChevronLeftIcon className="w-5 h-5" />
-                            </button>
+                            <div className="flex flex-col gap-2 mt-1">
+                                <button 
+                                    onClick={() => setSelectedCampaignId(null)}
+                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                                    title="Voltar"
+                                >
+                                    <ChevronLeftIcon className="w-5 h-5" />
+                                </button>
+                                {/* Lixeira abaixo do botão voltar apenas para Máquina Biológica */}
+                                {(selectedCampaign.title.toLowerCase().includes('máquina biológica') || selectedCampaign.title.toLowerCase().includes('maquina biologica')) && (
+                                    <button onClick={handleDeleteCampaign} className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors border border-red-500/20" title="Excluir Codex">
+                                        <TrashIcon className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
                             
                             <div className="flex-1 mr-4">
                                 {isEditing ? (
@@ -363,22 +417,40 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     </div>
                                 ) : (
                                     <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h1 className="arena-title arena-title-text text-3xl text-[var(--skin-accent-color)] luxe-title-shadow leading-tight line-clamp-2" style={{ fontFamily: 'Cinzel, serif' }}>
-                                                {selectedCampaign.title}
-                                            </h1>
-                                            {!isCodexCampaign && (
+                                        {/* Custom Header for Bio Machine */}
+                                        {selectedCampaign.title.toLowerCase().includes('máquina biológica') || selectedCampaign.title.toLowerCase().includes('maquina biologica') ? (
+                                            <div className="flex flex-col items-center text-center gap-3 mb-4 w-full pt-2">
+                                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-900 to-black border border-emerald-500/50 flex items-center justify-center text-4xl shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-pulse-slow">
+                                                    🧬
+                                                </div>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest font-mono leading-none drop-shadow-[0_0_15px_rgba(16,185,129,0.6)] uppercase">
+                                                        MÁQUINA<br/>BIOLÓGICA
+                                                    </h1>
+                                                    <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em] shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                                        SYSTEM CODEX
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h1 className="arena-title arena-title-text text-3xl text-[var(--skin-accent-color)] luxe-title-shadow leading-tight line-clamp-2" style={{ fontFamily: 'Cinzel, serif' }}>
+                                                    {selectedCampaign.title}
+                                                </h1>
+                                                
                                                 <div className="flex items-center gap-1 ml-2 bg-black/40 rounded-lg p-1 border border-white/10">
-                                                    <button onClick={() => setIsEditing(true)} className="p-1.5 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-all" title="Editar Título/Descrição">
-                                                        <EditIcon className="w-4 h-4" />
-                                                    </button>
-                                                    <div className="w-px h-4 bg-white/10"></div>
+                                                    {!isCodexCampaign && (
+                                                        <button onClick={() => setIsEditing(true)} className="p-1.5 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-all" title="Editar Título/Descrição">
+                                                            <EditIcon className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    {!isCodexCampaign && <div className="w-px h-4 bg-white/10"></div>}
                                                     <button onClick={handleDeleteCampaign} className="p-1.5 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-all" title="Excluir Campanha">
                                                         <TrashIcon className="w-4 h-4" />
                                                     </button>
                                                 </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
                                         
                                         {/* Expandable Description */}
                                         <div className="relative mt-2">
@@ -583,7 +655,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
                     {isCreatingArena && (
                         <NewArenaModal 
-                            assetId="" 
+                            isOpen={true}
                             onClose={() => setIsCreatingArena(false)} 
                             onArenaCreated={onArenaCreated}
                         />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { GlassCard } from './GlassCard';
 import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon } from './Icons';
 import { supabase } from '../supabaseClient';
-import { useGame } from '../contexts/GameContext';
+import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Arena, UserProfile, EnrichedClanMember, SeasonQuest, AldeiaSlot, AldeiaPresence, AldeiaSlotId, ClanCustomQuest } from '../types';
 import { Sovereign } from './Avatar';
 import { Portal } from './Portal';
@@ -15,12 +15,12 @@ import { ClanSlotModal } from './ClanSlotModal';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 
 const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; emoji: string; x: number; y: number }[] = [
-  { id: 'fogueira', label: 'Fogueira', emoji: '🔥', x: 42, y: 51 },
-  { id: 'torre',    label: 'Torre',    emoji: '🏰', x: 23, y: 24 },
-  { id: 'altar',    label: 'Altar',    emoji: '⛩️', x: 70, y: 40 },
-  { id: 'forja',    label: 'Forja',    emoji: '⚒️', x: 75, y: 70 },
-  { id: 'horta',    label: 'Horta',    emoji: '🌿', x: 25, y: 70 },
-  { id: 'trono',    label: 'Trono',    emoji: '👑', x: 49, y: 32 },
+    { id: 'fogueira', label: 'Fogueira', emoji: '🔥', x: 42, y: 51 },
+    { id: 'torre', label: 'Torre', emoji: '🏰', x: 23, y: 24 },
+    { id: 'altar', label: 'Altar', emoji: '⛩️', x: 70, y: 40 },
+    { id: 'forja', label: 'Forja', emoji: '⚒️', x: 75, y: 70 },
+    { id: 'horta', label: 'Horta', emoji: '🌿', x: 25, y: 70 },
+    { id: 'trono', label: 'Trono', emoji: '👑', x: 49, y: 32 },
 ];
 
 const getTierInfo = (rankIndex: number) => {
@@ -32,7 +32,7 @@ const getTierInfo = (rankIndex: number) => {
 
 const getClanBackgroundUrl = (rankIndex: number, isOfficeClan: boolean = false, customBackground?: string) => {
     const baseUrl = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/';
-    
+
     if (isOfficeClan) {
         // Se houver um fundo customizado (office1, office2, office3), use-o
         if (customBackground) {
@@ -91,43 +91,43 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
         <Portal>
             <div className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
                 <GlassCard variant="accent" className="w-full max-w-sm m-4 p-6 relative flex flex-col items-center space-y-4" onClick={e => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/20 text-gray-400 hover:text-white transition-colors">
-                    <XIcon className="w-5 h-5" />
-                </button>
-                
-                <div className="w-32 h-32 relative">
-                     <div className="absolute inset-0 bg-[var(--skin-accent-color)]/20 blur-2xl rounded-full animate-pulse" />
-                     <div className="relative w-full h-full filter drop-shadow-[0_0_15px_var(--sephirot-glow-color)]">
-                        <Sovereign sovereignConfig={member.sovereign!} />
-                     </div>
-                </div>
+                    <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/20 text-gray-400 hover:text-white transition-colors">
+                        <XIcon className="w-5 h-5" />
+                    </button>
 
-                <div className="text-center space-y-1">
-                    <h2 className="text-2xl font-black text-white luxe-title-shadow uppercase tracking-wider">{member.nickname}</h2>
-                    <div className="flex items-center justify-center space-x-2">
-                        <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider accent-text border border-[var(--skin-accent-color)]/30">
-                            {member.role === 'leader' ? (isOfficeClan || isBasicMode ? 'Diretor' : 'Líder') : (isOfficeClan || isBasicMode ? 'Equipe' : 'Membro')}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-gray-300 border border-white/10">
-                            Nível {member.level}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="w-full bg-black/20 rounded-xl p-4 border border-white/5 space-y-3">
-                    <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-400 font-bold uppercase">Humor Atual</span>
-                        <div className="flex items-center space-x-1">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: member.mood >= 80 ? '#4ade80' : member.mood >= 40 ? '#facc15' : '#f87171' }} />
-                            <span className="font-mono text-white">{member.mood}%</span>
+                    <div className="w-32 h-32 relative">
+                        <div className="absolute inset-0 bg-[var(--skin-accent-color)]/20 blur-2xl rounded-full animate-pulse" />
+                        <div className="relative w-full h-full filter drop-shadow-[0_0_15px_var(--sephirot-glow-color)]">
+                            <Sovereign sovereignConfig={member.sovereign!} />
                         </div>
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-400 font-bold uppercase">Contribuição</span>
-                        <span className="font-mono accent-text">{member.contributionPoints} pts</span>
+
+                    <div className="text-center space-y-1">
+                        <h2 className="text-2xl font-black text-white luxe-title-shadow uppercase tracking-wider">{member.nickname}</h2>
+                        <div className="flex items-center justify-center space-x-2">
+                            <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider accent-text border border-[var(--skin-accent-color)]/30">
+                                {member.role === 'leader' ? (isOfficeClan || isBasicMode ? 'Diretor' : 'Líder') : (isOfficeClan || isBasicMode ? 'Equipe' : 'Membro')}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-gray-300 border border-white/10">
+                                Nível {member.level}
+                            </span>
+                        </div>
                     </div>
-                </div>
-            </GlassCard>
+
+                    <div className="w-full bg-black/20 rounded-xl p-4 border border-white/5 space-y-3">
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400 font-bold uppercase">Humor Atual</span>
+                            <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: member.mood >= 80 ? '#4ade80' : member.mood >= 40 ? '#facc15' : '#f87171' }} />
+                                <span className="font-mono text-white">{member.mood}%</span>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400 font-bold uppercase">Contribuição</span>
+                            <span className="font-mono accent-text">{member.contributionPoints} pts</span>
+                        </div>
+                    </div>
+                </GlassCard>
             </div>
         </Portal>
     );
@@ -143,11 +143,11 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     const [isExpanded, setIsExpanded] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editableDescription, setEditableDescription] = useState(clan?.description || '');
-    
+
     useEffect(() => {
         if (expandDescription) setIsExpanded(true);
     }, [expandDescription]);
-    
+
     if (!clan) return null;
     const currentRank = clanRanks.find(r => r.id === clan.rankId);
     const nextRankIndex = clanRanks.findIndex(r => r.id === clan.rankId) + 1;
@@ -178,9 +178,9 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
                 <div className="text-[10px] text-center text-gray-400 font-mono mt-0.5">
                     {Math.floor(progressInRank)} / {expToNextRank} XP
                 </div>
-                 <div className="flex items-center justify-center space-x-4 border-t border-white/10 pt-1 mt-1">
-                    <button 
-                        onClick={() => setIsExpanded(!isExpanded)} 
+                <div className="flex items-center justify-center space-x-4 border-t border-white/10 pt-1 mt-1">
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
                         className="text-xs text-gray-400 hover:text-white flex items-center space-x-1"
                     >
                         <span>{isExpanded ? 'Ocultar' : 'Ver'} descrição</span>
@@ -200,7 +200,7 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
                 {isExpanded && (
                     <div className="text-xs text-gray-300 text-center pt-1">
                         {isEditingDescription ? (
-                             <textarea
+                            <textarea
                                 value={editableDescription}
                                 onChange={(e) => setEditableDescription(e.target.value)}
                                 className="w-full bg-black/30 p-2 rounded-lg text-xs text-white"
@@ -216,9 +216,9 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     );
 };
 
-const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; onClose: () => void; onTake: () => void; onClaim?: () => void; canClaim?: boolean; currentValue: number }> = ({ quest, progress, isActive, onClose, onTake, onClaim, canClaim, currentValue }) => {
+const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; onClose: () => void; onTake: () => void; onActivate?: () => void; onClaim?: () => void; canClaim?: boolean; currentValue: number }> = ({ quest, progress, isActive, onClose, onTake, onActivate, onClaim, canClaim, currentValue }) => {
     const { fetchClanQuestParticipants, clanQuestParticipants } = useGame();
-    
+
     useEffect(() => {
         if (quest.id && quest.actionTemplate?.name) {
             fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
@@ -227,65 +227,69 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
 
     const participants = clanQuestParticipants[quest.id] || 0;
     const actionsRemaining = Math.max(0, quest.goal_value - currentValue);
-    
+
     return (
         <Portal>
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[230] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl p-4" onClick={e => e.stopPropagation()}>
-                <div className="text-center space-y-1">
-                    <h3 className="text-lg font-black uppercase tracking-widest">{quest.title}</h3>
-                    <p className="text-xs text-gray-300">{quest.description}</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2 text-center">
-                    <div className="bg-black/30 rounded-xl p-2">
-                        <div className="text-[10px] uppercase text-gray-400 font-bold">Participantes</div>
-                        <div className="text-lg font-mono accent-text flex items-center justify-center gap-1">
-                            <UsersIcon className="w-4 h-4" />
-                            {participants}
-                        </div>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[230] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl p-4" onClick={e => e.stopPropagation()}>
+                    <div className="text-center space-y-1">
+                        <h3 className="text-lg font-black uppercase tracking-widest">{quest.title}</h3>
+                        <p className="text-xs text-gray-300">{quest.description}</p>
                     </div>
-                     <div className="bg-black/30 rounded-xl p-2">
-                        <div className="text-[10px] uppercase text-gray-400 font-bold">Ações Restantes</div>
-                        <div className="text-lg font-mono text-white">
-                            {actionsRemaining}
-                        </div>
-                    </div>
-                </div>
 
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Progresso</span>
-                        <span className="text-xs font-mono">{progress}%</span>
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                        <div className="bg-black/30 rounded-xl p-2">
+                            <div className="text-[10px] uppercase text-gray-400 font-bold">Participantes</div>
+                            <div className="text-lg font-mono accent-text flex items-center justify-center gap-1">
+                                <UsersIcon className="w-4 h-4" />
+                                {participants}
+                            </div>
+                        </div>
+                        <div className="bg-black/30 rounded-xl p-2">
+                            <div className="text-[10px] uppercase text-gray-400 font-bold">Ações Restantes</div>
+                            <div className="text-lg font-mono text-white">
+                                {actionsRemaining}
+                            </div>
+                        </div>
                     </div>
-                    <div className="w-full bg-black/30 rounded-full h-1.5">
-                        <div className="bg-[var(--skin-accent-color)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Progresso</span>
+                            <span className="text-xs font-mono">{progress}%</span>
+                        </div>
+                        <div className="w-full bg-black/30 rounded-full h-1.5">
+                            <div className="bg-[var(--skin-accent-color)] h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                        </div>
                     </div>
-                </div>
-                <div className="space-y-2">
-                    {canClaim ? (
-                        <button onClick={onClaim} className="w-full py-2 rounded-xl text-xs font-bold bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)] animate-pulse">
-                            RESGATAR RECOMPENSA
+                    <div className="space-y-2">
+                        {canClaim ? (
+                            <button onClick={onClaim} className="w-full py-2 rounded-xl text-xs font-bold bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)] animate-pulse">
+                                RESGATAR RECOMPENSA
+                            </button>
+                        ) : onActivate ? (
+                            <button onClick={onActivate} className="w-full py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)] animate-pulse">
+                                ATIVAR MISSÃO PARA O CLÃ
+                            </button>
+                        ) : (
+                            <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-skin-button'}`}>
+                                {isActive ? 'JUNTAR-SE À MISSÃO' : 'PARTICIPAR'}
+                            </button>
+                        )}
+                        <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-bold bg-black/30 text-gray-300 hover:bg-black/50">
+                            FECHAR
                         </button>
-                    ) : (
-                        <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-skin-button'}`}>
-                            {isActive ? 'QUEST ATIVA' : 'PEGAR QUEST'}
-                        </button>
-                    )}
-                    <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-bold bg-black/30 text-gray-300 hover:bg-black/50">
-                        FECHAR
-                    </button>
-                </div>
-            </GlassCard>
-        </div>
-    </Portal>
+                    </div>
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };
 
 const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_SLOTS }> = ({ slots, slotsConfig = ALDEIA_SLOTS }) => {
     const mainSlots = slots.filter(s => s.slotId !== 'trono');
     // const order = mainSlots.length > 0 ? Math.floor(mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length) : 0;
-    
+
     return (
         <GlassCard variant="neutral" className="p-3 space-y-2">
             {/* Order Bar moved to Sanctuary Tab */}
@@ -297,8 +301,8 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
                         <div key={slot.slotId} className="flex flex-col items-center space-y-1">
                             <div className="text-[10px] uppercase text-gray-500">{configSlot?.emoji || slot.slotId.substring(0, 3)}</div>
                             <div className="w-full bg-black/30 rounded-full h-1">
-                                <div 
-                                    className={`h-full rounded-full bg-[var(--metal-gold)]`} 
+                                <div
+                                    className={`h-full rounded-full bg-[var(--metal-gold)]`}
                                     style={{ width: `${slot.health}%` }}
                                 />
                             </div>
@@ -313,23 +317,23 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode, activateClanQuest, clanQuestProgress } = useGame();
     const isBasicMode = appMode === 'BASIC';
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
 
     const { trigger } = useSensoryFeedback();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const enrichedClanMembersRef = useRef(enrichedClanMembers);
-    
+
     useEffect(() => {
         trigger('whoosh');
     }, [trigger]);
-    
+
     // Aldeia State
     const [aldeiaSlots, setAldeiaSlots] = useState<AldeiaSlot[]>([]);
     const [aldeiaPresence, setAldeiaPresence] = useState<AldeiaPresence[]>([]);
     const [selectedSlotForModal, setSelectedSlotForModal] = useState<AldeiaSlotId | null>(null);
-    
+
     // --- Long Press Logic ---
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
     const isLongPressTriggered = useRef(false);
@@ -344,7 +348,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const handlePointerDown = (e: React.PointerEvent, slotId: string, isThroneDisabled: boolean) => {
         if (isThroneDisabled) return;
-        
+
         // Prevent default to avoid context menus or selection
         // e.preventDefault(); // Removed to allow click events to propagate properly
 
@@ -358,7 +362,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         pressStartTime.current = Date.now();
         startPos.current = { x: e.clientX, y: e.clientY };
         isLongPressTriggered.current = false;
-        
+
         // Start timers
         if (longPressTimer.current) clearTimeout(longPressTimer.current);
         if (visualTimer.current) clearTimeout(visualTimer.current);
@@ -373,10 +377,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             isLongPressTriggered.current = true;
             // Visual feedback of completion happens here (maybe vibrate if possible)
             if (navigator.vibrate) navigator.vibrate(200);
-            
+
             setPressingSlot(null);
             setShowHoldVisual(false);
-            
+
             // Action: Occupy/Sit (Long Press)
             console.log('[LONG_PRESS] Triggered for slot:', slotId);
             handleSlotClick(slotId as AldeiaSlotId);
@@ -385,7 +389,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const handlePointerUp = (e: React.PointerEvent, slotId: AldeiaSlotId, isThroneDisabled: boolean) => {
         if (isThroneDisabled) return;
-        
+
         try {
             e.currentTarget.releasePointerCapture(e.pointerId);
         } catch (err) {
@@ -409,26 +413,26 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const handlePointerLeave = (e: React.PointerEvent) => {
         // Cancel if leaving element
-         if (longPressTimer.current) clearTimeout(longPressTimer.current);
-         if (visualTimer.current) clearTimeout(visualTimer.current);
-         setPressingSlot(null);
-         setShowHoldVisual(false);
-         isLongPressTriggered.current = false;
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+        if (visualTimer.current) clearTimeout(visualTimer.current);
+        setPressingSlot(null);
+        setShowHoldVisual(false);
+        isLongPressTriggered.current = false;
     };
 
     const handlePointerCancel = (e: React.PointerEvent) => {
-         if (longPressTimer.current) clearTimeout(longPressTimer.current);
-         if (visualTimer.current) clearTimeout(visualTimer.current);
-         setPressingSlot(null);
-         setShowHoldVisual(false);
-         isLongPressTriggered.current = false;
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+        if (visualTimer.current) clearTimeout(visualTimer.current);
+        setPressingSlot(null);
+        setShowHoldVisual(false);
+        isLongPressTriggered.current = false;
     };
 
     // Click handler for Tap action (Open Modal)
     const handleSlotTap = (e: React.MouseEvent | React.PointerEvent, slotId: AldeiaSlotId, isThroneDisabled: boolean) => {
         // e.stopPropagation(); // Let's try removing stopPropagation for a moment to see if it helps, but usually it's better to have it
         console.log(`[HANDLE_SLOT_TAP] Interaction on: ${slotId}, isThroneDisabled: ${isThroneDisabled}, isLongPressTriggered: ${isLongPressTriggered.current}`);
-        
+
         if (isThroneDisabled) {
             console.log('[HANDLE_SLOT_TAP] Throne is disabled, skipping modal');
             return;
@@ -463,7 +467,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             .select('mission_id, contribution_value')
             .eq('clan_id', clan.id)
             .eq('user_id', userProfile.id);
-        
+
         if (partData) {
             setMyParticipations(partData.map(p => p.mission_id));
             const contribs: Record<string, number> = {};
@@ -474,12 +478,12 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     useEffect(() => {
         if (!clan?.id) return;
-        
+
         fetchQuests();
 
         // Subscribe to quest changes
         const channel = supabase.channel(`clan-quests-${clan.id}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'clan_custom_quests', filter: `clan_id=eq.${clan.id}` }, 
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'clan_custom_quests', filter: `clan_id=eq.${clan.id}` },
                 () => fetchQuests()
             )
             .subscribe();
@@ -492,8 +496,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const handleOptIn = async (quest: ClanCustomQuest) => {
         try {
             if (quest.mission_type === 'singular' && (quest.status === 'locked' || quest.assigned_user_id) && quest.assigned_user_id !== userProfile.id) {
-                 showToast("Esta missão já foi atribuída a outro membro.", "error");
-                 return;
+                showToast("Esta missão já foi atribuída a outro membro.", "error");
+                return;
             }
 
             // Check if already participating (extra safety)
@@ -509,9 +513,9 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     mission_id: quest.id,
                     user_id: userProfile.id
                 });
-            
+
             if (participationError && participationError.code !== '23505') {
-                 throw participationError;
+                throw participationError;
             }
 
             if (quest.mission_type === 'singular') {
@@ -527,20 +531,20 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 arenaId: 'geral',
                 name: `[${quest.priority === 'urgent' ? 'URGENTE' : (isOfficeClan || isBasicMode ? 'AÇÃO' : 'CLÃ')}] ${quest.title}`,
                 description: quest.description || (isOfficeClan || isBasicMode ? 'Ação de Clã' : 'Missão de Clã'),
-                icon: quest.category === 'work' ? '💼' : 
-                      quest.category === 'meeting' ? '📅' : 
-                      quest.category === 'report' ? '📊' : 
-                      quest.category === 'development' ? '👨‍💻' : '⚔️',
+                icon: quest.category === 'work' ? '💼' :
+                    quest.category === 'meeting' ? '📅' :
+                        quest.category === 'report' ? '📊' :
+                            quest.category === 'development' ? '👨‍💻' : '⚔️',
                 duration: 30,
                 repetitions: 1,
                 actionType: 'Compromisso',
                 originCodexId: `clan_quest:${quest.id}`
             });
-            
+
             // Auto-schedule if due date exists
             if (quest.due_date) {
                 const date = new Date(quest.due_date);
-                const dateString = date.toISOString().split('T')[0];
+                const dateString = getLocalDateString(date);
                 const timeInMinutes = date.getHours() * 60 + date.getMinutes();
                 scheduleTask(newAction.id, dateString, timeInMinutes);
                 showToast(isOfficeClan || isBasicMode ? "Ação aceita e agendada no Planner!" : "Missão aceita e agendada no Planner!");
@@ -549,7 +553,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             }
 
             setMyParticipations(prev => [...prev, quest.id]);
-            
+
             // Refresh quests to show locked status immediately
             const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
             if (data) setClanQuests(data as ClanCustomQuest[]);
@@ -582,7 +586,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
             showToast(isOfficeClan || isBasicMode ? "Ação devolvida com sucesso." : "Missão devolvida/abortada com sucesso.");
             setMyParticipations(prev => prev.filter(id => id !== quest.id));
-            
+
             // Refresh quests
             const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
             if (data) setClanQuests(data as ClanCustomQuest[]);
@@ -595,7 +599,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     useEffect(() => {
         if (!clan?.id) return;
-        
+
         // Check for updates periodically
         performAldeiaDailyUpdate(clan.id);
         const dailyCheckInterval = setInterval(() => performAldeiaDailyUpdate(clan.id), 60000 * 60); // Check every hour
@@ -603,14 +607,14 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         const loadAldeiaData = async () => {
             // Prevent overwriting optimistic updates with stale data
             if (Date.now() - lastUpdateRef.current < 2000) {
-                 console.log('Skipping aldeia update due to recent user action');
-                 return;
+                console.log('Skipping aldeia update due to recent user action');
+                return;
             }
 
             const slots = await getAldeiaSlots(clan.id);
             setAldeiaSlots(slots);
             const presence = await getAldeiaPresence(clan.id);
-            
+
             // Deduplicate presence by userId (keep latest startedAt) to fix visual multiplication bug
             const uniquePresence = Object.values(presence.reduce((acc, p) => {
                 const existing = acc[p.userId];
@@ -618,7 +622,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 if (!existing || (p.startedAt && existing.startedAt && new Date(p.startedAt) > new Date(existing.startedAt))) {
                     acc[p.userId] = p;
                 } else if (!existing.startedAt && p.startedAt) {
-                     acc[p.userId] = p;
+                    acc[p.userId] = p;
                 }
                 return acc;
             }, {} as Record<string, AldeiaPresence>));
@@ -644,14 +648,14 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         if (aldeiaSlots.length === 0) return 0;
         const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
         if (mainSlots.length === 0) return 0;
-        
+
         if (isOfficeClan) {
             // No clã Office, a produtividade é a SOMA das saúdes das mesas (máximo 500 se houver 5 mesas)
             // No entanto, para a barra visual, talvez o usuário queira uma média ou um valor escalonado.
             // "produtividade seja a soma de cada mesa" -> Vamos calcular a soma real.
             return mainSlots.reduce((acc, s) => acc + s.health, 0);
         }
-        
+
         const totalHealth = mainSlots.reduce((acc, s) => acc + s.health, 0);
         return Math.floor(totalHealth / mainSlots.length);
     }, [aldeiaSlots, isOfficeClan]);
@@ -660,19 +664,19 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const slotsConfig = useMemo(() => {
         const base = isOfficeClan ? [
             { id: 'fogueira', label: 'Mesa Central', emoji: '🏢', x: 42, y: 51 },
-            { id: 'torre',    label: 'Café',          emoji: '☕', x: 70, y: 40 },
-            { id: 'altar',    label: 'Recepção',     emoji: '🛎️', x: 23, y: 24 },
-            { id: 'forja',    label: 'Mesa 1',       emoji: '💻', x: 75, y: 70 },
-            { id: 'horta',    label: 'Mesa 2',       emoji: '💻', x: 25, y: 70 },
-            { id: 'trono',    label: 'Sala Diretor', emoji: '💼', x: 49, y: 32 },
+            { id: 'torre', label: 'Café', emoji: '☕', x: 70, y: 40 },
+            { id: 'altar', label: 'Recepção', emoji: '🛎️', x: 23, y: 24 },
+            { id: 'forja', label: 'Mesa 1', emoji: '💻', x: 75, y: 70 },
+            { id: 'horta', label: 'Mesa 2', emoji: '💻', x: 25, y: 70 },
+            { id: 'trono', label: 'Sala Diretor', emoji: '💼', x: 49, y: 32 },
         ] : ALDEIA_SLOTS;
-        
+
         // Para Clã Office, ignoramos configurações customizadas do banco para garantir os nomes de escritório
         if (isOfficeClan) return base;
-        
+
         const customConfig = clan?.slotConfig || clan?.slot_config;
         if (!customConfig) return base;
-        
+
         return base.map(s => {
             const custom = customConfig[s.id];
             return custom ? { ...s, label: custom.label, emoji: custom.emoji } : s;
@@ -691,7 +695,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             console.error('[HANDLE_SLOT_CLICK] No clan ID found');
             return;
         }
-        
+
         // If it's the Throne, check if user is leader
         if (slotId === 'trono') {
             // Se for clã office, apenas o líder pode entrar na Sala do Diretor
@@ -710,7 +714,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         }
 
         console.log(`[HANDLE_SLOT_CLICK] Calling enterAldeiaSlot...`);
-        
+
         // Optimistic Update to ensure immediate feedback
         lastUpdateRef.current = Date.now(); // Prevent interval overwrite
         setAldeiaPresence(prev => {
@@ -728,7 +732,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         try {
             await enterAldeiaSlot(clan.id, slotId);
             console.log(`[HANDLE_SLOT_CLICK] enterAldeiaSlot returned. Refreshing data...`);
-            
+
             // Short delay to ensure DB propagation
             await new Promise(r => setTimeout(r, 500));
 
@@ -738,7 +742,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             setAldeiaPresence(presence);
             const slots = await getAldeiaSlots(clan.id);
             setAldeiaSlots(slots);
-            
+
             const slotConfig = slotsConfig.find(s => s.id === slotId);
             showToast(`Você entrou em: ${slotConfig?.label || slotId}`);
         } catch (error) {
@@ -753,18 +757,18 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const [selectedMember, setSelectedMember] = useState<EnrichedClanMember | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
     const [expandDescription, setExpandDescription] = useState(false);
-    
+
     const userClanRole = useMemo(() => {
         return enrichedClanMembers.find(m => m.id === userProfile.id)?.role;
     }, [enrichedClanMembers, userProfile.id]);
 
     const activeSeason = seasons.find(s => s.is_active);
-    const todayString = new Date().toISOString().split('T')[0];
+    const todayString = getLocalDateString();
     const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
-    
+
     // Background Image Handling
     const [bgError, setBgError] = useState(false);
-    
+
     useEffect(() => {
         setBgError(false);
     }, [clan?.rankId, isBasicMode]);
@@ -789,7 +793,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             setSubModal('leave');
         }
     };
-    
+
     const handleConfirmLeave = async () => {
         if (userClanRole === 'leader' && enrichedClanMembers.length === 1) {
             await deleteClan();
@@ -807,13 +811,19 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     };
 
     const handleKickMember = async () => {
-        if(memberToKick) {
+        if (memberToKick) {
             await kickClanMember(memberToKick.id);
             setMemberToKick(null);
         }
     };
+
+    const activeSeasonClanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
     
-    const seasonClanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
+    // Determine active quests for the clan based on progress record
+    const clanActiveQuestIds = (clan && clanQuestProgress[clan.id]) ? Object.keys(clanQuestProgress[clan.id]) : [];
+    
+    const activeClanQuests = activeSeasonClanQuests.filter(q => clanActiveQuestIds.includes(q.id));
+    const availableClanQuests = activeSeasonClanQuests.filter(q => !clanActiveQuestIds.includes(q.id));
     const questArenaName = activeSeason ? `Quests - Clã ${activeSeason.id}` : 'Quests - Clã';
 
     const isQuestActive = (quest: SeasonQuest) => {
@@ -855,7 +865,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <div className="relative w-full max-w-sm m-4 aspect-[9/16] rounded-3xl shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <div className="relative w-full h-full rounded-3xl overflow-hidden border border-white/10 flex flex-col isolate bg-black"> 
+                    <div className="relative w-full h-full rounded-3xl overflow-hidden border border-white/10 flex flex-col isolate bg-black">
                         {/* Background Image Layer */}
                         <div className="absolute inset-0 z-0 select-none pointer-events-none">
                             {isBasicMode && bgError ? (
@@ -866,9 +876,9 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                     </div>
                                 </div>
                             ) : (
-                                <img 
-                                    src={backgroundUrl} 
-                                    alt="Clan Background" 
+                                <img
+                                    src={backgroundUrl}
+                                    alt="Clan Background"
                                     className="w-full h-full object-cover transition-opacity duration-500"
                                     onError={handleBgError}
                                 />
@@ -878,24 +888,24 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                 <div className={`absolute inset-0 mix-blend-overlay ${tierInfo.tier === 1 ? 'bg-amber-900/30' : tierInfo.tier === 2 ? 'bg-emerald-900/30' : 'bg-purple-900/30'}`} />
                             )}
                         </div>
-                        
+
                         {/* Header Section */}
                         <div className="flex-none relative z-10">
                             <ClanHeader userClanRole={userClanRole} expandDescription={expandDescription} />
-                            
+
                             {/* Header Actions */}
-                            <button onClick={onClose} className="absolute top-4 right-4 z-50 p-1 rounded-full bg-black/50 hover:bg-black/80 text-white"><XIcon className="w-5 h-5"/></button>
-                            
+                            <button onClick={onClose} className="absolute top-4 right-4 z-50 p-1 rounded-full bg-black/50 hover:bg-black/80 text-white"><XIcon className="w-5 h-5" /></button>
+
                             {/* Leader Edit Button */}
                             {userClanRole === 'leader' && (
-                                <button 
+                                <button
                                     onClick={() => setSubModal('manage')}
                                     className="absolute top-4 left-4 z-50 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-colors border border-white/10 backdrop-blur-sm"
                                     title="Editar Clã"
                                 >
                                     <span className="sr-only">Editar</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                                     </svg>
                                 </button>
                             )}
@@ -906,8 +916,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                             {activeTab === 'santuario' && (
                                 <div className="absolute inset-0 overflow-hidden">
                                     <Sparkles />
-                                    
-                                    
+
+
                                     {/* Tier Label */}
                                     {/* <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-center z-10">
                                         <div className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Nível da Aldeia</div>
@@ -922,7 +932,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
                                             const slotData = aldeiaSlots.find(s => s.slotId === slot.id);
                                             const occupants = aldeiaPresence.filter(p => p.slotId === slot.id);
-                                            
+
                                             // Special Logic for Casual Clan Bonfire (Presence based health)
                                             let health = slotData?.health ?? 100;
                                             if (!isBasicMode && slot.id === 'fogueira') {
@@ -941,10 +951,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                             // Restored strict check for Order < 90, and leader-only for Office
                                             // No clã Office, o trono nunca fica desabilitado para o líder (independente da produtividade)
                                             const isThroneDisabled = slot.id === 'trono' && (
-                                                (isOfficeClan && userClanRole !== 'leader') || 
+                                                (isOfficeClan && userClanRole !== 'leader') ||
                                                 (!isOfficeClan && aldeiaOrder < 90)
                                             );
-                                            
+
                                             if (slot.id === 'trono') {
                                                 console.log(`[RENDER_SLOT] Throne: Order=${aldeiaOrder}, Disabled=${isThroneDisabled}`);
                                             }
@@ -960,139 +970,139 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                     onPointerCancel={handlePointerCancel}
                                                     onClick={(e) => handleSlotTap(e, slot.id as AldeiaSlotId, isThroneDisabled)}
                                                 >
-                                                {/* Visual Feedback for Holding */}
-                                                {pressingSlot === slot.id && showHoldVisual && (
-                                                    <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none scale-125">
-                                                        <div className="absolute inset-0 bg-white/10 rounded-full blur-md animate-pulse" />
-                                                        <svg className="w-24 h-24 rotate-[-90deg] relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-                                                            <circle
-                                                                className="text-white/20"
-                                                                strokeWidth="6"
-                                                                stroke="currentColor"
-                                                                fill="transparent"
-                                                                r="40"
-                                                                cx="48"
-                                                                cy="48"
-                                                            />
-                                                            <circle
-                                                                className="text-[var(--skin-accent-color)]"
-                                                                strokeWidth="6"
-                                                                strokeDasharray={251.2}
-                                                                strokeDashoffset={251.2}
-                                                                strokeLinecap="round"
-                                                                stroke="currentColor"
-                                                                fill="transparent"
-                                                                r="40"
-                                                                cx="48"
-                                                                cy="48"
-                                                                style={{ 
-                                                                    animation: 'dash 3s linear forwards',
-                                                                    strokeDashoffset: 251.2 
-                                                                }}
-                                                            />
-                                                        </svg>
-                                                        <style>{`
+                                                    {/* Visual Feedback for Holding */}
+                                                    {pressingSlot === slot.id && showHoldVisual && (
+                                                        <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none scale-125">
+                                                            <div className="absolute inset-0 bg-white/10 rounded-full blur-md animate-pulse" />
+                                                            <svg className="w-24 h-24 rotate-[-90deg] relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                                                                <circle
+                                                                    className="text-white/20"
+                                                                    strokeWidth="6"
+                                                                    stroke="currentColor"
+                                                                    fill="transparent"
+                                                                    r="40"
+                                                                    cx="48"
+                                                                    cy="48"
+                                                                />
+                                                                <circle
+                                                                    className="text-[var(--skin-accent-color)]"
+                                                                    strokeWidth="6"
+                                                                    strokeDasharray={251.2}
+                                                                    strokeDashoffset={251.2}
+                                                                    strokeLinecap="round"
+                                                                    stroke="currentColor"
+                                                                    fill="transparent"
+                                                                    r="40"
+                                                                    cx="48"
+                                                                    cy="48"
+                                                                    style={{
+                                                                        animation: 'dash 3s linear forwards',
+                                                                        strokeDashoffset: 251.2
+                                                                    }}
+                                                                />
+                                                            </svg>
+                                                            <style>{`
                                                             @keyframes dash {
                                                                 to { stroke-dashoffset: 0; }
                                                             }
                                                         `}</style>
-                                                    </div>
-                                                )}
-                                                {/* Occupants Avatars - MOVED TO TOP */}
-                                                <div className="relative h-16 w-full flex justify-center items-end -mb-2 z-20">
-                                                    {occupants.map((presence, idx) => {
-                                                        const member = enrichedClanMembers.find(m => m.id === presence.userId);
-                                                        if (!member) return null;
-                                                        
-                                                        // Force "Boneco" Config
-                                                        const forceBodyConfig = member.sovereign ? {
-                                                            ...member.sovereign,
-                                                            glyph: 'none',
-                                                            artifact: 'none',
-                                                            glyphPlate: 'none',
-                                                            artifactPlate: 'none',
-                                                            aura: 'none',
-                                                            sovereignPlate: 'none',
-                                                            orb: 'none',
-                                                            primaryDisplay: 'sovereign' as const
-                                                        } : undefined;
-
-                                                        // Stagger multiple occupants
-                                                        const offset = (idx - (occupants.length - 1) / 2) * 20;
-                                                        
-                                                        // Calculate Planner Progress based on active singular quests
-                                                        let plannerProgress = 0;
-                                                        
-                                                        const memberActiveQuests = clanQuests.filter(q => q.assigned_user_id === member.id && q.status === 'locked');
-                                                        if (memberActiveQuests.length > 0) {
-                                                            const totalProgress = memberActiveQuests.reduce((acc, q) => acc + (q.current_value / Math.max(1, q.target_value)), 0);
-                                                            plannerProgress = Math.min(100, (totalProgress / memberActiveQuests.length) * 100);
-                                                        }
-
-                                                        return (
-                                                            <div 
-                                                                key={presence.userId}
-                                                                className="absolute bottom-0 transition-all duration-500 hover:z-50 hover:scale-110 flex flex-col items-center"
-                                                                style={{ transform: `translateX(${offset}px)` }}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setSelectedMember(member);
-                                                                }}
-                                                            >
-                                                                {/* Circular Base (Subtle) */}
-                                                                <div className="absolute bottom-1 w-10 h-3 bg-white/10 rounded-[100%] blur-[2px] shadow-[0_0_10px_rgba(255,255,255,0.1)] pointer-events-none" />
-
-                                                                <div className="w-12 h-16 filter drop-shadow-lg pointer-events-none relative z-10">
-                                                                    {/* FORCE SOVEREIGN DISPLAY ALWAYS */}
-                                                                    {forceBodyConfig ? (
-                                                                        <Sovereign sovereignConfig={forceBodyConfig} />
-                                                                    ) : (
-                                                                        <div className="w-full h-full bg-gray-500 rounded-full flex items-center justify-center text-xs">
-                                                                            {member.nickname.substring(0, 2)}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                {/* Nametag */}
-                                                                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/70 px-1.5 py-0.5 rounded text-[8px] whitespace-nowrap text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-                                                                    {member.nickname}
-                                                                </div>
-                                                                
-                                                                {/* Planner Progress Bar */}
-                                                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-black/50 rounded-full overflow-hidden border border-white/10 z-40">
-                                                                     <div className="h-full bg-[var(--skin-accent-color)] transition-all duration-500" style={{ width: `${plannerProgress}%` }}></div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-
-                                                {/* Slot Label (Transparent) */}
-                                                <div className={`mb-0.5 z-10 flex flex-col items-center gap-[1px] ${slot.id === 'trono' ? '' : ''}`}>
-                                                    
-                                                    {/* Emoji (Left) */}
-                                                    <div className="w-[18px] h-[18px] min-w-[18px] min-h-[18px] rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex flex-none items-center justify-center shadow-lg overflow-hidden">
-                                                        <span className="text-[9px] leading-none drop-shadow-md flex items-center justify-center w-full h-full">
-                                                            {slot.emoji}
-                                                        </span>
-                                                    </div>
-                                                    
-                                                    {/* Health Bar - Fixed below text, discrete */}
-                                                    {slot.id !== 'trono' && (
-                                                        <div className="w-[20px] h-[3px] min-h-[3px] bg-black/60 rounded-full overflow-hidden flex-shrink-0">
-                                                            <div 
-                                                                className="h-full transition-all duration-500"
-                                                                style={{ 
-                                                                    width: `${health}%`, 
-                                                                    background: isBasicMode ? 'var(--skin-accent-color)' : 'var(--metal-gold)', 
-                                                                    opacity: 0.9 
-                                                                }}
-                                                            />
                                                         </div>
                                                     )}
+                                                    {/* Occupants Avatars - MOVED TO TOP */}
+                                                    <div className="relative h-16 w-full flex justify-center items-end -mb-2 z-20">
+                                                        {occupants.map((presence, idx) => {
+                                                            const member = enrichedClanMembers.find(m => m.id === presence.userId);
+                                                            if (!member) return null;
+
+                                                            // Force "Boneco" Config
+                                                            const forceBodyConfig = member.sovereign ? {
+                                                                ...member.sovereign,
+                                                                glyph: 'none',
+                                                                artifact: 'none',
+                                                                glyphPlate: 'none',
+                                                                artifactPlate: 'none',
+                                                                aura: 'none',
+                                                                sovereignPlate: 'none',
+                                                                orb: 'none',
+                                                                primaryDisplay: 'sovereign' as const
+                                                            } : undefined;
+
+                                                            // Stagger multiple occupants
+                                                            const offset = (idx - (occupants.length - 1) / 2) * 20;
+
+                                                            // Calculate Planner Progress based on active singular quests
+                                                            let plannerProgress = 0;
+
+                                                            const memberActiveQuests = clanQuests.filter(q => q.assigned_user_id === member.id && q.status === 'locked');
+                                                            if (memberActiveQuests.length > 0) {
+                                                                const totalProgress = memberActiveQuests.reduce((acc, q) => acc + (q.current_value / Math.max(1, q.target_value)), 0);
+                                                                plannerProgress = Math.min(100, (totalProgress / memberActiveQuests.length) * 100);
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={presence.userId}
+                                                                    className="absolute bottom-0 transition-all duration-500 hover:z-50 hover:scale-110 flex flex-col items-center"
+                                                                    style={{ transform: `translateX(${offset}px)` }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedMember(member);
+                                                                    }}
+                                                                >
+                                                                    {/* Circular Base (Subtle) */}
+                                                                    <div className="absolute bottom-1 w-10 h-3 bg-white/10 rounded-[100%] blur-[2px] shadow-[0_0_10px_rgba(255,255,255,0.1)] pointer-events-none" />
+
+                                                                    <div className="w-12 h-16 filter drop-shadow-lg pointer-events-none relative z-10">
+                                                                        {/* FORCE SOVEREIGN DISPLAY ALWAYS */}
+                                                                        {forceBodyConfig ? (
+                                                                            <Sovereign sovereignConfig={forceBodyConfig} />
+                                                                        ) : (
+                                                                            <div className="w-full h-full bg-gray-500 rounded-full flex items-center justify-center text-xs">
+                                                                                {member.nickname.substring(0, 2)}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    {/* Nametag */}
+                                                                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/70 px-1.5 py-0.5 rounded text-[8px] whitespace-nowrap text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                                                                        {member.nickname}
+                                                                    </div>
+
+                                                                    {/* Planner Progress Bar */}
+                                                                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-black/50 rounded-full overflow-hidden border border-white/10 z-40">
+                                                                        <div className="h-full bg-[var(--skin-accent-color)] transition-all duration-500" style={{ width: `${plannerProgress}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Slot Label (Transparent) */}
+                                                    <div className={`mb-0.5 z-10 flex flex-col items-center gap-[1px] ${slot.id === 'trono' ? '' : ''}`}>
+
+                                                        {/* Emoji (Left) */}
+                                                        <div className="w-[18px] h-[18px] min-w-[18px] min-h-[18px] rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex flex-none items-center justify-center shadow-lg overflow-hidden">
+                                                            <span className="text-[9px] leading-none drop-shadow-md flex items-center justify-center w-full h-full">
+                                                                {slot.emoji}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Health Bar - Fixed below text, discrete */}
+                                                        {slot.id !== 'trono' && (
+                                                            <div className="w-[20px] h-[3px] min-h-[3px] bg-black/60 rounded-full overflow-hidden flex-shrink-0">
+                                                                <div
+                                                                    className="h-full transition-all duration-500"
+                                                                    style={{
+                                                                        width: `${health}%`,
+                                                                        background: isBasicMode ? 'var(--skin-accent-color)' : 'var(--metal-gold)',
+                                                                        opacity: 0.9
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
                                     </div>
 
                                     {/* Aldeia Order Bar - Moved to Bottom */}
@@ -1105,11 +1115,11 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                 </span>
                                             </div>
                                             <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden backdrop-blur-sm">
-                                                <div 
-                                                    className="h-full rounded-full transition-all duration-500" 
-                                                    style={{ 
-                                                        width: `${isOfficeClan ? Math.min(100, (aldeiaOrder / 500) * 100) : aldeiaOrder}%`, 
-                                                        background: 'var(--metal-gold)' 
+                                                <div
+                                                    className="h-full rounded-full transition-all duration-500"
+                                                    style={{
+                                                        width: `${isOfficeClan ? Math.min(100, (aldeiaOrder / 500) * 100) : aldeiaOrder}%`,
+                                                        background: 'var(--metal-gold)'
                                                     }}
                                                 />
                                             </div>
@@ -1117,7 +1127,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                     </div>
                                 </div>
                             )}
-                            
+
                             {activeTab === 'membros' && (
                                 <div className="absolute inset-0 px-4 overflow-y-auto space-y-2 hide-scrollbar pt-4">
                                     {userClanRole === 'leader' && (
@@ -1164,14 +1174,14 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         <span>{enrichedClanMembers.length} total</span>
                                     </div>
                                     {enrichedClanMembers.map(member => (
-                                        <ClanMemberCard 
+                                        <ClanMemberCard
                                             key={member.id}
                                             member={member}
                                             isLeaderView={userClanRole === 'leader'}
                                             onKick={setMemberToKick}
                                         />
                                     ))}
-                                     <div className="mt-6 flex flex-col items-center space-y-2 text-center">
+                                    <div className="mt-6 flex flex-col items-center space-y-2 text-center">
                                         <button onClick={handleLeaveRequest} className="text-sm font-bold text-red-400 hover:text-red-300">Sair do Clã</button>
                                     </div>
                                 </div>
@@ -1181,29 +1191,28 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                 <div className="absolute inset-0 px-4 overflow-y-auto hide-scrollbar pt-4 pb-20">
                                     <div className="space-y-3">
                                         <div className="text-center text-xs font-bold uppercase tracking-wider text-gray-300">
-                                            {isOfficeClan || isBasicMode ? 'Ações da Temporada' : 'Missões da Temporada'}
+                                            {isOfficeClan || isBasicMode ? 'Ações da Temporada Ativas' : 'Missões da Temporada Ativas'}
                                         </div>
-                                        
-                                        {seasonClanQuests.length === 0 && (
+
+                                        {activeClanQuests.length === 0 && (
                                             <GlassCard variant="neutral" className="p-4 text-center text-sm text-gray-300">
                                                 {isOfficeClan || isBasicMode ? 'Nenhuma ação de temporada ativa.' : 'Nenhuma missão de temporada ativa.'}
                                             </GlassCard>
                                         )}
-                                        
-                                        {seasonClanQuests.map((quest) => {
+
+                                        {activeClanQuests.map((quest) => {
                                             const progress = getQuestProgress(quest);
                                             const isActive = isQuestActive(quest);
                                             const isClaimed = userProfile.completedSeasonMissions?.includes(quest.id);
 
                                             return (
-                                                <GlassCard 
-                                                    key={quest.id} 
-                                                    variant="accent" 
-                                                    className={`p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border-2 shadow-lg mt-3 ${
-                                                        isActive 
-                                                            ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
+                                                <GlassCard
+                                                    key={quest.id}
+                                                    variant="accent"
+                                                    className={`p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border-2 shadow-lg mt-3 ${isActive
+                                                            ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]'
                                                             : 'bg-gradient-to-br from-[#3d2b1f] to-[#1a100c] border-[#8b5cf6]/30 hover:border-[#8b5cf6]/60'
-                                                    }`}
+                                                        }`}
                                                     onClick={() => setSelectedQuest(quest)}
                                                 >
                                                     <div className="flex justify-between items-start relative z-10">
@@ -1229,8 +1238,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                             <span className="text-white font-mono">{Math.floor(progress)}%</span>
                                                         </div>
                                                         <div className="relative w-full bg-black/40 rounded-full h-2 overflow-hidden border border-white/5 p-[1px]">
-                                                            <div 
-                                                                className="h-full rounded-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-700 ease-out shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
+                                                            <div
+                                                                className="h-full rounded-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-700 ease-out shadow-[0_0_10px_rgba(255,255,255,0.2)]"
                                                                 style={{ width: `${progress}%` }}
                                                             />
                                                         </div>
@@ -1242,6 +1251,39 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                 </GlassCard>
                                             );
                                         })}
+
+                                        {/* AVAILABLE QUESTS FOR LEADER */}
+                                        {userClanRole === 'leader' && availableClanQuests.length > 0 && (
+                                            <>
+                                                <div className="pt-4 text-center text-xs font-bold uppercase tracking-wider text-[var(--skin-accent-color)] border-t border-white/5 mt-4">
+                                                    Disponíveis para Ativação
+                                                </div>
+                                                {availableClanQuests.map((quest) => (
+                                                    <GlassCard
+                                                        key={quest.id}
+                                                        variant="neutral"
+                                                        className="p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border border-white/10 hover:border-[var(--skin-accent-color)] mt-3 opacity-80 hover:opacity-100"
+                                                        onClick={() => setSelectedQuest(quest)}
+                                                    >
+                                                        <div className="flex justify-between items-start relative z-10">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-2xl grayscale opacity-70">{quest.icon || '🌟'}</span>
+                                                                <div>
+                                                                    <h4 className="font-bold text-sm leading-tight uppercase tracking-wide text-gray-300">{quest.title}</h4>
+                                                                    <p className="text-[10px] text-gray-500 line-clamp-2">{quest.description}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <span className="text-[10px] text-gray-500 font-mono">+{quest.reward_value} XP</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="w-full py-1.5 rounded-lg bg-white/5 border border-white/10 text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 group-hover:bg-[var(--skin-accent-color)]/20 group-hover:text-[var(--skin-accent-color)] transition-colors">
+                                                            Clique para Ativar
+                                                        </div>
+                                                    </GlassCard>
+                                                ))}
+                                            </>
+                                        )}
 
                                         <div className="pt-4 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500 border-t border-white/5 mt-4">
                                             {isOfficeClan || isBasicMode ? 'Outras Ações do Clã' : 'Outras Missões do Clã'}
@@ -1256,7 +1298,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         const isParticipating = myParticipations.includes(quest.id);
                                         const isLocked = quest.status === 'locked';
                                         const isMyLockedQuest = isLocked && quest.assigned_user_id === userProfile.id;
-                                        
+
                                         // If Type A and locked by someone else, show as locked
                                         if (quest.mission_type === 'singular' && isLocked && !isMyLockedQuest) {
                                             return (
@@ -1277,17 +1319,16 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                         const progressPercent = Math.min(100, (quest.current_value / Math.max(1, quest.target_value)) * 100);
 
                                         return (
-                                            <div 
-                                                key={quest.id} 
-                                                className={`p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border-2 shadow-lg mt-3 ${
-                                                    isParticipating 
-                                                        ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
+                                            <div
+                                                key={quest.id}
+                                                className={`p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border-2 shadow-lg mt-3 ${isParticipating
+                                                        ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]'
                                                         : 'bg-gradient-to-br from-[#3d2b1f] to-[#1a100c] border-[#8b5cf6]/30 hover:border-[#8b5cf6]/60'
-                                                }`}
+                                                    }`}
                                             >
                                                 {/* Metallic sheen overlay */}
                                                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                                                
+
                                                 <div className="flex justify-between items-start relative z-10">
                                                     <div className="space-y-1 max-w-[70%]">
                                                         <div className="flex items-center gap-2 mb-0.5">
@@ -1316,7 +1357,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                         <span className="text-[10px] text-yellow-500 font-mono">+{quest.reward_xp} XP</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* Progress Bar */}
                                                 <div className="space-y-1 relative z-10">
                                                     <div className="flex justify-between text-[10px] text-gray-400 font-mono">
@@ -1329,17 +1370,17 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                         </div>
                                                     )}
                                                     <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden border border-white/5">
-                                                        <div 
-                                                            className={`h-full rounded-full transition-all duration-500 ${isParticipating ? 'bg-[var(--skin-accent-color)]' : 'bg-gray-500'}`} 
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-500 ${isParticipating ? 'bg-[var(--skin-accent-color)]' : 'bg-gray-500'}`}
                                                             style={{ width: `${progressPercent}%` }}
                                                         />
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* Actions */}
                                                 <div className="relative z-10 pt-1">
                                                     {!isParticipating ? (
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleOptIn(quest)}
                                                             className="w-full py-2 rounded-lg bg-gradient-to-r from-amber-700/80 to-amber-900/80 hover:from-amber-600 hover:to-amber-800 text-amber-100 text-xs font-bold uppercase tracking-wider transition-colors border border-amber-500/30 shadow-md"
                                                         >
@@ -1353,7 +1394,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                                     Em Andamento
                                                                 </span>
                                                             </div>
-                                                            <button 
+                                                            <button
                                                                 onClick={() => handleAbortMission(quest)}
                                                                 className="w-full py-2 rounded-lg bg-red-900/40 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase tracking-wider hover:bg-red-900/60"
                                                             >
@@ -1368,7 +1409,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                 </div>
                             )}
                         </div>
-                        
+
                         {/* Footer Navigation */}
                         <div className="flex-none p-4 z-30 bg-gradient-to-t from-black/80 to-transparent">
                             <GlassCard variant="neutral" className="p-1">
@@ -1385,15 +1426,23 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     </div>
                 </div>
             </div>
-            
+
             {selectedQuest && (
-                <ClanMissionDetailModal 
-                    quest={selectedQuest} 
+                <ClanMissionDetailModal
+                    quest={selectedQuest}
                     progress={getQuestProgress(selectedQuest)}
                     currentValue={getQuestRawProgress(selectedQuest)}
                     isActive={isQuestActive(selectedQuest)}
                     onClose={() => setSelectedQuest(null)}
                     onTake={() => handleTakeQuest(selectedQuest)}
+                    onActivate={
+                        (userClanRole === 'leader' && !activeClanQuests.some(q => q.id === selectedQuest.id)) 
+                        ? () => {
+                            activateClanQuest(selectedQuest.id);
+                            setSelectedQuest(null);
+                        }
+                        : undefined
+                    }
                     onClaim={() => handleClaimQuest(selectedQuest)}
                     canClaim={!userProfile.completedSeasonMissions?.includes(selectedQuest.id) && getQuestProgress(selectedQuest) >= 100}
                 />
@@ -1401,18 +1450,18 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
             {subModal === 'manage' && <ClanManagementModal onClose={() => setSubModal(null)} />}
             {memberToKick && (
-                <ConfirmationModal 
-                    title={isOfficeClan || isBasicMode ? 'Remover da Equipe' : 'Expulsar Membro'} 
-                    message={isOfficeClan || isBasicMode ? `Tem certeza que deseja remover ${memberToKick.nickname} da equipe?` : `Tem certeza que deseja expulsar ${memberToKick.nickname} do clã?`} 
-                    onConfirm={handleKickMember} 
-                    onCancel={() => setMemberToKick(null)} 
+                <ConfirmationModal
+                    title={isOfficeClan || isBasicMode ? 'Remover da Equipe' : 'Expulsar Membro'}
+                    message={isOfficeClan || isBasicMode ? `Tem certeza que deseja remover ${memberToKick.nickname} da equipe?` : `Tem certeza que deseja expulsar ${memberToKick.nickname} do clã?`}
+                    onConfirm={handleKickMember}
+                    onCancel={() => setMemberToKick(null)}
                 />
             )}
             {subModal === 'leave' && (
-                <ConfirmationModal 
-                    title="Sair do Clã" 
+                <ConfirmationModal
+                    title="Sair do Clã"
                     message={userClanRole === 'leader' ? `Você é o último membro. Sair irá dissolver o clã "${clanName}". Tem certeza?` : `Tem certeza que deseja sair de ${clanName}?`}
-                    onConfirm={handleConfirmLeave} 
+                    onConfirm={handleConfirmLeave}
                     onCancel={() => setSubModal(null)}
                 />
             )}
@@ -1446,9 +1495,9 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 />
             )}
             {selectedMember && (
-                <SovereignDetailModal 
-                    member={selectedMember} 
-                    onClose={() => setSelectedMember(null)} 
+                <SovereignDetailModal
+                    member={selectedMember}
+                    onClose={() => setSelectedMember(null)}
                 />
             )}
         </Portal>

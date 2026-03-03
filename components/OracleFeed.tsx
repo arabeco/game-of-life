@@ -94,7 +94,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
                 <div className="flex-1 overflow-hidden relative">
                     {activeTab === 'chat' && (
                         <div className="absolute inset-0 animate-in slide-in-from-left-4 duration-200">
-                            <OracleChat onClose={onClose} />
+                            <OracleChat onClose={onClose} isEmbedded={true} />
                         </div>
                     )}
 

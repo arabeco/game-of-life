@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
 import { Arena, ActionType, ArenaFolder, Campaign } from '../types';
 import { PlusIcon, EyeIcon, XIcon, LayersIcon } from '../components/Icons';
@@ -141,6 +142,142 @@ export const ArenasView: React.FC = () => {
         setDraggedId(null);
     };
 
+    // Unified Interaction State (Mouse & Touch)
+    const interactionRef = useRef<{ 
+        id: string, 
+        type: 'arena' | 'campaign', 
+        startX: number, 
+        startY: number, 
+        element: HTMLElement
+    } | null>(null);
+    
+    const [dragPosition, setDragPosition] = useState<{x: number, y: number} | null>(null);
+
+    const handleInteractionStart = (e: React.MouseEvent | React.TouchEvent, id: string, type: 'arena' | 'campaign') => {
+        if (isSelectionMode && type === 'arena' && allCampaignArenaIds.includes(id)) return;
+        
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        
+        interactionRef.current = {
+            id: id,
+            type: type,
+            startX: clientX,
+            startY: clientY,
+            element: e.currentTarget as HTMLElement
+        };
+    };
+
+    const handleInteractionMove = (e: MouseEvent | TouchEvent) => {
+        if (!interactionRef.current) return;
+        
+        const clientX = 'touches' in e ? (e as TouchEvent).touches[0].clientX : (e as MouseEvent).clientX;
+        const clientY = 'touches' in e ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY;
+        
+        const deltaX = Math.abs(clientX - interactionRef.current.startX);
+        const deltaY = Math.abs(clientY - interactionRef.current.startY);
+        
+        // If moved more than threshold, start dragging
+        if (!draggedId && (deltaX > 10 || deltaY > 10)) {
+            setDraggedId(interactionRef.current.id);
+        }
+
+        if (draggedId) {
+            if (e.cancelable && e.type !== 'mousemove') e.preventDefault(); // Prevent scroll on touch, allow mouse move
+            
+            setDragPosition({ x: clientX, y: clientY });
+
+            // Find drop target manually via elementFromPoint
+            const targetEl = document.elementFromPoint(clientX, clientY);
+            const dropZone = targetEl?.closest('[data-drop-id]');
+            
+            if (dropZone) {
+                const dropId = dropZone.getAttribute('data-drop-id');
+                // Ensure we are not dropping on self
+                if (dropId && dropId !== draggedId) {
+                    const rect = dropZone.getBoundingClientRect();
+                    const side = (clientX - rect.left) > rect.width / 2 ? 'right' : 'left';
+                    setDragOverId(dropId);
+                    setDragOverSide(side);
+                }
+            } else {
+                setDragOverId(null);
+            }
+        }
+    };
+
+    const handleInteractionEnd = async (e: MouseEvent | TouchEvent) => {
+        if (!draggedId || !interactionRef.current) {
+            interactionRef.current = null;
+            setDragPosition(null);
+            return;
+        }
+
+        const draggedType = interactionRef.current.type;
+
+        // Logic similar to Drop
+        if (dragOverId) {
+             const isFolder = arenaFolders.some(f => f.id === dragOverId);
+             const isCampaign = campaigns.some(c => c.id === dragOverId);
+             const targetType = isFolder ? 'folder' : isCampaign ? 'campaign' : 'arena';
+             
+             // Check if target is a Priority section (only for Priority View)
+             if (arenasViewMode === 'priorities') {
+                 if (['alta', 'media', 'baixa'].includes(dragOverId)) {
+                     // Dropped directly on the priority header/zone
+                     await handlePriorityDrop({
+                         preventDefault: () => {},
+                         stopPropagation: () => {},
+                         dataTransfer: { getData: (key: string) => key === 'type' ? draggedType : '' } // Mock with type
+                     } as any, dragOverId as any, draggedId);
+                 } else {
+                     // Dropped on an item (Arena or Campaign) within a priority list
+                     // Find the priority of the target to know where we are dropping
+                     const targetArena = allArenas.find(a => a.id === dragOverId);
+                     const targetCampaign = campaigns.find(c => c.id === dragOverId);
+                     
+                     // Default to media if not found, though it should be found
+                     const targetPriority = targetArena?.priority || targetCampaign?.priority || 'media';
+                     
+                     await handlePriorityDrop({
+                         preventDefault: () => {},
+                         stopPropagation: () => {},
+                         dataTransfer: { getData: (key: string) => key === 'type' ? draggedType : '' } // Mock with type
+                     } as any, targetPriority as any, dragOverId);
+                 }
+             } else {
+                 // Standard drop (Arena swap/Campaign)
+                 await handleDrop({
+                     preventDefault: () => {},
+                     stopPropagation: () => {},
+                     dataTransfer: { getData: (key: string) => key === 'type' ? draggedType : '' } // Mock with type
+                 } as any, dragOverId, targetType);
+             }
+        }
+
+        setDraggedId(null);
+        setDragOverId(null);
+        setDragPosition(null);
+        interactionRef.current = null;
+    };
+
+    useEffect(() => {
+        const onMove = (e: MouseEvent | TouchEvent) => handleInteractionMove(e);
+        const onEnd = (e: MouseEvent | TouchEvent) => handleInteractionEnd(e);
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onEnd);
+        window.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('touchend', onEnd);
+
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onEnd);
+            window.removeEventListener('touchmove', onMove);
+            window.removeEventListener('touchend', onEnd);
+        };
+    }, [draggedId, arenasViewMode, isSelectionMode, dragOverId]); // Add necessary dependencies
+
     const handleDragStart = (e: React.DragEvent, id: string, type: 'arena' | 'campaign') => {
         console.log('DRAG START:', id, type, 'SelectionMode:', isSelectionMode);
         // Prevent dragging locked arenas in selection mode
@@ -159,16 +296,12 @@ export const ArenasView: React.FC = () => {
 
     const handleDragOver = (e: React.DragEvent, id: string) => {
         e.preventDefault();
+        e.stopPropagation(); // Essential to allow drop!
         e.dataTransfer.dropEffect = 'move';
         
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const x = e.clientX - rect.left;
         const side = x > rect.width / 2 ? 'right' : 'left';
-        
-        // Only log if changing (to avoid spam)
-        if (dragOverId !== id || dragOverSide !== side) {
-             console.log('DRAG OVER:', id, side);
-        }
         
         setDragOverId(id);
         setDragOverSide(side);
@@ -190,7 +323,7 @@ export const ArenasView: React.FC = () => {
         const idFromState = draggedId;
         const draggedIdFromData = e.dataTransfer.getData('id');
         const finalDraggedId = idFromState || draggedIdFromData;
-        const draggedType = e.dataTransfer.getData('type') || 'arena';
+        const draggedType = (e.dataTransfer.getData('type') || 'arena') as 'arena' | 'campaign';
         const side = dragOverSide || 'left';
         
         console.log('DROP DETAILS:', { finalDraggedId, draggedType, side });
@@ -211,6 +344,7 @@ export const ArenasView: React.FC = () => {
 
         // If in Edit/Selection Mode, handle Grouping Logic
         if (isSelectionMode) {
+            // ... (rest of selection mode logic)
             console.log('PROCESSING SELECTION MODE DROP');
             if (targetType === 'campaign') {
                 if (draggedType !== 'arena') return;
@@ -264,15 +398,13 @@ export const ArenasView: React.FC = () => {
         }
         
         console.log('PROCESSING STANDARD MODE DROP');
-        // ... rest of the function
-
 
         // Standard Drag Logic (Not in Edit Mode)
         if (targetType === 'folder') {
             await moveArenaToFolder(finalDraggedId, targetId);
         } else if (arenasViewMode === 'free') {
              // In Free Mode, reorder any entity
-             await reorderEntity(finalDraggedId, draggedType as 'arena' | 'campaign', targetId, targetType as 'arena' | 'campaign', side);
+             await reorderEntity(finalDraggedId, draggedType, targetId, targetType, side);
         } else if (targetType === 'arena') {
              const targetArena = allArenas.find(a => a.id === targetId);
              if (!targetArena) return;
@@ -379,12 +511,9 @@ export const ArenasView: React.FC = () => {
         return (
             <div
                 key={campaign.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, campaign.id, 'campaign')}
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => handleDragOver(e, campaign.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, campaign.id, 'campaign')}
+                data-drop-id={campaign.id}
+                onMouseDown={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
+                onTouchStart={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
                 onClick={() => setSelectedCampaignId(campaign.id)}
                 className={`relative col-span-2 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''}`}
                 style={{ borderColor: userProfile.skinColor || 'var(--skin-accent-color)' }}
@@ -433,9 +562,49 @@ export const ArenasView: React.FC = () => {
         );
     };
 
+    // Helper to render Drag Preview
+    const renderDragPreview = () => {
+        if (!draggedId || !dragPosition) return null;
+        
+        const draggedArena = allArenas.find(a => a.id === draggedId);
+        const draggedCampaign = campaigns.find(c => c.id === draggedId);
+        const name = draggedArena?.name || draggedCampaign?.title || 'Moving...';
+        const type = draggedArena ? 'Arena' : 'Campaign';
+        
+        return createPortal(
+            <div 
+                style={{
+                    position: 'fixed',
+                    left: dragPosition.x,
+                    top: dragPosition.y,
+                    transform: 'translate(-50%, -50%) rotate(5deg) scale(1.05)',
+                    pointerEvents: 'none',
+                    zIndex: 9999,
+                    width: '220px',
+                }}
+                className="pointer-events-none"
+            >
+                 <div className="bg-[#1a1a1a] border-2 border-[var(--skin-accent-color)] rounded-xl p-0 shadow-2xl flex flex-col gap-0 opacity-100 overflow-hidden w-full h-full">
+                    {/* Render a miniature version of the card or just a clean label */}
+                    <div className="bg-black/50 p-2 border-b border-white/10 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)]"></div>
+                        <span className="text-[10px] uppercase font-black tracking-widest text-[var(--skin-accent-color)]">{type}</span>
+                    </div>
+                    <div className="p-3 bg-[#1a1a1a]">
+                        <h3 className="font-bold text-white truncate text-sm leading-tight">
+                            {name}
+                        </h3>
+                    </div>
+                 </div>
+            </div>,
+            document.body
+        );
+    };
+
     if (isBuilderMode) {
         return (
             <>
+                {/* Drag Preview in Builder Mode too if needed, though mostly unused there */}
                 <div className="p-4 space-y-4 min-h-full">
                     <div className="bg-black/30 border border-[var(--skin-accent-color)]/30 rounded-2xl p-3 space-y-1">
                         <div className="text-xs font-bold uppercase tracking-wider accent-text">Modo Arquiteto</div>
@@ -602,6 +771,7 @@ export const ArenasView: React.FC = () => {
 
     return (
         <>
+            {renderDragPreview()}
             <div className="px-4 pb-4 pt-4 relative min-h-full">
                 <div className="flex items-center justify-end gap-2 mb-4 z-[60]">
                     <button 
@@ -649,10 +819,7 @@ export const ArenasView: React.FC = () => {
                                 return (
                                      <div 
                                         key={folder.id}
-                                        onDragOver={(e) => handleDragOver(e, folder.id)}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={(e) => handleDrop(e, folder.id, 'folder')}
-
+                                        data-drop-id={folder.id}
                                         onClick={() => setSelectedFolderId(folder.id)}
                                         className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
                                     >
@@ -704,19 +871,17 @@ export const ArenasView: React.FC = () => {
                                     return (
                                         <div
                                             key={arena.id}
-                                            draggable={true}
-                                            onDragStart={(e) => handleDragStart(e, arena.id, 'arena')}
-                                            onDragEnd={handleDragEnd}
-                                            onDragOver={(e) => handleDragOver(e, arena.id)}
-                                            onDragLeave={handleDragLeave}
-                                            onDrop={(e) => handleDrop(e, arena.id, 'arena')}
+                                            data-drop-id={arena.id}
+                                            onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
+                                            onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
                                             className={`relative transition-all duration-200 select-none cursor-grab active:cursor-grabbing
-                                                ${isDragOver ? 'z-20' : 'z-0'} 
+                                                ${isDragOver ? 'z-50' : 'z-10'} 
                                                 ${isDragged ? 'opacity-30 brightness-50' : ''} 
                                                 ${isSelectionMode && alreadyInCampaign ? 'opacity-30 grayscale cursor-not-allowed' : ''}
                                             `}
                                             onClick={() => isSelectionMode ? null : setSelectedArenaId(arena.id)}
                                         >
+                                            <div className="absolute inset-0 z-50 pointer-events-auto" />
                                             {/* Indicador visual de inserção magnética */}
                                             {isDragOver && (
                                                 <div className={`absolute top-0 bottom-0 w-1 bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--skin-accent-color)] z-30 pointer-events-none rounded-full
@@ -749,12 +914,18 @@ export const ArenasView: React.FC = () => {
                         <div className="space-y-6">
                             {(['alta', 'media', 'baixa'] as const).map(p => {
                                 const isCollapsed = collapsedSections[`priority-${p}`];
+                                const isDragOverGroup = dragOverId === p;
+                                const itemsInPriority = [
+                                    ...campaigns.filter(c => (c.priority === p) || (!c.priority && p === 'media')),
+                                    ...rootArenas.filter(a => (a.priority === p) || (!a.priority && p === 'media'))
+                                ];
+                                const isEmpty = itemsInPriority.length === 0;
+
                                 return (
                                     <div 
                                         key={p} 
-                                        onDragOver={(e) => e.preventDefault()}
-                                        onDrop={(e) => handlePriorityDrop(e, p)}
-                                        className="space-y-2"
+                                        data-drop-id={p} // Drop zone for priority group
+                                        className={`space-y-2 rounded-2xl transition-all duration-200 ${isDragOverGroup ? 'bg-[var(--skin-accent-color)]/10 ring-2 ring-[var(--skin-accent-color)] p-2' : ''}`}
                                     >
                                         <div 
                                             className="flex items-center gap-2 px-2 cursor-pointer group"
@@ -768,7 +939,12 @@ export const ArenasView: React.FC = () => {
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
-                                            <div className="grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <div className={`grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'min-h-[80px] border-2 border-dashed border-white/5 rounded-xl flex items-center justify-center' : ''}`}>
+                                                {isEmpty && (
+                                                    <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">
+                                                        Arraste aqui
+                                                    </span>
+                                                )}
                                                 {[
                                                     ...campaigns.filter(c => (c.priority === p) || (!c.priority && p === 'media')).map(c => ({ ...c, type: 'campaign' as const, priorityOrder: c.priorityOrder || 0 })),
                                                     ...rootArenas.filter(a => (a.priority === p) || (!a.priority && p === 'media')).map(a => ({ ...a, type: 'arena' as const, priorityOrder: a.priorityOrder || 0 }))
@@ -799,17 +975,18 @@ export const ArenasView: React.FC = () => {
                                                     const isDragged = draggedId === arena.id;
                                                     
                                                     return (
-                                                        <div
-                                                            key={arena.id}
-                                                            draggable={true}
-                                                            onDragStart={(e) => handleDragStart(e, arena.id, 'arena')}
-                                                            onDragEnd={handleDragEnd}
-                                                            onDragOver={(e) => handleDragOver(e, arena.id)}
-                                                            onDragLeave={handleDragLeave}
-                                                            onDrop={(e) => isSelectionMode ? handleDrop(e, arena.id, 'arena') : handlePriorityDrop(e, p, arena.id)}
-                                                            className={`relative transition-all duration-300 select-none cursor-grab active:cursor-grabbing ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : ''} ${isDragged ? 'opacity-30 brightness-50' : ''}`}
-                                                            onClick={() => isSelectionMode ? null : setSelectedArenaId(arena.id)} // Disable selection click, enable detail click only if not selection mode
-                                                        >
+                                        <div
+                                            key={arena.id}
+                                            data-drop-id={arena.id}
+                                            onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
+                                            onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
+                                            className={`relative transition-all duration-300 select-none cursor-grab active:cursor-grabbing 
+                                                ${isDragOver ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : 'z-10'} 
+                                                ${isDragged ? 'opacity-30 brightness-50' : ''}`}
+                                            style={{ touchAction: 'none' }}
+                                            onClick={() => isSelectionMode ? null : setSelectedArenaId(arena.id)} // Disable selection click, enable detail click only if not selection mode
+                                        >
+                                                            <div className="absolute inset-0 z-50 pointer-events-auto" />
                                                             <ArenaCard 
                                                                 arena={arena} 
                                                                 assetName={getAssetById(arena.assetId)?.name}
@@ -888,15 +1065,16 @@ export const ArenasView: React.FC = () => {
                                                     return (
                                                         <div 
                                                             key={arena.id} 
-                                                            draggable={true}
-                                                            onDragStart={(e) => handleDragStart(e, arena.id, 'arena')}
-                                                            onDragEnd={handleDragEnd}
-                                                            onDragOver={(e) => handleDragOver(e, arena.id)}
-                                                            onDragLeave={handleDragLeave}
-                                                            onDrop={(e) => handleDrop(e, arena.id, 'arena')}
-                                                            className={`relative select-none cursor-grab active:cursor-grabbing ${isSelectionMode && alreadyInCampaign ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                                                            data-drop-id={arena.id}
+                                                            onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
+                                                            onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
+                                                            className={`relative select-none cursor-grab active:cursor-grabbing z-10
+                                                                ${isSelectionMode && alreadyInCampaign ? 'opacity-30 grayscale cursor-not-allowed' : ''}
+                                                                ${dragOverId === arena.id ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-xl' : ''}
+                                                            `}
                                                             onClick={() => isSelectionMode && alreadyInCampaign ? null : (isSelectionMode ? null : setSelectedArenaId(arena.id))}
                                                         >
+                                                            <div className="absolute inset-0 z-50 pointer-events-auto" />
                                                             <ArenaCard 
                                                                 arena={arena} 
                                                                 assetName={group.name}
@@ -952,7 +1130,7 @@ export const ArenasView: React.FC = () => {
             )}
             {isCreatingArena && (
                 <NewArenaModal 
-                    assetId="" // Let user choose inside modal
+                    isOpen={true}
                     onClose={() => setIsCreatingArena(false)} 
                     onArenaCreated={handleArenaCreated}
                 />

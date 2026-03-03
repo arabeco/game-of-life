@@ -232,6 +232,28 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const tasks = (propTasks || contextTasks) as any[];
     const [skinTone, setSkinTone] = useState('#F0C843');
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
+    const [linkType, setLinkType] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Fetch link type for icon
+        const fetchLinkType = async () => {
+             const { data: sessionData } = await supabase.auth.getSession();
+             const uid = sessionData.session?.user.id;
+             if (!uid) return;
+             
+             const { data } = await supabase.from('relationship_links')
+                 .select('link_type')
+                 .or(`mentor_id.eq.${uid},pupil_id.eq.${uid}`)
+                 .eq('arena_id', arena.id)
+                 .is('ended_at', null)
+                 .maybeSingle();
+             
+             if (data) {
+                 setLinkType(data.link_type);
+             }
+        };
+        fetchLinkType();
+    }, [arena.id]);
 
     const handleActionDragStart = (e: React.DragEvent, actionId: string) => {
         e.stopPropagation();
@@ -366,14 +388,14 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const baseClasses = `arena-plate p-1 rounded-lg border flex flex-col justify-between relative overflow-hidden transition-all duration-300 select-none pointer-events-none`;
     const styleClasses = isOverview 
         ? 'h-26' 
-        : 'h-24';
+        : variant === 'dossier' ? 'h-full w-full' : 'h-24';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
     const cardStyle: React.CSSProperties = {
         borderColor: skinColor,
         backgroundImage: 'linear-gradient(135deg, rgba(22,22,22,0.95) 0%, rgba(10,10,10,1) 55%, rgba(18,18,18,0.9) 100%)',
     };
     const tiltStyle: React.CSSProperties = {
-        transform: 'perspective(900px) rotateX(2.2deg) rotateY(-2deg)',
+        transform: 'none',
     };
     
     return (
@@ -386,7 +408,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             <div className="arena-plasma pointer-events-none">
                 <PlasmaCanvas color={skinTone} opacity={0.35} className="arena-plasma-canvas" width={320} height={220} />
             </div>
-            <div className="text-center relative z-10 -mt-2 pointer-events-none">
+            <div className="text-center relative z-10 -mt-2 pointer-events-none select-none">
                 <div className="arena-icon-slot">
                     <span className="arena-icon">
                         {getIcon()}
@@ -403,6 +425,14 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                             <UsersIcon className="w-3 h-3" />
                             <span className="font-mono">{participants}</span>
                         </div>
+                    </div>
+                )}
+
+                {linkType && (
+                    <div className="absolute top-1 left-1 z-20">
+                        {linkType === 'competicao' && <span title="Desafio PVP" className="text-[10px] bg-red-500/20 text-red-400 px-1 rounded border border-red-500/30">⚔️</span>}
+                        {linkType === 'mentoria' && <span title="Mentoria" className="text-[10px] bg-blue-500/20 text-blue-400 px-1 rounded border border-blue-500/30">👁️</span>}
+                        {linkType === 'parceria' && <span title="Parceria" className="text-[10px] bg-purple-500/20 text-purple-400 px-1 rounded border border-purple-500/30">🤝</span>}
                     </div>
                 )}
             </div>

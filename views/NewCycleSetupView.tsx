@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useGame, ArenaSetupChange } from '../contexts/GameContext';
+import { useGame, ArenaSetupChange, getLocalDateString } from '../contexts/GameContext';
 import { Arena } from '../types';
 import { GlassCard } from '../components/GlassCard';
 import { EditIcon, RefreshCwIcon, ArchiveBoxIcon, Trash2Icon, XIcon, ChevronLeftIcon, CalendarIcon } from '../components/Icons';
@@ -30,7 +30,7 @@ const ArenaSetupCard: React.FC<ArenaSetupCardProps> = ({ arena, status, onStatus
             </GlassCard>
         );
     }
-    
+
     return (
         <GlassCard variant="neutral" className={`p-3 transition-all ${isArchived ? 'bg-gray-800/50 opacity-60' : ''}`}>
             <div className="flex items-center justify-between">
@@ -40,10 +40,10 @@ const ArenaSetupCard: React.FC<ArenaSetupCardProps> = ({ arena, status, onStatus
                 </div>
                 <div className="flex items-center space-x-1">
                     <button onClick={() => onStatusChange(isArchived ? 'renew' : 'archive')} className={`p-2 rounded-full ${!isArchived ? 'bg-white/10' : ''}`} title={isArchived ? 'Renovar' : 'Arquivar'}>
-                        {isArchived ? <RefreshCwIcon className="w-4 h-4 text-green-400"/> : <ArchiveBoxIcon className="w-4 h-4"/>}
+                        {isArchived ? <RefreshCwIcon className="w-4 h-4 text-green-400" /> : <ArchiveBoxIcon className="w-4 h-4" />}
                     </button>
-                     <button onClick={onEdit} className="p-2 rounded-full" title="Editar"><EditIcon className="w-4 h-4" /></button>
-                     <button onClick={() => onStatusChange('delete')} className="p-2 rounded-full" title="Remover"><Trash2Icon className="w-4 h-4 text-red-500" /></button>
+                    <button onClick={onEdit} className="p-2 rounded-full" title="Editar"><EditIcon className="w-4 h-4" /></button>
+                    <button onClick={() => onStatusChange('delete')} className="p-2 rounded-full" title="Remover"><Trash2Icon className="w-4 h-4 text-red-500" /></button>
                 </div>
             </div>
         </GlassCard>
@@ -64,9 +64,9 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     const [showConfirm, setShowConfirm] = useState(false);
     const [cycleName, setCycleName] = useState(`Ciclo de ${new Date().toLocaleString('default', { month: 'long' })}`);
     const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-    const [cycleEndDate, setCycleEndDate] = useState(activeSeason ? activeSeason.endDate : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    const [cycleEndDate, setCycleEndDate] = useState(activeSeason ? activeSeason.endDate : getLocalDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)));
     const [isDatePickerOpen, setDatePickerOpen] = useState(false);
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
 
     const handleStatusChange = (arenaId: string, status: ArenaStatus) => {
         setArenaChanges(prev => new Map(prev).set(arenaId, status));
@@ -80,7 +80,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     };
 
     const handleDateSelect = (date: Date) => {
-        setCycleEndDate(date.toISOString().split('T')[0]);
+        setCycleEndDate(getLocalDateString(date));
         setDatePickerOpen(false);
     };
 
@@ -90,11 +90,11 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                 <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
-                           <button onClick={onCancel} className="p-2 -ml-2"><ChevronLeftIcon /></button>
-                           <h1 className="text-xl font-black uppercase tracking-widest">Setup de Ciclo</h1>
+                            <button onClick={onCancel} className="p-2 -ml-2"><ChevronLeftIcon /></button>
+                            <h1 className="text-xl font-black uppercase tracking-widest">Setup de Ciclo</h1>
                         </div>
                     </div>
-                    
+
                     <div className="flex-shrink-0 space-y-3 mb-4">
                         {activeSeason && (
                             <GlassCard variant="accent" className="p-3 bg-gradient-to-r from-[var(--skin-accent-color)]/10 to-[var(--skin-accent-color)]/5 border-[var(--skin-accent-color)]/30">
@@ -112,16 +112,16 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                         )}
 
                         <GlassCard variant="neutral" className="p-3">
-                             <h3 className='text-center text-xs font-bold uppercase tracking-wider text-gray-400 mb-2'>Detalhes da Campanha</h3>
-                             <div className="space-y-2">
-                                 <input 
+                            <h3 className='text-center text-xs font-bold uppercase tracking-wider text-gray-400 mb-2'>Detalhes da Campanha</h3>
+                            <div className="space-y-2">
+                                <input
                                     type='text'
                                     placeholder='Nome do Novo Ciclo'
                                     value={cycleName}
                                     onChange={e => setCycleName(e.target.value)}
-                                    className='w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 focus:border-[var(--skin-accent-color)] outline-none transition-colors' 
+                                    className='w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 focus:border-[var(--skin-accent-color)] outline-none transition-colors'
                                 />
-                                <button 
+                                <button
                                     onClick={() => setDatePickerOpen(true)}
                                     className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 flex items-center justify-between hover:bg-black/60 transition-colors"
                                 >
@@ -135,7 +135,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                     <div className="flex-grow overflow-y-auto space-y-2 pr-2">
                         <p className="text-sm text-gray-400 pb-2">Revise suas arenas. Arenas arquivadas não aparecerão no seu Planner até serem renovadas.</p>
                         {arenas.map(arena => (
-                            <ArenaSetupCard 
+                            <ArenaSetupCard
                                 key={arena.id}
                                 arena={arena}
                                 status={arenaChanges.get(arena.id) || 'renew'}

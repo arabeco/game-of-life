@@ -539,9 +539,9 @@ export const ASSETS_DATA: Asset[] = [
       { id: 'proposito.missao', label: 'Missão de Vida', type: 1, inputType: 'textarea', value: 'Minha missão...' },
       { id: 'proposito.personalidade1', label: 'MBTI', type: 3, inputType: 'wheelpick', options: ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'], value: 'INTJ' },
       { id: 'proposito.personalidade2', label: 'Signo', type: 3, inputType: 'wheelpick', options: ['Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'], value: 'Áries' },
-      { id: 'proposito.virtude1', label: 'Virtude 1', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança'], value: 'Coragem' },
-      { id: 'proposito.virtude2', label: 'Virtude 2', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança'], value: 'Sabedoria' },
-      { id: 'proposito.virtude3', label: 'Virtude 3', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança'], value: 'Justiça' },
+      { id: 'proposito.virtude1', label: 'Virtude 1', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança', 'Resiliência', 'Humildade', 'Paciência', 'Gratidão', 'Generosidade', 'Lealdade'], value: 'Coragem' },
+      { id: 'proposito.virtude2', label: 'Virtude 2', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança', 'Resiliência', 'Humildade', 'Paciência', 'Gratidão', 'Generosidade', 'Lealdade'], value: 'Sabedoria' },
+      { id: 'proposito.virtude3', label: 'Virtude 3', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança', 'Resiliência', 'Humildade', 'Paciência', 'Gratidão', 'Generosidade', 'Lealdade'], value: 'Justiça' },
     ]
   },
   {
@@ -591,10 +591,10 @@ export const ASSETS_DATA: Asset[] = [
       { id: 'fisico.basico2', label: 'Gênero', type: 3, inputType: 'wheelpick', options: ['Masculino', 'Feminino', 'Não-binário', 'Outro'], value: 'Masculino' },
       { id: 'fisico.medida1', label: 'Peso (kg)', type: 3, inputType: 'slider', range: { min: 30, max: 200 }, value: 70 },
       { id: 'fisico.medida2', label: 'Altura (cm)', type: 3, inputType: 'slider', range: { min: 140, max: 220 }, value: 175 },
-      { id: 'fisico.medida3', label: 'Atributo', type: 3, inputType: 'wheelpick', options: ['Força', 'Agilidade', 'Inteligência', 'Resistência', 'Carisma', 'Sorte'], value: 'Força' },
-      { id: 'fisico.forma', label: 'Forma Física', type: 1, inputType: 'textarea', value: 'Descrição da forma física...' },
-      { id: 'fisico.habito1', label: 'Atividade', type: 3, inputType: 'text', value: 'Musculação' },
-      { id: 'fisico.habito2', label: 'Dieta', type: 3, inputType: 'text', value: 'Balanceada' },
+      { id: 'fisico.forma', label: 'Forma Física', type: 1, inputType: 'wheelpick', options: ['Sedentário', 'Iniciante', 'Intermediário', 'Avançado', 'Atleta'], value: 'Iniciante' },
+      { id: 'fisico.medida3', label: 'Atributo', type: 4, inputType: 'wheelpick', options: ['Força', 'Agilidade', 'Inteligência', 'Resistência', 'Carisma', 'Sorte'], value: 'Força' },
+      { id: 'fisico.habito1', label: 'Atividade', type: 3, inputType: 'wheelpick', options: ['Musculação', 'Corrida', 'Natação', 'Ciclismo', 'Crossfit', 'Yoga', 'Pilates', 'Artes Marciais', 'Dança', 'Esportes Coletivos', 'Calistenia', 'Caminhada'], value: 'Musculação' },
+      { id: 'fisico.habito2', label: 'Dieta', type: 3, inputType: 'wheelpick', options: ['Balanceada', 'Onívora', 'Vegetariana', 'Vegana', 'Low Carb', 'Cetogênica', 'Jejum Intermitente', 'Flexível'], value: 'Balanceada' },
     ]
   },
   {

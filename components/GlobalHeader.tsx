@@ -77,9 +77,9 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
             <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-transparent backdrop-blur-sm safe-area-top" style={{ top: topOffsetPx }}>
                 <div className="max-w-7xl mx-auto relative flex items-center justify-between h-20 px-4 text-xs font-semibold text-gray-300">
                     {/* Date Chip */}
-                    <div className={chipStyle}>
-                        <span className="text-[10px] font-black tracking-widest text-[var(--skin-accent-color)] uppercase leading-none mb-0.5">{day}</span>
-                        <span className="text-[10px] font-bold text-white tracking-widest leading-none">{dateStr}</span>
+                    <div className="flex flex-col items-center justify-center w-20 h-9 flex-shrink-0 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl relative z-50 shadow-lg">
+                        <span className="text-[10px] font-black tracking-widest text-[var(--skin-accent-color)] uppercase leading-none mb-0.5 luxe-title-ornate">{day}</span>
+                        <span className="text-[12px] font-bold text-[var(--skin-accent-color)] tracking-widest leading-none luxe-title-ornate">{dateStr}</span>
                     </div>
                     
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[calc(100%-12rem)] flex items-center justify-center pointer-events-none">
@@ -165,8 +165,8 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                     </div>
 
                     {/* Time Chip */}
-                    <div className={chipStyle}>
-                        <span className="text-[14px] font-black tracking-widest text-white leading-none">{timeStr}</span>
+                    <div className="flex flex-col items-center justify-center w-20 h-9 flex-shrink-0 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl relative z-50 shadow-lg">
+                        <span className="text-[16px] font-black tracking-widest text-[var(--skin-accent-color)] leading-none luxe-title-ornate">{timeStr}</span>
                     </div>
                 </div>
             </header>

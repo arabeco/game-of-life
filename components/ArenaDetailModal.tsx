@@ -188,7 +188,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     const availableFriends = friends.filter(f => isUuid(f.id));
 
-    const sendObserverInvite = async (friend: UserProfile) => {
+    const sendObserverInvite = async (friend: UserProfile, type: 'mentoria' | 'competicao' | 'parceria') => {
         setLinkStatus(null);
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData.session?.user.id;
@@ -201,12 +201,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             return;
         }
 
-        const inviteType = arena.name === "Quem corre 15km antes" ? 'competicao' : 'mentoria';
-
         const { error } = await supabase.from('relationship_link_invites').insert({
             sender_id: uid,
             recipient_id: friend.id,
-            link_type: inviteType,
+            link_type: type,
             arena_id: arena.id,
             arena_snapshot: { name: editableArena.name || arena.name, icon: editableArena.icon || arena.icon },
             status: 'pending',
@@ -215,7 +213,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             setLinkStatus(error.message);
             return;
         }
-        setLinkStatus(`Convite enviado para ${friend.nickname}.`);
+        setLinkStatus(`Convite de ${type === 'competicao' ? 'Desafio' : type === 'parceria' ? 'Parceria' : 'Mentoria'} enviado para ${friend.nickname}.`);
         window.setTimeout(() => {
             setIsLinkingObserver(false);
             setLinkStatus(null);
@@ -438,10 +436,17 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setIsLinkingObserver(false)}>
                     <div className="bg-black/70 border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center">
-                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">ESCOLHA SEU JUIZ</div>
+                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">VINCULAR ALIADO</div>
                             <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">×</span></button>
                         </div>
-                        <div className="text-xs text-gray-400">Convide um aliado para observar {editableArena.name || arena.name}.</div>
+                        <div className="text-xs text-gray-400">Escolha o tipo de vínculo e convide um amigo para {editableArena.name || arena.name}.</div>
+                        
+                        <div className="flex gap-2 mb-2">
+                             <button onClick={() => setCurrentLinkType('mentoria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${currentLinkType === 'mentoria' ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/30 text-gray-400 border-white/10'}`}>Mentoria</button>
+                             <button onClick={() => setCurrentLinkType('competicao')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${currentLinkType === 'competicao' ? 'bg-red-500 text-white border-red-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Desafio</button>
+                             <button onClick={() => setCurrentLinkType('parceria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${currentLinkType === 'parceria' ? 'bg-blue-500 text-white border-blue-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Parceria</button>
+                        </div>
+
                         {availableFriends.length === 0 ? (
                             <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID válido.</div>
                         ) : (
@@ -449,7 +454,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 {availableFriends.map(friend => (
                                     <button
                                         key={friend.id}
-                                        onClick={() => sendObserverInvite(friend)}
+                                        onClick={() => sendObserverInvite(friend, (currentLinkType as any) || 'mentoria')}
                                         className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-black/30 border border-white/10 flex items-center gap-3"
                                     >
                                         <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
@@ -458,6 +463,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                         <div className="flex-1">
                                             <div className="text-sm font-bold text-white">{friend.nickname}</div>
                                             <div className="text-[10px] text-gray-500">{friend.isOnline ? 'ONLINE' : 'OFFLINE'}</div>
+                                        </div>
+                                        <div className="p-2 bg-white/5 rounded-full">
+                                            <SendIcon className="w-4 h-4 text-gray-400" />
                                         </div>
                                     </button>
                                 ))}

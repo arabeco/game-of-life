@@ -7,7 +7,7 @@ import { Report, ChestType } from '../types';
 import { getScoreGrade } from '../utils/dateUtils';
 import { VideoPlayer } from './VideoPlayer';
 import { resolveItemDef } from '../constants/items';
-import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon } from './Icons';
 
 // Helper functions (duplicated to avoid circular dependencies)
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
@@ -24,6 +24,7 @@ interface ReportResultCarouselProps {
     expGained?: number;           // Added for reward slide
     insignias?: string[];         // Added for reward slide
     onOpenChest?: () => void;     // Trigger chest opening
+    onDelete?: () => void;        // Added for delete action
 }
 
 const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
@@ -72,7 +73,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     chest,
     expGained,
     insignias = [],
-    onOpenChest
+    onOpenChest,
+    onDelete
 }) => {
     const { userProfile } = useGame();
     const userSkinId = userProfile.skin;
@@ -475,6 +477,16 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             >
                                 <ShareIcon className="w-5 h-5" />
                             </button>
+
+                            {onDelete && (
+                                <button 
+                                    onClick={onDelete} 
+                                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-red-500 hover:text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all shrink-0" 
+                                    title="Deletar Ciclo"
+                                >
+                                    <Trash2Icon className="w-5 h-5" />
+                                </button>
+                            )}
                             
                             <button 
                                 onClick={onStartNewCycle || onOk} 

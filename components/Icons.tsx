@@ -79,12 +79,13 @@ export const GameLogoIcon: React.FC<{ className?: string }> = ({ className = "w-
             </filter>
         </defs>
         <g filter="url(#logo-depth)">
-            <path d="M50 6 L94 50 L50 94 L6 50 Z" fill="url(#logo-gold-main)" stroke="url(#logo-gold-edge)" strokeWidth="1.2" />
-            <path d="M50 12 L88 50 L50 88 L12 50 Z" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-            <path d="M50 20 L80 50 L50 80 L20 50 Z" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="0.8" />
-            <circle cx="50" cy="50" r="20" fill="url(#logo-core-glow)" filter="url(#logo-core-glow-filter)" />
-            <circle cx="50" cy="50" r="16" fill="url(#logo-core)" />
-            <circle cx="50" cy="50" r="11" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1" />
+            {/* Wind Rose / Star Shape */}
+            <path d="M50 0 L65 35 L100 50 L65 65 L50 100 L35 65 L0 50 L35 35 Z" fill="url(#logo-gold-main)" stroke="url(#logo-gold-edge)" strokeWidth="1.5" />
+            <path d="M50 15 L60 40 L85 50 L60 60 L50 85 L40 60 L15 50 L40 40 Z" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
+            
+            {/* Central Core */}
+            <circle cx="50" cy="50" r="12" fill="url(#logo-core-glow)" filter="url(#logo-core-glow-filter)" />
+            <circle cx="50" cy="50" r="8" fill="url(#logo-core)" />
         </g>
     </svg>
 );

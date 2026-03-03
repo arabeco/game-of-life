@@ -17,6 +17,7 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
             case 1: return 'col-span-6'; // Wide
             case 2: return 'col-span-2 aspect-square'; // Square
             case 3: return 'col-span-3'; // Rect
+            case 4: return 'col-span-6 w-2/3 mx-auto'; // Centered Wide
             default: return 'col-span-6';
         }
     }
@@ -51,15 +52,15 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
     );
 
     return (
-        <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
-            <h3 className="text-[10px] font-semibold text-white uppercase tracking-wider">{slot.label}</h3>
+        <div className={`text-center space-y-0.5 flex flex-col ${getGridClasses(slot.type)}`}>
+            <h3 className="text-[9px] font-semibold text-white/80 uppercase tracking-wider">{slot.label}</h3>
             <button
                 onClick={isEditing ? onClick : undefined}
-                className={`relative w-full flex-grow mx-auto p-2 rounded-xl bg-black/40 border border-[color:var(--skin-accent-color)] transition-colors flex items-center justify-center ${editableClasses}`}
+                className={`relative w-full flex-grow mx-auto p-1 rounded-lg bg-black/40 border border-[color:var(--skin-accent-color)] transition-colors flex items-center justify-center ${editableClasses} min-h-[2rem]`}
             >
                 {valueDisplay}
                 {rarityDotColor && (
-                    <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${rarityDotColor} shadow-sm z-10`} />
+                    <div className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${rarityDotColor} shadow-sm z-10`} />
                 )}
             </button>
         </div>
@@ -98,60 +99,74 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
 
     return (
         <>
-            <div className="animate-fade-in h-full">
-                <div className={`dossier-bg border border-[color:var(--skin-accent-color)] rounded-2xl p-4 h-full flex flex-col shadow-2xl shadow-black/50 relative overflow-hidden ${playShimmer ? 'shimmer-effect' : ''} ${isEditing ? 'ring-2 ring-[var(--skin-accent-color)]/40 shadow-[0_0_25px_rgba(212,175,55,0.25)]' : ''}`}>
+            <div className="animate-fade-in h-full flex flex-col">
+                <div className={`dossier-bg border border-[color:var(--skin-accent-color)] rounded-2xl p-4 h-auto max-h-full flex flex-col shadow-2xl shadow-black/50 relative overflow-hidden ${playShimmer ? 'shimmer-effect' : ''} ${isEditing ? 'ring-2 ring-[var(--skin-accent-color)]/40 shadow-[0_0_25px_rgba(212,175,55,0.25)]' : ''}`}>
                     {/* Fixed Header */}
-                    <div className="flex-shrink-0">
-                        <div className="flex justify-between items-center">
-                            <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)]/40' : 'bg-transparent'}`}>
-                                <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
+                    <div className="flex-shrink-0 mb-2">
+                        <div className="flex justify-between items-center mb-1">
+                            <button onClick={() => setIsEditing(!isEditing)} className={`p-1.5 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)]/40' : 'bg-transparent'}`}>
+                                <EditIcon className={`w-4 h-4 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
                             </button>
-                            <h2 className="luxe-title-ornate text-xl font-black uppercase tracking-widest text-[color:var(--skin-accent-color)] luxe-title-shadow">{asset.name}</h2>
-                            <button onClick={handleMainButton} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
+                            <h2 className="luxe-title-ornate text-lg font-black uppercase tracking-widest text-[color:var(--skin-accent-color)] luxe-title-shadow truncate px-2">{asset.name}</h2>
+                            <button onClick={handleMainButton} className="px-4 py-1.5 text-xs font-bold rounded-lg luxe-skin-button">
                                 OK
                             </button>
                         </div>
 
-                        <div className="bg-black/35 rounded-xl p-2 flex items-center justify-center border border-[color:var(--skin-accent-color)] my-2 relative min-h-[3.5rem]">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-lg text-white border-2 border-[color:var(--skin-accent-color)] bg-black shadow-lg">
+                        <div className="bg-black/35 rounded-lg p-1.5 flex items-center justify-center border border-[color:var(--skin-accent-color)] relative min-h-[3rem]">
+                            <div className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-base text-white border-2 border-[color:var(--skin-accent-color)] bg-black shadow-lg">
                                 {asset.level}
                             </div>
-                            <p className="px-12 text-sm font-bold text-gray-100 text-center leading-tight m-0 -translate-y-[1px]">
+                            <p className="pl-10 pr-2 text-xs font-medium text-gray-100 text-center leading-tight m-0 line-clamp-2">
                                 {(asset.levelDescriptions[asset.level] || 'Descrição não disponível.').replace(/^Nível\s+\d+:\s*/, '')}
                             </p>
                         </div>
                     </div>
                     
-                    {/* Scrollable Slots Area */}
-                    <div className="flex-grow overflow-y-auto pr-2 -mr-4 pl-1">
-                        <div className="grid grid-cols-6 gap-1">
-                             {asset.slots.map(slot => <SlotWidget key={slot.id} slot={slot} isEditing={isEditing} onClick={() => setEditingSlot(slot)} />)}
+                    {/* Scrollable Slots Area - Flexible but doesn't force expansion */}
+                    <div className="flex-shrink-0 overflow-y-auto pr-1 -mr-2 pl-1 pb-2 custom-scrollbar min-h-0">
+                        <div className="grid grid-cols-6 gap-1.5">
+                             {asset.slots.map(slot => (
+                                <SlotWidget 
+                                    key={slot.id} 
+                                    slot={slot} 
+                                    isEditing={isEditing} 
+                                    onClick={() => setEditingSlot(slot)} 
+                                />
+                             ))}
                         </div>
                     </div>
 
-                    {/* Fixed Arenas Footer */}
-                    <div className="flex-shrink-0 pt-2">
-                        <div className='relative text-center mb-2'>
-                                <hr className="border-t border-[color:var(--skin-accent-color)]" />
-                                <h3 className="luxe-title-ornate text-sm font-semibold text-[color:var(--skin-accent-color)] uppercase tracking-wider absolute -top-3 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Arenas</h3>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                            {asset.arenas.map(arena => {
-                                const arenaActions = getActionsForArena(arena.id);
-                                return (
-                                    <ArenaCard
-                                        key={arena.id}
-                                        arena={arena}
-                                        actions={arenaActions}
-                                        onClick={() => setViewingArenaId(arena.id)}
-                                        variant="dossier"
-                                    />
-                                );
-                            })}
-                            <button onClick={() => setIsCreatingArena(true)} className="w-full h-40 flex-shrink-0 border-2 border-dashed border-[color:var(--accent-silver-soft)] rounded-xl flex flex-col items-center justify-center hover:border-[color:var(--accent-silver)] transition-colors text-gray-500 hover:text-gray-300">
-                                <PlusIcon className="w-8 h-8"/>
-                                <span className="text-xs font-bold mt-1">ADD ARENA</span>
-                            </button>
+                    {/* Fixed Arenas Footer - Takes only necessary space */}
+                    <div className="flex-shrink-0 flex flex-col min-h-0 pt-3 border-t border-[var(--skin-accent-color)]/30 relative mt-auto">
+                        <h3 className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#101010] px-2 text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-widest z-10 border border-[var(--skin-accent-color)]/30 rounded-full">
+                            Arenas
+                        </h3>
+                        
+                        <div className="overflow-y-auto pr-1 pt-2 custom-scrollbar">
+                            <div className="grid grid-cols-3 gap-2 pb-1">
+                                {asset.arenas.map(arena => {
+                                    const arenaActions = getActionsForArena(arena.id);
+                                    return (
+                                        <div key={arena.id} className="aspect-[3/4] w-full">
+                                            <ArenaCard
+                                                arena={arena}
+                                                actions={arenaActions}
+                                                onClick={() => setViewingArenaId(arena.id)}
+                                                variant="dossier"
+                                            />
+                                        </div>
+                                    );
+                                })}
+                                
+                                <button 
+                                    onClick={() => setIsCreatingArena(true)} 
+                                    className="aspect-[3/4] w-full border border-dashed border-[var(--skin-accent-color)]/40 rounded-lg flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/5 transition-all group bg-black/20"
+                                >
+                                    <PlusIcon className="w-5 h-5 text-gray-500 group-hover:text-[var(--skin-accent-color)] transition-colors mb-1"/>
+                                    <span className="text-[8px] font-bold text-gray-500 group-hover:text-[var(--skin-accent-color)] uppercase tracking-wider text-center leading-tight px-1">Add<br/>Arena</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

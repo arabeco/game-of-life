@@ -1,10 +1,8 @@
 
-
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, FolderIcon, DollarSignIcon, FolderStarIcon, FlameIcon, LightbulbIcon, PlusIcon, MinusIcon } from '../components/Icons';
-import { useGame } from '../contexts/GameContext';
-import { Action, ScheduledTask, Arena, ActionType, DayOfWeek } from '../types';
+import { useGame, getLocalDateString } from '../contexts/GameContext';
+import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
 import { WeeklyPlannerGrid } from '../components/WeeklyPlannerGrid';
 import { PoolAction } from '../components/PoolAction';
@@ -71,13 +69,20 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
 
     const handleLongPress = () => {
         if (isTransitioning) return;
+
+        // Anti-exploit visual no PlannerView: nao animar completação futura
+        const now = new Date();
+        const todayString = getLocalDateString(now);
+        if (task.date > todayString && !task.completed) {
+            // O próprio toggleTaskCompletion vai dar o aviso em toast. Aqui só abortamos a visual.
+            toggleTaskCompletion(task.id);
+            return;
+        }
+
         setIsHolding(true);
         setIsTransitioning(true);
         if (completionTimeout.current) clearTimeout(completionTimeout.current);
         completionTimeout.current = setTimeout(() => {
-            // Only complete if not already completed (or toggle?) 
-            // User said "hold to complete", implying one-way or toggle. 
-            // Let's keep toggle behavior but only on hold.
             if (!task.completed) {
                 setShowSparkles(true);
                 setTimeout(() => setShowSparkles(false), 1000);
@@ -102,11 +107,11 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         // Open modal on click
         onTaskClick(task);
     };
-    
+
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
-            <div style={{...backgroundStyle, height: '40px', width: '100px'}} className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80`}>
-                <div className="text-lg z-10">{ action?.icon === '$' ? <DollarSignIcon className="w-5 h-5"/> : action?.icon === '🔥' ? <FlameIcon className="w-5 h-5" /> : <span className="text-xl">{action?.icon}</span> }</div>
+            <div style={{ ...backgroundStyle, height: '40px', width: '100px' }} className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80`}>
+                <div className="text-lg z-10">{action?.icon === '$' ? <DollarSignIcon className="w-5 h-5" /> : action?.icon === '🔥' ? <FlameIcon className="w-5 h-5" /> : <span className="text-xl">{action?.icon}</span>}</div>
                 <div className="text-sm font-semibold truncate w-full z-10">{action?.name}</div>
             </div>
         );
@@ -126,12 +131,12 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
     });
 
     const top = (task.startTime - (4 * 60)) * scaleFactor; // Time is in minutes, view starts at 4am (240 mins)
-    
+
     if (isMilestone) {
         const height = Math.max(15 * scaleFactor, task.duration * scaleFactor);
 
         return (
-             <div
+            <div
                 ref={taskRef}
                 {...longPressEvents}
                 className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer flex items-center justify-center"
@@ -139,41 +144,41 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             >
                 <div className="relative w-full h-full">
                     <div className="absolute inset-0 w-full h-full" style={{ ...backgroundStyle, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
-                    {task.completed && <div className="absolute inset-0 bg-black/60" style={{clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'}} />}
-                    <div className={`absolute inset-0 border-2 ${task.completed ? 'border-[var(--accent-silver)]' : 'border-dashed border-gray-600'}`} style={{clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'}} />
+                    {task.completed && <div className="absolute inset-0 bg-black/60" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />}
+                    <div className={`absolute inset-0 border-2 ${task.completed ? 'border-[var(--accent-silver)]' : 'border-dashed border-gray-600'}`} style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
                     <div className={`relative z-10 w-full h-full flex flex-col items-center justify-center text-center p-1 ${task.completed ? 'opacity-70' : ''}`}>
                         <div className="text-xl">{action?.icon}</div>
                         <div className="text-xs font-semibold truncate max-w-full px-1">{action?.name}</div>
                     </div>
-                    {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'}}><div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
+                    {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}><div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
                     {showSparkles && <Sparkles />}
                 </div>
-                 <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
+                <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
             </div>
         );
     }
-    
+
     const height = task.duration * scaleFactor;
 
     return (
         <div
             ref={taskRef}
             {...longPressEvents}
-            className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer" 
+            className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer"
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
-            <div 
+            <div
                 className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${task.completed ? 'text-white/80 font-bold' : 'text-orange-200'}`}
                 style={backgroundStyle}
             >
-                 <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
-                 <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${task.completed ? 'border-[var(--bronze)]' : 'border-dashed border-gray-600'}`}></div>
-                 <div className="text-lg z-10">{ action?.icon === '$' ? <DollarSignIcon className="w-5 h-5"/> : action?.icon === '🔥' ? <FlameIcon className="w-5 h-5" /> : <span className="text-xl">{action?.icon}</span> }</div>
-                 <div className="text-sm font-semibold truncate w-full z-10">{action?.name}</div>
-                 {isHolding && (<div className="absolute inset-0 bg-black/50 rounded-2xl animate-pulse"><div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
-                 {showSparkles && <Sparkles />}
+                <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
+                <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${task.completed ? 'border-[var(--bronze)]' : 'border-dashed border-gray-600'}`}></div>
+                <div className="text-lg z-10">{action?.icon === '$' ? <DollarSignIcon className="w-5 h-5" /> : action?.icon === '🔥' ? <FlameIcon className="w-5 h-5" /> : <span className="text-xl">{action?.icon}</span>}</div>
+                <div className="text-sm font-semibold truncate w-full z-10">{action?.name}</div>
+                {isHolding && (<div className="absolute inset-0 bg-black/50 rounded-2xl animate-pulse"><div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
+                {showSparkles && <Sparkles />}
             </div>
-             <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
+            <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
         </div>
     );
 };
@@ -212,22 +217,22 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
         <div className="flex-grow relative bg-[#111] border border-white/10 rounded-3xl p-2 h-full depth-grid" data-testid="daily-timeline">
             <div className="flex h-full">
                 <div className="w-12 flex-shrink-0">
-                    {hours.map(hour => (<div key={hour} className="text-right pr-2" style={{height: `${60 * scaleFactor}px`}}><span className="text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span></div>))}
+                    {hours.map(hour => (<div key={hour} className="text-right pr-2" style={{ height: `${60 * scaleFactor}px` }}><span className="text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span></div>))}
                 </div>
                 <div className="flex-grow relative border-l border-white/10 h-full">
-                    {hours.slice(0).map((hour, i) => (<div key={hour} className={`relative ${i > 0 ? 'border-t border-white/10' : ''}`} style={{height: `${60 * scaleFactor}px`}}><div className="absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
+                    {hours.slice(0).map((hour, i) => (<div key={hour} className={`relative ${i > 0 ? 'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}><div className="absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
                     {tasks.map((task) => <TaskSlot key={task.id} task={task} action={getActionById(task.actionId)} scaleFactor={scaleFactor} onCustomDragStart={onCustomDragStart} onTaskClick={handleTaskClick} />)}
                     {dropIndicator && <DropIndicator top={dropIndicator.top} height={dropIndicator.height} className="w-[calc(100%-0.5rem)] right-2" />}
                     {isToday && timeIndicatorTop >= 0 && <CurrentTimeIndicator ref={timeIndicatorRef} top={timeIndicatorTop} />}
                 </div>
             </div>
             {modalData && (
-                <ActionModal 
-                    action={modalData.action} 
+                <ActionModal
+                    action={modalData.action}
                     taskId={modalData.taskId}
-                    arenaId={modalData.action.arenaId} 
-                    initialMode="view" 
-                    onClose={() => setModalData(null)} 
+                    arenaId={modalData.action.arenaId}
+                    initialMode="view"
+                    onClose={() => setModalData(null)}
                 />
             )}
         </div>
@@ -236,12 +241,12 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
 
 const TacticalHUD: React.FC = () => {
     const { userProfile, activeCycle, nobilityRanks } = useGame();
-    
+
     // Nobility Progress
     const currentExp = userProfile.nobility.exp;
     const currentRank = nobilityRanks.slice().reverse().find(r => currentExp >= r.expTotalRequired) || nobilityRanks[0];
     const nextRank = nobilityRanks.find(r => r.expTotalRequired > currentExp);
-    
+
     let progress = 0;
     if (nextRank) {
         const prevRankExp = currentRank.expTotalRequired;
@@ -258,7 +263,7 @@ const TacticalHUD: React.FC = () => {
                     <span className="text-[var(--skin-accent-color)] font-black text-xs leading-none">LVL {userProfile.level}</span>
                     <span className="text-[8px] text-gray-500 leading-none mt-0.5">MAESTRIA</span>
                 </div>
-                
+
                 <div className="h-6 w-px bg-white/10 mx-1"></div>
 
                 <div className="flex flex-col w-24">
@@ -273,28 +278,28 @@ const TacticalHUD: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-2">
-                 <div className="flex flex-col items-center">
-                     <span className="text-white font-black text-xs">{/* Streak placeholder */ (userProfile as any).streak || 0} 🔥</span>
-                     <span className="text-[8px]">DIAS</span>
-                 </div>
+                <div className="flex flex-col items-center">
+                    <span className="text-white font-black text-xs">{/* Streak placeholder */ (userProfile as any).streak || 0} 🔥</span>
+                    <span className="text-[8px]">DIAS</span>
+                </div>
             </div>
         </div>
     );
 };
 
 export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReportsClick }) => {
-    const { 
-        actions, 
-        taskPool, 
-        scheduleTask, 
+    const {
+        actions,
+        taskPool,
+        scheduleTask,
         scheduleMultipleTasks,
-        getTasksForDate, 
-        tasks, 
-        checklistItems, 
-        rescheduleTask, 
-        returnTaskToPool, 
-        deleteTask, 
-        scheduleAndCompleteNow, 
+        getTasksForDate,
+        tasks,
+        checklistItems,
+        rescheduleTask,
+        returnTaskToPool,
+        deleteTask,
+        scheduleAndCompleteNow,
         scheduleAndCompleteMilestoneNow,
         addAction,
         assets,
@@ -325,7 +330,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         }
     }, [showOracleInput]);
 
-    const toDateString = (value: Date) => value.toISOString().split('T')[0];
+    const toDateString = (value: Date) => getLocalDateString(value);
     const today = new Date();
     const startOfWeek = new Date(today);
     const dayOfWeek = startOfWeek.getDay();
@@ -627,7 +632,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             });
 
             if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
-                const dateString = currentDate.toISOString().split('T')[0];
+                const dateString = getLocalDateString(currentDate);
                 await scheduleTask(created, dateString, startTimeInMinutes);
             }
 
@@ -685,7 +690,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const weeklyGridElRef = useRef<HTMLElement | null>(null);
     const weeklyDaysContainerRef = useRef<HTMLElement | null>(null);
     const pointerDisabledElsRef = useRef<HTMLElement[]>([]);
-    
+
     // Custom Drag State
     const [dragState, setDragState] = useState({
         isDragging: false,
@@ -705,7 +710,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         weeklyDaysContainerRef.current = weeklyGridElRef.current?.querySelector('.flex-grow.grid.grid-cols-7') as HTMLElement | null;
     }, []);
 
-    const handleCustomDragStart = ( event: MouseEvent | TouchEvent, item: { type: string; payload: any; duration: number; }, ghostElement: React.ReactNode, draggedElementRef: React.RefObject<HTMLDivElement> ) => {
+    const handleCustomDragStart = (event: MouseEvent | TouchEvent, item: { type: string; payload: any; duration: number; }, ghostElement: React.ReactNode, draggedElementRef: React.RefObject<HTMLDivElement>) => {
         const isTouchEvent = 'touches' in event;
         const pos = isTouchEvent ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : { x: event.clientX, y: event.clientY };
         const elemRect = draggedElementRef.current?.getBoundingClientRect();
@@ -757,12 +762,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const containerTop = rect.top;
                     const containerBottom = rect.bottom;
                     const draggedElementTop = p.y - dragOffsetRef.current.y;
-                    
+
                     // Lógica Dupla para Subir:
                     // 1. Se o topo do elemento tocar o topo do container (precisão)
                     // 2. OU se o ponteiro estiver nos primeiros 200px da tela (fallback de segurança)
                     const isTopZone = draggedElementTop < (containerTop + 80) || p.y < 200;
-                    
+
                     // Lógica para Descer:
                     // 1. Ponteiro nos últimos 150px do container ou da tela
                     const isBottomZone = p.y > (containerBottom - 100) || p.y > (window.innerHeight - 150);
@@ -772,22 +777,22 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         const distElement = (containerTop + 80) - draggedElementTop;
                         const distPointer = 200 - p.y;
                         const dist = Math.max(distElement, distPointer);
-                        
-                        const intensity = Math.min(3.0, dist / 100); 
-                        dy = -Math.max(15, intensity * maxSpeed); 
-                    } 
-                    else if (isBottomZone) {
-                         const distPointer = p.y - (containerBottom - 100);
-                         const distScreen = p.y - (window.innerHeight - 150);
-                         const dist = Math.max(distPointer, distScreen);
 
-                         const intensity = Math.min(3.0, dist / 100);
-                         dy = Math.max(15, intensity * maxSpeed);
+                        const intensity = Math.min(3.0, dist / 100);
+                        dy = -Math.max(15, intensity * maxSpeed);
+                    }
+                    else if (isBottomZone) {
+                        const distPointer = p.y - (containerBottom - 100);
+                        const distScreen = p.y - (window.innerHeight - 150);
+                        const dist = Math.max(distPointer, distScreen);
+
+                        const intensity = Math.min(3.0, dist / 100);
+                        dy = Math.max(15, intensity * maxSpeed);
                     }
 
                     if (dy !== 0) {
                         scrollContainerRef.current.style.scrollBehavior = 'auto';
-                        
+
                         let handledByWindow = false;
                         // Prioritize bringing the container into view
                         if (dy < 0 && rect.top < 0) {
@@ -795,14 +800,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             window.scrollBy(0, dy);
                             handledByWindow = true;
                         } else if (dy > 0 && rect.bottom > window.innerHeight) {
-                             // Container bottom is below viewport, scroll window down to show it
-                             window.scrollBy(0, dy);
-                             handledByWindow = true;
+                            // Container bottom is below viewport, scroll window down to show it
+                            window.scrollBy(0, dy);
+                            handledByWindow = true;
                         }
 
                         if (!handledByWindow) {
                             scrollContainerRef.current.scrollTop += dy;
-                            lastScrollTopRef.current = scrollContainerRef.current.scrollTop; 
+                            lastScrollTopRef.current = scrollContainerRef.current.scrollTop;
                         }
                     }
                 }
@@ -832,7 +837,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             const pos = isTouchEvent ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
             setDragState(prev => ({ ...prev, currentPosition: pos }));
             lastPointerPosRef.current = pos;
-            
+
             if (!bayAreaElRef.current || !dailyGridElRef.current || !weeklyGridElRef.current) {
                 refreshDragTargets();
             }
@@ -853,18 +858,18 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const dailyViewEl = dailyGridElRef.current;
                     if (!dailyViewEl) return;
                     const gridRect = dailyViewEl.getBoundingClientRect();
-                    
+
                     // Permitir margem para manter o indicador visível durante o auto-scroll nas bordas
                     const scrollMargin = 150;
-                    if (pos.y < gridRect.top - scrollMargin || pos.y > gridRect.bottom + scrollMargin) { 
-                        setDailyDropIndicator(null); 
-                        return; 
+                    if (pos.y < gridRect.top - scrollMargin || pos.y > gridRect.bottom + scrollMargin) {
+                        setDailyDropIndicator(null);
+                        return;
                     }
-                    
+
                     // Calcular dropY relativo ao topo do grid rolável
                     let dropY = pos.y - gridRect.top + scrollContainerRef.current.scrollTop;
                     dropY = Math.max(0, dropY); // Impedir valores negativos
-                    
+
                     const minutesFromViewStart = dropY / scaleFactor;
                     const snappedMinutes = Math.round(minutesFromViewStart / 15) * 15;
                     setDailyDropIndicator({ top: snappedMinutes * scaleFactor, height: dragState.item.duration * scaleFactor });
@@ -874,15 +879,15 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     if (!daysContainer) { setWeeklyDropIndicator(null); return; }
                     const containerRect = daysContainer.getBoundingClientRect();
                     const scrollMargin = 150;
-                    if (pos.x > containerRect.left && pos.x < containerRect.right && 
+                    if (pos.x > containerRect.left && pos.x < containerRect.right &&
                         pos.y > containerRect.top - scrollMargin && pos.y < containerRect.bottom + scrollMargin) {
-                            const dayColumnWidth = containerRect.width / 7;
-                            let dayIndex = Math.floor((pos.x - containerRect.left) / dayColumnWidth);
-                            dayIndex = Math.max(0, Math.min(6, dayIndex));
-                            const headerHeight = 32;
-                            let dropY = pos.y - containerRect.top - headerHeight + scrollContainerRef.current.scrollTop;
-                            if (dropY < 0) dropY = 0;
-                            const minutesFromViewStart = dropY / scaleFactor;
+                        const dayColumnWidth = containerRect.width / 7;
+                        let dayIndex = Math.floor((pos.x - containerRect.left) / dayColumnWidth);
+                        dayIndex = Math.max(0, Math.min(6, dayIndex));
+                        const headerHeight = 32;
+                        let dropY = pos.y - containerRect.top - headerHeight + scrollContainerRef.current.scrollTop;
+                        if (dropY < 0) dropY = 0;
+                        const minutesFromViewStart = dropY / scaleFactor;
                         const snappedMinutes = Math.round(minutesFromViewStart / 15) * 15;
                         setWeeklyDropIndicator({ dayIndex, top: snappedMinutes * scaleFactor, height: dragState.item.duration * scaleFactor });
                     } else { setWeeklyDropIndicator(null); }
@@ -895,7 +900,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
         const handleDragEnd = (e: MouseEvent | TouchEvent) => {
             if (!dragState.item) return;
-            
+
             // Get final pointer position directly from the event to avoid state update lag
             let pos: { x: number; y: number };
             if (e.type === 'touchend' && (e as TouchEvent).changedTouches?.length > 0) {
@@ -906,7 +911,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 // Fallback to the last known position from state
                 pos = dragState.currentPosition;
             }
-            
+
             if (!bayAreaElRef.current || !dailyGridElRef.current || !weeklyGridElRef.current) {
                 refreshDragTargets();
             }
@@ -919,10 +924,10 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 if (!rect || !pos) return false;
                 return pos.y > rect.top - verticalMargin && pos.y < rect.bottom + verticalMargin && pos.x > rect.left && pos.x < rect.right;
             };
-            
+
             if (isOver(bayAreaRect)) {
                 const { type, payload } = dragState.item;
-                 if (type === 'reschedule_task') {
+                if (type === 'reschedule_task') {
                     const task = tasks.find(t => t.id === payload);
                     const action = task ? getActionById(task.actionId) : undefined;
                     if (action && action.actionType !== 'Marco') {
@@ -932,7 +937,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     }
                 }
             } else if (isOver(dailyTimelineRect, 150) && viewMode === 'day' && dailyDropIndicator) {
-                const dateString = currentDate.toISOString().split('T')[0];
+                const dateString = getLocalDateString(currentDate);
                 const minutesFromViewStart = dailyDropIndicator.top / scaleFactor;
                 const startTimeInMinutes = minutesFromViewStart + (4 * 60);
                 const { type, payload } = dragState.item;
@@ -946,19 +951,19 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 startOfWeek.setDate(diff);
                 const dropDate = new Date(startOfWeek);
                 dropDate.setDate(dropDate.getDate() + dayIndex);
-                const dateString = dropDate.toISOString().split('T')[0];
+                const dateString = getLocalDateString(dropDate);
                 const minutesFromViewStart = weeklyDropIndicator.top / scaleFactor;
                 const startTimeInMinutes = minutesFromViewStart + (4 * 60);
                 const { type, payload } = dragState.item;
                 const scheduledTask = type === 'new_action' ? scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
                 if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
             }
-            
+
             if (scrollContainerRef.current) {
                 scrollContainerRef.current.style.overflow = '';
             }
 
-            setDragState({ isDragging: false, item: null, ghostElement: null, pointerOffset: {x: 0, y: 0}, currentPosition: {x: 0, y: 0} });
+            setDragState({ isDragging: false, item: null, ghostElement: null, pointerOffset: { x: 0, y: 0 }, currentPosition: { x: 0, y: 0 } });
             setDailyDropIndicator(null);
             setWeeklyDropIndicator(null);
             setIsOverBayArea(false);
@@ -981,7 +986,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             window.removeEventListener('mouseup', handleDragEnd);
             window.removeEventListener('touchmove', handleDragMove);
             window.removeEventListener('touchend', handleDragEnd);
-            
+
             // Restaurar pointer-events
             const gridDays = document.querySelectorAll('.grid-day-container');
             gridDays.forEach(el => {
@@ -996,26 +1001,111 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, []);
 
     // Auto-scroll useEffects
-     useEffect(() => { if (viewMode === 'day' && scrollContainerRef.current) { const isToday = currentDate.toDateString() === new Date().toDateString(); if (isToday) { const now = new Date(); const currentHour = now.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { dailyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
-     useEffect(() => { if (viewMode === 'week' && scrollContainerRef.current) { const startOfWeek = new Date(currentDate); const day = startOfWeek.getDay(); const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); startOfWeek.setDate(diff); startOfWeek.setHours(0, 0, 0, 0); const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23, 59, 59, 999); const today = new Date(); if (today >= startOfWeek && today <= endOfWeek) { const currentHour = today.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { weeklyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
-    
+    useEffect(() => { if (viewMode === 'day' && scrollContainerRef.current) { const isToday = currentDate.toDateString() === new Date().toDateString(); if (isToday) { const now = new Date(); const currentHour = now.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { dailyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
+    useEffect(() => { if (viewMode === 'week' && scrollContainerRef.current) { const startOfWeek = new Date(currentDate); const day = startOfWeek.getDay(); const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); startOfWeek.setDate(diff); startOfWeek.setHours(0, 0, 0, 0); const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23, 59, 59, 999); const today = new Date(); if (today >= startOfWeek && today <= endOfWeek) { const currentHour = today.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { weeklyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
+
+    // Define milestoneActions before usage
     const milestoneActions = actions.filter(a => a.actionType === 'Marco' && !tasks.some(task => task.actionId === a.id));
-    const groupedTaskPool = taskPool.reduce((acc, item) => {
-        const existing = acc[item.actionId] || { count: 0, isUnlimited: false };
-        const nextUnlimited = existing.isUnlimited || !!item.unlimited;
-        const nextCount = nextUnlimited ? 0 : existing.count + 1;
-        acc[item.actionId] = { count: nextCount, isUnlimited: nextUnlimited };
-        return acc;
-    }, {} as Record<string, { count: number; isUnlimited: boolean }>);
+
+    const currentDayStr = toDateString(currentDate);
+
+    // Recalculate Available Task Pool based on ACTIONS (Mirror Arenas) - Scheduled Tasks for Current Date
+    const availableTaskPool = useMemo(() => {
+        const pool: Record<string, { count: number; isUnlimited: boolean; taskIds?: string[] }> = {};
+        const activeArenaIds = new Set(assets.flatMap(a => a.arenas).filter(ar => !ar.isArchived).map(ar => ar.id));
+        
+        // Filter actions that belong to active arenas
+        const validActions = actions.filter(a => activeArenaIds.has(a.arenaId));
+
+        // DIAGNOSTIC LOG START
+        // console.log("--- BAY AREA CALC START ---");
+        // console.log("Date:", currentDayStr);
+
+        validActions.forEach(action => {
+            const maxRepetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
+            const isUnlimited = !!action.unlimited;
+            
+            // Count scheduled instances for the CURRENT VIEW DATE
+            // CRITICAL FIX 1: Count ONLY tasks that are SCHEDULED (startTime >= 0) or COMPLETED.
+            // Tasks in Bay Area (startTime < 0 AND !completed) should NOT count against the STOCK, 
+            // because they ARE the stock (just instantiated).
+            // NO! Wait. If I drag from Bay Area (stock) to Bay Area (instantiated), does it consume stock?
+            // "as ações do planner ao ser agendadas, deiminuem um do bay" -> Agendada = startTime >= 0.
+            // "ao voltar elas voltam pro bay somando ao total daquela acao."
+            
+            // Let's look at the tasks for this action today:
+            const allTasksForActionToday = tasks.filter(t => t.actionId === action.id && t.date === currentDayStr);
+            
+            // Scheduled or Completed tasks consume stock from the "Pool"
+            // Bay Area tasks (startTime < 0 and !completed) are effectively "in the pool" but instantiated.
+            
+            const consumedCount = allTasksForActionToday.filter(t => t.startTime >= 0 || t.completed).length;
+            
+            // The "Pool" display should show: (Max - Consumed)
+            // But wait, if I have 3 Max, and I instantiate 1 in Bay Area (startTime=-1), consumed is 0.
+            // So Pool shows 3. 
+            // And Bay Area shows the instantiated one too? No.
+            
+            // User says: "as ações da bay area sao as ações das arenas ativas menos as ações completas ou agendadas num horario."
+            // So: Stock = Total - (Scheduled_With_Time + Completed)
+            
+            const remaining = isUnlimited ? 99 : Math.max(0, maxRepetitions - consumedCount);
+
+            pool[action.id] = {
+                count: remaining,
+                isUnlimited,
+                taskIds: []
+            };
+        });
+
+        return pool;
+    }, [actions, tasks, currentDayStr, assets]);
+
+
     const getActionById = (id: string) => actions.find(a => a.id === id);
     const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
-    const dailyTasks = getTasksForDate(currentDate).filter(t => t.startTime >= 0);
+    
+    const dailyTasks = getTasksForDate(currentDate);
+    const bayAreaTasks = dailyTasks.filter(t => t.startTime < 0 && !t.completed); // Only uncompleted tasks in Bay Area
+    const scheduledTasks = dailyTasks.filter(t => t.startTime >= 0); // For DailyView
+    
     const allTasksCompleted = checklistItems.every(item => item.completed);
     const isToday = currentDate.toDateString() === new Date().toDateString();
 
-    const poolItemCount = Object.keys(groupedTaskPool).length;
-    const isSingleRow = poolItemCount <= 8; // Increased threshold slightly as icons are smaller now
-    const bayAreaHeight = isSingleRow ? 'h-[60px]' : 'h-[100px]';
+    // UNIFY POOL AND BAY AREA TASKS FOR DISPLAY
+    // "Estoque e Espera é a mesma coisa"
+    const unifiedBayAreaItems = useMemo(() => {
+        const unified = { ...availableTaskPool };
+        
+        bayAreaTasks.forEach(task => {
+            // These are tasks that are instantiated but sit in Bay Area.
+            // They should NOT add to the count if they are already counted in the "remaining" logic?
+            // Wait. Logic above: Stock = Total - (Scheduled + Completed).
+            // BayAreaTask is NOT scheduled and NOT completed. So it is NOT subtracted.
+            // So 'remaining' ALREADY INCLUDES the potential for this task.
+            // We just need to attach the taskId to the slot so we can drag it.
+            
+            if (!unified[task.actionId]) {
+                 // Should exist from pool init, but just in case
+                 unified[task.actionId] = { count: 0, isUnlimited: false, taskIds: [] };
+            }
+            
+            // We do NOT add to count here because 'remaining' calculation already includes this "slot".
+            // Actually, if I have 3 slots, and 1 is a BayAreaTask, 'remaining' is 3.
+            // If I display '3', and one of them is this task...
+            // It means I have 1 Concrete Task + 2 Virtual Slots.
+            
+            if (!unified[task.actionId].taskIds) unified[task.actionId].taskIds = [];
+            unified[task.actionId].taskIds!.push(task.id);
+        });
+        
+        return unified;
+    }, [availableTaskPool, bayAreaTasks]);
+
+    const poolItemCount = Object.keys(unifiedBayAreaItems).length;
+    const isSingleRow = poolItemCount <= 8;
+    // Reduced heights as requested
+    const bayAreaHeight = isSingleRow ? 'h-[42px]' : 'h-[84px]';
     const bayGridRows = isSingleRow ? 'grid-rows-1' : 'grid-rows-2';
 
     return (
@@ -1025,7 +1115,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     {dragState.ghostElement}
                 </div>
             )}
-            
+
             <div className="flex-shrink-0 z-0 bg-[#111111]/95 backdrop-blur-sm border-b border-white/5 transition-all duration-300 relative -mt-4 pt-4">
                 <div className="bg-transparent">
                     <div className="relative flex items-center justify-between px-2 text-lg font-bold h-10 mt-1">
@@ -1035,28 +1125,31 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     </div>
 
                     <div className={`flex items-center space-x-2 my-0 w-full overflow-visible pb-1 px-2 transition-all duration-300`}>
-                        <div 
-                            data-testid="bay-area" 
+                        <div
+                            data-testid="bay-area"
                             className={`flex-grow min-w-0 bg-black/20 border border-white/5 rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
                         >
                             <div className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden pr-2 scrollbar-hide items-center`}>
-                                {Object.entries(groupedTaskPool).length > 0 ? (Object.entries(groupedTaskPool) as [string, { count: number; isUnlimited: boolean }][]).map(([actionId, payload]) => {
+                                {Object.entries(unifiedBayAreaItems).length > 0 ? (Object.entries(unifiedBayAreaItems) as [string, { count: number; isUnlimited: boolean; taskIds?: string[] }][]).map(([actionId, payload]) => {
                                     const action = getActionById(actionId);
                                     if (!action) return null;
-                                    return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a })} />);
+                                    // Use the first available taskId (FIFO) if any exist in Bay Area
+                                    const nextTaskId = payload.taskIds && payload.taskIds.length > 0 ? payload.taskIds[0] : undefined;
+                                    
+                                    return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} taskId={nextTaskId} onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })} />);
                                 }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 uppercase tracking-wider row-span-full col-span-full">Sem ações</div>)}
                             </div>
                         </div>
                         <div className={`relative flex-shrink-0 ${bayAreaHeight} transition-all duration-300`}>
-                            <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-10 h-full bg-black/20 border border-white/5 rounded-2xl flex items-center justify-center hover:bg-white/5 transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/></svg></button>
-                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-[#1a1a1a] border border-white/10 rounded-xl p-2 space-y-1 z-50 shadow-2xl animate-fade-in"><h4 className="text-[10px] font-bold text-center text-gray-500 pb-1 border-b border-white/5 uppercase tracking-widest">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })}/>)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
+                            <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-10 h-full bg-black/20 border border-white/5 rounded-2xl flex items-center justify-center hover:bg-white/5 transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" /></svg></button>
+                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-[#1a1a1a] border border-white/10 rounded-xl p-2 space-y-1 z-50 shadow-2xl animate-fade-in"><h4 className="text-[10px] font-bold text-center text-gray-500 pb-1 border-b border-white/5 uppercase tracking-widest">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
                         </div>
                     </div>
                 </div>
                 {viewMode === 'day' && <DayHeader currentDate={currentDate} />}
             </div>
 
-            <div 
+            <div
                 ref={scrollContainerRef}
                 className="flex-grow min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
                 style={{ scrollBehavior: 'smooth' }}
@@ -1064,27 +1157,27 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 <div className={dragState.isDragging ? 'pointer-events-auto' : ''}>
                     {viewMode === 'day' ? (
                         <div>
-                            <DailyView tasks={dailyTasks} actions={actions} scaleFactor={scaleFactor} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
+                            <DailyView tasks={scheduledTasks} actions={actions} scaleFactor={scaleFactor} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
                         </div>
                     ) : (
                         <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} onTaskClick={handleTaskClick} scaleFactor={scaleFactor} stickyHeaderOffset={'0rem'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
                     )}
                 </div>
             </div>
-            
+
             {modalData && (
-                <ActionModal 
-                    action={modalData.action} 
+                <ActionModal
+                    action={modalData.action}
                     taskId={modalData.taskId}
-                    arenaId={modalData.action.arenaId} 
-                    initialMode="view" 
-                    onClose={() => setModalData(null)} 
+                    arenaId={modalData.action.arenaId}
+                    initialMode="view"
+                    onClose={() => setModalData(null)}
                 />
             )}
 
             {/* Floating Action Button */}
             <div className="fixed bottom-20 right-4 z-20 flex flex-col items-center space-y-2">
-                
+
                 {/* Oracle Input Panel */}
                 {showOracleInput && (
                     <div className="absolute bottom-full mb-4 right-0 w-72 z-30">
@@ -1101,7 +1194,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                         placeholder="Ação @ Arena..."
                                         className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 placeholder-gray-500"
                                     />
-                                    <button 
+                                    <button
                                         onClick={handleOracleSubmit}
                                         className="p-2 bg-[var(--skin-accent-color)] text-black rounded-lg hover:brightness-110 transition-colors"
                                     >
@@ -1117,8 +1210,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 )}
 
                 <div className="flex flex-col items-center bg-black/50 backdrop-blur-lg border border-[var(--glass-border)] rounded-full p-1 space-y-1">
-                    <button 
-                        onClick={() => setShowOracleInput(!showOracleInput)} 
+                    <button
+                        onClick={() => setShowOracleInput(!showOracleInput)}
                         className={`p-2 rounded-full transition-all ${showOracleInput ? 'bg-[var(--skin-accent-color)] text-black' : 'text-white hover:bg-white/10'}`}
                         title="Adicionar por texto"
                     >

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Arena, Action, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIcon } from './Icons';
+import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIcon, SendIcon } from './Icons';
 import { ActionModal } from './ActionModal';
 import { IconPickerModal } from './IconPickerModal';
 import { ConfirmationModal } from './ConfirmationModal';

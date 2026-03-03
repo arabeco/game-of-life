@@ -39,8 +39,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             if (startTime > 0 && videoRef.current.currentTime === 0) {
                 videoRef.current.currentTime = startTime;
             }
+            
+            // Ensure play is triggered
+            const playPromise = videoRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn("Auto-play was prevented:", error);
+                    // Fallback handled by user interaction or just visual placeholder if needed
+                });
+            }
         }
-    }, [playbackRate, startTime]);
+    }, [playbackRate, startTime, src]);
 
     // Placeholder timeout
     useEffect(() => {
@@ -80,6 +89,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 className="w-full h-full object-cover"
                 autoPlay
                 playsInline
+                muted
                 onEnded={handleEnd}
                 onError={handleError}
                 controls={false}

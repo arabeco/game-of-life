@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Arena, Action } from '../types';
 import { DollarSignIcon, FlameIcon, CheckIcon, UsersIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
+import { supabase } from '../supabaseClient';
 
 const ASSET_ACCENT_COLORS: Record<string, string> = {
     consciencia: '#1a2a4a',

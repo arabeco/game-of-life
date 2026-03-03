@@ -3,7 +3,7 @@ import React, { useRef, useEffect } from 'react';
 interface SephirotFogProps {
   points: { x: number; y: number; level: number }[];
   color: string;
-  mode?: 'sephirot' | 'arena' | 'office';
+  mode?: 'sephirot' | 'arena' | 'office' | 'deepwork';
 }
 
 const vertexShaderSource = `
@@ -28,6 +28,7 @@ const fragmentShaderSource = `
   uniform float uFieldDrift;
   uniform float uAlphaMax;
   uniform float uCoreBoost;
+  uniform int uMode; // 0=sephirot, 1=arena, 2=office, 3=deepwork
   
   varying vec2 vUv;
 
@@ -91,106 +92,142 @@ const fragmentShaderSource = `
     // Global Time for animation
     // Scaled down for a more relaxing, slower movement
     float scaledTime = uTime * 0.5;
-    float t = scaledTime * 0.2; 
     
     // Fade in the intensity over the first 2 seconds to make it look like it's "starting"
     float startupFade = smoothstep(0.0, 2.0, uTime);
-    
-    for (int i = 0; i < 10; i++) {
-        float level = uLevels[i];
-        if (level < 0.1) continue;
 
-        vec2 pt = uPoints[i];
-        pt.y = 1.0 - pt.y; 
-        pt.x += sin(scaledTime * 0.18 + float(i) * 1.7) * uPointDrift;
-        pt.y += cos(scaledTime * 0.16 + float(i) * 1.3) * uPointDrift;
-        vec2 pt_aspect = vec2(pt.x * aspect, pt.y);
+    if (uMode == 3) { // DEEP WORK MODE
+        vec2 center = vec2(0.5 * aspect, 0.5);
+        vec2 toCenter = st_aspect - center;
+        float dist = length(toCenter);
+        float angle = atan(toCenter.y, toCenter.x);
         
-        vec2 toPixel = st_aspect - pt_aspect;
-        float dist = length(toPixel);
+        // Outward flow - Slower, more majestic
+        float expansion = dist - scaledTime * 0.1;
         
-        // Influence radius (FIXED MAX RADIUS)
-        float radiusBase = 0.35; 
+        // Polar noise for dispersing smoke rings - Larger scale
+        vec2 polarSt = vec2(expansion * 1.5, angle * 1.5 + expansion * 0.3);
         
-        if (dist < radiusBase) {
-             // --- VISIBLE ELECTRICITY LOGIC ---
-             // "Nao sai nada nivel 1" -> Reduced contrast exponent, increased brightness.
-             // "Nivel 6 muito fraco" -> Boosted mid-range intensity.
-             
-             // 1. Local Coordinates
-             vec2 wind = vec2(sin(scaledTime * 0.1), cos(scaledTime * 0.08)) * uWindStrength;
-             vec2 localP = toPixel * 3.5 + vec2(scaledTime * 0.08, -scaledTime * 0.06) * uFieldDrift + wind;
+        // Warping for natural smoke - OPTIMIZED (Removed heavy pattern() call)
+        // Instead of 5 FBM calls (20 octaves), we use 2 FBM calls (8 octaves)
+        float warp = fbm(polarSt * 0.8 + scaledTime * 0.1);
+        float n = fbm(polarSt * 1.2 + warp);
+        
+        // Masking - Center is clear/bright, fades out
+        // Make the center clear area slightly larger
+        float mask = 1.0 - smoothstep(0.1, 1.2, dist);
+        
+        // Core glow (The "Source")
+        float core = 1.0 - smoothstep(0.0, 0.3, dist);
+        
+        // Smoke ring definition - Looser
+        float smoke = n * mask;
+        
+        // Soften contrast for "freer" look
+        smoke = pow(smoke, 1.8) * 1.5; // Slightly increased mult to compensate for lost detail
+        
+        totalDensity = smoke + core * 0.4;
+        
+    } else {
+        // STANDARD MODES (Sephirot, Arena, Office)
+        float t = scaledTime * 0.2; 
+        
+        for (int i = 0; i < 10; i++) {
+            float level = uLevels[i];
+            if (level < 0.1) continue;
 
-             // 2. Periodic Flow (Very Slow)
-             float cycleSpeed = 0.05 + (level / 10.0) * 0.1; 
-             float phase = scaledTime * cycleSpeed;
-             
-             float t1 = fract(phase);
-             float t2 = fract(phase + 0.5);
-             float blend = abs(2.0 * t1 - 1.0); 
+            vec2 pt = uPoints[i];
+            pt.y = 1.0 - pt.y; 
+            pt.x += sin(scaledTime * 0.18 + float(i) * 1.7) * uPointDrift;
+            pt.y += cos(scaledTime * 0.16 + float(i) * 1.3) * uPointDrift;
+            vec2 pt_aspect = vec2(pt.x * aspect, pt.y);
+            
+            vec2 toPixel = st_aspect - pt_aspect;
+            float dist = length(toPixel);
+            
+            // Influence radius (FIXED MAX RADIUS)
+            float radiusBase = 0.35; 
+            
+            if (dist < radiusBase) {
+                 // --- VISIBLE ELECTRICITY LOGIC ---
+                 // "Nao sai nada nivel 1" -> Reduced contrast exponent, increased brightness.
+                 // "Nivel 6 muito fraco" -> Boosted mid-range intensity.
+                 
+                 // 1. Local Coordinates
+                 vec2 wind = vec2(sin(scaledTime * 0.1), cos(scaledTime * 0.08)) * uWindStrength;
+                 vec2 localP = toPixel * 3.5 + vec2(scaledTime * 0.08, -scaledTime * 0.06) * uFieldDrift + wind;
 
-             // 3. Domain Warping
-             vec2 warpP = localP;
-             
-             // Swirl
-             float angle = length(toPixel) * 3.0; 
-             float c = cos(angle);
-             float s = sin(angle);
-             mat2 rot = mat2(c, -s, s, c);
-             warpP = rot * warpP;
+                 // 2. Periodic Flow (Very Slow)
+                 float cycleSpeed = 0.05 + (level / 10.0) * 0.1; 
+                 float phase = scaledTime * cycleSpeed;
+                 
+                 float t1 = fract(phase);
+                 float t2 = fract(phase + 0.5);
+                 float blend = abs(2.0 * t1 - 1.0); 
 
-             // 4. Sample Noise Twice
-             vec2 offset1 = normalize(toPixel) * (t1 * 1.8); 
-             vec2 timeOffset = vec2(cos(scaledTime * 0.07), sin(scaledTime * 0.05)) * 0.6;
-             float n1 = fbm(warpP - offset1 + timeOffset);
+                 // 3. Domain Warping
+                 vec2 warpP = localP;
+                 
+                 // Swirl
+                 float angle = length(toPixel) * 3.0; 
+                 float c = cos(angle);
+                 float s = sin(angle);
+                 mat2 rot = mat2(c, -s, s, c);
+                 warpP = rot * warpP;
 
-             vec2 offset2 = normalize(toPixel) * ((t2 - 0.5) * 1.8); 
-             float n2 = fbm(warpP - offset2 - timeOffset + wind);
+                 // 4. Sample Noise Twice
+                 vec2 offset1 = normalize(toPixel) * (t1 * 1.8); 
+                 vec2 timeOffset = vec2(cos(scaledTime * 0.07), sin(scaledTime * 0.05)) * 0.6;
+                 float n1 = fbm(warpP - offset1 + timeOffset);
 
-             float noiseVal = mix(n1, n2, blend);
-             
-             // 5. Shaping (CRITICAL FIX)
-             // Lower exponents = Thicker, more visible lines.
-             
-             // A. Electric Sparks
-             // Higher exponents = Thinner, more defined "lightning" lines.
-             // Level 1: 6.0 (Very thin/defined). Level 10: 3.0 (Sharp plasma).
-             float electricExp = 6.0 - (level / 10.0) * 3.0; 
-             float electric = pow(noiseVal, electricExp);
-             
-             // B. Smoke Body
-             // Increased exponent to 5.0 to make the smoke much more transparent/less dense.
-             float smokeExp = 5.0;
-             float smoke = pow(noiseVal, smokeExp) * (0.05 + (level / 10.0) * 0.75);
+                 vec2 offset2 = normalize(toPixel) * ((t2 - 0.5) * 1.8); 
+                 float n2 = fbm(warpP - offset2 - timeOffset + wind);
 
-             // Combine
-             float combinedShape = electric + smoke;
+                 float noiseVal = mix(n1, n2, blend);
+                 
+                 // 5. Shaping (CRITICAL FIX)
+                 // Lower exponents = Thicker, more visible lines.
+                 
+                 // A. Electric Sparks
+                 // Higher exponents = Thinner, more defined "lightning" lines.
+                 // Level 1: 6.0 (Very thin/defined). Level 10: 3.0 (Sharp plasma).
+                 float electricExp = 6.0 - (level / 10.0) * 3.0; 
+                 float electric = pow(noiseVal, electricExp);
+                 
+                 // B. Smoke Body
+                 // Increased exponent to 5.0 to make the smoke much more transparent/less dense.
+                 float smokeExp = 5.0;
+                 float smoke = pow(noiseVal, smokeExp) * (0.05 + (level / 10.0) * 0.75);
 
-             // 6. Intensity & Reach
-             // "Nivel 6 fraco" -> Boosted intensity significantly.
-             
-             // Reach: Even level 1 needs to go a bit further to be seen.
-             // Level 1: 60% reach. Level 10: 100%.
-             float reach = 0.6 + (level / 10.0) * 0.4;
-             
-             // Radial Fade
-             float fade = 1.0 - smoothstep(0.0, radiusBase * reach, dist);
-             fade = pow(fade, 1.2); // Softer fade, stays visible longer
+                 // Combine
+                 float combinedShape = electric + smoke;
 
-             // Intensity: Muito mais foda (Level 10: 5.5, Level 1: 2.5)
-             float intensityMult = 2.5 + (level / 10.0) * 3.0;
+                 // 6. Intensity & Reach
+                 // "Nivel 6 fraco" -> Boosted intensity significantly.
+                 
+                 // Reach: Even level 1 needs to go a bit further to be seen.
+                 // Level 1: 60% reach. Level 10: 100%.
+                 float reach = 0.6 + (level / 10.0) * 0.4;
+                 
+                 // Radial Fade
+                 float fade = 1.0 - smoothstep(0.0, radiusBase * reach, dist);
+                 fade = pow(fade, 1.2); // Softer fade, stays visible longer
 
-             // 7. Core Glow
-             // Tiny anchor point
-             float corePulse = 0.5 + 0.5 * sin(scaledTime * 0.8);
-             float coreBase = smoothstep(0.03, 0.0, dist);
-             float coreBoosted = smoothstep(0.05, 0.0, dist) * (1.2 + corePulse * 0.6);
-             float core = mix(coreBase, coreBoosted, uCoreBoost);
+                 // Intensity: Muito mais foda (Level 10: 5.5, Level 1: 2.5)
+                 float intensityMult = 2.5 + (level / 10.0) * 3.0;
 
-             // Combine
-             float finalVal = (combinedShape * fade * intensityMult) + core;
-             
-             totalDensity += finalVal;
+                 // 7. Core Glow
+                 // Tiny anchor point
+                 float corePulse = 0.5 + 0.5 * sin(scaledTime * 0.8);
+                 float coreBase = smoothstep(0.03, 0.0, dist);
+                 float coreBoosted = smoothstep(0.05, 0.0, dist) * (1.2 + corePulse * 0.6);
+                 float core = mix(coreBase, coreBoosted, uCoreBoost);
+
+                 // Combine
+                 float finalVal = (combinedShape * fade * intensityMult) + core;
+                 
+                 totalDensity += finalVal;
+            }
         }
     }
     
@@ -227,10 +264,13 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
   const uFieldDriftLoc = useRef<WebGLUniformLocation | null>(null);
   const uAlphaMaxLoc = useRef<WebGLUniformLocation | null>(null);
   const uCoreBoostLoc = useRef<WebGLUniformLocation | null>(null);
+  const uModeLoc = useRef<WebGLUniformLocation | null>(null); // NEW
   const startTimeRef = useRef<number | null>(null);
 
   // Helper to hex to rgb
-  const hexToRgb = (hex: string) => {
+  const hexToRgb = (hex: string | undefined | null) => {
+    if (!hex || typeof hex !== 'string') return [0, 0.8, 1]; // Fallback to Cyan/Blue
+
     const trimmed = hex.trim();
     if (trimmed.startsWith('rgb')) {
       const values = trimmed.replace(/rgba?\(|\)/g, '').split(',').map(val => Number.parseFloat(val.trim()));
@@ -245,7 +285,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
       parseInt(result[1], 16) / 255,
       parseInt(result[2], 16) / 255,
       parseInt(result[3], 16) / 255
-    ] : [1, 1, 1];
+    ] : [0, 0.8, 1]; // Fallback
   };
 
   // Initialize WebGL - Run once
@@ -319,6 +359,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
     uFieldDriftLoc.current = gl.getUniformLocation(program, 'uFieldDrift');
     uAlphaMaxLoc.current = gl.getUniformLocation(program, 'uAlphaMax');
     uCoreBoostLoc.current = gl.getUniformLocation(program, 'uCoreBoost');
+    uModeLoc.current = gl.getUniformLocation(program, 'uMode'); // NEW
 
     // Set Resolution once
     if (resolutionLocation) {
@@ -363,18 +404,43 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
     gl.useProgram(program);
 
     // Update Points
-    if (uPointsLoc.current) {
-        const flatPoints = points.flatMap(p => [p.x / 100, p.y / 100]);
-        // Pad with zeros if less than 10 points
+    if (uPointsLoc.current && points) {
+        // Ensure points is an array
+        const safePoints = Array.isArray(points) ? points : [];
+        const flatPoints: number[] = [];
+        
+        safePoints.forEach(p => {
+            if (p && typeof p.x === 'number' && typeof p.y === 'number') {
+                flatPoints.push(p.x / 100, p.y / 100);
+            } else {
+                flatPoints.push(0, 0);
+            }
+        });
+
+        // Pad with zeros if less than 10 points (20 floats)
         while (flatPoints.length < 20) flatPoints.push(0, 0);
+        
         gl.uniform2fv(uPointsLoc.current, new Float32Array(flatPoints));
+    } else if (uPointsLoc.current) {
+        // Fallback if points is undefined
+        const zeros = new Float32Array(20).fill(0);
+        gl.uniform2fv(uPointsLoc.current, zeros);
     }
 
     // Update Levels
-    if (uLevelsLoc.current) {
-        const flatLevels = points.map(p => p.level);
+    if (uLevelsLoc.current && points) {
+        const safePoints = Array.isArray(points) ? points : [];
+        const flatLevels: number[] = [];
+        
+        safePoints.forEach(p => {
+             flatLevels.push(typeof p.level === 'number' ? p.level : 0);
+        });
+
         while (flatLevels.length < 10) flatLevels.push(0);
         gl.uniform1fv(uLevelsLoc.current, new Float32Array(flatLevels));
+    } else if (uLevelsLoc.current) {
+         const zeros = new Float32Array(10).fill(0);
+         gl.uniform1fv(uLevelsLoc.current, zeros);
     }
 
     // Update Color
@@ -407,6 +473,10 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
         gl.uniform1f(uCoreBoostLoc.current, coreBoost);
     }
 
+    if (uModeLoc.current) {
+        const modeVal = mode === 'sephirot' ? 0 : mode === 'arena' ? 1 : mode === 'office' ? 2 : mode === 'deepwork' ? 3 : 0;
+        gl.uniform1i(uModeLoc.current, modeVal);
+    }
   }, [points, color, mode]);
 
   // Handle Resize

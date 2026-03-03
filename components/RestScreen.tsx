@@ -7,6 +7,9 @@ import { GlassCard } from './GlassCard';
 import { SephirotFog } from './SephirotFog';
 import { MoodModal } from './MoodModal';
 import { SitrepContent } from './SitrepContent';
+import { ClanDetailModal } from './ClanDetailModal';
+import { OracleFeed } from './OracleFeed';
+import { WheelPicker } from './inputs/WheelPicker';
 
 interface RestScreenProps {
     onClose: () => void;
@@ -87,11 +90,61 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         }
     };
 
+    const [showCancelButton, setShowCancelButton] = useState(false);
+    const cancelAnimationFrameRef = useRef<number | null>(null);
+    const cancelStartTimeRef = useRef<number | null>(null);
+    const [cancelProgress, setCancelProgress] = useState(0);
+
     const handleDeepWorkStart = () => {
         const minutes = parseInt(selectedDeepWorkTime);
         setDeepWorkTimeLeft(minutes * 60);
         setDeepWorkActive(true);
         setIsDeepWorkOpen(false);
+    };
+
+    const updateCancelProgress = (timestamp: number) => {
+        if (!cancelStartTimeRef.current) cancelStartTimeRef.current = timestamp;
+        const elapsed = timestamp - cancelStartTimeRef.current;
+        const duration = 1500; // 1.5s to cancel
+        const progress = Math.min((elapsed / duration) * 100, 100);
+        
+        setCancelProgress(progress);
+
+        if (progress >= 100) {
+            cancelStartTimeRef.current = null;
+            cancelAnimationFrameRef.current = null;
+            setCancelProgress(0);
+            setDeepWorkActive(false);
+            setShowCancelButton(false);
+        } else {
+            cancelAnimationFrameRef.current = requestAnimationFrame(updateCancelProgress);
+        }
+    };
+
+    const handleCancelStart = (e?: React.MouseEvent | React.TouchEvent) => {
+        e?.stopPropagation(); // Prevent toggling visibility
+        if (cancelAnimationFrameRef.current) return;
+        
+        cancelStartTimeRef.current = null;
+        cancelAnimationFrameRef.current = requestAnimationFrame(updateCancelProgress);
+    };
+
+    const handleCancelEnd = (e?: React.MouseEvent | React.TouchEvent) => {
+        e?.stopPropagation();
+        if (cancelAnimationFrameRef.current) {
+            cancelAnimationFrame(cancelAnimationFrameRef.current);
+            cancelAnimationFrameRef.current = null;
+        }
+        cancelStartTimeRef.current = null;
+        setCancelProgress(0);
+    };
+
+    const toggleCancelVisibility = () => {
+        if (deepWorkActive) {
+            setShowCancelButton(prev => !prev);
+            // Auto hide after 3 seconds if not interacting
+            // setTimeout(() => setShowCancelButton(false), 3000); // Removed auto-hide to match request
+        }
     };
 
     useEffect(() => {
@@ -102,6 +155,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             }, 1000);
         } else if (deepWorkTimeLeft === 0) {
             setDeepWorkActive(false);
+            // Optionally notify completion
         }
         return () => clearInterval(interval);
     }, [deepWorkActive, deepWorkTimeLeft]);
@@ -111,8 +165,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         const s = seconds % 60;
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
-
-    // Animation for mounting
 
     // Animation for mounting
     const [mounted, setMounted] = useState(false);
@@ -180,6 +232,99 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
     const cycleProgress = getCycleProgress();
     const daysLeft = activeCycle ? Math.ceil((new Date(activeCycle.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
+    // If Deep Work is Active, show immersive screen
+    if (deepWorkActive) {
+        return (
+            <Portal>
+                <div 
+                    className="fixed inset-0 z-[20000] bg-black flex flex-col items-center justify-start pt-32 cursor-pointer overflow-hidden"
+                    onClick={toggleCancelVisibility}
+                >
+                    {/* Fog Background - Passando pontos dummy para garantir renderização */}
+                    <div className="absolute inset-0 opacity-40 pointer-events-none">
+                        <SephirotFog 
+                            mode="deepwork" 
+                            color="#22d3ee" 
+                            points={[{x: 50, y: 50, level: 1}]} // Pontos mínimos para o shader não reclamar
+                        />
+                    </div>
+                    
+                    <div className="relative z-10 flex flex-col items-center gap-4 pointer-events-none opacity-80">
+                        {/* Relógio menor e mais discreto */}
+                        <div className="w-32 h-32 rounded-full border border-cyan-500/5 flex items-center justify-center relative">
+                             {/* Anéis de rotação mais sutis */}
+                             <div className="absolute inset-0 border border-cyan-500/10 rounded-full animate-[spin_20s_linear_infinite]" />
+                             <div className="absolute inset-2 border border-cyan-500/5 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
+                             
+                             <div className="text-2xl font-light text-cyan-400/80 tracking-widest tabular-nums font-mono drop-shadow-[0_0_10px_rgba(34,211,238,0.3)]">
+                                {formatDeepWorkTime(deepWorkTimeLeft)}
+                            </div>
+                        </div>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-500/30">
+                            Deep Work
+                        </div>
+                    </div>
+
+                    {showCancelButton && (
+                         <div 
+                            className="absolute bottom-20 z-20 animate-fade-in"
+                            onClick={e => e.stopPropagation()}
+                         >
+                            <button
+                                onMouseDown={(e) => handleCancelStart(e)}
+                                onMouseUp={(e) => handleCancelEnd(e)}
+                                onMouseLeave={(e) => handleCancelEnd(e)}
+                                onTouchStart={(e) => handleCancelStart(e)}
+                                onTouchEnd={(e) => handleCancelEnd(e)}
+                                className="relative w-24 h-24 rounded-full bg-black/40 border border-white/10 flex items-center justify-center backdrop-blur-sm group hover:border-white/20 transition-all active:scale-95"
+                                style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
+                            >
+                                {/* Progress Ring SVG */}
+                                <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+                                    {/* Background Track */}
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="46"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.1)"
+                                        strokeWidth="2"
+                                    />
+                                    {/* Progress Arc */}
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="46"
+                                        fill="none"
+                                        stroke="#ffffff"
+                                        strokeWidth="3"
+                                        strokeDasharray="289" // 2 * pi * 46
+                                        strokeDashoffset={289 - (289 * cancelProgress) / 100}
+                                        strokeLinecap="round"
+                                        className="transition-all duration-75 ease-linear"
+                                        style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }}
+                                    />
+                                </svg>
+                                
+                                <div className="relative z-10 flex flex-col items-center justify-center gap-1">
+                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-active:bg-white/20 transition-colors">
+                                        <XCircleIcon className="w-4 h-4 text-gray-400 group-active:text-white" />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-active:text-white transition-colors">
+                                        Segure
+                                    </span>
+                                </div>
+                            </button>
+                            <div className="text-[8px] text-gray-600 text-center mt-3 uppercase tracking-widest opacity-0 animate-fade-in delay-75">
+                                Para Cancelar
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </Portal>
+        );
+    }
 
     return (
         <Portal>

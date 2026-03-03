@@ -143,7 +143,11 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         arenaNames: assets.flatMap(a => a.arenas.map(ar => ar.name)),
         staleArenas: [], // Logic to find stale arenas
         completedActionsInCycle: 0, // Logic needed
-        pendingActionsToday: tasks.filter(t => t.date === now.toISOString().split('T')[0] && !t.completed).length,
+        // Fix: pendingActionsToday should count ALL scheduled tasks for today that are not completed
+        pendingActionsToday: tasks.filter(t => {
+            const isToday = t.date === now.toLocaleDateString('pt-BR').split('T')[0] || t.date === now.toISOString().split('T')[0]; // Support both formats
+            return isToday && !t.completed;
+        }).length,
         overdueActions: 0, // Logic needed
         activeMode: currentMode,
         customModeInstructions: oraclePreferences?.customModeInstructions || null,

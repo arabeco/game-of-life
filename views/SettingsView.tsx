@@ -408,6 +408,15 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [showChallengeModal, setShowChallengeModal] = useState(false);
     const [selectedFriendForChallenge, setSelectedFriendForChallenge] = useState<UserProfile | null>(null);
 
+    const handleCreateChallenge = (friend: UserProfile) => {
+        setSelectedFriendForChallenge(friend);
+        setShowChallengeModal(false);
+    };
+
+    const handleOpenChallengeModal = () => {
+        setShowChallengeModal(true);
+    };
+
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>

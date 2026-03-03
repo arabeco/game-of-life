@@ -705,10 +705,8 @@ const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [showBootRitual, setShowBootRitual] = useState(false);
-    // Inicia mostrando o splash apenas se não foi visto nesta sessão
-    const [showSplash, setShowSplash] = useState(() => {
-        return !sessionStorage.getItem('hasSeenSplash');
-    });
+    // Inicia mostrando o splash sempre
+    const [showSplash, setShowSplash] = useState(true);
 
     const handleSplashComplete = () => {
         setShowSplash(false);
@@ -717,9 +715,8 @@ const App: React.FC = () => {
 
     // Auto-dismiss splash if session is restored (Only show before login)
     useEffect(() => {
-        if (session && showSplash) {
-            handleSplashComplete();
-        }
+        // If session is restored, we don't automatically hide splash anymore
+        // We wait for the video to finish via SplashScreen component logic
     }, [session, showSplash]);
 
     useEffect(() => {
@@ -800,13 +797,7 @@ const App: React.FC = () => {
     }, []);
 
     if (loading) {
-        return showSplash ? (
-            <SplashScreen onComplete={handleSplashComplete} />
-        ) : (
-            <div className="w-screen h-screen flex items-center justify-center bg-black text-gray-500 font-mono text-sm animate-pulse">
-                Sincronizando...
-            </div>
-        );
+        return <SplashScreen onComplete={handleSplashComplete} isLoading={loading} />;
     }
 
     const renderContent = () => {

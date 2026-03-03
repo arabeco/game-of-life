@@ -86,7 +86,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
     const handleDeleteCampaign = () => {
         if (!selectedCampaign) return;
-        if (confirm('Tem certeza que deseja excluir esta campanha?')) {
+        if (confirm('Tem certeza que deseja excluir esta campanha? TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
             deleteCampaign(selectedCampaign.id);
             setSelectedCampaignId(null);
         }
@@ -363,19 +363,20 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     </div>
                                 ) : (
                                     <div>
-                                        <div className="flex items-center gap-2 group mb-1">
+                                        <div className="flex items-center gap-2 mb-1">
                                             <h1 className="arena-title arena-title-text text-3xl text-[var(--skin-accent-color)] luxe-title-shadow leading-tight line-clamp-2" style={{ fontFamily: 'Cinzel, serif' }}>
                                                 {selectedCampaign.title}
                                             </h1>
                                             {!isCodexCampaign && (
-                                                <button onClick={() => setIsEditing(true)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-all">
-                                                    <EditIcon className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                            {!isCodexCampaign && (
-                                                <button onClick={handleDeleteCampaign} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-red-400 transition-all">
-                                                    <TrashIcon className="w-4 h-4" />
-                                                </button>
+                                                <div className="flex items-center gap-1 ml-2 bg-black/40 rounded-lg p-1 border border-white/10">
+                                                    <button onClick={() => setIsEditing(true)} className="p-1.5 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-all" title="Editar Título/Descrição">
+                                                        <EditIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <div className="w-px h-4 bg-white/10"></div>
+                                                    <button onClick={handleDeleteCampaign} className="p-1.5 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-all" title="Excluir Campanha">
+                                                        <TrashIcon className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                         

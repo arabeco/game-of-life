@@ -607,8 +607,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const deleteCampaign = async (id: string) => {
+      const campaign = campaigns.find(c => c.id === id);
       setCampaigns(prev => prev.filter(c => c.id !== id));
-      // Arenas are not deleted, they just lose their campaign context implicitly
+      
+      // Delete arenas inside the campaign (Cascading delete)
+      if (campaign?.arenaIds?.length) {
+          await Promise.all(campaign.arenaIds.map(arenaId => deleteArena(arenaId)));
+      }
       
       const { error } = await supabase.from('campaigns').delete().eq('id', id);
       if (error) console.error("Error deleting campaign:", error);

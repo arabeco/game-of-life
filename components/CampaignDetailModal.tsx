@@ -31,7 +31,7 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({ campai
     };
 
     const handleDelete = () => {
-        if (confirm('Tem certeza que deseja excluir esta campanha? As arenas não serão excluídas.')) {
+        if (confirm('Tem certeza que deseja excluir esta campanha? TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
             deleteCampaign(campaign.id);
             onClose();
         }

@@ -32,13 +32,7 @@ export const TrashIcon = Trash2Icon;
 export const DoorIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M13 4h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><polyline points="10 17 15 12 10 7"/><path d="M15 12H3"/></IconWrapper>);
 export const UsersIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></IconWrapper>);
 
-export const LinkIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <IconWrapper className={className}>
-        <path d="M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 0 0-7.07-7.07L12 3" />
-        <path d="M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 0 0 7.07 7.07L12 21" />
-    </IconWrapper>
-);
-
+export const LinkIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></IconWrapper>);
 
 export const FolderStarIcon: React.FC<{ className?: string }> = ({ className }) => (
     <IconWrapper className={className}>

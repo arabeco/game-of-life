@@ -1,9 +1,10 @@
-const CACHE_VERSION = 'elite2050-v1';
+const CACHE_VERSION = 'glyph-app-v2';
 const ASSETS = [
   '/',
   '/index.html',
   '/offline.html',
   '/manifest.webmanifest',
+  '/logo-diamond.png',
   '/logo-core.png'
 ];
 

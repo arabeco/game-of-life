@@ -313,7 +313,7 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuestReward, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode } = useGame();
     const isBasicMode = appMode === 'BASIC';
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
 
@@ -839,7 +839,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const handleClaimQuest = (quest: SeasonQuest) => {
         if (userProfile.completedSeasonMissions?.includes(quest.id)) return;
-        claimSeasonQuestReward(quest.id);
+        claimSeasonQuest(quest.id);
 
         const xp = quest.rewards.xp;
         const items = quest.rewards.items || [];

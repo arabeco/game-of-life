@@ -612,7 +612,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                     </button>
                     <button 
                         onClick={() => onSave(config)}
-                        className="flex-1 py-3 rounded-xl bg-[var(--skin-accent-color)] hover:brightness-110 text-black text-xs font-bold transition-all uppercase tracking-widest shadow-lg shadow-[var(--skin-accent-color)]/20"
+                        className="flex-1 py-3 rounded-xl luxe-skin-button"
                     >
                         Salvar
                     </button>

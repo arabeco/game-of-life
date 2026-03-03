@@ -2,7 +2,8 @@ import React from 'react';
 import { FeedEvent } from '../types';
 import { GlassCard } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
-import { CrownIcon } from './Icons';
+import { CrownIcon, ShareIcon } from './Icons';
+import { handleShare } from './Share';
 
 const getEventMessage = (event: FeedEvent): string => {
     switch (event.type) {
@@ -54,12 +55,12 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
     }
 
     return (
-        <GlassCard variant="neutral" className="p-3 animate-fade-in">
+        <GlassCard id={`feed-event-${event.id}`} variant="neutral" className="p-3 animate-fade-in relative">
             <div className="flex items-start space-x-3">
                 <img src={author.avatarUrl} alt={author.nickname} className="w-10 h-10 rounded-full border-2 border-white/20"/>
                 <div className="flex-grow">
                     <div className="flex justify-between items-baseline">
-                        <p className="text-sm">
+                        <p className="text-sm pr-6">
                             <span className="font-bold text-white">{author.nickname}</span>
                             <span className="text-gray-400"> {getEventMessage(event)}</span>
                         </p>
@@ -67,9 +68,18 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                     </div>
                      <div className="flex items-center space-x-4 mt-2">
                         <span className="text-2xl">{getEventIcon(event)}</span>
-                        <button className="p-1 text-gray-400 hover:text-[var(--gold)] transition-colors">
-                            <CrownIcon className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button className="p-1 text-gray-400 hover:text-[var(--skin-accent-color)] transition-colors" data-html2canvas-ignore>
+                                <CrownIcon className="w-5 h-5" />
+                            </button>
+                            <button 
+                                onClick={() => handleShare(`feed-event-${event.id}`, `Conquista de ${author.nickname} - Life OS`)}
+                                className="p-1 text-gray-400 hover:text-white transition-colors"
+                                data-html2canvas-ignore
+                            >
+                                <ShareIcon className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

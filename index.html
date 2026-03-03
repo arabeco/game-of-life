@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo-core.png" />
-    <link rel="apple-touch-icon" href="/logo-core.png" />
+    <link rel="icon" type="image/png" href="/logo-diamond.png" />
+    <link rel="apple-touch-icon" href="/logo-diamond.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -584,6 +584,51 @@
       ::-webkit-scrollbar-thumb:hover { background: var(--accent-silver); }
       .hide-scrollbar::-webkit-scrollbar { display: none; }
       .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* RestScreen Animations */
+      @keyframes smoke-slow {
+        0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+        33% { transform: translate(-45%, -55%) rotate(5deg) scale(1.1); }
+        66% { transform: translate(-55%, -45%) rotate(-5deg) scale(0.9); }
+        100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+      }
+      @keyframes smoke-slower {
+        0% { transform: translate(-20%, -20%) rotate(0deg) scale(1); }
+        50% { transform: translate(-25%, -15%) rotate(-10deg) scale(1.2); }
+        100% { transform: translate(-20%, -20%) rotate(0deg) scale(1); }
+      }
+      .animate-smoke-slow {
+        animation: smoke-slow 40s ease-in-out infinite;
+      }
+      .animate-smoke-slower {
+        animation: smoke-slower 60s ease-in-out infinite;
+      }
+      @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-down {
+        animation: fadeInDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      @keyframes unlock {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); filter: brightness(1.5) drop-shadow(0 0 15px var(--skin-accent-color)); }
+        100% { transform: scale(1); }
+      }
+      .animate-unlock {
+        animation: unlock 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .delay-100 { animation-delay: 100ms; }
+      .delay-200 { animation-delay: 200ms; }
+      .delay-300 { animation-delay: 300ms; }
+      .delay-500 { animation-delay: 500ms; }
     </style>
 <script type="importmap">
 {

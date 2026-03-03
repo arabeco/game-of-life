@@ -7,6 +7,8 @@ import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { GlassCard } from '../components/GlassCard';
 import { Portal } from '../components/Portal';
 import { AssetDecagon } from '../components/AssetDecagon';
+import { ShareIcon } from '../components/Icons';
+import { handleShare } from '../components/Share';
 
 type MasteryMode = 'LEGADO' | 'SOBERANO';
 
@@ -110,7 +112,7 @@ export const MasteryView: React.FC = () => {
 
 
     return (
-        <div className="flex flex-col h-full space-y-4">
+        <div className="flex flex-col h-full space-y-4" id="mastery-capture-area">
             {/* Header Fixo com Decágono */}
             <div className="sticky top-[-16px] z-30 bg-black pb-4 pt-4 -mx-4 px-4 border-b border-white/5">
                 <div className="flex items-center justify-center bg-white/5 rounded-full p-1 mb-6 max-w-[160px] mx-auto">
@@ -118,11 +120,11 @@ export const MasteryView: React.FC = () => {
                     <button onClick={() => setMode('SOBERANO')} className={`w-1/2 py-1 text-[9px] font-bold rounded-full transition-colors ${mode === 'SOBERANO' ? 'bg-white/10 text-white' : 'text-gray-500'}`}>SOBERANO</button>
                 </div>
                 
-                <div className="mx-auto max-w-[220px]">
+                <div className="mx-auto max-w-[300px]">
                     <AssetDecagon 
                         assets={assets} 
                         tempLevels={tempLevels} 
-                        size={150} 
+                        size={280} 
                     />
                 </div>
             </div>
@@ -145,8 +147,15 @@ export const MasteryView: React.FC = () => {
                 })}
             </div>
 
-            <div className="sticky bottom-[-16px] bg-black pt-4 pb-4 -mx-4 px-4 border-t border-white/5 z-30">
-                <button onClick={() => setShowConfirmModal(true)} className="w-full py-3 rounded-xl luxe-skin-button transition-transform hover:scale-105">
+            <div className="sticky bottom-[-16px] bg-black pt-4 pb-4 -mx-4 px-4 border-t border-white/5 z-30 flex gap-2">
+                <button 
+                    onClick={() => handleShare('mastery-capture-area', 'Minha Maestria - Life OS')}
+                    className="p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+                    data-html2canvas-ignore
+                >
+                    <ShareIcon className="w-5 h-5" />
+                </button>
+                <button onClick={() => setShowConfirmModal(true)} className="flex-1 py-3 rounded-xl luxe-skin-button transition-transform hover:scale-105" data-html2canvas-ignore>
                     SALVAR NÍVEIS
                 </button>
             </div>

@@ -36,11 +36,18 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     return (
         <Portal>
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[10000] pointer-events-none flex items-start justify-center pt-24 px-4 animate-fade-in" onClick={onClose}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto" onClick={onClose} />
+            <GlassCard 
+                variant="neutral" 
+                className="w-full max-w-sm pointer-events-auto space-y-4 rounded-3xl shadow-2xl border border-white/10 relative" 
+                onClick={e => e.stopPropagation()}
+            >
                 <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-bold uppercase tracking-wider">Humor</h2>
-                    <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
+                    <h2 className="text-lg font-bold uppercase tracking-wider text-[var(--skin-accent-color)]">Humor</h2>
+                    <button onClick={onClose} className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+                        <XIcon className="w-5 h-5 text-gray-400"/>
+                    </button>
                 </div>
                 
                 <div className="text-center py-2 min-h-[48px] flex items-center justify-center">

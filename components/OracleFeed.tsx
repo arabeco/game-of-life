@@ -28,10 +28,11 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+            <div className="fixed inset-0 z-[10000] pointer-events-none flex items-start justify-center pt-20 px-4 animate-in fade-in duration-200" onClick={onClose}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto" onClick={onClose} />
             <GlassCard 
                 variant="neutral" 
-                className="w-full max-w-lg h-[85vh] m-4 rounded-3xl flex flex-col overflow-hidden !p-0 border border-white/10 shadow-2xl"
+                className="w-full max-w-lg h-[80vh] pointer-events-auto rounded-3xl flex flex-col overflow-hidden !p-0 border border-white/10 shadow-2xl relative"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header / Tabs */}

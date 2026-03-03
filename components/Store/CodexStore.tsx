@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { BIOLOGICAL_MACHINE_CODEX } from '../CodexLibrary';
+import { BIOLOGICAL_MACHINE_CODEX } from '../../data/initialCodex';
 import { CheckIcon, PlusIcon, CloseIcon } from '../Icons';
 import { ArenaCard } from '../ArenaCard';
 import { Arena, Action } from '../../types';
@@ -166,23 +166,24 @@ const createMockActions = (actions: any[], arenaId: string): Action[] => {
 }
 
 export const CodexStore: React.FC = () => {
-    const { userProfile, buyStoreItem, showToast } = useGame();
+    const { userCodexes, codexCatalog, buyCodex, showToast } = useGame();
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [selectedLevelArena, setSelectedLevelArena] = useState<{ arena: Arena, actions: Action[] } | null>(null);
     const [previewAction, setPreviewAction] = useState<Action | null>(null);
 
-    const availableCodexes = [BIOLOGICAL_MACHINE_CODEX];
-
-    const handlePurchase = async (codexId: string, price: number) => {
+    const handlePurchase = async (catalogId: string, price: number) => {
         if (purchasing) return;
-        setPurchasing(codexId);
+        setPurchasing(catalogId);
         try {
-            if (userProfile.unlockedItems?.codexes?.[codexId]) {
+            // Check if already owned by catalog title (since catalog ID != user codex ID)
+            const catalogItem = codexCatalog.find(c => c.id === catalogId);
+            const isOwned = userCodexes.some(uc => uc.name === catalogItem?.title);
+            
+            if (isOwned) {
                 showToast("Você já possui este Codex.");
                 return;
             }
-            await buyStoreItem(codexId, 'codex');
-            showToast("Codex adquirido com sucesso!");
+            await buyCodex(catalogId);
         } catch (error) {
             console.error("Failed to purchase Codex", error);
             showToast("Erro ao adquirir Codex.");
@@ -191,106 +192,117 @@ export const CodexStore: React.FC = () => {
         }
     };
 
+    console.log("CodexStore rendering with catalog:", codexCatalog);
+
     return (
         <div className="space-y-6 animate-fade-in pb-10">
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white uppercase tracking-wider">Codexes Disponíveis</h2>
-                <div className="text-xs text-gray-400">
-                    Expanda seu conhecimento e habilidades com novos protocolos.
-                </div>
-            </div>
-
             <div className="grid grid-cols-1 gap-6">
-                {availableCodexes.map(codex => {
-                    const isOwned = userProfile.unlockedItems?.codexes?.[codex.id];
+                {codexCatalog && codexCatalog.length > 0 ? (
+                    codexCatalog.map(codex => {
+                        console.log("Rendering Codex Card for:", codex.title);
+                        const isOwned = userCodexes && userCodexes.some(uc => uc.name === codex.title);
+                        const template = codex.template;
 
-                    return (
-                        <GlassCard key={codex.id} variant="neutral" className="relative group overflow-hidden border-purple-500/30">
-                            <div className="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none" />
-                            
-                            <div className="relative z-10 flex flex-col h-full space-y-6 p-2">
-                                {/* Header */}
-                                <div className="flex flex-col md:flex-row gap-4 items-start">
-                                    <div className="p-4 bg-black/40 rounded-2xl border border-purple-500/20 text-5xl shadow-[0_0_20px_rgba(168,85,247,0.2)] flex-shrink-0">
-                                        {codex.coverImage}
-                                    </div>
-                                    <div className="flex-grow space-y-2">
-                                        <div className="flex justify-between items-start">
-                                            <h2 className="text-2xl font-black text-gray-100 uppercase tracking-tight">{codex.title}</h2>
-                                            {isOwned ? (
-                                                <span className="px-3 py-1 bg-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-500/30 flex items-center gap-1">
-                                                    <CheckIcon className="w-3 h-3" /> Adquirido
-                                                </span>
-                                            ) : (
-                                                <div className="px-3 py-1 bg-black/40 text-yellow-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-yellow-500/30">
-                                                    {codex.price === 0 ? 'GRÁTIS' : `${codex.price} 🪙`}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-gray-400 leading-relaxed max-w-2xl">{codex.description}</p>
-                                        <div className="flex flex-wrap gap-2 pt-1">
-                                            {codex.tags.map(tag => (
-                                                <span key={tag} className="text-[9px] bg-white/5 px-2 py-0.5 rounded text-gray-500 uppercase font-bold tracking-wider border border-white/5">
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                        if (!template) {
+                            console.warn("Codex missing template, skipping:", codex.id);
+                            return null; // Skip invalid entries
+                        }
+
+                        return (
+                            <GlassCard key={codex.id} variant="neutral" className="relative group overflow-hidden border-purple-500/30">
+                                <div className="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none" />
                                 
-                                {/* Levels Slider with Arena Cards */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between px-1">
-                                        <div className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Estrutura do Protocolo</div>
-                                        <div className="text-[10px] text-gray-600">{codex.levels.length} Fases • {codex.durationDays} Dias</div>
+                                <div className="relative z-10 flex flex-col h-full space-y-6 p-2">
+                                    {/* Header */}
+                                    <div className="flex flex-col md:flex-row gap-4 items-start">
+                                        <div className="p-4 bg-black/40 rounded-2xl border border-purple-500/20 text-5xl shadow-[0_0_20px_rgba(168,85,247,0.2)] flex-shrink-0">
+                                            {codex.cover_image || '📜'}
+                                        </div>
+                                        <div className="flex-grow space-y-2">
+                                            <div className="flex justify-between items-start">
+                                                <h2 className="text-2xl font-black text-gray-100 uppercase tracking-tight">{codex.title}</h2>
+                                                {isOwned ? (
+                                                    <span className="px-3 py-1 bg-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-500/30 flex items-center gap-1">
+                                                        <CheckIcon className="w-3 h-3" /> Adquirido
+                                                    </span>
+                                                ) : (
+                                                    <div className="px-3 py-1 bg-black/40 text-yellow-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-yellow-500/30">
+                                                        {codex.price_brl === 0 ? 'GRÁTIS' : `R$ ${codex.price_brl}`}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-400 leading-relaxed max-w-2xl">{codex.description}</p>
+                                            <div className="flex flex-wrap gap-2 pt-1">
+                                                <span className="text-[9px] bg-white/5 px-2 py-0.5 rounded text-gray-500 uppercase font-bold tracking-wider border border-white/5">
+                                                    {codex.duration_days} Dias
+                                                </span>
+                                                {template.tags.map(tag => (
+                                                    <span key={tag} className="text-[9px] bg-white/5 px-2 py-0.5 rounded text-gray-500 uppercase font-bold tracking-wider border border-white/5">
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                     
-                                    <div className="flex overflow-x-auto gap-4 pb-4 px-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
-                                        {codex.levels.map((level) => {
-                                            const mockArena = createMockArena(level, codex.id);
-                                            const mockActions = createMockActions(level.actions, mockArena.id);
-                                            
-                                            return (
-                                                <div 
-                                                    key={level.level} 
-                                                    className="snap-center flex-shrink-0 w-64 transform transition-transform hover:scale-105"
-                                                >
-                                                    <ArenaCard
-                                                        arena={mockArena}
-                                                        actions={mockActions}
-                                                        onClick={() => setSelectedLevelArena({ arena: mockArena, actions: mockActions })}
-                                                        variant="dossier"
-                                                        // Pass empty tasks to ensure no completion checks interfere with store view
-                                                        tasks={[]}
-                                                    />
-                                                </div>
-                                            );
-                                        })}
+                                    {/* Levels Slider with Arena Cards */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between px-1">
+                                            <div className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Estrutura do Protocolo</div>
+                                            <div className="text-[10px] text-gray-600">{template.levels.length} Fases</div>
+                                        </div>
+                                        
+                                        <div className="flex overflow-x-auto gap-4 pb-4 px-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
+                                            {template.levels.map((level) => {
+                                                const mockArena = createMockArena(level, codex.id);
+                                                const mockActions = createMockActions(level.actions, mockArena.id);
+                                                
+                                                return (
+                                                    <div 
+                                                        key={level.level} 
+                                                        className="snap-center flex-shrink-0 w-64 transform transition-transform hover:scale-105"
+                                                    >
+                                                        <ArenaCard
+                                                            arena={mockArena}
+                                                            actions={mockActions}
+                                                            onClick={() => setSelectedLevelArena({ arena: mockArena, actions: mockActions })}
+                                                            variant="dossier"
+                                                            // Pass empty tasks to ensure no completion checks interfere with store view
+                                                            tasks={[]}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-white/5 flex justify-end">
+                                        {isOwned ? (
+                                            <button 
+                                                disabled
+                                                className="px-8 py-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-bold text-sm flex items-center gap-2 cursor-default"
+                                            >
+                                                <CheckIcon className="w-4 h-4" /> NA BIBLIOTECA
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                onClick={() => handlePurchase(codex.id, codex.price_brl)}
+                                                disabled={!!purchasing}
+                                                className="px-8 py-3 rounded-xl bg-[var(--skin-accent-color)] text-black font-black uppercase tracking-wider hover:brightness-110 transition-all shadow-[0_0_15px_var(--sephirot-glow-color)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {purchasing === codex.id ? 'PROCESSANDO...' : codex.price_brl === 0 ? 'RESGATAR AGORA' : `COMPRAR • R$ ${codex.price_brl}`}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-
-                                <div className="pt-4 border-t border-white/5 flex justify-end">
-                                    {isOwned ? (
-                                        <button 
-                                            disabled
-                                            className="px-8 py-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-bold text-sm flex items-center gap-2 cursor-default"
-                                        >
-                                            <CheckIcon className="w-4 h-4" /> NA BIBLIOTECA
-                                        </button>
-                                    ) : (
-                                        <button 
-                                            onClick={() => handlePurchase(codex.id, codex.price)}
-                                            disabled={!!purchasing}
-                                            className="px-8 py-3 rounded-xl bg-[var(--skin-accent-color)] text-black font-black uppercase tracking-wider hover:brightness-110 transition-all shadow-[0_0_15px_var(--sephirot-glow-color)] disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {purchasing === codex.id ? 'PROCESSANDO...' : codex.price === 0 ? 'RESGATAR AGORA' : `COMPRAR • ${codex.price} 🪙`}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </GlassCard>
-                    );
-                })}
+                            </GlassCard>
+                        );
+                    })
+                ) : (
+                    <div className="text-center py-20 text-gray-500">
+                        <p>Nenhum codex disponível no catálogo no momento.</p>
+                    </div>
+                )}
             </div>
 
             {/* Arena Detail Modal Overlay */}

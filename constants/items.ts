@@ -217,6 +217,33 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_exclusive_001', name: 'Empreendedor', category: 'skin', tier: 4, rarity: 'epic', icon: '💼', costGold: 500, isGoldExclusive: true },
     { id: 'item_aura_exclusive_001', name: 'Fênix Dourada', category: 'aura', tier: 5, rarity: 'legendary', icon: '🐦', costGold: 800, isGoldExclusive: true },
     { id: 'item_border_exclusive_001', name: 'Fundador', category: 'border', tier: 4, rarity: 'epic', icon: '🏛️', costGold: 400, isGoldExclusive: true },
+
+    // --- INSÍGNIAS ---
+    // NOBREZA (Ouro)
+    { id: 'insignia_rank_1_vagante', name: 'Ouro: Vagante', category: 'insignia', tier: 1, rarity: 'common', icon: '👤', description: "Patente de Ouro: Reconhecimento inicial para aqueles que começam sua jornada." },
+    { id: 'insignia_rank_2_escudeiro', name: 'Ouro: Escudeiro', category: 'insignia', tier: 1, rarity: 'common', icon: '🛡️', description: "Patente de Ouro: Concedida aos que demonstraram compromisso inicial com a ordem." },
+    { id: 'insignia_rank_3_cavaleiro', name: 'Ouro: Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '⚔️', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constância em batalha." },
+    { id: 'insignia_rank_4_lorde', name: 'Ouro: Lorde', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏰', description: "Patente de Ouro: Um título de nobreza para quem lidera pelo exemplo." },
+    { id: 'insignia_rank_5_barao', name: 'Ouro: Barão', category: 'insignia', tier: 4, rarity: 'epic', icon: '👑', description: "Patente de Ouro: Elite da nobreza, reservada aos mestres da disciplina." },
+    { id: 'insignia_rank_6_conde', name: 'Ouro: Conde', category: 'insignia', tier: 4, rarity: 'epic', icon: '🎖️', description: "Patente de Ouro: Reconhecimento por serviços notáveis prestados ao reino." },
+    { id: 'insignia_rank_7_duque', name: 'Ouro: Duque', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🏅', description: "Patente de Ouro: Um alto título de nobreza, concedido apenas aos mais dignos." },
+    { id: 'insignia_rank_8_principe', name: 'Ouro: Príncipe', category: 'insignia', tier: 5, rarity: 'legendary', icon: '💎', description: "Patente de Ouro: Sangue real. Seu nome é conhecido em todas as terras." },
+    { id: 'insignia_rank_9_rei', name: 'Ouro: Rei', category: 'insignia', tier: 5, rarity: 'legendary', icon: '👑', description: "Patente de Ouro: A autoridade máxima. Sua palavra é lei." },
+    { id: 'insignia_rank_10_soberano', name: 'Ouro: Soberano', category: 'insignia', tier: 5, rarity: 'legendary', icon: '⚜️', description: "Patente de Ouro: O ápice da maestria. Poucos alcançam este patamar de soberania." },
+
+    // RELATÓRIOS (Bronze)
+    { id: 'insignia_sitrep_s', name: 'Bronze: Rank S', category: 'insignia', tier: 4, rarity: 'epic', icon: '⭐', description: "Relatório de Bronze: Concedida por um Relatório Diário com score perfeito (100%)." },
+    { id: 'insignia_sitrep_a', name: 'Bronze: Rank A', category: 'insignia', tier: 3, rarity: 'rare', icon: '🅰️', description: "Relatório de Bronze: Concedida por um Relatório Diário com score superior a 90%." },
+    { id: 'insignia_sitrep_b', name: 'Bronze: Rank B', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🅱️', description: "Relatório de Bronze: Concedida por um Relatório Diário com score superior a 80%." },
+    { id: 'insignia_sitrep_c', name: 'Bronze: Rank C', category: 'insignia', tier: 1, rarity: 'common', icon: '©️', description: "Relatório de Bronze: Concedida por um Relatório Diário com score superior a 70%." },
+
+    // QUESTS (Prata)
+    { id: 'insignia_quest_master', name: 'Prata: Mestre de Quests', category: 'insignia', tier: 3, rarity: 'rare', icon: '📜', description: "Missão de Prata: Concedida ao completar missões desafiadoras da temporada." },
+
+    // NOVAS INSÍGNIAS (Recompensas Automáticas)
+    { id: 'insignia_report_comum', name: 'Bronze: Relatório Comum', category: 'insignia', tier: 1, rarity: 'common', icon: '🥉', description: "Relatório de Bronze: Concedida por completar o Relatório Diário com sucesso." },
+    { id: 'insignia_quest_incomum', name: 'Prata: Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🥈', description: "Missão de Prata: Concedida ao concluir uma missão da temporada." },
+    { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '🥇', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência." },
 ];
 
 export const resolveItemDef = (itemId: string): ItemDef | undefined => {

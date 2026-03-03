@@ -46,40 +46,39 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
         return () => clearInterval(timer);
     }, [onComplete, onOpen, onClose]);
 
+    if (progress >= 100) return null;
+
     const currentPhrase = PHRASES.find(p => progress <= p.threshold)?.text || 'Relatório pronto';
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4">
-            <div className="w-full max-w-xs relative">
-                <GlassCard variant="neutral" className="p-6 flex flex-col items-center space-y-6">
-                    {/* Video Container */}
-                    <div className="w-full aspect-[9/16] max-h-[60vh] bg-black/50 rounded-lg overflow-hidden relative border border-white/10 shadow-2xl">
-                        <VideoPlayer
-                            src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`}
-                            onEnd={() => {}} // Progress controls completion
-                            className="w-full h-full object-cover"
-                            placeholderLabel="Gerando Relatório..."
-                            duration={5000}
-                            playbackRate={0.85} // Slow down by 15%
-                            startTime={0.5} // Start 0.5s late
-                        />
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full space-y-2">
-                        <div className="w-full bg-black/50 h-2 rounded-full overflow-hidden border border-white/10">
-                            <div 
-                                className="h-full bg-gradient-to-r from-[var(--bronze)] via-[var(--gold)] to-[var(--skin-accent-color)] transition-all duration-100 ease-linear shadow-[0_0_10px_var(--gold)]"
-                                style={{ width: `${progress}%` }}
-                            />
+            <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[9999] flex items-center justify-center animate-fade-in">
+                <GlassCard className="w-full max-w-[280px] aspect-[9/16] relative overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+                    <VideoPlayer
+                        src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`}
+                        onEnd={() => {}} // Progress controls completion
+                        className="w-full h-full object-cover"
+                        placeholderLabel="Sincronizando..."
+                        duration={5000}
+                        playbackRate={0.85}
+                        startTime={0.5}
+                    />
+                    
+                    {/* Overlay with subtle progress */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none flex flex-col justify-end p-6">
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--skin-accent-color)] text-center animate-pulse drop-shadow-lg">
+                                {currentPhrase}
+                            </p>
+                            <div className="w-full bg-black/40 h-1 rounded-full overflow-hidden border border-white/5 backdrop-blur-sm">
+                                <div 
+                                    className="h-full bg-[var(--skin-accent-color)] transition-all duration-100 ease-linear shadow-[0_0_8px_var(--skin-accent-color)]"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
                         </div>
-                        <p className="text-center text-xs font-mono text-[var(--gold)] uppercase tracking-widest animate-pulse">
-                            {currentPhrase}
-                        </p>
                     </div>
                 </GlassCard>
-            </div>
             </div>
         </Portal>
     );

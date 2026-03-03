@@ -1,11 +1,7 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { GlassCard } from './GlassCard';
-import { XIcon, LightbulbIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon } from './Icons';
+import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon } from './Icons';
 import { ScheduledTask, Action, DailyCommitment } from '../types';
-import { Portal } from './Portal';
 import { handleShare } from './Share';
 import { resolveItemDef } from '../constants/items';
 
@@ -16,13 +12,9 @@ const parseDate = (value: string) => {
 
 const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, isClanQuestActionId: (actionId: string) => boolean) => {
-    // Filter tasks that are part of the daily commitment by ID.
-    // We ignore the date check to handle potential timezone mismatches or rescheduled tasks that are still committed.
+const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment) => {
     const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id));
     
-    // Check if ANY task for this actionId is completed today, not just the specific committed instance.
-    // This allows "general" completion as requested.
     const tasksWithStatus = committedTasks.map(task => {
         const isCompleted = tasks.some(t => 
             t.actionId === task.actionId && 
@@ -40,10 +32,8 @@ const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyComm
     return { committedTasks, tasksWithStatus, completedCount, totalCount: committedTasks.length };
 };
 
-// --- Sub Components ---
-
 const CycleHeader: React.FC = () => {
-    const { activeCycle, tasks, dailyCommitment } = useGame();
+    const { activeCycle, dailyCommitment } = useGame();
     if (!activeCycle) return null;
 
     const startDate = parseDate(activeCycle.startDate);
@@ -124,32 +114,20 @@ const BattleTaskItem: React.FC<{
     );
 };
 
-// --- Main Modal ---
-
-export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
     const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas, checklistItems, showToast } = useGame();
 
     const [isAdjusting, setIsAdjusting] = useState(false);
 
-    const isClanQuestActionId = (actionId: string) => {
-        const action = actions.find(a => a.id === actionId);
-        if (!action) return false;
-        const arena = getArenas().find(ar => ar.id === action.arenaId);
-        if (!arena?.name) return false;
-        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        return normalized.includes('quests - cla');
-    };
-
     const handleCommitAction = async (actionId: string) => {
         const today = new Date().toISOString().split('T')[0];
-        const newTask = await scheduleTask(actionId, today, 0); // Schedule for today with no specific time
+        const newTask = await scheduleTask(actionId, today, 0); 
         if (newTask) {
             setDailyCommitment([...dailyCommitment.taskIds, newTask.id]);
         }
     };
     
     const handleQuickComplete = async (actionId: string) => {
-        // Check if there's already a task for this action today
         const today = dailyCommitment.date;
         const existingTask = tasks.find(t => t.actionId === actionId && t.date === today && !t.completed);
         
@@ -157,10 +135,8 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             toggleTaskCompletion(existingTask.id);
             showToast("Ação marcada como completa!");
         } else {
-            // Create a new task and mark it as completed immediately
             const newTask = await scheduleTask(actionId, today, 0);
             if (newTask) {
-                // We need to wait a bit or just call toggle since it was created as pending
                 toggleTaskCompletion(newTask.id);
                 showToast("Ação realizada!");
             }
@@ -177,7 +153,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return acc;
     }, {} as Record<string, number>), [taskPool, actions, getArenas]);
     
-    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment, isClanQuestActionId), [tasks, dailyCommitment, actions, getArenas]);
+    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment), [tasks, dailyCommitment, actions, getArenas]);
     
     const getActionById = (id: string) => actions.find(a => a.id === id);
 
@@ -226,13 +202,10 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const renderBattle = () => {
         const progress = commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 0;
         
-        // Fix: Use dailyCommitment.date instead of system date to ensure consistency with game logic
         const [y, m, d] = dailyCommitment.date.split('-').map(Number);
-        const dateObj = new Date(y, m - 1, d);
         const monthNames = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
         const todayStr = `${d.toString().padStart(2, '0')} DE ${monthNames[m - 1]} DE ${y}`;
 
-        // Office Mode Metrics
         const workTasks = commitmentStats.tasksWithStatus.filter(({ task }) => {
             const action = getActionById(task.actionId);
             return action?.name?.includes('[CLÃ]') || action?.name?.includes('[URGENTE]');
@@ -378,7 +351,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <button 
                         onClick={() => {
                             if (expDeposited > 0) showToast(`✦ +${expDeposited} XP foram adicionados ao seu ciclo`);
-                            onClose();
+                            if (onClose) onClose();
                         }} 
                         className="w-full py-2 rounded-xl luxe-button-secondary text-sm"
                     >
@@ -447,47 +420,21 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <div className="text-center">
                         <p className="text-xs text-gray-500 mb-2">Vá para a aba <span className="text-white font-bold">CICLOS</span> para iniciar sua jornada.</p>
                     </div>
-                    <button onClick={onClose} className="w-full py-3 rounded-xl luxe-button-secondary text-sm font-bold">
-                        CONTINUAR EM MODO ZEN
-                    </button>
+                    {onClose && (
+                        <button onClick={onClose} className="w-full py-3 rounded-xl luxe-button-secondary text-sm font-bold">
+                            CONTINUAR EM MODO ZEN
+                        </button>
+                    )}
                 </div>
             </div>
         );
     };
 
-    const renderContent = () => {
-        if (!activeCycle) return renderNoCycle();
-        switch (dailyCommitment.stage) {
-            case 'planning': return renderPlanning();
-            case 'battle': return renderBattle();
-            case 'judgment': return renderJudgment();
-            default: return null;
-        }
-    };
-    
-    const getLightbulbColor = () => {
-        if (!dailyCommitment.isLocked) return 'accent-text';
-        if (commitmentStats.totalCount === 0) return 'accent-text';
-        const ratio = commitmentStats.completedCount / commitmentStats.totalCount;
-        if (ratio === 1) return 'text-green-400';
-        if (ratio >= 0.5) return 'text-yellow-400';
-        return 'text-red-400';
-    };
-
-    return (
-        <Portal>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <GlassCard variant="dossier" className="w-full max-w-md m-4 rounded-3xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                    <div className="relative flex items-center justify-center p-4 border-b border-white/10">
-                        <div className="flex items-center space-x-2">
-                            <LightbulbIcon className={`w-6 h-6 transition-colors duration-500 ${getLightbulbColor()}`} />
-                            <h2 className="text-lg font-bold uppercase tracking-wider text-center">Plano Diário</h2>
-                        </div>
-                        <button onClick={onClose} className="absolute right-4 p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
-                    </div>
-                    {renderContent()}
-                </GlassCard>
-            </div>
-        </Portal>
-    );
+    if (!activeCycle) return renderNoCycle();
+    switch (dailyCommitment.stage) {
+        case 'planning': return renderPlanning();
+        case 'battle': return renderBattle();
+        case 'judgment': return renderJudgment();
+        default: return null;
+    }
 };

@@ -75,7 +75,7 @@ export const ClanMissionsModal: React.FC<{ onClose: () => void }> = ({ onClose }
                                         {!mission.pledged ? (
                                             <button 
                                                 onClick={() => handlePledge(mission.id)}
-                                                className="px-3 py-1 rounded-lg text-xs font-bold border border-[var(--skin-accent-color)] accent-text hover:bg-[var(--skin-accent-color)] hover:text-black transition-colors"
+                                                className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 luxe-skin-button"
                                             >
                                                 FIRMAR PACTO
                                             </button>

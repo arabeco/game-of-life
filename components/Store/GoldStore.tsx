@@ -66,7 +66,7 @@ export const GoldStore: React.FC = () => {
                             <button 
                                 onClick={handleBuyPremium}
                                 disabled={!!loading}
-                                className="w-full py-3 bg-yellow-500 text-black font-black uppercase tracking-wider rounded-xl hover:bg-yellow-400 transition-colors shadow-lg shadow-yellow-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading === 'premium' ? '...' : `${ECONOMY.gold_products.premium_monthly.cost} 🪙`}
                             </button>

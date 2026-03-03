@@ -16,9 +16,9 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ select
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [deadline, setDeadline] = useState('');
+    const [type, setType] = useState<'sequential' | 'parallel'>('sequential');
 
-    const allArenas = getArenas();
-    const selectedArenas = allArenas.filter(a => selectedArenaIds.includes(a.id));
+    const selectedArenas = getArenas().filter(a => selectedArenaIds.includes(a.id));
 
     const handleSave = () => {
         if (!title.trim()) return;
@@ -26,7 +26,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ select
         const arenaConfig = selectedArenaIds.reduce((acc, id, index) => ({
             ...acc,
             [id]: {
-                isLocked: index > 0,
+                isLocked: type === 'sequential' ? index > 0 : false,
                 isHidden: false
             }
         }), {});
@@ -36,7 +36,12 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ select
             description: description.trim(),
             deadline: deadline || undefined,
             arenaIds: selectedArenaIds,
-            arenaConfig
+            arenaConfig,
+            type,
+            status: 'active',
+            order: 0,
+            priority: 'media',
+            priorityOrder: 0
         });
 
         onCreated();
@@ -67,6 +72,41 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ select
                             className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors"
                             autoFocus
                         />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tipo de Campanha</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                onClick={() => setType('sequential')}
+                                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                                    type === 'sequential' 
+                                        ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] text-[var(--skin-accent-color)]' 
+                                        : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'
+                                }`}
+                            >
+                                <span className="text-2xl">⛓️</span>
+                                <div className="text-center">
+                                    <span className="text-xs font-bold block">Sequencial</span>
+                                    <span className="text-[10px] opacity-70">Fases desbloqueáveis</span>
+                                </div>
+                            </button>
+                            
+                            <button
+                                onClick={() => setType('parallel')}
+                                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                                    type === 'parallel' 
+                                        ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] text-[var(--skin-accent-color)]' 
+                                        : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'
+                                }`}
+                            >
+                                <span className="text-2xl">⚡</span>
+                                <div className="text-center">
+                                    <span className="text-xs font-bold block">Paralela</span>
+                                    <span className="text-[10px] opacity-70">Progresso simultâneo</span>
+                                </div>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="space-y-1">

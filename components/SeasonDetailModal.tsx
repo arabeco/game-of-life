@@ -392,6 +392,33 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
     const [selectedMission, setSelectedMission] = useState<SeasonMission | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
     const [viewMode, setViewMode] = useState<'missions' | 'quests'>('missions');
+    const [completedMission, setCompletedMission] = useState<SeasonMission | null>(null);
+    const [earnedInsignia, setEarnedInsignia] = useState<string | null>(null);
+
+    const handleClaimMission = async (mission: SeasonMission) => {
+        const primaryInsignia = await claimSeasonMission(mission.id);
+        setEarnedInsignia(primaryInsignia || 'insignia_quest_master');
+        setCompletedMission(mission);
+        setSelectedMission(null);
+    };
+
+    const handleClaimQuest = async (quest: SeasonQuest) => {
+        const primaryInsignia = await claimSeasonQuest(quest.id);
+        setEarnedInsignia(primaryInsignia || 'insignia_quest_incomum');
+        // Quests are treated as missions for the completion modal
+        setCompletedMission({
+            id: quest.id,
+            title: quest.title,
+            description: quest.description,
+            icon: quest.actionTemplate.icon,
+            reward_value: quest.rewards.xp || 0,
+            goal_value: quest.goal_value,
+            goal_type: 'actions_completed',
+            type: quest.type,
+            status: 'completed'
+        } as SeasonMission);
+        setSelectedQuest(null);
+    };
 
     const seasonArenaName = `Quests - ${season.name}`;
     const seasonArena = getArenas().find(a => a.name === seasonArenaName);
@@ -506,7 +533,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
                                         progress={getMissionProgress(mission)}
                                         isCompleted={isMissionCompleted(mission)}
                                         canClaim={canClaimMission(mission)}
-                                        onComplete={() => claimSeasonMission(mission.id)}
+                                        onComplete={() => handleClaimMission(mission)}
                                         onSelect={() => setSelectedMission(mission)}
                                     />
                                 ))
@@ -518,7 +545,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
                                         progress={getQuestProgress(quest)}
                                         isCompleted={isQuestCompleted(quest)}
                                         canClaim={canClaimQuest(quest)}
-                                        onComplete={() => claimSeasonQuest(quest.id)}
+                                        onComplete={() => handleClaimQuest(quest)}
                                         onSelect={() => setSelectedQuest(quest)}
                                     />
                                 ))
@@ -544,8 +571,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
                         isCompleted={isMissionCompleted(selectedMission)}
                         onClose={() => setSelectedMission(null)}
                         onClaim={() => {
-                            claimSeasonMission(selectedMission.id);
-                            setSelectedMission(null);
+                            handleClaimMission(selectedMission);
                         }}
                     />
                 )}
@@ -566,10 +592,24 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
                             setSelectedQuest(null);
                         }}
                         onClaim={() => {
-                            claimSeasonQuest(selectedQuest.id);
-                            setSelectedQuest(null);
+                            handleClaimQuest(selectedQuest);
                         }}
                         canClaim={canClaimQuest(selectedQuest)}
+                    />
+                )}
+
+                {completedMission && (
+                    <MissionCompletionModal 
+                        mission={completedMission}
+                        insignia={earnedInsignia}
+                        onOk={() => {
+                            setCompletedMission(null);
+                            setEarnedInsignia(null);
+                        }}
+                        onClose={() => {
+                            setCompletedMission(null);
+                            setEarnedInsignia(null);
+                        }}
                     />
                 )}
             </div>

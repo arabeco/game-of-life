@@ -105,16 +105,78 @@ export const DebugRewardControls: React.FC = () => {
         }
     };
 
+    const addInsignias = async () => {
+        setLoading(true);
+        try {
+            const insignias = [
+                'insignia_rank_5_barao', // Ouro
+                'insignia_quest_incomum', // Prata
+                'insignia_sitrep_s' // Bronze
+            ];
+            
+            // 1. Add to user_inventory table
+            const newItems = insignias.map(id => ({
+                user_id: userProfile.id,
+                item_id: id,
+                acquired_at: new Date().toISOString()
+            }));
+            
+            const { error: insertError } = await supabase.from('user_inventory').insert(newItems);
+            
+            if (insertError) {
+                console.warn("Could not insert into user_inventory:", insertError);
+                throw insertError;
+            }
+
+            // 2. Add to unlocked items (JSONB)
+            const newUnlocked = { ...userProfile.unlockedItems };
+            if (!newUnlocked.insignias) newUnlocked.insignias = {};
+            
+            insignias.forEach(id => {
+                newUnlocked.insignias[id] = true;
+            });
+
+            // Optimistic update
+            const currentInventory = userProfile.inventory || [];
+            const newInventoryItems = insignias.map(id => ({
+                id,
+                instanceId: crypto.randomUUID(),
+                acquiredAt: new Date().toISOString(),
+                isEquipped: false
+            }));
+            
+            await updateUserProfile({ 
+                unlockedItems: newUnlocked,
+                inventory: [...currentInventory, ...newInventoryItems]
+            });
+            
+            // Force sync with DB
+            const { error: profileError } = await supabase
+                .from('user_profiles')
+                .update({ unlocked_items: newUnlocked })
+                .eq('id', userProfile.id);
+
+            if (profileError) throw profileError;
+
+            showToast("1 Insígnia de cada tipo adicionada com sucesso!");
+        } catch (error: any) {
+            console.error(error);
+            showToast(`Erro ao adicionar insígnias: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleTestMission = () => {
         setTestMission({
             id: 'test-mission-01',
             season_id: 'season-debug',
             title: 'Missão de Teste',
-            description: 'Conclua uma tarefa para ganhar XP.',
+            description: 'Conclua uma tarefa para ganhar XP e Insígnia.',
             goal_type: 'actions_completed',
             goal_value: 1,
-            reward_type: 'exp',
-            reward_value: 500,
+            reward_type: 'item_id',
+            reward_value: 'insignia_quest_incomum',
             type: 'individual',
             icon: '🎯'
         });
@@ -128,7 +190,8 @@ export const DebugRewardControls: React.FC = () => {
                 icon: '👑',
                 rewards: {
                     exp: 1000,
-                    chest: 'Lendário'
+                    chest: 'Lendário',
+                    items: ['insignia_rank_5_barao']
                 }
             }
         });
@@ -148,6 +211,15 @@ export const DebugRewardControls: React.FC = () => {
                     className="p-3 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-200 rounded-lg text-xs font-bold transition-all border border-yellow-500/20 hover:border-yellow-500/50 flex flex-col items-center justify-center gap-1"
                 >
                     <span>🎁 +5 Baús de Cada</span>
+                    <span className="text-[10px] opacity-70">(Adiciona ao Inventário)</span>
+                </button>
+
+                <button 
+                    onClick={addInsignias} 
+                    disabled={loading}
+                    className="p-3 bg-amber-600/20 hover:bg-amber-600/40 text-amber-200 rounded-lg text-xs font-bold transition-all border border-amber-500/20 hover:border-amber-500/50 flex flex-col items-center justify-center gap-1"
+                >
+                    <span>🎖️ +1 Insígnia de Cada</span>
                     <span className="text-[10px] opacity-70">(Adiciona ao Inventário)</span>
                 </button>
                 
@@ -230,11 +302,15 @@ export const DebugRewardControls: React.FC = () => {
                     onShare={() => showToast("Compartilhar (Simulação)")}
                     onPostToFeed={() => showToast("Postar no Feed (Simulação)")}
                     onStartNewCycle={() => {
-                        showToast("Novo Ciclo (Simulação)");
+                        const msg = showReportResult.id === 'debug-report-chest'
+                            ? `✦ Baú Lendário e 1 Insígnia(s) adicionados\n✦ +1000 XP computados`
+                            : `✦ 1 Insígnia(s) adicionada(s) ao inventário\n✦ +1000 XP computados`;
+                        showToast(msg);
                         setShowReportResult(null);
                     }}
                     expGained={1000}
-                    chest={showReportResult.id === 'debug-report-chest' ? 'Lendário' : null} 
+                    chest={showReportResult.id === 'debug-report-chest' ? 'Lendário' : null}
+                    insignias={['insignia_sitrep_s']} 
                 />
             )}
 
@@ -243,6 +319,7 @@ export const DebugRewardControls: React.FC = () => {
                     mission={testMission}
                     onOk={() => setTestMission(null)}
                     onClose={() => setTestMission(null)}
+                    insignia="insignia_quest_incomum"
                 />
             )}
         </GlassCard>

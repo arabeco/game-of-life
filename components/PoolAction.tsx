@@ -105,12 +105,12 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
             ref={poolActionRef}
             {...longPressEvents}
             style={backgroundStyle}
-            className="h-full aspect-square border border-[var(--accent-bronze)] rounded-xl flex items-center justify-center p-1 flex-shrink-0 cursor-grab active:cursor-grabbing relative"
+            className="h-full aspect-square border border-[var(--accent-bronze)]/50 rounded-xl flex items-center justify-center p-1 flex-shrink-0 cursor-grab active:cursor-grabbing relative hover:border-[var(--skin-accent-color)]/50 transition-colors"
         >
-            <span className="text-2xl">{action.icon}</span>
-            {!clanProgressDisplay && (isUnlimited || count > 1) && <div className="absolute -top-1 -right-1 bg-[var(--bronze)] text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{isUnlimited ? '∞' : `x${count}`}</div>}
+            <span className="text-lg">{action.icon}</span>
+            {!clanProgressDisplay && (isUnlimited || count > 1) && <div className="absolute -top-1 -right-1 bg-[var(--bronze)] text-black text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-sm">{isUnlimited ? '∞' : `${count}`}</div>}
             {clanProgressDisplay && (
-                <div className={`absolute -top-1 -right-1 ${isCompleted ? 'bg-green-500' : 'bg-yellow-500'} text-black text-[9px] font-bold px-1 rounded-full border border-black min-w-[24px] text-center shadow-lg z-10`}>
+                <div className={`absolute -top-1 -right-1 ${isCompleted ? 'bg-green-500' : 'bg-yellow-500'} text-black text-[9px] font-bold px-1 rounded-full border border-black min-w-[20px] text-center shadow-lg z-10`}>
                     {clanProgressDisplay}
                 </div>
             )}

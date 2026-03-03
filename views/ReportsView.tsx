@@ -17,6 +17,9 @@ import { ReportGenerationModal } from '../components/ReportGenerationModal';
 import { ChestOpeningModal } from '../components/ChestOpeningModal';
 import { Portal } from '../components/Portal';
 
+import { NOBILITY_RANKS } from '../constants/nobility';
+import { resolveItemDef } from '../constants/items';
+
 // --- Helper Functions ---
 import { parseDate, daysBetween, formatDate, getScoreGrade } from '../utils/dateUtils';
 const toRoman = (num: number) => {
@@ -275,7 +278,12 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { reports, activeCycle, startCycle, endCycle, assets, actions, applyExp, addChest, addFeedEvent, seasons, userProfile, oraclePreferences, showToast } = useGame();
+    const { 
+        reports, activeCycle, startCycle, endCycle, assets, actions, 
+        applyExp, addChest, addFeedEvent, seasons, userProfile, 
+        oraclePreferences, showToast, grantInventoryItem, grantUserUnlock,
+        setAchievementUnlocked
+    } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
     const [showConfirmEndCycle, setShowConfirmEndCycle] = useState(false);
@@ -284,6 +292,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [reportForComparison, setReportForComparison] = useState<Report | null>(null);
     const [showNewCycleSetup, setShowNewCycleSetup] = useState(false);
     const [expGained, setExpGained] = useState(0);
+    const [grantedInsignias, setGrantedInsignias] = useState<string[]>([]);
     const [earnedChest, setEarnedChest] = useState<ChestType | null>(null);
     const [isPostCycleFlow, setIsPostCycleFlow] = useState(false);
     const [cycleShimmer, setCycleShimmer] = useState(false);
@@ -380,16 +389,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setSelectedReport(report);
             setExpGained(expGained);
 
-            // New Chest Logic based on User Feedback (Minute-based Economy)
-            // 1 XP = 1 Minute of Focus
-            // Thresholds:
-            // - Legendary: 25,000 XP (Month) + Grade S
-            // - Epic: 12,000 XP (~2.5 Weeks) + Grade A
-            // - Rare: 5,000 XP (Week) + Grade B
-            // - Uncommon: 2,250 XP (3 Days) + Grade C
-            // - Common: 750 XP (1 Day) + Grade D
-            // - None: < 750 XP
-
             const startD = parseDate(report.startDate);
             const endD = parseDate(report.endDate);
             const durationDays = Math.max(1, daysBetween(startD, endD) + 1);
@@ -397,19 +396,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
             let chestType: ChestType | null = null;
 
-            // Base Tier Determination
             if (expGained >= 25000 && score >= 90) chestType = 'Lendário';
             else if (expGained >= 12000 && score >= 80) chestType = 'Épico';
             else if (expGained >= 5000 && score >= 70) chestType = 'Raro';
             else if (expGained >= 2250 && score >= 60) chestType = 'Incomum';
             else if (expGained >= 750) chestType = 'Comum';
             
-            // Luck Roll (5% Chance to Upgrade)
-            // Only if chest is earned and not already Legendary
             if (chestType && chestType !== 'Lendário') {
                 const roll = Math.random();
-                if (roll < 0.05) { // 5% chance
-                    console.log("Luck Roll Success! Upgrading Chest...");
+                if (roll < 0.05) {
                     if (chestType === 'Comum') chestType = 'Incomum';
                     else if (chestType === 'Incomum') chestType = 'Raro';
                     else if (chestType === 'Raro') chestType = 'Épico';
@@ -417,21 +412,42 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 }
             }
 
-            // Duration Cap (Strict Anti-Exploit)
-            // Cycles shorter than 7 days yield NO chest to prevent mini-cycle spamming.
             if (durationDays < 7) {
                 chestType = null;
-                console.log("Ciclo curto detectado (< 7 dias). Recompensa anulada.");
             }
 
             setEarnedChest(chestType);
 
+            const insigniasToGrant: string[] = [];
+            
+            if (score === 100) {
+                insigniasToGrant.push('insignia_sitrep_s');
+            } else if (score >= 90) {
+                insigniasToGrant.push('insignia_sitrep_a');
+            } else if (score >= 80) {
+                insigniasToGrant.push('insignia_sitrep_b');
+            } else if (score >= 70) {
+                insigniasToGrant.push('insignia_sitrep_c');
+            } else {
+                insigniasToGrant.push('insignia_report_comum');
+            }
+
+            const currentExp = userProfile.nobility?.exp || 0;
+            const nextExp = currentExp + expGained;
+            
+            const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
+            
+            if (nextRank) {
+                const rankIndex = NOBILITY_RANKS.indexOf(nextRank);
+                insigniasToGrant.push(`insignia_rank_${rankIndex + 1}_${nextRank.id}`);
+            }
+
+            setGrantedInsignias(insigniasToGrant);
             setIsPostCycleFlow(true);
             return chestType;
         } catch (error) {
             console.error('Erro ao analisar ciclo:', error);
             setScanError('Não foi possível analisar o ciclo. Tente novamente.');
-            // Do not switch to hub, let the user see the error in scanning view
             return null;
         }
     };
@@ -515,14 +531,74 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const handlePostCycleResultsOk = () => {
+        const currentExp = userProfile.nobility.exp;
+        const nextExp = currentExp + expGained;
+        
         applyExp(expGained);
-            if (earnedChest) {
-            addChest(earnedChest);
-            showToast(`✦ Baú ${earnedChest} adicionado ao inventário · +${expGained} XP computados`);
-        } else {
-            showToast(`✦ +${expGained} XP foram computados ao seu perfil`);
+        
+        const earnedItems: string[] = [];
+        const itemNames: string[] = [];
+
+        // Grant Insignias if earned (Cycle Report Insignias - Bronze)
+        if (grantedInsignias.length > 0) {
+            grantedInsignias.forEach(insigniaId => {
+                grantUserUnlock('insignias', insigniaId);
+                grantInventoryItem(insigniaId, true);
+                earnedItems.push(insigniaId);
+                const def = resolveItemDef(insigniaId);
+                if (def) itemNames.push(def.name);
+            });
         }
+
+        if (earnedChest) {
+            addChest(earnedChest);
+        }
+
+        // Check for Rank Up (Gold Insignia)
+        const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
+        if (nextRank) {
+            const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
+            grantUserUnlock('insignias', rankInsigniaId);
+            grantInventoryItem(rankInsigniaId, true);
+            earnedItems.push(rankInsigniaId);
+            const rankDef = resolveItemDef(rankInsigniaId);
+            if (rankDef) itemNames.push(rankDef.name);
+        }
+
+        // Determine all items to show in modal (using names to resolve defs if needed, or IDs directly)
+        const allEarnedItems: string[] = [...earnedItems];
+
+        // Show Achievement Modal
+        // If Ranked Up, prioritize PLAYER_RANK_UP modal
+        if (nextRank) {
+            setAchievementUnlocked({
+                type: 'PLAYER_RANK_UP',
+                data: {
+                    name: nextRank.name,
+                    rank: nextRank,
+                    rewards: {
+                        exp: expGained,
+                        items: allEarnedItems,
+                        chest: earnedChest
+                    }
+                }
+            });
+        } else {
+            setAchievementUnlocked({
+                type: 'REPORT_COMPLETED',
+                data: {
+                    title: `Relatório de Ciclo - ${selectedReport?.performanceScore || 0}%`,
+                    reward: {
+                        exp: expGained,
+                        items: allEarnedItems,
+                        chest: earnedChest
+                    }
+                }
+            });
+        }
+
         setIsPostCycleFlow(false);
+        setGrantedInsignias([]);
         setView('hub');
     };
 
@@ -617,8 +693,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20">
-                                <div className="w-16 h-16 border-4 border-[var(--skin-accent-color)] border-t-transparent rounded-full animate-spin"></div>
-                                <p className="text-gray-400 font-mono animate-pulse">Gerando Relatório...</p>
+                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p>
                             </div>
                         )}
                     </div>
@@ -812,17 +887,34 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onStartNewCycle={() => {
                              applyExp(expGained);
+                             
+                             // Grant Insignias if earned
+                             if (grantedInsignias.length > 0) {
+                                 grantedInsignias.forEach(insigniaId => {
+                                     grantUserUnlock('insignias', insigniaId);
+                                     grantInventoryItem(insigniaId, true);
+                                 });
+                             }
+
                              if (earnedChest) {
                                  addChest(earnedChest);
-                                 showToast(`✦ Baú ${earnedChest} adicionado ao inventário · +${expGained} XP computados`);
+                                 const msg = grantedInsignias.length > 0
+                                     ? `✦ Baú ${earnedChest} e ${grantedInsignias.length} Insígnia(s) adicionados\n✦ +${expGained} XP computados`
+                                     : `✦ Baú ${earnedChest} adicionado ao inventário\n✦ +${expGained} XP computados`;
+                                 showToast(msg);
                              } else {
-                                 showToast(`✦ +${expGained} XP foram computados ao seu perfil`);
+                                 const msg = grantedInsignias.length > 0
+                                     ? `✦ ${grantedInsignias.length} Insígnia(s) adicionada(s) ao inventário\n✦ +${expGained} XP computados`
+                                     : `✦ +${expGained} XP foram computados ao seu perfil`;
+                                 showToast(msg);
                              }
                              setIsPostCycleFlow(false);
+                             setGrantedInsignias([]);
                              setShowNewCycleSetup(true);
                         }}
                         chest={isPostCycleFlow ? earnedChest : null}
                         expGained={isPostCycleFlow ? expGained : undefined}
+                        insignias={isPostCycleFlow ? grantedInsignias : []}
                     />
                 ) : <p>Erro ao carregar relatório.</p>;
             case 'comparing':
@@ -862,7 +954,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         </div>
                         <button onClick={onClose}><XIcon /></button>
                     </div>
-                    <div className={`flex-grow overflow-y-auto relative overflow-hidden ${cycleShimmer ? 'shimmer-effect' : ''}`}>
+                    <div className="flex-grow overflow-y-auto relative overflow-hidden">
                         {renderContent()}
                     </div>
                 </div>

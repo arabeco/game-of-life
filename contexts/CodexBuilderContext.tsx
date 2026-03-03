@@ -166,46 +166,65 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const addArena: GameContextType['addArena'] = async (assetId, arenaData) => {
-    const newArena = createArena(assetId, arenaData);
-    setDraftArenas(prev => [newArena, ...prev]);
+    // In Builder Mode, we create a temporary arena object
+    // We mock the properties that would usually come from DB or be auto-generated
+    const newArena: Arena = {
+        id: crypto.randomUUID(),
+        assetId: assetId,
+        name: arenaData.name,
+        description: arenaData.description || '',
+        icon: arenaData.icon || '⚔️',
+        folderId: arenaData.folderId || null,
+        originCodexId: arenaData.originCodexId,
+        codexLevel: arenaData.codexLevel,
+        isArchived: false,
+        priority: 'media',
+        order: draftArenas.length, // Append to end
+        priorityOrder: 0
+    };
+    
+    setDraftArenas(prev => [...prev, newArena]);
     return newArena;
   };
 
-  const updateArena: GameContextType['updateArena'] = (arenaId, arenaData) => {
-    setDraftArenas(prev => prev.map(a => (a.id === arenaId ? { ...a, ...arenaData } : a)));
+  const updateArena: GameContextType['updateArena'] = async (arenaId, arenaData) => {
+     setDraftArenas(prev => prev.map(a => a.id === arenaId ? { ...a, ...arenaData } : a));
   };
 
-  const deleteArena: GameContextType['deleteArena'] = (arenaId) => {
+  const deleteArena: GameContextType['deleteArena'] = async (arenaId) => {
     setDraftArenas(prev => prev.filter(a => a.id !== arenaId));
+    // Also remove actions associated with this arena
     setDraftActions(prev => prev.filter(a => a.arenaId !== arenaId));
   };
 
   const addAction: GameContextType['addAction'] = async (actionData: any) => {
-    const id = typeof actionData?.id === 'string' && actionData.id.trim() ? actionData.id : createActionId();
     const newAction: Action = {
-      id,
+      id: crypto.randomUUID(),
       arenaId: actionData.arenaId,
       name: actionData.name,
       description: actionData.description,
       icon: actionData.icon,
-      duration: actionData.duration,
-      repetitions: actionData.repetitions,
-      actionType: actionData.actionType,
-      difficulty: actionData.difficulty,
+      duration: actionData.duration || 15,
+      repetitions: actionData.repetitions || 1,
+      actionType: actionData.actionType || 'Ação Recorrente',
+      difficulty: actionData.difficulty || 1,
+      xpReward: actionData.xpReward || 10,
+      goldReward: actionData.goldReward || 0,
+      scheduledDays: actionData.scheduledDays,
+      scheduledStartTime: actionData.scheduledStartTime,
+      originCodexId: actionData.originCodexId
     };
 
-    setDraftActions(prev => [newAction, ...prev]);
-    setDraftArenas(prev => prev.map(ar => (ar.id === newAction.arenaId ? { ...ar, actionIds: [...ar.actionIds, newAction.id] } : ar)));
+    setDraftActions(prev => [...prev, newAction]);
     return newAction;
   };
 
-  const updateAction: GameContextType['updateAction'] = (actionId, actionData) => {
-    setDraftActions(prev => prev.map(a => (a.id === actionId ? { ...a, ...actionData } : a)));
+  const updateAction: GameContextType['updateAction'] = async (actionId, actionData) => {
+    setDraftActions(prev => prev.map(a => a.id === actionId ? { ...a, ...actionData } : a));
   };
 
-  const deleteAction: GameContextType['deleteAction'] = (actionId) => {
+  const deleteAction: GameContextType['deleteAction'] = async (actionId) => {
     setDraftActions(prev => prev.filter(a => a.id !== actionId));
-    setDraftArenas(prev => prev.map(ar => ({ ...ar, actionIds: ar.actionIds.filter(id => id !== actionId) })));
   };
 
   const getArenas: GameContextType['getArenas'] = () => draftArenas;

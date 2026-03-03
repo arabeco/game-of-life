@@ -9,6 +9,7 @@ interface VideoPlayerProps {
     duration?: number; // Duration for placeholder
     playbackRate?: number; // Control video speed (default 1.0)
     startTime?: number; // Start playing from this time (in seconds)
+    maxDuration?: number; // Force end after this duration (safety timeout)
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
@@ -18,10 +19,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     placeholderLabel = "Playing Video...",
     duration = 4000,
     playbackRate = 1.0,
-    startTime = 0
+    startTime = 0,
+    maxDuration
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [hasError, setHasError] = useState(false);
+    const hasEndedRef = useRef(false);
+
+    const handleEnd = () => {
+        if (hasEndedRef.current) return;
+        hasEndedRef.current = true;
+        onEnd();
+    };
 
     useEffect(() => {
         if (videoRef.current) {
@@ -33,12 +42,21 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
     }, [playbackRate, startTime]);
 
+    // Placeholder timeout
     useEffect(() => {
         if (!src || hasError) {
-            const timer = setTimeout(onEnd, duration);
+            const timer = setTimeout(handleEnd, duration);
             return () => clearTimeout(timer);
         }
-    }, [src, hasError, duration, onEnd]);
+    }, [src, hasError, duration]);
+
+    // Safety timeout for video if maxDuration is provided
+    useEffect(() => {
+        if (src && maxDuration && !hasError) {
+            const timer = setTimeout(handleEnd, maxDuration);
+            return () => clearTimeout(timer);
+        }
+    }, [src, maxDuration, hasError]);
 
     const handleError = () => {
         console.warn(`Failed to load video: ${src}`);
@@ -62,7 +80,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 className="w-full h-full object-cover"
                 autoPlay
                 playsInline
-                onEnded={onEnd}
+                onEnded={handleEnd}
                 onError={handleError}
                 controls={false}
             />

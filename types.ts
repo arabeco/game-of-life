@@ -1,5 +1,52 @@
 
 
+export interface CodexLevel {
+  level: number;
+  title: string;
+  description: string;
+  actions: Omit<Action, 'id' | 'arenaId'>[];
+}
+
+export interface CodexTemplate {
+  id: string;
+  title: string;
+  description: string;
+  author: string;
+  price: number; // 0 for free
+  durationDays: number;
+  levels: CodexLevel[];
+  coverImage?: string; // Emoji or URL
+  tags: string[];
+}
+
+export interface CodexCatalogItem {
+    id: string;
+    title: string;
+    description: string;
+    price_brl: number;
+    is_premium: boolean;
+    cover_image?: string;
+    author_name: string;
+    duration_days: number;
+    created_at: string;
+    template?: CodexTemplate; // JSONB
+}
+
+export interface UserCodex {
+    id: string;
+    owner_id: string;
+    schema_version: string;
+    name: string;
+    author: string;
+    price: number;
+    description: string;
+    template: CodexTemplate; // JSONB
+    is_public: boolean;
+    published_at?: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
 export type SlotLayoutType = 1 | 2 | 3; // 1: wide, 2: square, 3: rect
 export type ChestType = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' | 'Ciclo' | 'Skin Comum';
@@ -75,7 +122,9 @@ export interface Arena {
   isHidden?: boolean;
   isCleared?: boolean;
   priority?: 'alta' | 'media' | 'baixa';
-
+  order?: number; // Global order for "free" mode
+  priorityOrder?: number; // Order within a specific priority level
+  
   // Codex Fields
   originCodexId?: string;
   codexLevel?: number; // 1, 2, 3...
@@ -101,6 +150,7 @@ export interface ArenaFolder {
 // Alias for backward compatibility if needed, but prefer ArenaFolder
 export interface Campaign {
     id: string;
+    userId: string; // Add userId explicitly if missing in interface but present in DB
     title: string;
     description?: string;
     deadline?: string;
@@ -113,7 +163,12 @@ export interface Campaign {
         isHidden?: boolean;
         isCleared?: boolean;
         completedActionIds?: string[];
+        prerequisiteArenaIds?: string[]; // IDs of arenas that must be cleared to unlock this one
     }>;
+    priority?: 'alta' | 'media' | 'baixa';
+    type?: 'sequential' | 'parallel';
+    order?: number;
+    priorityOrder?: number;
 }
 
 export interface Asset {
@@ -218,13 +273,16 @@ export interface ClanMissionState {
 
 export type AppMode = 'GAME' | 'BASIC';
 export type ThemePreference = 'LIGHT' | 'DARK';
+export type ArenasViewMode = 'free' | 'priorities' | 'assets';
 
 export interface UserProfile {
   id: string;
   // FIX: Added optional email property to align with database schema and fix typing errors.
   email?: string;
+  username: string;
   appMode?: AppMode;
   themePreference?: ThemePreference;
+  arenasViewMode?: ArenasViewMode;
   sovereign?: SovereignConfig;
   avatarUrl: string; // The circular profile picture
   border: string; // Corresponds to a Skin ID or 'default'
@@ -413,6 +471,7 @@ export interface Cycle {
     endDate: string;
     arenaIds: string[]; // IDs das arenas ativas neste ciclo
     userId: string; // ID do usuário dono do ciclo
+    seasonId?: string;
     arenaConfig?: Record<string, {
         isLocked: boolean;
         isHidden?: boolean;
@@ -430,6 +489,7 @@ export interface DailyCommitment {
     score: number | null;
     expDeposited?: number | null;
     sitrepBonus?: number | null;
+    earnedInsigniaId?: string | null;
 }
 
 // --- Sovereign Control Panel Types ---
@@ -510,7 +570,7 @@ export interface SeasonQuest {
 }
 
 // --- Hall of Fame / Feed Types ---
-export type FeedEventType = 'MILESTONE_COMPLETED' | 'ARENA_COMPLETED' | 'CYCLE_COMPLETED' | 'PLAYER_RANK_UP' | 'CLAN_RANK_UP' | 'LEVEL_UP';
+export type FeedEventType = 'MILESTONE_COMPLETED' | 'ARENA_COMPLETED' | 'CYCLE_COMPLETED' | 'PLAYER_RANK_UP' | 'CLAN_RANK_UP' | 'LEVEL_UP' | 'QUEST_COMPLETED' | 'REPORT_COMPLETED';
 
 export interface FeedEvent {
   id: string;
@@ -525,7 +585,7 @@ export interface FeedEvent {
   timestamp: string;
 }
 
-export type RelationshipLinkType = 'mentoria' | 'parceria';
+export type RelationshipLinkType = 'mentoria' | 'parceria' | 'competicao';
 
 export type RelationshipInviteStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
 

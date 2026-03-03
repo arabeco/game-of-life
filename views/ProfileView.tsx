@@ -15,6 +15,7 @@ import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { AssetDecagon } from '../components/AssetDecagon';
 import { handleShare } from '../components/Share';
 import { Portal } from '../components/Portal';
+import { ITEMS_DB, resolveItemDef } from '../constants/items';
 
 const UnifiedSovereignDisplay: React.FC<{ 
     sovereignConfig: UserProfile['sovereign']; 
@@ -89,12 +90,13 @@ const UnifiedSovereignDisplay: React.FC<{
                     getArtifactUrl() ? (
                         <div className="relative w-full h-full flex items-center justify-center">
                             {getPlateUrl() && (
-                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-cover opacity-90" />
+                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-cover opacity-90" crossOrigin="anonymous" />
                             )}
                             <img 
                                 src={getArtifactUrl()} 
                                 alt="Item" 
                                 className="relative z-10 w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
+                                crossOrigin="anonymous"
                             />
                         </div>
                     ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
@@ -103,15 +105,16 @@ const UnifiedSovereignDisplay: React.FC<{
                     getGlyphUrl() ? (
                         <div className="relative w-full h-full flex items-center justify-center">
                             {getPlateUrl() && (
-                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-cover opacity-90" />
+                                <img src={getPlateUrl()} alt="Placa" className="absolute inset-0 w-full h-full object-cover opacity-90" crossOrigin="anonymous" />
                             )}
                             <img 
                                 src={getGlyphUrl()} 
                                 alt="Glifo" 
                                 className="relative z-10 w-full h-full object-contain p-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]" 
+                                crossOrigin="anonymous"
                             />
                             {getOrbUrl() && (
-                                <img src={getOrbUrl()} alt="Orbe" className="absolute inset-0 w-full h-full object-contain z-20 scale-75 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
+                                <img src={getOrbUrl()} alt="Orbe" className="absolute inset-0 w-full h-full object-contain z-20 scale-75 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" crossOrigin="anonymous" />
                             )}
                         </div>
                     ) : <span className="text-[10px] text-gray-500 font-bold uppercase">Vazio</span>
@@ -163,17 +166,23 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
     const glowStyle = hasGlow ? { boxShadow: `0 0 10px ${rarityStyle.color}40` } : {};
 
     const valueDisplay = typeof slot.value === 'object' && slot.value.imageUrl ? (
-         <img src={slot.value.imageUrl} alt={slot.value.caption} className="w-full h-full object-cover rounded-xl" crossOrigin="anonymous" />
+         <img 
+            src={slot.value.imageUrl} 
+            alt={slot.value.caption} 
+            className="w-full h-full object-cover rounded-xl" 
+            crossOrigin="anonymous" 
+            onError={(e) => console.error(`Failed to load widget image: ${slot.value.imageUrl}`)}
+         />
     ) : (
         <span className={`truncate font-bold ${isShareable ? 'text-black' : 'text-white'}`}>{String(slot.value)}</span>
     );
 
     // UNIFIED STYLE: Always use the dark/glass style regardless of isShareable
     return (
-        <div className={`text-center space-y-1 flex flex-col ${getGridClasses(slot.type)}`}>
+        <div className={`text-center space-y-0.5 flex flex-col ${getGridClasses(slot.type)}`}>
             <h3 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{slot.label}</h3>
             <div 
-                className="relative w-full flex-grow mx-auto p-2 rounded-2xl flex items-center justify-center bg-black/50 gradient-border gradient-border-accent text-white"
+                className="relative w-full flex-grow mx-auto p-1.5 rounded-2xl flex items-center justify-center bg-black/50 gradient-border gradient-border-accent text-white"
                 style={glowStyle}
             >
                 {valueDisplay}
@@ -191,7 +200,8 @@ export const ShareableProfileCard: React.FC<{
     clanName: string;
     clanRank: ClanRank | undefined;
     getSlotById: (slotId: string) => Slot | undefined;
-}> = ({ id, userProfile, clanName, clanRank, getSlotById }) => {
+    isBasicMode?: boolean;
+}> = ({ id, userProfile, clanName, clanRank, getSlotById, isBasicMode = false }) => {
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
     const isGradientBackground = userProfile.backgroundUrl.startsWith('var(') || userProfile.backgroundUrl.startsWith('linear-gradient');
 
@@ -199,7 +209,16 @@ export const ShareableProfileCard: React.FC<{
         if (isGradientBackground) {
             return <div className="w-full h-full" style={{ background: userProfile.backgroundUrl }} />;
         }
-        return <img src={userProfile.backgroundUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous"/>
+        return (
+            <img 
+                src={userProfile.backgroundUrl} 
+                className="w-full h-full object-cover" 
+                alt="" 
+                crossOrigin="anonymous" 
+                loading="eager" 
+                onError={(e) => console.error(`Failed to load background: ${userProfile.backgroundUrl}`)}
+            />
+        );
     };
 
     return (
@@ -210,37 +229,40 @@ export const ShareableProfileCard: React.FC<{
             </div>
 
             {/* Layer 2: Content */}
-            <div className="relative z-10 p-4 space-y-4">
-                <div className="pt-8 flex flex-col items-center text-center">
+            <div className="relative z-10 p-4 space-y-1">
+                <div className="pt-4 flex flex-col items-center text-center">
                     <div className="relative w-32 h-32">
-                         <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap opacity-60">
-                             Foto de Perfil
-                         </span>
-                        
                         {/* Avatar */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75%] h-[75%] rounded-full flex items-center justify-center z-30">
                             <div className="w-full h-full rounded-full overflow-hidden relative">
-                                <img src={userProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous"/>
+                                <img 
+                                    src={userProfile.avatarUrl} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover" 
+                                    crossOrigin="anonymous" 
+                                    loading="eager" 
+                                    onError={(e) => console.error(`Failed to load avatar: ${userProfile.avatarUrl}`)}
+                                />
                             </div>
                         </div>
 
                         {/* Border */}
-                        <div
-                            className="absolute -inset-1 pointer-events-none z-40"
-                            style={
-                                selectedBorder?.imageUrl
-                                ? {
-                                    backgroundImage: `url(${selectedBorder.imageUrl})`,
-                                    backgroundSize: 'contain',
-                                    backgroundPosition: 'center',
-                                    backgroundRepeat: 'no-repeat',
-                                }
-                                : {
-                                    border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
-                                    borderRadius: '50%',
-                                }
-                            }
-                        />
+                        <div className="absolute -inset-1 pointer-events-none z-40">
+                            {selectedBorder?.imageUrl ? (
+                                <img 
+                                    src={selectedBorder.imageUrl} 
+                                    alt="Border" 
+                                    className="w-full h-full object-contain" 
+                                    crossOrigin="anonymous"
+                                    onError={(e) => console.error(`Failed to load border: ${selectedBorder.imageUrl}`)}
+                                />
+                            ) : (
+                                <div 
+                                    className="w-full h-full rounded-full" 
+                                    style={{ border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}` }}
+                                />
+                            )}
+                        </div>
                         
                         {/* Level Badge */}
                         <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-10" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
@@ -249,11 +271,11 @@ export const ShareableProfileCard: React.FC<{
                     </div>
                     
                     {/* Name & Clan */}
-                    <div className="relative mt-2 flex flex-col items-center">
+                    <div className="relative mt-1 flex flex-col items-center">
                         <div className="bg-black/50 backdrop-blur-sm border rounded-xl py-1 px-4 inline-block" style={{ borderColor: 'var(--skin-accent-color)' }}>
                             <h2 className="text-3xl font-bold text-white luxe-title-shadow">{userProfile.nickname}</h2>
                         </div>
-                        <div className="mt-2 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-2 px-4 inline-flex flex-col items-center">
+                        <div className="mt-0.5 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-1.5 px-4 inline-flex flex-col items-center">
                             <span className="text-sm font-bold text-white">{clanName}</span>
                             <span className="text-xs text-gray-400">{clanRank?.name || 'N/A'}</span>
                         </div>
@@ -262,15 +284,21 @@ export const ShareableProfileCard: React.FC<{
 
                 {/* Banner */}
                 {userProfile.bannerUrl && (
-                    <div className="pt-4 pb-4 text-center flex items-center justify-center">
-                        <img src={userProfile.bannerUrl} alt="Banner" className="mx-auto h-16 object-contain" crossOrigin="anonymous" />
+                    <div className="pt-0 pb-0 text-center flex items-center justify-center -my-1 px-4">
+                        <img 
+                            src={userProfile.bannerUrl} 
+                            alt="Banner" 
+                            className="mx-auto h-16 object-contain scale-115" 
+                            crossOrigin="anonymous" 
+                            onError={(e) => console.error(`Failed to load banner: ${userProfile.bannerUrl}`)}
+                        />
                     </div>
                 )}
                 
                 {/* Widgets */}
-                <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl">
+                <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl">
                     {userProfile.visibleWidgets.length > 0 ? (
-                        <div className="grid grid-cols-6 gap-2">
+                        <div className="grid grid-cols-6 gap-0.5">
                         {userProfile.visibleWidgets.map(slotId => {
                             const slot = getSlotById(slotId);
                             if (!slot) return null;
@@ -311,7 +339,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [isClanModalOpen, setClanModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
-    const [activeWidgetTab, setActiveWidgetTab] = useState<'mural' | 'ativos'>('mural');
+    const [activeWidgetTab, setActiveWidgetTab] = useState<'mural' | 'maestria'>('mural');
 
     const [viewedClan, setViewedClan] = useState<Clan | null>(null);
     const [viewedClanRank, setViewedClanRank] = useState<ClanRank | undefined>(undefined);
@@ -448,7 +476,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
         if (isGradientBackground) {
             return <div className="w-full h-full" style={{ background: displayProfile.backgroundUrl }} />;
         }
-        return <img src={displayProfile.backgroundUrl} className="w-full h-full object-cover" alt="Background" />;
+        return <img src={displayProfile.backgroundUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous" />
     };
 
     // Layout Adjustment: Ensure the card container is centered and scrollable if needed, matching "comprido" (long) description.
@@ -456,13 +484,15 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     // z-index increased to 9999 and using Portal to overlay everything
     return (
         <Portal>
-            <div style={{ position: 'fixed', top: 0, left: '-9999px', zIndex: -1 }}>
+            {/* Hidden container for capture - positioned off-screen but visible to capture tools */}
+            <div style={{ position: 'absolute', top: '-10000px', left: '0', width: '380px', opacity: 1, pointerEvents: 'none', zIndex: -100 }}>
                 <ShareableProfileCard 
                     id="shareable-profile" 
                     userProfile={displayProfile}
                     clanName={clanName}
                     clanRank={currentClanRank} 
                     getSlotById={getSlotById}
+                    isBasicMode={isBasicMode}
                 />
             </div>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
@@ -479,7 +509,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                         </div>
 
                         {/* Layer 2: Scrollable Content */}
-                        <div className="absolute inset-0 overflow-y-auto z-10 p-4 space-y-4">
+                        <div className="absolute inset-0 overflow-y-auto z-10 p-4 space-y-2">
                             <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-start">
                                 <div className="flex flex-col space-y-2">
                                     {isOwnProfile && (
@@ -496,7 +526,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             </button>
                             </div>
 
-                            <div className="pt-8 flex flex-col items-center text-center">
+                            <div className="pt-4 flex flex-col items-center text-center">
                                 <div className="relative w-32 h-32">
                                     <button
                                         onClick={() => isEditing && setBorderModalOpen(true)}
@@ -507,7 +537,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     {/* Avatar Button (Top Layer) */}
                                     <button onClick={() => isEditing && setIsAvatarModalOpen(true)} disabled={!isEditing} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75%] h-[75%] rounded-full group flex items-center justify-center z-30">
                                         <div className="w-full h-full rounded-full overflow-hidden relative">
-                                            <img src={displayProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                                            <img src={displayProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
                                             {isEditing && (
                                                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <span className="text-xs font-bold">EDITAR</span>
@@ -540,32 +570,32 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     </div>
                                 </div>
                                 
-                                <div className="relative mt-2 flex flex-col items-center">
+                                <div className="relative mt-1 flex flex-col items-center">
                                     <div 
                                         className="bg-black/50 backdrop-blur-sm border rounded-xl py-1 px-4 inline-block" 
                                         style={{ borderColor: 'var(--skin-accent-color)' }}
                                     >
                                         <h2 className="text-3xl font-bold text-white luxe-title-shadow">{displayProfile.nickname}</h2>
                                     </div>
-                                    <button onClick={() => isOwnProfile && clan && setClanModalOpen(true)} disabled={!isOwnProfile || !clan} className="mt-2 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-2 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
+                                    <button onClick={() => isOwnProfile && clan && setClanModalOpen(true)} disabled={!isOwnProfile || !clan} className="mt-0.5 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-1.5 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
                                         <span className="text-sm font-bold text-white">{clanName}</span>
                                         <span className="text-xs text-gray-400">{currentClanRank?.name || 'N/A'}</span>
                                     </button>
                                 </div>
                             </div>
                             
-                            <div className="px-4 pb-8 w-full">
+                            <div className="px-4 pb-0 w-full">
                                 {!isBasicMode && displayProfile.bannerUrl ? (
-                                    <div className="relative group mb-4">
-                                        <img src={displayProfile.bannerUrl} alt="Banner" className="mx-auto h-16 object-contain" />
+                                    <div className="relative group mb-0 -my-1 px-4 flex items-center justify-center">
+                                        <img src={displayProfile.bannerUrl} alt="Banner" className="mx-auto h-16 object-contain scale-115" crossOrigin="anonymous" />
                                         {isEditing && isOwnProfile && (
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer" onClick={() => setBannerModalOpen(true)}>
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer z-10" onClick={() => setBannerModalOpen(true)}>
                                                 <EditIcon className="w-6 h-6 text-white" />
                                             </div>
                                         )}
                                     </div>
                                 ) : !isBasicMode && isEditing && isOwnProfile ? (
-                                    <div className="mb-4 w-full cursor-pointer group" onClick={() => setBannerModalOpen(true)}>
+                                    <div className="mb-1 w-full cursor-pointer group" onClick={() => setBannerModalOpen(true)}>
                                         <div className="border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center p-4 group-hover:bg-white/5 group-hover:border-white/40 transition-all">
                                             <PlusIcon className="w-6 h-6 text-gray-400 mb-1 group-hover:text-white" />
                                             <span className="text-xs text-gray-400 font-bold uppercase group-hover:text-white">Adicionar Banner</span>
@@ -573,20 +603,20 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     </div>
                                 ) : null}
 
-                                <div className="space-y-4">
-                                    <div className="flex bg-black/30 backdrop-blur-sm rounded-xl p-1 border border-white/5 mb-4 relative z-20">
+                                <div className="space-y-1">
+                                    <div className="flex bg-black/30 backdrop-blur-sm rounded-xl p-0.5 border border-white/5 mb-1 relative z-20">
                                         <button 
                                             onClick={() => setActiveWidgetTab('mural')} 
-                                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'mural' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'mural' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                         >
                                             {isBasicMode ? 'Métricas' : 'Mural'}
                                         </button>
                                         {!isBasicMode && (
                                             <button 
-                                                onClick={() => setActiveWidgetTab('ativos')} 
-                                                className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'ativos' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                                onClick={() => setActiveWidgetTab('maestria')} 
+                                                className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'maestria' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                             >
-                                                Ativos
+                                                Maestria
                                             </button>
                                         )}
                                     </div>
@@ -594,18 +624,18 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     {/* Tab Content */}
                                     {activeWidgetTab === 'mural' || isBasicMode ? (
                                         isEditing && isOwnProfile ? (
-                                            <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <span className="text-xs font-bold text-gray-400 uppercase">Widgets Visíveis ({editableProfile.visibleWidgets?.length || 0}/6)</span>
+                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                                <div className="flex justify-between items-center mb-1.5">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Widgets Visíveis ({editableProfile.visibleWidgets?.length || 0}/6)</span>
                                                 </div>
-                                                <div className="grid grid-cols-6 gap-2">
+                                                <div className="grid grid-cols-6 gap-1.5">
                                                 {assets.flatMap(a => a.slots).map(slot => {
                                                     const isSelected = editableProfile.visibleWidgets?.includes(slot.id);
                                                     return (
                                                         <button
                                                             key={slot.id}
                                                             onClick={() => handleWidgetToggle(slot.id)}
-                                                            className={`col-span-2 aspect-square rounded-xl border flex flex-col items-center justify-center p-2 gap-1 transition-all ${
+                                                            className={`col-span-2 aspect-square rounded-xl border flex flex-col items-center justify-center p-1.5 gap-1 transition-all ${
                                                                 isSelected 
                                                                 ? 'bg-white/10 border-[var(--skin-accent-color)] text-white' 
                                                                 : 'bg-black/20 border-white/5 text-gray-500 hover:bg-white/5'
@@ -619,9 +649,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/5 w-full">
+                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
                                                 {displayProfile.visibleWidgets.length > 0 && !isBasicMode ? (
-                                                    <div className="grid grid-cols-6 gap-2">
+                                                    <div className="grid grid-cols-6 gap-0.5">
                                                     {displayProfile.visibleWidgets.map(slotId => {
                                                         const slot = getSlotById(slotId);
                                                         if (!slot) return null;
@@ -629,23 +659,23 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                     })}
                                                     </div>
                                                 ) : isBasicMode ? (
-                                                    <div className="space-y-4">
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="bg-black/20 p-3 rounded-xl border border-white/5 text-center">
-                                                                <div className="text-[10px] uppercase tracking-wider text-gray-500">Nível Geral</div>
-                                                                <div className="text-3xl font-bold text-[var(--skin-accent-color)]">{displayProfile.level}</div>
+                                                    <div className="space-y-2">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                                <div className="text-[8px] uppercase tracking-wider text-gray-500">Nível Geral</div>
+                                                                <div className="text-2xl font-bold text-[var(--skin-accent-color)]">{displayProfile.level}</div>
                                                             </div>
-                                                            <div className="bg-black/20 p-3 rounded-xl border border-white/5 text-center">
-                                                                <div className="text-[10px] uppercase tracking-wider text-gray-500">Fidelidade</div>
-                                                                <div className="text-3xl font-bold text-white">94%</div>
+                                                            <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                                <div className="text-[8px] uppercase tracking-wider text-gray-500">Fidelidade</div>
+                                                                <div className="text-2xl font-bold text-white">94%</div>
                                                             </div>
                                                         </div>
-                                                        <div className="bg-black/20 p-3 rounded-xl border border-white/5">
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <span className="text-xs font-bold text-gray-400">Progresso do Ciclo</span>
-                                                                <span className="text-xs font-bold text-white">12/30 dias</span>
+                                                        <div className="bg-black/20 p-2 rounded-xl border border-white/5">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <span className="text-[10px] font-bold text-gray-400">Progresso do Ciclo</span>
+                                                                <span className="text-[10px] font-bold text-white">12/30 dias</span>
                                                             </div>
-                                                            <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden">
+                                                            <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
                                                                 <div className="h-full bg-[var(--skin-accent-color)] w-[40%]"></div>
                                                             </div>
                                                         </div>
@@ -660,7 +690,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             <AssetDecagon 
                                                 assets={assets} 
                                                 tempLevels={!isOwnProfile ? viewedLevels : undefined}
-                                                size={280} 
+                                                size={220} 
                                             />
                                         </div>
                                     )}

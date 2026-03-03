@@ -211,8 +211,8 @@ const TutorialGateOverlay: React.FC<{ open: boolean; onStart: () => void; onSkip
                     <h2 className="text-2xl font-bold text-white">Você já viu o tutorial?</h2>
                     <p className="text-gray-300">Se já concluiu, seguimos direto. Se não, te guio pelos primeiros passos.</p>
                     <div className="flex space-x-2">
-                        <button onClick={onSkip} className="w-full py-2 rounded-lg bg-gray-700 text-white">Já vi</button>
-                        <button onClick={onStart} className="w-full py-2 rounded-lg bg-yellow-500 text-black font-bold">Quero ver</button>
+                        <button onClick={onSkip} className="w-full py-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all">Já vi</button>
+                        <button onClick={onStart} className="w-full py-2 rounded-lg luxe-skin-button">Quero ver</button>
                     </div>
                 </div>
             </div>
@@ -441,7 +441,7 @@ const AppWithTutorial: React.FC = () => {
             // Verificar se temos um userId válido antes de tentar inserir
             if (userId && isUuid(userId)) {
                 await supabase
-                    .from('codexes')
+                    .from('codex')
                     .insert({
                         owner_id: userId,
                         schema_version: typeof parsed.schemaVersion === 'number' ? parsed.schemaVersion : 1,
@@ -519,7 +519,7 @@ const AppWithTutorial: React.FC = () => {
 
     return (
         <div 
-            className={`min-h-screen text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''} ${themeClass}`}
+            className={`h-screen min-h-0 overflow-hidden text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''} ${themeClass}`}
             data-skin={isBasicMode ? 'default' : userProfile.skin}
         >
             <OracleTutorialOverlay />
@@ -550,8 +550,8 @@ const AppWithTutorial: React.FC = () => {
             )}
             <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ? 44 : 0} />
             <TutorialBridge currentView={currentView} onNavigate={handleSetView} />
-            <main className="flex-1 flex flex-col" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
-                <div className="max-w-7xl mx-auto w-full h-full flex flex-col">
+            <main className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
+                <div className="max-w-7xl mx-auto w-full h-full min-h-0 flex flex-col overflow-hidden">
                     {renderView()}
                 </div>
             </main>
@@ -724,17 +724,32 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setLoading(false);
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) {
+                    console.warn("Session restore error (silent):", error.message);
+                    setSession(null);
+                } else {
+                    setSession(session);
+                }
+            } catch (e) {
+                console.error("Critical auth check error:", e);
+                setSession(null);
+            } finally {
+                setLoading(false);
+            }
         };
 
         checkSession();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if ((event as unknown as string) === 'TOKEN_REFRESH_ERROR') {
-                supabase.auth.signOut();
+            // Handle refresh errors silently by clearing session
+            if (event === 'SIGNED_OUT' || (event as any) === 'TOKEN_REFRESH_ERROR') {
                 setSession(null);
+                if (event === 'TOKEN_REFRESH_ERROR') {
+                    // Force logout on refresh error to clean local storage
+                    supabase.auth.signOut();
+                }
             } else {
                 setSession(session);
             }
@@ -785,11 +800,12 @@ const App: React.FC = () => {
     }, []);
 
     if (loading) {
-        return (
-            <>
-                {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-                <div className="w-screen h-screen flex items-center justify-center bg-black">Carregando...</div>
-            </>
+        return showSplash ? (
+            <SplashScreen onComplete={handleSplashComplete} />
+        ) : (
+            <div className="w-screen h-screen flex items-center justify-center bg-black text-gray-500 font-mono text-sm animate-pulse">
+                Sincronizando...
+            </div>
         );
     }
 
@@ -803,7 +819,7 @@ const App: React.FC = () => {
                 <TutorialProvider>
                     {renderContent()}
                     <BootRitualOverlay open={showBootRitual} />
-                    {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+                    {showSplash && !loading && <SplashScreen onComplete={handleSplashComplete} />}
                 </TutorialProvider>
             </GameProvider>
         </CodexBuilderProvider>

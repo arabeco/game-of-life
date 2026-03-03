@@ -8,7 +8,7 @@ import { ItemDetailModal } from '../ItemDetailModal';
 import { ChestType } from '../../types';
 import { ChestOpeningModal } from '../ChestOpeningModal';
 
-type InventoryTab = 'all' | 'skins' | 'character' | 'ui' | 'glyphs' | 'chests';
+type InventoryTab = 'all' | 'skins' | 'character' | 'ui' | 'glyphs' | 'insignias' | 'chests';
 
 const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'all', label: 'Tudo', categories: [] },
@@ -16,6 +16,7 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'character', label: 'Personagem', categories: ['skin', 'hair'] },
     { id: 'ui', label: 'Interface', categories: ['border', 'ui_skin', 'banner', 'aura'] },
     { id: 'glyphs', label: 'Glifos', categories: ['glyph', 'orb', 'plate'] },
+    { id: 'insignias', label: 'Insígnias', categories: ['insignia'] },
     { id: 'chests', label: 'Baús', categories: ['chest'] },
 ];
 
@@ -36,14 +37,14 @@ export const Inventory: React.FC = () => {
     const visibleTabs = useMemo(() => {
         if (appMode === 'BASIC') {
             // Hide cosmetic tabs and chests in BASIC mode (Focus on productivity)
-            return TABS.filter(t => !['skins', 'character', 'ui', 'glyphs', 'chests'].includes(t.id));
+            return TABS.filter(t => !['skins', 'character', 'ui', 'glyphs', 'insignias', 'chests'].includes(t.id));
         }
         return TABS;
     }, [appMode]);
 
     // Reset active tab if it becomes invisible
     useEffect(() => {
-        if (appMode === 'BASIC' && ['skins', 'character', 'ui', 'glyphs', 'chests'].includes(activeTab)) {
+        if (appMode === 'BASIC' && ['skins', 'character', 'ui', 'glyphs', 'insignias', 'chests'].includes(activeTab)) {
             setActiveTab('all');
         }
     }, [appMode, activeTab]);

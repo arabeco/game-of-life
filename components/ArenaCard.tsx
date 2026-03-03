@@ -220,7 +220,14 @@ interface ArenaCardProps {
     variant: 'overview' | 'dossier';
 }
 
-export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ arena, actions, onClick, assetName, variant, tasks: propTasks }) => {
+export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ 
+    arena, 
+    actions, 
+    onClick, 
+    assetName, 
+    variant, 
+    tasks: propTasks
+}) => {
     const { appMode, tasks: contextTasks, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, reorderAction } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const [skinTone, setSkinTone] = useState('#F0C843');
@@ -356,7 +363,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ arena,
     const isOverview = variant === 'overview';
     const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
     const skinColor = 'var(--skin-accent-color)';
-    const baseClasses = `arena-plate p-1 rounded-lg border flex flex-col justify-between cursor-pointer relative overflow-hidden transition-all duration-300`;
+    const baseClasses = `arena-plate p-1 rounded-lg border flex flex-col justify-between relative overflow-hidden transition-all duration-300 select-none pointer-events-none`;
     const styleClasses = isOverview 
         ? 'h-26' 
         : 'h-24';
@@ -370,12 +377,16 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ arena,
     };
     
     return (
-        <div onClick={onClick} className={`${baseClasses} ${styleClasses} ${archivedClasses}`} style={{ ...cardStyle, ...tiltStyle }}>
+        <div 
+            onClick={onClick} 
+            className={`${baseClasses} ${styleClasses} ${archivedClasses}`} 
+            style={{ ...cardStyle, ...tiltStyle }}
+        >
             <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: accentColor }} />
-            <div className="arena-plasma">
+            <div className="arena-plasma pointer-events-none">
                 <PlasmaCanvas color={skinTone} opacity={0.35} className="arena-plasma-canvas" width={320} height={220} />
             </div>
-            <div className="text-center relative z-10 -mt-2">
+            <div className="text-center relative z-10 -mt-2 pointer-events-none">
                 <div className="arena-icon-slot">
                     <span className="arena-icon">
                         {getIcon()}
@@ -396,7 +407,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ arena,
                 )}
             </div>
             
-            <div className="flex flex-col items-center space-y-2 flex-shrink-0 relative z-10">
+            <div className="flex flex-col items-center space-y-2 flex-shrink-0 relative z-10 pointer-events-auto">
                 {milestoneActions.length > 0 && (
                     <div className="w-full flex items-center justify-center h-8 gap-2">
                         {milestoneActions.map(action => {

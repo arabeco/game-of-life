@@ -64,6 +64,27 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const [linkStatus, setLinkStatus] = useState<string | null>(null);
     const newActionRef = useRef<HTMLButtonElement>(null);
     const [skinColor, setSkinColor] = useState('#F0C843');
+    const [currentLinkType, setCurrentLinkType] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchLinkType = async () => {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const uid = sessionData.session?.user.id;
+            if (!uid) return;
+            
+            const { data } = await supabase.from('relationship_links')
+                .select('link_type')
+                .or(`mentor_id.eq.${uid},pupil_id.eq.${uid}`)
+                .eq('arena_id', arena.id)
+                .is('ended_at', null)
+                .maybeSingle();
+            
+            if (data) {
+                setCurrentLinkType(data.link_type);
+            }
+        };
+        fetchLinkType();
+    }, [arena.id]);
 
     const parentAsset = assets.find(a => a.id === arena.assetId);
     const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -180,10 +201,12 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             return;
         }
 
+        const inviteType = arena.name === "Quem corre 15km antes" ? 'competicao' : 'mentoria';
+
         const { error } = await supabase.from('relationship_link_invites').insert({
             sender_id: uid,
             recipient_id: friend.id,
-            link_type: 'mentoria',
+            link_type: inviteType,
             arena_id: arena.id,
             arena_snapshot: { name: editableArena.name || arena.name, icon: editableArena.icon || arena.icon },
             status: 'pending',
@@ -245,6 +268,16 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             </h2>
                             {parentAsset?.name && (
                                 <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-300">{parentAsset.name}</p>
+                            )}
+                            {currentLinkType === 'competicao' && (
+                                <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
+                                    <span>⚔️</span> PVP
+                                </div>
+                            )}
+                            {currentLinkType === 'mentoria' && (
+                                <div className="bg-blue-500/20 border border-blue-500/50 text-blue-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
+                                    <span>🎓</span> MENTORIA
+                                </div>
                             )}
                             {isClanQuestArena && (
                                 <div className="flex flex-col items-center gap-1 mt-1">

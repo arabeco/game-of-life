@@ -20,7 +20,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ title, mes
                         <button onClick={onCancel} className="w-full py-2 rounded-xl luxe-button-secondary">
                             CANCELAR
                         </button>
-                        <button onClick={onConfirm} className="w-full py-2 rounded-xl bg-red-800/50 text-red-300 hover:bg-red-800/80">
+                        <button onClick={onConfirm} className="w-full py-2 rounded-xl luxe-skin-button">
                             CONFIRMAR
                         </button>
                     </div>

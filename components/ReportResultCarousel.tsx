@@ -6,6 +6,7 @@ import { SKINS_DATA } from '../constants/GMboard';
 import { Report, ChestType } from '../types';
 import { getScoreGrade } from '../utils/dateUtils';
 import { VideoPlayer } from './VideoPlayer';
+import { resolveItemDef } from '../constants/items';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon } from './Icons';
 
 // Helper functions (duplicated to avoid circular dependencies)
@@ -21,6 +22,7 @@ interface ReportResultCarouselProps {
     onStartNewCycle?: () => void; // Added for reward slide
     chest?: ChestType | null;     // Added for reward slide
     expGained?: number;           // Added for reward slide
+    insignias?: string[];         // Added for reward slide
     onOpenChest?: () => void;     // Trigger chest opening
 }
 
@@ -69,6 +71,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     onStartNewCycle,
     chest,
     expGained,
+    insignias = [],
     onOpenChest
 }) => {
     const { userProfile } = useGame();
@@ -77,36 +80,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const skinColor = userSkin?.color || '#ffffff';
 
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [showVideo, setShowVideo] = useState(true); // Start with video
     const totalSlides = 5;
 
     const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, totalSlides - 1));
     const prevSlide = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
-
-    if (showVideo) {
-        return (
-            <Portal>
-                <div className="fixed inset-0 bg-black z-[10001] flex items-center justify-center animate-fade-in">
-                    <div className="relative w-full h-full max-w-md max-h-[800px] bg-black">
-                        <VideoPlayer
-                            src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/mission_complete.mp4`}
-                            className="w-full h-full object-cover"
-                            placeholderLabel="Gerando Relatório..."
-                            duration={4000}
-                            playbackRate={1.0}
-                            onEnd={() => setShowVideo(false)}
-                        />
-                        <button 
-                            onClick={() => setShowVideo(false)}
-                            className="absolute top-4 right-4 text-white/50 hover:text-white text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm"
-                        >
-                            Pular
-                        </button>
-                    </div>
-                </div>
-            </Portal>
-        );
-    }
 
     const { metrics, highlight, assetProgress } = report;
     const scoreInfo = getScoreGrade(report.performanceScore);
@@ -126,47 +103,50 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
     // Slide 1: Execução
     const renderExecutionSlide = () => (
-        <div className="flex flex-col h-full space-y-6 p-4">
-            <h3 className="text-xl font-bold accent-text uppercase tracking-widest text-center">Execução</h3>
+        <div className="flex flex-col h-full space-y-8 p-6">
+            <div className="text-center">
+                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Execução</h3>
+                <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+            </div>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
                 {/* Actions Bar */}
-                <div>
-                    <div className="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>AÇÕES</span>
-                        <span>{metrics.actionsCompleted} / {metrics.totalPlannedActions}</span>
+                <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
+                    <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
+                        <span>Ações</span>
+                        <span className="text-white">{metrics.actionsCompleted} <span className="text-gray-600">/</span> {metrics.totalPlannedActions}</span>
                     </div>
-                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
                         <div 
-                            className="h-full bg-green-500 transition-all duration-1000" 
+                            className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-1000 shadow-[0_0_10px_var(--skin-accent-color)]" 
                             style={{ width: `${Math.min((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100, 100)}%` }}
                         />
                     </div>
                 </div>
 
                 {/* Time Bar */}
-                <div>
-                    <div className="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>TEMPO</span>
-                        <span>{duration} / {plannedDuration} dias</span>
+                <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
+                    <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
+                        <span>Tempo</span>
+                        <span className="text-white">{duration} <span className="text-gray-600">/</span> {plannedDuration} <span className="text-gray-600 text-[8px]">DIAS</span></span>
                     </div>
-                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
                          <div 
-                            className="h-full bg-red-500 transition-all duration-1000" 
+                            className="h-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-1000 shadow-[0_0_10px_rgba(239,68,68,0.5)]" 
                             style={{ width: `${timePercentage}%` }}
                         />
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                    <p className="text-2xl font-black text-white">{metrics.totalHours}</p>
-                    <p className="text-[10px] uppercase text-gray-500 tracking-wider">Horas Totais</p>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
+                    <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.totalHours}</p>
+                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Horas Totais</p>
                 </div>
-                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                    <p className="text-2xl font-black text-white">{metrics.arenasInvolved}</p>
-                    <p className="text-[10px] uppercase text-gray-500 tracking-wider">Arenas</p>
+                <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
+                    <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.arenasInvolved}</p>
+                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Arenas</p>
                 </div>
             </div>
         </div>
@@ -174,45 +154,48 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
     // Slide 2: Território
     const renderTerritorySlide = () => (
-        <div className="flex flex-col h-full space-y-4 p-4">
-            <h3 className="text-xl font-bold accent-text uppercase tracking-widest text-center">Território</h3>
+        <div className="flex flex-col h-full space-y-6 p-6">
+            <div className="text-center">
+                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Território</h3>
+                <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+            </div>
             
-            <div className="flex-1 min-h-[200px] relative">
+            <div className="flex-1 min-h-[240px] relative bg-white/[0.02] rounded-3xl border border-white/[0.03] p-2">
                 <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                        <PolarGrid stroke="#333" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#999', fontSize: 10 }} />
+                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                        <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#666', fontSize: 9, fontWeight: 900, letterSpacing: '0.1em' }} />
                         <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar name="Nível" dataKey="A" stroke="var(--skin-accent-color)" fill="var(--skin-accent-color)" fillOpacity={0.3} />
+                        <Radar name="Nível" dataKey="A" stroke="var(--skin-accent-color)" fill="var(--skin-accent-color)" fillOpacity={0.4} />
                     </RadarChart>
                 </ResponsiveContainer>
             </div>
 
             <div className="space-y-3">
-                <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-[var(--skin-accent-color)]/20 flex items-center justify-center">
-                            <ZapIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                <div className="flex items-center justify-between bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] hover:bg-white/[0.05] transition-all">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 flex items-center justify-center shadow-inner">
+                            <ZapIcon className="w-5 h-5 text-[var(--skin-accent-color)] filter drop-shadow-[0_0_5px_var(--skin-accent-color)]" />
                         </div>
                         <div>
-                            <p className="text-xs text-gray-400 uppercase">Arena Foco</p>
-                            <p className="text-sm font-bold text-white">{highlight.mostFocusedArena}</p>
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Arena Foco</p>
+                            <p className="text-sm font-black text-white tracking-tight">{highlight.mostFocusedArena}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                            <CheckIcon className="w-4 h-4 text-blue-400" />
+                <div className="flex items-center justify-between bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] hover:bg-white/[0.05] transition-all">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-inner">
+                            <CheckIcon className="w-5 h-5 text-blue-400 filter drop-shadow-[0_0_5px_rgba(96,165,250,0.5)]" />
                         </div>
                         <div>
-                            <p className="text-xs text-gray-400 uppercase">Ação Mais Repetida</p>
-                            <p className="text-sm font-bold text-white">{highlight.mostRepeatedAction}</p>
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Frequência</p>
+                            <p className="text-sm font-black text-white tracking-tight">{highlight.mostRepeatedAction}</p>
                         </div>
                     </div>
                     <div className="text-right">
-                         <span className="text-xl font-bold text-blue-400">{highlight.mostRepeatedActionCount || 0}x</span>
+                         <span className="text-xl font-black text-blue-400 tabular-nums">{highlight.mostRepeatedActionCount || 0}<span className="text-[10px] ml-0.5 opacity-50">X</span></span>
                     </div>
                 </div>
             </div>
@@ -224,46 +207,59 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         const hasAchievements = metrics.goalsMet > 0 || (metrics.questsCompleted || 0) > 0 || (report.clanPoints || 0) > 0;
         
         return (
-            <div className="flex flex-col h-full space-y-6 p-4">
-                <h3 className="text-xl font-bold accent-text uppercase tracking-widest text-center">Conquistas</h3>
+            <div className="flex flex-col h-full space-y-6 p-6">
+                <div className="text-center">
+                    <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Conquistas</h3>
+                    <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+                </div>
                 
                 {hasAchievements ? (
                     <div className="space-y-4">
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <TrophyIcon className="w-6 h-6 text-yellow-500" />
-                                <span className="text-sm font-bold text-white">Marcos Conquistados</span>
+                        <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/[0.05] flex items-center justify-between group hover:bg-white/[0.05] transition-all">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                    <TrophyIcon className="w-6 h-6 text-[var(--skin-accent-color)] filter drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
+                                </div>
+                                <span className="text-xs font-black text-white uppercase tracking-widest">Marcos</span>
                             </div>
-                            <span className="text-2xl font-black text-yellow-500">{metrics.goalsMet}</span>
+                            <span className="text-3xl font-black text-[var(--skin-accent-color)] tabular-nums">{metrics.goalsMet}</span>
                         </div>
 
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <CrownIcon className="w-6 h-6 text-purple-500" />
-                                <span className="text-sm font-bold text-white">Quests Completadas</span>
+                        <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/[0.05] flex items-center justify-between group hover:bg-white/[0.05] transition-all">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                    <CrownIcon className="w-6 h-6 text-purple-500 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                                </div>
+                                <span className="text-xs font-black text-white uppercase tracking-widest">Missões</span>
                             </div>
-                            <span className="text-2xl font-black text-purple-500">{metrics.questsCompleted || 0}</span>
+                            <span className="text-3xl font-black text-purple-500 tabular-nums">{metrics.questsCompleted || 0}</span>
                         </div>
 
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-6 h-6 rounded-full border-2 border-red-500 bg-red-500/20" />
-                                <span className="text-sm font-bold text-white">Pontos de Clã</span>
+                        <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/[0.05] flex items-center justify-between group hover:bg-white/[0.05] transition-all">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                    <div className="w-6 h-6 rounded-full border-2 border-red-500 bg-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                </div>
+                                <span className="text-xs font-black text-white uppercase tracking-widest">Poder</span>
                             </div>
-                            <span className="text-2xl font-black text-red-500">{report.clanPoints || 0}</span>
+                            <span className="text-3xl font-black text-red-500 tabular-nums">{report.clanPoints || 0}</span>
                         </div>
 
-                        <div className="text-center mt-4">
-                            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">EXP TOTAL</p>
-                            <p className="text-4xl font-black accent-text">+{report.expGained || expGained || 0}</p>
+                        <div className="text-center mt-8 p-6 bg-white/[0.02] rounded-[32px] border border-white/[0.03]">
+                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mb-2">Total Acumulado</p>
+                            <p className="text-5xl font-black text-white tracking-tighter">
+                                <span className="text-[var(--skin-accent-color)] opacity-50">+</span>{report.expGained || expGained || 0}<span className="text-xs ml-1 opacity-30 tracking-widest">XP</span>
+                            </p>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center flex-1 text-center opacity-60">
-                        <div className="w-16 h-16 rounded-full bg-gray-800 mb-4 flex items-center justify-center">
-                            <XIcon className="w-8 h-8 text-gray-600" />
+                    <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
+                        <div className="w-20 h-20 rounded-full bg-white/[0.02] border border-white/[0.05] mb-6 flex items-center justify-center shadow-inner opacity-40">
+                            <XIcon className="w-10 h-10 text-gray-700" />
                         </div>
-                        <p className="text-gray-400 italic">"Nenhum marco neste ciclo. O próximo pode mudar isso."</p>
+                        <p className="text-gray-500 text-xs font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px] opacity-60">
+                            "Nenhum marco registrado. <br/>A disciplina é a única saída."
+                        </p>
                     </div>
                 )}
             </div>
@@ -272,24 +268,28 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
     // Slide 4: Veredito
     const renderVerdictSlide = () => (
-        <div className="flex flex-col h-full items-center justify-center p-4 text-center space-y-6">
-            <h3 className="text-xl font-bold accent-text uppercase tracking-widest absolute top-4">Veredito</h3>
+        <div className="flex flex-col h-full items-center justify-center p-6 text-center space-y-8">
+            <div className="absolute top-10 text-center">
+                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Veredito</h3>
+                <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+            </div>
             
-            <div className="relative">
-                <div className={`text-9xl font-black ${scoreInfo.color} filter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]`}>
+            <div className="relative group">
+                <div className="absolute inset-0 bg-[var(--skin-accent-color)] opacity-20 blur-[60px] group-hover:opacity-40 transition-opacity duration-1000" />
+                <div className={`text-[7rem] font-black ${scoreInfo.color} leading-none tracking-tighter filter drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative z-10 select-none`}>
                     {scoreInfo.grade}
                 </div>
-                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-black/80 px-3 py-1 rounded-full border border-white/10">
-                    <span className="text-xl font-bold text-white">{report.performanceScore}</span>
+                <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-md px-6 py-2 rounded-2xl border border-white/[0.1] shadow-2xl z-20">
+                    <span className="text-2xl font-black text-white tracking-tight">{report.performanceScore}</span>
                 </div>
             </div>
 
-            <div className="pt-8 space-y-1">
-                <p className="text-xs text-gray-500 uppercase tracking-widest">{formatDate(report.startDate)} - {formatDate(report.endDate)}</p>
-                <p className="text-xs text-gray-600 uppercase">{duration} dias de jornada</p>
+            <div className="pt-12 space-y-2 relative z-10">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">{formatDate(report.startDate)} — {formatDate(report.endDate)}</p>
+                <p className="text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-[0.1em] opacity-60">{duration} dias de operação</p>
             </div>
 
-            <p className="text-lg italic text-white/80 max-w-[280px]">
+            <p className="text-xl font-black text-white leading-tight tracking-tight max-w-[300px] italic opacity-90 relative z-10">
                 "{scoreInfo.phrase}"
             </p>
         </div>
@@ -298,84 +298,82 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     // Slide 5: Resumo do Relatório
     const renderRewardSlide = () => {
         return (
-            <div className="flex flex-col h-full items-center p-4 text-center space-y-4 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-5 pointer-events-none" />
-                
-                <h3 className="text-lg font-bold accent-text uppercase tracking-widest mt-2">Resumo do Relatório</h3>
+            <div className="flex flex-col h-full items-center p-6 text-center space-y-6 relative overflow-hidden">
+                <div className="text-center">
+                    <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Resumo</h3>
+                    <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+                </div>
                 
                 {/* Stats Header */}
-                <div className="flex w-full justify-around bg-black/40 p-3 rounded-xl border border-white/10 shadow-lg mb-4">
+                <div className="flex w-full justify-around bg-white/[0.03] p-5 rounded-[24px] border border-white/[0.05] shadow-2xl backdrop-blur-sm">
                     <div className="text-center">
-                        <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">XP Coletada</p>
-                        <p className="text-xl font-black accent-text">+{report.expGained || expGained || 0}</p>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Total XP</p>
+                        <p className="text-2xl font-black text-white tracking-tighter">+{report.expGained || expGained || 0}</p>
                     </div>
-                    <div className="w-px bg-white/10" />
+                    <div className="w-px bg-white/[0.05] h-10 self-center" />
                     <div className="text-center">
-                        <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">Nota</p>
-                        <p className={`text-xl font-black ${scoreInfo.color}`}>{report.performanceScore}</p>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Nota</p>
+                        <p className={`text-2xl font-black ${scoreInfo.color}`}>{report.performanceScore}</p>
                     </div>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center w-full space-y-2">
-                    {chest ? (
-                        <div className="w-full max-w-[260px] bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center gap-3 justify-center animate-fade-in-up">
-                            <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-black/40 rounded-lg border border-white/5 relative overflow-hidden">
-                                <div className="transform scale-[0.3]">
-                                    <ChestVisual type={chest} />
+                <div className="flex-1 flex flex-col items-center justify-center w-full space-y-3">
+                    {/* Reward Miniature - Standardized Pattern */}
+                    <div className="w-full flex flex-col gap-2 justify-center">
+                        {chest && (
+                            <div className="flex items-center gap-3 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all text-left">
+                                <div className="w-9 h-9 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
+                                    <div className="transform scale-[0.3]">
+                                        <ChestVisual type={chest} />
+                                    </div>
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="text-[7px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Recompensa</p>
+                                    <p className="text-[10px] font-black text-white whitespace-nowrap tracking-tight truncate">
+                                        {chest} Chest
+                                    </p>
                                 </div>
                             </div>
-                            <div className="text-left flex-1">
-                                <p className="text-[8px] text-gray-500 uppercase tracking-wider">Recompensa</p>
-                                <h4 className="text-xs font-bold text-white drop-shadow-md">{chest} Chest</h4>
-                                <p className="text-[8px] text-[var(--skin-accent-color)] font-mono uppercase tracking-wider opacity-80">Adicionado</p>
-                            </div>
-                        </div>
-                    ) : null}
-                    
-                    {(expGained && expGained > 0) ? (
-                        <div className="w-full max-w-[260px] bg-white/5 border border-white/10 rounded-xl p-2.5 flex items-center gap-3 justify-center animate-fade-in-up">
-                            <div className="w-8 h-8 flex-shrink-0 bg-gradient-to-br from-yellow-500/20 to-transparent rounded-lg border border-yellow-500/30 flex items-center justify-center">
-                                <span className="text-lg filter drop-shadow-[0_0_10px_rgba(234,179,8,0.3)]">✨</span>
-                            </div>
-                            <div className="text-left flex-1">
-                                <p className="text-[8px] text-gray-500 uppercase tracking-wider">Recompensa</p>
-                                <h4 className="text-xs font-bold text-white drop-shadow-md">+{expGained} XP</h4>
-                                <p className="text-[8px] text-yellow-500 font-mono uppercase tracking-wider opacity-80">Coletado</p>
-                            </div>
-                        </div>
-                    ) : null}
-                    
-                    {!chest && (!expGained || expGained === 0) && (
-                        <p className="text-gray-500 italic text-[10px] max-w-[250px]">
-                            "Sua disciplina forja seu destino."
-                        </p>
-                    )}
-                </div>
+                        )}
 
-                <div className="w-full space-y-3 pt-2">
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={onShare} 
-                            className="p-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
-                            title="Compartilhar"
-                        >
-                            <ShareIcon className="w-4 h-4"/>
-                        </button>
-                        <button 
-                            onClick={onStartNewCycle || onOk} 
-                            className="flex-1 py-2.5 rounded-lg font-bold uppercase tracking-wider text-[10px] transition-all hover:brightness-110 flex items-center justify-center gap-2"
-                            style={{ backgroundColor: `${skinColor}15`, border: `1px solid ${skinColor}40`, color: skinColor }}
-                        >
-                            Novo Ciclo
-                        </button>
+                        <div className="flex gap-2 w-full flex-wrap justify-center">
+                            {((report.expGained || expGained) && (report.expGained || expGained) > 0) && (
+                                <div className="flex-1 flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all text-left min-w-[120px]">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
+                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">✨</span>
+                                    </div>
+                                    <div className="overflow-hidden min-w-0">
+                                        <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Bônus Ciclo</p>
+                                        <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
+                                            +{report.expGained || expGained} <span className="text-[var(--skin-accent-color)] opacity-70">XP</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {insignias && insignias.length > 0 && insignias.map((insigniaId, idx) => (
+                                <div key={idx} className="flex-1 flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all text-left min-w-[120px]">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
+                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">
+                                            {resolveItemDef(insigniaId)?.icon || '🎖️'}
+                                        </span>
+                                    </div>
+                                    <div className="overflow-hidden min-w-0">
+                                        <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Insígnia</p>
+                                        <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
+                                            {resolveItemDef(insigniaId)?.name || insigniaId.replace(/_/g, ' ')}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {!chest && (!report.expGained && !expGained) && (!insignias || insignias.length === 0) && (
+                            <p className="text-gray-500 font-black uppercase text-[10px] tracking-[0.3em] opacity-40 max-w-[200px] leading-relaxed italic mx-auto">
+                                "A disciplina <br/>é a liberdade."
+                            </p>
+                        )}
                     </div>
-                    
-                    <button 
-                        onClick={onOk} 
-                        className="w-full py-2.5 rounded-lg font-bold uppercase tracking-wider text-[10px] bg-white/5 text-gray-400 hover:bg-white/10 transition-all border border-white/5 hover:text-white"
-                    >
-                        Descansar
-                    </button>
                 </div>
             </div>
         );
@@ -389,55 +387,104 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         renderRewardSlide
     ];
 
+    // If it's the reward slide, hide the standard footer and show the special action button
+    const isRewardSlide = currentSlide === totalSlides - 1;
+
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[10001] flex items-center justify-center p-4 animate-fade-in">
-            <div className="w-full max-w-[420px] h-[85vh] max-h-[800px] bg-gradient-to-b from-gray-900 via-[#0a0a0a] to-black border border-white/10 rounded-[32px] shadow-2xl relative flex flex-col overflow-hidden">
+            <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[10001] flex items-center justify-center p-4 animate-fade-in">
+            <div 
+                className="w-full max-w-[420px] h-[85vh] max-h-[800px] bg-[#050505] border-t border-x rounded-[32px] shadow-[0_0_100px_rgba(0,0,0,1)] relative flex flex-col overflow-hidden transition-all duration-500"
+                style={{ 
+                    borderColor: `${skinColor}30`, 
+                    boxShadow: `0 0 60px ${skinColor}10, inset 0 0 30px ${skinColor}05`
+                }}
+            >
+                {/* Premium border gradient effect */}
+                <div className="absolute inset-0 pointer-events-none z-50">
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/40 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/10 to-transparent" />
+                </div>
+
                 {/* Header */}
-                <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-white/5">
-                    <div className="flex space-x-1">
+                <div className="h-20 flex items-center justify-between px-8 border-b border-white/[0.03] bg-white/[0.02]">
+                    <div className="flex space-x-1.5">
                         {slides.map((_, idx) => (
                             <div 
                                 key={idx} 
-                                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-[var(--skin-accent-color)]' : 'w-2 bg-gray-700'}`}
+                                className={`h-1 rounded-full transition-all duration-500 ${idx === currentSlide ? 'w-10 bg-[var(--skin-accent-color)] shadow-[0_0_10px_var(--skin-accent-color)]' : 'w-2 bg-white/[0.05]'}`}
                             />
                         ))}
                     </div>
-                    <button onClick={onOk} className="text-gray-400 hover:text-white transition-colors">
-                        <XIcon className="w-6 h-6" />
+                    <button 
+                        onClick={onOk} 
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all border border-transparent hover:border-white/[0.05]"
+                    >
+                        <XIcon className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 relative overflow-hidden">
-                    <div className="absolute inset-0 p-2">
-                        {slides[currentSlide]()}
+                <div className="flex-1 relative overflow-hidden bg-[#050505]" id="report-summary-card-capture">
+                        {/* Background decoration */}
+                        <div className="absolute inset-0 z-0 opacity-20">
+                            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_var(--skin-accent-color)_0%,_transparent_70%)]" />
+                        </div>
+                        
+                        <div className="absolute inset-0 p-4 z-10 overflow-y-auto">
+                            {slides[currentSlide]()}
+                        </div>
                     </div>
-                </div>
 
                 {/* Footer Navigation */}
-                <div className="h-20 flex items-center justify-between px-6 border-t border-white/5 bg-white/5">
-                    <button 
-                        onClick={prevSlide} 
-                        disabled={currentSlide === 0}
-                        className={`p-3 rounded-full transition-colors ${currentSlide === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-white hover:bg-white/10'}`}
-                    >
-                        <ChevronLeftIcon className="w-6 h-6" />
-                    </button>
+                <div className="h-24 flex items-center justify-between px-8 border-t border-white/[0.03] bg-white/[0.02]">
+                    {!isRewardSlide ? (
+                        <>
+                            <button 
+                                onClick={prevSlide} 
+                                disabled={currentSlide === 0}
+                                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${currentSlide === 0 ? 'text-gray-800 border-transparent' : 'text-white border-white/[0.05] hover:bg-white/[0.05] active:scale-90'}`}
+                            >
+                                <ChevronLeftIcon className="w-6 h-6" />
+                            </button>
 
-                    <div className="flex space-x-4">
-                        <button onClick={onShare} className="p-3 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors" title="Compartilhar">
-                            <ShareIcon className="w-5 h-5" />
-                        </button>
-                    </div>
+                            <div className="flex items-center gap-4">
+                                <button 
+                                    onClick={onShare} 
+                                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:text-white border border-white/[0.05] hover:bg-white/[0.05] transition-all" 
+                                    title="Compartilhar"
+                                >
+                                    <ShareIcon className="w-5 h-5" />
+                                </button>
+                            </div>
 
-                    <button 
-                        onClick={nextSlide} 
-                        disabled={currentSlide === totalSlides - 1}
-                        className={`p-3 rounded-full transition-colors ${currentSlide === totalSlides - 1 ? 'text-gray-700 cursor-not-allowed' : 'text-white hover:bg-white/10'}`}
-                    >
-                        <ChevronRightIcon className="w-6 h-6" />
-                    </button>
+                            <button 
+                                onClick={nextSlide} 
+                                disabled={currentSlide === totalSlides - 1}
+                                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${currentSlide === totalSlides - 1 ? 'text-gray-800 border-transparent' : 'text-white border-white/[0.05] hover:bg-white/[0.05] active:scale-90'}`}
+                            >
+                                <ChevronRightIcon className="w-6 h-6" />
+                            </button>
+                        </>
+                    ) : (
+                        <div className="w-full flex gap-3 items-center">
+                            <button 
+                                onClick={onShare} 
+                                className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:text-white border border-white/[0.05] hover:bg-white/[0.05] transition-all shrink-0" 
+                                title="Compartilhar"
+                            >
+                                <ShareIcon className="w-5 h-5" />
+                            </button>
+                            
+                            <button 
+                                onClick={onStartNewCycle || onOk} 
+                                className="flex-1 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl relative overflow-hidden group luxe-skin-button"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                {onStartNewCycle ? 'Novo Ciclo' : 'OK'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

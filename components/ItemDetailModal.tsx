@@ -151,6 +151,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         }
     };
 
+    const isInsignia = currentItem.category === 'insignia' || currentItem.category === 'insignias';
+
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[70] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
@@ -182,6 +184,11 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                             {rarityLabel}
                         </span>
                     </div>
+                    {isInsignia && (
+                        <div className="mt-2 text-[9px] font-bold text-blue-400 uppercase tracking-widest animate-pulse">
+                            Colecionável · Somente Visualização
+                        </div>
+                    )}
                     <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto my-4" />
                     <div className="mt-4 text-xs text-white/60 px-4">
                         {currentItem.description || "Um item raro e misterioso."}
@@ -231,31 +238,31 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                     {currentItem.category === 'chest' ? (
                         <button 
                             onClick={handleOpen}
-                            className={`col-span-2 py-3 rounded-xl font-bold uppercase tracking-wider transition-all transform hover:scale-105 active:scale-95 shadow-lg ${rarityClass.replace('plasma-', 'bg-')}/20 border ${rarityColor} hover:bg-${rarityColor.replace('text-', '')}/20`}
+                            className="col-span-2 py-3 rounded-xl luxe-skin-button"
                         >
                             ABRIR
                         </button>
                     ) : (
                         <button 
                             onClick={handleEquip}
-                            disabled={!isOwned}
+                            disabled={!isOwned || isInsignia}
                             className={`col-span-2 py-3 rounded-xl font-bold uppercase tracking-wider transition-all transform shadow-lg
-                                ${!isOwned 
+                                ${(!isOwned || isInsignia)
                                     ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed border border-gray-700' 
                                     : isEquipped 
                                         ? 'bg-red-500/20 text-red-400 border border-red-500/50 hover:scale-105 active:scale-95' 
-                                        : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:scale-105 active:scale-95'
+                                        : 'luxe-skin-button hover:scale-105 active:scale-95'
                                 }`}
                         >
-                            {!isOwned ? 'Bloqueado' : isEquipped ? 'Desequipar' : 'Equipar'}
+                            {isInsignia ? 'Somente Visualização' : (!isOwned ? 'Bloqueado' : isEquipped ? 'Desequipar' : 'Equipar')}
                         </button>
                     )}
                     
                     <button 
                         onClick={handleRecycle}
-                        disabled={!isOwned}
+                        disabled={!isOwned || isInsignia}
                         className={`py-3 rounded-xl font-bold uppercase tracking-wider border transition-all flex items-center justify-center gap-2
-                            ${!isOwned 
+                            ${(!isOwned || isInsignia)
                                 ? 'bg-transparent text-gray-600 border-gray-800 cursor-not-allowed' 
                                 : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
                             }`}
@@ -266,9 +273,9 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                     
                     <button 
                         onClick={handleDonate}
-                        disabled={!isOwned}
+                        disabled={!isOwned || isInsignia}
                         className={`py-3 rounded-xl font-bold uppercase tracking-wider border transition-all flex items-center justify-center gap-2
-                            ${!isOwned 
+                            ${(!isOwned || isInsignia)
                                 ? 'bg-transparent text-gray-600 border-gray-800 cursor-not-allowed' 
                                 : 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
                             }`}

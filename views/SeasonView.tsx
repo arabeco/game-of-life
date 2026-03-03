@@ -123,7 +123,7 @@ const SeasonQuestCard: React.FC<{
 export const SeasonView: React.FC = () => {
     const { 
         userProfile, tasks, seasons, seasonQuests, acceptSeasonQuest, abortSeasonQuest,
-        claimSeasonQuestReward, getArenas, getActionsForArena, getClanQuestProgress, 
+        claimSeasonQuest, getArenas, getActionsForArena, getClanQuestProgress, 
         clanQuestParticipants, fetchClanQuestParticipants, userMissionParticipations, 
         addCompletedMission, addProfileFlag, showToast, addChest 
     } = useGame();
@@ -481,7 +481,7 @@ export const SeasonView: React.FC = () => {
                         if (['meta-quest-3', 'tutorial-quest'].includes(selectedQuest.id) || selectedQuest.id.startsWith('intro-')) {
                             handleClaimSpecial(selectedQuest.id);
                         } else {
-                            claimSeasonQuestReward(selectedQuest.id);
+                            claimSeasonQuest(selectedQuest.id);
                             
                             const xp = selectedQuest.rewards.xp;
                             const items = selectedQuest.rewards.items || [];

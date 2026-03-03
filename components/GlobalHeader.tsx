@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { MoodModal } from './MoodModal';
 import { OracleFeed } from './OracleFeed';
+import { ClanDetailModal } from './ClanDetailModal';
 import { RestScreen } from './RestScreen';
 import { SparklesIcon, LockIcon } from './Icons';
 
@@ -11,16 +12,27 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const { userProfile, oracleMessages, notifications, appMode, clan } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
-    const [isRestScreenOpen, setRestScreenOpen] = useState(false);
+    const [isClanOpen, setClanOpen] = useState(false);
+    const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
+    const [isRestScreenOpen, setRestScreenOpen] = useState(true); // Default to true for auto-open on login/app start
     const isBasicMode = appMode === 'BASIC';
     
     const unreadNotificationsCount = notifications.filter(n => !n.read).length;
     const hasUnreadMessages = oracleMessages.some(m => !m.read);
     const hasUnread = hasUnreadMessages || unreadNotificationsCount > 0;
-    const date = new Date();
-    const day = date.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '');
-    const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase().replace('.', '');
-    const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
+    // Time state
+    const [currentDate, setCurrentDate] = useState(new Date());
+
+    React.useEffect(() => {
+        const timer = setInterval(() => setCurrentDate(new Date()), 10000); // Update every 10s to be safe
+        return () => clearInterval(timer);
+    }, []);
+
+    const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '');
+    const dateStr = currentDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); // 02/03
+    const timeStr = currentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
     const avatarUrl = userProfile.avatarUrl?.trim();
 
     const currentMood = MOODS_DATA.find(m => userProfile.mood >= m.min && userProfile.mood < m.max) || MOODS_DATA[MOODS_DATA.length - 1];
@@ -57,13 +69,20 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
         setOracleOpen(true);
     };
 
+    // Common style for header chips
+    const chipStyle = "flex flex-col items-center justify-center w-20 h-9 flex-shrink-0 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl relative z-50 shadow-lg";
+
     return (
         <>
-            <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-black/40 backdrop-blur-lg border-b safe-area-top" style={{ top: topOffsetPx, borderColor: 'var(--skin-accent-color)' }}>
+            <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-transparent backdrop-blur-sm safe-area-top" style={{ top: topOffsetPx }}>
                 <div className="max-w-7xl mx-auto relative flex items-center justify-between h-20 px-4 text-xs font-semibold text-gray-300">
-                    <span className="text-center w-24 flex-shrink-0 text-[10px] uppercase tracking-[0.2em] bg-white/5 border px-3 py-1 rounded-full" style={{ borderColor: 'var(--skin-accent-color)' }}>{day} • {dateStr}</span>
+                    {/* Date Chip */}
+                    <div className={chipStyle}>
+                        <span className="text-[10px] font-black tracking-widest text-[var(--skin-accent-color)] uppercase leading-none mb-0.5">{day}</span>
+                        <span className="text-[10px] font-bold text-white tracking-widest leading-none">{dateStr}</span>
+                    </div>
                     
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[calc(100%-14rem)] flex items-center justify-center pointer-events-none">
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[calc(100%-12rem)] flex items-center justify-center pointer-events-none">
                         <div className="relative w-full flex items-center justify-center pointer-events-auto">
                             {/* Clickable Mood Bar (positioned behind the avatar) */}
                             <button 
@@ -89,7 +108,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                 {/* Rest Screen Button (Left) */}
                                 <button
                                     onClick={() => setRestScreenOpen(true)}
-                                    className="absolute right-full mr-4 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-[var(--skin-accent-color)] transition-all group shadow-lg backdrop-blur-sm"
+                                    className="absolute right-full mr-2 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-[var(--skin-accent-color)] transition-all group shadow-lg backdrop-blur-sm"
                                     aria-label="Tela de Descanso"
                                 >
                                     <LockIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
@@ -131,7 +150,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                 <button
                                     id="header-oracle"
                                     onClick={handleOracleClick}
-                                    className={`absolute left-full ml-4 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-amber-500/50 transition-all group shadow-lg backdrop-blur-sm ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
+                                    className={`absolute left-full ml-2 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-amber-500/50 transition-all group shadow-lg backdrop-blur-sm ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
                                     aria-label="Oracle Assistant"
                                 >
                                     <SparklesIcon className={`w-5 h-5 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'text-amber-200/80 group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />
@@ -145,12 +164,24 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                         </div>
                     </div>
 
-                    <span className="text-center w-20 flex-shrink-0 text-[11px] tracking-[0.2em] bg-white/5 border px-3 py-1 rounded-full" style={{ borderColor: 'var(--skin-accent-color)' }}>{timeStr}</span>
+                    {/* Time Chip */}
+                    <div className={chipStyle}>
+                        <span className="text-[14px] font-black tracking-widest text-white leading-none">{timeStr}</span>
+                    </div>
                 </div>
             </header>
             {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
             {isOracleOpen && <OracleFeed onClose={() => setOracleOpen(false)} />}
-            {isRestScreenOpen && <RestScreen onClose={() => setRestScreenOpen(false)} />}
+            {isClanOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanOpen(false)} />}
+            {isRestScreenOpen && (
+                <RestScreen 
+                    onClose={() => setRestScreenOpen(false)} 
+                    onOpenMood={() => setMoodModalOpen(true)}
+                    onOpenOracle={() => setOracleOpen(true)}
+                    onOpenClan={() => setClanOpen(true)}
+                    onOpenDeepWork={() => setDeepWorkOpen(true)}
+                />
+            )}
         </>
     );
 };

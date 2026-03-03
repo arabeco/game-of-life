@@ -19,7 +19,7 @@ import { useLongPress } from '../hooks/useLongPress';
 const DayHeader: React.FC<{ currentDate: Date }> = ({ currentDate }) => {
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase();
     return (
-        <div className="text-center text-sm font-bold text-gray-400 py-2 bg-[#111111] sticky z-10 top-0">
+        <div className="text-center text-sm font-bold text-gray-400 py-2 bg-[#111111]">
             {day}
         </div>
     );
@@ -273,15 +273,6 @@ const TacticalHUD: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-2">
-                {activeCycle ? (
-                    <div className="flex flex-col items-end">
-                        <span className="text-white font-bold text-[10px] truncate max-w-[80px]">{activeCycle.name}</span>
-                        <span className="text-[8px] text-green-400 animate-pulse">EM PROGRESSO</span>
-                    </div>
-                ) : (
-                    <span className="text-gray-600 text-[9px]">SEM CICLO ATIVO</span>
-                )}
-                 <div className="h-6 w-px bg-white/10 mx-1"></div>
                  <div className="flex flex-col items-center">
                      <span className="text-white font-black text-xs">{/* Streak placeholder */ (userProfile as any).streak || 0} 🔥</span>
                      <span className="text-[8px]">DIAS</span>
@@ -1022,45 +1013,57 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const allTasksCompleted = checklistItems.every(item => item.completed);
     const isToday = currentDate.toDateString() === new Date().toDateString();
 
+    const poolItemCount = Object.keys(groupedTaskPool).length;
+    const isSingleRow = poolItemCount <= 8; // Increased threshold slightly as icons are smaller now
+    const bayAreaHeight = isSingleRow ? 'h-[60px]' : 'h-[100px]';
+    const bayGridRows = isSingleRow ? 'grid-rows-1' : 'grid-rows-2';
+
     return (
-        <div id="planner-container" className="px-1 pb-1 pt-0 flex flex-col flex-1 min-h-0 relative bg-black">
+        <div id="planner-container" className="flex flex-col h-full min-h-0 bg-[#111111] overflow-hidden">
             {dragState.isDragging && (
                 <div style={{ position: 'fixed', top: dragState.currentPosition.y, left: dragState.currentPosition.x, transform: `translate(-${dragState.pointerOffset.x}px, -${dragState.pointerOffset.y}px)`, pointerEvents: 'none', zIndex: 1000 }}>
                     {dragState.ghostElement}
                 </div>
             )}
-            <div className="flex-shrink-0 z-30 bg-black sticky top-20">
-                <div className="relative flex items-center justify-between px-2 text-lg font-bold h-16">
-                    <div className="flex items-center space-x-1"><button onClick={() => setChecklistVisible(true)} className="p-1 rounded-full hover:bg-white/10 relative">{allTasksCompleted ? <FolderStarIcon className="w-4 h-4" /> : <FolderIcon className="w-4 h-4" />}</button><button onClick={() => setIsSitrepVisible(true)} className="p-1 rounded-full hover:bg-white/10"><LightbulbIcon className="w-4 h-4" /></button><button onClick={onReportsClick} className="p-1 rounded-full hover:bg-white/10"><ClockIcon className="w-4 h-4" /></button></div>
-                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1"><button onClick={() => changeDate(-1)} className="p-2 rounded-full hover:bg-white/10"><ChevronLeftIcon /></button><span className="uppercase tracking-wider text-base w-32 text-center">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span><button onClick={() => changeDate(1)} className="p-2 rounded-full hover:bg-white/10"><ChevronRightIcon /></button></div>
-                    <div className="flex items-center bg-black/20 rounded-full p-1 text-sm"><button onClick={() => setViewMode('day')} className={`px-2 py-1 rounded-full ${viewMode === 'day' ? 'bg-white/10' : ''}`}>D</button><button onClick={() => setViewMode('week')} className={`px-2 py-1 rounded-full ${viewMode === 'week' ? 'bg-white/10' : ''}`}>S</button></div>
-                </div>
+            
+            <div className="flex-shrink-0 z-0 bg-[#111111]/95 backdrop-blur-sm border-b border-white/5 transition-all duration-300 relative -mt-4 pt-4">
+                <div className="bg-transparent">
+                    <div className="relative flex items-center justify-between px-2 text-lg font-bold h-10 mt-1">
+                        <div className="flex items-center space-x-1"><button onClick={() => setChecklistVisible(true)} className="p-1 rounded-full hover:bg-white/10 relative text-gray-400 hover:text-white transition-colors">{allTasksCompleted ? <FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}</button><button onClick={() => setIsSitrepVisible(true)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"><LightbulbIcon className="w-4 h-4" /></button><button onClick={onReportsClick} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"><ClockIcon className="w-4 h-4" /></button></div>
+                        <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1"><button onClick={() => changeDate(-1)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button><span className="uppercase tracking-wider text-sm w-28 text-center text-gray-300">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span><button onClick={() => changeDate(1)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button></div>
+                        <div className="flex items-center bg-black/40 rounded-full p-0.5 text-[10px] border border-white/5"><button onClick={() => setViewMode('day')} className={`px-2 py-0.5 rounded-full transition-colors ${viewMode === 'day' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>D</button><button onClick={() => setViewMode('week')} className={`px-2 py-0.5 rounded-full transition-colors ${viewMode === 'week' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>S</button></div>
+                    </div>
 
-                <div className="flex items-center space-x-2 my-0">
-                    <div 
-                        data-testid="bay-area" 
-                        className={`flex-grow bg-black/20 border border-white/10 rounded-3xl p-2 h-[60px] transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-2 ring-[var(--skin-accent-color)] shadow-lg shadow-[var(--skin-accent-color)]/20' : ''}`}
-                    >
-                        <div className="flex space-x-2 h-full overflow-x-auto">
-                            {Object.entries(groupedTaskPool).length > 0 ? (Object.entries(groupedTaskPool) as [string, { count: number; isUnlimited: boolean }][]).map(([actionId, payload]) => {
-                                const action = getActionById(actionId);
-                                if (!action) return null;
-                                return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a })} />);
-                            }) : (<div className="w-full h-full flex items-center justify-center text-sm text-gray-500">Sem ações no pool.</div>)}
+                    <div className={`flex items-center space-x-2 my-0 w-full overflow-visible pb-1 px-2 transition-all duration-300`}>
+                        <div 
+                            data-testid="bay-area" 
+                            className={`flex-grow min-w-0 bg-black/20 border border-white/5 rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
+                        >
+                            <div className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden pr-2 scrollbar-hide items-center`}>
+                                {Object.entries(groupedTaskPool).length > 0 ? (Object.entries(groupedTaskPool) as [string, { count: number; isUnlimited: boolean }][]).map(([actionId, payload]) => {
+                                    const action = getActionById(actionId);
+                                    if (!action) return null;
+                                    return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} onComplete={scheduleAndCompleteNow} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a })} />);
+                                }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 uppercase tracking-wider row-span-full col-span-full">Sem ações</div>)}
+                            </div>
+                        </div>
+                        <div className={`relative flex-shrink-0 ${bayAreaHeight} transition-all duration-300`}>
+                            <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-10 h-full bg-black/20 border border-white/5 rounded-2xl flex items-center justify-center hover:bg-white/5 transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/></svg></button>
+                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-[#1a1a1a] border border-white/10 rounded-xl p-2 space-y-1 z-50 shadow-2xl animate-fade-in"><h4 className="text-[10px] font-bold text-center text-gray-500 pb-1 border-b border-white/5 uppercase tracking-widest">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })}/>)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
                         </div>
                     </div>
-                    <div className="relative flex-shrink-0">
-                        <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-14 h-[60px] bg-black/20 border border-white/10 rounded-3xl flex items-center justify-center hover:border-white/20 transition-colors"><svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--accent-silver)] transform rotate-45"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/></svg></button>
-                        {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-2 space-y-1 z-20 animate-fade-in"><h4 className="text-xs font-bold text-center text-gray-400 pb-1 border-b border-white/10">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })}/>)) : (<p className="text-xs text-center text-gray-500 py-2">Nenhum marco disponível.</p>)}</div>)}
-                    </div>
                 </div>
+                {viewMode === 'day' && <DayHeader currentDate={currentDate} />}
             </div>
 
-            <div ref={scrollContainerRef} className={`flex-grow overflow-y-auto overflow-x-hidden ${dragState.isDragging ? 'touch-none select-none' : ''} relative min-h-0`}>
+            <div 
+                ref={scrollContainerRef}
+                className="flex-grow min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
+                style={{ scrollBehavior: 'smooth' }}
+            >
                 <div className={dragState.isDragging ? 'pointer-events-auto' : ''}>
                     {viewMode === 'day' ? (
                         <div>
-                            <DayHeader currentDate={currentDate} />
                             <DailyView tasks={dailyTasks} actions={actions} scaleFactor={scaleFactor} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
                         </div>
                     ) : (
@@ -1126,7 +1129,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <span className="font-bold text-xs text-white">{zoomLevel}x</span>
                     <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="p-2 disabled:opacity-50"><MinusIcon className="w-5 h-5" /></button>
                 </div>
-                <button onClick={() => setIsActionModalOpen(true)} className="w-16 h-16 rounded-full bg-[var(--skin-accent-color)] flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-8 h-8 text-black" /></button>
+                <button onClick={() => setIsActionModalOpen(true)} className="w-10 h-10 rounded-full bg-[var(--skin-accent-color)] flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-5 h-5 text-black" /></button>
             </div>
             {isChecklistVisible && <ChecklistModal onClose={() => setChecklistVisible(false)} />}
             {isSitrepVisible && <SitrepModal onClose={() => setIsSitrepVisible(false)} />}

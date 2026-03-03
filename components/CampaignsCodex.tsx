@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { Campaign, Arena, Action } from '../types';
-import { XIcon, PlusIcon, ChevronRightIcon, ChevronDownIcon, LockIcon, UnlockIcon, EyeIcon, EyeOffIcon, TrashIcon, CheckIcon, EditIcon } from './Icons';
+import { Arena, Campaign } from '../types';
+import { XIcon, PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
 import { NewArenaModal } from './NewArenaModal';
+import { ArenaDetailModal } from './ArenaDetailModal';
 import { Portal } from './Portal';
+import { GlassCard } from './GlassCard';
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -12,21 +14,66 @@ interface CampaignsCodexProps {
 }
 
 export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId }) => {
-    const { campaigns, getArenas, actions, updateCampaign, deleteCampaign, addArena } = useGame();
-    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || campaigns[0]?.id || null);
+    const { campaigns, getArenas, actions, updateCampaign, deleteCampaign, addCampaign } = useGame();
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
-
-    const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+    const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     
+    // Linking Mode State
+    const [isLinkingMode, setIsLinkingMode] = useState(false);
+    const [linkingSourceId, setLinkingSourceId] = useState<string | null>(null);
+
+    // Expandable Description State
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+    // Filter out valid campaigns (ignore deleted/null)
+    const validCampaigns = campaigns.filter(Boolean);
+
+    // Derived state for the selected campaign
+    const selectedCampaign = selectedCampaignId ? validCampaigns.find(c => c.id === selectedCampaignId) : null;
+    
+    // Reset selection if campaign is deleted
+    useEffect(() => {
+        if (selectedCampaignId && !selectedCampaign) {
+            setSelectedCampaignId(null);
+        }
+    }, [validCampaigns, selectedCampaignId]);
+
+    // Update edit fields when campaign changes
     useEffect(() => {
         if (selectedCampaign) {
             setEditTitle(selectedCampaign.title);
             setEditDescription(selectedCampaign.description || '');
+            setIsDescriptionExpanded(false); // Reset expansion on change
         }
     }, [selectedCampaign]);
+
+    // Identify Codex-based campaigns
+    const isCodexCampaign = selectedCampaign?.arenaIds.some(id => {
+        const arena = getArenas().find(a => a.id === id);
+        return !!arena?.originCodexId;
+    });
+
+    const handleCreateCampaign = async () => {
+        const newId = crypto.randomUUID();
+        const title = `Nova Campanha ${validCampaigns.length + 1}`;
+        await addCampaign({
+            title,
+            description: 'Descrição da campanha...',
+            status: 'active',
+            type: 'sequential',
+            arenaIds: [],
+            arenaConfig: {},
+            priority: 'media',
+            order: validCampaigns.length,
+            priorityOrder: 0
+        });
+        setSelectedCampaignId(newId); // Open it immediately
+        setIsEditing(true); // Auto-enter edit mode
+    };
 
     const handleSaveCampaign = () => {
         if (!selectedCampaign) return;
@@ -41,21 +88,14 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         if (!selectedCampaign) return;
         if (confirm('Tem certeza que deseja excluir esta campanha?')) {
             deleteCampaign(selectedCampaign.id);
-            if (campaigns.length > 1) {
-                const next = campaigns.find(c => c.id !== selectedCampaign.id);
-                setSelectedCampaignId(next?.id || null);
-            } else {
-                onClose();
-            }
+            setSelectedCampaignId(null);
         }
     };
     
-    // Derived state for the selected campaign
     const campaignArenas = selectedCampaign 
         ? getArenas().filter(a => selectedCampaign.arenaIds.includes(a.id))
         : [];
-        
-    // Sort arenas based on their order in arenaIds
+
     const sortedArenas = selectedCampaign 
         ? [...campaignArenas].sort((a, b) => {
             const indexA = selectedCampaign.arenaIds.indexOf(a.id);
@@ -63,120 +103,143 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
             return indexA - indexB;
         })
         : [];
-
-    const handleToggleLock = (arenaId: string, e: React.MouseEvent) => {
+    
+    const handleRemoveArena = (arenaId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (!selectedCampaign) return;
         
-        const currentConfig = selectedCampaign.arenaConfig || {};
-        const isLocked = currentConfig[arenaId]?.isLocked || false;
-        
-        updateCampaign(selectedCampaign.id, {
-            arenaConfig: {
-                ...currentConfig,
-                [arenaId]: {
-                    ...currentConfig[arenaId],
-                    isLocked: !isLocked
-                }
-            }
-        });
-    };
-
-    const handleBossKill = (arenaId: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!selectedCampaign) return;
-        
-        const actionsInArena = actions.filter(a => a.arenaId === arenaId);
-        const otherActions = actionsInArena.filter(a => a.actionType !== 'Marco');
-        const currentConfig = selectedCampaign.arenaConfig || {};
-        const arenaConfig = currentConfig[arenaId] || {};
-        const completedActionIds = arenaConfig.completedActionIds || [];
-        
-        const allGruntsDefeated = otherActions.every(action => completedActionIds.includes(action.id));
-        const isCleared = arenaConfig.isCleared || false;
-
-        // If trying to clear (not uncheck) and grunts are not defeated, show alert
-        if (!isCleared && !allGruntsDefeated && otherActions.length > 0) {
-            alert('Você precisa completar todas as ações menores antes de enfrentar o Chefão da Fase!');
+        if (isCodexCampaign) {
+            alert("Não é possível remover arenas de uma campanha de Codex.");
             return;
         }
-        
-        // Calculate new state
-        const newClearedState = !isCleared;
-        
-        const newConfig = {
-            ...currentConfig,
-            [arenaId]: {
-                ...(currentConfig[arenaId] || { isLocked: false, isHidden: false }),
-                isCleared: newClearedState
-            }
-        };
 
-        // Progressive Disclosure Logic
-        const currentIndex = selectedCampaign.arenaIds.indexOf(arenaId);
-        if (currentIndex !== -1 && currentIndex < selectedCampaign.arenaIds.length - 1) {
-            const nextArenaId = selectedCampaign.arenaIds[currentIndex + 1];
+        if (window.confirm("Tem certeza que deseja remover esta arena da campanha?")) {
+            const newArenaIds = selectedCampaign.arenaIds.filter(id => id !== arenaId);
+            const newConfig = { ...selectedCampaign.arenaConfig };
+            delete newConfig[arenaId];
             
-            if (newClearedState) {
-                // Unlock next phase
-                newConfig[nextArenaId] = {
-                    ...(newConfig[nextArenaId] || { isLocked: true }), // Default to locked if undefined
-                    isLocked: false,
-                    isHidden: false
-                };
-            } else {
-                // Re-lock next phase if we uncheck this one
-                newConfig[nextArenaId] = {
-                    ...(newConfig[nextArenaId] || {}),
-                    isLocked: true
-                };
+            Object.keys(newConfig).forEach(key => {
+                const prereqs = newConfig[key].prerequisiteArenaIds || [];
+                if (prereqs.includes(arenaId)) {
+                    newConfig[key] = {
+                        ...newConfig[key],
+                        prerequisiteArenaIds: prereqs.filter(id => id !== arenaId)
+                    };
+                }
+            });
+
+            updateCampaign(selectedCampaign.id, {
+                arenaIds: newArenaIds,
+                arenaConfig: newConfig
+            });
+        }
+    };
+
+    const handleMoveArena = (arenaId: string, direction: 'left' | 'right', e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!selectedCampaign) return;
+        if (isCodexCampaign) return; // Prevent reordering codex arenas
+        
+        const currentIds = [...selectedCampaign.arenaIds];
+        const currentIndex = currentIds.indexOf(arenaId);
+        if (currentIndex === -1) return;
+        
+        const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+        
+        if (newIndex >= 0 && newIndex < currentIds.length) {
+            [currentIds[currentIndex], currentIds[newIndex]] = [currentIds[newIndex], currentIds[currentIndex]];
+            updateCampaign(selectedCampaign.id, { arenaIds: currentIds });
+        }
+    };
+    
+    const isArenaLocked = (arenaId: string) => {
+        if (!selectedCampaign) return false;
+        const config = selectedCampaign.arenaConfig?.[arenaId];
+        
+        // Manual lock override is effectively removed from UI but respected if set
+        if (config?.isLocked) return true;
+
+        // Check prerequisites
+        const prerequisites = config?.prerequisiteArenaIds || [];
+        
+        // In Codex campaigns (sequential), check if previous arena is cleared
+        if (isCodexCampaign) {
+            const arenaIndex = selectedCampaign.arenaIds.indexOf(arenaId);
+            if (arenaIndex > 0) {
+                const prevArenaId = selectedCampaign.arenaIds[arenaIndex - 1];
+                const prevConfig = selectedCampaign.arenaConfig?.[prevArenaId];
+                if (!prevConfig?.isCleared) return true;
             }
         }
 
-        updateCampaign(selectedCampaign.id, {
-            arenaConfig: newConfig
+        if (prerequisites.length === 0) return false;
+
+        // Check if all prerequisites are cleared
+        const allPrereqsCleared = prerequisites.every(prereqId => {
+            const prereqConfig = selectedCampaign.arenaConfig?.[prereqId];
+            return prereqConfig?.isCleared;
         });
+
+        return !allPrereqsCleared;
+    };
+
+    const handleArenaClick = (arenaId: string) => {
+        if (!selectedCampaign) return;
+
+        if (isLinkingMode) {
+            if (isCodexCampaign) return; // Disable linking for Codex campaigns
+            if (!linkingSourceId) {
+                setLinkingSourceId(arenaId);
+            } else {
+                if (linkingSourceId === arenaId) {
+                    setLinkingSourceId(null);
+                    return;
+                }
+                const currentConfig = selectedCampaign.arenaConfig || {};
+                const targetConfig = currentConfig[arenaId] || {};
+                const currentPrereqs = targetConfig.prerequisiteArenaIds || [];
+                
+                let newPrereqs;
+                if (currentPrereqs.includes(linkingSourceId)) {
+                    newPrereqs = currentPrereqs.filter(id => id !== linkingSourceId);
+                } else {
+                    const sourceConfig = currentConfig[linkingSourceId] || {};
+                    const sourcePrereqs = sourceConfig.prerequisiteArenaIds || [];
+                    if (sourcePrereqs.includes(arenaId)) {
+                        alert("Não é possível criar dependência circular!");
+                        return;
+                    }
+                    newPrereqs = [...currentPrereqs, linkingSourceId];
+                }
+
+                updateCampaign(selectedCampaign.id, {
+                    arenaConfig: {
+                        ...currentConfig,
+                        [arenaId]: {
+                            ...targetConfig,
+                            prerequisiteArenaIds: newPrereqs
+                        }
+                    }
+                });
+            }
+        } else {
+            setSelectedArenaId(arenaId);
+        }
     };
 
     const handleCreateFutureArena = () => {
         setIsCreatingArena(true);
     };
 
-    const handleToggleAction = (arenaId: string, actionId: string) => {
-        if (!selectedCampaign) return;
-
-        const currentConfig = selectedCampaign.arenaConfig || {};
-        const arenaConfig = currentConfig[arenaId] || { isLocked: false };
-        const completedActions = arenaConfig.completedActionIds || [];
-
-        const isCompleted = completedActions.includes(actionId);
-        const newCompletedActions = isCompleted
-            ? completedActions.filter(id => id !== actionId)
-            : [...completedActions, actionId];
-
-        updateCampaign(selectedCampaign.id, {
-            arenaConfig: {
-                ...currentConfig,
-                [arenaId]: {
-                    ...arenaConfig,
-                    completedActionIds: newCompletedActions
-                }
-            }
-        });
-    };
-
     const onArenaCreated = (newArena: Arena) => {
         if (!selectedCampaign) return;
         
-        const isFirstArena = selectedCampaign.arenaIds.length === 0;
-
-        // Add to campaign and lock it by default unless it's the first one
         updateCampaign(selectedCampaign.id, {
             arenaIds: [...selectedCampaign.arenaIds, newArena.id],
             arenaConfig: {
                 ...(selectedCampaign.arenaConfig || {}),
                 [newArena.id]: {
-                    isLocked: !isFirstArena,
+                    isLocked: false,
                     isHidden: false
                 }
             }
@@ -184,389 +247,354 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         setIsCreatingArena(false);
     };
 
-    return (
-        <Portal>
-            <div className="fixed inset-0 z-50 bg-black text-white flex flex-col md:flex-row overflow-hidden font-sans">
-                {/* Sidebar - Campaign List */}
-            <div className="w-full md:w-80 bg-[#0a0a0a] border-r border-white/10 flex flex-col h-[30vh] md:h-full">
-                <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/50">
-                    <h2 className="text-xl font-bold tracking-wider text-[var(--skin-accent-color)] uppercase flex items-center gap-2">
-                        <span>📜</span> Codex
-                    </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors md:hidden">
-                        <XIcon className="w-5 h-5 text-gray-400" />
-                    </button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
-                    {campaigns.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 text-sm italic">
-                            Nenhuma campanha ativa.
-                        </div>
-                    ) : (
-                        campaigns.map(campaign => (
-                            <button
-                                key={campaign.id}
-                                onClick={() => setSelectedCampaignId(campaign.id)}
-                                className={`w-full text-left p-3 rounded-xl transition-all border ${
-                                    selectedCampaignId === campaign.id 
-                                        ? 'bg-[var(--skin-accent-color)]/10 border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_rgba(var(--skin-accent-color-rgb),0.2)]' 
-                                        : 'bg-white/5 border-transparent hover:bg-white/10 hover:border-white/20'
-                                }`}
-                            >
-                                <div className="font-bold text-sm truncate flex items-center gap-2">
-                                    <span>{selectedCampaignId === campaign.id ? '📂' : '📁'}</span>
-                                    {campaign.title}
-                                </div>
-                                <div className="text-[10px] text-gray-500 mt-1 flex justify-between items-center">
-                                    <span>{campaign.arenaIds.length} fases</span>
-                                    {campaign.deadline && <span>{new Date(campaign.deadline).toLocaleDateString()}</span>}
-                                </div>
-                            </button>
-                        ))
-                    )}
-                </div>
-                
-                <div className="p-4 border-t border-white/10 bg-black/50 hidden md:block">
-                    <button onClick={onClose} className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors text-gray-400 hover:text-white">
-                        Fechar Codex
-                    </button>
-                </div>
-            </div>
+    const selectedArena = selectedArenaId ? getArenas().find(a => a.id === selectedArenaId) : null;
 
-            {/* Main Content - Campaign Details */}
-            <div className="flex-1 bg-[#121212] flex flex-col h-[70vh] md:h-full relative overflow-hidden">
-                {selectedCampaign ? (
-                    <>
-                        {/* Header */}
-                        <div className="p-6 md:p-8 border-b border-white/10 bg-gradient-to-r from-black/80 to-transparent backdrop-blur-md sticky top-0 z-10">
-                             <div className="flex justify-between items-start">
-                                <div className="flex-1 mr-4">
-                                    <div className="text-[10px] font-bold text-[var(--skin-accent-color)] uppercase tracking-[0.2em] mb-2">
-                                        Campanha Ativa
+    // RENDER: LIST VIEW (Grid of Campaigns)
+    if (!selectedCampaign) {
+        return (
+            <Portal>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+                    <GlassCard variant="neutral" className="w-full max-w-5xl h-[85vh] flex flex-col relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                            <h2 className="text-xl font-bold uppercase tracking-wider text-white">Campanhas</h2>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <XIcon className="w-6 h-6" />
+                            </button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {/* Create New Button */}
+                                <button 
+                                    onClick={handleCreateCampaign}
+                                    className="aspect-[4/3] rounded-2xl border-2 border-dashed border-white/10 hover:border-[var(--skin-accent-color)] hover:bg-white/5 flex flex-col items-center justify-center gap-2 transition-all group"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-white/5 group-hover:bg-[var(--skin-accent-color)] group-hover:text-black flex items-center justify-center transition-all">
+                                        <PlusIcon className="w-6 h-6" />
                                     </div>
+                                    <span className="text-sm font-bold text-gray-400 group-hover:text-white">Nova Campanha</span>
+                                </button>
+
+                                {/* Campaign Cards */}
+                                {validCampaigns.map(campaign => {
+                                    // Determine if it's a Codex campaign for visual cue
+                                    const isCodex = campaign.arenaIds.some(id => getArenas().find(a => a.id === id)?.originCodexId);
                                     
-                                    {isEditing ? (
-                                        <div className="space-y-4 max-w-2xl bg-black/40 p-4 rounded-xl border border-white/10">
-                                            <input 
-                                                value={editTitle}
-                                                onChange={e => setEditTitle(e.target.value)}
-                                                className="w-full bg-black/50 border-b border-white/20 text-2xl font-bold text-white p-2 focus:outline-none focus:border-[var(--skin-accent-color)]"
-                                                placeholder="Nome da Campanha"
-                                                autoFocus
-                                            />
-                                            <textarea 
-                                                value={editDescription}
-                                                onChange={e => setEditDescription(e.target.value)}
-                                                className="w-full bg-black/50 border border-white/10 rounded-lg text-gray-300 p-3 text-sm focus:outline-none focus:border-[var(--skin-accent-color)] resize-none"
-                                                rows={3}
-                                                placeholder="Descrição..."
-                                            />
-                                            <div className="flex gap-2 justify-end">
-                                                <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-white/5 text-gray-400 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">Cancelar</button>
-                                                <button onClick={handleSaveCampaign} className="px-4 py-2 bg-[var(--skin-accent-color)] text-black text-xs font-bold rounded-lg hover:brightness-110 transition-colors">Salvar Alterações</button>
+                                    return (
+                                        <div 
+                                            key={campaign.id}
+                                            onClick={() => setSelectedCampaignId(campaign.id)}
+                                            className="aspect-[4/3] bg-[#1a1a1a] rounded-2xl border border-white/10 hover:border-[var(--skin-accent-color)] cursor-pointer flex flex-col overflow-hidden group relative transition-all hover:shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                                        >
+                                            {/* Folder Tab Effect */}
+                                            <div className="absolute top-0 left-0 w-1/3 h-1 bg-white/20 group-hover:bg-[var(--skin-accent-color)] transition-colors" />
+                                            
+                                            {isCodex && (
+                                                <div className="absolute top-2 right-2 px-2 py-0.5 bg-[var(--skin-accent-color)]/20 border border-[var(--skin-accent-color)]/50 rounded text-[9px] font-bold text-[var(--skin-accent-color)] uppercase tracking-wider">
+                                                    Codex
+                                                </div>
+                                            )}
+
+                                            <div className="flex-1 p-4 flex flex-col justify-end">
+                                                <h3 className="text-lg font-bold text-white leading-tight line-clamp-2 mb-1 group-hover:text-[var(--skin-accent-color)] transition-colors">
+                                                    {campaign.title}
+                                                </h3>
+                                                <p className="text-xs text-gray-500 line-clamp-2">
+                                                    {campaign.description || "Sem descrição."}
+                                                </p>
+                                            </div>
+                                            
+                                            <div className="px-4 py-2 bg-black/40 border-t border-white/5 flex items-center justify-between">
+                                                <div className="text-[10px] text-gray-400 font-mono">
+                                                    {campaign.arenaIds.length} Arenas
+                                                </div>
+                                                <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                                    <ChevronRightIcon className="w-3 h-3 text-gray-400" />
+                                                </div>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center gap-3 group">
-                                                <h1 className="text-3xl md:text-4xl font-black text-white mb-2 leading-tight">
-                                                    {selectedCampaign.title}
-                                                </h1>
-                                                <button onClick={() => setIsEditing(true)} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all transform hover:scale-110">
-                                                    <EditIcon className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={handleDeleteCampaign} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/20 rounded-full text-red-400 hover:text-red-300 transition-all transform hover:scale-110">
-                                                    <TrashIcon className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                            {selectedCampaign.description && (
-                                                <p className="text-gray-400 text-sm md:text-base max-w-2xl leading-relaxed">
-                                                    {selectedCampaign.description}
-                                                </p>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                                <div className="flex gap-2">
-                                     {!isEditing && (
-                                         <button 
-                                            onClick={handleCreateFutureArena}
-                                            className="hidden md:flex items-center gap-2 px-4 py-2 bg-[var(--skin-accent-color)]/10 hover:bg-[var(--skin-accent-color)]/20 border border-[var(--skin-accent-color)]/30 rounded-lg transition-all text-[var(--skin-accent-color)] text-xs font-bold uppercase tracking-wider"
-                                        >
-                                            <PlusIcon className="w-4 h-4" />
-                                            Nova Fase
-                                        </button>
-                                     )}
-                                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors md:hidden absolute top-4 right-4">
-                                        <XIcon className="w-6 h-6" />
-                                    </button>
-                                </div>
+                                    );
+                                })}
                             </div>
                         </div>
+                    </GlassCard>
+                </div>
+            </Portal>
+        );
+    }
 
-                        {/* Stages (Arenas) List */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 space-y-6">
-                            {sortedArenas.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-64 text-gray-500 border-2 border-dashed border-white/5 rounded-3xl">
-                                    <p className="mb-4">Nenhuma fase definida nesta campanha.</p>
+    // RENDER: DETAIL VIEW
+    return (
+        <Portal>
+             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden relative" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="p-4 border-b border-white/10 flex justify-between items-start shrink-0 bg-black/20">
+                        <div className="flex items-start gap-4 flex-1">
+                            <button 
+                                onClick={() => setSelectedCampaignId(null)}
+                                className="mt-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                                title="Voltar"
+                            >
+                                <ChevronLeftIcon className="w-5 h-5" />
+                            </button>
+                            
+                            <div className="flex-1 mr-4">
+                                {isEditing ? (
+                                    <div className="space-y-2 max-w-xl">
+                                        <input 
+                                            value={editTitle}
+                                            onChange={e => setEditTitle(e.target.value)}
+                                            className="w-full bg-black/50 border-b border-white/20 text-xl font-bold text-white p-1 focus:outline-none focus:border-[var(--skin-accent-color)]"
+                                            placeholder="Nome da Campanha"
+                                            autoFocus
+                                        />
+                                        <textarea 
+                                            value={editDescription}
+                                            onChange={e => setEditDescription(e.target.value)}
+                                            className="w-full bg-black/50 border border-white/10 rounded-lg text-gray-300 p-2 text-sm focus:outline-none focus:border-[var(--skin-accent-color)] resize-none"
+                                            rows={2}
+                                            placeholder="Descrição..."
+                                        />
+                                        <div className="flex gap-2">
+                                            <button onClick={handleSaveCampaign} className="px-3 py-1 bg-[var(--skin-accent-color)] text-black text-xs font-bold rounded hover:brightness-110">Salvar</button>
+                                            <button onClick={() => setIsEditing(false)} className="px-3 py-1 bg-white/10 text-white text-xs font-bold rounded hover:bg-white/20">Cancelar</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="flex items-center gap-2 group mb-1">
+                                            <h1 className="arena-title arena-title-text text-3xl text-[var(--skin-accent-color)] luxe-title-shadow leading-tight line-clamp-2" style={{ fontFamily: 'Cinzel, serif' }}>
+                                                {selectedCampaign.title}
+                                            </h1>
+                                            {!isCodexCampaign && (
+                                                <button onClick={() => setIsEditing(true)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-all">
+                                                    <EditIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {!isCodexCampaign && (
+                                                <button onClick={handleDeleteCampaign} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-red-400 transition-all">
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Expandable Description */}
+                                        <div className="relative mt-2">
+                                            <p className={`text-gray-400 text-sm max-w-2xl transition-all leading-relaxed ${isDescriptionExpanded ? '' : 'line-clamp-2'}`}>
+                                                {selectedCampaign.description}
+                                            </p>
+                                            {(selectedCampaign.description && selectedCampaign.description.length > 100) && (
+                                                <button 
+                                                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                                    className="text-[var(--skin-accent-color)] text-xs font-bold mt-1 hover:underline flex items-center gap-1"
+                                                >
+                                                    {isDescriptionExpanded ? 'Mostrar menos' : 'Mostrar mais'}
+                                                    <ChevronDownIcon className={`w-3 h-3 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                            {isLinkingMode && (
+                                <span className="text-xs text-[var(--skin-accent-color)] font-bold animate-pulse mr-2">
+                                    Selecione o REQUISITO, depois as arenas que ele BLOQUEIA.
+                                </span>
+                            )}
+                            {!isCodexCampaign && (
+                                <>
+                                    <button
+                                        onClick={() => setIsLinkingMode(!isLinkingMode)}
+                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all ${
+                                            isLinkingMode 
+                                                ? 'bg-blue-500/20 border-blue-500 text-blue-400 animate-pulse' 
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                        }`}
+                                    >
+                                        <LinkIcon className="w-4 h-4" />
+                                        {isLinkingMode ? 'Vínculo (Ativo)' : 'Vincular'}
+                                    </button>
                                     <button 
                                         onClick={handleCreateFutureArena}
-                                        className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold text-sm transition-colors"
+                                        className="flex items-center justify-center w-8 h-8 bg-[var(--skin-accent-color)]/10 hover:bg-[var(--skin-accent-color)]/20 border border-[var(--skin-accent-color)]/30 rounded-lg transition-all text-[var(--skin-accent-color)]"
+                                        title="Adicionar Arena"
                                     >
-                                        Criar Primeira Fase
+                                        <PlusIcon className="w-5 h-5" />
                                     </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-8 relative">
-                                    {/* Vertical connecting line */}
-                                    <div className="absolute left-8 top-8 bottom-8 w-0.5 bg-gradient-to-b from-[var(--skin-accent-color)]/50 via-white/10 to-transparent pointer-events-none" />
+                                </>
+                            )}
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <XIcon className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Grid Area */}
+                    <div className="flex-1 overflow-y-auto relative p-6 bg-black/40">
+                        {sortedArenas.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                                <p className="mb-4">Nenhuma arena definida nesta campanha.</p>
+                                {!isCodexCampaign && (
+                                    <button 
+                                        onClick={handleCreateFutureArena}
+                                        className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-sm transition-all"
+                                    >
+                                        + Adicionar Primeira Arena
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex flex-wrap gap-4 justify-center content-start">
+                                {sortedArenas.map((arena, index) => {
+                                    const locked = isArenaLocked(arena.id);
+                                    const config = selectedCampaign.arenaConfig?.[arena.id] || {};
+                                    const prereqs = config.prerequisiteArenaIds || [];
+                                    const isSource = linkingSourceId === arena.id;
+                                    const isPrereqOfSource = linkingSourceId && selectedCampaign.arenaConfig?.[linkingSourceId]?.prerequisiteArenaIds?.includes(arena.id);
+                                    const isTargetOfSource = linkingSourceId && prereqs.includes(linkingSourceId);
                                     
-                                    {sortedArenas.map((arena, index) => {
-                                        const isLocked = selectedCampaign.arenaConfig?.[arena.id]?.isLocked || false;
-                                        const isCleared = selectedCampaign.arenaConfig?.[arena.id]?.isCleared || false;
-                                        const actionsInArena = actions.filter(a => a.arenaId === arena.id);
-                                        const bossAction = actionsInArena.find(a => a.actionType === 'Marco');
-                                        const otherActions = actionsInArena.filter(a => a.actionType !== 'Marco');
-                                        
-                                        return (
-                                            <div key={arena.id} className={`relative pl-20 transition-all duration-500 ${isLocked ? 'opacity-50 grayscale' : 'opacity-100'}`}>
-                                                {/* Node Marker */}
-                                                <div className={`absolute left-6 top-6 w-8 h-8 -ml-2 rounded-full border-4 border-[#121212] z-10 flex items-center justify-center transition-all ${
-                                                    isLocked 
-                                                        ? 'bg-gray-700 text-gray-400' 
-                                                        : isCleared
-                                                            ? 'bg-green-500 text-black shadow-[0_0_15px_var(--green-500)] scale-110'
-                                                            : 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_var(--skin-accent-color)] scale-110'
-                                                }`}>
-                                                    {isCleared ? <CheckIcon className="w-4 h-4" /> : <span className="text-xs font-black">{index + 1}</span>}
+                                    // Highlight logic for linking mode
+                                    let borderClass = 'border-transparent';
+                                    let scaleClass = '';
+                                    
+                                    if (isLinkingMode) {
+                                        if (isSource) {
+                                            borderClass = 'border-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.6)]';
+                                            scaleClass = 'scale-105 z-10';
+                                        }
+                                        else if (isTargetOfSource) {
+                                            borderClass = 'border-green-500 border-dashed shadow-[0_0_15px_rgba(34,197,94,0.4)]';
+                                        }
+                                        else if (linkingSourceId) {
+                                            borderClass = 'border-white/10 hover:border-blue-300 cursor-pointer';
+                                        }
+                                    } else {
+                                        if (locked) borderClass = 'border-red-900/50 grayscale-[0.5] opacity-75';
+                                        else if (config.isCleared) borderClass = 'border-green-500/30';
+                                    }
+
+                                    return (
+                                        <div 
+                                            key={arena.id} 
+                                            className={`relative w-[240px] flex-shrink-0 transition-all duration-300 group ${scaleClass}`}
+                                            onClick={() => handleArenaClick(arena.id)}
+                                        >
+                                            {/* Linking Indicators */}
+                                            {isLinkingMode && (
+                                                <div className="absolute -top-3 left-0 w-full flex justify-center z-20 pointer-events-none">
+                                                    {isSource && <span className="bg-blue-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase shadow-lg">Requisito</span>}
+                                                    {isTargetOfSource && <span className="bg-green-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase shadow-lg">Liberado</span>}
                                                 </div>
+                                            )}
+
+                                            {/* Main Card Wrapper */}
+                                            <div className={`rounded-xl border-2 transition-all duration-300 bg-[#1a1a1a] overflow-hidden ${borderClass} relative group`}>
                                                 
-                                                {/* Connecting Line Segment */}
-                                                {index < sortedArenas.length - 1 && (
-                                                    <div className={`absolute left-6 top-14 bottom-[-2rem] w-0.5 -ml-px z-0 ${
-                                                        isLocked 
-                                                            ? 'bg-gray-800 border-l border-dashed border-gray-600' 
-                                                            : isCleared 
-                                                                ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]'
-                                                                : 'bg-[var(--skin-accent-color)]/50'
+                                                {/* Floating Controls (Top Right) - Only for custom campaigns */}
+                                                {!isCodexCampaign && !isLinkingMode && (
+                                                    <div className="absolute top-1 right-1 z-30 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-sm rounded-lg p-1 border border-white/10">
+                                                        <button 
+                                                            onClick={(e) => handleMoveArena(arena.id, 'left', e)}
+                                                            disabled={index === 0}
+                                                            className="p-1 rounded hover:bg-white/20 text-gray-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                                                            title="Mover para Esquerda"
+                                                        >
+                                                            <ChevronLeftIcon className="w-3 h-3" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => handleMoveArena(arena.id, 'right', e)}
+                                                            disabled={index === sortedArenas.length - 1}
+                                                            className="p-1 rounded hover:bg-white/20 text-gray-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                                                            title="Mover para Direita"
+                                                        >
+                                                            <ChevronRightIcon className="w-3 h-3" />
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button 
+                                                            onClick={(e) => handleRemoveArena(arena.id, e)}
+                                                            className="p-1 rounded hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-colors"
+                                                            title="Remover da Campanha"
+                                                        >
+                                                            <TrashIcon className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {/* Status Header Overlay */}
+                                                {(locked || config.isCleared) && !isLinkingMode && (
+                                                    <div className={`absolute top-0 left-0 right-0 h-1 z-10 ${
+                                                        locked ? 'bg-red-500' : 'bg-green-500'
                                                     }`} />
                                                 )}
                                                 
-                                                {/* Stage Card */}
-                                                <div className={`bg-[#1a1a1a] border rounded-2xl overflow-hidden transition-all group ${
-                                                    isLocked 
-                                                        ? 'border-white/5' 
-                                                        : isCleared
-                                                            ? 'border-green-500/30 hover:border-green-500/50'
-                                                            : 'border-[var(--skin-accent-color)]/30 hover:border-[var(--skin-accent-color)]/50'
-                                                }`}>
-                                                    <div className="p-4 flex items-center gap-4 bg-gradient-to-r from-black/40 to-transparent">
-                                                        <div className="text-4xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-300">{arena.icon}</div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
-                                                                    isLocked 
-                                                                        ? 'bg-gray-800 text-gray-500' 
-                                                                        : isCleared
-                                                                            ? 'bg-green-500/20 text-green-400'
-                                                                            : 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)]'
-                                                                }`}>
-                                                                    Fase {index + 1}
-                                                                </span>
-                                                                {isLocked && <span className="text-[10px] text-gray-500 font-bold flex items-center gap-1"><LockIcon className="w-3 h-3" /> BLOQUEADA</span>}
-                                                                {isCleared && <span className="text-[10px] text-green-500 font-bold flex items-center gap-1"><CheckIcon className="w-3 h-3" /> COMPLETA</span>}
-                                                            </div>
-                                                            <h3 className={`text-xl font-black truncate transition-colors ${
-                                                                isLocked 
-                                                                    ? 'text-gray-500' 
-                                                                    : isCleared
-                                                                        ? 'text-green-100 line-through decoration-green-500/50'
-                                                                        : 'text-white'
-                                                            }`}>
-                                                                {arena.name}
-                                                            </h3>
-                                                        </div>
-                                                        
-                                                        {/* Controls */}
-                                                        <div className="flex items-center gap-2">
-                                                            <button 
-                                                                onClick={(e) => handleToggleLock(arena.id, e)}
-                                                                className={`p-2 rounded-full transition-colors ${isLocked ? 'text-gray-500 hover:text-white hover:bg-white/10' : 'text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/10'}`}
-                                                                title={isLocked ? "Desbloquear Fase" : "Bloquear Fase"}
-                                                            >
-                                                                {isLocked ? <LockIcon className="w-5 h-5" /> : <UnlockIcon className="w-5 h-5" />}
-                                                            </button>
+                                                {/* Locked Overlay with Padlock */}
+                                                {locked && !isLinkingMode && (
+                                                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px] pointer-events-none">
+                                                        <div className="bg-black/60 p-3 rounded-full border border-red-500/30 shadow-lg backdrop-blur-md">
+                                                            <LockIcon className="w-6 h-6 text-red-400" />
                                                         </div>
                                                     </div>
-                                                    
-                                                    {/* Expanded Content (Actions) */}
-                                                    {!isLocked && (
-                                                        <div className="p-4 border-t border-white/5 bg-black/20 space-y-3">
-                                                            
-                                                            {/* Grunt Actions (Minions/Steps) */}
-                                                            {otherActions.length > 0 && (
-                                                                <div className="grid grid-cols-1 gap-2 mb-4 relative">
-                                                                    {/* Connector Line to Boss */}
-                                                                    {bossAction && <div className="absolute left-6 top-full h-4 w-0.5 bg-white/10 -ml-px z-0" />}
-                                                                    
-                                                                    {otherActions.map((action, i) => {
-                                                                        const isActionCompleted = selectedCampaign.arenaConfig?.[arena.id]?.completedActionIds?.includes(action.id) || false;
-                                                                        return (
-                                                                            <div 
-                                                                                key={action.id} 
-                                                                                onClick={() => handleToggleAction(arena.id, action.id)}
-                                                                                className={`flex items-center gap-3 p-3 rounded-lg border transition-all group/action relative overflow-hidden cursor-pointer ${
-                                                                                    isActionCompleted 
-                                                                                        ? 'bg-green-900/10 border-green-500/20' 
-                                                                                        : 'bg-white/5 border-white/5 hover:bg-white/10'
-                                                                                }`}
-                                                                            >
-                                                                                <div className={`w-8 h-8 rounded flex items-center justify-center text-lg shadow-inner transition-colors ${
-                                                                                    isActionCompleted ? 'bg-green-500/20 text-green-400' : 'bg-black/40'
-                                                                                }`}>
-                                                                                    {action.icon}
-                                                                                </div>
-                                                                                <div className="flex-1 min-w-0">
-                                                                                    <div className={`text-xs font-bold truncate transition-colors ${
-                                                                                        isActionCompleted ? 'text-green-400 line-through' : 'text-gray-300'
-                                                                                    }`}>
-                                                                                        {action.name}
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                                                                                        <span className="bg-white/10 px-1.5 py-0.5 rounded text-gray-400">{action.actionType}</span>
-                                                                                        {action.duration > 0 && <span>{action.duration}m</span>}
-                                                                                    </div>
-                                                                                </div>
-                                                                                {/* Checkbox */}
-                                                                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                                                                                    isActionCompleted 
-                                                                                        ? 'border-green-500 bg-green-500 text-black' 
-                                                                                        : 'border-white/20 group-hover/action:border-[var(--skin-accent-color)]'
-                                                                                }`}>
-                                                                                    {isActionCompleted && <CheckIcon className="w-3 h-3 font-bold" />}
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            )}
+                                                )}
 
-                                                            {/* Boss Fight Section (The Milestone) */}
-                                                            {bossAction ? (() => {
-                                                                const allGruntsDefeated = otherActions.every(action => 
-                                                                    selectedCampaign.arenaConfig?.[arena.id]?.completedActionIds?.includes(action.id)
-                                                                );
-                                                                const isBossUnlocked = allGruntsDefeated || otherActions.length === 0;
+                                                {/* Mini Arena Card Content */}
+                                                <div className={`${(isLinkingMode) ? 'pointer-events-none' : ''}`}>
+                                                    <ArenaCard 
+                                                        arena={arena}
+                                                        actions={actions.filter(a => a.arenaId === arena.id)}
+                                                        variant="overview" 
+                                                        onClick={() => {}} // Click handled by parent div
+                                                    />
+                                                </div>
 
+                                                {/* Footer Controls / Prerequisites */}
+                                                {!isCodexCampaign && prereqs.length > 0 && (
+                                                    <div className="p-1.5 bg-black/80 border-t border-white/5 flex items-center justify-center min-h-[24px]">
+                                                        {/* Dependencies */}
+                                                        <div className="flex flex-wrap gap-1 justify-center w-full">
+                                                            {prereqs.map(pid => {
+                                                                const pArena = getArenas().find(a => a.id === pid);
+                                                                const pCleared = selectedCampaign.arenaConfig?.[pid]?.isCleared;
                                                                 return (
-                                                                    <div 
-                                                                        onClick={(e) => handleBossKill(arena.id, e)}
-                                                                        className={`p-3 rounded-xl border relative overflow-hidden group/boss cursor-pointer transition-all hover:scale-[1.01] ${
-                                                                            isCleared
-                                                                                ? 'bg-green-900/10 border-green-500/30'
-                                                                                : !isBossUnlocked
-                                                                                    ? 'bg-gray-900/40 border-gray-700/30 opacity-75 grayscale'
-                                                                                    : 'bg-red-900/10 border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.1)]'
-                                                                        }`}
-                                                                    >
-                                                                        <div className={`absolute top-0 right-0 p-1 rounded-bl-lg text-[8px] font-bold uppercase tracking-wider ${
-                                                                            isCleared
-                                                                                ? 'bg-green-500/20 text-green-400'
-                                                                                : !isBossUnlocked
-                                                                                    ? 'bg-gray-700 text-gray-400'
-                                                                                    : 'bg-red-500/20 text-red-400'
-                                                                        }`}>
-                                                                            {isCleared ? 'MARCO ATINGIDO' : !isBossUnlocked ? 'BLOQUEADO' : 'CHEFÃO DA FASE'}
-                                                                        </div>
-                                                                        <div className="flex items-center gap-4 relative z-10">
-                                                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-3xl shadow-lg ${
-                                                                                isCleared 
-                                                                                    ? 'bg-green-500/20 text-green-400' 
-                                                                                    : !isBossUnlocked
-                                                                                        ? 'bg-gray-800 text-gray-500'
-                                                                                        : 'bg-red-500/20 text-red-400 animate-pulse'
-                                                                            }`}>
-                                                                                {!isBossUnlocked && !isCleared ? <LockIcon className="w-6 h-6" /> : (bossAction.icon || '☠️')}
-                                                                            </div>
-                                                                            <div className="flex-1">
-                                                                                <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${isCleared ? 'text-green-400' : !isBossUnlocked ? 'text-gray-500' : 'text-red-400'}`}>
-                                                                                    {isCleared ? 'Vitória!' : !isBossUnlocked ? 'Complete as ações acima' : 'Desafio Final'}
-                                                                                </div>
-                                                                                <div className={`text-sm font-bold ${isCleared ? 'text-gray-400 line-through' : !isBossUnlocked ? 'text-gray-500' : 'text-white'}`}>
-                                                                                    {bossAction.name}
-                                                                                </div>
-                                                                            </div>
-                                                                            <button 
-                                                                                className={`text-xs px-4 py-2 rounded-lg border font-black uppercase tracking-wider transition-all shadow-lg ${
-                                                                                    isCleared
-                                                                                        ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
-                                                                                        : !isBossUnlocked
-                                                                                            ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
-                                                                                            : 'bg-red-500 hover:bg-red-600 border-red-400 text-white hover:scale-105'
-                                                                                }`}
-                                                                            >
-                                                                                {isCleared ? 'REVIVER' : !isBossUnlocked ? 'BLOQUEADO' : 'DERROTAR'}
-                                                                            </button>
-                                                                        </div>
+                                                                    <div key={pid} className={`px-1.5 py-0.5 rounded-full flex items-center gap-1 text-[8px] font-bold border ${
+                                                                        pCleared 
+                                                                            ? 'bg-green-900/40 border-green-500/50 text-green-400 opacity-50' 
+                                                                            : 'bg-red-900/40 border-red-500/50 text-red-400'
+                                                                    }`} title={`Requer: ${pArena?.name}`}>
+                                                                        <LinkIcon className="w-2.5 h-2.5" />
+                                                                        <span className="max-w-[60px] truncate">{pArena?.name}</span>
                                                                     </div>
                                                                 );
-                                                            })() : (
-                                                                /* Fallback: Manual Complete Button if no boss exists */
-                                                                <div className="flex flex-col items-center gap-2 py-2">
-                                                                    {otherActions.length === 0 && (
-                                                                        <div className="text-xs text-gray-500 italic mb-2">Sem ações definidas.</div>
-                                                                    )}
-                                                                    <button
-                                                                        onClick={(e) => handleBossKill(arena.id, e)}
-                                                                        className={`w-full py-3 rounded-xl border border-dashed font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                                                                            isCleared
-                                                                                ? 'bg-green-900/10 border-green-500/30 text-green-400 hover:bg-green-900/20'
-                                                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/20'
-                                                                        }`}
-                                                                    >
-                                                                        {isCleared ? (
-                                                                            <><CheckIcon className="w-4 h-4" /> Fase Completa</>
-                                                                        ) : (
-                                                                            <><CheckIcon className="w-4 h-4" /> Marcar Fase como Concluída</>
-                                                                        )}
-                                                                    </button>
-                                                                </div>
-                                                            )}
+                                                            })}
                                                         </div>
-                                                    )}
-                                                </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                            
-                            {/* Fab for mobile to add stage */}
-                             <button 
-                                onClick={handleCreateFutureArena}
-                                className="md:hidden w-full py-4 mt-4 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center gap-2 text-gray-400 hover:text-white hover:border-white/20 transition-all"
-                            >
-                                <PlusIcon className="w-5 h-5" />
-                                <span className="font-bold text-sm uppercase tracking-wider">Adicionar Próxima Fase</span>
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
-                        <span className="text-6xl mb-4 opacity-20">📜</span>
-                        <p>Selecione uma campanha para ver o Codex.</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
 
-            {isCreatingArena && (
-                <NewArenaModal 
-                    assetId="" // Let user choose inside modal or default to general
-                    onClose={() => setIsCreatingArena(false)} 
-                    onArenaCreated={onArenaCreated}
-                />
-            )}
+                    {isCreatingArena && (
+                        <NewArenaModal 
+                            assetId="" 
+                            onClose={() => setIsCreatingArena(false)} 
+                            onArenaCreated={onArenaCreated}
+                        />
+                    )}
+                    
+                    {selectedArena && (
+                        <ArenaDetailModal 
+                            arena={selectedArena}
+                            onClose={() => setSelectedArenaId(null)}
+                        />
+                    )}
+                </GlassCard>
             </div>
         </Portal>
     );

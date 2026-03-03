@@ -12,6 +12,7 @@ export const TheForge: React.FC = () => {
     const [activeTab, setActiveTab] = useState<ForgeTab>('craft');
     const [selectedTier, setSelectedTier] = useState<number>(1);
     const [processing, setProcessing] = useState<string | null>(null);
+    const [confirmRecycleId, setConfirmRecycleId] = useState<string | null>(null);
 
     // --- CRAFTING LOGIC ---
     const craftableItems = useMemo(() => {
@@ -62,7 +63,11 @@ export const TheForge: React.FC = () => {
     }, [inventory]);
 
     const handleRecycle = async (instanceId: string) => {
-        if (!confirm("Tem certeza que deseja reciclar este item? A ação é irreversível.")) return;
+        if (confirmRecycleId !== instanceId) {
+            setConfirmRecycleId(instanceId);
+            return;
+        }
+        
         if (processing) return;
         setProcessing(`recycle-${instanceId}`);
         try {
@@ -71,6 +76,7 @@ export const TheForge: React.FC = () => {
             console.error("Recycle failed", error);
         } finally {
             setProcessing(null);
+            setConfirmRecycleId(null);
         }
     };
 
@@ -215,9 +221,13 @@ export const TheForge: React.FC = () => {
                                         <button 
                                             onClick={() => handleRecycle(item.instanceId)}
                                             disabled={!!processing}
-                                            className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
+                                            className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${
+                                                confirmRecycleId === item.instanceId 
+                                                    ? 'bg-red-500 text-white animate-pulse' 
+                                                    : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                                            }`}
                                         >
-                                            {processing === `recycle-${item.instanceId}` ? <RefreshCwIcon className="w-4 h-4 animate-spin" /> : <Trash2Icon className="w-4 h-4" />}
+                                            {processing === `recycle-${item.instanceId}` ? <RefreshCwIcon className="w-4 h-4 animate-spin" /> : confirmRecycleId === item.instanceId ? <span className="text-[10px] font-bold">CONFIRMAR?</span> : <Trash2Icon className="w-4 h-4" />}
                                         </button>
                                     </div>
                                 </div>

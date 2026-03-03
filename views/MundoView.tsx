@@ -207,7 +207,7 @@ const SocialTab: React.FC = () => {
                         )}
                     </div>
                 ) : (
-                    <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                         {activeTab === 'aliados' && friends.map(friend => (
                             <SocialCard key={friend.id} profile={friend} onClick={() => setSelectedProfile(friend)} />
                         ))}
@@ -304,7 +304,7 @@ const MundoView: React.FC = () => {
     return (
         <div id="social-container" className="flex flex-col h-full">
             {/* Tab Navigation */}
-            <div className="flex justify-between px-4 pt-2 pb-4 border-b border-white/5 bg-black/20 backdrop-blur-sm sticky top-[60px] z-40">
+            <div className="flex justify-between px-4 py-2 z-40">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}

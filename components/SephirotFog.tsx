@@ -88,8 +88,13 @@ const fragmentShaderSource = `
 
     float totalDensity = 0.0;
     
-    // Global Time for animation (Pre-warmed to avoid t=0 static look)
-    float t = (uTime + 100.0) * 0.2; 
+    // Global Time for animation
+    // Scaled down for a more relaxing, slower movement
+    float scaledTime = uTime * 0.5;
+    float t = scaledTime * 0.2; 
+    
+    // Fade in the intensity over the first 2 seconds to make it look like it's "starting"
+    float startupFade = smoothstep(0.0, 2.0, uTime);
     
     for (int i = 0; i < 10; i++) {
         float level = uLevels[i];
@@ -97,8 +102,8 @@ const fragmentShaderSource = `
 
         vec2 pt = uPoints[i];
         pt.y = 1.0 - pt.y; 
-        pt.x += sin(uTime * 0.18 + float(i) * 1.7) * uPointDrift;
-        pt.y += cos(uTime * 0.16 + float(i) * 1.3) * uPointDrift;
+        pt.x += sin(scaledTime * 0.18 + float(i) * 1.7) * uPointDrift;
+        pt.y += cos(scaledTime * 0.16 + float(i) * 1.3) * uPointDrift;
         vec2 pt_aspect = vec2(pt.x * aspect, pt.y);
         
         vec2 toPixel = st_aspect - pt_aspect;
@@ -113,12 +118,12 @@ const fragmentShaderSource = `
              // "Nivel 6 muito fraco" -> Boosted mid-range intensity.
              
              // 1. Local Coordinates
-             vec2 wind = vec2(sin(uTime * 0.1), cos(uTime * 0.08)) * uWindStrength;
-             vec2 localP = toPixel * 3.5 + vec2(uTime * 0.08, -uTime * 0.06) * uFieldDrift + wind;
+             vec2 wind = vec2(sin(scaledTime * 0.1), cos(scaledTime * 0.08)) * uWindStrength;
+             vec2 localP = toPixel * 3.5 + vec2(scaledTime * 0.08, -scaledTime * 0.06) * uFieldDrift + wind;
 
              // 2. Periodic Flow (Very Slow)
              float cycleSpeed = 0.05 + (level / 10.0) * 0.1; 
-             float phase = uTime * cycleSpeed;
+             float phase = scaledTime * cycleSpeed;
              
              float t1 = fract(phase);
              float t2 = fract(phase + 0.5);
@@ -136,7 +141,7 @@ const fragmentShaderSource = `
 
              // 4. Sample Noise Twice
              vec2 offset1 = normalize(toPixel) * (t1 * 1.8); 
-             vec2 timeOffset = vec2(cos(uTime * 0.07), sin(uTime * 0.05)) * 0.6;
+             vec2 timeOffset = vec2(cos(scaledTime * 0.07), sin(scaledTime * 0.05)) * 0.6;
              float n1 = fbm(warpP - offset1 + timeOffset);
 
              vec2 offset2 = normalize(toPixel) * ((t2 - 0.5) * 1.8); 
@@ -148,16 +153,15 @@ const fragmentShaderSource = `
              // Lower exponents = Thicker, more visible lines.
              
              // A. Electric Sparks
-             // Level 1: was 7.0 (invisible). Now 4.5 (Thin but solid).
-             // Level 10: 1.5 (Thick plasma).
-             float electricExp = 4.5 - (level / 10.0) * 3.0; 
+             // Higher exponents = Thinner, more defined "lightning" lines.
+             // Level 1: 6.0 (Very thin/defined). Level 10: 3.0 (Sharp plasma).
+             float electricExp = 6.0 - (level / 10.0) * 3.0; 
              float electric = pow(noiseVal, electricExp);
              
              // B. Smoke Body
-             // Level 1: 0.1 opacity (faint background).
-             // Level 6: 0.6 opacity (visible cloud).
-             float smokeExp = 3.0 - (level / 10.0) * 1.5;
-             float smoke = pow(noiseVal, smokeExp) * (0.1 + (level / 10.0) * 0.9);
+             // Increased exponent to 5.0 to make the smoke much more transparent/less dense.
+             float smokeExp = 5.0;
+             float smoke = pow(noiseVal, smokeExp) * (0.05 + (level / 10.0) * 0.75);
 
              // Combine
              float combinedShape = electric + smoke;
@@ -178,7 +182,7 @@ const fragmentShaderSource = `
 
              // 7. Core Glow
              // Tiny anchor point
-             float corePulse = 0.5 + 0.5 * sin(uTime * 0.8);
+             float corePulse = 0.5 + 0.5 * sin(scaledTime * 0.8);
              float coreBase = smoothstep(0.03, 0.0, dist);
              float coreBoosted = smoothstep(0.05, 0.0, dist) * (1.2 + corePulse * 0.6);
              float core = mix(coreBase, coreBoosted, uCoreBoost);
@@ -196,12 +200,12 @@ const fragmentShaderSource = `
     // Mix with white/cyan for energy look
     vec3 energyColor = mix(vec3(0.5, 0.9, 1.0), color, 0.7); 
     
-    // Map density to color
-    vec3 finalColor = energyColor * totalDensity;
+    // Map density to color with startup fade
+    vec3 finalColor = energyColor * totalDensity * startupFade;
     
     // Alpha
     // Max opacity reduced for "efeito discreto"
-    float alpha = smoothstep(0.0, 1.0, totalDensity);
+    float alpha = smoothstep(0.0, 1.0, totalDensity * startupFade);
     alpha = clamp(alpha, 0.0, uAlphaMax); 
     
     gl_FragColor = vec4(finalColor, alpha);
@@ -223,6 +227,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
   const uFieldDriftLoc = useRef<WebGLUniformLocation | null>(null);
   const uAlphaMaxLoc = useRef<WebGLUniformLocation | null>(null);
   const uCoreBoostLoc = useRef<WebGLUniformLocation | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   // Helper to hex to rgb
   const hexToRgb = (hex: string) => {
@@ -248,7 +253,9 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext('webgl');
+    startTimeRef.current = null;
+
+    const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
     if (!gl) {
       console.error('WebGL not supported');
       return;
@@ -322,11 +329,16 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
     const render = (time: number) => {
       if (!gl || !program) return;
       
+      if (startTimeRef.current === null) {
+        startTimeRef.current = time;
+      }
+      const relativeTime = (time - startTimeRef.current) * 0.001;
+      
       gl.useProgram(program); // Ensure program is used
       
       // Update Time
       if (timeLocation) {
-        gl.uniform1f(timeLocation, time * 0.001);
+        gl.uniform1f(timeLocation, relativeTime);
       }
 
       // Draw

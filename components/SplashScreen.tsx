@@ -8,7 +8,6 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     // Tenta carregar do public folder primeiro.
-    // O usuário pode colocar o vídeo em /public/videos/intro.mp4
     const videoSrc = '/videos/intro.mp4'; 
     
     return (
@@ -18,9 +17,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
                     src={videoSrc}
                     onEnd={onComplete}
                     className="w-full h-full object-cover"
-                    placeholderLabel="Carregando Abertura..."
-                    duration={5000} // Timeout de segurança se o video travar
-                    playbackRate={1.0}
+                    placeholderLabel="GOL 1.0"
+                    duration={1500} // Se não carregar em 1.5s, pula (mais liso)
+                    maxDuration={6000} // Pula no máximo em 6s
+                    playbackRate={1.2} // Um pouco mais rápido pra ser "liso"
                 />
             </div>
         </Portal>

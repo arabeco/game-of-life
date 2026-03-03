@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 export const handleShare = async (elementId: string, title: string = 'Meu Progresso - Life OS') => {
     const element = document.getElementById(elementId);
@@ -12,36 +12,50 @@ export const handleShare = async (elementId: string, title: string = 'Meu Progre
     }
 
     try {
-        // Give the browser a moment to ensure all assets (especially cross-origin images) are rendered.
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Give the browser more time to ensure all assets are rendered.
+        await new Promise(resolve => setTimeout(resolve, 800));
 
-        const canvas = await html2canvas(element, {
+        // Using toPng instead of toBlob, as it can sometimes handle CSS rules better
+        const dataUrl = await toPng(element, {
+            cacheBust: true,
+            pixelRatio: 2,
             backgroundColor: '#101010',
-            scale: 2,
-            useCORS: true,
-            // Force the canvas to use the element's actual dimensions, ignoring viewport constraints.
-            width: element.offsetWidth,
-            height: element.offsetHeight,
-            windowWidth: element.offsetWidth,
-            windowHeight: element.offsetHeight,
+            imageTimeout: 30000,
+            filter: (node) => {
+                if (node instanceof HTMLElement && node.hasAttribute('data-html2canvas-ignore')) {
+                    return false;
+                }
+                return true;
+            },
+            // Try to avoid the SecurityError by providing a custom style that doesn't trigger the rule access
+            style: {
+                // Ensure fonts are correctly rendered if we can
+                'font-family': 'Inter, sans-serif'
+            }
         });
         
-        canvas.toBlob(async (blob) => {
-            if (blob) {
-                const file = new File([blob], 'share.png', { type: 'image/png' });
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: title,
-                    });
-                } catch (shareError) {
-                    // This can happen if the user cancels the share dialog
-                    console.info('Share cancelled or failed', shareError);
-                }
+        // Convert dataUrl to blob
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        
+        if (blob) {
+            const file = new File([blob], 'share.png', { type: 'image/png' });
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: title,
+                });
+            } catch (shareError) {
+                // This can happen if the user cancels the share dialog
+                console.info('Share cancelled or failed', shareError);
             }
-        }, 'image/png');
-    } catch (error) {
+        } else {
+            throw new Error('Falha ao criar blob da imagem.');
+        }
+    } catch (error: any) {
         console.error('Erro ao gerar imagem para compartilhar:', error);
-        alert('Ocorreu um erro ao tentar compartilhar.');
+        // Provide more context in the error message for debugging
+        const errorMessage = error?.message || 'Desconhecido';
+        alert(`Ocorreu um erro ao gerar a imagem (Erro: ${errorMessage}). Verifique se as imagens do perfil estão carregando corretamente.`);
     }
 };

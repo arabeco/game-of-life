@@ -108,20 +108,29 @@ const RARITY_COLORS: Record<string, string> = {
 };
 
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose, predefinedReward }) => {
-    const { userProfile, grantUserUnlock, updateUserProfile, oraclePreferences } = useGame();
+    const { addFeedEvent, userProfile, grantUserUnlock, grantInventoryItem, showToast, appMode, oraclePreferences, updateUserProfile } = useGame();
     const [stage, setStage] = useState<Stage>('video');
-    const [reward, setReward] = useState<any>(predefinedReward || null);
+    const [reward, setReward] = useState<Reward | null>(null);
+
+    useEffect(() => {
+        if (appMode !== 'GAME') {
+            onClose();
+        }
+    }, [appMode, onClose]);
+
+    if (appMode !== 'GAME') return null;
 
     const rarityColor = RARITY_COLORS[chestType] || RARITY_COLORS['Comum'];
-    
-    // Get user skin color for border
+
+    // Get user skin color
     const userSkinId = userProfile.skin;
     const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
     const skinBorderColor = userSkin?.color || '#ffffff'; // Fallback to white
 
     useEffect(() => {
         // Use predefined reward or calculate random one
-        setReward(predefinedReward || getRandomReward(chestType));
+        const finalReward = predefinedReward || getRandomReward(chestType);
+        setReward(finalReward);
 
         const animationsEnabled = oraclePreferences?.animationsEnabled ?? true;
 
@@ -129,11 +138,11 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
             setStage('video');
             // Force end video after 4 seconds as requested
             const timer = setTimeout(() => {
-                setStage('revealed');
+                setStage('reward');
             }, 4000);
             return () => clearTimeout(timer);
         } else {
-            setStage('revealed');
+            setStage('reward');
         }
     }, [chestType, oraclePreferences?.animationsEnabled, predefinedReward]);
 
@@ -148,6 +157,19 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
             if (rewardValue?.skinUnlock) {
                 const nextUnlockedSkins = { ...(userProfile.unlockedSkins || {}), [rewardValue.skinUnlock]: true };
                 updateUserProfile({ unlockedSkins: nextUnlockedSkins });
+            }
+            
+            // Show toast for collected item
+            if (reward) {
+                const name = reward.value;
+                const typeLabel = reward.type === 'Item' ? 'Item' : 
+                                 reward.type === 'Skin' ? 'Skin' : 
+                                 reward.type === 'EXP' ? 'XP' : 
+                                 reward.type === 'Conselho' ? 'Conselho' : 'Recompensa';
+                
+                if (reward.type !== 'Nada') {
+                   showToast(`✦ ${typeLabel} ${name} adicionado ao inventário`);
+                }
             }
         }
         onClose();
@@ -173,17 +195,14 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                     <div className="relative aspect-[9/16] w-full bg-black rounded-t-3xl overflow-hidden">
                         <VideoPlayer 
                             src={CHEST_VIDEOS[chestType]}
-                            onEnd={() => setStage('revealed')}
+                            onEnd={() => setStage('reward')}
                             className="w-full h-full object-cover"
                             placeholderLabel={`Opening ${chestType} Chest...`}
                             duration={4000}
                         />
                     </div>
                 );
-            case 'shaking': // Fallback if needed
-            case 'exploding':
-                return null; 
-            case 'revealed':
+            case 'reward':
                 if (!reward) return null;
                 
                 // Determine visuals based on reward type
@@ -230,8 +249,7 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                         <div className="w-full grid grid-cols-2 gap-2 z-10 mt-2">
                             <button 
                                 onClick={handleCollect}
-                                className="col-span-2 py-3 rounded-xl font-bold uppercase tracking-wider transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center justify-center gap-2"
-                                style={{ backgroundColor: `${rarityColor}20`, border: `1px solid ${rarityColor}`, color: rarityColor }}
+                                className="col-span-2 py-3 rounded-xl font-bold uppercase tracking-[0.1em] text-[10px] transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center justify-center gap-2 luxe-skin-button"
                             >
                                 <CheckIcon className="w-4 h-4" />
                                 <span>OK</span>

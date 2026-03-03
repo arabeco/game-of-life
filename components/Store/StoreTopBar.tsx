@@ -18,12 +18,12 @@ export const StoreTopBar: React.FC = () => {
                 <div className="flex items-center space-x-2">
                     <div className="text-2xl">🪙</div>
                     <div className="flex flex-col items-end">
-                        <span className="text-lg font-black text-[var(--gold)] leading-none">
+                        <span className="text-lg font-black text-[var(--skin-accent-color)] leading-none">
                             {gold.toLocaleString()}
                         </span>
                         <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Ouro</span>
                     </div>
-                    <button className="w-6 h-6 rounded-full bg-[var(--gold)]/20 text-[var(--gold)] flex items-center justify-center hover:bg-[var(--gold)]/30 transition-colors border border-[var(--gold)]/30">
+                    <button className="w-6 h-6 rounded-full bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] flex items-center justify-center hover:bg-[var(--skin-accent-color)]/30 transition-colors border border-[var(--skin-accent-color)]/30">
                         <span className="text-xs font-bold">+</span>
                     </button>
                 </div>

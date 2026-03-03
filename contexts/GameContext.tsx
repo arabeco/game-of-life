@@ -3,6 +3,8 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, DirectMessage, DMConversation, ItemRarity } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef } from '../constants/items';
+import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
+import { NOBILITY_RANKS, RANK_REWARDS } from '../constants/nobility';
 import { supabase } from '../supabaseClient';
 import { ORACLE_MODES } from '../constants/oracle';
 import { SupabaseService } from '../services/SupabaseService';
@@ -75,20 +77,6 @@ const CLAN_RANKS: ClanRank[] = [
     { id: 'dinastia', name: 'Dinastia', expRequired: 1000000 },
     { id: 'imperio', name: 'Império', expRequired: 2500000 },
 ];
-
-const NOBILITY_RANKS: NobilityRank[] = [
-    { id: 'vagante', name: 'Vagante', levelRequired: 1, expTotalRequired: 0 },
-    { id: 'escudeiro', name: 'Escudeiro', levelRequired: 10, expTotalRequired: 10000 },
-    { id: 'cavaleiro', name: 'Cavaleiro', levelRequired: 20, expTotalRequired: 35000 },
-    { id: 'lorde', name: 'Lorde', levelRequired: 30, expTotalRequired: 85000 },
-    { id: 'barao', name: 'Barão', levelRequired: 40, expTotalRequired: 185000 },
-    { id: 'conde', name: 'Conde', levelRequired: 50, expTotalRequired: 350000 },
-    { id: 'duque', name: 'Duque', levelRequired: 60, expTotalRequired: 512500 },
-    { id: 'principe', name: 'Príncipe', levelRequired: 70, expTotalRequired: 675000 },
-    { id: 'rei', name: 'Rei', levelRequired: 80, expTotalRequired: 837500 },
-    { id: 'soberano', name: 'Soberano', levelRequired: 90, expTotalRequired: 1000000 },
-];
-
 
 
 const DEFAULT_USER_PROFILE: UserProfile = {
@@ -189,6 +177,30 @@ interface EndCycleResult {
     expGained: number;
 }
 
+export interface CodexCatalogItem {
+    id: string;
+    title: string;
+    description: string;
+    author_name: string;
+    price_brl: number;
+    is_premium: boolean;
+    cover_image?: string;
+    duration_days: number;
+    created_at: string;
+    template: any; // Using 'any' for now, ideally strictly typed
+}
+
+export interface UserCodex {
+    id: string;
+    owner_id: string;
+    name: string;
+    description: string;
+    author: string;
+    price: number;
+    template: any;
+    created_at: string;
+}
+
 export interface GameContextType {
   isNewUser: boolean;
   assets: Asset[];
@@ -232,7 +244,7 @@ export interface GameContextType {
   addCompletedMission: (mission: SeasonMission) => void;
   acceptSeasonQuest: (questId: string) => void;
   abortSeasonQuest: (questId: string) => Promise<void>;
-  claimSeasonQuestReward: (questId: string) => void;
+  claimSeasonQuest: (questId: string) => void;
   claimSeasonMission: (missionId: string) => Promise<void>;
   addProfileFlag: (flag: string) => void;
   feed: FeedEvent[];
@@ -246,7 +258,12 @@ export interface GameContextType {
   updateArenaFolder: (folderId: string, data: Partial<ArenaFolder>) => Promise<void>;
   deleteArenaFolder: (folderId: string) => Promise<void>;
   moveArenaToFolder: (arenaId: string, folderId: string | null) => Promise<void>;
-  reorderArena: (arenaId: string, newIndex: number) => void;
+  reorderArena: (arenaId: string, newIndex: number | string, side?: 'left' | 'right') => Promise<void>;
+  reorderArenaPriority: (arenaId: string, priority: 'alta' | 'media' | 'baixa', newIndex: number | string) => Promise<void>;
+  reorderEntity: (draggedId: string, draggedType: 'arena' | 'campaign', targetId: string, targetType: 'arena' | 'campaign', side?: 'left' | 'right') => Promise<void>;
+  reorderEntityPriority: (draggedId: string, draggedType: 'arena' | 'campaign', priority: 'alta' | 'media' | 'baixa', targetId?: string) => Promise<void>;
+  arenasViewMode: ArenasViewMode;
+  setArenasViewMode: (mode: ArenasViewMode) => Promise<void>;
   reorderAction: (arenaId: string, actionId: string, newIndex: number) => void;
   getActionsForArena: (arenaId: string) => Action[];
   getAssetForAction: (actionId: string) => Asset | undefined;
@@ -337,7 +354,7 @@ export interface GameContextType {
   performAldeiaDailyUpdate: (clanId: string) => Promise<void>;
 
   showToast: (message: string) => void;
-  toast: { message: string; visible: boolean };
+  toast: { message: string; visible: boolean; style?: React.CSSProperties };
   hideToast: () => void;
   // Forge & Store
   inventory: InventoryItem[];
@@ -349,15 +366,21 @@ export interface GameContextType {
   toggleEquipItem: (item: InventoryItem) => Promise<void>;
   updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
   
+  // Codex System
+  userCodexes: UserCodex[];
+  codexCatalog: CodexCatalogItem[];
+  buyCodex: (catalogId: string) => Promise<void>;
+  installCodex: (userCodexId: string) => Promise<void>;
+
   // PWA
   installPrompt: any;
   promptInstall: () => Promise<void>;
 
   // Campaigns
   campaigns: Campaign[];
-  addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>) => Campaign;
-  updateCampaign: (id: string, updates: Partial<Campaign>) => void;
-  deleteCampaign: (id: string) => void;
+  addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>) => Promise<Campaign>;
+  updateCampaign: (id: string, updates: Partial<Campaign>) => Promise<void>;
+  deleteCampaign: (id: string) => Promise<void>;
 
   // App Mode & Theme
   appMode: AppMode;
@@ -400,6 +423,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const isNewUser = useMemo(() => {
       return !userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
   }, [userProfile.completedSeasonMissions]);
+
+  const [arenasViewMode, setArenasViewModeState] = useState<ArenasViewMode>(() => {
+    const userId = session?.user.id;
+    if (userId) {
+        const saved = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${userId}`);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return parsed.arenasViewMode || 'free';
+            } catch (e) {}
+        }
+    }
+    return 'free';
+  });
+
+  const setArenasViewMode = async (mode: ArenasViewMode) => {
+    setArenasViewModeState(mode);
+    updateUserProfile({ arenasViewMode: mode });
+  };
+
+  useEffect(() => {
+    if (userProfile?.arenasViewMode) {
+        setArenasViewModeState(userProfile.arenasViewMode);
+    }
+  }, [userProfile?.arenasViewMode]);
 
   const [assets, setAssets] = useState<Asset[]>(() => {
     const defaults = createDefaultAssets(true);
@@ -486,6 +534,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
   // Campaigns State
   const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
+      // Optimistic load from localStorage first
       const userId = session?.user.id;
       if (userId) {
           try {
@@ -498,6 +547,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       return [];
   });
 
+  // Fetch campaigns from Supabase on load
+  useEffect(() => {
+      const userId = session?.user.id;
+      if (userId) {
+          supabase.from('campaigns').select('*').eq('user_id', userId)
+              .then(({ data, error }) => {
+                  if (data) {
+                      const mappedCampaigns = mapToCamelCase(data);
+                      setCampaigns(mappedCampaigns);
+                      // Update localStorage to keep sync
+                      localStorage.setItem(`${STORAGE_KEY_CAMPAIGNS}_${userId}`, JSON.stringify(mappedCampaigns));
+                  }
+                  if (error) console.error("Error fetching campaigns:", error);
+              });
+      }
+  }, [session?.user.id]);
+
   useEffect(() => {
       const userId = session?.user.id;
       if (userId) {
@@ -505,23 +571,47 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       }
   }, [campaigns, session?.user.id]);
 
-  const addCampaign = (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>): Campaign => {
+  const addCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'status'>): Promise<Campaign> => {
+      const userId = session?.user.id;
+      if (!userId) throw new Error("User not authenticated");
+
       const newCampaign: Campaign = {
-          ...campaign,
+          ...campaignData,
           id: crypto.randomUUID(),
           createdAt: new Date().toISOString(),
           status: 'active'
       };
+      
+      // Optimistic update
       setCampaigns(prev => [...prev, newCampaign]);
+      
+      // Persist to Supabase
+      const { error } = await supabase.from('campaigns').insert(mapToSnakeCase({
+          ...newCampaign,
+          userId
+      }));
+      
+      if (error) {
+          console.error("Error creating campaign:", error);
+          // Revert optimistic update? Or retry?
+      }
+      
       return newCampaign;
   };
 
-  const updateCampaign = (id: string, updates: Partial<Campaign>) => {
+  const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
       setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+      
+      const { error } = await supabase.from('campaigns').update(mapToSnakeCase(updates)).eq('id', id);
+      if (error) console.error("Error updating campaign:", error);
   };
 
-  const deleteCampaign = (id: string) => {
+  const deleteCampaign = async (id: string) => {
       setCampaigns(prev => prev.filter(c => c.id !== id));
+      // Arenas are not deleted, they just lose their campaign context implicitly
+      
+      const { error } = await supabase.from('campaigns').delete().eq('id', id);
+      if (error) console.error("Error deleting campaign:", error);
   };
 
   // App Mode & Theme Implementation
@@ -1026,13 +1116,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
       if (error) {
           console.error("Error buying gold pack:", error);
-          alert("Erro ao processar compra.");
+          showToast("Erro ao processar compra.");
           return;
       }
       
       if (data && data.success) {
           updateUserProfile({ wallet: { ...userProfile.wallet, gold: data.new_gold } });
-          alert(`Compra de ${pack.name} realizada! +${pack.total} Ouro.`);
+          showToast(`Compra de ${pack.name} realizada! +${pack.total} Ouro.`);
       }
   };
 
@@ -1064,7 +1154,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       }
 
       if ((userProfile.wallet?.gold || 0) < cost) {
-          alert("Ouro insuficiente!");
+          showToast("Ouro insuficiente!");
           return;
       }
 
@@ -1076,7 +1166,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
       if (error) {
           console.error("Error buying store item:", error);
-          alert("Erro ao comprar item.");
+          showToast("Erro ao comprar item.");
           return;
       }
 
@@ -1093,7 +1183,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
           updateUserProfile({ isPremium: true });
       }
       
-      alert(`Compra de ${name} realizada com sucesso!`);
+      showToast(`Compra de ${name} realizada com sucesso!`);
   };
 
   const recycleItem = async (instanceId: string) => {
@@ -1106,7 +1196,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
       if (error) {
           console.error("Error recycling:", error);
-          alert("Erro ao reciclar item.");
+          showToast("Erro ao reciclar item.");
           return;
       }
 
@@ -1131,7 +1221,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
       if (error) {
           console.error("Error crafting:", error);
-          alert("Erro ao forjar item: " + error.message);
+          showToast("Erro ao forjar item: " + error.message);
           return null;
       }
 
@@ -1202,7 +1292,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
               updateUserProfile({ border: 'default' });
           } else if (itemDef.category === 'ui_skin') {
               updateUserProfile({ skin: 'GOLD' }); // Default skin
-              alert('Skin de Interface removida. Tema padrão restaurado.');
+              showToast('Skin de Interface removida. Tema padrão restaurado.');
           } else if (itemDef.category === 'banner') {
               updateUserProfile({ bannerUrl: '' });
           } else {
@@ -1226,7 +1316,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
               updateUserProfile({ border: itemDef.id });
           } else if (itemDef.category === 'ui_skin') {
               updateUserProfile({ skin: itemDef.id });
-              alert(`Skin de Interface "${itemDef.name}" aplicada!`);
+              showToast(`Skin de Interface "${itemDef.name}" aplicada!`);
           } else if (itemDef.category === 'banner') {
               updateUserProfile({ bannerUrl: itemDef.imageUrl || '' });
           } else {
@@ -2280,7 +2370,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             levelsResult,
             clanMemberResult,
             reportsResult,
-            cyclesResult
+            cyclesResult,
+            campaignsResult
         ] = await rateLimiter.batchRequests([
             () => supabase.from('arena_folders').select('*').eq('user_id', userId),
             () => supabase.from('arenas').select('*').eq('user_id', userId),
@@ -2290,12 +2381,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             () => supabase.from('asset_levels').select('*').eq('user_id', userId),
             () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
             () => supabase.from('cycles').select('*').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
-            () => supabase.from('cycles').select('*').eq('user_id', userId).is('report_data', null).limit(1)
+            () => supabase.from('cycles').select('*').eq('user_id', userId).is('report_data', null).limit(1),
+            () => supabase.from('campaigns').select('*').eq('user_id', userId)
         ]) as any[];
 
         const { data: foldersData, error: foldersError } = foldersResult;
         if (!foldersError && foldersData) {
             setArenaFolders(mapToCamelCase(foldersData) as ArenaFolder[]);
+        }
+
+        const { data: campaignsData, error: campaignsError } = campaignsResult;
+        if (!campaignsError && campaignsData) {
+            setCampaigns(mapToCamelCase(campaignsData) as Campaign[]);
         }
 
         let camelArenas: Arena[] | null = null;
@@ -2482,6 +2579,280 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     run();
   }, [session?.user.id, userProfile.id]);
 
+  // Codex System
+  const [userCodexes, setUserCodexes] = useState<UserCodex[]>([]);
+  const [codexCatalog, setCodexCatalog] = useState<CodexCatalogItem[]>([]);
+
+  useEffect(() => {
+    const fetchCodexData = async () => {
+        console.log("Fetching Codex Data...");
+        let catalog: CodexCatalogItem[] = [];
+        try {
+            const { data: catalogData, error } = await supabase.from('codex_catalog').select('*');
+            if (error) console.error("Supabase Error fetching catalog:", error);
+            
+            console.log("Raw Catalog Data from DB:", catalogData);
+
+            if (catalogData && catalogData.length > 0) {
+                catalog = (catalogData as any[]).map(item => {
+                     // Handle potential JSON string for template
+                     let template = item.template;
+                     if (typeof template === 'string') {
+                         try { template = JSON.parse(template); } catch (e) { console.error("Error parsing template JSON for item", item.id, e); }
+                     }
+
+                     // Robust fallback for missing template using shared constant
+                     // Check by ID OR Title (case insensitive)
+                     const isBioMachine = item.id === BIOLOGICAL_MACHINE_CODEX.id || 
+                                          (item.title && BIOLOGICAL_MACHINE_CODEX.title && item.title.toLowerCase().trim() === BIOLOGICAL_MACHINE_CODEX.title.toLowerCase().trim());
+                     
+                     if (isBioMachine && (!template || !template.levels)) {
+                        console.log("Injecting fallback template for Biological Machine item:", item.id);
+                        template = BIOLOGICAL_MACHINE_CODEX;
+                    }
+                    return { ...item, template };
+                }).filter(item => {
+                    const isValid = item.template && item.template.levels && Array.isArray(item.template.levels);
+                    if (!isValid) console.warn("Filtering out invalid catalog item (missing template or levels):", item.title || item.id);
+                    return isValid;
+                }); 
+            }
+        } catch (err) {
+            console.error("Failed to fetch codex catalog", err);
+        }
+
+        console.log("Processed Catalog:", catalog);
+
+        // Fallback: If DB is empty, fails, or filtered out everything, use hardcoded data
+        // Also, if the catalog DOES NOT contain the Biological Machine, force add it.
+        const bioMachineExists = catalog.some(c => c.id === BIOLOGICAL_MACHINE_CODEX.id || c.title === BIOLOGICAL_MACHINE_CODEX.title);
+        
+        if (!bioMachineExists) {
+             console.log("Biological Machine not found in valid catalog. Adding fallback.");
+             const fallbackItem: CodexCatalogItem = {
+                 id: BIOLOGICAL_MACHINE_CODEX.id,
+                 title: BIOLOGICAL_MACHINE_CODEX.title,
+                 description: BIOLOGICAL_MACHINE_CODEX.description,
+                 price_brl: BIOLOGICAL_MACHINE_CODEX.price,
+                 is_premium: false,
+                 cover_image: BIOLOGICAL_MACHINE_CODEX.coverImage,
+                 author_name: BIOLOGICAL_MACHINE_CODEX.author,
+                 duration_days: BIOLOGICAL_MACHINE_CODEX.durationDays,
+                 created_at: new Date().toISOString(),
+                 template: BIOLOGICAL_MACHINE_CODEX
+             };
+             // Add to beginning of catalog
+             catalog = [fallbackItem, ...catalog];
+        }
+
+        console.log("Final Catalog set to state:", catalog);
+        setCodexCatalog([...catalog]); // Spread to ensure new reference
+        
+        // Fetch user codexes after catalog is set (or in parallel)
+        const userId = getSupabaseUserId();
+        console.log("Fetching User Codexes for UserID:", userId);
+        if (userId) {
+            const { data: userCodexData, error: userError } = await supabase.from('codex').select('*').eq('owner_id', userId);
+            if (userError) console.error("Error fetching user codexes:", userError);
+            console.log("User Codexes Data:", userCodexData);
+            if (userCodexData) {
+                // Also parse template for user codexes if needed
+                const parsedUserCodexes = userCodexData.map((uc: any) => {
+                    let t = uc.template;
+                    if (typeof t === 'string') {
+                        try { t = JSON.parse(t); } catch(e) {}
+                    }
+                    // FALLBACK: If template is missing in user codex (due to bad insert), try to find it in catalog
+                    if (!t) {
+                        const catalogItem = codexCatalog.find(c => c.id === uc.catalog_id || c.title === uc.name);
+                        if (catalogItem) {
+                            console.log("Recovered template from catalog for user codex:", uc.name);
+                            t = catalogItem.template;
+                        } else if (uc.name === BIOLOGICAL_MACHINE_CODEX.title) {
+                            console.log("Recovered fallback template for Biological Machine");
+                            t = BIOLOGICAL_MACHINE_CODEX;
+                        }
+                    }
+                    return { ...uc, template: t };
+                });
+                setUserCodexes(parsedUserCodexes as UserCodex[]);
+            }
+        }
+    };
+    // Force re-fetch on mount regardless of session state for catalog
+    fetchCodexData();
+  }, [session?.user.id]);
+
+  const buyCodex = async (catalogId: string) => {
+    const userId = getSupabaseUserId();
+    if (!userId) return;
+
+    const catalogItem = codexCatalog.find(c => c.id === catalogId);
+    if (!catalogItem) return;
+
+    // Create User Codex linked to Catalog
+    const { data, error } = await supabase.from('codex').insert({
+        owner_id: userId,
+        catalog_id: catalogItem.id,
+        name: catalogItem.title,
+        description: catalogItem.description,
+        author: catalogItem.author_name,
+        price: catalogItem.price_brl,
+        template: catalogItem.template,
+        schema_version: 'v2',
+        is_public: false
+    }).select().single();
+
+    if (error) {
+        console.error("Error buying codex:", error);
+        showToast("Erro ao adquirir Codex.");
+        return;
+    }
+
+    setUserCodexes(prev => [...prev, data as UserCodex]);
+    showToast(`Codex "${catalogItem.title}" adquirido!`);
+  };
+
+  const deleteUserCodex = async (codexId: string) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      setUserCodexes(prev => prev.filter(c => c.id !== codexId));
+      
+      const { error } = await supabase.from('codex').delete().eq('id', codexId);
+      if (error) {
+          console.error("Error deleting codex:", error);
+          showToast("Erro ao deletar Codex.");
+      }
+  };
+
+  const transferUserCodex = async (codexId: string, recipientId: string) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      setUserCodexes(prev => prev.filter(c => c.id !== codexId));
+
+      const { error } = await supabase.from('codex').update({ owner_id: recipientId }).eq('id', codexId);
+      if (error) {
+          console.error("Error transferring codex:", error);
+          showToast("Erro ao transferir Codex.");
+      }
+  };
+
+  const installCodex = async (userCodexId: string) => {
+      const userId = getSupabaseUserId();
+      if (!userId) return;
+
+      const codex = userCodexes.find(c => c.id === userCodexId);
+      if (!codex || !codex.template) return;
+
+      const template = codex.template;
+      
+      // 1. Create Campaign
+      const campaignId = crypto.randomUUID();
+      const arenaIds: string[] = [];
+      const arenaConfig: Record<string, any> = {};
+
+      // 2. Create Arenas & Actions for each level
+      for (const level of template.levels) {
+          // Find asset ID (default to 'fisico' or first available)
+          const assetId = assets.find(a => a.id === 'fisico')?.id || assets[0]?.id || 'geral';
+          
+          const arenaId = crypto.randomUUID();
+          arenaIds.push(arenaId);
+          
+          // Determine if locked (Level 1 is unlocked, others locked)
+          const isLocked = level.level > 1;
+          const prereqIds = level.level > 1 ? [arenaIds[arenaIds.length - 2]] : []; // Simple linear dependency on previous arena
+
+          arenaConfig[arenaId] = {
+              isLocked,
+              isHidden: false,
+              prerequisiteArenaIds: prereqIds
+          };
+
+          // Insert Arena
+          await supabase.from('arenas').insert({
+              id: arenaId,
+              user_id: userId,
+              asset_id: assetId,
+              name: level.title,
+              description: level.description,
+              icon: '📜', // Default Codex Icon
+              origin_codex_id: codex.id,
+              codex_level: level.level,
+              is_archived: false,
+              priority: 'media',
+              order: 0,
+              priority_order: 0
+          });
+
+          // Insert Actions
+          // Fix: Ensure we wait for actions to be inserted before proceeding or catching errors
+          for (const action of level.actions) {
+              const { error: actionError } = await supabase.from('actions').insert({
+                  id: crypto.randomUUID(), // Ensure ID is generated
+                  user_id: userId,
+                  arena_id: arenaId,
+                  name: action.name,
+                  description: action.description,
+                  icon: action.icon || '⚔️', // Default icon if missing
+                  duration: action.duration || 0,
+                  repetitions: action.repetitions || 0,
+                  action_type: action.actionType || 'check',
+                  difficulty: action.difficulty || 'easy',
+                  origin_codex_id: codex.id,
+              });
+              
+              if (actionError) {
+                  console.error("Error inserting action:", actionError);
+              }
+          }
+      }
+
+      // 3. Insert Campaign
+      const newCampaign: Campaign = {
+          id: campaignId,
+          userId,
+          title: template.title,
+          description: template.description,
+          status: 'active',
+          type: 'sequential', // Codexes are usually sequential levels
+          arenaIds,
+          arenaConfig,
+          createdAt: new Date().toISOString(),
+          priority: 'media',
+          order: 0,
+          priorityOrder: 0
+      };
+
+      const { error } = await supabase.from('campaigns').insert({
+          id: campaignId,
+          user_id: userId,
+          title: newCampaign.title,
+          description: newCampaign.description,
+          status: newCampaign.status,
+          type: newCampaign.type,
+          arena_ids: newCampaign.arenaIds,
+          arena_config: newCampaign.arenaConfig,
+          priority: 'media',
+          order: 0,
+          priority_order: 0
+      });
+
+      if (error) {
+          console.error("Error creating campaign from codex:", error);
+          showToast("Erro ao criar campanha: " + error.message);
+          return;
+      }
+
+      showToast(`Codex "${codex.name}" instalado com sucesso!`);
+      // Give DB a moment to index before reloading
+      setTimeout(() => {
+        window.location.reload(); 
+      }, 500);
+  };
+
   const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
     const newEvent: FeedEvent = {
         id: `feed_${Date.now()}`,
@@ -2533,30 +2904,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 p_chest_type: 'Comum' // Fallback para comum se der erro no custom
             });
             if (fallbackError) {
-                alert(fallbackError.message);
-                return false;
-            }
-            // Continue with fallback data
-            handleChestOpenResult(fallbackData, 'Comum');
-            return true;
+            showToast("Erro: " + fallbackError.message);
+            return false;
         }
-
-        if (data && data.success) {
-            handleChestOpenResult(data, 'Skin Comum');
-            return true;
-        }
-        return false;
+        // Continue with fallback data
+        handleChestOpenResult(fallbackData, 'Comum');
+        return true;
     }
 
-    const { data, error } = await supabase.rpc('open_chest', {
-        p_chest_type: chestType
-    });
-
-    if (error) {
-        console.error("Error opening chest:", error);
-        alert(error.message);
-        return false;
+    if (data && data.success) {
+        handleChestOpenResult(data, 'Skin Comum');
+        return true;
     }
+    return false;
+}
+
+const { data, error } = await supabase.rpc('open_chest', {
+    p_chest_type: chestType
+});
+
+if (error) {
+    console.error("Error opening chest:", error);
+    showToast("Erro: " + error.message);
+    return false;
+}
 
     if (data && data.success) {
         handleChestOpenResult(data, chestType);
@@ -2571,8 +2942,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (!userId) return;
 
     // Show reward (item + fragments)
-    const rewardMsg = `Você ganhou ${data.item_name} (Tier ${data.tier}) + ${data.fragments_gained} Fragmentos!`;
-    alert(rewardMsg);
+    const rewardMsg = `✦ +${data.item_name} (Tier ${data.tier}) · +${data.fragments_gained} Fragmentos!`;
+    showToast(rewardMsg);
 
     // Update local state
     const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
@@ -2618,7 +2989,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   };
 
   const resetDailyCommitment = () => {
-    setDailyCommitmentState({ date: getTodayString(), taskIds: [], stage: 'planning', score: null, expDeposited: null, sitrepBonus: null });
+    setDailyCommitmentState({ 
+      date: getTodayString(), 
+      taskIds: [], 
+      stage: 'planning', 
+      score: null, 
+      expDeposited: null, 
+      sitrepBonus: null,
+      earnedInsigniaId: null 
+    });
     setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
   };
   const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds }));
@@ -2654,10 +3033,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const sitrepBonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
     const expDeposited = expDepositBase + sitrepBonus;
     
+    setAchievementUnlocked({
+      type: 'REPORT_COMPLETED',
+      data: {
+        title: `Relatório Diário - ${score}%`,
+        reward: {
+          exp: expDeposited
+        }
+      }
+    });
+
     const newStage = 'judgment';
-    setDailyCommitmentState(prev => ({...prev, stage: newStage, score, expDeposited, sitrepBonus }));
+    setDailyCommitmentState(prev => ({...prev, stage: newStage, score, expDeposited, sitrepBonus, earnedInsigniaId: null }));
     if (activeCycle && sitrepBonus > 0) {
         setCycleExpBonus(prev => prev + sitrepBonus);
+    }
+    
+    // NEW: Show SITREP EXP toast
+    if (expDeposited > 0) {
+        showToast(`${expDeposited} EXP foi adicionada ao seu ciclo.`);
     }
 
     // Persist to Supabase if logged in
@@ -3081,44 +3475,42 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // E também não dispara se o novo rank for o inicial (Vagante) para evitar aviso no login para nível 1
         if (newRankIndex > oldRankIndex && oldRankIndex !== -1 && newRankIndex > 0) {
             if (newRank) {
-                setAchievementUnlocked({ type: 'PLAYER_RANK_UP', data: newRank });
+                // Determine rank insignia ID
+                const rankInsigniaId = `insignia_rank_${newRankIndex + 1}_${newRankId}`;
+
+                // NEW: Grant rare insignia for rank up
+                const rareInsigniaId = 'insignia_levelup_rara';
+                grantUserUnlock('insignias', rareInsigniaId);
+                grantInventoryItem(rareInsigniaId, true);
+
+                // Grant specific rank insignia
+                grantUserUnlock('insignias', rankInsigniaId);
+                grantInventoryItem(rankInsigniaId, true);
+
+                const allRankInsignias = [rareInsigniaId, rankInsigniaId];
+
+                setAchievementUnlocked({ 
+                    type: 'PLAYER_RANK_UP', 
+                    data: { 
+                        ...newRank,
+                        reward: {
+                            exp: 0, // Exp already added
+                            items: allRankInsignias
+                        }
+                    } 
+                });
                 
                 // Grant Rank Rewards
-                const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: string; name: string }[]> = {
-                    'vagante': [
-                        { category: 'ui_skins', itemId: 'FROST', name: 'Tema Gelo Eterno' }
-                    ],
-                    'escudeiro': [
-                        { category: 'ui_skins', itemId: 'CYBER', name: 'Tema Cyberpunk' },
-                        { category: 'borders', itemId: 'item_border_t1_aprendiz', name: 'Borda Aprendiz' },
-                        { category: 'banners', itemId: 'item_banner_t1_aprendiz', name: 'Banner Aprendiz' }
-                    ],
-                    'cavaleiro': [
-                        { category: 'ui_skins', itemId: 'EMBER', name: 'Tema Chama Viva' },
-                        { category: 'borders', itemId: 'item_border_t2_veterano', name: 'Borda Veterano' },
-                        { category: 'banners', itemId: 'item_banner_t2_veterano', name: 'Banner Veterano' }
-                    ],
-                    'lorde': [
-                        { category: 'ui_skins', itemId: 'AURORA', name: 'Tema Aurora Boreal' },
-                        { category: 'borders', itemId: 'item_border_t3_mistico', name: 'Borda Místico' },
-                        { category: 'banners', itemId: 'item_banner_t3_mistico', name: 'Banner Místico' }
-                    ],
-                    'barao': [
-                        { category: 'borders', itemId: 'item_border_t4_celestial', name: 'Borda Celestial' },
-                        { category: 'banners', itemId: 'item_banner_t4_celestial', name: 'Banner Celestial' }
-                    ],
-                    'soberano': [
-                        { category: 'borders', itemId: 'item_border_t5_genesis', name: 'Borda Gênesis' },
-                        { category: 'banners', itemId: 'item_banner_t5_genesis', name: 'Banner Gênesis' }
-                    ]
-                };
-
                 const rewards = RANK_REWARDS[newRankId];
                 if (rewards) {
                     rewards.forEach(reward => {
                         grantUserUnlock(reward.category, reward.itemId);
-                        grantInventoryItem(reward.itemId);
-                        showToast(`Recompensa de Patente: ${reward.name}`, 'success');
+                        if (reward.category !== 'ui_skins') {
+                            grantInventoryItem(reward.itemId);
+                        } else {
+                            // UI Skins don't go to inventory, just unlock
+                            showToast(`Tema desbloqueado: ${reward.name}`, 'success');
+                        }
                     });
                 }
             }
@@ -3170,7 +3562,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             'role',
             'isPremium',
             'appMode',
-            'themePreference'
+            'themePreference',
+            'arenasViewMode'
         ];
         const entries = Object.entries(profileData).filter(([key, value]) => {
             if (!allowedKeys.includes(key as keyof UserProfile)) return false;
@@ -3216,6 +3609,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         auras: {},
         orbs: {},
         plates: {},
+        insignias: {},
+        ornament: {},
+        ui_skins: {},
     };
     if (unlockedItems[category]?.[itemId]) return;
     const nextUnlockedItems = {
@@ -3228,7 +3624,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     updateUserProfile({ unlockedItems: nextUnlockedItems });
   };
 
-  const grantInventoryItem = async (itemId: string) => {
+  const grantInventoryItem = async (itemId: string, silent: boolean = false) => {
       const userId = getSupabaseUserId();
       if (!userId) return;
 
@@ -3254,7 +3650,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
               isEquipped: false
           };
           setInventory(prev => [...prev, newItem]);
-          showToast(`Item recebido: ${resolveItemDef(itemId)?.name || itemId}`, 'success');
+          
+          const itemDef = resolveItemDef(itemId);
+          const isInsignia = itemDef?.category === 'insignias' || itemDef?.category === 'insignia';
+          
+          if (isInsignia) {
+              console.log(`[Supabase] Insígnia persistida com sucesso: ${itemId} (ID: ${data.id})`);
+          }
+
+          if (!silent) {
+            let toastMsg = '';
+            if (isInsignia) {
+                toastMsg = `Insígnia ${itemDef?.name || itemId} foi adicionada ao seu inventário.`;
+            } else {
+                const prefix = itemDef?.category === 'skin' ? 'Skin' : 'Item';
+                const suffix = itemDef?.category === 'skin' ? 'foi adicionada ao seu inventário.' : 'foi adicionado ao seu inventário.';
+                toastMsg = `${prefix} ${itemDef?.name || itemId} ${suffix}`;
+            }
+            
+            showToast(toastMsg);
+          }
       }
   };
 
@@ -3285,15 +3700,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }
     
     // NEW: Grant insignia for quest completion
-    if (mission.reward_type === 'item_id' && rewardCategory === 'insignias' && rewardItemId) {
+    // We grant a specific insignia if the mission has one, or a generic one if it's a season mission
+    if (mission.reward_type === 'item_id' && (rewardCategory === 'insignias' || rewardCategory === 'insignia') && rewardItemId) {
         grantUserUnlock('insignias', rewardItemId);
         grantInventoryItem(rewardItemId);
+    } else {
+        // Generic insignia for completing ANY season mission/quest
+        const genericInsigniaId = mission.type === 'season' ? 'insignia_quest_master' : 'insignia_quest_incomum';
+        grantUserUnlock('insignias', genericInsigniaId);
+        grantInventoryItem(genericInsigniaId, true); // Silent because the modal will show it
     }
-    
-    // Also grant generic Quest Badge for every mission completion (as per instructions)
-    // "Agora, ao completar qualquer missão de temporada válida, a insígnia será corretamente adicionada ao seu inventário."
-    // Assuming 'item_ornament_quest_badge' is the generic badge
-    grantInventoryItem('item_ornament_quest_badge');
 
     const unlockedItems: UserUnlocks = userProfile.unlockedItems || {
         bodyStyles: {},
@@ -3394,7 +3810,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         startDate: new Date().toISOString().split('T')[0], 
         endDate: endDate,
         userId: userId,
-        arenaIds: arenaIds || assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id))
+        arenaIds: arenaIds || assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id)),
+        seasonId: ACTIVE_SEASON_ID
     };
     setCycleExpBonus(0);
     setActiveCycle(newCycle);
@@ -3406,7 +3823,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         name: newCycle.name,
         start_date: newCycle.startDate,
         end_date: newCycle.endDate,
-        arena_ids: newCycle.arenaIds
+        arena_ids: newCycle.arenaIds,
+        season_id: ACTIVE_SEASON_ID
     };
     supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
         if (error) console.error("Supabase start cycle error:", error.message);
@@ -3418,6 +3836,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const startDate = cycle?.startDate || '2000-01-01'; // Fallback para o primeiro ciclo sem data
     const endDate = new Date().toISOString().split('T')[0];
     const plannedEndDate = cycle?.endDate;
+    const cycleSeasonId = cycle?.seasonId || ACTIVE_SEASON_ID; // Use stored season or default to current
 
     // 1. Filter Tasks
     // Standard Tasks (Planned) - Include Quests now as per user request
@@ -3548,7 +3967,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         endDate, 
         performanceScore, 
         cycleName: cycle?.name,
-        seasonId: ACTIVE_SEASON_ID,
+        seasonId: cycleSeasonId,
         metrics: { 
             actionsCompleted: completedTasks.length, 
             totalPlannedActions: cycleTasks.length, 
@@ -3964,7 +4383,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
   const getArenas = () => assets.flatMap(asset => asset.arenas);
   const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
     const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
+    
+    // Optimistic Update
     setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
+    
     const userId = getSupabaseUserId();
     if (userId && !skipDb) {
         const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
@@ -3973,12 +4395,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (snakeCaseData.origin_codex_id && !isUuid(String(snakeCaseData.origin_codex_id))) {
             delete snakeCaseData.origin_codex_id;
         }
-        const { error } = await supabase.from('arenas').insert(snakeCaseData);
-        if (error) {
-            console.error("Supabase add arena error:", error.message);
-            showToast("Erro ao salvar arena: " + error.message);
-            throw error;
-        }
+        
+        // Non-blocking DB insert to prevent UI freeze
+        supabase.from('arenas').insert(snakeCaseData).then(({ error }) => {
+            if (error) {
+                console.error("Supabase add arena error:", error.message);
+                showToast("Erro ao salvar arena no servidor: " + error.message);
+                // In a real app, we might want to rollback the optimistic update here
+            }
+        });
     }
     return newArena;
   };
@@ -4057,29 +4482,295 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       updateArena(arenaId, { folderId: folderId || null }); // Use null explicitly for DB update
   };
 
-  const reorderArena = (arenaId: string, newIndexOrTargetId: number | string) => {
+  const reorderArena = async (arenaId: string, newIndexOrTargetId: number | string, side?: 'left' | 'right') => {
+    let updatesToPersist: { id: string, order: number }[] = [];
+    
     setAssets(prevAssets => {
-        return prevAssets.map(asset => {
-            const currentArenas = asset.arenas;
-            const arenaIndex = currentArenas.findIndex(a => a.id === arenaId);
-            if (arenaIndex === -1) return asset;
+        const allArenasAcrossAssets = prevAssets.flatMap(a => a.arenas);
+        const draggedArena = allArenasAcrossAssets.find(a => a.id === arenaId);
+        if (!draggedArena) return prevAssets;
 
-            let newIndex: number;
-            if (typeof newIndexOrTargetId === 'string') {
-                newIndex = currentArenas.findIndex(a => a.id === newIndexOrTargetId);
-                if (newIndex === -1) return asset;
-            } else {
-                newIndex = newIndexOrTargetId;
-            }
+        const targetArena = allArenasAcrossAssets.find(a => a.id === newIndexOrTargetId);
+        if (!targetArena) return prevAssets;
 
-            const newArenas = [...currentArenas];
-            const [movedArena] = newArenas.splice(arenaIndex, 1);
-            newArenas.splice(newIndex, 0, movedArena);
+        const folderId = draggedArena.folderId;
+        const relevantArenas = allArenasAcrossAssets
+            .filter(a => a.folderId === folderId)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-            return { ...asset, arenas: newArenas };
-        });
+        const draggedIdx = relevantArenas.findIndex(a => a.id === arenaId);
+        if (draggedIdx === -1) return prevAssets;
+
+        const [movedArena] = relevantArenas.splice(draggedIdx, 1);
+
+        let finalTargetIdx = relevantArenas.findIndex(a => a.id === newIndexOrTargetId);
+        if (finalTargetIdx === -1) return prevAssets;
+        
+        if (side === 'right') finalTargetIdx += 1;
+
+        relevantArenas.splice(finalTargetIdx, 0, movedArena);
+
+        const reorderedGroup = relevantArenas.map((a, idx) => ({ ...a, order: idx }));
+        
+        // Prepare updates for persistence within the same logic
+        updatesToPersist = reorderedGroup.map(a => ({ id: a.id, order: a.order }));
+
+        return prevAssets.map(asset => ({
+            ...asset,
+            arenas: asset.arenas.map(arena => {
+                const updated = reorderedGroup.find(u => u.id === arena.id);
+                return updated ? { ...arena, order: updated.order } : arena;
+            })
+        }));
     });
+
+    const userId = getSupabaseUserId();
+    if (userId && updatesToPersist.length > 0) {
+        const updates = updatesToPersist.map(u => ({
+            id: u.id,
+            user_id: userId,
+            order: u.order
+        }));
+        
+        const { error } = await supabase
+            .from('arenas')
+            .upsert(updates, { onConflict: 'id' });
+            
+        if (error) console.error("Supabase reorder update error:", error.message);
+    }
   };
+
+  const reorderArenaPriority = async (arenaId: string, priority: 'alta' | 'media' | 'baixa', newIndexOrTargetId: number | string) => {
+    let updatesToPersist: { id: string, priority: string, priority_order: number }[] = [];
+
+    setAssets(prevAssets => {
+        const allArenasAcrossAssets = prevAssets.flatMap(a => a.arenas);
+        const draggedArena = allArenasAcrossAssets.find(a => a.id === arenaId);
+        if (!draggedArena) return prevAssets;
+
+        // 1. Create a modified list where the dragged arena already has the NEW priority
+        const modifiedArenas = allArenasAcrossAssets.map(a => 
+            a.id === arenaId ? { ...a, priority } : a
+        );
+        
+        // 2. Filter to the target priority group
+        const priorityArenas = modifiedArenas
+            .filter(a => (a.priority === priority) || (priority === 'media' && !a.priority))
+            .sort((a, b) => (a.priorityOrder || 0) - (b.priorityOrder || 0));
+
+        // 3. Find its current position in the TARGET group
+        const draggedIdx = priorityArenas.findIndex(a => a.id === arenaId);
+        if (draggedIdx === -1) return prevAssets;
+
+        // 4. Remove and re-insert at the desired position
+        const [movedArena] = priorityArenas.splice(draggedIdx, 1);
+        
+        let newIndex: number;
+        if (typeof newIndexOrTargetId === 'string') {
+            newIndex = priorityArenas.findIndex(a => a.id === newIndexOrTargetId);
+            if (newIndex === -1) newIndex = priorityArenas.length;
+        } else {
+            newIndex = newIndexOrTargetId as number;
+        }
+
+        priorityArenas.splice(newIndex, 0, movedArena);
+
+        // 5. Reassign priorityOrder within the group
+        const reorderedGroup = priorityArenas.map((a, idx) => ({ 
+            ...a, 
+            priorityOrder: idx,
+            priority: priority // Ensure priority is set correctly
+        }));
+        
+        // Prepare updates for persistence
+        updatesToPersist = reorderedGroup.map(a => ({ 
+            id: a.id, 
+            priority: a.priority || 'media', 
+            priority_order: a.priorityOrder 
+        }));
+
+        // 6. Map back to assets
+        return prevAssets.map(asset => ({
+            ...asset,
+            arenas: asset.arenas.map(arena => {
+                const updated = reorderedGroup.find(u => u.id === arena.id);
+                if (updated) {
+                    return { 
+                        ...arena, 
+                        priority: updated.priority as any, 
+                        priorityOrder: updated.priorityOrder 
+                    };
+                }
+                // If it was the dragged arena but not in the reorderedGroup (shouldn't happen), 
+                // still update its priority
+                if (arena.id === arenaId) {
+                    return { ...arena, priority };
+                }
+                return arena;
+            })
+        }));
+    });
+
+    const userId = getSupabaseUserId();
+    if (userId && updatesToPersist.length > 0) {
+        const updates = updatesToPersist.map(u => ({
+            id: u.id,
+            user_id: userId,
+            priority: u.priority,
+            priority_order: u.priority_order
+        }));
+        
+        const { error } = await supabase
+            .from('arenas')
+            .upsert(updates, { onConflict: 'id' });
+            
+        if (error) console.error("Supabase priority reorder error:", error.message);
+    }
+  };
+
+  const reorderEntity = async (draggedId: string, draggedType: 'arena' | 'campaign', targetId: string, targetType: 'arena' | 'campaign', side: 'left' | 'right' = 'left') => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        // 1. Get current flat list of everything sorted by current order
+        const allArenas = getArenas().filter(a => !a.folderId && !a.isArchived); // Filtered similar to view
+        
+        // Filter out arenas that are inside campaigns (they are not top-level entities)
+        const campaignArenaIds = campaigns.flatMap(c => c.arenaIds);
+        const rootArenas = allArenas.filter(a => !campaignArenaIds.includes(a.id));
+
+        // Create unified list
+        const items = [
+            ...campaigns.map(c => ({ id: c.id, type: 'campaign' as const, order: c.order || 0 })),
+            ...rootArenas.map(a => ({ id: a.id, type: 'arena' as const, order: a.order || 0 }))
+        ].sort((a, b) => a.order - b.order);
+
+        // 2. Remove dragged item
+        const draggedIndex = items.findIndex(i => i.id === draggedId && i.type === draggedType);
+        if (draggedIndex === -1) return;
+        
+        const [movedItem] = items.splice(draggedIndex, 1);
+
+        // 3. Find insertion index
+        let targetIndex = items.findIndex(i => i.id === targetId && i.type === targetType);
+        
+        // If target not found (e.g. dropped at end of container), append
+        if (targetIndex === -1) {
+             items.push(movedItem);
+        } else {
+             if (side === 'right') targetIndex += 1;
+             items.splice(targetIndex, 0, movedItem);
+        }
+
+        // 4. Reassign order and persist
+        const updates = items.map((item, index) => ({
+            id: item.id,
+            type: item.type,
+            order: index
+        }));
+
+        const arenaUpdates = updates.filter(u => u.type === 'arena');
+        const campaignUpdates = updates.filter(u => u.type === 'campaign');
+
+        // Optimistic Updates
+        if (arenaUpdates.length > 0) {
+            setAssets(prev => prev.map(a => ({
+                ...a,
+                arenas: a.arenas.map(ar => {
+                    const up = arenaUpdates.find(u => u.id === ar.id);
+                    return up ? { ...ar, order: up.order } : ar;
+                })
+            })));
+             
+            await supabase.from('arenas').upsert(arenaUpdates.map(u => ({ id: u.id, user_id: userId, order: u.order })));
+        }
+
+        if (campaignUpdates.length > 0) {
+            setCampaigns(prev => prev.map(c => {
+                const up = campaignUpdates.find(u => u.id === c.id);
+                return up ? { ...c, order: up.order } : c;
+            }));
+            
+            await supabase.from('campaigns').upsert(campaignUpdates.map(u => ({ id: u.id, user_id: userId, order: u.order })));
+        }
+    };
+
+    const reorderEntityPriority = async (draggedId: string, draggedType: 'arena' | 'campaign', priority: 'alta' | 'media' | 'baixa', targetId?: string) => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        // 1. Get all items for THIS priority
+        const allArenas = getArenas().filter(a => !a.folderId && !a.isArchived);
+        const campaignArenaIds = campaigns.flatMap(c => c.arenaIds);
+        const rootArenas = allArenas.filter(a => !campaignArenaIds.includes(a.id));
+
+        // Get items that currently match the target priority (or default 'media')
+        // We include the dragged item in this list IF it wasn't already there, treating it as if it moved in.
+        // But simpler: just get all items that WILL be in this priority group.
+        
+        // Filter items that are NOT the dragged item, but ARE in the target priority
+        const currentPriorityItems = [
+            ...campaigns.filter(c => c.id !== draggedId && (c.priority === priority || (!c.priority && priority === 'media'))).map(c => ({ id: c.id, type: 'campaign' as const, priorityOrder: c.priorityOrder || 0 })),
+            ...rootArenas.filter(a => a.id !== draggedId && (a.priority === priority || (!a.priority && priority === 'media'))).map(a => ({ id: a.id, type: 'arena' as const, priorityOrder: a.priorityOrder || 0 }))
+        ].sort((a, b) => a.priorityOrder - b.priorityOrder);
+
+        // Determine insertion index
+        let insertIndex = currentPriorityItems.length;
+        if (targetId) {
+            const idx = currentPriorityItems.findIndex(i => i.id === targetId);
+            if (idx !== -1) insertIndex = idx;
+        }
+
+        // Insert dragged item
+        currentPriorityItems.splice(insertIndex, 0, { id: draggedId, type: draggedType, priorityOrder: 0 }); // Order will be reassigned
+
+        // Reassign priorityOrder
+        const updates = currentPriorityItems.map((item, index) => ({
+            id: item.id,
+            type: item.type,
+            priorityOrder: index,
+            priority: priority // Ensure priority is set correctly
+        }));
+
+        const arenaUpdates = updates.filter(u => u.type === 'arena');
+        const campaignUpdates = updates.filter(u => u.type === 'campaign');
+
+        // Optimistic Updates
+        if (arenaUpdates.length > 0) {
+            setAssets(prev => prev.map(a => ({
+                ...a,
+                arenas: a.arenas.map(ar => {
+                    const up = arenaUpdates.find(u => u.id === ar.id);
+                    // Update priority too if it's the dragged item
+                    if (ar.id === draggedId) return { ...ar, priority: priority, priorityOrder: up ? up.priorityOrder : 0 };
+                    return up ? { ...ar, priorityOrder: up.priorityOrder } : ar;
+                })
+            })));
+             
+            await supabase.from('arenas').upsert(arenaUpdates.map(u => ({ 
+                id: u.id, 
+                user_id: userId, 
+                priority_order: u.priorityOrder,
+                priority: priority // All items in this group have this priority
+            })));
+        }
+
+        if (campaignUpdates.length > 0) {
+            setCampaigns(prev => prev.map(c => {
+                const up = campaignUpdates.find(u => u.id === c.id);
+                // Update priority too if it's the dragged item
+                if (c.id === draggedId) return { ...c, priority: priority, priorityOrder: up ? up.priorityOrder : 0 };
+                return up ? { ...c, priorityOrder: up.priorityOrder } : c;
+            }));
+            
+            await supabase.from('campaigns').upsert(campaignUpdates.map(u => ({ 
+                id: u.id, 
+                user_id: userId, 
+                priority_order: u.priorityOrder,
+                priority: priority
+            })));
+        }
+    };
 
   const reorderAction = (arenaId: string, actionId: string, newIndex: number) => {
     setAssets(prevAssets => {
@@ -4599,15 +5290,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Manually persist and await
         const userId = getSupabaseUserId();
-        if (userId) {
+    if (userId) {
+        try {
             const snakeCaseData = { ...mapToSnakeCase(arena), user_id: userId };
             delete snakeCaseData.action_ids;
             const { error } = await supabase.from('arenas').insert(snakeCaseData);
             if (error) {
                 console.error("Supabase add arena error:", error.message);
-                return; // Stop if arena creation failed
+                // Non-blocking error if it's just a sync issue
             }
+        } catch (e) {
+            console.error("Supabase insert error caught:", e);
         }
+    }
     }
 
     if (arena?.isArchived) {
@@ -4699,7 +5394,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     showToast(`Missão "${quest.title}" abandonada.`);
   };
 
-  const claimSeasonQuestReward = async (questId: string) => {
+  const claimSeasonQuest = async (questId: string) => {
     const activeSeason = SEASONS[ACTIVE_SEASON_ID];
     if (!activeSeason) return;
     const quest = activeSeason.quests.find(q => q.id === questId);
@@ -4716,12 +5411,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const nextExp = currentExp + addedExp;
 
     // Check for chest rewards in description
-    if (quest.description.includes("Baú Comum")) await addChest('Comum');
-    if (quest.description.includes("Baú Incomum")) await addChest('Incomum');
-    if (quest.description.includes("Baú Ciclo")) await addChest('Ciclo');
-    if (quest.description.includes("Baú Raro")) await addChest('Raro');
-    if (quest.description.includes("Baú Épico")) await addChest('Épico');
-    if (quest.description.includes("Baú Lendário")) await addChest('Lendário');
+    let earnedChest: string | null = null;
+    if (quest.description.includes("Baú Comum")) earnedChest = 'Comum';
+    else if (quest.description.includes("Baú Incomum")) earnedChest = 'Incomum';
+    else if (quest.description.includes("Baú Ciclo")) earnedChest = 'Ciclo';
+    else if (quest.description.includes("Baú Raro")) earnedChest = 'Raro';
+    else if (quest.description.includes("Baú Épico")) earnedChest = 'Épico';
+    else if (quest.description.includes("Baú Lendário")) earnedChest = 'Lendário';
+
+    if (earnedChest) await addChest(earnedChest);
+
+    // Grant items from rewards
+    const earnedItemIds: string[] = [];
+    if (quest.rewards?.items) {
+        for (const itemId of quest.rewards.items) {
+            const def = resolveItemDef(itemId);
+            if (def?.category === 'insignia') {
+                grantUserUnlock('insignias', itemId);
+            }
+            grantInventoryItem(itemId, true); // Silent
+            earnedItemIds.push(itemId);
+        }
+    }
+
+    // Grant uncommon insignia for quest completion
+    const questInsigniaId = 'insignia_quest_incomum';
+    grantUserUnlock('insignias', questInsigniaId);
+    grantInventoryItem(questInsigniaId, true);
+    earnedItemIds.push(questInsigniaId);
+
+    // Check if this completion should grant a rank insignia (levelup flow)
+    const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
+    if (nextRank) {
+        const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
+        grantUserUnlock('insignias', rankInsigniaId);
+        grantInventoryItem(rankInsigniaId, true);
+        earnedItemIds.push(rankInsigniaId);
+    }
 
     // Update Profile (Removing gold)
     updateUserProfile({
@@ -4730,11 +5456,41 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
 
     addFeedEvent({
-        type: 'MILESTONE_COMPLETED',
+        type: 'QUEST_COMPLETED', // Changed from MILESTONE_COMPLETED
         content: { title: `Quest Completada: ${quest.title}`, icon: '🏆', score: addedExp }
     });
 
-    showToast(`Recompensa resgatada! +${addedExp} XP`);
+    // Determine all insignias to show in modal
+    // Deduplicate IDs
+    const allEarnedItems: string[] = [...new Set(earnedItemIds)];
+
+    // If Ranked Up, show PLAYER_RANK_UP modal with all rewards
+    if (nextRank) {
+        setAchievementUnlocked({
+            type: 'PLAYER_RANK_UP',
+            data: {
+                name: nextRank.name,
+                rank: nextRank,
+                rewards: {
+                    exp: addedExp,
+                    items: allEarnedItems,
+                    chest: earnedChest
+                }
+            }
+        });
+    } else {
+        setAchievementUnlocked({
+            type: 'QUEST_COMPLETED',
+            data: {
+                title: quest.title,
+                reward: {
+                    exp: addedExp,
+                    items: allEarnedItems,
+                    chest: earnedChest
+                }
+            }
+        });
+    }
   };
 
   const claimSeasonMission = async (missionId: string) => {
@@ -4759,6 +5515,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     if (mission.description.includes("Baú Épico")) await addChest('Épico');
     if (mission.description.includes("Baú Lendário")) await addChest('Lendário');
 
+    // Grant items if it's an item reward
+    const earnedItemIds: string[] = [];
+    if (mission.reward_type === 'item_id' && typeof mission.reward_value === 'string') {
+        const itemId = mission.reward_value;
+        const def = resolveItemDef(itemId);
+        if (def?.category === 'insignia') {
+            grantUserUnlock('insignias', itemId);
+        }
+        grantInventoryItem(itemId, true); // Silent
+        earnedItemIds.push(itemId);
+    }
+
+    // Grant uncommon insignia for mission completion
+    const questInsigniaId = 'insignia_quest_incomum';
+    grantUserUnlock('insignias', questInsigniaId);
+    grantInventoryItem(questInsigniaId, true);
+    earnedItemIds.push(questInsigniaId);
+
+    // Check if this completion should grant a rank insignia (levelup flow)
+    const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
+    if (nextRank) {
+        const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
+        grantUserUnlock('insignias', rankInsigniaId);
+        grantInventoryItem(rankInsigniaId, true);
+        earnedItemIds.push(rankInsigniaId);
+    }
+
     // Update Profile
     updateUserProfile({
         nobility: { ...userProfile.nobility, exp: nextExp },
@@ -4766,11 +5549,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
 
     addFeedEvent({
-        type: 'MILESTONE_COMPLETED',
+        type: 'QUEST_COMPLETED',
         content: { title: `Missão de Temporada: ${mission.title}`, icon: '🌟', score: Number(addedExp) }
     });
 
-    showToast(`Recompensa resgatada! +${addedExp} XP`);
+    // Determine all insignias to show in modal
+    // Deduplicate IDs
+    const allEarnedItems: string[] = [...new Set(earnedItemIds)];
+
+    // If Ranked Up, show PLAYER_RANK_UP modal with all rewards
+    if (nextRank) {
+        setAchievementUnlocked({
+            type: 'PLAYER_RANK_UP',
+            data: {
+                name: nextRank.name,
+                rank: nextRank,
+                rewards: {
+                    exp: addedExp,
+                    items: allEarnedItems,
+                    chest: earnedChest
+                }
+            }
+        });
+    } else {
+        setAchievementUnlocked({
+            type: 'QUEST_COMPLETED',
+            data: {
+                title: mission.title,
+                reward: {
+                    exp: addedExp,
+                    items: allEarnedItems
+                }
+            }
+        });
+    }
   };
   
   const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
@@ -5110,6 +5922,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                 type: 'MILESTONE_COMPLETED',
                                 content: { title: action.name, icon: action.icon }
                             });
+                        }
+
+                        // Check for PVP Arena Completion
+                        const arena = getArenas().find(a => a.id === action.arenaId);
+                        if (arena && arena.name === "Quem corre 15km antes") {
+                            const allArenaActions = getActionsForArena(arena.id);
+                            const completedCount = prevTasks.filter(t => 
+                                allArenaActions.some(a => a.id === t.actionId) && t.completed && t.id !== taskId
+                            ).length + 1;
+
+                            if (completedCount >= 15) {
+                                showToast("PARABÉNS! DESAFIO DE 15KM COMPLETADO!", 'success');
+                                // Future: Send notification to opponent
+                            }
                         }
                     }
                 }
@@ -5563,16 +6389,58 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       }
   };
 
+  // --- Ensure PVP Arena Logic ---
+  useEffect(() => {
+    const ensurePvpArena = async () => {
+        if (!isProfileLoaded || !hasHydratedFromSupabase) return;
+        const arenaName = "Quem corre 15km antes";
+        const allArenas = assets.flatMap(a => a.arenas);
+        const existingArena = allArenas.find(a => a.name === arenaName);
+        
+        if (!existingArena) {
+            console.log("Creating PVP Arena: ", arenaName);
+            try {
+                // 'fisico' is the asset ID for physical activities
+                const newArena = await addArena('fisico', {
+                    name: arenaName,
+                    description: "Desafio PVP de corrida. Quem completar 15km primeiro vence.",
+                    icon: "🏃",
+                    priority: 'alta'
+                });
 
+                if (newArena) {
+                    const actionsToCreate = Array.from({ length: 15 }, (_, i) => ({
+                        name: "Correr 1km",
+                        description: `Km ${i + 1} de 15`,
+                        arenaId: newArena.id,
+                        icon: "🏃",
+                        duration: 10,
+                        repetitions: 1,
+                        actionType: 'Ação Recorrente' as any,
+                        difficulty: 3
+                    }));
+
+                    for (const actionData of actionsToCreate) {
+                         await addAction(actionData);
+                    }
+                    console.log("PVP Arena created with 15 actions.");
+                }
+            } catch (e) {
+                console.error("Error creating PVP arena:", e);
+            }
+        }
+    };
+    ensurePvpArena();
+  }, [isProfileLoaded, hasHydratedFromSupabase, assets.length]); // Check assets length to ensure they are loaded
 
   return (
     <GameContext.Provider value={{ isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
         abortSeasonQuest,
-        claimSeasonQuestReward,
+        claimSeasonQuest,
         claimSeasonMission,
         addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, updateTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, 
       directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-      addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall }}>
+      addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex }}>
       {children}
     </GameContext.Provider>
   );

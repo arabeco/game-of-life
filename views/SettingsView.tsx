@@ -394,6 +394,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const myPupils = links.filter(l => l.linkType === 'mentoria' && !!sessionUid && l.mentorId === sessionUid);
     const myMentors = links.filter(l => l.linkType === 'mentoria' && !!sessionUid && l.pupilId === sessionUid);
     const myPartners = links.filter(l => l.linkType === 'parceria');
+    const myCompetitions = links.filter(l => l.linkType === 'competicao');
 
     const getProfile = (id: string) => profilesById[id];
 
@@ -579,16 +580,45 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 {activeTab === 'desafios' && (
                                     <div className="space-y-4">
                                         <div className="text-[10px] font-black tracking-widest text-gray-400">EVENTOS PVP</div>
-                                        <div className="bg-black/20 border border-white/10 rounded-2xl p-4 text-center space-y-2 opacity-70">
-                                            <div className="text-2xl">⚔️</div>
-                                            <div className="text-sm font-bold text-white">Corrida de XP</div>
-                                            <div className="text-xs text-gray-400">Quem faz 1000xp primeiro?</div>
-                                            <div className="w-full bg-black/30 rounded-full h-2 mt-2 overflow-hidden">
-                                                <div className="bg-blue-500 h-full w-1/2"></div>
-                                            </div>
-                                            <div className="text-[10px] text-gray-500">Expira em 2d 4h</div>
+                                        {myCompetitions.length === 0 ? (
+                                            <div className="text-center text-sm text-gray-500 py-4">Nenhum desafio ativo.</div>
+                                        ) : (
+                                            myCompetitions.map(link => {
+                                                const isMeMentor = link.mentorId === sessionUid;
+                                                const opponentId = isMeMentor ? link.pupilId : link.mentorId;
+                                                const opponent = getProfile(opponentId);
+                                                
+                                                return (
+                                                    <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-4 text-center space-y-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => fetchSpectatorData(link, opponent?.nickname || 'Oponente')}>
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xl">{link.arenaSnapshot?.icon || '⚔️'}</span>
+                                                                <div className="text-left">
+                                                                    <div className="text-sm font-bold text-white leading-none">{link.arenaSnapshot?.name || 'Desafio'}</div>
+                                                                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">COMPETIÇÃO</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-xs text-gray-400 bg-black/40 px-2 py-1 rounded-lg border border-white/5">
+                                                                vs {opponent?.nickname || 'Oponente'}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden flex relative">
+                                                            <div className="h-full bg-green-500/50 w-1/3"></div>
+                                                            <div className="absolute top-0 right-0 h-full bg-red-500/50 w-1/4"></div>
+                                                        </div>
+                                                        
+                                                        <div className="flex justify-between text-[9px] text-gray-500 font-mono mt-1">
+                                                            <span>VOCÊ</span>
+                                                            <span>OPONENTE</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                        <div className="text-center text-[10px] text-gray-600 py-2">
+                                            Convide amigos para desafios na tela da Arena.
                                         </div>
-                                        <div className="text-center text-xs text-gray-500 py-4">Mais desafios em breve.</div>
                                     </div>
                                 )}
                             </>
@@ -1390,37 +1420,43 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
 };
 
 const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userProfile, updateUserProfile, friends } = useGame();
-    const [selectedCodex, setSelectedCodex] = useState<typeof CODEXES[0] | null>(null);
+    const { userCodexes, deleteUserCodex, transferUserCodex, friends, installCodex } = useGame();
+    const [selectedCodex, setSelectedCodex] = useState<any | null>(null);
     const [isCreatorOpen, setCreatorOpen] = useState(false);
+    const [isInstalling, setIsInstalling] = useState(false);
 
-    // Filter owned codexes
-    const myCodexes = useMemo(() => {
-        const unlockedIds = Object.keys(userProfile.unlockedItems?.codexes || {});
-        // Also check legacy/default unlocked logic if needed, but assuming userProfile has them
-        return CODEXES.filter(c => unlockedIds.includes(c.id));
-    }, [userProfile.unlockedItems]);
+    // Use userCodexes directly from GameContext (synced with DB)
+    const myCodexes = userCodexes || [];
 
-    const handleApply = () => {
-        // In the future, this could equip a related border or background
-        alert(`Codex "${selectedCodex?.name}" ativado com sucesso!`);
-        setSelectedCodex(null);
+    const handleApply = async () => {
+        if (!selectedCodex) return;
+        
+        if (confirm(`Deseja instalar a campanha "${selectedCodex.name}"? Isso criará as arenas e ações correspondentes.`)) {
+            setIsInstalling(true);
+            try {
+                if (installCodex) {
+                    await installCodex(selectedCodex.id);
+                    // installCodex already handles success toast and reload
+                    onClose();
+                } else {
+                    alert("Função de instalação indisponível.");
+                }
+            } catch (error) {
+                console.error("Erro ao instalar codex:", error);
+                alert("Erro ao instalar Codex.");
+            } finally {
+                setIsInstalling(false);
+            }
+        }
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!selectedCodex) return;
         if (confirm(`Tem certeza que deseja deletar ${selectedCodex.name}? Esta ação não pode ser desfeita.`)) {
-            // Remove from unlockedItems
-            const updatedCodexes = { ...(userProfile.unlockedItems?.codexes || {}) };
-            delete updatedCodexes[selectedCodex.id];
-            
-            updateUserProfile({
-                unlockedItems: {
-                    ...userProfile.unlockedItems,
-                    codexes: updatedCodexes
-                } as any
-            });
-            setSelectedCodex(null);
+            if (deleteUserCodex) {
+                await deleteUserCodex(selectedCodex.id);
+                setSelectedCodex(null);
+            }
         }
     };
     
@@ -1434,45 +1470,11 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         
         if (confirm(`Confirmar envio de "${selectedCodex.name}" para ${friend?.nickname || 'Aliado'}? O item será removido do seu inventário.`)) {
             try {
-                // 1. Get friend's current unlocked items
-                const { data: friendData, error: fetchError } = await supabase
-                    .from('user_profiles')
-                    .select('unlocked_items')
-                    .eq('id', friendId)
-                    .single();
-
-                if (fetchError) throw fetchError;
-
-                const friendUnlockedItems = friendData.unlocked_items || {};
-                const friendCodexes = friendUnlockedItems.codexes || {};
-
-                // 2. Add codex to friend (using 1 as boolean/true equivalent)
-                const updatedFriendCodexes = { ...friendCodexes, [selectedCodex.id]: 1 };
-                const updatedFriendUnlockedItems = {
-                    ...friendUnlockedItems,
-                    codexes: updatedFriendCodexes
-                };
-
-                const { error: updateError } = await supabase
-                    .from('user_profiles')
-                    .update({ unlocked_items: updatedFriendUnlockedItems })
-                    .eq('id', friendId);
-
-                if (updateError) throw updateError;
-
-                // 3. Remove from me
-                const myUpdatedCodexes = { ...(userProfile.unlockedItems?.codexes || {}) };
-                delete myUpdatedCodexes[selectedCodex.id];
-                
-                updateUserProfile({
-                    unlockedItems: {
-                        ...userProfile.unlockedItems,
-                        codexes: myUpdatedCodexes
-                    } as any
-                });
-                
-                alert(`Codex enviado com sucesso para ${friend?.nickname}!`);
-                setSelectedCodex(null);
+                if (transferUserCodex) {
+                    await transferUserCodex(selectedCodex.id, friendId);
+                    alert(`Codex enviado com sucesso para ${friend?.nickname}!`);
+                    setSelectedCodex(null);
+                }
             } catch (error: any) {
                 console.error("Erro ao doar Codex:", error);
                 alert("Erro ao enviar Codex. Tente novamente.");
@@ -1512,17 +1514,15 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         className="aspect-square rounded-xl bg-black/40 border border-white/10 hover:bg-white/5 transition-all flex flex-col items-center justify-center p-2 group relative overflow-hidden"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        <div className="text-3xl mb-2 group-hover:scale-110 transition-transform relative z-10 drop-shadow-lg">{codex.icon}</div>
-                                        <span className="text-[10px] font-bold text-gray-400 text-center truncate w-full relative z-10 group-hover:text-white transition-colors">{codex.name.replace('Codex: ', '')}</span>
+                                        <div className="text-3xl mb-2 group-hover:scale-110 transition-transform relative z-10 drop-shadow-lg">
+                                            {codex.template?.coverImage || codex.template?.icon || '📜'}
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-400 text-center truncate w-full relative z-10 group-hover:text-white transition-colors">
+                                            {codex.name.replace('Codex: ', '')}
+                                        </span>
                                         
-                                        {/* Rarity Dot */}
-                                        <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${
-                                            codex.rarity === 'legendary' ? 'bg-purple-500 shadow-[0_0_5px_#a855f7]' :
-                                            codex.rarity === 'epic' ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' :
-                                            codex.rarity === 'rare' ? 'bg-[#FFD700] shadow-[0_0_5px_#FFD700]' :
-                                            codex.rarity === 'uncommon' ? 'bg-[#C0C0C0] shadow-[0_0_5px_#C0C0C0]' :
-                                            'bg-[#A0522D]' // Comum (Marrom)
-                                        }`} />
+                                        {/* Rarity Dot (Visual flair, defaulting to Common/Brown if missing) */}
+                                        <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#A0522D]`} />
                                     </button>
                                 ))}
                             </div>
@@ -1532,7 +1532,14 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 
                 {selectedCodex && (
                     <CodexActionModal 
-                        codex={selectedCodex} 
+                        codex={{
+                            id: selectedCodex.id,
+                            name: selectedCodex.name,
+                            icon: selectedCodex.template?.coverImage || selectedCodex.template?.icon || '📜',
+                            // Add other necessary props for the modal if it expects strictly ItemDef
+                            // Assuming CodexActionModal is flexible or we map it
+                            ...selectedCodex
+                        }} 
                         onClose={() => setSelectedCodex(null)} 
                         onApply={handleApply}
                         onDelete={handleDelete}

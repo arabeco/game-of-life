@@ -126,3 +126,5 @@ export const EyeOffIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const LayersIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></IconWrapper>);
 export const CheckCircleIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></IconWrapper>);
 export const XCircleIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></IconWrapper>);
+
+export const ArrowRightIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></IconWrapper>);

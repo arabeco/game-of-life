@@ -264,7 +264,6 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     const renderPlanning = () => (
         <>
             <CycleHeader />
-            <p className="text-center text-sm text-gray-400">O que vamos fazer para virar esse jogo?</p>
 
             <div className="bg-black/20 p-2 rounded-xl">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-2">🛒 ESTOQUE DO CICLO</h3>

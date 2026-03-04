@@ -41,7 +41,7 @@ const Sparkles: React.FC = () => (
 );
 
 const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, onTaskClick: (task: ScheduledTask) => void }> = ({ task, action, scaleFactor, onCustomDragStart, onTaskClick }) => {
-    const { getActionBackgroundStyle, toggleTaskCompletion } = useGame();
+    const { getActionBackgroundStyle, toggleTaskCompletion, deleteTask } = useGame();
     const [isHolding, setIsHolding] = useState(false);
     const [showSparkles, setShowSparkles] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -66,6 +66,30 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
 
     const backgroundStyle = action ? getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isMilestone = action?.actionType === 'Marco';
+    const top = (task.startTime - (4 * 60)) * scaleFactor;
+
+    // Handle corrupted tasks (missing action)
+    if (!action) {
+        const height = Math.max(30 * scaleFactor, task.duration * scaleFactor);
+        return (
+            <div
+                ref={taskRef}
+                className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer z-10"
+                style={{ top: `${top}px`, height: `${height}px` }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm("Tarefa corrompida detectada (sem ação vinculada). Deseja deletá-la?")) {
+                        deleteTask(task.id);
+                    }
+                }}
+            >
+                <div className="h-full w-full bg-red-900/40 border border-red-500/30 rounded-lg flex flex-col items-center justify-center p-1 backdrop-blur-sm hover:bg-red-900/60 transition-colors">
+                     <span className="text-lg">⚠️</span>
+                     <span className="text-[10px] text-red-200 font-bold text-center leading-tight mt-1">DADOS INVÁLIDOS<br/>Toque para limpar</span>
+                </div>
+            </div>
+        );
+    }
 
     const handleLongPress = () => {
         if (isTransitioning) return;
@@ -129,8 +153,6 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         delay: 300,
         dragThreshold: 20, // Increased to prevent accidental drags during long press
     });
-
-    const top = (task.startTime - (4 * 60)) * scaleFactor; // Time is in minutes, view starts at 4am (240 mins)
 
     if (isMilestone) {
         const height = Math.max(15 * scaleFactor, task.duration * scaleFactor);
@@ -1222,7 +1244,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <span className="font-bold text-xs text-white">{zoomLevel}x</span>
                     <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="p-2 disabled:opacity-50"><MinusIcon className="w-5 h-5" /></button>
                 </div>
-                <button onClick={() => setIsActionModalOpen(true)} className="w-10 h-10 rounded-full bg-[var(--skin-accent-color)] flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-5 h-5 text-black" /></button>
+                <button onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
             </div>
             {isChecklistVisible && <ChecklistModal onClose={() => setChecklistVisible(false)} />}
             {isSitrepVisible && <SitrepModal onClose={() => setIsSitrepVisible(false)} />}

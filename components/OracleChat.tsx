@@ -13,6 +13,10 @@ const API_KEY = "sk-or-v1-64a57952be53959a841ece4f6f47074e4588fad28a4951e82cb9a5
 const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: API_KEY,
+  headers: {
+    'HTTP-Referer': 'https://glyph-life-os.vercel.app', // Substitua pelo seu domínio se souber
+    'X-Title': 'GLYPH Life OS',
+  }
 });
 
 interface Message {
@@ -72,6 +76,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const isInitialLoadRef = useRef(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +92,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Load initial messages from history and set mode based on last message
   useEffect(() => {
-    if (oracleMessages && oracleMessages.length > 0) {
+    if (isInitialLoadRef.current && oracleMessages && oracleMessages.length > 0) {
         const history: Message[] = oracleMessages
             .filter(m => m.deliveryType === 'feed') // Show feed messages
             .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
@@ -104,6 +109,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         if (lastMsg && lastMsg.mode) {
             setCurrentMode(lastMsg.mode);
         }
+        isInitialLoadRef.current = false;
     }
   }, [oracleMessages]);
 
@@ -135,8 +141,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         currentTime: now.toISOString(),
         timeOfDay,
         hasCycle: !!activeCycle,
-        cycleDayNumber: activeCycle ? Math.floor((now.getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
-        cycleTotalDays: activeCycle ? Math.floor((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
+        cycleDayNumber: activeCycle ? Math.max(0, Math.floor((now.getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24))) : 0,
+        cycleTotalDays: activeCycle ? Math.max(1, Math.floor((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24))) : 0,
         cycleCompletionPercent: null, // Calculate if needed
         hasArenas: assets.some(a => a.arenas.length > 0),
         totalArenas: assets.reduce((acc, a) => acc + a.arenas.length, 0),
@@ -145,19 +151,22 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         completedActionsInCycle: 0, // Logic needed
         // Fix: pendingActionsToday should count ALL scheduled tasks for today that are not completed
         pendingActionsToday: tasks.filter(t => {
-            const isToday = t.date === now.toLocaleDateString('pt-BR').split('T')[0] || t.date === now.toISOString().split('T')[0]; // Support both formats
-            return isToday && !t.completed;
+            if (!t.date) return false;
+            // Normalize dates to YYYY-MM-DD for comparison
+            const taskDate = t.date.split('T')[0];
+            const todayStr = now.toISOString().split('T')[0];
+            return taskDate === todayStr && !t.completed;
         }).length,
         overdueActions: 0, // Logic needed
         activeMode: currentMode,
         customModeInstructions: oraclePreferences?.customModeInstructions || null,
         enabledCategories: oraclePreferences?.enabledCategories || [],
-        username: userProfile.nickname,
-        level: userProfile.level,
+        username: userProfile.nickname || 'Viajante',
+        level: userProfile.level || 1,
         sephirotLevels: assets.reduce((acc, a) => ({ ...acc, [a.name]: a.level }), {}),
         clanName: null, // Get from clan state if available
         seasonName: null,
-        pendingChests: userProfile.chests?.reduce((acc, c) => acc + c.count, 0) || 0
+        pendingChests: userProfile.chests?.reduce((acc, c) => acc + (c.count || 0), 0) || 0
     };
 
     return config.systemPromptTemplate(contextData);
@@ -273,21 +282,33 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
 
     try {
+      // TESTE: Enviando apenas a mensagem ATUAL do usuário (sem histórico)
+      // Isso evita erros de 400 acumulados e garante que cada pergunta seja "nova" para a API
+      const apiMessages = [
+        { role: 'user', content: userMessage.content }
+      ];
+
       const result = await streamText({
-        model: openrouter('google/gemini-2.0-flash-001'),
+        model: openrouter('openrouter/auto'),
         system: systemPrompt,
-        messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
+        messages: apiMessages as any, 
       });
 
       let fullResponse = '';
       const assistantMessage: Message = { role: 'assistant', content: '', timestamp: new Date(), mode: currentMode };
+      
+      // Optimistic update
       setMessages(prev => [...prev, assistantMessage]);
 
       for await (const textPart of result.textStream) {
         fullResponse += textPart;
         setMessages(prev => {
           const newMessages = [...prev];
-          newMessages[newMessages.length - 1].content = fullResponse;
+          const lastMsg = newMessages[newMessages.length - 1];
+          // Ensure we are updating the last assistant message
+          if (lastMsg.role === 'assistant') {
+              lastMsg.content = fullResponse;
+          }
           return newMessages;
         });
       }

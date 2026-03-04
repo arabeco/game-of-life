@@ -2330,6 +2330,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 () => supabase.from('campaigns').select('*').eq('user_id', userId)
             ]) as any[];
 
+            let loadedArenas: Arena[] = [];
+            let loadedActions: Action[] = [];
+            let loadedTasks: ScheduledTask[] = [];
+
             const { data: foldersData, error: foldersError } = foldersResult;
             if (!foldersError && foldersData) {
                 setArenaFolders(mapToCamelCase(foldersData) as ArenaFolder[]);
@@ -2348,6 +2352,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     actionIds: Array.isArray(arena.actionIds) ? arena.actionIds : [],
                     isArchived: typeof arena.isArchived === 'boolean' ? arena.isArchived : false,
                 }));
+                if (camelArenas) loadedArenas = camelArenas;
             }
 
             const { data: actionsData, error: actionsError } = actionsResult;
@@ -2365,14 +2370,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     const validArenaIds = new Set(camelArenas.map(a => a.id));
                     const validActions = normalizedActions.filter(a => validArenaIds.has(a.arenaId));
                     setActions(validActions);
+                    loadedActions = validActions;
                 } else {
                     setActions(normalizedActions);
+                    loadedActions = normalizedActions;
                 }
             }
 
             const { data: tasksData, error: tasksError } = tasksResult;
             if (!tasksError && tasksData) {
-                setTasks(mapToCamelCase(tasksData) as ScheduledTask[]);
+                const tasks = mapToCamelCase(tasksData) as ScheduledTask[];
+                setTasks(tasks);
+                loadedTasks = tasks;
             }
 
             const { data: slotsData, error: slotsError } = slotsResult;
@@ -2453,10 +2462,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             const { data: cyclesData, error: cyclesError } = cyclesResult;
-            if (!cyclesError && cyclesData && cyclesData.length > 0) {
-                setActiveCycle(mapToCamelCase(cyclesData[0]) as Cycle);
-            }
-        };
+                if (!cyclesError && cyclesData && cyclesData.length > 0) {
+                    setActiveCycle(mapToCamelCase(cyclesData[0]) as Cycle);
+                }
+
+                // --- CLEANUP ORPHAN TASKS ---
+                // Remove scheduled tasks that reference deleted arenas
+                // This runs once on load to sanitize local state from legacy data
+                if (loadedActions.length > 0 && loadedArenas.length > 0) {
+                    const validArenaIds = new Set(loadedArenas.map(a => a.id));
+                    const validActionIds = new Set(loadedActions.map(a => a.id));
+                    
+                    // Filter out tasks for actions that no longer exist OR belong to deleted arenas
+                    const cleanedTasks = loadedTasks.filter(task => {
+                        const action = loadedActions.find(a => a.id === task.actionId);
+                        if (!action) return false; // Action deleted
+                        if (!validArenaIds.has(action.arenaId)) return false; // Arena deleted
+                        return true;
+                    });
+                    
+                    if (cleanedTasks.length !== loadedTasks.length) {
+                        console.log(`Cleaned up ${loadedTasks.length - cleanedTasks.length} orphan tasks.`);
+                        setTasks(cleanedTasks);
+                    }
+                }
+            };
 
 
         const run = async () => {
@@ -2533,6 +2563,89 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     pendingProfilePatchRef.current = null;
                     updateUserProfile(patch);
                 }
+            }
+        };
+
+        // EXPOSE MANUAL CLEANUP FUNCTION TO WINDOW
+        (window as any).cleanOrphans = async () => {
+            console.log("🧹 Iniciando limpeza manual de tarefas órfãs...");
+            const uid = session?.user.id;
+            if (!uid) {
+                console.error("❌ Usuário não autenticado.");
+                return;
+            }
+
+            // 1. Fetch ALL relevant data fresh from DB
+            const { data: allTasks, error: tErr } = await supabase.from('scheduled_tasks').select('*').eq('user_id', uid);
+            const { data: allActions, error: aErr } = await supabase.from('actions').select('id, arena_id').eq('user_id', uid);
+            const { data: allArenas, error: arErr } = await supabase.from('arenas').select('id').eq('user_id', uid);
+
+            if (tErr || aErr || arErr) {
+                console.error("❌ Erro ao buscar dados para limpeza:", tErr, aErr, arErr);
+                return;
+            }
+
+            if (!allTasks || !allActions || !allArenas) {
+                console.log("⚠️ Dados insuficientes para limpeza.");
+                return;
+            }
+
+            const validActionIds = new Set(allActions.map(a => a.id));
+            const validArenaIds = new Set(allArenas.map(a => a.id));
+            const actionArenaMap = new Map(allActions.map(a => [a.id, a.arena_id]));
+
+            const tasksToDelete: string[] = [];
+
+            allTasks.forEach(task => {
+                // Check 0: Action ID is missing?
+                if (!task.action_id) {
+                    console.log(`🗑️ Tarefa ${task.id} -> Action ID nulo/vazio.`);
+                    tasksToDelete.push(task.id);
+                    return;
+                }
+
+                // Check 1: Action exists?
+                if (!validActionIds.has(task.action_id)) {
+                    console.log(`🗑️ Tarefa ${task.id} (Action ${task.action_id}) -> Ação não existe.`);
+                    tasksToDelete.push(task.id);
+                    return;
+                }
+
+                // Check 2: Arena exists?
+                const arenaId = actionArenaMap.get(task.action_id);
+                if (arenaId && !validArenaIds.has(arenaId)) {
+                    console.log(`🗑️ Tarefa ${task.id} (Arena ${arenaId}) -> Arena não existe.`);
+                    tasksToDelete.push(task.id);
+                    return;
+                }
+            });
+
+            console.log(`🔍 Encontradas ${tasksToDelete.length} tarefas órfãs para deletar.`);
+
+            if (tasksToDelete.length > 0) {
+                // Delete in batches of 100 to be safe
+                for (let i = 0; i < tasksToDelete.length; i += 100) {
+                    const batch = tasksToDelete.slice(i, i + 100);
+                    const { error } = await supabase.from('scheduled_tasks').delete().in('id', batch);
+                    if (error) {
+                        console.error("❌ Erro ao deletar lote:", error);
+                    } else {
+                        console.log(`✅ Lote ${i / 100 + 1} deletado com sucesso.`);
+                    }
+                }
+
+                // Refresh local state
+                setTasks(prev => prev.filter(t => !tasksToDelete.includes(t.id)));
+                console.log("✨ Limpeza concluída e estado atualizado!");
+                alert(`Limpeza concluída! ${tasksToDelete.length} tarefas órfãs removidas.`);
+                
+                // Optional reload to force sync
+                if (confirm("Deseja recarregar a página para garantir que todas as mudanças sejam aplicadas?")) {
+                    window.location.reload();
+                }
+            } else {
+                console.log("✨ Nenhuma tarefa órfã encontrada.");
+                alert("Nenhuma tarefa órfã encontrada no banco de dados. Se você ainda vê tarefas quebradas, elas podem ser fantasmas locais. Tente recarregar a página.");
             }
         };
 
@@ -5262,6 +5375,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return asset;
         }));
 
+        // --- NEW: Ensure Arena is in Active Cycle ---
+        if (activeCycle) {
+            const arenaId = newAction.arenaId;
+            // Check if arena is already in cycle
+            if (!activeCycle.arenaIds.includes(arenaId)) {
+                console.log(`[GameContext] Adding Arena ${arenaId} to Active Cycle ${activeCycle.id} via addAction`);
+                
+                // Update Local State
+                setActiveCycle(prev => {
+                    if (!prev) return null;
+                    if (prev.arenaIds.includes(arenaId)) return prev;
+                    return { ...prev, arenaIds: [...prev.arenaIds, arenaId] };
+                });
+
+                // Update DB
+                const userId = getSupabaseUserId();
+                if (userId) {
+                    const nextArenaIds = [...activeCycle.arenaIds, arenaId];
+                    supabase.from('cycles').update({ arena_ids: nextArenaIds }).eq('id', activeCycle.id).then(({ error }) => {
+                        if (error) console.error("Error updating cycle arena_ids:", error.message);
+                    });
+                }
+            }
+        }
+
         const userId = getSupabaseUserId();
         if (userId) {
             const contextPayload = mergeScheduleIntoContext(newAction.context, newAction.scheduledDays, newAction.scheduledStartTime);
@@ -5796,6 +5934,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         setTasks(prevTasks => [...prevTasks, ...newTasks]);
 
+        // --- NEW: Add to Daily Commitment if Today ---
+        if (!isClanQuestActionId(actionId)) {
+            const todayStr = getLocalDateString();
+            const todayTasks = newTasks.filter(t => t.date === todayStr);
+            if (todayTasks.length > 0) {
+                setDailyCommitmentState(prev => ({
+                    ...prev,
+                    taskIds: [...new Set([...prev.taskIds, ...todayTasks.map(t => t.id)])]
+                }));
+            }
+        }
+
         const userId = getSupabaseUserId();
         if (userId) {
             const snakeCaseData = newTasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
@@ -5822,6 +5972,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
 
         setTasks(prevTasks => [...prevTasks, newTask]);
+
+        // --- NEW: Add to Daily Commitment if Today ---
+        const todayStr = getLocalDateString();
+        if (newTask.date === todayStr && !isClanQuestActionId(actionId)) {
+            setDailyCommitmentState(prev => {
+                if (prev.taskIds.includes(newTask.id)) return prev;
+                return { ...prev, taskIds: [...prev.taskIds, newTask.id] };
+            });
+        }
 
         const userId = getSupabaseUserId();
         if (userId) {

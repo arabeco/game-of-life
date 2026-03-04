@@ -1101,9 +1101,9 @@ export const ArenasView: React.FC = () => {
                  <button 
                     ref={fabRef}
                     onClick={handleOpenCreateArena}
-                    className={`fixed bottom-20 right-4 w-16 h-16 rounded-full bg-[var(--skin-accent-color)] flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isSelectionMode ? 'opacity-0 pointer-events-none' : ''}`}
+                    className={`fixed bottom-20 right-4 w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isSelectionMode ? 'opacity-0 pointer-events-none' : ''}`}
                 >
-                    <PlusIcon className="w-8 h-8 text-black" />
+                    <PlusIcon className="w-6 h-6 text-black" />
                 </button>
             </div>
             {selectedArena && (

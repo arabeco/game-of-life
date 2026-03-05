@@ -178,8 +178,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
             </div>
 
-            <div className="flex-1 min-h-[240px] relative bg-white/[0.02] rounded-3xl border border-white/[0.03] p-2">
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="flex-1 relative bg-white/[0.02] rounded-3xl border border-white/[0.03] p-2" style={{ minHeight: 200 }}>
+                <ResponsiveContainer width="100%" height={200}>
                     <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                         <PolarGrid stroke="rgba(255,255,255,0.05)" />
                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#666', fontSize: 9, fontWeight: 900, letterSpacing: '0.1em' }} />
@@ -453,7 +453,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
 
                     {/* Header */}
-                    <div className="h-20 flex items-center justify-between px-8 border-b border-white/[0.03] bg-white/[0.02]">
+                    <div className="h-14 flex items-center justify-between px-6 border-b border-white/[0.03] bg-white/[0.02]">
                         <div className="flex space-x-1.5">
                             {slides.map((_, idx) => (
                                 <div
@@ -483,7 +483,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
 
                     {/* Footer Navigation */}
-                    <div className="h-24 flex items-center justify-between px-8 border-t border-white/[0.03] bg-white/[0.02]">
+                    <div className="h-16 flex items-center justify-between px-6 border-t border-white/[0.03] bg-white/[0.02]">
                         {!isRewardSlide ? (
                             <>
                                 <button

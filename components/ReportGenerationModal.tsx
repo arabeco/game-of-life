@@ -20,11 +20,11 @@ const PHRASES = [
 export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ onComplete, onOpen, onClose }) => {
     const [progress, setProgress] = useState(0);
     const [isReady, setIsReady] = useState(false);
-    
+
     // Simulate progress alongside video
     useEffect(() => {
-        const duration = 6000; // Increased to 6s (slower by ~20%)
-        const intervalTime = 50; // Update every 50ms
+        const duration = 6000;
+        const intervalTime = 50;
         const steps = duration / intervalTime;
         const increment = 100 / steps;
 
@@ -34,9 +34,6 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
                 if (next >= 100) {
                     clearInterval(timer);
                     setIsReady(true);
-                    onComplete(); // Notify parent that report is generated
-                    onOpen(); // Automatically open report
-                    onClose(); // Close this modal
                     return 100;
                 }
                 return next;
@@ -44,7 +41,16 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
         }, intervalTime);
 
         return () => clearInterval(timer);
-    }, [onComplete, onOpen, onClose]);
+    }, []);
+
+    // Fire callbacks AFTER render, not inside setProgress
+    useEffect(() => {
+        if (isReady) {
+            onComplete();
+            onOpen();
+            onClose();
+        }
+    }, [isReady, onComplete, onOpen, onClose]);
 
     if (progress >= 100) return null;
 
@@ -56,14 +62,14 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
                 <GlassCard className="w-full max-w-[280px] aspect-[9/16] relative overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
                     <VideoPlayer
                         src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`}
-                        onEnd={() => {}} // Progress controls completion
+                        onEnd={() => { }} // Progress controls completion
                         className="w-full h-full object-cover"
                         placeholderLabel="Sincronizando..."
                         duration={5000}
                         playbackRate={0.85}
                         startTime={0.5}
                     />
-                    
+
                     {/* Overlay with subtle progress */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none flex flex-col justify-end p-6">
                         <div className="space-y-3">
@@ -71,7 +77,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
                                 {currentPhrase}
                             </p>
                             <div className="w-full bg-black/40 h-1 rounded-full overflow-hidden border border-white/5 backdrop-blur-sm">
-                                <div 
+                                <div
                                     className="h-full bg-[var(--skin-accent-color)] transition-all duration-100 ease-linear shadow-[0_0_8px_var(--skin-accent-color)]"
                                     style={{ width: `${progress}%` }}
                                 />

@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { Portal } from './components/Portal';
-import { AssetsView } from './views/AssetsView';
-import { ArenasView } from './views/ArenasView';
-import { PlannerView } from './views/PlannerView';
-import MundoView from './views/MundoView';
-import { SettingsView } from './views/SettingsView';
-import { ProfileView } from './views/ProfileView';
-import { ReportsView } from './views/ReportsView';
 import { LoginView } from './views/LoginView';
+
+// Code-Splitting: Heavy views loaded on demand via React.lazy()
+const AssetsView = React.lazy(() => import('./views/AssetsView').then(m => ({ default: m.AssetsView })));
+const ArenasView = React.lazy(() => import('./views/ArenasView').then(m => ({ default: m.ArenasView })));
+const PlannerView = React.lazy(() => import('./views/PlannerView').then(m => ({ default: m.PlannerView })));
+const MundoView = React.lazy(() => import('./views/MundoView'));
+const SettingsView = React.lazy(() => import('./views/SettingsView').then(m => ({ default: m.SettingsView })));
+const ProfileView = React.lazy(() => import('./views/ProfileView').then(m => ({ default: m.ProfileView })));
+const ReportsView = React.lazy(() => import('./views/ReportsView').then(m => ({ default: m.ReportsView })));
 import { GameProvider, useGame, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING, PROFILE_FLAG_TUTORIAL_COMPLETED } from './contexts/GameContext';
 import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
@@ -556,14 +558,25 @@ const AppWithTutorial: React.FC = () => {
     };
 
     const renderView = () => {
-        switch (currentView) {
-            case 'assets': return <AssetsView />;
-            case 'arenas': return <ArenasView />;
-            case 'planner': return <PlannerView onReportsClick={() => setReportsVisible(true)} />;
-            case 'social': return <MundoView />;
-            case 'settings': return <SettingsView />;
-            default: return <AssetsView />;
-        }
+        const viewContent = (() => {
+            switch (currentView) {
+                case 'assets': return <AssetsView />;
+                case 'arenas': return <ArenasView />;
+                case 'planner': return <PlannerView onReportsClick={() => setReportsVisible(true)} />;
+                case 'social': return <MundoView />;
+                case 'settings': return <SettingsView />;
+                default: return <AssetsView />;
+            }
+        })();
+        return (
+            <Suspense fallback={
+                <div className="flex items-center justify-center h-full w-full">
+                    <div className="w-8 h-8 border-2 border-[var(--skin-accent-color)] border-t-transparent rounded-full animate-spin" />
+                </div>
+            }>
+                {viewContent}
+            </Suspense>
+        );
     };
 
     const NavItem: React.FC<{ view: View; label: string; icon: React.ReactNode; id?: string }> = ({ view, label, icon, id }) => (

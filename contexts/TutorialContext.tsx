@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useGame, PROFILE_FLAG_TUTORIAL_COMPLETED } from './GameContext';
-import { TUTORIAL_LEVEL_1, TUTORIAL_LEVEL_2, TUTORIAL_LEVEL_3, TUTORIAL_LEVEL_4, TUTORIAL_STEPS_25, TUTORIAL_STEPS_BASIC } from '../constants/tutorialSteps';
+import { TUTORIAL_STEPS } from '../constants/tutorialSteps';
 import { TutorialStep } from '../types';
 
 interface TooltipContent {
@@ -16,7 +16,12 @@ interface TutorialContextType {
     spotlightTarget: DOMRect | null;
     tooltipContent: TooltipContent | null;
     tutorialSteps: TutorialStep[];
-    startTutorial: () => void;
+    isHubOpen: boolean;
+    setIsHubOpen: (open: boolean) => void;
+    didForceGameMode: boolean;
+    originalMode: 'BASIC' | 'GAME' | null;
+    startedFromSettings: boolean;
+    startTutorial: (startIndex?: number | null, levelIndicator?: number | null, fromSettings?: boolean) => void;
     startTutorialLevel: (level: number) => void;
     restartTutorial: () => void;
     endTutorial: (completed?: boolean) => void;
@@ -28,11 +33,15 @@ interface TutorialContextType {
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { userProfile, completeTutorialMission, appMode, addProfileFlag } = useGame();
+    const { userProfile, completeTutorialMission, appMode, setAppMode, addProfileFlag } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
+    const [didForceGameMode, setDidForceGameMode] = useState(false);
+    const [originalMode, setOriginalMode] = useState<'BASIC' | 'GAME' | null>(null);
+    const [isHubOpen, setIsHubOpen] = useState(false);
     const [activeLevel, setActiveLevel] = useState<number | null>(null);
-    
+    const [startedFromSettings, setStartedFromSettings] = useState(false);
+
     // Get tutorial completion status from user profile
     const isTutorialCompleted = (userProfile.completedSeasonMissions || []).includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
 
@@ -41,30 +50,9 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         return (userProfile.completedSeasonMissions || []).includes(flag);
     }, [userProfile.completedSeasonMissions]);
 
-    // Select tutorial steps based on app mode and active level
+    // Use the unified 25+1 steps tutorial
     const tutorialSteps = useMemo(() => {
-        if (appMode === 'BASIC') return TUTORIAL_STEPS_BASIC;
-        
-        switch (activeLevel) {
-            case 1: return TUTORIAL_LEVEL_1;
-            case 2: return TUTORIAL_LEVEL_2;
-            case 3: return TUTORIAL_LEVEL_3;
-            case 4: return TUTORIAL_LEVEL_4;
-            default: return TUTORIAL_STEPS_25;
-        }
-    }, [appMode, activeLevel]);
-
-    const startTutorial = useCallback(() => {
-        setActiveLevel(null);
-        setIsTutorialActive(true);
-        setCurrentStep(0);
-    }, []);
-
-    const startTutorialLevel = useCallback((level: number) => {
-        console.log(`Starting tutorial level: ${level}`);
-        setActiveLevel(level);
-        setIsTutorialActive(true);
-        setCurrentStep(0);
+        return TUTORIAL_STEPS;
     }, []);
 
     const restartTutorial = useCallback(() => {
@@ -73,32 +61,128 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         setCurrentStep(0);
     }, []);
 
-    const endTutorial = useCallback((completed = true) => {
+    const endTutorial = useCallback((completed: boolean = false) => {
         setIsTutorialActive(false);
+
+        // Restore original mode if we forced it or saved it
+        if (didForceGameMode || originalMode) {
+            const modeToRestore = originalMode || 'BASIC';
+            console.log(`Tutorial Engine: Restoring original mode (${modeToRestore})`);
+
+            // Small delay to let the overlay unmount before the whole app re-renders
+            setTimeout(() => {
+                setAppMode(modeToRestore);
+                setDidForceGameMode(false);
+                setOriginalMode(null);
+            }, 100);
+        }
+
         const finishedLevel = activeLevel;
         setActiveLevel(null);
         setCurrentStep(0);
-        
+
         if (completed) {
-            if (finishedLevel) {
+            if (finishedLevel !== null) {
                 // Mark specific level as completed
                 addProfileFlag(`tutorial_level_${finishedLevel}_completed`);
+                if (startedFromSettings) {
+                    setIsHubOpen(false);
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { view: 'settings' } }));
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('tutorialSettingsReturn'));
+                        }, 100);
+                    }, 100);
+                }
             } else {
                 // Original full tutorial completion
                 completeTutorialMission();
+                // If it was the full tutorial, maybe we don't open the HUB automatically
+                if (!startedFromSettings) {
+                    setIsHubOpen(false);
+                }
             }
         }
-    }, [completeTutorialMission, activeLevel, addProfileFlag]);
+    }, [completeTutorialMission, activeLevel, addProfileFlag, originalMode, setAppMode, didForceGameMode, startedFromSettings]);
+
+    const startTutorial = useCallback((startIndex: number | null = null, levelIndicator: number | null = null, fromSettings: boolean = false) => {
+        const index = startIndex !== null ? startIndex : 0;
+        setStartedFromSettings(fromSettings);
+
+        // Save original mode before starting
+        console.log(`Tutorial Engine: Saving original mode (${appMode})`);
+        setOriginalMode(appMode as 'BASIC' | 'GAME');
+
+        setActiveLevel(levelIndicator !== null ? levelIndicator : startIndex);
+        console.log(`Tutorial Engine: Jump to Index ${index} (Target: ${TUTORIAL_STEPS[index]?.title})`);
+        setCurrentStep(index);
+        setIsTutorialActive(true);
+        setIsHubOpen(false);
+    }, [appMode]);
+
+    // Real mode switching based on current step
+    useEffect(() => {
+        if (!isTutorialActive) return;
+
+        const step = TUTORIAL_STEPS[currentStep];
+        const isGameStep = step && (step.category === 'IDENTIDADE' || step.category === 'MUNDO' || (currentStep >= 9 && currentStep <= 19));
+
+        if (isGameStep && appMode === 'BASIC') {
+            console.log(`Tutorial Engine: Forcing GAME Mode for step ${currentStep}`);
+            // If we don't have an original mode yet, save it
+            if (!originalMode) setOriginalMode('BASIC');
+            setDidForceGameMode(true);
+            setAppMode('GAME');
+        } else if (!isGameStep && didForceGameMode && appMode === 'GAME') {
+            console.log(`Tutorial Engine: Reverting to original mode (${originalMode || 'BASIC'})`);
+            setAppMode(originalMode || 'BASIC');
+            setDidForceGameMode(false);
+        }
+
+        // Automatic trigger for Mastery Quiz at Step 11
+        if (currentStep === 11) {
+            console.log('Tutorial Engine: Triggering Mastery Quiz Event');
+            window.dispatchEvent(new CustomEvent('tutorialOpenMasteryQuiz'));
+        }
+    }, [currentStep, isTutorialActive, appMode, didForceGameMode, setAppMode, originalMode]);
 
     const nextStep = useCallback(() => {
-        setCurrentStep(prev => prev + 1);
-    }, []);
+        const currentCategory = TUTORIAL_STEPS[currentStep]?.category;
+        const nextIdx = currentStep + 1;
+        const nextCategory = TUTORIAL_STEPS[nextIdx]?.category;
+
+        // CRITICAL: Stop flow IF category changes (except when finishing INTRO)
+        // This forces the user back to the HUB after completing a station
+        if (nextIdx >= TUTORIAL_STEPS.length || (currentCategory !== nextCategory && currentCategory !== 'INTRO')) {
+            console.log(`Tutorial Engine: End of station reached (${currentCategory}).`);
+            // Every end of station represents a completed section
+            endTutorial(true);
+            if (!startedFromSettings) {
+                setIsHubOpen(true);
+            }
+        } else {
+            setCurrentStep(nextIdx);
+        }
+    }, [currentStep, endTutorial]);
 
     const goToStep = useCallback((step: number) => {
         setCurrentStep(step);
     }, []);
 
-    // Deprecated: No-op for compatibility during migration
+    // NEW: Robust mapping from Station Level (1-4) to Step Index
+    const startTutorialLevel = useCallback((level: number) => {
+        let targetIndex = 1; // Default to Alicerçe
+        switch (level) {
+            case 1: targetIndex = 1; break;  // O Alicerce
+            case 2: targetIndex = 9; break;  // A Identidade
+            case 3: targetIndex = 16; break; // O Mundo
+            case 4: targetIndex = 20; break; // O Arquiteto
+            default: targetIndex = level; // Fallback to raw index if passed
+        }
+        console.log(`Tutorial Engine: Starting Station Level ${level} -> Index ${targetIndex}`);
+        startTutorial(targetIndex, level, true);
+    }, [startTutorial]);
+
     const setSpotlight = useCallback((rect: DOMRect | null, content: TooltipContent | null) => {
         // No-op
     }, []);
@@ -112,6 +196,11 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             spotlightTarget: null,
             tooltipContent: null,
             tutorialSteps,
+            isHubOpen,
+            setIsHubOpen,
+            didForceGameMode,
+            originalMode,
+            startedFromSettings,
             startTutorial,
             startTutorialLevel,
             restartTutorial,

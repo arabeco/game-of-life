@@ -12,6 +12,8 @@ import { GameProvider, useGame, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_
 import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import { OracleTutorialOverlay } from './components/OracleTutorialOverlay';
+import { ModeSelectionOverlay } from './components/ModeSelectionOverlay';
+import { TutorialHub } from './components/TutorialHub';
 import { TUTORIAL_STEPS } from './constants/tutorialSteps';
 import { View as TutorialView } from './types';
 import { TutorialOverlay } from './components/TutorialOverlay';
@@ -111,52 +113,52 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
 
     return (
         <Portal>
-        <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center animate-fade-in"
-            style={{ background: 'radial-gradient(circle at center, #0A0A0A 0%, #000000 72%)' }}
-        >
-            <div className="absolute inset-4 border border-[var(--skin-line-color)] rounded-[32px]" />
-            {isSealing && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--sephirot-glow-color),rgba(0,0,0,0.95))] animate-fade-in" />}
-            <div className="relative w-full max-w-md mx-auto h-full px-6 py-12 flex flex-col justify-center gap-10">
-                <div className="text-center space-y-3">
-                    <p className="text-[11px] uppercase tracking-[0.45em] text-[#8f8f8f]">Pacto de Soberania</p>
-                    <h1
-                        className="text-2xl uppercase tracking-[0.18em]"
-                        style={{ color: 'var(--skin-accent-color)', textShadow: '0 0 16px var(--sephirot-glow-color)', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
-                    >
-                        O Despertar do Soberano
-                    </h1>
-                </div>
-
-                <div className="relative min-h-[220px] text-base leading-relaxed whitespace-pre-line text-[#E0E0E0] text-center">
-                    {typedText}
-                    {isTyping && <span className="inline-block w-2 h-5 bg-[var(--skin-accent-color)] ml-1 animate-pulse" />}
-                    {isTyping && <div className="absolute inset-0 dust-layer" />}
-                </div>
-
-                <div className="flex flex-col items-center gap-3">
-                    <div
-                        className="relative w-32 h-32 rounded-full border border-[var(--skin-accent-color)] flex items-center justify-center text-[var(--skin-accent-color)] font-black tracking-[0.2em] select-none"
-                        onMouseDown={handleMouseDown}
-                        onTouchStart={handleTouchStart}
-                        onContextMenu={longPressEvents.onContextMenu}
-                        style={{ touchAction: 'none', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
-                    >
-                        SELO
-                        <div className="absolute inset-2 rounded-full border border-[var(--skin-line-color)]" />
-                        {isHolding && (
-                            <div
-                                className="absolute inset-2 rounded-full seal-fill"
-                                style={{ animationDuration: `${holdDurationMs}ms` }}
-                            />
-                        )}
+            <div
+                className="fixed inset-0 z-[9999] flex items-center justify-center animate-fade-in"
+                style={{ background: 'radial-gradient(circle at center, #0A0A0A 0%, #000000 72%)' }}
+            >
+                <div className="absolute inset-4 border border-[var(--skin-line-color)] rounded-[32px]" />
+                {isSealing && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--sephirot-glow-color),rgba(0,0,0,0.95))] animate-fade-in" />}
+                <div className="relative w-full max-w-md mx-auto h-full px-6 py-12 flex flex-col justify-center gap-10">
+                    <div className="text-center space-y-3">
+                        <p className="text-[11px] uppercase tracking-[0.45em] text-[#8f8f8f]">Pacto de Soberania</p>
+                        <h1
+                            className="text-2xl uppercase tracking-[0.18em]"
+                            style={{ color: 'var(--skin-accent-color)', textShadow: '0 0 16px var(--sephirot-glow-color)', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
+                        >
+                            O Despertar do Soberano
+                        </h1>
                     </div>
-                    <p className="text-[10px] uppercase tracking-[0.35em] text-[#9b9b9b]">
-                        {isLast ? 'Segure para selar o pacto' : 'Segure para avançar'}
-                    </p>
+
+                    <div className="relative min-h-[220px] text-base leading-relaxed whitespace-pre-line text-[#E0E0E0] text-center">
+                        {typedText}
+                        {isTyping && <span className="inline-block w-2 h-5 bg-[var(--skin-accent-color)] ml-1 animate-pulse" />}
+                        {isTyping && <div className="absolute inset-0 dust-layer" />}
+                    </div>
+
+                    <div className="flex flex-col items-center gap-3">
+                        <div
+                            className="relative w-32 h-32 rounded-full border border-[var(--skin-accent-color)] flex items-center justify-center text-[var(--skin-accent-color)] font-black tracking-[0.2em] select-none"
+                            onMouseDown={handleMouseDown}
+                            onTouchStart={handleTouchStart}
+                            onContextMenu={longPressEvents.onContextMenu}
+                            style={{ touchAction: 'none', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
+                        >
+                            SELO
+                            <div className="absolute inset-2 rounded-full border border-[var(--skin-line-color)]" />
+                            {isHolding && (
+                                <div
+                                    className="absolute inset-2 rounded-full seal-fill"
+                                    style={{ animationDuration: `${holdDurationMs}ms` }}
+                                />
+                            )}
+                        </div>
+                        <p className="text-[10px] uppercase tracking-[0.35em] text-[#9b9b9b]">
+                            {isLast ? 'Segure para selar o pacto' : 'Segure para avançar'}
+                        </p>
+                    </div>
                 </div>
-            </div>
-            <style>{`
+                <style>{`
                 .seal-fill {
                     background: radial-gradient(circle at center, var(--sephirot-glow-color), rgba(197,160,89,0.08));
                     animation: sealFill linear forwards;
@@ -182,7 +184,7 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                     100% { opacity: 0.2; transform: scale(1.02); }
                 }
             `}</style>
-        </div>
+            </div>
         </Portal>
     );
 };
@@ -227,28 +229,28 @@ const BootRitualOverlay: React.FC<{ open: boolean }> = ({ open }) => {
 
     return (
         <Portal>
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(7,6,4,0.8),rgba(0,0,0,0.98))]" />
-            <div className="absolute inset-8 rounded-[36px] border border-[var(--skin-line-color)] boot-frame" />
-            <div className="relative flex flex-col items-center gap-8">
-                <div className="relative w-48 h-48">
-                    <div className="absolute inset-0 boot-orbit" />
-                    <div className="absolute inset-6 boot-orbit boot-orbit-delayed" />
-                    <div className="absolute inset-12 boot-orbit" />
-                    <div className="absolute left-1/2 top-1/2 w-40 h-px -translate-x-1/2 -translate-y-1/2 boot-line" />
-                    <div className="absolute left-1/2 top-1/2 w-px h-40 -translate-x-1/2 -translate-y-1/2 boot-line" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="boot-logo">
-                            <GameLogoIcon />
+            <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(7,6,4,0.8),rgba(0,0,0,0.98))]" />
+                <div className="absolute inset-8 rounded-[36px] border border-[var(--skin-line-color)] boot-frame" />
+                <div className="relative flex flex-col items-center gap-8">
+                    <div className="relative w-48 h-48">
+                        <div className="absolute inset-0 boot-orbit" />
+                        <div className="absolute inset-6 boot-orbit boot-orbit-delayed" />
+                        <div className="absolute inset-12 boot-orbit" />
+                        <div className="absolute left-1/2 top-1/2 w-40 h-px -translate-x-1/2 -translate-y-1/2 boot-line" />
+                        <div className="absolute left-1/2 top-1/2 w-px h-40 -translate-x-1/2 -translate-y-1/2 boot-line" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="boot-logo">
+                                <GameLogoIcon />
+                            </div>
                         </div>
                     </div>
+                    <div className="text-center space-y-2">
+                        <p className="text-[10px] uppercase tracking-[0.5em] text-[#7f7f7f]">Ritual de Boot</p>
+                        <p className="text-sm font-semibold text-[var(--skin-accent-color)] tracking-[0.2em]">Modo Soberano</p>
+                    </div>
                 </div>
-                <div className="text-center space-y-2">
-                    <p className="text-[10px] uppercase tracking-[0.5em] text-[#7f7f7f]">Ritual de Boot</p>
-                    <p className="text-sm font-semibold text-[var(--skin-accent-color)] tracking-[0.2em]">Modo Soberano</p>
-                </div>
-            </div>
-            <style>{`
+                <style>{`
                 .boot-frame { animation: bootFrame 2s ease-out forwards; }
                 .boot-orbit { border: 1px solid var(--skin-line-color); border-radius: 9999px; box-shadow: 0 0 25px var(--sephirot-glow-color); animation: bootOrbit 2s ease-out forwards; }
                 .boot-orbit-delayed { animation-delay: 0.25s; }
@@ -259,7 +261,7 @@ const BootRitualOverlay: React.FC<{ open: boolean }> = ({ open }) => {
                 @keyframes bootLogo { 0% { opacity: 0; transform: scale(0.4) rotate(-6deg); } 55% { opacity: 1; transform: scale(1) rotate(0deg); } 100% { opacity: 0.85; transform: scale(1.05); } }
                 @keyframes bootFrame { 0% { opacity: 0; } 60% { opacity: 1; } 100% { opacity: 0.8; } }
             `}</style>
-        </div>
+            </div>
         </Portal>
     );
 };
@@ -271,9 +273,13 @@ const AppWithTutorial: React.FC = () => {
     const [isRestScreenOpen, setRestScreenOpen] = useState(false);
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile, appMode, activeTheme, clan } = useGame();
-    const { isTutorialActive, currentStep } = useTutorial();
+    const { isTutorialActive, currentStep, isHubOpen, setIsHubOpen, didForceGameMode } = useTutorial();
     const historyReady = useRef(false);
-    
+
+    // CRITICAL: Logic for Mode Display (HUB Architecture)
+    const activeUIMode = appMode === 'GAME' ? 'GAME' : 'BASIC';
+    const isBasicMode = activeUIMode === 'BASIC';
+
     useEffect(() => {
         const handleNavigateToStore = () => {
             setCurrentView('social');
@@ -301,7 +307,7 @@ const AppWithTutorial: React.FC = () => {
             const containerRect = navContainerRef.current.getBoundingClientRect();
             const itemRect = currentRef.getBoundingClientRect();
             // Center a 32px indicator
-            const indicatorWidth = 32; 
+            const indicatorWidth = 32;
             const left = (itemRect.left - containerRect.left) + (itemRect.width / 2) - (indicatorWidth / 2);
             setNavIndicatorStyle({ left, width: indicatorWidth, opacity: 1 });
         }
@@ -330,14 +336,14 @@ const AppWithTutorial: React.FC = () => {
         const currentX = e.touches[0].clientX;
         const diff = currentX - touchStartRef.current;
         currentDeltaRef.current = diff;
-        
+
         // Invert direction: Drag Right (positive diff) moves indicator Left (negative transform)
         indicatorRef.current.style.transform = `translateX(${-diff}px)`;
     };
 
     const handleNavTouchEnd = (e: React.TouchEvent) => {
         if (touchStartRef.current === null) return;
-        
+
         const diff = currentDeltaRef.current;
         const threshold = 40; // Swipe threshold
 
@@ -346,13 +352,13 @@ const AppWithTutorial: React.FC = () => {
             indicatorRef.current.style.transition = '';
             indicatorRef.current.style.transform = '';
         }
-        
+
         if (Math.abs(diff) > threshold) {
-            const views: View[] = isBasicMode 
+            const views: View[] = activeUIMode === 'BASIC'
                 ? ['arenas', 'planner', 'social', 'settings']
                 : ['assets', 'arenas', 'planner', 'social', 'settings'];
             const currentIndex = views.indexOf(currentView);
-            
+
             // Inverted Logic:
             // Drag Right (diff > 0) -> Previous Item (Index - 1)
             // Drag Left (diff < 0) -> Next Item (Index + 1)
@@ -376,7 +382,7 @@ const AppWithTutorial: React.FC = () => {
                     case '3': setCurrentView('planner'); break;
                     case '4': setCurrentView('social'); break;
                     case '5': setCurrentView('settings'); break;
-                    case 'r': 
+                    case 'r':
                     case 'R': setReportsVisible(prev => !prev); break;
                     case 'p':
                     case 'P': setProfileVisible(prev => !prev); break;
@@ -394,17 +400,17 @@ const AppWithTutorial: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const handleNavigate = (e: CustomEvent<{ 
-            view: View; 
-            tab?: string; 
-            showReports?: boolean; 
-            showProfile?: boolean; 
+        const handleNavigate = (e: CustomEvent<{
+            view: View;
+            tab?: string;
+            showReports?: boolean;
+            showProfile?: boolean;
             showOracleSettings?: boolean;
             showRestScreen?: boolean;
             showArenaId?: string;
         }>) => {
             console.log('App: tutorialNavigate event received', e.detail);
-            
+
             // Handle Profile visibility
             if (e.detail.showProfile !== undefined) {
                 setProfileVisible(e.detail.showProfile);
@@ -428,7 +434,7 @@ const AppWithTutorial: React.FC = () => {
             if (e.detail.showReports !== undefined) {
                 setReportsVisible(e.detail.showReports);
             } else {
-                setReportsVisible(false); 
+                setReportsVisible(false);
             }
 
             // Handle Oracle Settings
@@ -448,11 +454,11 @@ const AppWithTutorial: React.FC = () => {
                 const arenaEvent = new CustomEvent('tutorialOpenArena', { detail: { arenaId: null } });
                 window.dispatchEvent(arenaEvent);
             }
-            
+
             if (e.detail.view) {
                 setCurrentView(e.detail.view);
             }
-            
+
             if (e.detail.tab) {
                 setTimeout(() => {
                     const tabEvent = new CustomEvent('tutorialTabChange', { detail: { tab: e.detail.tab } });
@@ -516,7 +522,7 @@ const AppWithTutorial: React.FC = () => {
             const parsed = JSON.parse(json) as { schemaVersion?: number; metadata?: { name?: string; author?: string; price?: number; description?: string } };
             const { data: sessionData } = await supabase.auth.getSession();
             const userId = sessionData.session?.user.id;
-            
+
             // Verificar se temos um userId válido antes de tentar inserir
             if (userId && isUuid(userId)) {
                 await supabase
@@ -565,9 +571,8 @@ const AppWithTutorial: React.FC = () => {
             id={id}
             ref={(el) => { if (el) navItemRefs.current.set(view, el); }}
             onClick={() => handleSetView(view)}
-            className={`flex flex-col items-center justify-center w-full transition-colors duration-200 relative z-10 ${
-                currentView === view ? 'accent-text' : 'text-gray-500 hover:text-gray-300'
-            }`}
+            className={`flex flex-col items-center justify-center w-full transition-colors duration-200 relative z-10 ${currentView === view ? 'accent-text' : 'text-gray-500 hover:text-gray-300'
+                }`}
         >
             {icon}
             <span className="text-[10px] font-bold tracking-wider mt-1">{label}</span>
@@ -581,27 +586,30 @@ const AppWithTutorial: React.FC = () => {
         ? 'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
 
-    const isBasicMode = appMode === 'BASIC';
-    const themeClass = isBasicMode ? `mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
+    const themeClass = activeUIMode === 'BASIC' ? `mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
 
     useEffect(() => {
-        if (isBasicMode && currentView === 'assets') {
+        // If in BASIC mode and trying to access 'assets', force back to 'arenas'
+        // UNLESS a tutorial is forcing GAME mode (even if the base appMode is BASIC)
+        if (appMode === 'BASIC' && currentView === 'assets' && !didForceGameMode) {
             setCurrentView('arenas');
         }
-    }, [isBasicMode, currentView]);
+    }, [appMode, currentView, didForceGameMode]);
 
     useEffect(() => {
-        const skin = isBasicMode ? 'default' : userProfile.skin;
+        const skin = activeUIMode === 'BASIC' ? 'default' : userProfile.skin;
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);
-    }, [isBasicMode, userProfile.skin]);
+    }, [activeUIMode, userProfile.skin]);
 
     return (
-        <div 
+        <div
+            id="app-root"
             className={`h-screen min-h-0 overflow-hidden text-gray-200 font-sans flex flex-col ${isBuilderMode ? 'border-4 border-yellow-400 border-dashed' : ''} ${themeClass}`}
-            data-skin={isBasicMode ? 'default' : userProfile.skin}
+            data-skin={activeUIMode === 'BASIC' ? 'default' : userProfile.skin}
         >
             <OracleTutorialOverlay />
+            <TutorialHub isOpen={isHubOpen} onClose={() => setIsHubOpen(false)} />
             {isBuilderMode && (
                 <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/15 backdrop-blur-lg border-b border-yellow-500/40">
                     <div className="max-w-[420px] mx-auto px-4 h-11 flex items-center gap-2">
@@ -634,35 +642,35 @@ const AppWithTutorial: React.FC = () => {
                     {renderView()}
                 </div>
             </main>
-            
+
             {isProfileVisible && <ProfileView onClose={() => setProfileVisible(false)} />}
             {isReportsVisible && <ReportsView onClose={() => setReportsVisible(false)} />}
-            
-            <footer 
-                className={`fixed bottom-0 left-0 right-0 z-30 ${isBasicMode ? 'bg-[var(--nav-bg)] border-t border-[var(--nav-border)]' : 'bg-black/80 backdrop-blur-xl border-t border-[var(--glass-border)]'} safe-area-bottom`} 
+
+            <footer
+                className={`fixed bottom-0 left-0 right-0 z-30 ${activeUIMode === 'BASIC' ? 'bg-[var(--nav-bg)] border-t border-[var(--nav-border)]' : 'bg-black/80 backdrop-blur-xl border-t border-[var(--glass-border)]'} safe-area-bottom`}
                 style={{ paddingBottom: 'var(--safe-area-bottom)' }}
             >
-                <div 
-                    className="max-w-7xl mx-auto relative" 
+                <div
+                    className="max-w-7xl mx-auto relative"
                     ref={navContainerRef}
                     onTouchStart={handleNavTouchStart}
                     onTouchMove={handleNavTouchMove}
                     onTouchEnd={handleNavTouchEnd}
                 >
-                    <div 
+                    <div
                         ref={indicatorRef}
                         className="absolute bottom-1 h-1 bg-[var(--skin-accent-color)] rounded-full transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] shadow-[0_0_10px_var(--skin-accent-color)]"
-                        style={{ 
-                            left: navIndicatorStyle.left, 
+                        style={{
+                            left: navIndicatorStyle.left,
                             width: navIndicatorStyle.width,
-                            opacity: navIndicatorStyle.opacity 
+                            opacity: navIndicatorStyle.opacity
                         }}
                     />
                     <div className="flex justify-around items-center h-16">
-                        {!isBasicMode && <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />}
-                        <NavItem view="arenas" label={isBasicMode ? "ÁREAS" : "ARENAS"} icon={<ArenaIcon />} id="nav-arenas" />
+                        {activeUIMode === 'GAME' && <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />}
+                        <NavItem view="arenas" label={activeUIMode === 'BASIC' ? "ÁREAS" : "ARENAS"} icon={<ArenaIcon />} id="nav-arenas" />
                         <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} id="nav-planner" />
-                        <NavItem view="social" label={isBasicMode ? "EQUIPE" : "MUNDO"} icon={<SocialIcon />} id="nav-mundo" />
+                        <NavItem view="social" label={activeUIMode === 'BASIC' ? "EQUIPE" : "MUNDO"} icon={<SocialIcon />} id="nav-mundo" />
                         <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} id="nav-settings" />
                     </div>
                 </div>
@@ -672,7 +680,7 @@ const AppWithTutorial: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
-    const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag, toast, hideToast, isProfileLoaded } = useGame();
+    const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag, toast, hideToast, isProfileLoaded, showToast } = useGame();
     const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
     const [showTerms, setShowTerms] = useState(false);
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
@@ -698,11 +706,9 @@ const MainApp: React.FC = () => {
         };
     }, [trigger]);
 
-    // Online Only: Removed localStorage migration for tutorial completion
-    
     // Inicia o tutorial apenas uma vez por sessão se não estiver concluído
     const [tutorialShownInSession, setTutorialShownInSession] = useState(false);
-    
+
     useEffect(() => {
         if (userProfile.id === 'placeholder_user' || !isProfileLoaded) return;
         if (!isTutorialCompleted && !isTutorialActive && !tutorialShownInSession) {
@@ -760,17 +766,18 @@ const MainApp: React.FC = () => {
     return (
         <>
             <AppWithTutorial />
+            <ModeSelectionOverlay />
             <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
             <OfflineOverlay open={!isOnline} />
             {achievementUnlocked && (
-                <AchievementModal 
+                <AchievementModal
                     achievement={achievementUnlocked}
                     onClose={() => setAchievementUnlocked(null)}
                 />
             )}
             {toast.visible && (
-                <GoldenToast 
-                    message={toast.message} 
+                <GoldenToast
+                    message={toast.message}
                     onClose={hideToast}
                 />
             )}
@@ -791,12 +798,6 @@ const App: React.FC = () => {
         setShowSplash(false);
         sessionStorage.setItem('hasSeenSplash', 'true');
     };
-
-    // Auto-dismiss splash if session is restored (Only show before login)
-    useEffect(() => {
-        // If session is restored, we don't automatically hide splash anymore
-        // We wait for the video to finish via SplashScreen component logic
-    }, [session, showSplash]);
 
     useEffect(() => {
         const checkSession = async () => {
@@ -820,9 +821,9 @@ const App: React.FC = () => {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             // Handle refresh errors silently by clearing session
-            if (event === 'SIGNED_OUT' || (event as any) === 'TOKEN_REFRESH_ERROR') {
+            if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_ERROR') {
                 setSession(null);
-                if (event === 'TOKEN_REFRESH_ERROR') {
+                if ((event as string) === 'TOKEN_REFRESH_ERROR') {
                     // Force logout on refresh error to clean local storage
                     supabase.auth.signOut();
                 }

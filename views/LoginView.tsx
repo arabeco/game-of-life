@@ -32,13 +32,31 @@ export const LoginView: React.FC = () => {
         };
         seedInvites();
     }, []);
-    
+
+    const getPasswordStrength = (pass: string) => {
+        if (pass.length === 0) return { score: 0, label: '', color: 'bg-gray-800' };
+        if (pass.length < 8) return { score: 1, label: 'RUIM', color: 'bg-red-500' };
+
+        const hasNumber = /\d/.test(pass);
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+
+        if (hasNumber || hasSpecial) return { score: 3, label: 'FORTE', color: 'bg-green-500' };
+        return { score: 2, label: 'MÉDIA', color: 'bg-yellow-500' };
+    };
+
     const handleSignUp = async () => {
         const normalizedInvite = inviteCode.trim();
         let inviteRecord: GoldenInvite | null = null;
 
         if (!normalizedInvite) {
             setError('Informe um Convite Dourado.');
+            return;
+        }
+
+        // Password Validation
+        const strength = getPasswordStrength(password);
+        if (strength.score < 3) {
+            setError('A senha deve ter pelo menos 8 caracteres e incluir um número ou caractere especial.');
             return;
         }
 
@@ -61,10 +79,10 @@ export const LoginView: React.FC = () => {
         setLoading(true);
         setError(null);
         setMessage(null);
-        
+
         try {
-            const { data, error } = await supabase.auth.signUp({ 
-                email, 
+            const { data, error } = await supabase.auth.signUp({
+                email,
                 password,
                 options: {
                     data: {
@@ -72,9 +90,9 @@ export const LoginView: React.FC = () => {
                     }
                 }
             });
-            
+
             if (error) throw error;
-            
+
             if (data.user) {
                 if (!isMultiUseInvite && inviteRecord) {
                     const consumed = await SupabaseService.consumeGoldenInvite(inviteRecord.id, data.user.id);
@@ -88,6 +106,7 @@ export const LoginView: React.FC = () => {
                 // Criar perfil do usuário
                 const newProfile: UserProfile = {
                     id: data.user.id,
+                    username: email.split('@')[0],
                     email: data.user.email,
                     nickname: nickname || email.split('@')[0],
                     appMode: appMode,
@@ -116,6 +135,7 @@ export const LoginView: React.FC = () => {
                         orbs: {},
                         plates: {},
                         ornament: {},
+                        insignias: {},
                         ui_skins: { 'BASIC': true },
                     },
                     completedSeasonMissions: [PROFILE_FLAG_TERMS_PENDING],
@@ -176,7 +196,7 @@ export const LoginView: React.FC = () => {
         } catch (error: any) {
             setError(error.message || 'Erro no cadastro');
         }
-        
+
         setLoading(false);
     };
 
@@ -184,12 +204,12 @@ export const LoginView: React.FC = () => {
         setLoading(true);
         setError(null);
         setMessage(null);
-        
+
         try {
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            
+
             if (error) throw error;
-            
+
             if (data.user) {
                 // Buscar perfil do usuário
                 const { data: profile } = await supabase
@@ -231,8 +251,11 @@ export const LoginView: React.FC = () => {
                             auras: {},
                             orbs: {},
                             plates: {},
-                        ornament: {},
-                    },
+                            ornament: {},
+                            insignias: {},
+                            ui_skins: {},
+                        },
+                        username: profile.username || profile.email?.split('@')[0] || 'anon',
                         completedSeasonMissions: profile.completed_season_missions ?? [],
                         lastLevelUpdate: profile.last_level_update,
                         nobility: profile.nobility,
@@ -249,14 +272,36 @@ export const LoginView: React.FC = () => {
         } catch (error: any) {
             setError(error.message || 'Erro no login');
         }
-        
+
         setLoading(false);
+    };
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    },
+                    redirectTo: window.location.origin
+                }
+            });
+            if (error) throw error;
+        } catch (error: any) {
+            setError(error.message || 'Erro no login com Google');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const loginAsAdmin = async () => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const adminEmail = 'admin@gol.local';
             const adminPassword = 'admin123';
@@ -282,7 +327,7 @@ export const LoginView: React.FC = () => {
                 if (signUpError) throw signUpError;
 
                 if (signUpData.user) {
-                     const adminProfileForState: UserProfile = {
+                    const adminProfileForState: UserProfile = {
                         id: signUpData.user.id,
                         email: adminEmail,
                         nickname: 'Admin',
@@ -323,8 +368,11 @@ export const LoginView: React.FC = () => {
                             auras: {},
                             orbs: {},
                             plates: {},
-                        ornament: {},
-                    },
+                            ornament: {},
+                            insignias: {},
+                            ui_skins: { 'GAME': true, 'BASIC': true },
+                        },
+                        username: 'admin',
                         completedSeasonMissions: [],
                         nobility: { exp: 999999, rankId: 'soberano' },
                         mood: 100,
@@ -361,7 +409,7 @@ export const LoginView: React.FC = () => {
                         role: adminProfileForState.role,
                         is_premium: adminProfileForState.isPremium ?? true
                     };
-                    
+
                     const { error: profileError } = await supabase
                         .from('user_profiles')
                         .insert([adminProfileForDB]);
@@ -401,7 +449,19 @@ export const LoginView: React.FC = () => {
                             helmets: {},
                             head_over_items: {},
                             artifacts: {},
+                            codexes: {},
+                            skins: {},
+                            borders: {},
+                            banners: {},
+                            glyphs: {},
+                            auras: {},
+                            orbs: {},
+                            plates: {},
+                            ornament: {},
+                            insignias: {},
+                            ui_skins: {},
                         },
+                        username: profile.username || 'admin',
                         completedSeasonMissions: profile.completed_season_missions ?? [],
                         lastLevelUpdate: profile.last_level_update,
                         nobility: profile.nobility,
@@ -464,20 +524,37 @@ export const LoginView: React.FC = () => {
                 </h1>
 
                 <div className="space-y-4">
-                    <input 
-                        type="email" 
-                        placeholder="Email" 
+                    <input
+                        type="email"
+                        placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                     />
-                    <input 
-                        type="password" 
-                        placeholder="Senha" 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
-                    />
+                    <div className="space-y-1">
+                        <input
+                            type="password"
+                            placeholder="Senha"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
+                        />
+                        {isSigningUp && password.length > 0 && (
+                            <div className="px-1 py-1">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Força da Senha</span>
+                                    <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÉDIA' ? 'text-yellow-500' : 'text-red-500'}`}>
+                                        {getPasswordStrength(password).label}
+                                    </span>
+                                </div>
+                                <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden flex gap-1">
+                                    <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 1 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                    <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 2 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                    <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 3 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     {isSigningUp && (
                         <div className="flex flex-col space-y-2 text-left mb-4">
                             <label className="text-xs font-bold uppercase tracking-wider text-[var(--skin-accent-color)] opacity-70 ml-1">Modo de Início</label>
@@ -485,11 +562,10 @@ export const LoginView: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setAppMode('GAME')}
-                                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${
-                                        appMode === 'GAME' 
-                                        ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] text-[var(--skin-accent-color)] shadow-[0_0_15px_rgba(var(--skin-accent-color-rgb),0.3)]' 
+                                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${appMode === 'GAME'
+                                        ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] text-[var(--skin-accent-color)] shadow-[0_0_15px_rgba(var(--skin-accent-color-rgb),0.3)]'
                                         : 'bg-black/30 border-[var(--glass-border)] text-gray-500 hover:border-gray-400'
-                                    }`}
+                                        }`}
                                 >
                                     <AssetIcon className="w-4 h-4" />
                                     <span className="font-bold text-sm">GAME</span>
@@ -497,11 +573,10 @@ export const LoginView: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setAppMode('BASIC')}
-                                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${
-                                        appMode === 'BASIC' 
-                                        ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${appMode === 'BASIC'
+                                        ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
                                         : 'bg-black/30 border-[var(--glass-border)] text-gray-500 hover:border-gray-400'
-                                    }`}
+                                        }`}
                                 >
                                     <ConfigIcon className="w-4 h-4" />
                                     <span className="font-bold text-sm">BÁSICO</span>
@@ -510,18 +585,18 @@ export const LoginView: React.FC = () => {
                         </div>
                     )}
                     {isSigningUp && (
-                        <input 
-                            type="text" 
-                            placeholder="Nickname" 
+                        <input
+                            type="text"
+                            placeholder="Nickname"
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
                             className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                         />
                     )}
                     {isSigningUp && (
-                        <input 
-                            type="text" 
-                            placeholder="Cole aqui seu Convite Dourado..." 
+                        <input
+                            type="text"
+                            placeholder="Cole aqui seu Convite Dourado..."
                             value={inviteCode}
                             onChange={(e) => setInviteCode(e.target.value)}
                             className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
@@ -532,42 +607,51 @@ export const LoginView: React.FC = () => {
                 {error && <p className="text-red-500 text-sm">{error}</p>}
                 {message && <p className="text-green-400 text-sm">{message}</p>}
 
-                <div className="space-y-3">
-                    {isSigningUp ? (
-                        <button 
-                            onClick={handleSignUp} 
-                            disabled={loading}
-                            className="w-full py-3 rounded-xl luxe-skin-button border border-[var(--skin-accent-color)]/50 shadow-[0_0_18px_rgba(0,0,0,0.4)] disabled:opacity-50"
-                        >
-                            {loading ? 'CADASTRANDO...' : 'CADASTRAR'}
-                        </button>
-                    ) : (
-                        <button 
-                            onClick={handleLogin} 
-                            disabled={loading}
-                            className="w-full py-3 rounded-xl luxe-skin-button border border-[var(--skin-accent-color)]/50 shadow-[0_0_18px_rgba(0,0,0,0.4)] disabled:opacity-50"
-                        >
-                            {loading ? 'ENTRANDO...' : 'ENTRAR'}
-                        </button>
-                    )}
-
-                    {/* Google Auth Button */}
-                    <button 
+                <div className="space-y-4">
+                    <button
+                        onClick={isSigningUp ? handleSignUp : handleLogin}
                         disabled={loading}
-                        className="w-full py-3 rounded-xl bg-white text-black font-bold flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.2)] disabled:opacity-50"
+                        className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black font-black text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(251,191,36,0.4)] flex items-center justify-center gap-2 border border-white/20"
                     >
-                        <GoogleIcon className="w-5 h-5" />
-                        <span className="uppercase tracking-wider text-xs">{isSigningUp ? 'CADASTRAR COM GOOGLE' : 'LOGIN COM GOOGLE'}</span>
+                        {loading ? (
+                            <div className="w-6 h-6 border-4 border-black/30 border-t-black rounded-full animate-spin" />
+                        ) : (
+                            isSigningUp ? 'CRIAR PERFIL' : 'ENTRAR NO GLYPH'
+                        )}
                     </button>
 
-                    <button 
-                        onClick={toggleMode} 
-                        className="w-full py-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 font-bold hover:bg-white/10 hover:text-white transition-all uppercase tracking-wider text-xs"
-                    >
-                        {isSigningUp ? 'JÁ TENHO CONTA' : 'CRIAR CONTA'}
-                    </button>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={handleGoogleLogin}
+                            disabled={loading}
+                            className="w-full py-3 rounded-xl bg-white text-black font-bold flex items-center justify-center gap-3 hover:bg-gray-100 transition-all shadow-[0_4px_15px_rgba(255,255,255,0.1)] active:scale-[0.98]"
+                        >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                            </svg>
+                            <span className="text-sm">
+                                {isSigningUp ? 'Criar conta com Google' : 'Entrar com Google'}
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={() => setIsSigningUp(!isSigningUp)}
+                            className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm"
+                        >
+                            {isSigningUp ? 'Já tenho uma consciência desperta (Login)' : 'Ainda não despertei minha consciência (Cadastro)'}
+                        </button>
+
+                        <button
+                            onClick={loginAsAdmin}
+                            className="w-full py-2 text-amber-500/60 hover:text-amber-500 transition-colors text-xs border border-amber-500/20 rounded-lg"
+                        >
+                            ACESSO.ADMIN (DEV_MODE)
+                        </button>
+                    </div>
                 </div>
-
             </div>
         </div>
     );

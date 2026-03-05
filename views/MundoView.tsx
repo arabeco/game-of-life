@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useTutorial } from '../contexts/TutorialContext';
 import { GlassCard } from '../components/GlassCard';
 import { CreateClanModal } from '../components/CreateClanModal';
 import { Clan, UserProfile } from '../types';
@@ -15,7 +16,7 @@ import { SeasonView } from './SeasonView';
 import { UserAvatar } from '../components/UserAvatar';
 import { ProfileView } from './ProfileView';
 
-const JoinClanBox: React.FC<{onCreate: () => void}> = ({ onCreate }) => {
+const JoinClanBox: React.FC<{ onCreate: () => void }> = ({ onCreate }) => {
     return (
         <GlassCard variant="neutral" className="text-center p-6 space-y-4" id="clans-section">
             <h2 className="text-xl font-bold">Você não está em um clã</h2>
@@ -25,9 +26,9 @@ const JoinClanBox: React.FC<{onCreate: () => void}> = ({ onCreate }) => {
     );
 };
 
-const ClanInfoBox: React.FC<{onClick: () => void}> = ({ onClick }) => {
+const ClanInfoBox: React.FC<{ onClick: () => void }> = ({ onClick }) => {
     const { clan, clanRanks } = useGame();
-    
+
     if (!clan) return null;
 
     const currentRank = clanRanks.find(r => r.id === clan.rankId);
@@ -108,7 +109,7 @@ const SocialSearch: React.FC<{ onSearchResults: (results: { players: UserProfile
                 />
                 <PlusIcon className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
-            <button 
+            <button
                 onClick={handleAdd}
                 disabled={!query.trim()}
                 className="p-3 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] rounded-xl border border-[var(--skin-accent-color)]/30 hover:bg-[var(--skin-accent-color)]/30 disabled:opacity-50 transition-colors"
@@ -135,7 +136,7 @@ const SocialTab: React.FC = () => {
 
     // Simple profile builder for fallback
     const buildFallbackProfile = (id: string): UserProfile => ({
-        id, nickname: 'Usuário', level: 1, avatarUrl: '', border: 'default', backgroundUrl: '', isOnline: false, visibleWidgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, wallet: { gold: 0, fragments: 0 }, inventory: [], role: 'user'
+        id, nickname: 'Usuário', username: 'usuario', level: 1, avatarUrl: '', border: 'default', backgroundUrl: '', isOnline: false, visibleWidgets: [], skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, wallet: { gold: 0, fragments: 0 }, inventory: [], role: 'user'
     });
 
     return (
@@ -148,7 +149,7 @@ const SocialTab: React.FC = () => {
             ) : (
                 <JoinClanBox onCreate={() => setModal('create')} />
             )}
-            
+
             <div className="space-y-4">
                 <h3 className="text-center font-bold uppercase tracking-wider text-sm text-gray-400">Aliados e Clãs</h3>
                 <SocialSearch onSearchResults={setSearchResults} />
@@ -167,9 +168,9 @@ const SocialTab: React.FC = () => {
                         Solicitações {friendRequestsIncoming.length > 0 ? `(${friendRequestsIncoming.length})` : ''}
                     </button>
                 </div>
-                
+
                 {showSearchResults ? (
-                        <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                         {searchResults.clans.length > 0 && (
                             <div className="space-y-2">
                                 <h4 className="text-xs font-bold text-gray-500">CLÃS ENCONTRADOS</h4>
@@ -177,7 +178,7 @@ const SocialTab: React.FC = () => {
                             </div>
                         )}
                         {searchResults.players.length > 0 && (
-                                <div className="space-y-2">
+                            <div className="space-y-2">
                                 <h4 className="text-xs font-bold text-gray-500">ALIADOS ENCONTRADOS</h4>
                                 {searchResults.players.map(player => {
                                     const isFriend = friends.some(friend => friend.id === player.id);
@@ -247,7 +248,7 @@ const SocialTab: React.FC = () => {
                                             // The hook returns requests. We need to check the type.
                                             // Assuming type has recipientProfile for outgoing
                                             const recipientProfile = (request as any).recipientProfile || buildFallbackProfile(request.recipientId);
-                                            
+
                                             return (
                                                 <SocialCard
                                                     key={request.id}
@@ -277,8 +278,9 @@ const SocialTab: React.FC = () => {
 
 const MundoView: React.FC = () => {
     const { appMode, clan } = useGame();
+    const { didForceGameMode } = useTutorial();
     const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>('social');
-    const isBasicMode = appMode === 'BASIC';
+    const isBasicMode = appMode === 'BASIC' && !didForceGameMode;
 
     const tabs = useMemo(() => {
         const allTabs = [

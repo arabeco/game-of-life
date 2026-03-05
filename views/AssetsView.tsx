@@ -5,18 +5,19 @@ import { AssetDossier } from '../components/AssetDossier';
 import { Sephirot } from '../components/Sephirot';
 import { SKINS_DATA } from '../constants';
 import { SephirotFog } from '../components/SephirotFog';
+import { useTutorial } from '../contexts/TutorialContext';
 
 const assetPositions: Record<string, { row: number; col: number }> = {
-  consciencia: { row: 1, col: 2 },
-  'espaco-mental': { row: 2, col: 1 },
-  espiritualidade: { row: 2, col: 3 },
-  proposito: { row: 3, col: 1 },
-  projetos: { row: 3, col: 3 },
-  conexoes: { row: 4, col: 2 },
-  trabalho: { row: 5, col: 1 },
-  financas: { row: 5, col: 3 },
-  hobbies: { row: 6, col: 2 },
-  fisico: { row: 7, col: 2 },
+    consciencia: { row: 1, col: 2 },
+    'espaco-mental': { row: 2, col: 1 },
+    espiritualidade: { row: 2, col: 3 },
+    proposito: { row: 3, col: 1 },
+    projetos: { row: 3, col: 3 },
+    conexoes: { row: 4, col: 2 },
+    trabalho: { row: 5, col: 1 },
+    financas: { row: 5, col: 3 },
+    hobbies: { row: 6, col: 2 },
+    fisico: { row: 7, col: 2 },
 };
 
 // Sephirot coordinates for the Fog Shader (0-100 scale)
@@ -35,113 +36,114 @@ const SEPHIROT_COORDS = [
 ];
 
 export const AssetsView: React.FC = () => {
-  const { assets, userProfile, appMode, clan } = useGame();
-  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  
-  const isBasicMode = appMode === 'BASIC';
-  const isBasicSkin = userProfile.skin === 'BASIC' || userProfile.skin === 'default' || !userProfile.skin;
-  const showWhiteSmoke = isBasicMode || isBasicSkin;
+    const { assets, userProfile, appMode: baseAppMode, clan } = useGame();
+    const { activeUIMode } = useTutorial();
+    const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  // Get user skin color or default to GOLD
-  const skinColor = SKINS_DATA.find(s => s.id === userProfile.skin)?.color || '#d4af37';
-  
-  // Use white color and office mode for BASIC mode or BASIC skin
-  const finalSmokeColor = showWhiteSmoke ? '#ffffff' : skinColor;
-  const finalSmokeMode = showWhiteSmoke ? 'office' : 'sephirot';
+    const isBasicMode = activeUIMode === 'BASIC';
+    const isBasicSkin = userProfile.skin === 'BASIC' || userProfile.skin === 'default' || !userProfile.skin;
+    const showWhiteSmoke = isBasicMode || isBasicSkin;
 
-  // Prepare points with levels for the shader
-  const baseAspect = 9 / 16;
-  const containerAspect = containerSize.width > 0 && containerSize.height > 0
-      ? containerSize.width / containerSize.height
-      : baseAspect;
-  const stretchY = containerAspect < baseAspect ? baseAspect / containerAspect : 1;
-  const layoutCoords = SEPHIROT_COORDS.map(coord => {
-      const yNorm = coord.y / 100;
-      const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
-      return {
-          id: coord.id,
-          x: coord.x,
-          y: yStretched * 100
-      };
-  });
-  const assetById = new Map<string, Asset>(assets.map(asset => [asset.id, asset]));
-  const fogPoints = layoutCoords.map(coord => {
-      const asset = assetById.get(coord.id);
-      return {
-          x: coord.x,
-          y: coord.y,
-          level: asset ? asset.level : 1
-      };
-  });
+    // Get user skin color or default to GOLD
+    const skinColor = SKINS_DATA.find(s => s.id === userProfile.skin)?.color || '#d4af37';
 
-  const handleSphereClick = (asset: Asset) => setSelectedAssetId(asset.id);
-  const handleBack = () => setSelectedAssetId(null);
-  
-  const selectedAsset = assets.find(a => a.id === selectedAssetId);
+    // Use white color and office mode for BASIC mode or BASIC skin
+    const finalSmokeColor = showWhiteSmoke ? '#ffffff' : skinColor;
+    const finalSmokeMode = showWhiteSmoke ? 'office' : 'sephirot';
 
-  useLayoutEffect(() => {
-      const container = containerRef.current;
-      if (!container) return;
+    // Prepare points with levels for the shader
+    const baseAspect = 9 / 16;
+    const containerAspect = containerSize.width > 0 && containerSize.height > 0
+        ? containerSize.width / containerSize.height
+        : baseAspect;
+    const stretchY = containerAspect < baseAspect ? baseAspect / containerAspect : 1;
+    const layoutCoords = SEPHIROT_COORDS.map(coord => {
+        const yNorm = coord.y / 100;
+        const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
+        return {
+            id: coord.id,
+            x: coord.x,
+            y: yStretched * 100
+        };
+    });
+    const assetById = new Map<string, Asset>(assets.map(asset => [asset.id, asset]));
+    const fogPoints = layoutCoords.map(coord => {
+        const asset = assetById.get(coord.id);
+        return {
+            x: coord.x,
+            y: coord.y,
+            level: asset ? asset.level : 1
+        };
+    });
 
-      const updateSize = () => {
-          const rect = container.getBoundingClientRect();
-          setContainerSize({ width: rect.width, height: rect.height });
-      };
+    const handleSphereClick = (asset: Asset) => setSelectedAssetId(asset.id);
+    const handleBack = () => setSelectedAssetId(null);
 
-      updateSize();
+    const selectedAsset = assets.find(a => a.id === selectedAssetId);
 
-      if (typeof ResizeObserver !== 'undefined') {
-          const observer = new ResizeObserver(() => updateSize());
-          observer.observe(container);
-          return () => observer.disconnect();
-      }
+    useLayoutEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
 
-      window.addEventListener('resize', updateSize);
-      return () => window.removeEventListener('resize', updateSize);
-  }, []);
+        const updateSize = () => {
+            const rect = container.getBoundingClientRect();
+            setContainerSize({ width: rect.width, height: rect.height });
+        };
 
-  if (selectedAsset) {
+        updateSize();
+
+        if (typeof ResizeObserver !== 'undefined') {
+            const observer = new ResizeObserver(() => updateSize());
+            observer.observe(container);
+            return () => observer.disconnect();
+        }
+
+        window.addEventListener('resize', updateSize);
+        return () => window.removeEventListener('resize', updateSize);
+    }, []);
+
+    if (selectedAsset) {
+        return (
+            <div className="px-4 h-full">
+                <AssetDossier asset={selectedAsset} onBack={handleBack} />
+            </div>
+        );
+    }
+
     return (
-        <div className="px-4 h-full">
-            <AssetDossier asset={selectedAsset} onBack={handleBack} />
-        </div>
-    );
-  }
+        <div
+            ref={containerRef}
+            className="flex justify-center items-center h-full relative bg-black"
+            style={{ height: 'calc(100vh - 80px - var(--safe-area-top) - 64px - var(--safe-area-bottom))' }}
+        >
+            {/* Background Fog Shader */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute inset-0 bg-black" />
+                <SephirotFog
+                    points={fogPoints}
+                    color={finalSmokeColor}
+                    mode={finalSmokeMode}
+                />
+            </div>
 
-  return (
-    <div
-        ref={containerRef}
-        className="flex justify-center items-center h-full relative bg-black"
-        style={{ height: 'calc(100vh - 80px - var(--safe-area-top) - 64px - var(--safe-area-bottom))' }}
-    >
-        {/* Background Fog Shader */}
-        <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-black" />
-            <SephirotFog 
-                points={fogPoints} 
-                color={finalSmokeColor} 
-                mode={finalSmokeMode}
-            />
-        </div>
-        
-        <div className="relative z-10 w-full h-full">
-            <div id="assets-grid" className="relative w-full h-full">
-                {layoutCoords.map(coord => {
-                    const asset = assetById.get(coord.id);
-                    if (!asset) return null;
-                    return (
-                        <div key={asset.id} className="absolute flex items-center justify-center" style={{ left: `${coord.x}%`, top: `${coord.y}%`, transform: 'translate(-50%, -50%)' }}>
-                            <Sephirot 
-                                asset={asset} 
-                                onClick={() => handleSphereClick(asset)} 
-                            />
-                        </div>
-                    );
-                })}
+            <div className="relative z-10 w-full h-full">
+                <div id="assets-grid" className="relative w-full h-full">
+                    {layoutCoords.map(coord => {
+                        const asset = assetById.get(coord.id);
+                        if (!asset) return null;
+                        return (
+                            <div key={asset.id} className="absolute flex items-center justify-center" style={{ left: `${coord.x}%`, top: `${coord.y}%`, transform: 'translate(-50%, -50%)' }}>
+                                <Sephirot
+                                    asset={asset}
+                                    onClick={() => handleSphereClick(asset)}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
-    </div>
-  );
+    );
 };

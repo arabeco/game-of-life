@@ -20,31 +20,31 @@ export interface CodexTemplate {
 }
 
 export interface CodexCatalogItem {
-    id: string;
-    title: string;
-    description: string;
-    price_brl: number;
-    is_premium: boolean;
-    cover_image?: string;
-    author_name: string;
-    duration_days: number;
-    created_at: string;
-    template?: CodexTemplate; // JSONB
+  id: string;
+  title: string;
+  description: string;
+  price_brl: number;
+  is_premium: boolean;
+  cover_image?: string;
+  author_name: string;
+  duration_days: number;
+  created_at: string;
+  template?: CodexTemplate; // JSONB
 }
 
 export interface UserCodex {
-    id: string;
-    owner_id: string;
-    schema_version: string;
-    name: string;
-    author: string;
-    price: number;
-    description: string;
-    template: CodexTemplate; // JSONB
-    is_public: boolean;
-    published_at?: string;
-    created_at: string;
-    updated_at: string;
+  id: string;
+  owner_id: string;
+  schema_version: string;
+  name: string;
+  author: string;
+  price: number;
+  description: string;
+  template: CodexTemplate; // JSONB
+  is_public: boolean;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
@@ -86,7 +86,7 @@ export interface Action {
   difficulty?: number; // 1 to 5
   scheduledDays?: DayOfWeek[]; // Days to automatically schedule
   scheduledStartTime?: number; // Time in minutes to automatically schedule
-  
+
   // Codex / Rich Content Fields
   originCodexId?: string; // If injected from a Codex
   briefing?: string; // The "Why"
@@ -107,7 +107,7 @@ export interface Action {
 }
 
 export interface Arena {
-  id:string;
+  id: string;
   assetId: string;
   name: string;
   description: string;
@@ -116,7 +116,7 @@ export interface Arena {
   actionIds: string[];
   isArchived?: boolean;
   folderId?: string; // Links to ArenaFolder
-  
+
   // Campaign/Progression State
   isLocked?: boolean;
   isHidden?: boolean;
@@ -124,51 +124,51 @@ export interface Arena {
   priority?: 'alta' | 'media' | 'baixa';
   order?: number; // Global order for "free" mode
   priorityOrder?: number; // Order within a specific priority level
-  
+
   // Codex Fields
   originCodexId?: string;
   codexLevel?: number; // 1, 2, 3...
 }
 
 export interface ArenaFolder {
-    id: string;
-    name: string;
-    icon: string;
-    assetId?: string; // Optional context link
-    
-    // Campaign metadata
-    description?: string;
-    deadline?: string;
-    status: 'active' | 'completed' | 'archived';
-    createdAt: string;
-    completedAt?: string;
-    
-    // UI Config
-    theme?: string; // For "subpastinhas" visual
+  id: string;
+  name: string;
+  icon: string;
+  assetId?: string; // Optional context link
+
+  // Campaign metadata
+  description?: string;
+  deadline?: string;
+  status: 'active' | 'completed' | 'archived';
+  createdAt: string;
+  completedAt?: string;
+
+  // UI Config
+  theme?: string; // For "subpastinhas" visual
 }
 
 // Alias for backward compatibility if needed, but prefer ArenaFolder
 export interface Campaign {
-    id: string;
-    userId: string; // Add userId explicitly if missing in interface but present in DB
-    title: string;
-    description?: string;
-    deadline?: string;
-    status: 'active' | 'completed' | 'archived';
-    createdAt: string;
-    completedAt?: string;
-    arenaIds: string[];
-    arenaConfig?: Record<string, {
-        isLocked: boolean;
-        isHidden?: boolean;
-        isCleared?: boolean;
-        completedActionIds?: string[];
-        prerequisiteArenaIds?: string[]; // IDs of arenas that must be cleared to unlock this one
-    }>;
-    priority?: 'alta' | 'media' | 'baixa';
-    type?: 'sequential' | 'parallel';
-    order?: number;
-    priorityOrder?: number;
+  id: string;
+  userId: string; // Add userId explicitly if missing in interface but present in DB
+  title: string;
+  description?: string;
+  deadline?: string;
+  status: 'active' | 'completed' | 'archived';
+  createdAt: string;
+  completedAt?: string;
+  arenaIds: string[];
+  arenaConfig?: Record<string, {
+    isLocked: boolean;
+    isHidden?: boolean;
+    isCleared?: boolean;
+    completedActionIds?: string[];
+    prerequisiteArenaIds?: string[]; // IDs of arenas that must be cleared to unlock this one
+  }>;
+  priority?: 'alta' | 'media' | 'baixa';
+  type?: 'sequential' | 'parallel';
+  order?: number;
+  priorityOrder?: number;
 }
 
 export interface Asset {
@@ -211,39 +211,39 @@ export interface ClanCustomQuest {
 }
 
 export interface Nobility {
-    exp: number;
-    rankId: string;
+  exp: number;
+  rankId: string;
 }
 
 export interface InventoryItem {
-    id: string; // References ItemDef.id
-    instanceId: string; // Unique ID for this specific item instance (UUID)
-    acquiredAt: string;
-    isEquipped?: boolean;
+  id: string; // References ItemDef.id
+  instanceId: string; // Unique ID for this specific item instance (UUID)
+  acquiredAt: string;
+  isEquipped?: boolean;
 }
 
 export interface UserWallet {
-    gold: number;
-    fragments: number;
+  gold: number;
+  fragments: number;
 }
 
 export interface SovereignConfig {
-    body: string;
-    skinTone: string;
-    hairStyle: string;
-    hairColor: string;
-    outfit: string;
-    head_under: string; // mascara, oculos, tapa-olho
-    helmet: string; // elmos
-    head_over: string; // coroa, boné, chapéu
-    artifact: string;
-    glyph: string; // NEW: Glifo slot
-    aura: string; // NEW: Aura slot
-    orb?: string; // NEW: Orbe slot
-    sovereignPlate?: string; // NEW: Placa slot for Sovereign
-    artifactPlate?: string; // NEW: Placa slot for Artifact
-    glyphPlate?: string; // NEW: Placa slot for Glyph
-    primaryDisplay?: 'sovereign' | 'item' | 'glyph'; // Preferred miniature display
+  body: string;
+  skinTone: string;
+  hairStyle: string;
+  hairColor: string;
+  outfit: string;
+  head_under: string; // mascara, oculos, tapa-olho
+  helmet: string; // elmos
+  head_over: string; // coroa, boné, chapéu
+  artifact: string;
+  glyph: string; // NEW: Glifo slot
+  aura: string; // NEW: Aura slot
+  orb?: string; // NEW: Orbe slot
+  sovereignPlate?: string; // NEW: Placa slot for Sovereign
+  artifactPlate?: string; // NEW: Placa slot for Artifact
+  glyphPlate?: string; // NEW: Placa slot for Glyph
+  primaryDisplay?: 'sovereign' | 'item' | 'glyph'; // Preferred miniature display
 }
 
 export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';
@@ -276,16 +276,17 @@ export type ThemePreference = 'LIGHT' | 'DARK';
 export type ArenasViewMode = 'free' | 'priorities' | 'assets';
 
 export interface TutorialStep {
-    title: string;
-    text: string;
-    view: string;
-    tab?: string;
-    showReports?: boolean;
-    showProfile?: boolean;
-    showOracleSettings?: boolean;
-    showRestScreen?: boolean;
-    showArenaId?: string;
-    targetId: string;
+  title: string;
+  text: string;
+  view: View;
+  tab?: string;
+  showReports?: boolean;
+  showProfile?: boolean;
+  showOracleSettings?: boolean;
+  showRestScreen?: boolean;
+  showArenaId?: string;
+  targetId?: string;
+  category?: 'INTRO' | 'ALICERCE' | 'IDENTIDADE' | 'MUNDO' | 'ARQUITETO';
 }
 
 export type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings';
@@ -295,7 +296,10 @@ export interface UserProfile {
   username: string;
   // FIX: Added optional email property to align with database schema and fix typing errors.
   email?: string;
+  emailConfirmedAt?: string;
+  createdAt?: string;
   appMode?: AppMode;
+
   themePreference?: ThemePreference;
   arenasViewMode?: ArenasViewMode;
   sovereign?: SovereignConfig;
@@ -353,45 +357,45 @@ export interface ChecklistItem {
 }
 
 export interface Report {
-    id: string;
-    cycleId?: string;
-    startDate: string;
-    endDate: string;
-    performanceScore: number;
-    metrics: {
-        actionsCompleted: number;
-        totalPlannedActions: number;
-        arenasInvolved: number;
-        goalsMet: number; // Assuming milestones are goals
-        totalHours: number;
-        questsCompleted?: number;
-        consistencyDays?: number;
-        expGained?: number;
-        plannedEndDate?: string;
-    };
-    highlight: {
-        mostFocusedArena: string;
-        mostFocusedArenaId?: string;
-        mostRepeatedAction: string;
-        mostRepeatedActionCount?: number;
-    };
-    cycleName?: string;
-    seasonId?: string;
-    clanPoints?: number;
-    assetProgress: { asset: string; value: number }[];
+  id: string;
+  cycleId?: string;
+  startDate: string;
+  endDate: string;
+  performanceScore: number;
+  metrics: {
+    actionsCompleted: number;
+    totalPlannedActions: number;
+    arenasInvolved: number;
+    goalsMet: number; // Assuming milestones are goals
+    totalHours: number;
+    questsCompleted?: number;
+    consistencyDays?: number;
+    expGained?: number;
+    plannedEndDate?: string;
+  };
+  highlight: {
+    mostFocusedArena: string;
+    mostFocusedArenaId?: string;
+    mostRepeatedAction: string;
+    mostRepeatedActionCount?: number;
+  };
+  cycleName?: string;
+  seasonId?: string;
+  clanPoints?: number;
+  assetProgress: { asset: string; value: number }[];
 }
 
 export interface NobilityRank {
-    id: string;
-    name: string;
-    levelRequired: number;
-    expTotalRequired: number;
+  id: string;
+  name: string;
+  levelRequired: number;
+  expTotalRequired: number;
 }
 
 export interface ClanRank {
-    id: string;
-    name: string;
-    expRequired: number;
+  id: string;
+  name: string;
+  expRequired: number;
 }
 
 export type ClanType = 'Casual' | 'Office';
@@ -399,22 +403,22 @@ export type RecruitmentStatus = 'Aberto' | 'Privado';
 export type ClanRankId = string;
 
 export interface Clan {
-    id: string;
-    name: string;
-    icon?: string;
-    description: string;
-    backgroundUrl?: string;
-    leaderId: string;
-    rankId: ClanRankId;
-    level: number;
-    experience: number;
-    exp: number;
-    bannerUrl?: string;
-    clanType: ClanType;
-    created_at?: string;
-    privacy: 'open' | 'invite-only' | 'closed';
-    recruitmentStatus?: RecruitmentStatus;
-    slotConfig?: Record<string, { label: string; emoji: string }>;
+  id: string;
+  name: string;
+  icon?: string;
+  description: string;
+  backgroundUrl?: string;
+  leaderId: string;
+  rankId: ClanRankId;
+  level: number;
+  experience: number;
+  exp: number;
+  bannerUrl?: string;
+  clanType: ClanType;
+  created_at?: string;
+  privacy: 'open' | 'invite-only' | 'closed';
+  recruitmentStatus?: RecruitmentStatus;
+  slotConfig?: Record<string, { label: string; emoji: string }>;
 }
 
 export interface ClanMember {
@@ -436,8 +440,8 @@ export interface ClanJoinRequest {
 
 // FIX: Define EnrichedClanMember to resolve role conflict and be reusable.
 export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
-    role: 'leader' | 'member';
-    joined_at: string;
+  role: 'leader' | 'member';
+  joined_at: string;
 };
 
 // Sistema de Santuário - Posicionamento e Tempo
@@ -445,144 +449,144 @@ export type SanctuaryArea = 'meditation' | 'devotion' | 'rest' | 'garden';
 export type GardenAction = 'working' | 'watering' | 'walking';
 
 export interface SanctuaryPosition {
-    userId: string;
-    row: number;
-    col: number;
-    area: SanctuaryArea;
-    gardenAction?: GardenAction;
-    lastUpdated: string; // ISO timestamp
+  userId: string;
+  row: number;
+  col: number;
+  area: SanctuaryArea;
+  gardenAction?: GardenAction;
+  lastUpdated: string; // ISO timestamp
 }
 
 export interface SanctuaryTimeTracker {
-    userId: string;
-    area: SanctuaryArea;
-    totalTime: number; // seconds
-    currentSessionStart?: string; // ISO timestamp
-    lastCalculatedDecay: string; // ISO timestamp
+  userId: string;
+  area: SanctuaryArea;
+  totalTime: number; // seconds
+  currentSessionStart?: string; // ISO timestamp
+  lastCalculatedDecay: string; // ISO timestamp
 }
 
 export interface SanctuaryAreaStats {
-    area: SanctuaryArea;
-    totalTime: number; // seconds
-    activeUsers: number;
-    lastUpdated: string;
-    decayRate: number; // seconds per hour when empty
+  area: SanctuaryArea;
+  totalTime: number; // seconds
+  activeUsers: number;
+  lastUpdated: string;
+  decayRate: number; // seconds per hour when empty
 }
 
 
 export interface Mood {
-    label: string;
-    min: number;
-    max: number;
-    color: string;
-    trackStart: string;
-    trackEnd: string;
+  label: string;
+  min: number;
+  max: number;
+  color: string;
+  trackStart: string;
+  trackEnd: string;
 }
 
 export interface Cycle {
-    id: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-    arenaIds: string[]; // IDs das arenas ativas neste ciclo
-    userId: string; // ID do usuário dono do ciclo
-    seasonId?: string;
-    isFinished?: boolean; // FIX: Added isFinished to Cycle interface
-    arenaConfig?: Record<string, {
-        isLocked: boolean;
-        isHidden?: boolean;
-        isCleared?: boolean;
-        completedActionIds?: string[];
-    }>;
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  arenaIds: string[]; // IDs das arenas ativas neste ciclo
+  userId: string; // ID do usuário dono do ciclo
+  seasonId?: string;
+  isFinished?: boolean; // FIX: Added isFinished to Cycle interface
+  arenaConfig?: Record<string, {
+    isLocked: boolean;
+    isHidden?: boolean;
+    isCleared?: boolean;
+    completedActionIds?: string[];
+  }>;
 }
 
 export type DailyCommitmentStage = 'planning' | 'battle' | 'judgment';
 
 export interface DailyCommitment {
-    date: string; // YYYY-MM-DD
-    taskIds: string[];
-    stage: DailyCommitmentStage;
-    score: number | null;
-    expDeposited?: number | null;
-    sitrepBonus?: number | null;
-    earnedInsigniaId?: string | null;
+  date: string; // YYYY-MM-DD
+  taskIds: string[];
+  stage: DailyCommitmentStage;
+  score: number | null;
+  expDeposited?: number | null;
+  sitrepBonus?: number | null;
+  earnedInsigniaId?: string | null;
 }
 
 // --- Sovereign Control Panel Types ---
 
 export interface GoldenInvite {
-    id: string;
-    code: string;
-    is_used: boolean;
-    claimed_by_user_id: string | null;
-    claimed_at: string | null;
-    created_at: string;
+  id: string;
+  code: string;
+  is_used: boolean;
+  claimed_by_user_id: string | null;
+  claimed_at: string | null;
+  created_at: string;
 }
 
 export interface Season {
-    id: string;
-    name: string;
-    start_date: string;
-    end_date: string;
-    background_png_url: string;
-    lore_text: string;
-    is_active: boolean;
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  background_png_url: string;
+  lore_text: string;
+  is_active: boolean;
 }
 
 export interface SeasonMission {
-    id: string;
-    season_id: string;
-    title: string;
-    description: string;
-    goal_type: 'km_run' | 'books_read' | 'meditation_days' | 'actions_completed';
-    goal_value: number;
-    reward_type: 'exp' | 'item_id';
-    reward_value: number | string;
-    type?: 'individual' | 'clan';
-    action_name?: string;
-    icon?: string;
-    requirements?: any;
+  id: string;
+  season_id: string;
+  title: string;
+  description: string;
+  goal_type: 'km_run' | 'books_read' | 'meditation_days' | 'actions_completed';
+  goal_value: number;
+  reward_type: 'exp' | 'item_id';
+  reward_value: number | string;
+  type?: 'individual' | 'clan';
+  action_name?: string;
+  icon?: string;
+  requirements?: any;
 }
 
 export interface QuestActionTemplate {
-    name: string;
-    description: string;
-    duration: number; // minutos
-    icon: string;
-    repetitions?: number; 
-    isMilestone?: boolean;
-    actionType?: string;
-    difficulty?: number;
+  name: string;
+  description: string;
+  duration: number; // minutos
+  icon: string;
+  repetitions?: number;
+  isMilestone?: boolean;
+  actionType?: string;
+  difficulty?: number;
 }
 
 export type ConfigSeasonQuest = SeasonQuest;
 
 export interface SeasonQuest {
-    id: string;
-    title: string;
-    description: string;
-    type: 'individual' | 'clan';
-    category?: 'physical' | 'intellectual' | 'social' | 'spiritual';
-    actionTemplate: QuestActionTemplate;
-    requirements: {
-        totalReps?: number;
-        milestone?: boolean;
-        clanGoal?: number;
-    };
-    rewards: {
-        xp: number;
-        gold?: number;
-        items?: string[];
-    };
-    clanConfig?: {
-        collectiveGoal: number;
-    };
-    season_id?: string;
-    goal_type?: 'actions_completed' | 'milestones_completed'; // Optional for compatibility if needed
-    goal_value?: number;
-    reward_type?: 'exp' | 'item_id' | 'chest';
-    reward_value?: number | string;
-    maxParticipants?: number;
+  id: string;
+  title: string;
+  description: string;
+  type: 'individual' | 'clan';
+  category?: 'physical' | 'intellectual' | 'social' | 'spiritual';
+  actionTemplate: QuestActionTemplate;
+  requirements: {
+    totalReps?: number;
+    milestone?: boolean;
+    clanGoal?: number;
+  };
+  rewards: {
+    xp: number;
+    gold?: number;
+    items?: string[];
+  };
+  clanConfig?: {
+    collectiveGoal: number;
+  };
+  season_id?: string;
+  goal_type?: 'actions_completed' | 'milestones_completed'; // Optional for compatibility if needed
+  goal_value?: number;
+  reward_type?: 'exp' | 'item_id' | 'chest';
+  reward_value?: number | string;
+  maxParticipants?: number;
 }
 
 // --- Hall of Fame / Feed Types ---
@@ -645,118 +649,118 @@ export interface LinkNotificationLog {
 
 export type OracleMode = 'calmo' | 'reflexivo' | 'tatico' | 'estrategico' | 'coach' | 'personalizado' | 'neutro';
 
-export type OracleCategory = 
-    | 'frases_inspiradoras' 
-    | 'reflexoes_filosoficas' 
-    | 'fragmentos_sabedoria' 
-    | 'dicas_produtividade' 
-    | 'rituais_lifestyle' 
-    | 'provocacoes' 
-    | 'sussurros_maestria' 
-    | 'analise_padroes';
+export type OracleCategory =
+  | 'frases_inspiradoras'
+  | 'reflexoes_filosoficas'
+  | 'fragmentos_sabedoria'
+  | 'dicas_produtividade'
+  | 'rituais_lifestyle'
+  | 'provocacoes'
+  | 'sussurros_maestria'
+  | 'analise_padroes';
 
 export interface OraclePreferences {
-    userId: string;
-    iaEnabled: boolean;
-    notificationsEnabled: boolean;
-    animationsEnabled: boolean;
-    soundsEnabled: boolean;
-    hapticsEnabled: boolean;
-    enabledCategories: OracleCategory[];
-    activeMode: OracleMode;
-    customModeInstructions?: string;
-    quietHoursStart: string;
-    quietHoursEnd: string;
-    updatedAt: string;
+  userId: string;
+  iaEnabled: boolean;
+  notificationsEnabled: boolean;
+  animationsEnabled: boolean;
+  soundsEnabled: boolean;
+  hapticsEnabled: boolean;
+  enabledCategories: OracleCategory[];
+  activeMode: OracleMode;
+  customModeInstructions?: string;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+  updatedAt: string;
 }
 
 export interface OracleMessage {
-    id: string;
-    userId: string;
-    category: OracleCategory;
-    content: string;
-    mode: OracleMode;
-    deliveryType: 'feed' | 'push' | 'chat';
-    contextSnapshot?: any;
-    read: boolean;
-    createdAt: string;
+  id: string;
+  userId: string;
+  category: OracleCategory;
+  content: string;
+  mode: OracleMode;
+  deliveryType: 'feed' | 'push' | 'chat';
+  contextSnapshot?: any;
+  read: boolean;
+  createdAt: string;
 }
 
 export interface OracleContext {
-    currentTime: string;
-    timeOfDay: "madrugada" | "manhã" | "tarde" | "noite";
-    hasCycle: boolean;
-    cycleDayNumber: number | null;
-    cycleTotalDays: number | null;
-    cycleCompletionPercent: number | null;
-    hasArenas: boolean;
-    totalArenas: number;
-    arenaNames: string[];
-    staleArenas: string[];
-    completedActionsInCycle: number;
-    pendingActionsToday: number;
-    overdueActions: number;
-    activeMode: OracleMode;
-    customModeInstructions: string | null;
-    enabledCategories: OracleCategory[];
-    username: string;
-    level: number;
-    sephirotLevels: Record<string, number>;
-    clanName: string | null;
-    seasonName: string | null;
-    pendingChests: number;
+  currentTime: string;
+  timeOfDay: "madrugada" | "manhã" | "tarde" | "noite";
+  hasCycle: boolean;
+  cycleDayNumber: number | null;
+  cycleTotalDays: number | null;
+  cycleCompletionPercent: number | null;
+  hasArenas: boolean;
+  totalArenas: number;
+  arenaNames: string[];
+  staleArenas: string[];
+  completedActionsInCycle: number;
+  pendingActionsToday: number;
+  overdueActions: number;
+  activeMode: OracleMode;
+  customModeInstructions: string | null;
+  enabledCategories: OracleCategory[];
+  username: string;
+  level: number;
+  sephirotLevels: Record<string, number>;
+  clanName: string | null;
+  seasonName: string | null;
+  pendingChests: number;
 }
 
 export interface Notification {
-    id: string;
-    userId: string;
-    type: 'friend_request' | 'friend_accepted' | 'clan_invite' | 'clan_join' | 'clan_mission_update' | 'cycle_ending' | 'season_ending' | 'level_up' | 'title_unlocked' | 'mission_redeemable' | 'system';
-    content: string;
-    read: boolean;
-    createdAt: string;
+  id: string;
+  userId: string;
+  type: 'friend_request' | 'friend_accepted' | 'clan_invite' | 'clan_join' | 'clan_mission_update' | 'cycle_ending' | 'season_ending' | 'level_up' | 'title_unlocked' | 'mission_redeemable' | 'system';
+  content: string;
+  read: boolean;
+  createdAt: string;
 }
 
 // --- Direct Messages ---
 
 export interface DirectMessage {
-    id: string;
-    senderId: string;
-    recipientId: string;
-    content: string;
-    read: boolean;
-    createdAt: string;
-    senderProfile?: UserProfile;
+  id: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  read: boolean;
+  createdAt: string;
+  senderProfile?: UserProfile;
 }
 
 export interface DMConversation {
-    participantId: string;
-    profile: UserProfile;
-    lastMessage?: DirectMessage;
-    unreadCount: number;
+  participantId: string;
+  profile: UserProfile;
+  lastMessage?: DirectMessage;
+  unreadCount: number;
 }
 
 // --- Aldeia System ---
 export type AldeiaSlotId = 'fogueira' | 'forja' | 'torre' | 'horta' | 'altar' | 'trono';
 
 export interface AldeiaSlot {
-    id: string;
-    clanId: string;
-    slotId: AldeiaSlotId;
-    health: number;
-    streakGood: number;
-    streakBad: number;
-    lastVisitedAt: string | null;
-    lastDecayCalculation: string | null;
-    updatedAt: string;
+  id: string;
+  clanId: string;
+  slotId: AldeiaSlotId;
+  health: number;
+  streakGood: number;
+  streakBad: number;
+  lastVisitedAt: string | null;
+  lastDecayCalculation: string | null;
+  updatedAt: string;
 }
 
 export interface AldeiaPresence {
-    id: string;
-    clanId: string;
-    userId: string;
-    slotId: AldeiaSlotId;
-    startedAt: string;
-    hoursCounted: number;
+  id: string;
+  clanId: string;
+  userId: string;
+  slotId: AldeiaSlotId;
+  startedAt: string;
+  hoursCounted: number;
 }
 
 

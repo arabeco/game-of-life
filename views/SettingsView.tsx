@@ -16,6 +16,7 @@ import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { SeasonDetailModal } from '../components/SeasonDetailModal';
 import { DebugRewardControls } from '../components/DebugRewardControls';
 import { CODEXES } from '../constants/items';
+import { NewArenaModal } from '../components/NewArenaModal';
 
 import { CodexModal } from '../components/CodexModal';
 import { CampaignsCodex } from '../components/CampaignsCodex';
@@ -102,7 +103,7 @@ const SettingSelector: React.FC<{ label: string; value: string; onClick: () => v
 
 const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
     const { startTutorialLevel, isFlagCompleted } = useTutorial();
-    
+
     const levels = [
         { id: 1, name: 'Alicerce (Básico)', flag: 'tutorial_level_1_completed' },
         { id: 2, name: 'Identidade (Interno)', flag: 'tutorial_level_2_completed' },
@@ -122,11 +123,11 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
                                 {isCompleted ? 'Concluído' : 'Pendente'}
                             </p>
                         </div>
-                        <button 
+                        <button
                             onClick={() => {
                                 onStart?.();
                                 startTutorialLevel(lvl.id);
-                            }} 
+                            }}
                             className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20 transition-colors"
                         >
                             REPLAY
@@ -629,7 +630,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                 </div>
                                                                 <div className="text-xs font-bold text-[var(--skin-accent-color)]">EM ANDAMENTO</div>
                                                             </div>
-                                                            
+
                                                             <div className="flex items-center gap-2">
                                                                 <div className="flex-1 h-1.5 bg-black/50 rounded-full overflow-hidden">
                                                                     <div className="h-full bg-blue-500 w-1/2"></div>
@@ -644,7 +645,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 })
                                             )}
                                             <div className="pt-2 border-t border-white/10">
-                                                <button 
+                                                <button
                                                     onClick={handleOpenChallengeModal}
                                                     className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
                                                 >
@@ -713,10 +714,10 @@ const ChallengeSelectionModal: React.FC<{ onClose: () => void; onSelectFriend: (
                         <h3 className="text-sm font-black uppercase tracking-widest text-white">Novo Desafio</h3>
                         <button onClick={onClose}><XIcon className="w-5 h-5 text-gray-400" /></button>
                     </div>
-                    
-                    <input 
-                        type="text" 
-                        placeholder="Buscar amigo..." 
+
+                    <input
+                        type="text"
+                        placeholder="Buscar amigo..."
                         className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white mb-4 focus:border-[var(--skin-accent-color)] outline-none"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
@@ -951,7 +952,7 @@ const NobrezaHierarchyView: React.FC = () => {
         <div className="space-y-6">
             <GlassCard variant="accent" className="text-center">
                 <p className="text-sm uppercase tracking-wider">NOBREZA</p>
-                <h2 className="text-3xl font-black accent-text">{currentRank?.name || 'N/A'}</h2>
+                <h2 className="text-3xl font-black accent-text">{currentRank?.name || 'Vagante'}</h2>
                 <div className="mt-4">
                     <div className="flex justify-between text-xs font-bold">
                         <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
@@ -1038,6 +1039,14 @@ const GeralTab: React.FC = () => {
             const month = today.toLocaleString('pt-BR', { month: 'long' });
             setCycleName(`Ciclo de ${month}`);
         }
+
+        // Listener for Tutorial Mastery Quiz Trigger (Step 11)
+        const handleOpenMastery = () => {
+            console.log('SettingsView: Received Mastery Quiz Trigger');
+            setShowMastery(true);
+        };
+        window.addEventListener('tutorialOpenMasteryQuiz', handleOpenMastery);
+        return () => window.removeEventListener('tutorialOpenMasteryQuiz', handleOpenMastery);
     }, [cycleEndDate, cycleName]);
 
     if (isHierarchyVisible) return (<div><button onClick={() => setIsHierarchyVisible(false)} className="mb-4 text-sm font-bold text-gray-400 hover:text-white">&larr; Voltar</button><NobrezaHierarchyView /></div>);
@@ -1097,11 +1106,11 @@ const GeralTab: React.FC = () => {
                 )}
             </GlassCard>
 
-            <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
-                <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color)] to-black/60 pointer-events-none" />
-                <div className="relative z-10">
-                    <p className="text-[10px] uppercase tracking-[0.2em] accent-text mb-1">Seu Status</p>
-                    <h2 className="text-3xl font-black accent-text drop-shadow-lg">{currentRank?.name || 'N/A'}</h2>
+            <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
+                <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color,rgba(0,0,0,0))] to-black/60 pointer-events-none" />
+                <div className="relative z-10 p-2">
+                    <p className="text-[10px] uppercase tracking-[0.2em] accent-text mb-1 opacity-70">Sua Patente</p>
+                    <h2 className="text-3xl font-black accent-text drop-shadow-lg tracking-tighter">{currentRank?.name || 'Vagante'}</h2>
 
                     <div className="mt-6 px-2">
                         <div className="flex justify-between text-[10px] font-bold tracking-wider accent-text opacity-80 mb-2">
@@ -1267,8 +1276,15 @@ const PreferenciasTab: React.FC = () => {
                 setModal(e.detail.open ? 'oracle' : null);
             }
         };
+        const handleTutorialReturn = () => {
+            setModal('tutorial');
+        };
         window.addEventListener('tutorialOracleSettings', handleTutorialOracle);
-        return () => window.removeEventListener('tutorialOracleSettings', handleTutorialOracle);
+        window.addEventListener('tutorialSettingsOpenModal', handleTutorialReturn);
+        return () => {
+            window.removeEventListener('tutorialOracleSettings', handleTutorialOracle);
+            window.removeEventListener('tutorialSettingsOpenModal', handleTutorialReturn);
+        };
     }, []);
 
     const activeModeName = oraclePreferences?.activeMode ? (oraclePreferences.activeMode.charAt(0).toUpperCase() + oraclePreferences.activeMode.slice(1)) : 'Neutro';
@@ -1674,8 +1690,18 @@ export const SettingsView: React.FC = () => {
                 setActiveTab(tab as SettingsTab);
             }
         };
+        const handleSettingsReturn = () => {
+            setActiveTab('Preferências');
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('tutorialSettingsOpenModal'));
+            }, 50);
+        };
         window.addEventListener('tutorialTabChange', handleTabChange);
-        return () => window.removeEventListener('tutorialTabChange', handleTabChange);
+        window.addEventListener('tutorialSettingsReturn', handleSettingsReturn);
+        return () => {
+            window.removeEventListener('tutorialTabChange', handleTabChange);
+            window.removeEventListener('tutorialSettingsReturn', handleSettingsReturn);
+        };
     }, []);
 
     const handleSovereignSave = (newSovereignConfig: SovereignConfig) => {

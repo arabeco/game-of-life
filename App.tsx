@@ -271,6 +271,19 @@ const AppWithTutorial: React.FC = () => {
     const { isTutorialActive, currentStep } = useTutorial();
     const historyReady = useRef(false);
     
+    useEffect(() => {
+        const handleNavigateToStore = () => {
+            setCurrentView('social');
+            // Give time for MundoView to mount if not active
+            setTimeout(() => {
+                const storeBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('LOJA'));
+                if (storeBtn) storeBtn.click();
+            }, 100);
+        };
+        window.addEventListener('navigate-to-store', handleNavigateToStore);
+        return () => window.removeEventListener('navigate-to-store', handleNavigateToStore);
+    }, []);
+
     // Bottom Nav Swipe Logic
     const navContainerRef = useRef<HTMLDivElement>(null);
     const navItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());

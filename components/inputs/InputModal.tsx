@@ -69,8 +69,17 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
 
     return (
         <Portal>
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+        <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in overscroll-none" 
+            style={{ touchAction: 'none' }}
+            onClick={handleBackdropClick}
+        >
+            <GlassCard 
+                variant="neutral" 
+                className="w-full max-w-sm m-4 space-y-4 rounded-3xl" 
+                style={{ touchAction: 'auto' }}
+                onClick={e => e.stopPropagation()}
+            >
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">{slot.label}</h2>
                 <div>{renderInput()}</div>
                 <div className="flex space-x-2">

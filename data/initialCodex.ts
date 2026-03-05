@@ -6,7 +6,7 @@ export const BIOLOGICAL_MACHINE_CODEX: CodexTemplate = {
   title: 'Máquina Biológica',
   description: 'Reconfigure sua biologia para performance máxima em 28 dias. Protocolos de sono, nutrição e ativação física.',
   author: 'Soberano System',
-  price: 0,
+  price: 200,
   durationDays: 28,
   tags: ['Saúde', 'Biohacking', 'Energia'],
   coverImage: '🧬',

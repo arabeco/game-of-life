@@ -452,14 +452,15 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     <div className="text-[10px] font-black tracking-widest text-gray-400">CONVITES</div>
                                                     {invites.map(invite => {
                                                         const sender = getProfile(invite.senderId);
+                                                        const senderNickname = sender?.nickname || (invite.senderId === sessionUid ? userProfile.nickname : 'Viajante');
                                                         return (
                                                             <div key={invite.id} className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
-                                                                        {sender?.avatarUrl ? <img src={sender.avatarUrl} alt={sender.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
+                                                                        {sender?.avatarUrl ? <img src={sender.avatarUrl} alt={senderNickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
                                                                     </div>
                                                                     <div className="flex-1">
-                                                                        <div className="text-sm font-bold text-white">{sender?.nickname || 'Soberano'}</div>
+                                                                        <div className="text-sm font-bold text-white">{senderNickname}</div>
                                                                         <div className="text-xs text-gray-400">convoca você para observar {invite.arenaSnapshot?.name || 'uma arena'}</div>
                                                                     </div>
                                                                 </div>
@@ -1229,18 +1230,8 @@ const GeralTab: React.FC = () => {
 
             {showMastery && (
                 <Portal>
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowMastery(false)}>
-                        <GlassCard variant="neutral" className="w-full max-w-sm m-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                            <div className="p-4 flex items-center justify-between">
-                                <h2 className="text-lg font-bold tracking-wider">Maestria</h2>
-                                <button onClick={() => setShowMastery(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50">
-                                    <XIcon className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="px-4 pb-4 max-h-[75vh] overflow-y-auto">
-                                <MasteryView />
-                            </div>
-                        </GlassCard>
+                    <div className="fixed inset-0 bg-black z-[10000] flex flex-col animate-fade-in overflow-hidden">
+                        <MasteryView onClose={() => setShowMastery(false)} />
                     </div>
                 </Portal>
             )}

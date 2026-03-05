@@ -19,56 +19,57 @@ export interface ItemDef {
 const BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
 const GLYPHS_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars/glyphs';
 const INTERFACE_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/interface';
+const ROOT_IMAGES_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
 
 export const ITEMS_DB: ItemDef[] = [
     // --- SKINS ---
     // T1 (Comum)
-    { id: 'item_skin_1_001', name: 'Náufrago', category: 'skin', tier: 1, rarity: 'common', icon: '🏝️', imageUrl: `${BASE_URL}/SKIN_T1_NAUFRAGO.png.png`, description: "Trajes desgastados pelo tempo e pelo mar. Ideal para quem está começando sua jornada do zero." },
-    { id: 'item_skin_1_002', name: 'Casual', category: 'skin', tier: 1, rarity: 'common', icon: '👕', imageUrl: `${BASE_URL}/SKIN_T1_CASUAL.png.png`, description: "Roupas confortáveis para o dia a dia. Nada de especial, mas cumpre o papel." },
-    { id: 'item_skin_1_003', name: 'Gym Rat', category: 'skin', tier: 1, rarity: 'common', icon: '💪', imageUrl: `${BASE_URL}/SKIN_T1_GYM_RAT.png.png`, description: "Focado no treino e na disciplina física. O suor é o seu melhor acessório." },
-    { id: 'item_skin_1_004', name: 'Street', category: 'skin', tier: 1, rarity: 'common', icon: '🛹', imageUrl: `${BASE_URL}/SKIN_T1_STREET.png.png`, description: "Estilo urbano para quem domina as ruas e o asfalto." },
+    { id: 'item_skin_1_001', name: 'Náufrago', category: 'skin', tier: 1, rarity: 'common', icon: '🏝️', imageUrl: `${BASE_URL}/SKIN_T1_NAUFRAGO.png`, description: "Trajes desgastados pelo tempo e pelo mar. Ideal para quem está começando sua jornada do zero." },
+    { id: 'item_skin_1_002', name: 'Casual', category: 'skin', tier: 1, rarity: 'common', icon: '👕', imageUrl: `${BASE_URL}/SKIN_T1_CASUAL.png`, description: "Roupas confortáveis para o dia a dia. Nada de especial, mas cumpre o papel." },
+    { id: 'item_skin_1_003', name: 'Gym Rat', category: 'skin', tier: 1, rarity: 'common', icon: '💪', imageUrl: `${BASE_URL}/SKIN_T1_GYM_RAT.png`, description: "Focado no treino e na disciplina física. O suor é o seu melhor acessório." },
+    { id: 'item_skin_1_004', name: 'Street', category: 'skin', tier: 1, rarity: 'common', icon: '🛹', imageUrl: `${BASE_URL}/SKIN_T1_STREET.png`, description: "Estilo urbano para quem domina as ruas e o asfalto." },
     // T2 (Incomum)
-    { id: 'item_skin_2_001', name: 'Executivo', category: 'skin', tier: 2, rarity: 'uncommon', icon: '💼', imageUrl: `${BASE_URL}/SKIN_T2_EXECUTIVO.png.png` },
-    { id: 'item_skin_2_002', name: 'Tático', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🕶️', imageUrl: `${BASE_URL}/SKIN_T2_TATICO.png.png` },
-    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: `${BASE_URL}/SKIN_T2_ACADEMICO.png.png` },
+    { id: 'item_skin_2_001', name: 'Executivo', category: 'skin', tier: 2, rarity: 'uncommon', icon: '💼', imageUrl: `${BASE_URL}/SKIN_T2_EXECUTIVO.png` },
+    { id: 'item_skin_2_002', name: 'Tático', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🕶️', imageUrl: `${BASE_URL}/SKIN_T2_TATICO.png` },
+    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: `${BASE_URL}/SKIN_T2_ACADEMICO.png` },
     // T3 (Raro)
-    { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🐪', imageUrl: `${BASE_URL}/SKIN_T3_NOMADE.png.png` },
-    { id: 'item_skin_3_002', name: 'Alquimista', category: 'skin', tier: 3, rarity: 'rare', icon: '⚗️', imageUrl: `${BASE_URL}/SKIN_T3_ALQUIMISTA.png.png` },
-    { id: 'item_skin_3_003', name: 'Híbrido', category: 'skin', tier: 3, rarity: 'rare', icon: '🤖', imageUrl: `${BASE_URL}/SKIN_T3_HIBRIDO.png.png` },
+    { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🐪', imageUrl: `${BASE_URL}/SKIN_T3_NOMADE.png` },
+    { id: 'item_skin_3_002', name: 'Alquimista', category: 'skin', tier: 3, rarity: 'rare', icon: '⚗️', imageUrl: `${BASE_URL}/SKIN_T3_ALQUIMISTA.png` },
+    { id: 'item_skin_3_003', name: 'Híbrido', category: 'skin', tier: 3, rarity: 'rare', icon: '🤖', imageUrl: `${BASE_URL}/SKIN_T3_HIBRIDO.png` },
     // T4 (Épico)
-    { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${BASE_URL}/SKIN_T4_ARMADURA_PLACA.png.png` },
-    { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙‍♂️', imageUrl: `${BASE_URL}/SKIN_T4_MAGO_CIRCULO.png.png` },
+    { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${BASE_URL}/SKIN_T4_ARMADURA_PLACA.png` },
+    { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙‍♂️', imageUrl: `${BASE_URL}/SKIN_T4_MAGO_CIRCULO.png` },
     // T5 (Lendário)
     { id: 'item_skin_5_001', name: 'Entidade de Luz', category: 'skin', tier: 5, rarity: 'legendary', icon: '✨' },
     
     // Season
-    { id: 'item_skin_season_001', name: 'O Criador', category: 'skin', tier: 4, rarity: 'epic', icon: '🎨', isSeasonExclusive: true, imageUrl: `${BASE_URL}/SKIN_SEASON_CRIADOR.png.png` },
+    { id: 'item_skin_season_001', name: 'O Criador', category: 'skin', tier: 4, rarity: 'epic', icon: '🎨', isSeasonExclusive: true, imageUrl: `${BASE_URL}/SKIN_SEASON_CRIADOR.png` },
 
     // --- ARTIFACTS (Ferramentas, Armas, Relíquias, Companions) ---
     // T1
-    { id: 'item_artifact_1_001', name: 'Adaga Aprendiz', category: 'artifact', tier: 1, rarity: 'common', icon: '🗡️', imageUrl: `${BASE_URL}/artefato_t1_adagaaprendiz.png.png` },
-    { id: 'item_artifact_1_002', name: 'Cachorro Beagle', category: 'artifact', tier: 1, rarity: 'common', icon: '🐕', imageUrl: `${BASE_URL}/artefato_t1_cachorrobeagle.png.png` },
-    { id: 'item_artifact_1_003', name: 'Gato Laranja', category: 'artifact', tier: 1, rarity: 'common', icon: '🐈', imageUrl: `${BASE_URL}/artefato_t1_gatolaranja.png.png` },
-    { id: 'item_artifact_1_004', name: 'Halteres', category: 'artifact', tier: 1, rarity: 'common', icon: '🏋️', imageUrl: `${BASE_URL}/artefato_t1_halterespar.png.png` },
-    { id: 'item_artifact_1_005', name: 'Trio Café', category: 'artifact', tier: 1, rarity: 'common', icon: '☕', imageUrl: `${BASE_URL}/artefato_t1_triocafe.png.png` },
+    { id: 'item_artifact_1_001', name: 'Adaga Aprendiz', category: 'artifact', tier: 1, rarity: 'common', icon: '🗡️', imageUrl: `${BASE_URL}/artefato_t1_adagaaprendiz.png` },
+    { id: 'item_artifact_1_002', name: 'Cachorro Beagle', category: 'artifact', tier: 1, rarity: 'common', icon: '🐕', imageUrl: `${BASE_URL}/artefato_t1_cachorrobeagle.png` },
+    { id: 'item_artifact_1_003', name: 'Gato Laranja', category: 'artifact', tier: 1, rarity: 'common', icon: '🐈', imageUrl: `${BASE_URL}/artefato_t1_gatolaranja.png` },
+    { id: 'item_artifact_1_004', name: 'Halteres', category: 'artifact', tier: 1, rarity: 'common', icon: '🏋️', imageUrl: `${BASE_URL}/artefato_t1_halterespar.png` },
+    { id: 'item_artifact_1_005', name: 'Trio Café', category: 'artifact', tier: 1, rarity: 'common', icon: '☕', imageUrl: `${BASE_URL}/artefato_t1_triocafe.png` },
     // T2
-    { id: 'item_artifact_2_001', name: 'Cachorro Husky', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '🐺', imageUrl: `${BASE_URL}/artefato_t2_cachorrohusky.png.png` },
-    { id: 'item_artifact_2_002', name: 'Gato Siamês', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '🐱', imageUrl: `${BASE_URL}/artefato_t2_gatosiames.png.png` },
-    { id: 'item_artifact_2_003', name: 'Setup', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '💻', imageUrl: `${BASE_URL}/artefato_t2_setup.png.png` },
+    { id: 'item_artifact_2_001', name: 'Cachorro Husky', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '🐺', imageUrl: `${BASE_URL}/artefato_t2_cachorrohusky.png` },
+    { id: 'item_artifact_2_002', name: 'Gato Siamês', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '🐱', imageUrl: `${BASE_URL}/artefato_t2_gatosiames.png` },
+    { id: 'item_artifact_2_003', name: 'Setup', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '💻', imageUrl: `${BASE_URL}/artefato_t2_setup.png` },
     // T3
-    { id: 'item_artifact_3_001', name: 'Cachorro Jack', category: 'artifact', tier: 3, rarity: 'rare', icon: '🐶', imageUrl: `${BASE_URL}/artefato_t3_cachorrojack.png.png` },
-    { id: 'item_artifact_3_002', name: 'Caixa Mágica', category: 'artifact', tier: 3, rarity: 'rare', icon: '📦', imageUrl: `${BASE_URL}/ARTEFATO_T3_caixamagica.png.png` },
+    { id: 'item_artifact_3_001', name: 'Cachorro Jack', category: 'artifact', tier: 3, rarity: 'rare', icon: '🐶', imageUrl: `${BASE_URL}/artefato_t3_cachorrojack.png` },
+    { id: 'item_artifact_3_002', name: 'Caixa Mágica', category: 'artifact', tier: 3, rarity: 'rare', icon: '📦', imageUrl: `${BASE_URL}/ARTEFATO_T3_caixamagica.png` },
     { id: 'item_artifact_3_003', name: 'Cetro Esmeralda', category: 'artifact', tier: 3, rarity: 'rare', icon: '🪄', imageUrl: `${BASE_URL}/ARTEFATO_T3_cetroesmeralda.png` },
-    { id: 'item_artifact_3_004', name: 'Coroa Prata', category: 'artifact', tier: 3, rarity: 'rare', icon: '👑', imageUrl: `${BASE_URL}/ARTEFATO_T3_coroaprata.png.png` },
-    { id: 'item_artifact_3_005', name: 'Divine Scepter', category: 'artifact', tier: 3, rarity: 'rare', icon: '⚜️', imageUrl: `${BASE_URL}/artefato_t3_DivineScepter.png.png` },
+    { id: 'item_artifact_3_004', name: 'Coroa Prata', category: 'artifact', tier: 3, rarity: 'rare', icon: '👑', imageUrl: `${BASE_URL}/ARTEFATO_T3_coroaprata.png` },
+    { id: 'item_artifact_3_005', name: 'Divine Scepter', category: 'artifact', tier: 3, rarity: 'rare', icon: '⚜️', imageUrl: `${BASE_URL}/artefato_t3_DivineScepter.png` },
     { id: 'item_artifact_3_006', name: 'Espada Runas', category: 'artifact', tier: 3, rarity: 'rare', icon: '⚔️', imageUrl: `${BASE_URL}/ARTEFATO_T3_espadarunas.png` },
     // T4
-    { id: 'item_artifact_4_001', name: 'Coroa de Espinhos', category: 'artifact', tier: 4, rarity: 'epic', icon: '🌵', imageUrl: `${BASE_URL}/ARTEFATO_T4_COROA_ESPINHOS.png.png` },
-    { id: 'item_artifact_4_002', name: 'Dragão Bebê', category: 'artifact', tier: 4, rarity: 'epic', icon: '🐉', imageUrl: `${BASE_URL}/ARTEFATO_T4_DRAGAO_BEBE.png.png` },
-    { id: 'item_artifact_4_003', name: 'Grimório Arcano', category: 'artifact', tier: 4, rarity: 'epic', icon: '📖', imageUrl: `${BASE_URL}/ARTEFATO_T4_GRIMORIO_ARCANO.png.png` },
+    { id: 'item_artifact_4_001', name: 'Coroa de Espinhos', category: 'artifact', tier: 4, rarity: 'epic', icon: '🌵', imageUrl: `${BASE_URL}/ARTEFATO_T4_COROA_ESPINHOS.png` },
+    { id: 'item_artifact_4_002', name: 'Dragão Bebê', category: 'artifact', tier: 4, rarity: 'epic', icon: '🐉', imageUrl: `${BASE_URL}/ARTEFATO_T4_DRAGAO_BEBE.png` },
+    { id: 'item_artifact_4_003', name: 'Grimório Arcano', category: 'artifact', tier: 4, rarity: 'epic', icon: '📖', imageUrl: `${BASE_URL}/ARTEFATO_T4_GRIMORIO_ARCANO.png` },
     // T5
-    { id: 'item_artifact_5_001', name: 'Fênix Cósmico', category: 'artifact', tier: 5, rarity: 'legendary', icon: '🐦', imageUrl: `${BASE_URL}/ARTEFATO_T5_FENIX_COSMICO.png.png` },
-    { id: 'item_artifact_5_002', name: 'Tesseract', category: 'artifact', tier: 5, rarity: 'legendary', icon: '🧊', imageUrl: `${BASE_URL}/ARTEFATO_T5_tessaract.png.png` },
+    { id: 'item_artifact_5_001', name: 'Fênix Cósmico', category: 'artifact', tier: 5, rarity: 'legendary', icon: '🐦', imageUrl: `${BASE_URL}/ARTEFATO_T5_FENIX_COSMICO.png` },
+    { id: 'item_artifact_5_002', name: 'Tesseract', category: 'artifact', tier: 5, rarity: 'legendary', icon: '🧊', imageUrl: `${BASE_URL}/ARTEFATO_T5_tessaract.png` },
 
     // --- CABELOS ---
     // TIER 1 - Common
@@ -209,9 +210,9 @@ export const ITEMS_DB: ItemDef[] = [
     // T4
     { id: 'EMBER', name: 'Tema: Chama Viva', category: 'ui_skin', tier: 4, rarity: 'epic', icon: '🔥' },
     { id: 'CYBER', name: 'Tema: Cyberpunk', category: 'ui_skin', tier: 4, rarity: 'epic', icon: '🦾' },
-    { id: 'AURORA', name: 'Tema: Aurora Boreal', category: 'ui_skin', tier: 4, rarity: 'epic', icon: '🌌' },
+    { id: 'AURORA', name: 'Tema: Aurora Boreal', category: 'ui_skin', tier: 4, rarity: 'epic', icon: '🌌', imageUrl: `${ROOT_IMAGES_URL}/aurora.jpg` },
     // T5
-    { id: 'VOID', name: 'Tema: Vazio Primordial', category: 'ui_skin', tier: 5, rarity: 'legendary', icon: '🔮' },
+    { id: 'VOID', name: 'Tema: Vazio Primordial', category: 'ui_skin', tier: 5, rarity: 'legendary', icon: '🔮', imageUrl: `${ROOT_IMAGES_URL}/void.jpg` },
 
     // --- EXCLUSIVOS (Store) ---
     { id: 'item_skin_exclusive_001', name: 'Empreendedor', category: 'skin', tier: 4, rarity: 'epic', icon: '💼', costGold: 500, isGoldExclusive: true },
@@ -266,7 +267,7 @@ export const GOLD_PACKS = [
 ];
 
 export const CODEXES = [
-    { id: 'd290f1ee-6c54-4b01-90e6-d701748f0851', name: "Máquina Biológica", cost: 0, icon: '🧬' },
+    { id: 'd290f1ee-6c54-4b01-90e6-d701748f0851', name: "Máquina Biológica", cost: 200, icon: '🧬' },
     { id: "codex_financas", name: "Codex: Finanças Pessoais", cost: 150, icon: '💰' },
     { id: "codex_produtividade", name: "Codex: Produtividade Extrema", cost: 150, icon: '⚡' },
     { id: "codex_saude", name: "Codex: Saúde & Fitness", cost: 150, icon: '🏋️' },

@@ -46,7 +46,7 @@ export const MiniCycleHUD: React.FC<MiniCycleHUDProps> = ({ cycle }) => {
     const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId) || isClanQuestActionId(t.actionId));
     const completedQuests = questTasks.filter(t => t.completed);
 
-    const fidelity = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
+    const cycleProgress = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
 
     const milestonesCompleted = completedTasks.filter(t => {
         const action = actions.find(a => a.id === t.actionId);
@@ -62,7 +62,7 @@ export const MiniCycleHUD: React.FC<MiniCycleHUDProps> = ({ cycle }) => {
 
     const totalFidelityBonus = (cycleTasks.length > 0 && completedTasks.length === cycleTasks.length) ? 5 : 0;
 
-    const currentScore = Math.round(fidelity + milestoneBonus + questBonus + consistencyBonus + totalFidelityBonus);
+    const currentScore = Math.round(cycleProgress + milestoneBonus + questBonus + consistencyBonus + totalFidelityBonus);
     const scoreInfo = getScoreGrade(currentScore);
     
     return (
@@ -75,13 +75,13 @@ export const MiniCycleHUD: React.FC<MiniCycleHUDProps> = ({ cycle }) => {
                 
                 <div className="flex-1 flex flex-col gap-1">
                     <div className="flex justify-between text-[9px] font-bold">
-                        <span className="text-gray-400 uppercase">Fidelidade</span>
-                        <span className="accent-text">{fidelity.toFixed(0)}%</span>
+                        <span className="text-gray-400 uppercase">Progresso</span>
+                        <span className="accent-text">{cycleProgress.toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden border border-white/5">
                         <div 
                             className="bg-[var(--skin-accent-color)] h-full transition-all duration-500" 
-                            style={{ width: `${fidelity}%` }}
+                            style={{ width: `${cycleProgress}%` }}
                         />
                     </div>
                     <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden border border-white/5 mt-0.5">

@@ -3,21 +3,21 @@ import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { ECONOMY } from '../../constants/economy';
 import { CheckIcon, CrownIcon } from '../Icons';
+import { MercadoPagoBrick } from './MercadoPagoBrick';
 
 export const GoldStore: React.FC = () => {
     const { buyGoldPack, buyStoreItem, userProfile } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
+    const [selectedPack, setSelectedPack] = useState<{ amount: number, goldAmount: number } | null>(null);
 
     const handleBuyPack = async (packId: string) => {
-        if (loading) return;
-        setLoading(packId);
-        try {
-            await buyGoldPack(packId);
-        } catch (error) {
-            console.error("Purchase failed", error);
-        } finally {
-            setLoading(null);
-        }
+        const pack = ECONOMY.gold_packs.find(p => p.id === packId);
+        if (!pack) return;
+        
+        setSelectedPack({
+            amount: pack.price_brl,
+            goldAmount: pack.total
+        });
     };
 
     const handleBuyPremium = async () => {
@@ -153,6 +153,14 @@ export const GoldStore: React.FC = () => {
                     <p className="text-sm text-gray-500">Ofertas rotativas em breve.</p>
                 </GlassCard>
             </div>
+
+            {selectedPack && (
+                <MercadoPagoBrick
+                    amount={selectedPack.amount}
+                    goldAmount={selectedPack.goldAmount}
+                    onClose={() => setSelectedPack(null)}
+                />
+            )}
         </div>
     );
 };

@@ -37,8 +37,8 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ options, value, onSele
     };
 
     return (
-        <div className="relative h-48 w-full bg-black/20 rounded-xl overflow-hidden">
-            <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-scroll snap-y snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+        <div className="relative h-48 w-full bg-black/20 rounded-xl overflow-hidden" style={{ touchAction: 'none' }}>
+            <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-scroll snap-y snap-mandatory" style={{ scrollbarWidth: 'none', touchAction: 'pan-y' }}>
                 <div className="h-[68px]"></div> {/* Padding top */}
                 {options.map((option, index) => (
                     <div

@@ -252,7 +252,7 @@ export const CodexStore: React.FC = () => {
                                             <div className="text-[10px] text-gray-600">{template.levels.length} Fases</div>
                                         </div>
                                         
-                                        <div className="flex overflow-x-auto gap-4 pb-4 px-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
+                                        <div className="flex overflow-x-auto gap-4 pb-4 px-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent overscroll-x-contain" style={{ touchAction: 'pan-x' }}>
                                             {template.levels.map((level) => {
                                                 const mockArena = createMockArena(level, codex.id);
                                                 const mockActions = createMockActions(level.actions, mockArena.id);

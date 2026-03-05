@@ -19,6 +19,19 @@ export const LoginView: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+
+    // Auto-seed golden invites when login page is opened
+    React.useEffect(() => {
+        const seedInvites = async () => {
+            const seedCodes = (GM_CONFIG.goldenInvites as any)?.seedCodes;
+            if (seedCodes && Array.isArray(seedCodes) && seedCodes.length > 0) {
+                console.log('Liberando convites dourados iniciais...');
+                await SupabaseService.seedGoldenInvites(seedCodes);
+                console.log('Convites liberados com sucesso.');
+            }
+        };
+        seedInvites();
+    }, []);
     
     const handleSignUp = async () => {
         const normalizedInvite = inviteCode.trim();
@@ -29,13 +42,15 @@ export const LoginView: React.FC = () => {
             return;
         }
 
+        console.log('Validando convite:', normalizedInvite);
         const multiUseCodes = (GM_CONFIG.goldenInvites as any)?.multiUseCodes as string[] | undefined;
         const isMultiUseInvite = (multiUseCodes || []).includes(normalizedInvite);
 
         if (!isMultiUseInvite) {
             inviteRecord = await SupabaseService.getGoldenInviteByCode(normalizedInvite);
+            console.log('Resultado da busca no DB:', inviteRecord);
             if (!inviteRecord) {
-                setError('Convite Dourado inválido.');
+                setError(`Convite Dourado "${normalizedInvite}" não encontrado no banco de dados.`);
                 return;
             }
             if (inviteRecord.is_used) {

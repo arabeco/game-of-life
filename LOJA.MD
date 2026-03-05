@@ -359,7 +359,7 @@ Para ganhar os melhores baús, você precisa de **Volume (XP/Tempo)** E **Qualid
 ### Regras Adicionais
 1.  **Sorte de Principiante (RNG Upgrade)**: Mesmo que você atinja apenas o requisito de um baú, existe uma chance fixa de **5%** de o sistema "critar" e te dar um baú de tier superior (ex: Comum -> Incomum).
 2.  **Duração Mínima**: Ciclos com menos de 7 dias **NÃO DÃO BAÚS**, independente do XP ou Nota. Isso previne o "spam" de mini-ciclos.
-3.  **Nota do Ciclo**: A nota (0 a 100+) é composta por Fidelidade (40%), Metas (+15pts), Consistência (+20pts) e Volume (+1pt/2h).
+3.  **Nota do Ciclo**: A nota (0 a 100+) é composta por Progresso (40%), Metas (+15pts), Consistência (+20pts) e Volume (+1pt/2h).
 
 ---
 

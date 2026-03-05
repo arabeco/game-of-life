@@ -324,7 +324,7 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, updateUserProfile, clan, clanRanks, getUserPublicData, appMode } = useGame();
+    const { userProfile, assets, updateUserProfile, clan, clanRanks, getUserPublicData, appMode, cycleProgress } = useGame();
     
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
@@ -666,8 +666,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                                 <div className="text-2xl font-bold text-[var(--skin-accent-color)]">{displayProfile.level}</div>
                                                             </div>
                                                             <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                                <div className="text-[8px] uppercase tracking-wider text-gray-500">Fidelidade</div>
-                                                                <div className="text-2xl font-bold text-white">94%</div>
+                                                                <div className="text-[8px] uppercase tracking-wider text-gray-500">Progresso</div>
+                                                                <div className="text-2xl font-bold text-white">{isOwnProfile ? `${cycleProgress.toFixed(0)}%` : '94%'}</div>
                                                             </div>
                                                         </div>
                                                         <div className="bg-black/20 p-2 rounded-xl border border-white/5">

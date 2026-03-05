@@ -100,8 +100,8 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId) || isClanQuestActionId(t.actionId));
     const completedQuests = questTasks.filter(t => t.completed);
 
-    // 1. Fidelity
-    const fidelity = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
+    // 1. Progress
+    const progress = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
 
     // 2. Bonuses
     // Milestones
@@ -126,7 +126,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const volumeBonus = Math.min(30, Math.floor(totalHours / 2));
 
     // Score
-    const currentScore = Math.round((fidelity * 0.4) + milestoneBonus + questBonus + consistencyBonus + volumeBonus);
+    const currentScore = Math.round((progress * 0.4) + milestoneBonus + questBonus + consistencyBonus + volumeBonus);
     const scoreInfo = getScoreGrade(currentScore);
 
     // Arenas e Ações envolvidas (seguindo a mesma lógica do endCycle)
@@ -158,8 +158,8 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                     <div className="w-full bg-red-900/50 rounded-full h-2.5 mt-1 border border-red-500/20"><div className="bg-red-500 h-full rounded-full" style={{ width: `${timeProgress}%` }}></div></div>
                 </div>
                 <div>
-                    <div className="flex justify-between text-xs font-bold text-gray-400"><span>FIDELIDADE</span><span>{fidelity.toFixed(0)}%</span></div>
-                    <div className="w-full bg-green-900/50 rounded-full h-2.5 mt-1 border border-green-500/20"><div className="bg-green-500 h-full rounded-full" style={{ width: `${fidelity}%` }}></div></div>
+                    <div className="flex justify-between text-xs font-bold text-gray-400"><span>PROGRESSO</span><span>{progress.toFixed(0)}%</span></div>
+                    <div className="w-full bg-green-900/50 rounded-full h-2.5 mt-1 border border-green-500/20"><div className="bg-green-500 h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
                 </div>
             </div>
             <div className='text-center border-t border-[var(--skin-accent-color)]/20 pt-3'>

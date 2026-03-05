@@ -290,13 +290,13 @@ const MundoView: React.FC = () => {
         ] as const;
 
         if (isBasicMode) {
-            return allTabs.filter(t => t.id === 'social' || t.id === 'temporada');
+            return allTabs.filter(t => t.id === 'social' || t.id === 'temporada' || t.id === 'loja');
         }
         return allTabs;
     }, [isBasicMode]);
 
     useEffect(() => {
-        if (isBasicMode && (activeTab === 'loja' || activeTab === 'arsenal' || activeTab === 'hall')) {
+        if (isBasicMode && (activeTab === 'arsenal' || activeTab === 'hall')) {
             setActiveTab('social');
         }
     }, [isBasicMode, activeTab]);

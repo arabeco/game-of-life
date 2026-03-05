@@ -576,7 +576,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     return (
         <Portal>
             <div
-                className={`fixed inset-0 z-[9000] flex flex-col items-center justify-start gap-2 bg-black transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y border-[var(--skin-accent-color)]/20 ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`fixed inset-0 z-[50] flex flex-col items-center justify-start gap-2 bg-black transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y border-[var(--skin-accent-color)]/20 ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
                 style={{ touchAction: 'none' }} // Prevent scrolling
             >
                 {/* Sephirot Fog Background */}

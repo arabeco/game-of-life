@@ -347,6 +347,8 @@ export interface GameContextType {
 
     // Notifications
     notifications: Notification[];
+    cycleExpBonus: number;
+    cycleProgress: number;
     markNotificationRead: (id: string) => Promise<void>;
     deleteNotification: (id: string) => Promise<void>;
     fetchNotifications: () => Promise<void>;
@@ -450,6 +452,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [dailyCommitment, setDailyCommitmentState] = useState<DailyCommitment>(() => createDefaultDailyCommitment());
 
     const [cycleExpBonus, setCycleExpBonus] = useState<number>(0);
+    const [cycleProgress, setCycleProgress] = useState<number>(0);
 
     const [oraclePreferences, setOraclePreferences] = useState<OraclePreferences | null>(null);
     const [oracleMessages, setOracleMessages] = useState<OracleMessage[]>([]);
@@ -1098,7 +1101,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if ((userProfile.wallet?.gold || 0) < cost) {
-            showToast("Ouro insuficiente!");
+            showToast("Ouro insuficiente! Redirecionando para a loja...");
+            // O usuário pediu: "exiba um alerta customizado e redirecione-o imediatamente para a página/modal da Loja de Ouro."
+            setTimeout(() => {
+                // Se estiver no MundoView, o activeTab mudará para 'loja'
+                const mundoContainer = document.getElementById('social-container');
+                if (mundoContainer) {
+                    // Tenta encontrar o botão da loja e clicar
+                    const storeBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('LOJA'));
+                    if (storeBtn) storeBtn.click();
+                } else {
+                    // Fallback: Dispatch custom event for App.tsx to handle navigation
+                    window.dispatchEvent(new CustomEvent('navigate-to-store'));
+                }
+            }, 1500);
             return;
         }
 
@@ -2462,9 +2478,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             const { data: cyclesData, error: cyclesError } = cyclesResult;
-                if (!cyclesError && cyclesData && cyclesData.length > 0) {
-                    setActiveCycle(mapToCamelCase(cyclesData[0]) as Cycle);
+            if (!cyclesError && cyclesData && cyclesData.length > 0) {
+                const currentCycle = mapToCamelCase(cyclesData[0]) as Cycle;
+                setActiveCycle(currentCycle);
+
+                // --- AUTO FINISH CYCLE CHECK ---
+                // If cycle end date has passed, trigger finish and report
+                if (currentCycle && !currentCycle.isFinished) {
+                    const endDate = new Date(currentCycle.endDate);
+                    const now = new Date();
+                    if (now >= endDate) {
+                        console.log('Cycle end date reached. Auto-finishing cycle...');
+                        // Note: The actual finishing logic is in finishCycle function.
+                        // We trigger it here if the user opens the app after the end date.
+                        setTimeout(() => {
+                            (window as any).finishCycle?.(); 
+                        }, 2000);
+                    }
                 }
+            }
 
                 // --- CLEANUP ORPHAN TASKS ---
                 // Remove scheduled tasks that reference deleted arenas
@@ -2531,17 +2563,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                     if (sitreps) {
                         // Recalcula o score de fidelidade baseado em % de ações completas vs totais
-                        // O usuário pediu: "trocar a fidelidade do ciclo pra % de metas comadas.. de açoes totais"
+                        // O usuário pediu: "renomear pra progresso e mostrar as ações completas/ ações totais"
                         const totalCompleted = sitreps.reduce((acc, r) => acc + (r.completed_tasks_count || 0), 0);
                         const totalTasks = sitreps.reduce((acc, r) => acc + (r.total_tasks_count || 0), 0);
 
-                        // Fidelidade é a média ponderada de execução
-                        const fidelity = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+                        // Progresso é a média ponderada de execução (ações completas / ações totais)
+                        const progress = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+                        setCycleProgress(progress); // Set the calculated progress in state
 
-                        // Atualiza o estado do ciclo com essa info se necessário, ou apenas usa pra display
-                        // Mas o ciclo tem um campo 'fidelity'? Não explicitamente no type Cycle, mas podemos injetar ou usar o score médio.
+                        // --- AUTO FINISH CYCLE CHECK ---
+                        // Se a data de término passou, finaliza automaticamente
+                        const endDate = new Date(cycle.endDate);
+                        const now = new Date();
+                        if (now >= endDate && !cycle.isFinished) {
+                            console.log('Cycle end date reached. Auto-finishing cycle...');
+                            setTimeout(() => {
+                                (window as any).finishCycle?.();
+                            }, 2000);
+                        }
+
                         // Vamos apenas calcular o bônus de EXP acumulado.
-
                         const totalExpBonus = sitreps.reduce((sum, r) => {
                             // Lógica antiga de bônus por score diário
                             const bonus = r.score >= 95 ? 120 : r.score >= 85 ? 60 : 0;
@@ -4015,9 +4056,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const questTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && isQuestActionId(t.actionId));
         const completedQuests = questTasks.filter(t => t.completed);
 
-        // 2. Calculate Fidelity (Base Score)
-        // fidelidade = (ações realizadas / ações planejadas) × 100
-        const fidelity = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
+        // 2. Calculate Progress (Base Score)
+        // progresso = (ações realizadas / ações planejadas) × 100
+        const progress = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
 
         // 3. Calculate Bonuses
         // +10 per milestone (Marco)
@@ -4052,11 +4093,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const volumeBonus = Math.min(30, Math.floor(totalHours / 2)); // Max 30 points for 60 hours
 
         // Final Performance Score (0-100+)
-        // Base: Fidelity (0-100)
+        // Base: Progress (0-100)
         // Plus: Metas, Quests, Consistency, Volume
         // We normalize to ensure it's a 0-100 grade mostly, but can exceed for S+
         let performanceScore = Math.round(
-            (fidelity * 0.4) + // Fidelity is 40% of the grade
+            (progress * 0.4) + // Progress is 40% of the grade
             milestoneBonus +
             questBonus +
             consistencyBonus +
@@ -6799,7 +6840,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, updateTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex
         }}>
             {children}
         </GameContext.Provider>

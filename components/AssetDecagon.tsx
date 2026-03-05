@@ -95,10 +95,10 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
                                         y={0}
                                         dy={index > 2 && index < 8 ? 10 : -5}
                                         textAnchor={textAnchor}
-                                        fill="rgba(255, 255, 255, 0.3)"
-                                        fontSize="7px"
+                                        fill="rgba(255, 255, 255, 0.4)"
+                                        fontSize="8px"
                                         fontWeight="900"
-                                        letterSpacing="0.05em"
+                                        letterSpacing="0.02em"
                                     >
                                         {label}
                                     </text>
@@ -118,7 +118,7 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
                         stroke={goldBright}
                         strokeWidth={1.5}
                         fill={goldBright}
-                        fillOpacity={0.15}
+                        fillOpacity={0.4}
                         dot={<CustomDot />}
                     />
                 </RadarChart>

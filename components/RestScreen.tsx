@@ -576,7 +576,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     return (
         <Portal>
             <div
-                className={`fixed inset-0 z-[50] flex flex-col items-center justify-start gap-2 bg-black transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y border-[var(--skin-accent-color)]/20 ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`fixed inset-0 z-[150] flex flex-col items-center justify-start gap-2 bg-black transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y border-[var(--skin-accent-color)]/20 ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
                 style={{ touchAction: 'none' }} // Prevent scrolling
             >
                 {/* Sephirot Fog Background */}
@@ -652,23 +652,9 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             {deepWorkActive ? 'DEEP WORK ATIVO' : formatDate(currentTime)}
                         </div>
                     </div>
-
-                    {/* Cycle Detail - Only if active */}
-                    {activeCycle && !deepWorkActive && (
-                        <div className="w-full animate-fade-in-down delay-100 mt-1">
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 flex items-center gap-2">
-                                    <CalendarIcon className="w-3 h-3 text-[var(--skin-accent-color)]" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-white">{activeCycle.name}</span>
-                                    <span className="w-1 h-1 rounded-full bg-white/20" />
-                                    <span className="text-[9px] font-bold text-gray-400">{daysLeft}D RESTANTES</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
-                {/* Center Section: SITREP (Main Focus) */}
+                {/* Center Section: Painel Diário (Main Focus) */}
                 <div className="flex-1 flex flex-col items-center justify-start w-full max-w-md px-4 z-10 animate-fade-in overflow-hidden h-full min-h-0 mb-2">
                     <div className="relative w-full h-full flex flex-col group">
                         {/* Decorative background glow */}
@@ -686,7 +672,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                     </div>
                                     <div>
-                                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">SITREP</h2>
+                                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">PAINEL DIÁRIO</h2>
                                         <div className="text-xs font-bold text-white uppercase tracking-wider">
                                             {dailyCommitment.stage === 'planning' ? 'Planejamento' : dailyCommitment.stage === 'battle' ? 'Combate' : 'Julgamento'}
                                         </div>
@@ -791,6 +777,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                         {/* Deep Work Indicator */}
                         <button
+                            id="deep-work-button"
                             onMouseDown={() => handleQuickActionStart('deepwork')}
                             onMouseUp={handleQuickActionEnd}
                             onMouseLeave={handleQuickActionEnd}

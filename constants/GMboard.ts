@@ -64,6 +64,50 @@ export const SEASONS: Record<string, SeasonConfig> = {
         rewards: { xp: 1125, gold: 0 }
       },
       {
+        id: 'quest-tutorial-1',
+        title: 'Estação 1: Alicerce',
+        description: 'Complete o primeiro nível do tutorial para entender as bases do seu reino. (Recompensa: 500 XP)',
+        type: 'individual',
+        category: 'intellectual',
+        actionTemplate: { name: 'Tutorial Alicerce', description: 'Visualizar as bases do sistema.', duration: 5, icon: '🏗️', repetitions: 1, isMilestone: true },
+        requirements: { milestone: true },
+        rewards: { xp: 500, gold: 0 },
+        tutorialLevel: 1
+      },
+      {
+        id: 'quest-tutorial-2',
+        title: 'Estação 2: Identidade',
+        description: 'Complete o segundo nível do tutorial e defina quem você é neste mundo. (Recompensa: 500 XP)',
+        type: 'individual',
+        category: 'intellectual',
+        actionTemplate: { name: 'Tutorial Identidade', description: 'Explorar sua identidade soberana.', duration: 5, icon: '👤', repetitions: 1, isMilestone: true },
+        requirements: { milestone: true },
+        rewards: { xp: 500, gold: 0 },
+        tutorialLevel: 2
+      },
+      {
+        id: 'quest-tutorial-3',
+        title: 'Estação 3: O Mundo',
+        description: 'Complete o terceiro nível do tutorial e conheça as fronteiras do seu domínio. (Recompensa: 500 XP)',
+        type: 'individual',
+        category: 'intellectual',
+        actionTemplate: { name: 'Tutorial Mundo', description: 'Navegar pelos domínios externos.', duration: 5, icon: '🌍', repetitions: 1, isMilestone: true },
+        requirements: { milestone: true },
+        rewards: { xp: 500, gold: 0 },
+        tutorialLevel: 3
+      },
+      {
+        id: 'quest-tutorial-4',
+        title: 'Estação 4: O Arquiteto',
+        description: 'Complete o quarto nível do tutorial e torne-se o mestre do seu destino. (Recompensa: 500 XP)',
+        type: 'individual',
+        category: 'intellectual',
+        actionTemplate: { name: 'Tutorial Arquiteto', description: 'Dominar as ferramentas de criação.', duration: 5, icon: '📐', repetitions: 1, isMilestone: true },
+        requirements: { milestone: true },
+        rewards: { xp: 500, gold: 0 },
+        tutorialLevel: 4
+      },
+      {
         id: 'quest-clan-unity',
         title: 'Unidade do Clã',
         description: 'O Clã deve acumular 50 horas de atividades conjuntas. (Recompensa: 1 Baú Comum)',

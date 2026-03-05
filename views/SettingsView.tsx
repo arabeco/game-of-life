@@ -66,7 +66,7 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
             case 'Essencial': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-blue-400" />} title="Alerta de Compromisso" time="12:00" message="Reunião de Alinhamento em 2h." fixedAtTop stackIndex={0} />);
             case 'Militar': return (
                 <>
-                    <NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento Tático. Verifique o Grid ou o Sitrep." fixedAtTop stackIndex={0} />
+                    <NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento Tático. Verifique o Grid ou o Painel Diário." fixedAtTop stackIndex={0} />
                     <NotificationCard icon={<ClockIcon className="w-5 h-5 text-orange-400" />} title="Radar de Batalha" time="09:00" message="Próxima ação: Treino de Força (11:00). Prepare-se." fixedAtTop stackIndex={1} />
                     <NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2." fixedAtTop stackIndex={2} />
                 </>
@@ -100,25 +100,40 @@ const SettingSelector: React.FC<{ label: string; value: string; onClick: () => v
     </div>
 );
 
-const TutorialSettings: React.FC = () => {
-    const { isTutorialCompleted, startTutorial } = useTutorial();
+const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
+    const { startTutorialLevel, isFlagCompleted } = useTutorial();
+    
+    const levels = [
+        { id: 1, name: 'Alicerce (Básico)', flag: 'tutorial_level_1_completed' },
+        { id: 2, name: 'Identidade (Interno)', flag: 'tutorial_level_2_completed' },
+        { id: 3, name: 'O Mundo (Externo)', flag: 'tutorial_level_3_completed' },
+        { id: 4, name: 'O Arquiteto (Mestre)', flag: 'tutorial_level_4_completed' },
+    ];
+
     return (
-        <div className="p-3 bg-black/20 rounded-xl">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h4 className="text-sm font-semibold">Nível 1 (Básico)</h4>
-                    <p className={`text-xs ${isTutorialCompleted ? 'text-green-400' : 'accent-text'}`}>{isTutorialCompleted ? 'Concluído' : 'Não concluído'}</p>
-                </div>
-                <button onClick={startTutorial} className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20">REPLAY</button>
-            </div>
-            <div className="flex justify-between items-center mt-2 opacity-50">
-                <div><h4 className="text-sm font-semibold">Nível 2 (Intermediário)</h4><p className="text-xs text-gray-500">Em breve</p></div>
-                <button disabled className="text-sm font-bold bg-white/5 px-3 py-1 rounded-lg cursor-not-allowed">Bloqueado</button>
-            </div>
-            <div className="flex justify-between items-center mt-2 opacity-50">
-                <div><h4 className="text-sm font-semibold">Nível 3 (Avançado)</h4><p className="text-xs text-gray-500">Em breve</p></div>
-                <button disabled className="text-sm font-bold bg-white/5 px-3 py-1 rounded-lg cursor-not-allowed">Bloqueado</button>
-            </div>
+        <div className="p-3 bg-black/20 rounded-xl space-y-3">
+            {levels.map((lvl) => {
+                const isCompleted = isFlagCompleted(lvl.flag);
+                return (
+                    <div key={lvl.id} className="flex justify-between items-center">
+                        <div>
+                            <h4 className="text-sm font-semibold">Nível {lvl.id}: {lvl.name}</h4>
+                            <p className={`text-xs ${isCompleted ? 'text-green-400' : 'accent-text'}`}>
+                                {isCompleted ? 'Concluído' : 'Pendente'}
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                onStart?.();
+                                startTutorialLevel(lvl.id);
+                            }} 
+                            className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20 transition-colors"
+                        >
+                            REPLAY
+                        </button>
+                    </div>
+                );
+            })}
         </div>
     );
 };
@@ -128,7 +143,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Tutoriais</h2>
-                <TutorialSettings />
+                <TutorialSettings onStart={onClose} />
                 <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button>
             </GlassCard>
         </div>
@@ -738,7 +753,7 @@ type FeedbackQuestion = { id: number; label: string; category: 'Core' | 'Dopamin
 const feedbackQuestions: FeedbackQuestion[] = [
     { id: 1, label: 'Fluidez do Campo de Batalha (Planner)', category: 'Core' },
     { id: 2, label: 'Estabilidade do Sistema (Bugs & Performance)', category: 'Core' },
-    { id: 3, label: 'Ritualística (SITREP & Fechamento)', category: 'Core' },
+    { id: 3, label: 'Ritualística (Painel Diário & Fechamento)', category: 'Core' },
     { id: 4, label: 'Senso de Progresso (XP & Níveis)', category: 'Dopamina' },
     { id: 5, label: 'Identidade Visual (UI & Avatar)', category: 'Dopamina' },
     { id: 6, label: 'Mecânica do Santuário (Manutenção)', category: 'Dopamina' },
@@ -1082,7 +1097,7 @@ const GeralTab: React.FC = () => {
                 )}
             </GlassCard>
 
-            <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group" onClick={() => setIsHierarchyVisible(true)}>
+            <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color)] to-black/60 pointer-events-none" />
                 <div className="relative z-10">
                     <p className="text-[10px] uppercase tracking-[0.2em] accent-text mb-1">Seu Status</p>
@@ -1131,6 +1146,7 @@ const GeralTab: React.FC = () => {
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-bold tracking-wider">Maestria</h2>
                     <button
+                        id="mastery-sliders-button"
                         onClick={() => setShowMastery(true)}
                         className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold"
                     >
@@ -1245,6 +1261,16 @@ const PreferenciasTab: React.FC = () => {
     const [modal, setModal] = useState<'oracle' | 'privacy' | 'tutorial' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
 
+    useEffect(() => {
+        const handleTutorialOracle = (e: any) => {
+            if (e.detail?.open !== undefined) {
+                setModal(e.detail.open ? 'oracle' : null);
+            }
+        };
+        window.addEventListener('tutorialOracleSettings', handleTutorialOracle);
+        return () => window.removeEventListener('tutorialOracleSettings', handleTutorialOracle);
+    }, []);
+
     const activeModeName = oraclePreferences?.activeMode ? (oraclePreferences.activeMode.charAt(0).toUpperCase() + oraclePreferences.activeMode.slice(1)) : 'Neutro';
 
     return (
@@ -1255,7 +1281,9 @@ const PreferenciasTab: React.FC = () => {
                 <div className="space-y-2">
                     <SettingSelector label="Tutoriais" value="Revisar" onClick={() => setModal('tutorial')} />
                     <SettingSelector label="Privacidade" value={privacyMode} onClick={() => setModal('privacy')} />
-                    <SettingSelector label="Oráculo & Notificações" value={activeModeName} onClick={() => setModal('oracle')} />
+                    <div id="oracle-preferences-setting">
+                        <SettingSelector label="Oráculo & Notificações" value={activeModeName} onClick={() => setModal('oracle')} />
+                    </div>
                 </div>
             </section>
 
@@ -1304,8 +1332,9 @@ const PremiumTab: React.FC = () => {
                 </div>
 
                 <GlassCard variant="neutral" className="p-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div id="premium-features-grid" className="grid grid-cols-2 gap-3">
                         <button
+                            id="links-button"
                             onClick={() => { if (isPremium) setLinksOpen(true); }}
                             disabled={!isPremium}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
@@ -1314,6 +1343,7 @@ const PremiumTab: React.FC = () => {
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
                         </button>
                         <button
+                            id="codex-button"
                             onClick={() => { if (isPremium) setCodexOpen(true); }}
                             disabled={!isPremium}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
@@ -1322,6 +1352,7 @@ const PremiumTab: React.FC = () => {
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Codex</span>
                         </button>
                         <button
+                            id="assistant-button"
                             onClick={() => {
                                 // Open Settings/Config for everyone
                                 console.log("PremiumTab: Assistant button clicked -> Opening Settings");
@@ -1335,6 +1366,7 @@ const PremiumTab: React.FC = () => {
                             </span>
                         </button>
                         <button
+                            id="campaigns-button"
                             onClick={() => setShowCampaignsCodex(true)}
                             disabled={!isPremium}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
@@ -1634,6 +1666,17 @@ export const SettingsView: React.FC = () => {
     const { updateUserProfile, userProfile } = useGame();
     const [activeTab, setActiveTab] = useState<SettingsTab>('Geral');
     const [isSovereignEditorOpen, setSovereignEditorOpen] = useState(false);
+
+    useEffect(() => {
+        const handleTabChange = (e: any) => {
+            const tab = e.detail?.tab;
+            if (tab && ['Geral', 'Preferências', 'Premium'].includes(tab)) {
+                setActiveTab(tab as SettingsTab);
+            }
+        };
+        window.addEventListener('tutorialTabChange', handleTabChange);
+        return () => window.removeEventListener('tutorialTabChange', handleTabChange);
+    }, []);
 
     const handleSovereignSave = (newSovereignConfig: SovereignConfig) => {
         updateUserProfile({ sovereign: newSovereignConfig });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTutorial } from '../contexts/TutorialContext';
 import { TUTORIAL_STEPS } from '../constants/tutorialSteps';
 import { Portal } from './Portal';
@@ -24,6 +24,40 @@ export const OracleTutorialOverlay: React.FC = () => {
     
     const step = tutorialSteps[currentStep];
 
+    // View Switching
+    useEffect(() => {
+        if (!isTutorialActive || !step) return;
+
+        console.log(`Tutorial navigating to view: ${step.view}, tab: ${step.tab}, showProfile: ${step.showProfile}`);
+
+        // Dispatch event to switch view in App.tsx
+        const event = new CustomEvent('tutorialNavigate', { 
+            detail: { 
+                view: step.view,
+                tab: step.tab,
+                showReports: step.showReports,
+                showProfile: step.showProfile,
+                showOracleSettings: step.showOracleSettings,
+                showRestScreen: step.showRestScreen
+            } 
+        });
+        window.dispatchEvent(event);
+    }, [currentStep, isTutorialActive, step]);
+
+    // Calculate if bubble should be at top or bottom
+    const bubblePosition = useMemo(() => {
+        if (!spotlightRect) return 'top';
+        
+        const screenHeight = window.innerHeight;
+        const spotlightCenterY = spotlightRect.top + spotlightRect.height / 2;
+        
+        // Use a 40% threshold to avoid being too jumpy in the middle
+        if (spotlightCenterY < screenHeight * 0.45) {
+            return 'bottom';
+        }
+        return 'top';
+    }, [spotlightRect]);
+
     // Typing Effect
     useEffect(() => {
         if (!isTutorialActive || !step) return;
@@ -42,38 +76,72 @@ export const OracleTutorialOverlay: React.FC = () => {
                 setIsTyping(false);
                 clearInterval(typingInterval);
             }
-        }, 30);
+        }, 15); // Even faster typing for better UX
 
         return () => clearInterval(typingInterval);
     }, [currentStep, isTutorialActive, step]);
 
-    // Spotlight Calculation
+    // Spotlight Calculation with multiple retries and mutation observer
     useEffect(() => {
         if (!isTutorialActive || !step?.targetId) {
             setSpotlightRect(null);
             return;
         }
 
+        let retryCount = 0;
+        const maxRetries = 10; // Increased retries
+
         const updateRect = () => {
             const el = document.getElementById(step.targetId!);
             if (el) {
                 const rect = el.getBoundingClientRect();
-                setSpotlightRect(rect);
-            } else {
-                // Retry if element not found (maybe rendering)
-                setTimeout(() => {
-                    const elRetry = document.getElementById(step.targetId!);
-                    if (elRetry) setSpotlightRect(elRetry.getBoundingClientRect());
-                }, 500);
+                // Check if rect is valid and has visible size
+                if (rect.width > 0 && rect.height > 0) {
+                    setSpotlightRect(rect);
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const attemptUpdate = () => {
+            if (updateRect()) return;
+            
+            if (retryCount < maxRetries) {
+                retryCount++;
+                setTimeout(attemptUpdate, 150 * retryCount);
             }
         };
 
-        updateRect();
+        // Initial delay for transitions and modal openings
+        const timer = setTimeout(attemptUpdate, 400);
+        
         window.addEventListener('resize', updateRect);
-        return () => window.removeEventListener('resize', updateRect);
+        window.addEventListener('scroll', updateRect, true);
+        
+        // Listen for ANY change in the DOM (very helpful for modals/portals)
+        const observer = new MutationObserver(() => {
+            if (updateRect()) {
+                // If we found it via mutation, we can stop the retry timer but keep the observer
+            }
+        });
+        
+        observer.observe(document.body, { 
+            childList: true, 
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style', 'class'] 
+        });
+
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', updateRect);
+            window.removeEventListener('scroll', updateRect, true);
+            observer.disconnect();
+        };
     }, [currentStep, isTutorialActive, step]);
 
-    // Keyboard Navigation
+    // Keyboard Navigation (Space/Enter to advance, but ONLY if typing is finished or to skip it)
     useEffect(() => {
         if (!isTutorialActive) return;
 
@@ -81,23 +149,25 @@ export const OracleTutorialOverlay: React.FC = () => {
             if (e.key === 'Escape') {
                 endTutorial(true);
             } else if (e.key === ' ' || e.key === 'Enter') {
-                e.preventDefault(); // Prevent scrolling
+                // Advance tutorial manually on key press
+                e.preventDefault(); 
                 handleNext();
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isTutorialActive, isTyping, currentStep]); // Depend on isTyping to skip anim
+    }, [isTutorialActive, isTyping, currentStep, tutorialSteps]);
 
     if (!isTutorialActive || !step) return null;
 
     const handleNext = () => {
         if (isTyping) {
-            // Complete typing instantly
+            // Complete typing instantly instead of going to next step
             setDisplayedText(step.text);
             setIsTyping(false);
         } else {
+            // Only go to next step if typing is finished
             if (currentStep >= tutorialSteps.length - 1) {
                 endTutorial(true);
             } else {
@@ -108,32 +178,46 @@ export const OracleTutorialOverlay: React.FC = () => {
 
     return (
         <Portal>
-        <div className="fixed inset-0 z-[9999] pointer-events-auto">
-            {/* Backdrop with Hole (Spotlight) */}
-            {spotlightRect ? (
-                <>
-                    <div className="absolute bg-black/70 backdrop-blur-[2px] transition-all duration-300" style={{ top: 0, left: 0, right: 0, height: spotlightRect.top }} />
-                    <div className="absolute bg-black/70 backdrop-blur-[2px] transition-all duration-300" style={{ top: spotlightRect.bottom, left: 0, right: 0, bottom: 0 }} />
-                    <div className="absolute bg-black/70 backdrop-blur-[2px] transition-all duration-300" style={{ top: spotlightRect.top, left: 0, width: spotlightRect.left, height: spotlightRect.height }} />
-                    <div className="absolute bg-black/70 backdrop-blur-[2px] transition-all duration-300" style={{ top: spotlightRect.top, left: spotlightRect.right, right: 0, height: spotlightRect.height }} />
-                    
-                    {/* Highlight Border */}
-                    <div 
-                        className="absolute border-2 border-[var(--gold)] rounded-lg shadow-[0_0_20px_var(--gold)] animate-pulse transition-all duration-300 pointer-events-none"
-                        style={{
-                            top: spotlightRect.top - 4,
-                            left: spotlightRect.left - 4,
-                            width: spotlightRect.width + 8,
-                            height: spotlightRect.height + 8,
-                        }}
-                    />
-                </>
-            ) : (
-                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-[20000] pointer-events-auto" onClick={(e) => {
+            // Capture clicks everywhere to advance, but allow interactions with the dialog itself
+            if (e.target === e.currentTarget) {
+                handleNext();
+            }
+        }}>
+            {/* Backdrop with Spotlight Hole */}
+            <div 
+                className="absolute inset-0 bg-black/60 transition-all duration-500"
+                onClick={handleNext} // Clicking the backdrop advances
+                style={{
+                    maskImage: spotlightRect 
+                        ? `radial-gradient(circle ${Math.max(spotlightRect.width, spotlightRect.height) / 1.5 + 20}px at ${spotlightRect.left + spotlightRect.width / 2}px ${spotlightRect.top + spotlightRect.height / 2}px, transparent 100%, black 100%)`
+                        : 'none',
+                    WebkitMaskImage: spotlightRect 
+                        ? `radial-gradient(circle ${Math.max(spotlightRect.width, spotlightRect.height) / 1.5 + 20}px at ${spotlightRect.left + spotlightRect.width / 2}px ${spotlightRect.top + spotlightRect.height / 2}px, transparent 100%, black 100%)`
+                        : 'none'
+                } as any}
+            />
+
+            {/* Yellow Spotlight Frame */}
+            {spotlightRect && (
+                <div 
+                    className="absolute border-2 border-yellow-400/80 rounded-lg transition-all duration-500 shadow-[0_0_20px_rgba(250,204,21,0.4)] pointer-events-none"
+                    style={{
+                        left: spotlightRect.left - 10,
+                        top: spotlightRect.top - 10,
+                        width: spotlightRect.width + 20,
+                        height: spotlightRect.height + 20,
+                    }}
+                >
+                    <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-yellow-200" />
+                    <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-yellow-200" />
+                    <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-yellow-200" />
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-yellow-200" />
+                </div>
             )}
 
-            {/* Dialog Box - Fixed at Top */}
-            <div className="absolute top-16 left-0 right-0 flex justify-center px-4 pointer-events-none">
+            {/* Dialog Box - Dynamic Positioning */}
+            <div className={`absolute left-0 right-0 flex justify-center px-4 transition-all duration-500 pointer-events-none ${bubblePosition === 'top' ? 'top-16' : 'bottom-24'}`}>
                 <div className="bg-black/80 border border-white/20 backdrop-blur-md rounded-xl p-4 w-full max-w-2xl shadow-2xl flex gap-4 pointer-events-auto animate-fade-in-down">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
@@ -146,7 +230,10 @@ export const OracleTutorialOverlay: React.FC = () => {
                     <div className="flex-grow flex flex-col justify-between min-h-[100px]">
                         <div>
                             <div className="flex justify-between items-start mb-1">
-                                <h3 className="text-[var(--gold)] font-bold uppercase tracking-widest text-sm">{step.title}</h3>
+                                <div className="flex flex-col">
+                                    <h3 className="text-[var(--gold)] font-bold uppercase tracking-widest text-sm">{step.title}</h3>
+                                    <span className="text-[10px] text-gray-500 font-mono">{currentStep + 1} / {tutorialSteps.length}</span>
+                                </div>
                                 <button onClick={() => endTutorial(true)} className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider transition-colors">
                                     Pular [ESC]
                                 </button>

@@ -16,7 +16,7 @@
 Para acessar a interface, você deve aceitar os termos do pacto que regem este domínio.
 
 **I. PROPRIEDADE ABSOLUTA**  
-Seus dados são sua soberania. O Life OS é “Local First”: anotações, diários e SITREPS residem no seu dispositivo. A nuvem é apenas o seu espelho de segurança. Nós não mineramos sua vida.
+Seus dados são sua soberania. O Life OS é “Local First”: anotações, diários e registros residem no seu dispositivo. A nuvem é apenas o seu espelho de segurança. Nós não mineramos sua vida.
 
 **II. O VÍNCULO DE MENTORIA**  
 Ao aceitar um Mentor, você autoriza a visualização parcial do seu progresso. Seus diários privados permanecem ocultos. O Life OS não se responsabiliza por orientações de terceiros; você é o único executor de suas ações.

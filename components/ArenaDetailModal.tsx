@@ -402,7 +402,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                        <div className="flex-grow overflow-x-auto overflow-y-hidden py-2">
                            <div className="flex space-x-2 h-full items-center">
                                {bronzeActions.map(action => <ActionSquare key={action.id} action={action} skinColor={skinColor} onClick={() => openActionDetails(action)} />)}
-                               <button ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
+                               <button id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
                                    <PlusIcon className="w-8 h-8"/>
                                </button>
                            </div>

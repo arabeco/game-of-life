@@ -1141,9 +1141,26 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             <div className="flex-shrink-0 z-0 bg-[#111111]/95 backdrop-blur-sm border-b border-white/5 transition-all duration-300 relative -mt-4 pt-4">
                 <div className="bg-transparent">
                     <div className="relative flex items-center justify-between px-2 text-lg font-bold h-10 mt-1">
-                        <div className="flex items-center space-x-1"><button onClick={() => setChecklistVisible(true)} className="p-1 rounded-full hover:bg-white/10 relative text-gray-400 hover:text-white transition-colors">{allTasksCompleted ? <FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}</button><button onClick={() => setIsSitrepVisible(true)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"><LightbulbIcon className="w-4 h-4" /></button><button onClick={onReportsClick} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"><ClockIcon className="w-4 h-4" /></button></div>
-                        <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1"><button onClick={() => changeDate(-1)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button><span className="uppercase tracking-wider text-sm w-28 text-center text-gray-300">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span><button onClick={() => changeDate(1)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button></div>
-                        <div className="flex items-center bg-black/40 rounded-full p-0.5 text-[10px] border border-white/5"><button onClick={() => setViewMode('day')} className={`px-2 py-0.5 rounded-full transition-colors ${viewMode === 'day' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>D</button><button onClick={() => setViewMode('week')} className={`px-2 py-0.5 rounded-full transition-colors ${viewMode === 'week' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>S</button></div>
+                        <div className="flex items-center space-x-1" id="planner-tools">
+                            <button onClick={() => setChecklistVisible(true)} className="p-1 rounded-full hover:bg-white/10 relative text-gray-400 hover:text-white transition-colors">
+                                {allTasksCompleted ? <FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}
+                            </button>
+                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                                <LightbulbIcon className="w-4 h-4" />
+                            </button>
+                            <button id="report-button" onClick={onReportsClick} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                                <ClockIcon className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1" id="cycle-hud">
+                            <button onClick={() => changeDate(-1)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
+                            <span className="uppercase tracking-wider text-sm w-28 text-center text-gray-300">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
+                            <button onClick={() => changeDate(1)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
+                        </div>
+                        <div className="flex items-center bg-black/40 rounded-full p-0.5 text-[10px] border border-white/5" id="view-mode-selector">
+                            <button onClick={() => setViewMode('day')} className={`px-2 py-0.5 rounded-full transition-colors ${viewMode === 'day' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>D</button>
+                            <button id="eras-button" onClick={() => setViewMode('week')} className={`px-2 py-0.5 rounded-full transition-colors ${viewMode === 'week' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>S</button>
+                        </div>
                     </div>
 
                     <div className={`flex items-center space-x-2 my-0 w-full overflow-visible pb-1 px-2 transition-all duration-300`}>
@@ -1152,14 +1169,20 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             className={`flex-grow min-w-0 bg-black/20 border border-white/5 rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
                         >
                             <div className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden pr-2 scrollbar-hide items-center`}>
-                                {Object.entries(unifiedBayAreaItems).length > 0 ? (Object.entries(unifiedBayAreaItems) as [string, { count: number; isUnlimited: boolean; taskIds?: string[] }][]).map(([actionId, payload]) => {
-                                    const action = getActionById(actionId);
-                                    if (!action) return null;
-                                    // Use the first available taskId (FIFO) if any exist in Bay Area
-                                    const nextTaskId = payload.taskIds && payload.taskIds.length > 0 ? payload.taskIds[0] : undefined;
-                                    
-                                    return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} taskId={nextTaskId} onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })} />);
-                                }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 uppercase tracking-wider row-span-full col-span-full">Sem ações</div>)}
+                                {Object.entries(unifiedBayAreaItems).filter(([_, payload]) => {
+                                     const p = payload as any;
+                                     return p.count > 0 || (p.taskIds && p.taskIds.length > 0);
+                                 }).length > 0 ? 
+                                     (Object.entries(unifiedBayAreaItems) as [string, { count: number; isUnlimited: boolean; taskIds?: string[] }][])
+                                     .filter(([_, payload]) => payload.count > 0 || (payload.taskIds && payload.taskIds.length > 0))
+                                     .map(([actionId, payload]) => {
+                                         const action = getActionById(actionId);
+                                         if (!action) return null;
+                                         // Use the first available taskId (FIFO) if any exist in Bay Area
+                                         const nextTaskId = payload.taskIds && payload.taskIds.length > 0 ? payload.taskIds[0] : undefined;
+                                         
+                                         return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} taskId={nextTaskId} onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })} />);
+                                     }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 uppercase tracking-wider row-span-full col-span-full">Sem ações</div>)}
                             </div>
                         </div>
                         <div className={`relative flex-shrink-0 ${bayAreaHeight} transition-all duration-300`}>
@@ -1233,6 +1256,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
                 <div className="flex flex-col items-center bg-black/50 backdrop-blur-lg border border-[var(--glass-border)] rounded-full p-1 space-y-1">
                     <button
+                        id="focus-mode-button"
                         onClick={() => setShowOracleInput(!showOracleInput)}
                         className={`p-2 rounded-full transition-all ${showOracleInput ? 'bg-[var(--skin-accent-color)] text-black' : 'text-white hover:bg-white/10'}`}
                         title="Adicionar por texto"

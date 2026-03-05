@@ -275,11 +275,26 @@ export type AppMode = 'GAME' | 'BASIC';
 export type ThemePreference = 'LIGHT' | 'DARK';
 export type ArenasViewMode = 'free' | 'priorities' | 'assets';
 
+export interface TutorialStep {
+    title: string;
+    text: string;
+    view: string;
+    tab?: string;
+    showReports?: boolean;
+    showProfile?: boolean;
+    showOracleSettings?: boolean;
+    showRestScreen?: boolean;
+    showArenaId?: string;
+    targetId: string;
+}
+
+export type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings';
+
 export interface UserProfile {
   id: string;
+  username: string;
   // FIX: Added optional email property to align with database schema and fix typing errors.
   email?: string;
-  username: string;
   appMode?: AppMode;
   themePreference?: ThemePreference;
   arenasViewMode?: ArenasViewMode;
@@ -472,6 +487,7 @@ export interface Cycle {
     arenaIds: string[]; // IDs das arenas ativas neste ciclo
     userId: string; // ID do usuário dono do ciclo
     seasonId?: string;
+    isFinished?: boolean; // FIX: Added isFinished to Cycle interface
     arenaConfig?: Record<string, {
         isLocked: boolean;
         isHidden?: boolean;

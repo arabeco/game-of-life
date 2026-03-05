@@ -155,7 +155,10 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     };
 
     // Getters for display names
-    const getBodyName = (id: string) => SOVEREIGN_ASSETS.bodyStyles.find(b => b.id === id)?.name || id;
+    const getBodyName = (id: string) => {
+        const assets = SOVEREIGN_ASSETS as any;
+        return assets.bodyStyles?.find((b: any) => b.id === id)?.name || assets.bodies?.find((b: any) => b.id === id)?.name || id;
+    };
     const getGenderLabel = (id: string) => {
         const body = BODY_DB.find(b => b.id === id);
         return body?.gender === 'female' ? 'Feminino' : 'Masculino';
@@ -169,7 +172,10 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         // The id is now an index+1 (1, 2, 3...)
         return `Tipo ${id}`;
     };
-    const getHairName = (id: string) => SOVEREIGN_ASSETS.hairStyles.find(h => h.id === id)?.name || id;
+    const getHairName = (id: string) => {
+        const assets = SOVEREIGN_ASSETS as any;
+        return assets.hairStyles?.find((h: any) => h.id === id)?.name || id;
+    };
     const getOutfitName = (id: string) => SOVEREIGN_ASSETS.outfits.find(o => o.id === id)?.name || id;
     const getGlyphName = (id: string) => SOVEREIGN_ASSETS.glyphs.find(g => g.id === id)?.name || id;
     const getAuraName = (id: string) => SOVEREIGN_ASSETS.auras.find(a => a.id === id)?.name || id;
@@ -213,7 +219,8 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     };
 
     const cycleHairStyle = (direction: number) => {
-        const newHairId = cycle(config.hairStyle, SOVEREIGN_ASSETS.hairStyles, direction);
+        const assets = SOVEREIGN_ASSETS as any;
+        const newHairId = cycle(config.hairStyle, assets.hairStyles || [], direction);
         
         // Clamp color if needed
         const newHairDef = HAIR_DB.find(h => h.id === newHairId);
@@ -536,10 +543,11 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                 <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1 pb-2 custom-scrollbar">
                                     {SOVEREIGN_ASSETS.artifacts.map(item => {
                                         const isSelected = config.artifact === item.id;
-                                        const tierColor = item.rarity === 'legendary' ? 'bg-yellow-500 shadow-[0_0_4px_rgba(234,179,8,0.5)]' : 
-                                                  item.rarity === 'epic' ? 'bg-purple-500' :
-                                                  item.rarity === 'rare' ? 'bg-blue-500' :
-                                                  item.rarity === 'uncommon' ? 'bg-green-500' : 'bg-gray-600';
+                                        const assetWithRarity = item as any;
+                const tierColor = assetWithRarity.rarity === 'legendary' ? 'bg-yellow-500 shadow-[0_0_4px_rgba(234,179,8,0.5)]' :
+                          assetWithRarity.rarity === 'epic' ? 'bg-purple-500' :
+                          assetWithRarity.rarity === 'rare' ? 'bg-blue-500' :
+                          assetWithRarity.rarity === 'uncommon' ? 'bg-green-500' : 'bg-gray-600';
                                         
                                         return (
                                             <button

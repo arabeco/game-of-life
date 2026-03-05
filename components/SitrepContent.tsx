@@ -266,7 +266,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
             <CycleHeader />
 
             <div className="bg-black/20 p-2 rounded-xl">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-2">🛒 ESTOQUE DO CICLO</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-2">🛒 TAREFAS DISPONÍVEIS</h3>
                 <div className="max-h-24 overflow-y-auto pr-1 space-y-1">
                     {groupedAvailableOptions.map((group) => {
                         const isStockOut = group.count <= 0;
@@ -454,7 +454,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         <div className="pt-3">
                             <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
                             <p className="text-xl arena-title-text accent-text luxe-title-shadow leading-tight">{expDeposited}</p>
-                            {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus SITREP: +{sitrepBonus}</p>}
+                            {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus Painel Diário: +{sitrepBonus}</p>}
                         </div>
 
                         <div className="pt-4 flex items-center justify-center space-x-2 text-gray-400">
@@ -473,7 +473,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                     >
                         🛌 DESCANSAR
                     </button>
-                    <button onClick={() => handleShare('sitrep-capture-area', 'Meu SITREP Diário - Life OS')} className="p-3 rounded-xl luxe-button-secondary">
+                    <button onClick={() => handleShare('sitrep-capture-area', 'Meu Painel Diário - Life OS')} className="p-3 rounded-xl luxe-button-secondary">
                         <ShareIcon className="w-5 h-5" />
                     </button>
                     <button
@@ -483,7 +483,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         }}
                         className="w-full py-2 rounded-xl luxe-skin-button text-sm"
                     >
-                        🌙 PLANEJAR
+                        🌙 NOVO PLANO
                     </button>
                 </div>
             </>

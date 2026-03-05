@@ -12,7 +12,8 @@ import { GameProvider, useGame, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_
 import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import { OracleTutorialOverlay } from './components/OracleTutorialOverlay';
-import { TUTORIAL_STEPS, View as TutorialView } from './constants/tutorialSteps';
+import { TUTORIAL_STEPS } from './constants/tutorialSteps';
+import { View as TutorialView } from './types';
 import { TutorialOverlay } from './components/TutorialOverlay';
 import { GlobalHeader } from './components/GlobalHeader';
 import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GameLogoIcon } from './components/Icons';
@@ -28,13 +29,14 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
 const TutorialBridge: React.FC<{ currentView: View; onNavigate: (v: View) => void }> = ({ currentView, onNavigate }) => {
-    return <TutorialOverlay currentView={currentView as TutorialView} onNavigate={(v) => onNavigate(v as View)} />;
+    // Disabled old TutorialOverlay to avoid duplication with the new OracleTutorialOverlay
+    return null;
 };
 
 const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open, onAccept }) => {
     const clauses = [
         'O DESPERTAR DO SOBERANO\n\nPara acessar a interface, você deve aceitar os termos do pacto que regem este domínio.',
-        'I. PROPRIEDADE ABSOLUTA\nSeus dados são sua soberania. O Life OS é “Local First”: anotações, diários e SITREPS residem no seu dispositivo. A nuvem é apenas o seu espelho de segurança. Nós não mineramos sua vida.',
+        'I. PROPRIEDADE ABSOLUTA\nSeus dados são sua soberania. O Life OS é “Local First”: anotações, diários e registros residem no seu dispositivo. A nuvem é apenas o seu espelho de segurança. Nós não mineramos sua vida.',
         'II. O VÍNCULO DE MENTORIA\nAo aceitar um Mentor, você autoriza a visualização parcial do seu progresso. Seus diários privados permanecem ocultos. O Life OS não se responsabiliza por orientações de terceiros; você é o único executor de suas ações.',
         'III. ISENÇÃO DE RESPONSABILIDADE\nEste sistema é uma ferramenta de autogestão. Não somos médicos, terapeutas ou consultores financeiros. O risco da execução física, mental ou financeira de qualquer Codex é inteiramente do Soberano.',
         'IV. DIREITO AO EXÍLIO\nA qualquer momento, você pode incinerar seus dados. O comando “Deletar Conta” é definitivo e apaga sua existência em nossos servidores, sem rastro ou recuperação.',
@@ -266,6 +268,7 @@ const AppWithTutorial: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('assets');
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
+    const [isRestScreenOpen, setRestScreenOpen] = useState(false);
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile, appMode, activeTheme, clan } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
@@ -391,8 +394,71 @@ const AppWithTutorial: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const handleNavigate = (e: CustomEvent<{ view: View }>) => {
-            setCurrentView(e.detail.view);
+        const handleNavigate = (e: CustomEvent<{ 
+            view: View; 
+            tab?: string; 
+            showReports?: boolean; 
+            showProfile?: boolean; 
+            showOracleSettings?: boolean;
+            showRestScreen?: boolean;
+            showArenaId?: string;
+        }>) => {
+            console.log('App: tutorialNavigate event received', e.detail);
+            
+            // Handle Profile visibility
+            if (e.detail.showProfile !== undefined) {
+                setProfileVisible(e.detail.showProfile);
+            } else {
+                setProfileVisible(false);
+            }
+
+            // Handle Rest Screen visibility
+            if (e.detail.showRestScreen !== undefined) {
+                setRestScreenOpen(e.detail.showRestScreen);
+                // Also dispatch to GlobalHeader which manages its own state
+                const restEvent = new CustomEvent('tutorialRestScreen', { detail: { open: e.detail.showRestScreen } });
+                window.dispatchEvent(restEvent);
+            } else {
+                setRestScreenOpen(false);
+                const restEvent = new CustomEvent('tutorialRestScreen', { detail: { open: false } });
+                window.dispatchEvent(restEvent);
+            }
+
+            // Handle Reports visibility
+            if (e.detail.showReports !== undefined) {
+                setReportsVisible(e.detail.showReports);
+            } else {
+                setReportsVisible(false); 
+            }
+
+            // Handle Oracle Settings
+            if (e.detail.showOracleSettings !== undefined) {
+                const settingsEvent = new CustomEvent('tutorialOracleSettings', { detail: { open: e.detail.showOracleSettings } });
+                window.dispatchEvent(settingsEvent);
+            } else {
+                const settingsEvent = new CustomEvent('tutorialOracleSettings', { detail: { open: false } });
+                window.dispatchEvent(settingsEvent);
+            }
+
+            // Handle Arena Modal
+            if (e.detail.showArenaId !== undefined) {
+                const arenaEvent = new CustomEvent('tutorialOpenArena', { detail: { arenaId: e.detail.showArenaId } });
+                window.dispatchEvent(arenaEvent);
+            } else {
+                const arenaEvent = new CustomEvent('tutorialOpenArena', { detail: { arenaId: null } });
+                window.dispatchEvent(arenaEvent);
+            }
+            
+            if (e.detail.view) {
+                setCurrentView(e.detail.view);
+            }
+            
+            if (e.detail.tab) {
+                setTimeout(() => {
+                    const tabEvent = new CustomEvent('tutorialTabChange', { detail: { tab: e.detail.tab } });
+                    window.dispatchEvent(tabEvent);
+                }, 100);
+            }
         };
         window.addEventListener('tutorialNavigate', handleNavigate as EventListener);
         return () => window.removeEventListener('tutorialNavigate', handleNavigate as EventListener);

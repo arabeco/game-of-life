@@ -29,6 +29,26 @@ export const ArenasView: React.FC = () => {
     const { getArenas, assets, actions, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile } = useGame();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const handleTutorialOpenArena = (e: any) => {
+            const arenaId = e.detail?.arenaId;
+            if (arenaId === null) {
+                setSelectedArenaId(null);
+            } else if (arenaId) {
+                // If it's a specific ID or 'first', we handle it
+                if (arenaId === 'first') {
+                    const firstArena = getArenas()[0];
+                    if (firstArena) setSelectedArenaId(firstArena.id);
+                } else {
+                    setSelectedArenaId(arenaId);
+                }
+            }
+        };
+        window.addEventListener('tutorialOpenArena', handleTutorialOpenArena);
+        return () => window.removeEventListener('tutorialOpenArena', handleTutorialOpenArena);
+    }, [getArenas]);
+
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
@@ -773,7 +793,7 @@ export const ArenasView: React.FC = () => {
         <>
             {renderDragPreview()}
             <div className="px-4 pb-4 pt-4 relative min-h-full">
-                <div className="flex items-center justify-end gap-2 mb-4 z-[60]">
+                <div className="flex items-center justify-end gap-2 mb-4 z-[60]" id="campaigns-section">
                     <button 
                         onClick={handleCreateCampaignClick} 
                         className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
@@ -1100,6 +1120,7 @@ export const ArenasView: React.FC = () => {
                 </div>
                  <button 
                     ref={fabRef}
+                    id="new-action-button"
                     onClick={handleOpenCreateArena}
                     className={`fixed bottom-20 right-4 w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isSelectionMode ? 'opacity-0 pointer-events-none' : ''}`}
                 >

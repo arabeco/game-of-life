@@ -17,7 +17,7 @@ import { ProfileView } from './ProfileView';
 
 const JoinClanBox: React.FC<{onCreate: () => void}> = ({ onCreate }) => {
     return (
-        <GlassCard variant="neutral" className="text-center p-6 space-y-4">
+        <GlassCard variant="neutral" className="text-center p-6 space-y-4" id="clans-section">
             <h2 className="text-xl font-bold">Você não está em um clã</h2>
             <p className="text-sm text-gray-400">Junte-se a um clã para participar de missões ou funde o seu próprio para começar uma nova dinastia.</p>
             <button onClick={onCreate} className="w-full py-2 rounded-xl luxe-skin-button">Fundar Clã</button>
@@ -40,7 +40,7 @@ const ClanInfoBox: React.FC<{onClick: () => void}> = ({ onClick }) => {
     const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
 
     return (
-        <GlassCard variant="gold" className="p-4 space-y-2 text-center transition-all">
+        <GlassCard variant="gold" className="p-4 space-y-2 text-center transition-all" id="clan-sanctuary">
             <button onClick={onClick} className="w-full text-left space-y-2">
                 <div className="flex items-center justify-center space-x-2">
                     <span className="text-3xl">{clan.icon}</span>
@@ -97,7 +97,7 @@ const SocialSearch: React.FC<{ onSearchResults: (results: { players: UserProfile
     };
 
     return (
-        <div className="flex space-x-2">
+        <div className="flex space-x-2" id="allies-search">
             <div className="relative flex-1">
                 <input
                     type="text"
@@ -282,11 +282,11 @@ const MundoView: React.FC = () => {
 
     const tabs = useMemo(() => {
         const allTabs = [
-            { id: 'social', label: 'Social', icon: <UsersIcon className="w-5 h-5" /> },
-            { id: 'loja', label: 'Loja', icon: <ShoppingBagIcon className="w-5 h-5" /> },
-            { id: 'arsenal', label: 'Arsenal', icon: <ArchiveBoxIcon className="w-5 h-5" /> },
-            { id: 'hall', label: 'Hall da Fama', icon: <TrophyIcon className="w-5 h-5" /> },
-            { id: 'temporada', label: 'Temporada', icon: <CalendarIcon className="w-5 h-5" /> },
+            { id: 'social', label: 'Social', icon: <UsersIcon className="w-5 h-5" />, tutorialId: 'nav-social' },
+            { id: 'loja', label: 'Loja', icon: <ShoppingBagIcon className="w-5 h-5" />, tutorialId: 'nav-loja' },
+            { id: 'arsenal', label: 'Arsenal', icon: <ArchiveBoxIcon className="w-5 h-5" />, tutorialId: 'nav-arsenal' },
+            { id: 'hall', label: 'Hall da Fama', icon: <TrophyIcon className="w-5 h-5" />, tutorialId: 'nav-hall' },
+            { id: 'temporada', label: 'Temporada', icon: <CalendarIcon className="w-5 h-5" />, tutorialId: 'season-quests' },
         ] as const;
 
         if (isBasicMode) {
@@ -296,10 +296,15 @@ const MundoView: React.FC = () => {
     }, [isBasicMode]);
 
     useEffect(() => {
-        if (isBasicMode && (activeTab === 'arsenal' || activeTab === 'hall')) {
-            setActiveTab('social');
-        }
-    }, [isBasicMode, activeTab]);
+        const handleTabChange = (e: any) => {
+            const tab = e.detail?.tab;
+            if (tab && tabs.some(t => t.id === tab)) {
+                setActiveTab(tab as any);
+            }
+        };
+        window.addEventListener('tutorialTabChange', handleTabChange);
+        return () => window.removeEventListener('tutorialTabChange', handleTabChange);
+    }, [tabs]);
 
     return (
         <div id="social-container" className="flex flex-col h-full">
@@ -308,6 +313,7 @@ const MundoView: React.FC = () => {
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
+                        id={tab.tutorialId}
                         onClick={() => setActiveTab(tab.id as any)}
                         className={`flex flex-col items-center gap-1 min-w-[64px] transition-colors ${activeTab === tab.id ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
                     >

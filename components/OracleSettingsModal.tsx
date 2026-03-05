@@ -169,7 +169,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({ onClos
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 rounded-3xl flex flex-col max-h-[85vh] overflow-hidden !p-0" onClick={e => e.stopPropagation()}>
+            <GlassCard id="oracle-settings-modal-content" variant="neutral" className="w-full max-w-sm m-4 rounded-3xl flex flex-col max-h-[85vh] overflow-hidden !p-0" onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">

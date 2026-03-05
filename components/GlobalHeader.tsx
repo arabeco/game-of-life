@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { MoodModal } from './MoodModal';
@@ -27,6 +27,16 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     React.useEffect(() => {
         const timer = setInterval(() => setCurrentDate(new Date()), 10000); // Update every 10s to be safe
         return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const handleTutorialRestScreen = (e: any) => {
+            if (e.detail?.open !== undefined) {
+                setRestScreenOpen(e.detail.open);
+            }
+        };
+        window.addEventListener('tutorialRestScreen', handleTutorialRestScreen);
+        return () => window.removeEventListener('tutorialRestScreen', handleTutorialRestScreen);
     }, []);
 
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '');
@@ -107,6 +117,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                             <div className="relative z-30 flex items-center justify-center">
                                 {/* Rest Screen Button (Left) */}
                                 <button
+                                    id="lock-icon-button"
                                     onClick={() => setRestScreenOpen(true)}
                                     className="absolute right-full mr-2 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-[var(--skin-accent-color)] transition-all group shadow-lg backdrop-blur-sm"
                                     aria-label="Tela de Descanso"
@@ -114,7 +125,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                     <LockIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
                                 </button>
 
-                                <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0">
+                                <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0" id="nobility-badge">
                                     <div className="relative w-16 h-16 group-hover:scale-105 transition-transform">
                                         {/* Avatar Image */}
                                         <div className="w-full h-full flex items-center justify-center">
@@ -141,7 +152,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         />
                                         )}
                                     </div>
-                                    <div className="absolute top-[3.3rem] bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border group-hover:scale-110 transition-transform z-10" style={{borderColor: 'var(--skin-accent-color)'}}>
+                                    <div className="absolute top-[3.3rem] bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border group-hover:scale-110 transition-transform z-10" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
                                         <span className="text-[11px] font-black text-white">{userProfile.level}</span>
                                     </div>
                                 </button>

@@ -1360,9 +1360,8 @@ const PremiumTab: React.FC = () => {
                         </button>
                         <button
                             id="codex-button"
-                            onClick={() => { if (isPremium) setCodexOpen(true); }}
-                            disabled={!isPremium}
-                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                            onClick={() => setCodexOpen(true)}
+                            className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">📜</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Codex</span>
@@ -1544,7 +1543,8 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
 };
 
 const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userCodexes, deleteUserCodex, transferUserCodex, friends, installCodex } = useGame();
+    const { userCodexes, deleteUserCodex, transferUserCodex, friends, installCodex, userProfile } = useGame();
+    const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
     const [selectedCodex, setSelectedCodex] = useState<any | null>(null);
     const [isCreatorOpen, setCreatorOpen] = useState(false);
     const [isInstalling, setIsInstalling] = useState(false);
@@ -1620,7 +1620,9 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-6">
                         <section className="space-y-4">
                             <div className="flex items-center justify-end px-1 pb-2">
-                                <button onClick={handleCreateCodex} className="text-[10px] font-bold text-[var(--skin-accent-color)] uppercase hover:underline">Criar Novo</button>
+                                {isPremiumUser && (
+                                    <button onClick={handleCreateCodex} className="text-[10px] font-bold text-[var(--skin-accent-color)] uppercase hover:underline">Criar Novo</button>
+                                )}
                             </div>
 
                             {myCodexes.length === 0 ? (

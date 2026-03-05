@@ -129,12 +129,16 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const currentScore = Math.round((progress * 0.4) + milestoneBonus + questBonus + consistencyBonus + volumeBonus);
     const scoreInfo = getScoreGrade(currentScore);
 
-    // Arenas e Ações envolvidas (seguindo a mesma lógica do endCycle)
-    const actionIdsInCycle = new Set(cycleTasks.map(t => t.actionId));
-    const involvedActions = actions.filter(a => actionIdsInCycle.has(a.id));
-
-    const arenaIdsInCycle = new Set(involvedActions.map(a => a.arenaId));
-    const involvedArenas = assets.flatMap(as => as.arenas).filter(ar => arenaIdsInCycle.has(ar.id));
+    // Avg Hours per Day + Max Streak (Phase 10)
+    const avgHoursPerDay = totalDays > 0 ? (totalHours / totalDays).toFixed(1) : '0';
+    const activeDatesHUD = completedTasks.map(t => t.date).filter((v, i, a) => a.indexOf(v) === i).sort();
+    let maxStreakHUD = activeDatesHUD.length > 0 ? 1 : 0;
+    let currentStreakHUD = 1;
+    for (let i = 1; i < activeDatesHUD.length; i++) {
+        const diffMs = new Date(activeDatesHUD[i]).getTime() - new Date(activeDatesHUD[i - 1]).getTime();
+        if (diffMs <= 86400000 * 1.5) { currentStreakHUD++; } else { currentStreakHUD = 1; }
+        maxStreakHUD = Math.max(maxStreakHUD, currentStreakHUD);
+    }
 
     return (
         <GlassCard variant="accent" className="p-4 space-y-4 relative group">
@@ -166,10 +170,12 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                 <p className="text-xs font-bold text-gray-400">RANK PROJETADO</p>
                 <p className={`text-4xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</p>
                 <p className="text-sm font-bold text-white mt-1">Score: {currentScore}</p>
-                <div className="flex justify-center space-x-3 mt-2 text-[10px] text-gray-500 uppercase font-mono">
+                <div className="flex justify-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-gray-500 uppercase font-mono">
                     <span>🏆 {milestonesCompleted} Marcos</span>
                     <span>⚔️ {questsCompletedCount} Quests</span>
                     <span>🔥 {uniqueDays} Dias</span>
+                    <span>⏱️ {avgHoursPerDay} h/dia</span>
+                    <span>🔗 {maxStreakHUD} Streak</span>
                 </div>
             </div>
         </GlassCard>

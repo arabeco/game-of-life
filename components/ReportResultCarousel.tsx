@@ -42,7 +42,7 @@ const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
 
     return (
         <div className="relative w-32 h-32 flex items-center justify-center">
-            <div 
+            <div
                 className="absolute inset-0 rounded-full blur-xl animate-pulse"
                 style={{ backgroundColor: colors.glow }}
             />
@@ -63,11 +63,11 @@ const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
     );
 };
 
-export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({ 
-    report, 
-    onOk, 
-    onCompare, 
-    onShare, 
+export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
+    report,
+    onOk,
+    onCompare,
+    onShare,
     onPostToFeed,
     onStartNewCycle,
     chest,
@@ -90,11 +90,13 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const { metrics, highlight, assetProgress } = report;
     const scoreInfo = getScoreGrade(report.performanceScore);
     const duration = daysBetween(new Date(report.startDate), new Date(report.endDate));
-    
+    const totalDays = Math.max(1, duration + 1);
+
     // Calculate Time Progress
     const plannedEndDate = metrics.plannedEndDate ? new Date(metrics.plannedEndDate) : new Date(report.endDate);
     const plannedDuration = Math.max(1, daysBetween(new Date(report.startDate), plannedEndDate));
     const timePercentage = Math.min(100, (duration / plannedDuration) * 100);
+    const consistencyPct = metrics.consistencyDays ? Math.min(100, Math.round((metrics.consistencyDays / totalDays) * 100)) : 0;
 
     // Prepare data for Radar Chart
     const radarData = assetProgress.map(ap => ({
@@ -110,7 +112,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Execução</h3>
                 <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
             </div>
-            
+
             <div className="space-y-6">
                 {/* Actions Bar */}
                 <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
@@ -119,8 +121,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         <span className="text-white">{metrics.actionsCompleted} <span className="text-gray-600">/</span> {metrics.totalPlannedActions}</span>
                     </div>
                     <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
-                        <div 
-                            className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-1000 shadow-[0_0_10px_var(--skin-accent-color)]" 
+                        <div
+                            className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-1000 shadow-[0_0_10px_var(--skin-accent-color)]"
                             style={{ width: `${Math.min((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100, 100)}%` }}
                         />
                     </div>
@@ -133,8 +135,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         <span className="text-white">{duration} <span className="text-gray-600">/</span> {plannedDuration} <span className="text-gray-600 text-[8px]">DIAS</span></span>
                     </div>
                     <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
-                         <div 
-                            className="h-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-1000 shadow-[0_0_10px_rgba(239,68,68,0.5)]" 
+                        <div
+                            className="h-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-1000 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
                             style={{ width: `${timePercentage}%` }}
                         />
                     </div>
@@ -147,8 +149,22 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Horas Totais</p>
                 </div>
                 <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
-                    <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.arenasInvolved}</p>
-                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Arenas</p>
+                    <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.avgHoursPerDay ?? (metrics.totalHours / totalDays).toFixed(1)}</p>
+                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Média h/dia</p>
+                </div>
+            </div>
+
+            {/* Consistência */}
+            <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
+                <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
+                    <span>Consistência</span>
+                    <span className="text-white">{metrics.consistencyDays || 0} <span className="text-gray-600">/</span> {totalDays} <span className="text-gray-600 text-[8px]">DIAS</span></span>
+                </div>
+                <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white/80 transition-all duration-1000 shadow-[0_0_10px_var(--skin-accent-color)]"
+                        style={{ width: `${consistencyPct}%` }}
+                    />
                 </div>
             </div>
         </div>
@@ -161,7 +177,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Território</h3>
                 <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
             </div>
-            
+
             <div className="flex-1 min-h-[240px] relative bg-white/[0.02] rounded-3xl border border-white/[0.03] p-2">
                 <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
@@ -186,20 +202,21 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] hover:bg-white/[0.05] transition-all">
-                    <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-inner">
-                            <CheckIcon className="w-5 h-5 text-blue-400 filter drop-shadow-[0_0_5px_rgba(96,165,250,0.5)]" />
-                        </div>
-                        <div>
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Frequência</p>
-                            <p className="text-sm font-black text-white tracking-tight">{highlight.mostRepeatedAction}</p>
-                        </div>
+                {/* Top 3 Ações — Roman Numeral Indicators */}
+                {metrics.top3Actions && metrics.top3Actions.length > 0 && (
+                    <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] space-y-2">
+                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-2">Ações Dominantes</p>
+                        {metrics.top3Actions.map((action, idx) => (
+                            <div key={idx} className="flex items-center justify-between py-1.5">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-black text-gray-600 w-5 text-right tracking-widest">{['I', 'II', 'III'][idx]}</span>
+                                    <span className="text-xs font-bold text-white truncate max-w-[180px]">{action.name}</span>
+                                </div>
+                                <span className="text-sm font-black text-[var(--skin-accent-color)] tabular-nums">{action.count}<span className="text-[9px] ml-0.5 opacity-40">×</span></span>
+                            </div>
+                        ))}
                     </div>
-                    <div className="text-right">
-                         <span className="text-xl font-black text-blue-400 tabular-nums">{highlight.mostRepeatedActionCount || 0}<span className="text-[10px] ml-0.5 opacity-50">X</span></span>
-                    </div>
-                </div>
+                )}
             </div>
         </div>
     );
@@ -207,47 +224,48 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     // Slide 3: Conquistas
     const renderAchievementsSlide = () => {
         const hasAchievements = metrics.goalsMet > 0 || (metrics.questsCompleted || 0) > 0 || (report.clanPoints || 0) > 0;
-        
+
         return (
             <div className="flex flex-col h-full space-y-6 p-6">
                 <div className="text-center">
                     <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Conquistas</h3>
                     <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
                 </div>
-                
+
                 {hasAchievements ? (
                     <div className="space-y-4">
-                        <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/[0.05] flex items-center justify-between group hover:bg-white/[0.05] transition-all">
-                            <div className="flex items-center space-x-4">
-                                <div className="w-12 h-12 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                                    <TrophyIcon className="w-6 h-6 text-[var(--skin-accent-color)] filter drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
-                                </div>
-                                <span className="text-xs font-black text-white uppercase tracking-widest">Marcos</span>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] flex flex-col items-center group hover:bg-white/[0.05] transition-all">
+                                <TrophyIcon className="w-5 h-5 text-[var(--skin-accent-color)] mb-2 filter drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
+                                <span className="text-2xl font-black text-[var(--skin-accent-color)] tabular-nums">{metrics.goalsMet}</span>
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Marcos</span>
                             </div>
-                            <span className="text-3xl font-black text-[var(--skin-accent-color)] tabular-nums">{metrics.goalsMet}</span>
+                            <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] flex flex-col items-center group hover:bg-white/[0.05] transition-all">
+                                <CrownIcon className="w-5 h-5 text-purple-500 mb-2 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                                <span className="text-2xl font-black text-purple-500 tabular-nums">{metrics.questsCompleted || 0}</span>
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Quests</span>
+                            </div>
                         </div>
 
-                        <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/[0.05] flex items-center justify-between group hover:bg-white/[0.05] transition-all">
-                            <div className="flex items-center space-x-4">
-                                <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                                    <CrownIcon className="w-6 h-6 text-purple-500 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                        {/* Best Day + Max Streak */}
+                        <div className="grid grid-cols-2 gap-3">
+                            {metrics.bestDay && (
+                                <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] flex flex-col items-center hover:bg-white/[0.05] transition-all">
+                                    <span className="text-2xl font-black text-white tabular-nums">{metrics.bestDayCount || 0}</span>
+                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Melhor Dia</span>
+                                    <span className="text-[9px] text-gray-600 font-mono mt-0.5">{formatDate(metrics.bestDay)}</span>
                                 </div>
-                                <span className="text-xs font-black text-white uppercase tracking-widest">Missões</span>
-                            </div>
-                            <span className="text-3xl font-black text-purple-500 tabular-nums">{metrics.questsCompleted || 0}</span>
+                            )}
+                            {(metrics.maxStreak ?? 0) > 0 && (
+                                <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] flex flex-col items-center hover:bg-white/[0.05] transition-all">
+                                    <span className="text-2xl font-black text-white tabular-nums">{metrics.maxStreak}</span>
+                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Maior Streak</span>
+                                    <span className="text-[9px] text-gray-600 font-mono mt-0.5">dias</span>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/[0.05] flex items-center justify-between group hover:bg-white/[0.05] transition-all">
-                            <div className="flex items-center space-x-4">
-                                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                                    <div className="w-6 h-6 rounded-full border-2 border-red-500 bg-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                                </div>
-                                <span className="text-xs font-black text-white uppercase tracking-widest">Poder</span>
-                            </div>
-                            <span className="text-3xl font-black text-red-500 tabular-nums">{report.clanPoints || 0}</span>
-                        </div>
-
-                        <div className="text-center mt-8 p-6 bg-white/[0.02] rounded-[32px] border border-white/[0.03]">
+                        <div className="text-center mt-4 p-6 bg-white/[0.02] rounded-[32px] border border-white/[0.03]">
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mb-2">Total Acumulado</p>
                             <p className="text-5xl font-black text-white tracking-tighter">
                                 <span className="text-[var(--skin-accent-color)] opacity-50">+</span>{report.expGained || expGained || 0}<span className="text-xs ml-1 opacity-30 tracking-widest">XP</span>
@@ -260,7 +278,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <XIcon className="w-10 h-10 text-gray-700" />
                         </div>
                         <p className="text-gray-500 text-xs font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px] opacity-60">
-                            "Nenhum marco registrado. <br/>A disciplina é a única saída."
+                            "Nenhum marco registrado. <br />A disciplina é a única saída."
                         </p>
                     </div>
                 )}
@@ -275,7 +293,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Veredito</h3>
                 <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
             </div>
-            
+
             <div className="relative group">
                 <div className="absolute inset-0 bg-[var(--skin-accent-color)] opacity-20 blur-[60px] group-hover:opacity-40 transition-opacity duration-1000" />
                 <div className={`text-[7rem] font-black ${scoreInfo.color} leading-none tracking-tighter filter drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative z-10 select-none`}>
@@ -294,6 +312,32 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             <p className="text-xl font-black text-white leading-tight tracking-tight max-w-[300px] italic opacity-90 relative z-10">
                 "{scoreInfo.phrase}"
             </p>
+
+            {/* Score Decomposition — Mono-tone accent bars */}
+            {metrics.scoreBreakdown && (
+                <div className="w-full max-w-[280px] mx-auto mt-6 space-y-2 relative z-10">
+                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em] text-center mb-3">Decomposição</p>
+                    {[
+                        { label: 'Progresso', pts: metrics.scoreBreakdown.progressPts, max: 40, opacity: 1 },
+                        { label: 'Marcos', pts: metrics.scoreBreakdown.milestonePts, max: Math.max(metrics.scoreBreakdown.milestonePts, 30), opacity: 0.8 },
+                        { label: 'Quests', pts: metrics.scoreBreakdown.questPts, max: Math.max(metrics.scoreBreakdown.questPts, 20), opacity: 0.65 },
+                        { label: 'Consistência', pts: metrics.scoreBreakdown.consistencyPts, max: 20, opacity: 0.5 },
+                        { label: 'Volume', pts: metrics.scoreBreakdown.volumePts, max: 30, opacity: 0.4 },
+                        ...((metrics.scoreBreakdown.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium +10%', pts: metrics.scoreBreakdown.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
+                    ].map(({ label, pts, max, opacity, ...rest }) => (
+                        <div key={label} className="flex items-center gap-3">
+                            <span className={`text-[8px] font-black uppercase tracking-widest w-[72px] text-right ${'isPremium' in rest ? 'text-yellow-500' : 'text-gray-600'}`}>{label}</span>
+                            <div className="flex-1 h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                                <div
+                                    className="h-full rounded-full transition-all duration-700"
+                                    style={{ width: `${max > 0 ? (pts / max) * 100 : 0}%`, backgroundColor: 'isPremium' in rest ? '#EAB308' : `var(--skin-accent-color)`, opacity }}
+                                />
+                            </div>
+                            <span className={`text-[9px] font-black tabular-nums w-6 text-right ${'isPremium' in rest ? 'text-yellow-500' : 'text-gray-500'}`}>+{pts}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 
@@ -305,7 +349,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Resumo</h3>
                     <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
                 </div>
-                
+
                 {/* Stats Header */}
                 <div className="flex w-full justify-around bg-white/[0.03] p-5 rounded-[24px] border border-white/[0.05] shadow-2xl backdrop-blur-sm">
                     <div className="text-center">
@@ -372,7 +416,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
                         {!chest && (!report.expGained && !expGained) && (!insignias || insignias.length === 0) && (
                             <p className="text-gray-500 font-black uppercase text-[10px] tracking-[0.3em] opacity-40 max-w-[200px] leading-relaxed italic mx-auto">
-                                "A disciplina <br/>é a liberdade."
+                                "A disciplina <br />é a liberdade."
                             </p>
                         )}
                     </div>
@@ -395,111 +439,111 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[10001] flex items-center justify-center p-4 animate-fade-in">
-            <div 
-                className="w-full max-w-[420px] h-[85vh] max-h-[800px] bg-[#050505] border-t border-x rounded-[32px] shadow-[0_0_100px_rgba(0,0,0,1)] relative flex flex-col overflow-hidden transition-all duration-500"
-                style={{ 
-                    borderColor: `${skinColor}30`, 
-                    boxShadow: `0 0 60px ${skinColor}10, inset 0 0 30px ${skinColor}05`
-                }}
-            >
-                {/* Premium border gradient effect */}
-                <div className="absolute inset-0 pointer-events-none z-50">
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/40 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/10 to-transparent" />
-                </div>
-
-                {/* Header */}
-                <div className="h-20 flex items-center justify-between px-8 border-b border-white/[0.03] bg-white/[0.02]">
-                    <div className="flex space-x-1.5">
-                        {slides.map((_, idx) => (
-                            <div 
-                                key={idx} 
-                                className={`h-1 rounded-full transition-all duration-500 ${idx === currentSlide ? 'w-10 bg-[var(--skin-accent-color)] shadow-[0_0_10px_var(--skin-accent-color)]' : 'w-2 bg-white/[0.05]'}`}
-                            />
-                        ))}
+                <div
+                    className="w-full max-w-[420px] h-[85vh] max-h-[800px] bg-[#050505] border-t border-x rounded-[32px] shadow-[0_0_100px_rgba(0,0,0,1)] relative flex flex-col overflow-hidden transition-all duration-500"
+                    style={{
+                        borderColor: `${skinColor}30`,
+                        boxShadow: `0 0 60px ${skinColor}10, inset 0 0 30px ${skinColor}05`
+                    }}
+                >
+                    {/* Premium border gradient effect */}
+                    <div className="absolute inset-0 pointer-events-none z-50">
+                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/40 to-transparent" />
+                        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/10 to-transparent" />
                     </div>
-                    <button 
-                        onClick={onOk} 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all border border-transparent hover:border-white/[0.05]"
-                    >
-                        <XIcon className="w-5 h-5" />
-                    </button>
-                </div>
 
-                {/* Content */}
-                <div className="flex-1 relative overflow-hidden bg-[#050505]" id="report-summary-card-capture">
+                    {/* Header */}
+                    <div className="h-20 flex items-center justify-between px-8 border-b border-white/[0.03] bg-white/[0.02]">
+                        <div className="flex space-x-1.5">
+                            {slides.map((_, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`h-1 rounded-full transition-all duration-500 ${idx === currentSlide ? 'w-10 bg-[var(--skin-accent-color)] shadow-[0_0_10px_var(--skin-accent-color)]' : 'w-2 bg-white/[0.05]'}`}
+                                />
+                            ))}
+                        </div>
+                        <button
+                            onClick={onOk}
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all border border-transparent hover:border-white/[0.05]"
+                        >
+                            <XIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 relative overflow-hidden bg-[#050505]" id="report-summary-card-capture">
                         {/* Background decoration */}
                         <div className="absolute inset-0 z-0 opacity-20">
                             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_var(--skin-accent-color)_0%,_transparent_70%)]" />
                         </div>
-                        
+
                         <div className="absolute inset-0 p-4 z-10 overflow-y-auto">
                             {slides[currentSlide]()}
                         </div>
                     </div>
 
-                {/* Footer Navigation */}
-                <div className="h-24 flex items-center justify-between px-8 border-t border-white/[0.03] bg-white/[0.02]">
-                    {!isRewardSlide ? (
-                        <>
-                            <button 
-                                onClick={prevSlide} 
-                                disabled={currentSlide === 0}
-                                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${currentSlide === 0 ? 'text-gray-800 border-transparent' : 'text-white border-white/[0.05] hover:bg-white/[0.05] active:scale-90'}`}
-                            >
-                                <ChevronLeftIcon className="w-6 h-6" />
-                            </button>
+                    {/* Footer Navigation */}
+                    <div className="h-24 flex items-center justify-between px-8 border-t border-white/[0.03] bg-white/[0.02]">
+                        {!isRewardSlide ? (
+                            <>
+                                <button
+                                    onClick={prevSlide}
+                                    disabled={currentSlide === 0}
+                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${currentSlide === 0 ? 'text-gray-800 border-transparent' : 'text-white border-white/[0.05] hover:bg-white/[0.05] active:scale-90'}`}
+                                >
+                                    <ChevronLeftIcon className="w-6 h-6" />
+                                </button>
 
-                            <div className="flex items-center gap-4">
-                                <button 
-                                    onClick={onShare} 
-                                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:text-white border border-white/[0.05] hover:bg-white/[0.05] transition-all" 
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={onShare}
+                                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:text-white border border-white/[0.05] hover:bg-white/[0.05] transition-all"
+                                        title="Compartilhar"
+                                    >
+                                        <ShareIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={nextSlide}
+                                    disabled={currentSlide === totalSlides - 1}
+                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${currentSlide === totalSlides - 1 ? 'text-gray-800 border-transparent' : 'text-white border-white/[0.05] hover:bg-white/[0.05] active:scale-90'}`}
+                                >
+                                    <ChevronRightIcon className="w-6 h-6" />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="w-full flex gap-3 items-center">
+                                <button
+                                    onClick={onShare}
+                                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:text-white border border-white/[0.05] hover:bg-white/[0.05] transition-all shrink-0"
                                     title="Compartilhar"
                                 >
                                     <ShareIcon className="w-5 h-5" />
                                 </button>
-                            </div>
 
-                            <button 
-                                onClick={nextSlide} 
-                                disabled={currentSlide === totalSlides - 1}
-                                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${currentSlide === totalSlides - 1 ? 'text-gray-800 border-transparent' : 'text-white border-white/[0.05] hover:bg-white/[0.05] active:scale-90'}`}
-                            >
-                                <ChevronRightIcon className="w-6 h-6" />
-                            </button>
-                        </>
-                    ) : (
-                        <div className="w-full flex gap-3 items-center">
-                            <button 
-                                onClick={onShare} 
-                                className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:text-white border border-white/[0.05] hover:bg-white/[0.05] transition-all shrink-0" 
-                                title="Compartilhar"
-                            >
-                                <ShareIcon className="w-5 h-5" />
-                            </button>
+                                {onDelete && (
+                                    <button
+                                        onClick={onDelete}
+                                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-red-500 hover:text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all shrink-0"
+                                        title="Deletar Ciclo"
+                                    >
+                                        <Trash2Icon className="w-5 h-5" />
+                                    </button>
+                                )}
 
-                            {onDelete && (
-                                <button 
-                                    onClick={onDelete} 
-                                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-red-500 hover:text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all shrink-0" 
-                                    title="Deletar Ciclo"
+                                <button
+                                    onClick={onStartNewCycle || onOk}
+                                    className="flex-1 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl relative overflow-hidden group luxe-skin-button"
                                 >
-                                    <Trash2Icon className="w-5 h-5" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                    {onStartNewCycle ? 'Novo Ciclo' : 'OK'}
                                 </button>
-                            )}
-                            
-                            <button 
-                                onClick={onStartNewCycle || onOk} 
-                                className="flex-1 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl relative overflow-hidden group luxe-skin-button"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                {onStartNewCycle ? 'Novo Ciclo' : 'OK'}
-                            </button>
-                        </div>
-                    )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
         </Portal>
     );
 };

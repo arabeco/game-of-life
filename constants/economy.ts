@@ -2,7 +2,7 @@ export const ECONOMY = {
   currency: {
     gold_to_brl_rate: 10
   },
-  
+
   recycle_values: {
     tier_1: 10,
     tier_2: 30,
@@ -10,7 +10,7 @@ export const ECONOMY = {
     tier_4: 300,
     tier_5: 1000
   },
-  
+
   craft_costs: {
     tier_1: 40,
     tier_2: 120,
@@ -18,7 +18,7 @@ export const ECONOMY = {
     tier_4: 1200,
     tier_5: 4000
   },
-  
+
   chest_bonus_fragments: {
     incomum: { min: 5, max: 15 },
     ciclo: { min: 10, max: 30 },
@@ -26,14 +26,14 @@ export const ECONOMY = {
     epico: { min: 80, max: 200 },
     season: { min: 200, max: 500 }
   },
-  
+
   pity_system: {
     ciclo: 15,
     radiante: 10,
     epico: 8,
     season: 5
   },
-  
+
   loot_tables: {
     incomum: { tier_1: 70, tier_2: 25, tier_3: 5 },
     ciclo: { tier_1: 40, tier_2: 35, tier_3: 20, tier_4: 5 },
@@ -41,7 +41,7 @@ export const ECONOMY = {
     epico: { tier_3: 50, tier_4: 35, tier_5: 15 },
     season: { tier_4: 60, tier_5: 30, season_exclusive: 10 }
   },
-  
+
   gold_packs: [
     {
       id: 'pack_pepita',
@@ -92,15 +92,16 @@ export const ECONOMY = {
 
   gold_products: {
     premium_monthly: {
-        id: 'premium_30d',
-        name: 'Premium (30 dias)',
-        cost: 200,
-        benefits: [
-            "XP +50% em todas atividades",
-            "1 Baú Radiante grátis por semana",
-            "Emblema Premium exclusivo",
-            "Acesso antecipado a itens de Season"
-        ]
+      id: 'premium_30d',
+      name: 'Premium (30 dias)',
+      cost: 200,
+      benefits: [
+        "Dossiês ampliados (6 slots vs 3)",
+        "Deep Focus Audio: 9 faixas exclusivas",
+        "Oráculo: todos os modos (Tático, Reflexivo...)",
+        "Bônus de Legado: +10% XP em tudo",
+        "Pack Gênesis: 4 itens exclusivos"
+      ]
     },
     codex: 150,
     boost_24h: 50,

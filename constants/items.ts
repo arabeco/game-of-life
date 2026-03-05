@@ -15,6 +15,7 @@ export interface ItemDef {
     isGoldExclusive?: boolean;
     isSeasonExclusive?: boolean;
     isRankExclusive?: boolean; // Items unlocked ONLY via Nobility Rank — blocked from chests and store
+    isPremiumOnly?: boolean; // Items given ONLY via Premium Pack — blocked from chests
 }
 
 const BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
@@ -279,3 +280,30 @@ export const XP_BOOSTS = [
     { id: "boost_xp_24h", name: "Boost XP 2x (24h)", cost: 50, durationHours: 24, icon: '🚀' },
     { id: "boost_xp_7d", name: "Boost XP 2x (7 dias)", cost: 200, durationHours: 168, icon: '📅' }
 ];
+
+// === Premium Genesis Pack ===
+const GENESIS_BORDER: ItemDef = {
+    id: 'item_border_genesis_01', name: 'Borda Gênesis', category: 'border',
+    tier: 4, rarity: 'epic', icon: '✦',
+    description: 'A primeira marca do Soberano Premium.',
+    isPremiumOnly: true, isRankExclusive: true,
+    imageUrl: `${INTERFACE_BASE_URL}/borders/genesis.png`
+};
+const GENESIS_BANNER: ItemDef = {
+    id: 'item_banner_origin_01', name: 'Banner Origem', category: 'banner',
+    tier: 4, rarity: 'epic', icon: '⛊',
+    description: 'O estandarte dos que escolheram evoluir.',
+    isPremiumOnly: true, isRankExclusive: true,
+    imageUrl: `${INTERFACE_BASE_URL}/banners/origin.png`
+};
+const GENESIS_THEME: ItemDef = {
+    id: 'item_theme_nebulosa', name: 'Interface Nebulosa', category: 'ui_skin',
+    tier: 4, rarity: 'epic', icon: '◈',
+    description: 'Interface visual de camadas cósmicas.',
+    isPremiumOnly: true, isRankExclusive: true
+};
+
+export const PREMIUM_PACK_GENESIS = [GENESIS_BORDER, GENESIS_BANNER, GENESIS_THEME];
+
+// Add Genesis items to main DB
+ITEMS_DB.push(GENESIS_BORDER, GENESIS_BANNER, GENESIS_THEME);

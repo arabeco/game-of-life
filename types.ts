@@ -366,12 +366,25 @@ export interface Report {
     actionsCompleted: number;
     totalPlannedActions: number;
     arenasInvolved: number;
-    goalsMet: number; // Assuming milestones are goals
+    goalsMet: number;
     totalHours: number;
     questsCompleted?: number;
     consistencyDays?: number;
     expGained?: number;
     plannedEndDate?: string;
+    avgHoursPerDay?: number;
+    maxStreak?: number;
+    bestDay?: string;
+    bestDayCount?: number;
+    top3Actions?: { name: string; count: number }[];
+    scoreBreakdown?: {
+      progressPts: number;
+      milestonePts: number;
+      questPts: number;
+      consistencyPts: number;
+      volumePts: number;
+      premiumBonusPts?: number;
+    };
   };
   highlight: {
     mostFocusedArena: string;
@@ -382,6 +395,7 @@ export interface Report {
   cycleName?: string;
   seasonId?: string;
   clanPoints?: number;
+  expGained?: number;
   assetProgress: { asset: string; value: number }[];
 }
 

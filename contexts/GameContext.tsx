@@ -1177,6 +1177,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             grantUserUnlock('codexes', itemId);
         } else if (type === 'premium') {
             updateUserProfile({ isPremium: true });
+            unlockPremiumPack();
         }
 
         showToast(`Débito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
@@ -3929,6 +3930,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
+    // === Premium Genesis Pack ===
+    const unlockPremiumPack = async () => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+        const storageKey = `premiumPackClaimed_${userId}`;
+        if (localStorage.getItem(storageKey)) return; // Already claimed
+
+        // Grant 3 Genesis items
+        const genesisIds = ['item_border_genesis_01', 'item_banner_origin_01', 'item_theme_nebulosa'];
+        for (const itemId of genesisIds) {
+            await grantInventoryItem(itemId, true); // silent
+        }
+        // Grant 1 Rare Chest
+        await addChest('Raro');
+
+        localStorage.setItem(storageKey, 'true');
+        showToast('👑 Pack Gênesis Desbloqueado: Seu legado Premium começa agora!', 'success');
+    };
+
     const addCompletedMission = (mission: SeasonMission) => {
         const completed = userProfile.completedSeasonMissions || [];
         if (completed.includes(mission.id)) return;
@@ -4203,7 +4223,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const duration = Number.isFinite(task.duration) ? task.duration : (action?.duration || 0);
             return sum + duration;
         }, 0);
-        const expGained = expFromActions + missionBonusExp + cycleExpBonus;
+        const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
+        const rawExp = expFromActions + missionBonusExp + cycleExpBonus;
+        const premiumBonusExp = isPremiumUser ? Math.round(rawExp * 0.1) : 0;
+        const expGained = rawExp + premiumBonusExp;
 
         // Calculate Clan Points (XP from completed clan quests)
         const activeSeason = SEASONS[ACTIVE_SEASON_ID];
@@ -4216,6 +4239,61 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             );
             return sum + (quest?.rewards.xp || 0);
         }, 0);
+
+        // === Phase 10: Advanced Report Metrics ===
+        // avgHoursPerDay
+        const avgHoursPerDay = durationDays > 0 ? Math.round((totalHours / durationDays) * 10) / 10 : 0;
+
+        // scoreBreakdown (reuse already computed bonus values)
+        const scoreBreakdown = {
+            progressPts: Math.round(progress * 0.4),
+            milestonePts: milestoneBonus,
+            questPts: questBonus,
+            consistencyPts: consistencyBonus,
+            volumePts: volumeBonus,
+            premiumBonusPts: premiumBonusExp,
+        };
+
+        // bestDay + bestDayCount
+        const dayActionCounts: Record<string, number> = {};
+        completedTasks.forEach(t => {
+            dayActionCounts[t.date] = (dayActionCounts[t.date] || 0) + 1;
+        });
+        let bestDay = '';
+        let bestDayCount = 0;
+        Object.entries(dayActionCounts).forEach(([date, count]) => {
+            if (count > bestDayCount) {
+                bestDayCount = count;
+                bestDay = date;
+            }
+        });
+
+        // maxStreak (consecutive days with ≥1 completed task)
+        const activeDates = completedTasks.map(t => t.date).filter((v, i, a) => a.indexOf(v) === i).sort();
+        let maxStreak = 0;
+        let currentStreak = 1;
+        for (let i = 1; i < activeDates.length; i++) {
+            const prev = new Date(activeDates[i - 1]);
+            const curr = new Date(activeDates[i]);
+            const diffMs = curr.getTime() - prev.getTime();
+            if (diffMs <= 86400000 * 1.5) { // ~1 day tolerance for timezone
+                currentStreak++;
+            } else {
+                currentStreak = 1;
+            }
+            maxStreak = Math.max(maxStreak, currentStreak);
+        }
+        if (activeDates.length === 1) maxStreak = 1;
+        if (activeDates.length === 0) maxStreak = 0;
+
+        // top3Actions (reuse actionCompletionCounts, resolve names)
+        const top3Actions = (Object.entries(actionCompletionCounts) as [string, number][])
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 3)
+            .map(([actionId, count]) => ({
+                name: currentActions.find(a => a.id === actionId)?.name || 'Desconhecida',
+                count,
+            }));
 
         const newReport: Report = {
             id: crypto.randomUUID(),
@@ -4233,7 +4311,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 questsCompleted: questsCompletedCount,
                 consistencyDays: uniqueDays,
                 expGained,
-                plannedEndDate
+                plannedEndDate,
+                avgHoursPerDay,
+                maxStreak,
+                bestDay,
+                bestDayCount,
+                top3Actions,
+                scoreBreakdown,
             },
             highlight: {
                 mostFocusedArena,
@@ -4242,6 +4326,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 mostRepeatedActionCount: maxActionCompletions
             },
             clanPoints,
+            expGained,
             assetProgress: currentAssets.map(asset => {
                 if (asset.id === 'geral') return null;
 

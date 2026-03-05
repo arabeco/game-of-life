@@ -5,12 +5,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const VERCEL_URL = "https://glyph-app-arabecos-projects.vercel.app";
+const VERCEL_URL = "https://glyph-app-arabecos-projects.vercel.app?_vercel_share=60aVDYM4ZOqZSA65zTG1QyOiBfnTIl6s";
+const ALLOWED_ORIGINS = ["https://glyph-app-arabecos-projects.vercel.app", "http://localhost:3000", "http://localhost:5173"];
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": VERCEL_URL, // Apenas sua URL da Vercel
+  "Access-Control-Allow-Origin": "*", // Libera para qualquer lugar (Vercel, Localhost, etc)
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -50,13 +51,12 @@ serve(async (req) => {
             gold_amount: goldAmount,
             amount_paid: amount
           },
-          // O Mercado Pago notificará este mesmo endpoint no path /webhook
-          notification_url: `${url.origin}${url.pathname.replace('/checkout', '/webhook')}`,
+          notification_url: `https://klmsdcncmhtgnlcejzdi.supabase.co/functions/v1/mercadopago/webhook`,
           auto_return: "approved",
           back_urls: {
-            success: `${VERCEL_URL}/?payment=success`,
-            failure: `${VERCEL_URL}/?payment=failure`,
-            pending: `${VERCEL_URL}/?payment=pending`,
+            success: `${VERCEL_URL}&payment=success`,
+            failure: `${VERCEL_URL}&payment=failure`,
+            pending: `${VERCEL_URL}&payment=pending`,
           },
         }),
       });
@@ -68,24 +68,85 @@ serve(async (req) => {
       });
     }
 
-    // --- 2. ENDPOINT DE WEBHOOK (NOTIFICAÇÃO DE PAGAMENTO) ---
+    // --- 2. ENDPOINT DE PROCESSAMENTO (CRIAR PAGAMENTO REAL) ---
+    if (url.pathname.endsWith("/process_payment")) {
+      const { formData, userId, goldAmount, amount } = await req.json();
+
+      const response = await fetch("https://api.mercadopago.com/v1/payments", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${MP_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          transaction_amount: amount,
+          payment_method_id: "pix",
+          payer: {
+            email: formData.payer?.email || "comprador_teste_glyph@test.com",
+            identification: {
+              type: "CPF",
+              number: "19119119100"
+            }
+          },
+          metadata: {
+            user_id: userId,
+            gold_amount: goldAmount,
+            amount_paid: amount
+          },
+          notification_url: "https://klmsdcncmhtgnlcejzdi.supabase.co/functions/v1/mercadopago/webhook",
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error("[Glyph Pay] Erro MP Detalhado:", JSON.stringify(data));
+        return new Response(JSON.stringify({ 
+          error: data.message || "Erro MP", 
+          status: "error",
+          id: null 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, // Retornamos 200 para evitar o 403 do Supabase
+        });
+      }
+
+      return new Response(JSON.stringify({
+        id: data.id,
+        status: data.status,
+        status_detail: data.status_detail,
+        point_of_interaction: data.point_of_interaction
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // --- 3. ENDPOINT DE WEBHOOK (NOTIFICAÇÃO DE PAGAMENTO) ---
     if (path.endsWith("/webhook")) {
       const body = await req.json();
-      
-      // O MP envia notificações de vários tipos, queremos apenas pagamentos
       const paymentId = body.data?.id || (body.type === "payment" ? body.resource?.split("/").pop() : null);
 
       if (!paymentId) {
         return new Response("Ignored: No payment ID", { status: 200 });
       }
 
-      // Buscar detalhes oficiais do pagamento no Mercado Pago para segurança
+      // Buscar detalhes oficiais do pagamento no Mercado Pago
       const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: { "Authorization": `Bearer ${MP_ACCESS_TOKEN}` },
       });
       
       if (!mpResponse.ok) {
-        return new Response("Error fetching payment details", { status: 500 });
+        // Se der erro na busca (comum em sandbox), vamos logar e tentar prosseguir se o body tiver info
+        console.error(`[Glyph Pay] Erro ao buscar detalhes do pagamento ${paymentId}. Status: ${mpResponse.status}`);
+        
+        // Tentar buscar do banco se já existe (fallback)
+        if (body.action === "payment.updated" || body.status === "approved") {
+           // Se a notificação já diz que aprovou, tentamos processar com o que temos
+        } else {
+           return new Response("Error fetching details", { status: 200 }); // Retorna 200 pro MP não reenviar
+        }
       }
 
       const paymentData = await mpResponse.json();
@@ -94,7 +155,6 @@ serve(async (req) => {
       if (paymentData.status === "approved") {
         const { user_id, gold_amount, amount_paid } = paymentData.metadata;
 
-        // Chamar a função SQL process_approved_payment que você rodou no banco
         const { error } = await supabase.rpc("process_approved_payment", {
           p_user_id: user_id,
           p_payment_id: paymentId.toString(),

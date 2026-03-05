@@ -172,7 +172,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2 custom-scrollbar bg-black/60 scroll-smooth min-h-[400px]">
+                    <div className="flex-1 overflow-y-auto p-2 custom-scrollbar bg-black/60 scroll-smooth min-h-[400px] flex flex-col">
                         {loading && !paymentResult && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4">
                                 <div className="w-10 h-10 border-4 border-[var(--skin-accent-color)] border-t-transparent rounded-full animate-spin"></div>
@@ -181,7 +181,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                         )}
 
                         {paymentResult ? (
-                            <div className="flex flex-col items-center justify-center py-10 px-6 text-center space-y-6 animate-fade-in">
+                            <div className="flex-1 flex flex-col items-center justify-center py-10 px-6 text-center space-y-6 animate-fade-in">
                                 <div className="w-20 h-20 bg-[var(--skin-accent-color)]/10 rounded-full flex items-center justify-center border border-[var(--skin-accent-color)]/30">
                                     <div className="w-12 h-12 border-4 border-[var(--skin-accent-color)] border-t-transparent rounded-full animate-spin"></div>
                                 </div>
@@ -189,7 +189,8 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 <div className="space-y-2">
                                     <h3 className="text-xl font-bold text-white">QR Code Pix Gerado!</h3>
                                     <p className="text-sm text-gray-400">
-                                        Use o app do seu banco para pagar. Se estiver testando, aprove o pagamento no seu 
+                                        O QR Code foi enviado ao seu e-mail. Se estiver em produção, ele aparecerá aqui. 
+                                        Para testes, aprove no seu 
                                         <a href="https://www.mercadopago.com.br/developers/panel/activities" target="_blank" className="text-[var(--skin-accent-color)] ml-1 underline">Painel do Mercado Pago</a>.
                                     </p>
                                 </div>

@@ -28,3 +28,10 @@ Você pode usar o script `push.sh` criado na raiz:
 # Especificando sufixo b, c, d...
 ./push.sh "Descrição da mudança" "b"
 ```
+
+## Push Atual (Copie e cole no terminal)
+```bash
+git add .
+git commit -m "Glyph1.001d - [x] Consolidação de Toasts do Sistema e Focus Audio Player"
+git push
+```

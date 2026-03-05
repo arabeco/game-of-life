@@ -649,13 +649,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     }, [activeTheme, userProfile]);
 
-    const showToast = useCallback((message: string) => {
-        setToast({ message, visible: true });
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+        setToast({ message, type, visible: true });
     }, []);
 
     const hideToast = useCallback(() => {
         setToast(prev => ({ ...prev, visible: false }));
     }, []);
+
+    // Helper for PWA Latency awareness
+    const withLatencyToast = async <T,>(operation: Promise<T> | any, timeoutMs = 1500): Promise<T> => {
+        let isComplete = false;
+
+        const timeoutId = setTimeout(() => {
+            if (!isComplete) {
+                showToast("Sincronizando operação com o servidor...", "info");
+            }
+        }, timeoutMs);
+
+        try {
+            const result = await operation;
+            isComplete = true;
+            clearTimeout(timeoutId);
+            return result;
+        } catch (error) {
+            isComplete = true;
+            clearTimeout(timeoutId);
+            throw error;
+        }
+    };
 
     const fetchOraclePreferences = useCallback(async (userId: string) => {
         const { data, error } = await supabase
@@ -1070,21 +1092,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return;
 
-        const { data, error } = await supabase.rpc('buy_gold_pack', {
-            p_pack_id: packId,
-            p_amount_gold: pack.total,
-            p_cost_brl: pack.price
-        });
+        const { data, error } = await withLatencyToast<{ data: any, error: any }>(
+            supabase.rpc('buy_gold_pack', {
+                p_pack_id: packId,
+                p_amount_gold: pack.total,
+                p_cost_brl: pack.price
+            }) as any
+        );
 
         if (error) {
             console.error("Error buying gold pack:", error);
-            showToast("Erro ao processar compra.");
+            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
             return;
         }
 
         if (data && data.success) {
             updateUserProfile({ wallet: { ...userProfile.wallet, gold: data.new_gold } });
-            showToast(`Compra de ${pack.name} realizada! +${pack.total} Ouro.`);
+            showToast(`Crédito de ${pack.total} Ouro identificado.`, "success");
         }
     };
 
@@ -1116,32 +1140,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if ((userProfile.wallet?.gold || 0) < cost) {
-            showToast("Ouro insuficiente! Redirecionando para a loja...");
-            // O usuário pediu: "exiba um alerta customizado e redirecione-o imediatamente para a página/modal da Loja de Ouro."
+            showToast("Saldo insuficiente para esta operação.", "error");
             setTimeout(() => {
-                // Se estiver no MundoView, o activeTab mudará para 'loja'
                 const mundoContainer = document.getElementById('social-container');
                 if (mundoContainer) {
-                    // Tenta encontrar o botão da loja e clicar
                     const storeBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('LOJA'));
                     if (storeBtn) storeBtn.click();
                 } else {
-                    // Fallback: Dispatch custom event for App.tsx to handle navigation
                     window.dispatchEvent(new CustomEvent('navigate-to-store'));
                 }
             }, 1500);
             return;
         }
 
-        const { data, error } = await supabase.rpc('buy_store_item', {
-            p_item_id: itemId,
-            p_cost_gold: cost,
-            p_type: type
-        });
+        const { data, error } = await withLatencyToast<{ data: any, error: any }>(
+            supabase.rpc('buy_store_item', {
+                p_item_id: itemId,
+                p_cost_gold: cost,
+                p_type: type
+            }) as any
+        );
 
         if (error) {
             console.error("Error buying store item:", error);
-            showToast("Erro ao comprar item.");
+            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
             return;
         }
 
@@ -1150,7 +1172,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: newGold } });
 
         if (type === 'exclusive') {
-            // Re-fetch inventory to get the new item
             fetchInventory(userId);
         } else if (type === 'codex') {
             grantUserUnlock('codexes', itemId);
@@ -1158,29 +1179,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             updateUserProfile({ isPremium: true });
         }
 
-        showToast(`Compra de ${name} realizada com sucesso!`);
+        showToast(`Débito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
     };
 
     const recycleItem = async (instanceId: string) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
 
-        const { data, error } = await supabase.rpc('recycle_item', {
-            p_item_instance_id: instanceId
-        });
+        const { data, error } = await withLatencyToast<{ data: any, error: any }>(
+            supabase.rpc('recycle_item', {
+                p_item_instance_id: instanceId
+            }) as any
+        );
 
         if (error) {
             console.error("Error recycling:", error);
-            showToast("Erro ao reciclar item.");
+            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
             return;
         }
 
         if (data && data.success) {
-            // Update Local Inventory
             setInventory(prev => prev.filter(i => i.instanceId !== instanceId));
-            // Update Fragments
             const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
             updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
+
+            showToast(`Item desconstruído. ${data.fragments_gained} Fragmentos adicionados ao inventário.`, "success");
         }
     };
 
@@ -1188,15 +1211,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return null;
 
-        const { data, error } = await supabase.rpc('craft_item', {
-            p_tier: tier,
-            p_category: category,
-            p_exact_item_id: exactItemId
-        });
+        const { data, error } = await withLatencyToast<{ data: any, error: any }>(
+            supabase.rpc('craft_item', {
+                p_tier: tier,
+                p_category: category,
+                p_exact_item_id: exactItemId
+            }) as any
+        );
 
         if (error) {
             console.error("Error crafting:", error);
-            showToast("Erro ao forjar item: " + error.message);
+            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
             return null;
         }
 
@@ -1223,6 +1248,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 isEquipped: false
             };
             setInventory(prev => [...prev, newItem]);
+
+            showToast(`Recurso forjado com sucesso. Ativo de Patamar ${tier} adicionado.`, "success");
+
             return newItem;
         }
         return null;
@@ -1267,7 +1295,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 updateUserProfile({ border: 'default' });
             } else if (itemDef.category === 'ui_skin') {
                 updateUserProfile({ skin: 'GOLD' }); // Default skin
-                showToast('Skin de Interface removida. Tema padrão restaurado.');
+                showToast('Configuração estética alterada. Novo ativo equipado.', 'success');
             } else if (itemDef.category === 'banner') {
                 updateUserProfile({ bannerUrl: '' });
             } else {
@@ -1291,7 +1319,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 updateUserProfile({ border: itemDef.id });
             } else if (itemDef.category === 'ui_skin') {
                 updateUserProfile({ skin: itemDef.id });
-                showToast(`Skin de Interface "${itemDef.name}" aplicada!`);
+                showToast(`Configuração estética alterada. Novo ativo equipado.`, 'success');
             } else if (itemDef.category === 'banner') {
                 updateUserProfile({ bannerUrl: itemDef.imageUrl || '' });
             } else {
@@ -6009,7 +6037,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { error } = await supabase.from('scheduled_tasks').insert(snakeCaseData);
             if (error) {
                 console.error("Supabase schedule multiple tasks error:", error.message);
-                showToast("Erro ao agendar tarefas recorrentes: " + error.message);
+                showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
                 throw error;
             }
         }
@@ -6045,11 +6073,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { error } = await supabase.from('scheduled_tasks').insert(snakeCaseData);
             if (error) {
                 console.error("Supabase schedule task error:", error.message);
-                showToast("Erro ao agendar tarefa: " + error.message);
+                showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
                 throw error;
             }
         }
 
+        showToast("Cronograma atualizado no banco de dados.", "success");
         return newTask;
     };
 

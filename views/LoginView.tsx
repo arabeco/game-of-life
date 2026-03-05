@@ -611,12 +611,12 @@ export const LoginView: React.FC = () => {
                     <button
                         onClick={isSigningUp ? handleSignUp : handleLogin}
                         disabled={loading}
-                        className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black font-black text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(251,191,36,0.4)] flex items-center justify-center gap-2 border border-white/20"
+                        className="w-full py-2.5 rounded-xl luxe-skin-button font-black text-sm transition-all flex items-center justify-center gap-2"
                     >
                         {loading ? (
-                            <div className="w-6 h-6 border-4 border-black/30 border-t-black rounded-full animate-spin" />
+                            <div className="w-5 h-5 border-4 border-black/30 border-t-black rounded-full animate-spin" />
                         ) : (
-                            isSigningUp ? 'CRIAR PERFIL' : 'ENTRAR NO GLYPH'
+                            isSigningUp ? 'CRIAR PERFIL' : 'ENTRAR'
                         )}
                     </button>
 

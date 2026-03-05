@@ -11,6 +11,7 @@ import { ClanDetailModal } from './ClanDetailModal';
 import { OracleFeed } from './OracleFeed';
 import { WheelPicker } from './inputs/WheelPicker';
 import { Action, ActionType, Arena, ScheduledTask, DayOfWeek } from '../types';
+import { FocusAudioPlayer } from './FocusAudioPlayer';
 
 interface RestScreenProps {
     onClose: () => void;
@@ -68,12 +69,12 @@ const parseTimeMinutes = (text: string): number | null => {
     if (matchH) return parseInt(matchH[1]) * 60;
     const matchAt = text.match(/\bas\s*(\d{1,2})\b/i);
     if (matchAt) return parseInt(matchAt[1]) * 60;
-    
+
     // Fuzzy time periods
     if (text.match(/\b(manha|manhã)\b/i)) return 9 * 60; // 09:00
     if (text.match(/\b(tarde)\b/i)) return 14 * 60; // 14:00
     if (text.match(/\b(noite)\b/i)) return 19 * 60; // 19:00
-    
+
     return null;
 };
 
@@ -87,11 +88,11 @@ const parseDaysOfWeek = (text: string): DayOfWeek[] => {
     if (normalized.match(/\b(sex|sexta)\b/)) days.push('SEX');
     if (normalized.match(/\b(sab|sabado|sábado)\b/)) days.push('SAB');
     if (normalized.match(/\b(dom|domingo)\b/)) days.push('DOM');
-    
+
     if (normalized.match(/\b(todos os dias|diariamente)\b/)) return ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
     if (normalized.match(/\b(fim de semana|fds)\b/)) return ['SAB', 'DOM'];
     if (normalized.match(/\b(semana|dias uteis)\b/)) return ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
-    
+
     return days;
 };
 
@@ -125,7 +126,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const [selectedDeepWorkTime, setSelectedDeepWorkTime] = useState('25');
     const [deepWorkActive, setDeepWorkActive] = useState(false);
     const [deepWorkTimeLeft, setDeepWorkTimeLeft] = useState(0);
-    
+
     // Quick Action Input State
     const [showQuickActionInput, setShowQuickActionInput] = useState(false);
     const [quickActionInput, setQuickActionInput] = useState('');
@@ -197,7 +198,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
         try {
             const input = quickActionInput;
-            
+
             // Parsing Logic (Copied from PlannerView)
             const splitOracleInput = (input: string) => {
                 // Support for @Arena syntax
@@ -212,12 +213,12 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 if (parts.length > 1) {
                     const before = parts[0].trim();
                     const after = parts.slice(1).join(' ').trim();
-                    
+
                     // Try to extract description from after part (after parentheses or something?)
                     // For now simple: "Action > Arena"
                     return { base: before, arenaName: after, description: '' };
                 }
-                
+
                 // Try to find arena by keyword if no explicit separator
                 // (Simplified for now)
                 return { base: input, arenaName: '', description: '' };
@@ -231,7 +232,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
             // Clean up name
             const normalizedBase = base;
-             const cutPoints = [
+            const cutPoints = [
                 normalizedBase.search(/\b\d+\s*(x|vez|vezes)\b/i),
                 normalizedBase.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
                 normalizedBase.search(/\b(?:as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
@@ -331,7 +332,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
             setQuickActionInput('');
             setShowQuickActionInput(false);
-            
+
         } catch (error) {
             console.error("Error creating action from RestScreen:", error);
         }
@@ -354,7 +355,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         const elapsed = timestamp - cancelStartTimeRef.current;
         const duration = 1500; // 1.5s to cancel
         const progress = Math.min((elapsed / duration) * 100, 100);
-        
+
         setCancelProgress(progress);
 
         if (progress >= 100) {
@@ -371,7 +372,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const handleCancelStart = (e?: React.MouseEvent | React.TouchEvent) => {
         e?.stopPropagation(); // Prevent toggling visibility
         if (cancelAnimationFrameRef.current) return;
-        
+
         cancelStartTimeRef.current = null;
         cancelAnimationFrameRef.current = requestAnimationFrame(updateCancelProgress);
     };
@@ -484,27 +485,30 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     if (deepWorkActive) {
         return (
             <Portal>
-                <div 
+                <div
                     className="fixed inset-0 z-[20000] bg-black flex flex-col items-center justify-start pt-32 cursor-pointer overflow-hidden"
                     onClick={toggleCancelVisibility}
                 >
+                    <div onClick={e => e.stopPropagation()}>
+                        <FocusAudioPlayer />
+                    </div>
                     {/* Fog Background - Passando pontos dummy para garantir renderização */}
                     <div className="absolute inset-0 opacity-40 pointer-events-none">
-                        <SephirotFog 
-                            mode="deepwork" 
-                            color="#22d3ee" 
-                            points={[{x: 50, y: 50, level: 1}]} // Pontos mínimos para o shader não reclamar
+                        <SephirotFog
+                            mode="deepwork"
+                            color="#22d3ee"
+                            points={[{ x: 50, y: 50, level: 1 }]} // Pontos mínimos para o shader não reclamar
                         />
                     </div>
-                    
+
                     <div className="relative z-10 flex flex-col items-center gap-4 pointer-events-none opacity-80">
                         {/* Relógio menor e mais discreto */}
                         <div className="w-32 h-32 rounded-full border border-cyan-500/5 flex items-center justify-center relative">
-                             {/* Anéis de rotação mais sutis */}
-                             <div className="absolute inset-0 border border-cyan-500/10 rounded-full animate-[spin_20s_linear_infinite]" />
-                             <div className="absolute inset-2 border border-cyan-500/5 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
-                             
-                             <div className="text-2xl font-light text-cyan-400/80 tracking-widest tabular-nums font-mono drop-shadow-[0_0_10px_rgba(34,211,238,0.3)]">
+                            {/* Anéis de rotação mais sutis */}
+                            <div className="absolute inset-0 border border-cyan-500/10 rounded-full animate-[spin_20s_linear_infinite]" />
+                            <div className="absolute inset-2 border border-cyan-500/5 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
+
+                            <div className="text-2xl font-light text-cyan-400/80 tracking-widest tabular-nums font-mono drop-shadow-[0_0_10px_rgba(34,211,238,0.3)]">
                                 {formatDeepWorkTime(deepWorkTimeLeft)}
                             </div>
                         </div>
@@ -514,10 +518,10 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     </div>
 
                     {showCancelButton && (
-                         <div 
+                        <div
                             className="absolute bottom-20 z-20 animate-fade-in"
                             onClick={e => e.stopPropagation()}
-                         >
+                        >
                             <button
                                 onMouseDown={(e) => handleCancelStart(e)}
                                 onMouseUp={(e) => handleCancelEnd(e)}
@@ -553,7 +557,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }}
                                     />
                                 </svg>
-                                
+
                                 <div className="relative z-10 flex flex-col items-center justify-center gap-1">
                                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-active:bg-white/20 transition-colors">
                                         <XCircleIcon className="w-4 h-4 text-gray-400 group-active:text-white" />
@@ -678,7 +682,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-3">
                                     {isSitrepLocked && (
                                         <div className="flex items-center gap-1.5 animate-fade-in">
@@ -689,8 +693,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                     <button
                                         onClick={() => setIsSitrepLocked(!isSitrepLocked)}
                                         className={`p-2 rounded-full transition-all ${isSitrepLocked
-                                                ? 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'
-                                                : 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border border-[var(--skin-accent-color)]/30'
+                                            ? 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'
+                                            : 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border border-[var(--skin-accent-color)]/30'
                                             }`}
                                     >
                                         {isSitrepLocked ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
@@ -898,19 +902,19 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 {showQuickActionInput && (
                     <div className="fixed inset-0 z-[10002] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 animate-fade-in">
                         <div className="w-full max-w-md relative">
-                            <button 
+                            <button
                                 onClick={() => setShowQuickActionInput(false)}
                                 className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white"
                             >
                                 <XIcon className="w-6 h-6" />
                             </button>
-                            
+
                             <div className="flex flex-col gap-4">
                                 <h3 className="text-xl font-bold text-white text-center">Nova Ação Rápida</h3>
                                 <p className="text-xs text-gray-400 text-center">
                                     Ex: "Ler 30min", "Treino 1h as 18h", "Estudar &gt; Faculdade"
                                 </p>
-                                
+
                                 <div className="relative">
                                     <input
                                         ref={quickActionInputRef}

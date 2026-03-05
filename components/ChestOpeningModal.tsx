@@ -113,12 +113,14 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
     const [reward, setReward] = useState<Reward | null>(null);
 
     useEffect(() => {
-        if (appMode !== 'GAME') {
+        const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
+        if (appMode !== 'GAME' && !isGM) {
             onClose();
         }
-    }, [appMode, onClose]);
+    }, [appMode, onClose, userProfile.role]);
 
-    if (appMode !== 'GAME') return null;
+    const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
+    if (appMode !== 'GAME' && !isGM) return null;
 
     const rarityColor = RARITY_COLORS[chestType] || RARITY_COLORS['Comum'];
 

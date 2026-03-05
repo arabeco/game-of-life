@@ -48,12 +48,14 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     }
 
     useEffect(() => {
-        if (appMode !== 'GAME') {
+        const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
+        if (appMode !== 'GAME' && !isGM) {
             onClose();
         }
-    }, [appMode, onClose]);
+    }, [appMode, onClose, userProfile.role]);
 
-    if (appMode !== 'GAME') return null;
+    const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
+    if (appMode !== 'GAME' && !isGM) return null;
 
     // Get user skin color
     const userSkinId = userProfile.skin;
@@ -79,7 +81,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         if (showVideo) {
             // trigger('level_up'); // TODO: Implement trigger or remove
             setShowContent(false); // Hide initially for video types
-            
+
             // Safety timeout: if video doesn't end or fails to load, show content after 4.5s
             // Video duration is 4s
             const timer = setTimeout(() => {
@@ -93,7 +95,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
     const handlePostToFeed = () => {
         let content;
-        switch(achievement.type) {
+        switch (achievement.type) {
             case 'MILESTONE_COMPLETED':
             case 'ARENA_COMPLETED':
                 content = { title: achievement.data.name, icon: achievement.data.icon };
@@ -118,14 +120,14 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         if (achievement.data.rewards || achievement.data.reward) {
             const rewards = achievement.data.rewards || achievement.data.reward;
             let messages: string[] = [];
-            
+
             // Handle multiple items if present, otherwise handle single item
             const items = rewards.items || (rewards.item ? [rewards.item] : []);
-            
+
             if (items.length > 0) {
                 // Deduplicate items for toast summary
                 const uniqueItems = [...new Set(items)];
-                
+
                 // Map each item to a toast line
                 const itemLines = uniqueItems.map((itemId: unknown) => {
                     const id = String(itemId);
@@ -145,12 +147,12 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                     messages.push(...itemLines.slice(0, maxIndividualLines));
                     messages.push(`✦ ...e mais ${itemLines.length - maxIndividualLines} itens`);
                 }
-            } 
-            
+            }
+
             if (rewards.chest) {
                 messages.push(`✦ Baú ${rewards.chest} adicionado`);
-            } 
-            
+            }
+
             if (rewards.ornament) {
                 const itemDef = resolveItemDef(rewards.ornament);
                 messages.push(`✦ Ornamento ${itemDef?.name || rewards.ornament} adicionado`);
@@ -169,17 +171,17 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
     return (
         <Portal>
-            <div 
+            <div
                 className="fixed inset-0 z-[10001] flex items-center justify-center p-4 transition-all duration-500 bg-black/90 backdrop-blur-md"
                 onClick={handleClose}
             >
-                <GlassCard 
+                <GlassCard
                     ref={cardRef}
-                    variant="neutral" 
+                    variant="neutral"
                     className="w-full max-w-sm overflow-hidden relative shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col border-t border-x bg-[#050505] transition-all duration-700"
-                    style={{ 
-                        borderColor: `${skinColor}30`, 
-                        boxShadow: `0 0 60px ${skinColor}10, inset 0 0 30px ${skinColor}05` 
+                    style={{
+                        borderColor: `${skinColor}30`,
+                        boxShadow: `0 0 60px ${skinColor}10, inset 0 0 30px ${skinColor}05`
                     }}
                     onClick={e => e.stopPropagation()}
                 >
@@ -187,13 +189,13 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                     {showVideo && !showContent && (
                         <div className="relative aspect-[9/16] w-full bg-black overflow-hidden">
                             <VideoPlayer
-                                src={isRankUp 
+                                src={isRankUp
                                     ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/levelup.mp4`
-                                    : (isReportComplete 
+                                    : (isReportComplete
                                         ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report.mp4`
                                         : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/quest.mp4`)
                                 }
-                                onEnd={() => setShowContent(true)} 
+                                onEnd={() => setShowContent(true)}
                                 className="w-full h-full object-cover"
                                 placeholderLabel={isRankUp ? "Level Up!" : (isReportComplete ? "Relatório!" : "Missão!")}
                                 duration={4000}
@@ -221,7 +223,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
                             {/* Header Title */}
                             <div className="pt-10 pb-6 px-8 text-center z-20 relative">
-                                <h2 
+                                <h2
                                     className="text-2xl font-black text-white uppercase tracking-[0.3em] leading-tight"
                                     style={{ textShadow: `0 0 20px ${skinColor}40` }}
                                 >
@@ -233,7 +235,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                             {/* Icon Section */}
                             <div className="relative w-full h-32 flex items-center justify-center z-10">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-10" />
-                                <div 
+                                <div
                                     className="w-20 h-20 rounded-2xl flex items-center justify-center border rotate-45 transition-all duration-700 shadow-2xl relative group overflow-hidden"
                                     style={{ borderColor: `${skinColor}40`, backgroundColor: `${skinColor}05` }}
                                 >
@@ -254,96 +256,96 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 </div>
 
                                 {/* Reward Miniature - Standardized Pattern */}
-                            {(normalizedRewards.exp || normalizedRewards.chest || normalizedRewards.ornament || normalizedRewards.items.length > 0) && (
-                                <div className="w-full flex gap-2 justify-center mb-4">
-                                    {/* XP Reward */}
-                                    {normalizedRewards.exp && (
-                                        <div className="flex-1 flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all overflow-hidden min-w-0">
-                                            <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
-                                                <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">✨</span>
+                                {(normalizedRewards.exp || normalizedRewards.chest || normalizedRewards.ornament || normalizedRewards.items.length > 0) && (
+                                    <div className="w-full flex gap-2 justify-center mb-4">
+                                        {/* XP Reward */}
+                                        {normalizedRewards.exp && (
+                                            <div className="flex-1 flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all overflow-hidden min-w-0">
+                                                <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
+                                                    <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">✨</span>
+                                                </div>
+                                                <div className="text-left overflow-hidden min-w-0">
+                                                    <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Experiência</p>
+                                                    <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
+                                                        +{normalizedRewards.exp} <span className="text-[var(--skin-accent-color)] opacity-70">XP</span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="text-left overflow-hidden min-w-0">
-                                                <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Experiência</p>
-                                                <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
-                                                    +{normalizedRewards.exp} <span className="text-[var(--skin-accent-color)] opacity-70">XP</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {/* Reward Item (Insignia, Chest, Ornament) */}
-                                    {(normalizedRewards.chest || normalizedRewards.ornament || normalizedRewards.items.length > 0) && (
-                                        <div className="flex-[2] flex flex-col gap-2">
-                                            {/* Handle array of items if present */}
-                                            {normalizedRewards.items.map((itemId: string, idx: number) => {
-                                                const def = resolveItemDef(itemId);
-                                                return (
-                                                    <div key={`${itemId}-${idx}`} className="flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all overflow-hidden min-w-0">
+                                        {/* Reward Item (Insignia, Chest, Ornament) */}
+                                        {(normalizedRewards.chest || normalizedRewards.ornament || normalizedRewards.items.length > 0) && (
+                                            <div className="flex-[2] flex flex-col gap-2">
+                                                {/* Handle array of items if present */}
+                                                {normalizedRewards.items.map((itemId: string, idx: number) => {
+                                                    const def = resolveItemDef(itemId);
+                                                    return (
+                                                        <div key={`${itemId}-${idx}`} className="flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all overflow-hidden min-w-0">
+                                                            <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
+                                                                <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">
+                                                                    {def?.icon || '🎖️'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-left overflow-hidden min-w-0">
+                                                                <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">
+                                                                    {def?.category === 'insignias' || def?.category === 'insignia' ? 'Insígnia' : 'Item'}
+                                                                </p>
+                                                                <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
+                                                                    {def?.name || itemId.replace(/_/g, ' ')}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {/* Handle single chest if present */}
+                                                {normalizedRewards.chest && (
+                                                    <div className="flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all overflow-hidden min-w-0">
+                                                        <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
+                                                            <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">📦</span>
+                                                        </div>
+                                                        <div className="text-left overflow-hidden min-w-0">
+                                                            <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Baú</p>
+                                                            <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
+                                                                {normalizedRewards.chest}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Handle single ornament if present */}
+                                                {normalizedRewards.ornament && (
+                                                    <div className="flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all overflow-hidden min-w-0">
                                                         <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
                                                             <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">
-                                                                {def?.icon || '🎖️'}
+                                                                {resolveItemDef(normalizedRewards.ornament)?.icon || '🎖️'}
                                                             </span>
                                                         </div>
                                                         <div className="text-left overflow-hidden min-w-0">
-                                                            <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">
-                                                                {def?.category === 'insignias' || def?.category === 'insignia' ? 'Insígnia' : 'Item'}
-                                                            </p>
+                                                            <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Ornamento</p>
                                                             <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
-                                                                {def?.name || itemId.replace(/_/g, ' ')}
+                                                                {resolveItemDef(normalizedRewards.ornament)?.name || 'Ornamento'}
                                                             </p>
                                                         </div>
                                                     </div>
-                                                );
-                                            })}
-
-                                            {/* Handle single chest if present */}
-                                            {normalizedRewards.chest && (
-                                                <div className="flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all overflow-hidden min-w-0">
-                                                    <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
-                                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">📦</span>
-                                                    </div>
-                                                    <div className="text-left overflow-hidden min-w-0">
-                                                        <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Baú</p>
-                                                        <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
-                                                            {normalizedRewards.chest}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Handle single ornament if present */}
-                                            {normalizedRewards.ornament && (
-                                                <div className="flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all overflow-hidden min-w-0">
-                                                    <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
-                                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">
-                                                            {resolveItemDef(normalizedRewards.ornament)?.icon || '🎖️'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-left overflow-hidden min-w-0">
-                                                        <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Ornamento</p>
-                                                        <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
-                                                            {resolveItemDef(normalizedRewards.ornament)?.name || 'Ornamento'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="space-y-3">
-                                    <button 
-                                        onClick={handlePostToFeed} 
+                                    <button
+                                        onClick={handlePostToFeed}
                                         className="w-full py-4 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 group relative overflow-hidden shadow-2xl luxe-skin-button"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                         <ShareIcon className="w-4 h-4" />
                                         Compartilhar Feito
                                     </button>
-                                    
-                                    <button 
-                                        onClick={handleClose} 
+
+                                    <button
+                                        onClick={handleClose}
                                         className="w-full py-4 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 group relative overflow-hidden shadow-2xl luxe-skin-button"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />

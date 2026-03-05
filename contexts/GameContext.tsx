@@ -3752,18 +3752,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         }
                     });
 
-                    // Grant Rank Rewards
+                    // Grant Rank Rewards (Escalada do Soberano 5.0)
                     const rewards = RANK_REWARDS[newRankId];
                     if (rewards) {
+                        const rewardNames: string[] = [];
                         rewards.forEach(reward => {
                             grantUserUnlock(reward.category, reward.itemId);
                             if (reward.category !== 'ui_skins') {
                                 grantInventoryItem(reward.itemId);
-                            } else {
-                                // UI Skins don't go to inventory, just unlock
-                                showToast(`Tema desbloqueado: ${reward.name}`, 'success');
+                            }
+                            if (reward.category !== 'insignias') {
+                                rewardNames.push(reward.name);
                             }
                         });
+                        if (rewardNames.length > 0) {
+                            showToast(`Patente ${newRank.name} alcançada. Itens de Legado integrados ao Arsenal: ${rewardNames.join(', ')}.`, 'success');
+                        }
                     }
                 }
             }

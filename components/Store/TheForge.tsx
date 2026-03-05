@@ -16,7 +16,7 @@ export const TheForge: React.FC = () => {
 
     // --- CRAFTING LOGIC ---
     const craftableItems = useMemo(() => {
-        return ITEMS_DB.filter(item => item.tier === selectedTier && !item.isGoldExclusive && !item.isSeasonExclusive);
+        return ITEMS_DB.filter(item => item.tier === selectedTier && !item.isGoldExclusive && !item.isSeasonExclusive && !item.isRankExclusive);
     }, [selectedTier]);
 
     // Group by category for T4/T5
@@ -29,7 +29,7 @@ export const TheForge: React.FC = () => {
     const handleCraft = async (itemOrCategory: string, isCategory: boolean) => {
         if (processing) return;
         setProcessing(`craft-${itemOrCategory}`);
-        
+
         try {
             if (isCategory) {
                 await craftItem(selectedTier, itemOrCategory);
@@ -44,7 +44,7 @@ export const TheForge: React.FC = () => {
     };
 
     const getCraftCost = (tier: number) => {
-        switch(tier) {
+        switch (tier) {
             case 1: return ECONOMY.craft_costs.tier_1;
             case 2: return ECONOMY.craft_costs.tier_2;
             case 3: return ECONOMY.craft_costs.tier_3;
@@ -67,7 +67,7 @@ export const TheForge: React.FC = () => {
             setConfirmRecycleId(instanceId);
             return;
         }
-        
+
         if (processing) return;
         setProcessing(`recycle-${instanceId}`);
         try {
@@ -81,7 +81,7 @@ export const TheForge: React.FC = () => {
     };
 
     const getRecycleValue = (tier: number) => {
-        switch(tier) {
+        switch (tier) {
             case 1: return ECONOMY.recycle_values.tier_1;
             case 2: return ECONOMY.recycle_values.tier_2;
             case 3: return ECONOMY.recycle_values.tier_3;
@@ -92,7 +92,7 @@ export const TheForge: React.FC = () => {
     };
 
     const getRarityColor = (tier: number) => {
-        switch(tier) {
+        switch (tier) {
             case 1: return 'text-[#A0522D] border-[#A0522D]/30'; // Comum: Marrom
             case 2: return 'text-[#C0C0C0] border-[#C0C0C0]/30'; // Incomum: Prata
             case 3: return 'text-[#FFD700] border-[#FFD700]/30'; // Raro: Ouro
@@ -106,13 +106,13 @@ export const TheForge: React.FC = () => {
         <div className="space-y-6 animate-fade-in">
             {/* Forge Header / Tabs */}
             <div className="flex justify-center space-x-4 mb-6">
-                <button 
+                <button
                     onClick={() => setActiveTab('craft')}
                     className={`px-6 py-2 rounded-full font-black uppercase tracking-widest transition-all ${activeTab === 'craft' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
                     <span className="mr-2">🔨</span> Forjar
                 </button>
-                <button 
+                <button
                     onClick={() => setActiveTab('recycle')}
                     className={`px-6 py-2 rounded-full font-black uppercase tracking-widest transition-all ${activeTab === 'recycle' ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(248,113,113,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
@@ -153,7 +153,7 @@ export const TheForge: React.FC = () => {
                                         <div className={`font-bold text-sm ${getRarityColor(item.tier).split(' ')[0]}`}>{item.name}</div>
                                         <div className="text-[10px] text-gray-500 uppercase">{item.category}</div>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => handleCraft(item.id, false)}
                                         disabled={!!processing || (userProfile.wallet?.fragments || 0) < getCraftCost(item.tier)}
                                         className="w-full py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-400 text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -171,7 +171,7 @@ export const TheForge: React.FC = () => {
                                         <div className={`font-bold text-lg ${getRarityColor(selectedTier).split(' ')[0]}`}>{cat.toUpperCase()}</div>
                                         <div className="text-xs text-gray-500">Item Aleatório</div>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => handleCraft(cat, true)}
                                         disabled={!!processing || (userProfile.wallet?.fragments || 0) < getCraftCost(selectedTier)}
                                         className="w-full py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-cyan-400 font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -181,7 +181,7 @@ export const TheForge: React.FC = () => {
                                 </GlassCard>
                             ))
                         )}
-                        
+
                         {selectedTier <= 3 && craftableItems.length === 0 && (
                             <div className="col-span-full text-center py-10 text-gray-500">
                                 Nenhum item disponível para forjar neste tier.
@@ -212,20 +212,19 @@ export const TheForge: React.FC = () => {
                                             <div className="text-[10px] text-gray-500 uppercase">T{item.def?.tier} • {item.def?.category}</div>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex items-center space-x-4">
                                         <div className="flex flex-col items-end">
                                             <span className="text-cyan-400 font-bold">+{getRecycleValue(item.def?.tier || 1)}</span>
                                             <span className="text-[9px] text-gray-500 uppercase">Fragmentos</span>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => handleRecycle(item.instanceId)}
                                             disabled={!!processing}
-                                            className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${
-                                                confirmRecycleId === item.instanceId 
-                                                    ? 'bg-red-500 text-white animate-pulse' 
+                                            className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${confirmRecycleId === item.instanceId
+                                                    ? 'bg-red-500 text-white animate-pulse'
                                                     : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                                            }`}
+                                                }`}
                                         >
                                             {processing === `recycle-${item.instanceId}` ? <RefreshCwIcon className="w-4 h-4 animate-spin" /> : confirmRecycleId === item.instanceId ? <span className="text-[10px] font-bold">CONFIRMAR?</span> : <Trash2Icon className="w-4 h-4" />}
                                         </button>

@@ -5,7 +5,7 @@ import { AssetIcon, ConfigIcon } from './Icons';
 import { AppMode } from '../types';
 
 export const ModeSelectionOverlay: React.FC = () => {
-    const { userProfile, setAppMode, isProfileLoaded } = useGame();
+    const { userProfile, setAppMode, isProfileLoaded, showToast } = useGame();
     const [selectedMode, setSelectedMode] = useState<AppMode | null>(null);
     const [isConfirming, setIsConfirming] = useState(false);
 
@@ -23,6 +23,9 @@ export const ModeSelectionOverlay: React.FC = () => {
         setIsConfirming(true);
         try {
             await setAppMode(selectedMode);
+            if (selectedMode === 'GAME') {
+                showToast('Pacote inicial do Vagante adicionado ao seu inventário.', 'success');
+            }
         } catch (error) {
             console.error('Error setting app mode:', error);
         } finally {
@@ -61,8 +64,8 @@ export const ModeSelectionOverlay: React.FC = () => {
                         <div
                             onClick={() => handleSelect('GAME')}
                             className={`group relative p-8 rounded-[32px] border-2 transition-all duration-500 cursor-pointer overflow-hidden ${selectedMode === 'GAME'
-                                    ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] shadow-[0_0_40px_rgba(var(--skin-accent-color-rgb),0.3)] scale-[1.02]'
-                                    : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'
+                                ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] shadow-[0_0_40px_rgba(var(--skin-accent-color-rgb),0.3)] scale-[1.02]'
+                                : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'
                                 }`}
                         >
                             <div className="relative z-10 space-y-6">
@@ -98,8 +101,8 @@ export const ModeSelectionOverlay: React.FC = () => {
                         <div
                             onClick={() => handleSelect('BASIC')}
                             className={`group relative p-8 rounded-[32px] border-2 transition-all duration-500 cursor-pointer overflow-hidden ${selectedMode === 'BASIC'
-                                    ? 'bg-blue-500/20 border-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] scale-[1.02]'
-                                    : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'
+                                ? 'bg-blue-500/20 border-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] scale-[1.02]'
+                                : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'
                                 }`}
                         >
                             <div className="relative z-10 space-y-6">
@@ -137,8 +140,8 @@ export const ModeSelectionOverlay: React.FC = () => {
                             disabled={!selectedMode || isConfirming}
                             onClick={handleConfirm}
                             className={`px-12 py-4 rounded-2xl font-black tracking-[0.4em] uppercase transition-all duration-500 ${selectedMode
-                                    ? 'bg-white text-black hover:scale-110 shadow-2xl active:scale-95'
-                                    : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
+                                ? 'bg-white text-black hover:scale-110 shadow-2xl active:scale-95'
+                                : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
                                 }`}
                         >
                             {isConfirming ? 'VINCULANDO...' : 'CONFIRMAR ESCOLHA'}

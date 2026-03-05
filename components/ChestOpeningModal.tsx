@@ -45,7 +45,7 @@ const getRandomReward = (chestType: ChestType): Reward => {
     };
 
     const targetRarity = rarityMap[chestType] || 'common';
-    const pool = ITEMS_DB.filter(item => item.rarity === targetRarity);
+    const pool = ITEMS_DB.filter(item => item.rarity === targetRarity && !item.isRankExclusive && !item.isGoldExclusive && !item.isSeasonExclusive);
 
     if (pool.length === 0) {
         return {
@@ -158,17 +158,17 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                 const nextUnlockedSkins = { ...(userProfile.unlockedSkins || {}), [rewardValue.skinUnlock]: true };
                 updateUserProfile({ unlockedSkins: nextUnlockedSkins });
             }
-            
+
             // Show toast for collected item
             if (reward) {
                 const name = reward.value;
-                const typeLabel = reward.type === 'Item' ? 'Item' : 
-                                 reward.type === 'Skin' ? 'Skin' : 
-                                 reward.type === 'EXP' ? 'XP' : 
-                                 reward.type === 'Conselho' ? 'Conselho' : 'Recompensa';
-                
+                const typeLabel = reward.type === 'Item' ? 'Item' :
+                    reward.type === 'Skin' ? 'Skin' :
+                        reward.type === 'EXP' ? 'XP' :
+                            reward.type === 'Conselho' ? 'Conselho' : 'Recompensa';
+
                 if (reward.type !== 'Nada') {
-                   showToast(`✦ ${typeLabel} ${name} adicionado ao inventário`);
+                    showToast(`✦ ${typeLabel} ${name} adicionado ao inventário`);
                 }
             }
         }
@@ -193,7 +193,7 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
             case 'video':
                 return (
                     <div className="relative aspect-[9/16] w-full bg-black rounded-t-3xl overflow-hidden">
-                        <VideoPlayer 
+                        <VideoPlayer
                             src={CHEST_VIDEOS[chestType]}
                             onEnd={() => setStage('reward')}
                             className="w-full h-full object-cover"
@@ -204,24 +204,24 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                 );
             case 'reward':
                 if (!reward) return null;
-                
+
                 // Determine visuals based on reward type
                 // If it's an item/skin, we might want an image. 
                 // For now, using the text/icon representation similar to ItemDetailModal but simplified if no image available.
-                
+
                 return (
                     <div className={`flex flex-col items-center p-6 gap-4 animate-fade-in-up w-full`}>
-                         {/* Item Image/Icon with Glow */}
+                        {/* Item Image/Icon with Glow */}
                         <div className="relative z-10 group mt-2">
-                            <div className={`absolute inset-0 bg-gradient-to-tr from-${rarityColor}/20 to-transparent rounded-full blur-xl opacity-50`} 
-                                 style={{ backgroundColor: rarityColor, opacity: 0.3, filter: 'blur(20px)' }}
+                            <div className={`absolute inset-0 bg-gradient-to-tr from-${rarityColor}/20 to-transparent rounded-full blur-xl opacity-50`}
+                                style={{ backgroundColor: rarityColor, opacity: 0.3, filter: 'blur(20px)' }}
                             />
                             <div className="w-24 h-24 rounded-2xl flex items-center justify-center relative z-10 bg-black/40 border border-white/10 shadow-lg">
                                 {/* If we had imageUrl, use it. Else use generic icon/text */}
                                 <span className="text-4xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-                                    {reward.type === 'Item' ? '⚔️' : 
-                                     reward.type === 'Skin' ? '👕' : 
-                                     reward.type === 'EXP' ? '✨' : '🎁'}
+                                    {reward.type === 'Item' ? '⚔️' :
+                                        reward.type === 'Skin' ? '👕' :
+                                            reward.type === 'EXP' ? '✨' : '🎁'}
                                 </span>
                             </div>
                         </div>
@@ -233,37 +233,37 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                             </h2>
                             <div className="flex justify-center">
                                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg"
-                                      style={{ color: rarityColor, borderColor: `${rarityColor}40` }}>
+                                    style={{ color: rarityColor, borderColor: `${rarityColor}40` }}>
                                     {reward.rarity}
                                 </span>
                             </div>
                             <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto my-3" />
                             <p className="text-xs text-white/60 px-2">
-                                {reward.type === 'Conselho' ? 'Um conselho para sua jornada.' : 
-                                 reward.type === 'Nada' ? 'Melhor sorte na próxima vez.' :
-                                 `Uma recompensa ${reward.rarity} para sua coleção.`}
+                                {reward.type === 'Conselho' ? 'Um conselho para sua jornada.' :
+                                    reward.type === 'Nada' ? 'Melhor sorte na próxima vez.' :
+                                        `Uma recompensa ${reward.rarity} para sua coleção.`}
                             </p>
                         </div>
 
                         {/* Actions */}
                         <div className="w-full grid grid-cols-2 gap-2 z-10 mt-2">
-                            <button 
+                            <button
                                 onClick={handleCollect}
                                 className="col-span-2 py-3 rounded-xl font-bold uppercase tracking-[0.1em] text-[10px] transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center justify-center gap-2 luxe-skin-button"
                             >
                                 <CheckIcon className="w-4 h-4" />
                                 <span>OK</span>
                             </button>
-                            
-                            <button 
+
+                            <button
                                 onClick={handleRecycle}
                                 className="py-2 rounded-xl bg-red-500/10 text-red-400 font-bold uppercase tracking-wider border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
                             >
                                 <Trash2Icon className="w-3 h-3" />
                                 <span className="text-[10px]">Reciclar</span>
                             </button>
-                            
-                            <button 
+
+                            <button
                                 onClick={handleDonate}
                                 className="py-2 rounded-xl bg-blue-500/10 text-blue-400 font-bold uppercase tracking-wider border border-blue-500/20 hover:bg-blue-500/20 transition-all flex items-center justify-center gap-2"
                             >
@@ -280,18 +280,18 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
         <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
                 {/* Reduced width to max-w-xs (approx 320px) as requested "30% menos" */}
-                <GlassCard 
-                    variant="neutral" 
-                    className="w-full max-w-xs rounded-3xl overflow-hidden relative shadow-2xl transform transition-all bg-zinc-900" 
+                <GlassCard
+                    variant="neutral"
+                    className="w-full max-w-xs rounded-3xl overflow-hidden relative shadow-2xl transform transition-all bg-zinc-900"
                     onClick={e => e.stopPropagation()}
                     style={{ borderColor: `${skinBorderColor}40`, borderWidth: '1px' }}
                 >
-                <div className="absolute top-3 right-3 z-50">
-                     <button onClick={onClose} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-all backdrop-blur-md border border-white/10">
-                        <XIcon className="w-4 h-4"/>
-                    </button>
-                </div>
-                {renderContent()}
+                    <div className="absolute top-3 right-3 z-50">
+                        <button onClick={onClose} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-all backdrop-blur-md border border-white/10">
+                            <XIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+                    {renderContent()}
                 </GlassCard>
             </div>
         </Portal>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
-import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon, CrownIcon } from '../components/Icons';
+import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon, CrownIcon, ImageIcon } from '../components/Icons';
 import { Slot, UserProfile, Clan, ClanRank, Asset } from '../types';
 import { BorderSelectionModal } from '../components/BorderSelectionModal';
 import { BackgroundImageSelectionModal } from '../components/BackgroundImageSelectionModal';
@@ -203,7 +203,7 @@ export const ShareableProfileCard: React.FC<{
     isBasicMode?: boolean;
 }> = ({ id, userProfile, clanName, clanRank, getSlotById, isBasicMode = false }) => {
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
-    const isGradientBackground = userProfile.backgroundUrl.startsWith('var(') || userProfile.backgroundUrl.startsWith('linear-gradient');
+    const isGradientBackground = userProfile.backgroundUrl.includes('-gradient(') || userProfile.backgroundUrl.startsWith('var(');
 
     const renderBackground = () => {
         if (isGradientBackground) {
@@ -475,7 +475,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const currentClanRank = isOwnProfile ? (clan ? clanRanks.find(r => r.id === clan.rankId) : undefined) : viewedClanRank;
     const clanName = isOwnProfile ? (clan ? clan.name : 'Sem Clã') : (viewedClan ? viewedClan.name : 'Sem Clã');
 
-    const isGradientBackground = displayProfile.backgroundUrl.startsWith('var(') || displayProfile.backgroundUrl.startsWith('linear-gradient');
+    const isGradientBackground = displayProfile.backgroundUrl.includes('-gradient(') || displayProfile.backgroundUrl.startsWith('var(');
 
     const renderBackground = () => {
         if (isGradientBackground) {
@@ -525,6 +525,15 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     <button onClick={() => handleShare('shareable-profile', `Perfil de ${displayProfile.nickname} - Life OS`)} className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm">
                                         <ShareIcon className="w-5 h-5 text-gray-300" />
                                     </button>
+                                    {isEditing && isOwnProfile && (
+                                        <button
+                                            onClick={() => setBackgroundModalOpen(true)}
+                                            className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm animate-fade-in"
+                                            title="Mudar Fundo"
+                                        >
+                                            <ImageIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />
+                                        </button>
+                                    )}
                                 </div>
                                 <button onClick={isEditing ? handleSave : onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
                                     {isEditing ? 'SALVAR' : 'OK'}
@@ -646,8 +655,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                                 key={slot.id}
                                                                 onClick={() => handleWidgetToggle(slot.id)}
                                                                 className={`col-span-2 aspect-square rounded-xl border flex flex-col items-center justify-center p-1.5 gap-1 transition-all ${isSelected
-                                                                        ? 'bg-white/10 border-[var(--skin-accent-color)] text-white'
-                                                                        : 'bg-black/20 border-white/5 text-gray-500 hover:bg-white/5'
+                                                                    ? 'bg-white/10 border-[var(--skin-accent-color)] text-white'
+                                                                    : 'bg-black/20 border-white/5 text-gray-500 hover:bg-white/5'
                                                                     }`}
                                                             >
                                                                 <span className="text-[8px] font-bold uppercase tracking-wider">{slot.label}</span>

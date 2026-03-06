@@ -105,8 +105,12 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     // Real mode switching based on current step
     useEffect(() => {
-        if (!isTutorialActive) return;
+        if (!isTutorialActive) {
+            (window as any).__GOL_TUTORIAL_ACTIVE__ = false;
+            return;
+        }
 
+        (window as any).__GOL_TUTORIAL_ACTIVE__ = true;
         const step = TUTORIAL_STEPS[currentStep];
         const isGameStep = step && (step.category === 'IDENTIDADE' || step.category === 'MUNDO' || (currentStep >= 9 && currentStep <= 19));
 

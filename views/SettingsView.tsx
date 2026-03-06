@@ -176,6 +176,7 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
         wallet: row.wallet ?? { gold: row.gold ?? 0, fragments: row.fragments ?? 0 },
         inventory: [],
         role,
+        completedSeasonMissions: Array.isArray(row.completed_season_missions) ? row.completed_season_missions : [],
     };
 };
 

@@ -4064,9 +4064,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const lastUpdate = userProfile.lastLevelUpdate || 0;
         const threeDays = 72 * 60 * 60 * 1000;
 
-        // Sem restrição para contas admin, gm ou admin_gm
-        if (userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm') {
-            // Permite atualização imediata para contas privilegiadas
+        // Sem restrição para contas admin, gm ou admin_gm, ou se estiver no tutorial
+        const isTutorialActive = window.location.search.includes('tutorial=true') || (window as any).__GOL_TUTORIAL_ACTIVE__;
+
+        if (userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm' || isTutorialActive) {
+            // Permite atualização imediata para contas privilegiadas ou durante o tutorial
         } else if (Date.now() - lastUpdate < threeDays) {
             showToast("Você só pode atualizar seus níveis de maestria a cada 72 horas.");
             return false;

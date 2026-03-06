@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString } from '../contexts/GameContext';
+import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
 import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, Arena, Action, ScheduledTask } from '../types';
@@ -1296,6 +1296,9 @@ const PreferenciasTab: React.FC = () => {
     }, []);
 
     const activeModeName = oraclePreferences?.activeMode ? (oraclePreferences.activeMode.charAt(0).toUpperCase() + oraclePreferences.activeMode.slice(1)) : 'Neutro';
+    const completedFlags = userProfile.completedSeasonMissions || [];
+    const termsStatus = completedFlags.includes(PROFILE_FLAG_TERMS_ACCEPTED) ? 'Aceito' : 'Pendente';
+    const tutorialStatus = completedFlags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED) ? 'Assistido' : 'Pendente';
 
     return (
         <div className="space-y-8 animate-fade-in pb-10">
@@ -1303,8 +1306,8 @@ const PreferenciasTab: React.FC = () => {
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
                 <div className="space-y-2">
-                    <SettingSelector label="Termos e Condições" value="Ver" onClick={() => window.dispatchEvent(new CustomEvent('openTermsOverlay'))} />
-                    <SettingSelector label="Tutoriais" value="Revisar" onClick={() => setModal('tutorial')} />
+                    <SettingSelector label="Termos e Condições" value={termsStatus} onClick={() => window.dispatchEvent(new CustomEvent('openTermsOverlay'))} />
+                    <SettingSelector label="Tutoriais" value={tutorialStatus} onClick={() => setModal('tutorial')} />
                     <SettingSelector label="Privacidade" value={privacyMode} onClick={() => setModal('privacy')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Notificações" value={activeModeName} onClick={() => setModal('oracle')} />

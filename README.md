@@ -15,7 +15,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/16hnjyElorZDXLIeKqq_q73
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Set `VITE_GEMINI_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_MERCADO_PAGO_PUBLIC_KEY` in [.env.local](.env.local)
 3. Run the app:
    `npm run dev`
 
@@ -50,3 +50,7 @@ Para alterar valores em produção, atualize este arquivo ou implemente um fetch
 - **A Forja**: Crafting (T1-T5) e Reciclagem de itens.
 - **Inventário**: Gestão de itens e equipamento (Skins, Glifos, Auras).
 - **Biblioteca**: Sistema de Codexes (Legado + Novo).
+
+
+For gateway.ts, use OPENROUTER_API_KEY in your shell environment (never hardcode keys).
+

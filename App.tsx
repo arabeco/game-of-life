@@ -785,11 +785,10 @@ const MainApp: React.FC = () => {
     // Sequencing Logic for Onboarding
     const completed = userProfile.completedSeasonMissions || [];
     const acceptedTerms = completed.includes(PROFILE_FLAG_TERMS_ACCEPTED);
-    const pendingTerms = completed.includes(PROFILE_FLAG_TERMS_PENDING);
-    // Explicitly show terms if NOT accepted AND (pending OR admin/gm bypass check) OR forced
-    const showTerms = forceShowTerms || (!acceptedTerms && (pendingTerms || (userProfile.role !== 'admin' && userProfile.role !== 'gm' && userProfile.role !== 'admin_gm')));
+    const requiresTermsAcceptance = !acceptedTerms && isProfileLoaded && userProfile.id !== 'placeholder_user';
+    const showTerms = forceShowTerms || requiresTermsAcceptance;
 
-    // Mode Selection logic (Applies after terms)
+    // Mode Selection logic (Applies only after mandatory terms)
     const needsModeSelection = acceptedTerms && !userProfile.appMode;
 
     // Tutorial start logic (Applies after mode selection)
@@ -804,7 +803,7 @@ const MainApp: React.FC = () => {
 
         if (!tutorialAlreadyDone && !isTutorialActive && !tutorialShownInSession) {
             console.log('App: Starting tutorial after Terms and Mode Selection');
-            startTutorial(0);
+            startTutorial();
             setTutorialShownInSession(true);
         }
     }, [userProfile.id, userProfile.appMode, isProfileLoaded, showTerms, needsModeSelection, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession, userProfile.completedSeasonMissions]);
@@ -841,7 +840,7 @@ const MainApp: React.FC = () => {
 
     return (
         <>
-            <AppWithTutorial />
+            {!requiresTermsAcceptance && <AppWithTutorial />}
             {!showTerms && <ModeSelectionOverlay />}
             <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
             <OfflineOverlay open={!isOnline} />

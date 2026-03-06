@@ -6,20 +6,29 @@ const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const VERCEL_URL = "https://glyph-app-arabecos-projects.vercel.app?_vercel_share=60aVDYM4ZOqZSA65zTG1QyOiBfnTIl6s";
-const ALLOWED_ORIGINS = ["https://glyph-app-arabecos-projects.vercel.app", "http://localhost:3000", "http://localhost:5173"];
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173").split(",").map(o => o.trim()).filter(Boolean);
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Libera para qualquer lugar (Vercel, Localhost, etc)
+const buildCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin": origin || ALLOWED_ORIGINS[0] || "",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+  "Vary": "Origin",
+});
 
 serve(async (req) => {
-  // Gerenciar preflight requests do CORS
+  const origin = req.headers.get("origin");
+  const isAllowedOrigin = !origin || ALLOWED_ORIGINS.includes(origin);
+  const corsHeaders = buildCorsHeaders(origin && isAllowedOrigin ? origin : null);
+
   if (req.method === "OPTIONS") {
+    if (!isAllowedOrigin) return new Response("Forbidden origin", { status: 403, headers: corsHeaders });
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  if (!isAllowedOrigin) {
+    return new Response("Forbidden origin", { status: 403, headers: corsHeaders });
   }
 
   const url = new URL(req.url);

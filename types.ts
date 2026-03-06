@@ -681,6 +681,8 @@ export interface OraclePreferences {
   animationsEnabled: boolean;
   soundsEnabled: boolean;
   hapticsEnabled: boolean;
+  // Local-only policy for proactive oracle notifications (not persisted in Supabase schema).
+  sentinelMode?: 'soberano_ativo' | 'apenas_necessarias' | 'nao_ia';
   enabledCategories: OracleCategory[];
   activeMode: OracleMode;
   customModeInstructions?: string;

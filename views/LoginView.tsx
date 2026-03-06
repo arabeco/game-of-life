@@ -204,7 +204,24 @@ export const LoginView: React.FC = () => {
         setMessage(null);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const identifier = email.trim();
+            let emailForLogin = identifier;
+
+            if (!identifier.includes('@')) {
+                const { data: profileByNickname, error: nicknameLookupError } = await supabase
+                    .from('user_profiles')
+                    .select('email')
+                    .ilike('nickname', identifier)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (nicknameLookupError) throw nicknameLookupError;
+                if (!profileByNickname?.email) throw new Error('Nickname não encontrado');
+
+                emailForLogin = profileByNickname.email;
+            }
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email: emailForLogin, password });
 
             if (error) throw error;
 
@@ -544,8 +561,8 @@ export const LoginView: React.FC = () => {
 
                 <div className="space-y-4">
                     <input
-                        type="email"
-                        placeholder="Email"
+                        type="text"
+                        placeholder="Email ou Nickname"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"

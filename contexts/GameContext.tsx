@@ -11,8 +11,6 @@ import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
 import { useCodexBuilder } from './CodexBuilderContext';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -696,6 +694,59 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const hideToast = useCallback(() => {
         setToast(prev => ({ ...prev, visible: false }));
     }, []);
+    const getSentinelStorageKey = (userId: string) => `glyph_sentinel_mode_${userId}`;
+    const getSentinelMode = (userId: string): OraclePreferences['sentinelMode'] => {
+        const saved = localStorage.getItem(getSentinelStorageKey(userId));
+        if (saved === 'apenas_necessarias' || saved === 'nao_ia' || saved === 'soberano_ativo') {
+            return saved;
+        }
+        return 'soberano_ativo';
+    };
+
+    const isOracleCriticalTrigger = (userId: string) => {
+        const pendingToday = tasks.filter(t => t.date === getLocalDateString() && !t.completed).length;
+        const hasCycleClosingRisk = !!activeCycle && pendingToday > 0 && (() => {
+            const msToEnd = new Date(activeCycle.endDate).getTime() - Date.now();
+            return msToEnd > 0 && msToEnd <= (24 * 60 * 60 * 1000);
+        })();
+
+        const hasOfficeUrgentAlert = clan?.clanType === 'Office' && notifications.some(n => !n.read && n.type === 'clan_mission_update');
+
+        return hasCycleClosingRisk || hasOfficeUrgentAlert;
+    };
+
+    const pushSystemOracleMessage = async (userId: string, content: string) => {
+        const newMessage: OracleMessage = {
+            id: crypto.randomUUID(),
+            userId,
+            category: 'dicas_produtividade',
+            content,
+            mode: 'neutro',
+            deliveryType: 'feed',
+            read: false,
+            createdAt: new Date().toISOString()
+        };
+
+        setOracleMessages(prev => [newMessage, ...prev]);
+        await supabase.from('oracle_messages').insert(mapToSnakeCase(newMessage));
+    };
+
+    const maybeNotifyVillageDuty = (userId: string) => {
+        if (!clan || !aldeiaSlots.length) return;
+        const key = `glyph_village_duty_${userId}_${getLocalDateString()}`;
+        if (localStorage.getItem(key) === '1') return;
+
+        const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
+        if (mainSlots.length === 0) return;
+
+        const villageOrder = mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length;
+        const villageBonusFactor = (villageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
+        const percent = Math.round(villageBonusFactor * 100);
+        if (percent <= 0) return;
+
+        showToast(`Dever Cumprido: Ordem da Aldeia ativa (+${percent}% de bônus de EXP).`, 'success');
+        localStorage.setItem(key, '1');
+    };
 
     // Helper for PWA Latency awareness
     const withLatencyToast = async <T,>(operation: Promise<T> | any, timeoutMs = 1500): Promise<T> => {
@@ -732,7 +783,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if (data) {
-            setOraclePreferences(mapToCamelCase(data));
+            const mapped = mapToCamelCase(data) as OraclePreferences;
+            setOraclePreferences({ ...mapped, sentinelMode: getSentinelMode(userId) });
         } else {
             // Default preferences
             const defaultPrefs: OraclePreferences = {
@@ -742,6 +794,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 animationsEnabled: true,
                 soundsEnabled: true,
                 hapticsEnabled: true,
+                sentinelMode: getSentinelMode(userId),
                 enabledCategories: ['frases_inspiradoras', 'reflexoes_filosoficas', 'fragmentos_sabedoria', 'dicas_produtividade', 'rituais_lifestyle', 'provocacoes'],
                 activeMode: 'neutro',
                 quietHoursStart: '22:00',
@@ -750,7 +803,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
 
             // Use upsert to prevent 409 Conflict if multiple calls happen simultaneously
-            const { error: insertError } = await supabase.from('oracle_preferences').upsert(mapToSnakeCase({ ...defaultPrefs, user_id: userId }));
+            const { sentinelMode, ...persistableDefaultPrefs } = defaultPrefs;
+            const { error: insertError } = await supabase.from('oracle_preferences').upsert(mapToSnakeCase({ ...persistableDefaultPrefs, user_id: userId }));
             if (!insertError) {
                 setOraclePreferences(defaultPrefs);
             }
@@ -761,13 +815,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return;
 
-        const newPrefs = { ...oraclePreferences, ...prefs, updatedAt: new Date().toISOString() };
+        const nextSentinelMode = (prefs.sentinelMode ?? oraclePreferences?.sentinelMode ?? 'soberano_ativo') as OraclePreferences['sentinelMode'];
+        localStorage.setItem(getSentinelStorageKey(userId), nextSentinelMode || 'soberano_ativo');
+
+        const newPrefs = { ...oraclePreferences, ...prefs, sentinelMode: nextSentinelMode, updatedAt: new Date().toISOString() };
         // Optimistic update
         setOraclePreferences(newPrefs as OraclePreferences);
 
+        const { sentinelMode, ...persistablePrefs } = (newPrefs as OraclePreferences);
+
         const { error } = await supabase
             .from('oracle_preferences')
-            .upsert(mapToSnakeCase({ ...newPrefs, userId }));
+            .upsert(mapToSnakeCase({ ...persistablePrefs, userId }));
 
         if (error) {
             console.error("Error updating oracle preferences:", error);
@@ -808,11 +867,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const triggerOracle = async (triggerType: 'app_open' | 'cron' | 'manual' = 'app_open') => {
         const userId = getSupabaseUserId();
-        if (!userId || !oraclePreferences?.iaEnabled) return;
-
-        // API Key (Hardcoded as per instructions found in codebase)
-        const API_KEY = "AIzaSyAryjNyDFBRrwfvsHdQWvUTCRm1-yx83zo";
-
+        if (!userId || !oraclePreferences) return;
+        const sentinelMode = oraclePreferences.sentinelMode ?? getSentinelMode(userId);
+        // Requirement: show village duty bonus hint at app open when village order is active.
+        if (triggerType === 'app_open') {
+            maybeNotifyVillageDuty(userId);
+        }
+        if (triggerType !== 'manual' && !oraclePreferences.notificationsEnabled) return;
+        if (sentinelMode === 'apenas_necessarias' && triggerType !== 'manual' && !isOracleCriticalTrigger(userId)) {
+            return;
+        }
+        if (sentinelMode === 'nao_ia') {
+            const content = isOracleCriticalTrigger(userId)
+                ? 'Alerta do Sistema: prioridade critica detectada. Revise pendencias de ciclo ou missao Office.'
+                : 'Mensagem do Sistema: status estavel. Sem intervencao do Oraculo.';
+            await pushSystemOracleMessage(userId, content);
+            return;
+        }
+        if (!oraclePreferences.iaEnabled) return;
         // 1. Check Quiet Hours (if not manual)
         if (triggerType !== 'manual') {
             const now = new Date();
@@ -962,17 +1034,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       Contexto atual: ${JSON.stringify(contextData)}
       `;
 
-        // 7. Call AI
+        // 7. Call AI via Edge Function (server-side secret)
         try {
-            const google = createGoogleGenerativeAI({
-                apiKey: API_KEY
+            const { data: oracleData, error: oracleError } = await supabase.functions.invoke('oracle', {
+                body: {
+                    systemPrompt,
+                    userPrompt,
+                    model: 'google/gemini-2.0-flash-001'
+                }
             });
 
-            const { text } = await generateText({
-                model: google('models/gemini-3-flash-preview'),
-                system: systemPrompt,
-                prompt: userPrompt,
-            });
+            if (oracleError) {
+                console.error('Oracle Edge Function failed:', oracleError);
+                return;
+            }
+
+            const text = String(oracleData?.text || '').trim();
+            if (!text) {
+                console.error('Oracle Edge Function returned empty content.');
+                return;
+            }
 
             // 8. Save and Update
             const newMessage: OracleMessage = {
@@ -980,7 +1061,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 userId,
                 category: category as any,
                 content: text,
-                mode: selectedMode, // Save the dynamic mode
+                mode: selectedMode,
                 deliveryType: 'feed',
                 read: false,
                 createdAt: new Date().toISOString()
@@ -989,10 +1070,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setOracleMessages(prev => [newMessage, ...prev]);
             await supabase.from('oracle_messages').insert(mapToSnakeCase(newMessage));
 
-            console.log("Oracle generated message:", text);
+            console.log('Oracle generated message:', text);
 
         } catch (error) {
-            console.error("Oracle AI generation failed:", error);
+            console.error('Oracle AI generation failed:', error);
         }
     };
 

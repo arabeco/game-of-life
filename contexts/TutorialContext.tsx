@@ -79,7 +79,7 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         setCurrentStep(0);
 
         if (completed) {
-            if (finishedLevel !== null) {
+            if (finishedLevel !== null && finishedLevel > 0) {
                 // Mark specific level as completed
                 addProfileFlag(`tutorial_level_${finishedLevel}_completed`);
             } else {
@@ -98,7 +98,7 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         console.log(`Tutorial Engine: Saving original mode (${appMode})`);
         setOriginalMode(appMode as 'BASIC' | 'GAME');
 
-        setActiveLevel(levelIndicator !== null ? levelIndicator : startIndex);
+        setActiveLevel(levelIndicator !== null ? levelIndicator : null);
         console.log(`Tutorial Engine: Jump to Index ${index} (Target: ${TUTORIAL_STEPS[index]?.title})`);
         setCurrentStep(index);
         setIsTutorialActive(true);

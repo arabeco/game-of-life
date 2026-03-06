@@ -19,8 +19,8 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({ onClos
 
     if (!oraclePreferences) return null;
 
-    const handleToggle = (key: keyof OraclePreferences) => {
-        updateOraclePreferences({ [key]: !oraclePreferences[key] });
+    const handleToggle = (key: 'iaEnabled' | 'notificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled') => {
+        updateOraclePreferences({ [key]: !Boolean(oraclePreferences[key]) } as Partial<OraclePreferences>);
     };
 
     const handleModeSelect = (mode: OracleMode) => {
@@ -33,6 +33,10 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({ onClos
             ? current.filter(c => c !== category)
             : [...current, category];
         updateOraclePreferences({ enabledCategories: next });
+    };
+
+    const handleSentinelModeSelect = (mode: NonNullable<OraclePreferences['sentinelMode']>) => {
+        updateOraclePreferences({ sentinelMode: mode });
     };
 
     const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
@@ -71,7 +75,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({ onClos
                             <span className="text-sm font-semibold text-gray-300">{item.label}</span>
                         </div>
                         <button 
-                            onClick={() => handleToggle(item.key as keyof OraclePreferences)}
+                            onClick={() => handleToggle(item.key as 'iaEnabled' | 'notificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled')}
                             className={`w-10 h-5 rounded-full transition-colors relative ${oraclePreferences[item.key as keyof OraclePreferences] ? 'bg-green-500/50' : 'bg-gray-700'}`}
                         >
                             <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${oraclePreferences[item.key as keyof OraclePreferences] ? 'left-6' : 'left-1'}`} />
@@ -220,13 +224,33 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({ onClos
                                             <span className="text-sm font-semibold text-gray-300">{item.label}</span>
                                         </div>
                                         <button 
-                                            onClick={() => handleToggle(item.key as keyof OraclePreferences)}
+                                            onClick={() => handleToggle(item.key as 'iaEnabled' | 'notificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled')}
                                             className={`w-10 h-5 rounded-full transition-colors relative ${oraclePreferences[item.key as keyof OraclePreferences] ? 'bg-[var(--skin-accent-color)]' : 'bg-gray-700'}`}
                                         >
                                             <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${oraclePreferences[item.key as keyof OraclePreferences] ? 'left-6' : 'left-1'}`} />
                                         </button>
                                     </div>
                                 ))}
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Oraculo Sentinela</h3>
+                                {[
+                                    { id: 'soberano_ativo', label: 'Soberano Ativo', desc: 'Proativo, com alertas de fadiga, streak e santuario.' },
+                                    { id: 'apenas_necessarias', label: 'Apenas Necessarias', desc: 'Filtra tudo, exceto gatilhos P0 de ciclo e Office.' },
+                                    { id: 'nao_ia', label: 'Nao-IA', desc: 'Substitui mensagens do Oraculo por avisos sistemicos.' },
+                                ].map((mode) => {
+                                    const selected = (oraclePreferences.sentinelMode || 'soberano_ativo') === mode.id;
+                                    return (
+                                        <button
+                                            key={mode.id}
+                                            onClick={() => handleSentinelModeSelect(mode.id as NonNullable<OraclePreferences['sentinelMode']>)}
+                                            className={`w-full text-left p-3 rounded-xl border transition-all ${selected ? 'bg-white/10 border-[var(--skin-accent-color)] text-white' : 'bg-black/20 border-white/10 text-gray-300 hover:bg-black/30'}`}
+                                        >
+                                            <div className="text-sm font-semibold">{mode.label}</div>
+                                            <div className="text-xs text-gray-400 mt-1">{mode.desc}</div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     ) : (

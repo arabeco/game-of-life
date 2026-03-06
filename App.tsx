@@ -38,13 +38,41 @@ const TutorialBridge: React.FC<{ currentView: View; onNavigate: (v: View) => voi
     return null;
 };
 
+const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4Z" fill="url(#oracle-gradient-terms)" fillOpacity="0.2" />
+        <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6ZM12 8C14.21 8 16 9.79 16 12C16 14.21 14.21 16 12 16C9.79 16 8 14.21 8 12C8 9.79 9.79 8 12 8Z" fill="url(#oracle-gradient-terms)" />
+        <defs>
+            <linearGradient id="oracle-gradient-terms" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#FFD700" />
+                <stop offset="1" stopColor="#FF8C00" />
+            </linearGradient>
+        </defs>
+    </svg>
+);
+
 const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open, onAccept }) => {
     const clauses = [
-        'O DESPERTAR DO SOBERANO\n\nPara acessar a interface, você deve aceitar os termos do pacto que regem este domínio.',
-        'I. PROPRIEDADE ABSOLUTA\nSeus dados são sua soberania. O Life OS é “Local First”: anotações, diários e registros residem no seu dispositivo. A nuvem é apenas o seu espelho de segurança. Nós não mineramos sua vida.',
-        'II. O VÍNCULO DE MENTORIA\nAo aceitar um Mentor, você autoriza a visualização parcial do seu progresso. Seus diários privados permanecem ocultos. O Life OS não se responsabiliza por orientações de terceiros; você é o único executor de suas ações.',
-        'III. ISENÇÃO DE RESPONSABILIDADE\nEste sistema é uma ferramenta de autogestão. Não somos médicos, terapeutas ou consultores financeiros. O risco da execução física, mental ou financeira de qualquer Codex é inteiramente do Soberano.',
-        'IV. DIREITO AO EXÍLIO\nA qualquer momento, você pode incinerar seus dados. O comando “Deletar Conta” é definitivo e apaga sua existência em nossos servidores, sem rastro ou recuperação.',
+        {
+            title: 'O DESPERTAR DO SOBERANO',
+            text: 'Para acessar a interface, você deve aceitar os termos do pacto que regem este domínio.'
+        },
+        {
+            title: 'I. PROPRIEDADE ABSOLUTA',
+            text: 'Seus dados são sua soberania. O Life OS é “Local First”: anotações, diários e registros residem no seu dispositivo. A nuvem é apenas o seu espelho de segurança. Nós não mineramos sua vida.'
+        },
+        {
+            title: 'II. O VÍNCULO DE MENTORIA',
+            text: 'Ao aceitar um Mentor, você autoriza a visualização parcial do seu progresso. Seus diários privados permanecem ocultos. O Life OS não se responsabiliza por orientações de terceiros; você é o único executor de suas ações.'
+        },
+        {
+            title: 'III. ISENÇÃO DE RESPONSABILIDADE',
+            text: 'Este sistema é uma ferramenta de autogestão. Não somos médicos, terapeutas ou consultores financeiros. O risco da execução física, mental ou financeira de qualquer Codex é inteiramente do Soberano.'
+        },
+        {
+            title: 'IV. DIREITO AO EXÍLIO',
+            text: 'A qualquer momento, você pode incinerar seus dados. O comando “Deletar Conta” é definitivo e apaga sua existência em nossos servidores, sem rastro ou recuperação.'
+        }
     ];
     const [step, setStep] = useState(0);
     const [typedText, setTypedText] = useState('');
@@ -63,19 +91,14 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
         let i = 0;
         const timer = window.setInterval(() => {
             i += 1;
-            setTypedText(currentClause.slice(0, i));
-            if (i >= currentClause.length) {
+            setTypedText(currentClause.text.slice(0, i));
+            if (i >= currentClause.text.length) {
                 window.clearInterval(timer);
                 setIsTyping(false);
             }
-        }, 26);
+        }, 20); // Faster typewriter as per Oracle style
         return () => window.clearInterval(timer);
-    }, [currentClause, open]);
-
-    const handleNext = () => {
-        if (isTyping || isLast) return;
-        setStep(prev => Math.min(prev + 1, clauses.length - 1));
-    };
+    }, [step, open]); // Simplified dependency
 
     const handleAccept = () => {
         setIsHolding(false);
@@ -84,13 +107,13 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
             setIsSealing(false);
             setStep(0);
             onAccept();
-        }, 420);
+        }, 500); // 500ms delay for ritual feel
     };
 
     const longPressEvents = useLongPress({
         onLongPress: () => {
             if (isTyping) {
-                setTypedText(currentClause);
+                setTypedText(currentClause.text);
                 setIsTyping(false);
             }
             if (isLast) handleAccept();
@@ -117,76 +140,90 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
     return (
         <Portal>
             <div
-                className="fixed inset-0 z-[9999] flex items-center justify-center animate-fade-in"
+                className="fixed inset-0 z-[20000] flex items-center justify-center animate-fade-in"
                 style={{ background: 'radial-gradient(circle at center, #0A0A0A 0%, #000000 72%)' }}
             >
-                <div className="absolute inset-4 border border-[var(--skin-line-color)] rounded-[32px]" />
-                {isSealing && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--sephirot-glow-color),rgba(0,0,0,0.95))] animate-fade-in" />}
-                <div className="relative w-full max-w-md mx-auto h-full px-6 py-12 flex flex-col justify-center gap-10">
-                    <div className="text-center space-y-3">
-                        <p className="text-[11px] uppercase tracking-[0.45em] text-[#8f8f8f]">Pacto de Soberania</p>
-                        <h1
-                            className="text-2xl uppercase tracking-[0.18em]"
-                            style={{ color: 'var(--skin-accent-color)', textShadow: '0 0 16px var(--sephirot-glow-color)', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
-                        >
-                            O Despertar do Soberano
-                        </h1>
-                    </div>
+                <div className="absolute inset-4 border border-white/10 rounded-[32px] pointer-events-none" />
+                {isSealing && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--gold),rgba(0,0,0,0.95))] animate-fade-in z-50" />}
 
-                    <div className="relative min-h-[220px] text-base leading-relaxed whitespace-pre-line text-[#E0E0E0] text-center">
-                        {typedText}
-                        {isTyping && <span className="inline-block w-2 h-5 bg-[var(--skin-accent-color)] ml-1 animate-pulse" />}
-                        {isTyping && <div className="absolute inset-0 dust-layer" />}
-                    </div>
-
-                    <div className="flex flex-col items-center gap-3">
-                        <div
-                            className="relative w-32 h-32 rounded-full border border-[var(--skin-accent-color)] flex items-center justify-center text-[var(--skin-accent-color)] font-black tracking-[0.2em] select-none"
-                            onMouseDown={handleMouseDown}
-                            onTouchStart={handleTouchStart}
-                            onContextMenu={longPressEvents.onContextMenu}
-                            style={{ touchAction: 'none', fontFamily: '"Cinzel Decorative","Playfair Display",serif' }}
-                        >
-                            SELO
-                            <div className="absolute inset-2 rounded-full border border-[var(--skin-line-color)]" />
-                            {isHolding && (
-                                <div
-                                    className="absolute inset-2 rounded-full seal-fill"
-                                    style={{ animationDuration: `${holdDurationMs}ms` }}
-                                />
-                            )}
+                <div className="relative w-full max-w-2xl mx-auto px-6 flex flex-col items-center">
+                    {/* Oracle Styled Box */}
+                    <div className="bg-black/95 border border-white/20 backdrop-blur-xl rounded-xl p-4 md:p-6 w-full shadow-2xl flex gap-4 animate-fade-in-down border-b-4 border-b-[var(--gold)]">
+                        {/* Avatar */}
+                        <div className="flex-shrink-0">
+                            <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-gray-800 to-black border-2 border-[var(--gold)] flex items-center justify-center shadow-lg">
+                                <OracleIcon className="w-8 h-8 md:w-10 md:h-10 animate-pulse-slow" />
+                            </div>
                         </div>
-                        <p className="text-[10px] uppercase tracking-[0.35em] text-[#9b9b9b]">
-                            {isLast ? 'Segure para selar o pacto' : 'Segure para avançar'}
-                        </p>
+
+                        {/* Content */}
+                        <div className="flex-grow flex flex-col justify-between min-h-[120px]">
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex flex-col">
+                                        <h3 className="text-[var(--gold)] font-bold uppercase tracking-[0.2em] text-[10px] md:text-sm">
+                                            {currentClause.title}
+                                        </h3>
+                                        <span className="text-[8px] md:text-[10px] text-gray-500 font-mono">
+                                            CLÁUSULA {step + 1} / {clauses.length}
+                                        </span>
+                                    </div>
+                                </div>
+                                <p className="text-gray-200 text-xs md:text-sm leading-relaxed whitespace-pre-wrap font-mono min-h-[80px]">
+                                    {typedText}
+                                    {isTyping && <span className="animate-pulse inline-block w-1 h-3 md:w-2 md:h-4 bg-[var(--gold)] ml-1 align-middle opacity-70"></span>}
+                                </p>
+                            </div>
+
+                            {/* Seal / Action Button */}
+                            <div className="flex justify-center mt-4 pb-2">
+                                <div
+                                    className="relative px-8 py-3 rounded-lg border border-[var(--gold)] flex flex-col items-center justify-center gap-1 cursor-pointer select-none active:scale-95 transition-transform"
+                                    onMouseDown={handleMouseDown}
+                                    onTouchStart={handleTouchStart}
+                                    onContextMenu={longPressEvents.onContextMenu}
+                                    style={{ touchAction: 'none' }}
+                                >
+                                    <span className="text-[var(--gold)] font-black tracking-[0.3em] text-[10px] md:text-xs">
+                                        {isLast ? (isHolding ? 'FIRMAR PACTO...' : 'SEAL PACT') : 'NEXT'}
+                                    </span>
+                                    <span className="text-[8px] md:text-[9px] text-[#9b9b9b] uppercase tracking-widest">
+                                        {isHolding ? 'RECONHECENDO ASSINATURA' : 'HOLD TO CONFIRM'}
+                                    </span>
+
+                                    {/* Progress Ritual Signature Line */}
+                                    <div className="absolute bottom-0 left-0 h-0.5 bg-[var(--gold)] shadow-[0_0_15px_var(--gold)] transition-all duration-100 ease-linear rounded-full"
+                                        style={{ width: `${isHolding ? 100 : 0}%`, opacity: isHolding ? 1 : 0 }} />
+
+                                    {/* Signature Glow Effect */}
+                                    {isHolding && isLast && (
+                                        <div className="absolute inset-0 bg-[var(--gold)]/5 animate-pulse rounded-lg pointer-events-none" />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <style>{`
-                .seal-fill {
-                    background: radial-gradient(circle at center, var(--sephirot-glow-color), rgba(197,160,89,0.08));
-                    animation: sealFill linear forwards;
-                    box-shadow: 0 0 25px var(--sephirot-glow-color);
-                    clip-path: inset(100% 0 0 0);
+                .animate-pulse-slow {
+                    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                 }
-                .dust-layer {
-                    background-image:
-                        radial-gradient(circle at 20% 30%, var(--sephirot-glow-color) 0 2px, transparent 3px),
-                        radial-gradient(circle at 60% 35%, var(--sephirot-glow-color) 0 1px, transparent 3px),
-                        radial-gradient(circle at 35% 70%, var(--sephirot-glow-color) 0 2px, transparent 3px),
-                        radial-gradient(circle at 75% 65%, var(--sephirot-glow-color) 0 1px, transparent 3px);
-                    opacity: 0.65;
-                    animation: dustFade 1.6s ease-out infinite;
-                    pointer-events: none;
+                .seal-progress-v2 {
+                    height: 100%;
+                    background: linear-gradient(to top, var(--gold) 0%, transparent 100%);
+                    opacity: 0.3;
+                    animation: sealFillHorizontal linear forwards;
                 }
-                @keyframes sealFill {
-                    to { clip-path: inset(0% 0 0 0); }
+                @keyframes sealFillHorizontal {
+                    from { transform: scaleX(0); transform-origin: left; }
+                    to { transform: scaleX(1); transform-origin: left; }
                 }
-                @keyframes dustFade {
-                    0% { opacity: 0.2; transform: scale(0.98); }
-                    60% { opacity: 0.75; transform: scale(1); }
-                    100% { opacity: 0.2; transform: scale(1.02); }
+                @keyframes fade-in-down {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
-            `}</style>
+                `}</style>
             </div>
         </Portal>
     );
@@ -680,7 +717,6 @@ const AppWithTutorial: React.FC = () => {
 const MainApp: React.FC = () => {
     const { achievementUnlocked, setAchievementUnlocked, userProfile, updateUserProfile, addProfileFlag, toast, hideToast, isProfileLoaded, showToast } = useGame();
     const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
-    const [showTerms, setShowTerms] = useState(false);
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
 
@@ -704,46 +740,45 @@ const MainApp: React.FC = () => {
         };
     }, [trigger]);
 
-    // Inicia o tutorial apenas uma vez por sessão se não estiver concluído
+    const [forceShowTerms, setForceShowTerms] = useState(false);
+
+    useEffect(() => {
+        const handleOpenTerms = () => setForceShowTerms(true);
+        window.addEventListener('openTermsOverlay', handleOpenTerms);
+        return () => window.removeEventListener('openTermsOverlay', handleOpenTerms);
+    }, []);
+
+    // Sequencing Logic for Onboarding
+    const completed = userProfile.completedSeasonMissions || [];
+    const acceptedTerms = completed.includes(PROFILE_FLAG_TERMS_ACCEPTED);
+    const pendingTerms = completed.includes(PROFILE_FLAG_TERMS_PENDING);
+    // Explicitly show terms if NOT accepted AND (pending OR admin/gm bypass check) OR forced
+    const showTerms = forceShowTerms || (!acceptedTerms && (pendingTerms || (userProfile.role !== 'admin' && userProfile.role !== 'gm' && userProfile.role !== 'admin_gm')));
+
+    // Mode Selection logic (Applies after terms)
+    const needsModeSelection = acceptedTerms && !userProfile.appMode;
+
+    // Tutorial start logic (Applies after mode selection)
     const [tutorialShownInSession, setTutorialShownInSession] = useState(false);
 
     useEffect(() => {
-        if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms) return;
+        if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms || needsModeSelection) return;
 
-        // Start tutorial ONLY if AppMode is already selected (sequencing: Terms -> Mode -> Tutorial)
-        const hasMode = userProfile.appMode === 'GAME' || userProfile.appMode === 'BASIC';
-
-        if (hasMode && !isTutorialCompleted && !isTutorialActive && !tutorialShownInSession) {
-            console.log('App: Starting tutorial directly after mode selection');
-            startTutorial(0); // Start from Intro (Step 0)
+        if (!isTutorialCompleted && !isTutorialActive && !tutorialShownInSession) {
+            console.log('App: Starting tutorial after Terms and Mode Selection');
+            startTutorial(0);
             setTutorialShownInSession(true);
         }
-    }, [userProfile.id, userProfile.appMode, isProfileLoaded, showTerms, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession]);
-
-    useEffect(() => {
-        // Não mostrar termos para contas privilegiadas
-        if (userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm') {
-            setShowTerms(false);
-            return;
-        }
-
-        const completed = userProfile.completedSeasonMissions || [];
-        const acceptedByProfile = completed.includes(PROFILE_FLAG_TERMS_ACCEPTED);
-        const pendingByProfile = completed.includes(PROFILE_FLAG_TERMS_PENDING);
-        if (!pendingByProfile || acceptedByProfile) {
-            setShowTerms(false);
-            return;
-        }
-
-        setShowTerms(true);
-    }, [userProfile.id, userProfile.completedSeasonMissions, userProfile.role]);
+    }, [userProfile.id, userProfile.appMode, isProfileLoaded, showTerms, needsModeSelection, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession]);
 
     const handleAcceptTerms = () => {
-        const completed = userProfile.completedSeasonMissions || [];
-        const nextCompleted = completed.filter(flag => flag !== PROFILE_FLAG_TERMS_PENDING);
+        if (forceShowTerms) {
+            setForceShowTerms(false);
+            return;
+        }
+        const nextCompleted = (userProfile.completedSeasonMissions || []).filter(flag => flag !== PROFILE_FLAG_TERMS_PENDING);
         if (!nextCompleted.includes(PROFILE_FLAG_TERMS_ACCEPTED)) nextCompleted.push(PROFILE_FLAG_TERMS_ACCEPTED);
         updateUserProfile({ completedSeasonMissions: nextCompleted });
-        setShowTerms(false);
     };
 
     // Handle tutorial completion

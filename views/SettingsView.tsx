@@ -1295,6 +1295,7 @@ const PreferenciasTab: React.FC = () => {
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
                 <div className="space-y-2">
+                    <SettingSelector label="Termos e Condições" value="Ver" onClick={() => window.dispatchEvent(new CustomEvent('openTermsOverlay'))} />
                     <SettingSelector label="Tutoriais" value="Revisar" onClick={() => setModal('tutorial')} />
                     <SettingSelector label="Privacidade" value={privacyMode} onClick={() => setModal('privacy')} />
                     <div id="oracle-preferences-setting">

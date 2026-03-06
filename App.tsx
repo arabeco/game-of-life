@@ -138,21 +138,15 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
     const handleMouseDown = (e: React.MouseEvent) => {
         if (isLast) {
             setIsHolding(true);
-            (longPressEvents as any).onMouseDown?.(e);
-        } else {
-            // Click only behavior for non-last steps
-            (longPressEvents as any).onClick?.(e as any);
         }
+        (longPressEvents as any).onMouseDown?.(e);
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {
         if (isLast) {
             setIsHolding(true);
-            (longPressEvents as any).onTouchStart?.(e);
-        } else {
-            // Click only behavior for non-last steps
-            (longPressEvents as any).onClick?.(e as any);
         }
+        (longPressEvents as any).onTouchStart?.(e);
     };
 
     if (!open) return null;
@@ -167,12 +161,12 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                 {isSealing && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--gold),rgba(0,0,0,0.95))] animate-fade-in z-50" />}
 
                 <div className="relative w-full max-w-2xl mx-auto px-6 flex flex-col items-center">
-                    {/* Oracle Styled Box */}
-                    <div className="bg-black/95 border border-white/20 backdrop-blur-xl rounded-xl p-4 md:p-6 w-full shadow-2xl flex gap-4 animate-fade-in-down border-b-4 border-b-[var(--gold)]">
+                    {/* Premium Light Glass Box */}
+                    <div className="bg-white/90 border border-black/10 backdrop-blur-xl rounded-xl p-4 md:p-6 w-full shadow-2xl flex gap-4 animate-fade-in-down border-b-4 border-b-[var(--gold)]">
                         {/* Avatar */}
                         <div className="flex-shrink-0">
-                            <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-gray-800 to-black border-2 border-[var(--gold)] flex items-center justify-center shadow-lg">
-                                <OracleIcon className="w-8 h-8 md:w-10 md:h-10 animate-pulse-slow" />
+                            <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-gray-100 to-white border-2 border-[var(--gold)] flex items-center justify-center shadow-lg">
+                                <OracleIcon className="w-8 h-8 md:w-10 md:h-10 opacity-80" />
                             </div>
                         </div>
 
@@ -181,15 +175,15 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                             <div className="space-y-2">
                                 <div className="flex justify-between items-start">
                                     <div className="flex flex-col">
-                                        <h3 className="text-[var(--gold)] font-bold uppercase tracking-[0.2em] text-[10px] md:text-sm">
+                                        <h3 className="text-[var(--gold)] font-bold uppercase tracking-[0.2em] text-[10px] md:text-sm drop-shadow-sm">
                                             {currentClause.title}
                                         </h3>
-                                        <span className="text-[8px] md:text-[10px] text-gray-500 font-mono">
+                                        <span className="text-[8px] md:text-[10px] text-gray-400 font-mono">
                                             CLÁUSULA {step + 1} / {clauses.length}
                                         </span>
                                     </div>
                                 </div>
-                                <p className="text-gray-200 text-xs md:text-sm leading-relaxed whitespace-pre-wrap font-mono min-h-[80px]">
+                                <p className="text-gray-900 text-xs md:text-sm leading-relaxed whitespace-pre-wrap font-mono min-h-[80px] font-medium">
                                     {typedText}
                                     {isTyping && <span className="animate-pulse inline-block w-1 h-3 md:w-2 md:h-4 bg-[var(--gold)] ml-1 align-middle opacity-70"></span>}
                                 </p>
@@ -210,7 +204,7 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                                         }`}>
                                         {isLast ? (isHolding ? 'FIRMAR...' : 'ACEITAR') : 'PRÓXIMO'}
                                     </span>
-                                    <span className="text-[9px] md:text-[10px] text-gray-400 uppercase tracking-[0.1em] font-bold text-center px-2">
+                                    <span className={`${isLast ? 'text-gray-400' : 'text-gray-500'} text-[9px] md:text-[10px] uppercase tracking-[0.1em] font-bold text-center px-2`}>
                                         {isHolding ? 'ASSINANDO' : (isLast ? 'SEGURE' : 'AVANÇAR')}
                                     </span>
 

@@ -639,16 +639,9 @@ export const LoginView: React.FC = () => {
 
                         <button
                             onClick={() => setIsSigningUp(!isSigningUp)}
-                            className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm"
+                            className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
                         >
-                            {isSigningUp ? 'Já tenho uma consciência desperta (Login)' : 'Ainda não despertei minha consciência (Cadastro)'}
-                        </button>
-
-                        <button
-                            onClick={loginAsAdmin}
-                            className="w-full py-2 text-amber-500/60 hover:text-amber-500 transition-colors text-xs border border-amber-500/20 rounded-lg"
-                        >
-                            ACESSO.ADMIN (DEV_MODE)
+                            {isSigningUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastrar'}
                         </button>
                     </div>
                 </div>

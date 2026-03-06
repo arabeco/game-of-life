@@ -136,6 +136,7 @@ export class SupabaseService {
         .from('user_profiles')
         .upsert({
           id: profile.id,
+          email: profile.email,
           nickname: profile.nickname,
           sovereign: profile.sovereign,
           avatar_url: profile.avatarUrl,
@@ -193,7 +194,7 @@ export class SupabaseService {
   static async generateGoldenInvite(): Promise<GoldenInvite | null> {
     try {
       const code = `ouro${new Date().getFullYear()}${(Math.random() + 1).toString(36).substring(2, 10)}`;
-      
+
       const { data } = await supabase
         .from('golden_invites')
         .insert([{ code, is_used: false }])

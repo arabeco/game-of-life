@@ -1380,7 +1380,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setUserMissionParticipations({});
 
             // Profile with Local Storage
-            let nextProfile = { ...DEFAULT_USER_PROFILE, id: currentUserId, isOnline: true };
+            const sessionUser = session?.user;
+            let nextProfile = {
+                ...DEFAULT_USER_PROFILE,
+                id: currentUserId,
+                email: sessionUser?.email || '',
+                nickname: sessionUser?.user_metadata?.full_name || sessionUser?.user_metadata?.name || DEFAULT_USER_PROFILE.nickname,
+                avatarUrl: sessionUser?.user_metadata?.avatar_url || DEFAULT_USER_PROFILE.avatarUrl,
+                isOnline: true
+            };
             try {
                 const savedProfile = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${currentUserId}`);
                 if (savedProfile) {
@@ -2322,8 +2330,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const hasExistingData = counts.some(count => typeof count === 'number' && count > 0);
 
                 if (hasExistingData) {
-                    const newProfile = { ...DEFAULT_USER_PROFILE, id: userId, isOnline: true };
-                    await supabase.from('user_profiles').insert(newProfile);
+                    const sessionUser = session?.user;
+                    const newProfile = {
+                        ...DEFAULT_USER_PROFILE,
+                        id: userId,
+                        email: sessionUser?.email || '',
+                        nickname: sessionUser?.user_metadata?.full_name || sessionUser?.user_metadata?.name || DEFAULT_USER_PROFILE.nickname,
+                        avatarUrl: sessionUser?.user_metadata?.avatar_url || DEFAULT_USER_PROFILE.avatarUrl,
+                        isOnline: true
+                    };
+                    await supabase.from('user_profiles').insert(mapToSnakeCase(newProfile));
                     setUserProfile(newProfile);
                 } else {
                     // Use the ref to access the latest version of migrateGuestDataToSupabase without triggering effect

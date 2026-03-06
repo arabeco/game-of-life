@@ -15,7 +15,6 @@ export const LoginView: React.FC = () => {
     const [password, setPassword] = useState('');
     const [nickname, setNickname] = useState('');
     const [inviteCode, setInviteCode] = useState('');
-    const [appMode, setAppMode] = useState<AppMode>('GAME');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
@@ -109,7 +108,6 @@ export const LoginView: React.FC = () => {
                     username: email.split('@')[0],
                     email: data.user.email,
                     nickname: nickname || email.split('@')[0],
-                    appMode: appMode,
                     avatarUrl: `https://picsum.photos/seed/${data.user.id}/100/100`,
                     border: 'default',
                     level: 1,
@@ -171,7 +169,7 @@ export const LoginView: React.FC = () => {
                         id: newProfile.id,
                         email: newProfile.email,
                         nickname: newProfile.nickname,
-                        app_mode: newProfile.appMode,
+                        app_mode: null,
                         avatar_url: newProfile.avatarUrl,
                         border: newProfile.border,
                         level: newProfile.level,
@@ -555,35 +553,6 @@ export const LoginView: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    {isSigningUp && (
-                        <div className="flex flex-col space-y-2 text-left mb-4">
-                            <label className="text-xs font-bold uppercase tracking-wider text-[var(--skin-accent-color)] opacity-70 ml-1">Modo de Início</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setAppMode('GAME')}
-                                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${appMode === 'GAME'
-                                        ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] text-[var(--skin-accent-color)] shadow-[0_0_15px_rgba(var(--skin-accent-color-rgb),0.3)]'
-                                        : 'bg-black/30 border-[var(--glass-border)] text-gray-500 hover:border-gray-400'
-                                        }`}
-                                >
-                                    <AssetIcon className="w-4 h-4" />
-                                    <span className="font-bold text-sm">GAME</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setAppMode('BASIC')}
-                                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 ${appMode === 'BASIC'
-                                        ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                                        : 'bg-black/30 border-[var(--glass-border)] text-gray-500 hover:border-gray-400'
-                                        }`}
-                                >
-                                    <ConfigIcon className="w-4 h-4" />
-                                    <span className="font-bold text-sm">BÁSICO</span>
-                                </button>
-                            </div>
-                        </div>
-                    )}
                     {isSigningUp && (
                         <input
                             type="text"

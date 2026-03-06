@@ -1738,7 +1738,7 @@ export const SettingsView: React.FC = () => {
                     ))}
                 </div>
 
-                <div className="flex-grow min-h-0 overflow-y-auto">
+                <div className="flex-grow min-h-0 overflow-y-auto pb-32 pt-2">
                     {renderContent()}
                 </div>
             </div>

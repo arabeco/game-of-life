@@ -14,8 +14,8 @@ async function testInsert() {
     // NOTE: This assumes we know the password. If this is a Google only account, this will fail.
     // However, if we just want to see if the upsert works as an authenticated user, we can try.
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: 'misterxhermit@gmail.com',
-        password: 'senha'
+        email: 'anapssos0210@outlook.com',
+        password: '010589'
     });
 
     if (authError) {
@@ -30,8 +30,8 @@ async function testInsert() {
 
     const payload = {
         id: testId,
-        email: 'misterxhermit@gmail.com',
-        nickname: 'Mister X Test',
+        email: 'anapssos0210@outlook.com',
+        nickname: 'Ana',
         app_mode: 'GAME',
         sovereign: {
             body: 'body_masc_1',

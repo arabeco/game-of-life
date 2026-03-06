@@ -138,7 +138,7 @@ export class SupabaseService {
           id: profile.id,
           email: profile.email,
           nickname: profile.nickname,
-          app_mode: profile.appMode || 'GAME',
+          app_mode: profile.appMode || null,
           sovereign: profile.sovereign,
           avatar_url: profile.avatarUrl,
           border: profile.border,

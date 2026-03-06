@@ -32,6 +32,6 @@ Você pode usar o script `push.sh` criado na raiz:
 ## Push Atual (Copie e cole no terminal)
 ```bash
 git add .
-git commit -m "Glyph1.001d - [x] Consolidação de Toasts do Sistema e Focus Audio Player"
+git commit -m "Glyph1.006 - [x] Correção do Sync do Perfil + Migração do Modo App para Onboarding"
 git push
 ```

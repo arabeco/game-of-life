@@ -19,7 +19,10 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules')) {
               if (id.includes('@supabase') || id.includes('supabase')) return 'supabase';
               if (id.includes('recharts') || id.includes('d3-') || id.includes('chart')) return 'charts';
-              if (id.includes('react-dom') || id.includes('react')) return 'react';
+              // More specific check for core react libraries to avoid catching react-easy-crop, etc.
+              if (id.includes('node_modules/react/') ||
+                id.includes('node_modules/react-dom/') ||
+                id.includes('node_modules/scheduler/')) return 'react';
               return 'vendor';
             }
           }

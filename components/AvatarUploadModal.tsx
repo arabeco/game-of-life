@@ -6,9 +6,9 @@ import { UploadIcon } from './Icons';
 import { Portal } from './Portal';
 
 interface AvatarUploadModalProps {
-    currentAvatar: string;
-    onClose: () => void;
-    onSave: (newAvatarUrl: string) => void;
+  currentAvatar: string;
+  onClose: () => void;
+  onSave: (newAvatarUrl: string) => void;
 }
 
 export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAvatar, onClose, onSave }) => {
@@ -25,7 +25,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
         setError('File size must be less than 5MB');
         return;
       }
-      
+
       if (!file.type.startsWith('image/')) {
         setError('File must be an image');
         return;
@@ -42,12 +42,24 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
 
     setIsUploading(true);
     try {
-      // Convert to base64 for storage
+      // First, read the raw file as Data URL
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        onSave(base64String);
-        onClose();
+      reader.onloadend = async () => {
+        try {
+          const rawDataUrl = reader.result as string;
+          // Compress to WebP (max 400x400 for avatars, good quality)
+          const { compressDataUrlToWebP } = await import('../utils/imageUtils');
+          const webpDataUrl = await compressDataUrlToWebP(rawDataUrl, { maxWidth: 400, maxHeight: 400, quality: 0.8 });
+          onSave(webpDataUrl);
+          onClose();
+        } catch (compressErr) {
+          setError('Failed to compress image');
+          setIsUploading(false);
+        }
+      };
+      reader.onerror = () => {
+        setError('Failed to read image');
+        setIsUploading(false);
       };
       reader.readAsDataURL(selectedFile);
     } catch (err) {
@@ -61,7 +73,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
           <h2 className="text-lg font-bold uppercase tracking-wider text-center">Editor de Imagem de Perfil</h2>
-          
+
           <div className="flex justify-center">
             <div className="w-48 h-48 rounded-full bg-black/20 overflow-hidden">
               <img src={previewUrl || currentAvatar} alt="Avatar Preview" className="w-full h-full object-cover" />

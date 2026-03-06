@@ -19,7 +19,7 @@ Cartao e Boleto estao integrados com Webhooks no Supabase.
 ------------------------------------------------------------
 
 NIVEL 1: O ALICERCE (Execucao e Ritual)
-01. Arenas (Metar) - Organizacao das areas da vida.
+01. Arenas (Metas) - Organizacao das areas da vida.
 02. Acoes - Criacao de tarefas especificas (Dossier).
 03. Planner - Campo de batalha diario (Bay Area).
 04. Ciclos - Prazos e metas temporais (Historico).
@@ -55,7 +55,7 @@ NIVEL 4: O ARQUITETO (Premium e Legado)
 3. CONCLUSAO DO ESPECIALISTA
 ------------------------------------------------------------
 O Glyph 1.001b resolveu a viabilidade comercial. Ao integrar 
-o Mercado Pago e simplificar a interface para 24 estacoes, o 
+o Mercado Pago e simplificar a interface para 25 estacoes, o 
 app deixou de ser um labirinto de 153 funcoes para se tornar 
 uma jornada heroica. O desafio agora e o polimento final da 
 seguranca e o onboarding desses novos Soberanos.

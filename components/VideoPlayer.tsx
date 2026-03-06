@@ -12,10 +12,10 @@ interface VideoPlayerProps {
     maxDuration?: number; // Force end after this duration (safety timeout)
 }
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
-    src, 
-    onEnd, 
-    className = "", 
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({
+    src,
+    onEnd,
+    className = "",
     placeholderLabel = "Playing Video...",
     duration = 4000,
     playbackRate = 1.0,
@@ -39,7 +39,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             if (startTime > 0 && videoRef.current.currentTime === 0) {
                 videoRef.current.currentTime = startTime;
             }
-            
+
             // Ensure play is triggered
             const playPromise = videoRef.current.play();
             if (playPromise !== undefined) {
@@ -90,6 +90,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 autoPlay
                 playsInline
                 muted
+                preload="none"
                 onEnded={handleEnd}
                 onError={handleError}
                 controls={false}

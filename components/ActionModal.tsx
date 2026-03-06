@@ -49,7 +49,7 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
 );
 
 export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskId, initialMode, onClose, isPreview, customThemeColor }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask } = useGame();
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask, clan, enrichedClanMembers } = useGame();
 
     const isNew = !action;
 
@@ -101,6 +101,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     const arenas = getArenas();
     const currentArena = arenas.find(a => a.id === editableAction.arenaId);
+
+    // Office Mode specific
+    const isOfficeMode = clan?.clanType === 'Office';
+    const enrichedMembers = enrichedClanMembers;
 
     const handleSave = () => {
         if (!editableAction.name?.trim()) return;
@@ -275,6 +279,30 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                         </button>
                     </div>
 
+                    {/* Assignment field for Office Mode */}
+                    {isOfficeMode && mode === 'edit' && (
+                        <div className="px-4 py-2 bg-black/20 border-b border-white/5">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Quem vai fazer? (Atribuição)</label>
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                <button
+                                    onClick={() => setEditableAction(prev => ({ ...prev, originCodexId: undefined }))}
+                                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${!editableAction.originCodexId?.startsWith('assign:') ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/20 text-gray-400 border-white/5'}`}
+                                >
+                                    MESA (QUALQUER UM)
+                                </button>
+                                {enrichedMembers.map(member => (
+                                    <button
+                                        key={member.id}
+                                        onClick={() => setEditableAction(prev => ({ ...prev, originCodexId: `assign:${member.id}` }))}
+                                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${editableAction.originCodexId === `assign:${member.id}` ? 'bg-blue-500 text-white border-blue-500' : 'bg-black/20 text-gray-400 border-white/5'}`}
+                                    >
+                                        {member.nickname.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Tabs Fixed */}
                     <div className="flex-none px-4 pb-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-20 relative">
                         <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5">
@@ -324,8 +352,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                     {displayAction.description || "Sem descrição definida."}
                                                 </p>
                                                 {displayAction.description && displayAction.description.length > 80 && (
-                                                    <label 
-                                                        htmlFor="desc-expand" 
+                                                    <label
+                                                        htmlFor="desc-expand"
                                                         className="block text-[9px] text-[var(--skin-accent-color)]/70 hover:text-[var(--skin-accent-color)] cursor-pointer mt-1 select-none"
                                                     >
                                                         [ ver mais ]

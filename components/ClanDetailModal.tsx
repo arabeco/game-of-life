@@ -317,7 +317,7 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode, activateClanQuest, clanQuestProgress } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, getAldeiaSlots, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, appMode, activateClanQuest, clanQuestProgress, getOrCreateOfficeArena } = useGame();
     const isBasicMode = appMode === 'BASIC';
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
 
@@ -527,8 +527,14 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             }
 
             // Create Planner Action with Link
+            // For Office Mode, route to auto-created Office arena
+            let targetArenaId = 'geral';
+            if (isOfficeClan) {
+                const officeArena = await getOrCreateOfficeArena();
+                if (officeArena) targetArenaId = officeArena.id;
+            }
             const newAction = await addAction({
-                arenaId: 'geral',
+                arenaId: targetArenaId,
                 name: `[${quest.priority === 'urgent' ? 'URGENTE' : (isOfficeClan || isBasicMode ? 'AÇÃO' : 'CLÃ')}] ${quest.title}`,
                 description: quest.description || (isOfficeClan || isBasicMode ? 'Ação de Clã' : 'Missão de Clã'),
                 icon: quest.category === 'work' ? '💼' :
@@ -818,10 +824,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     };
 
     const activeSeasonClanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
-    
+
     // Determine active quests for the clan based on progress record
     const clanActiveQuestIds = (clan && clanQuestProgress[clan.id]) ? Object.keys(clanQuestProgress[clan.id]) : [];
-    
+
     const activeClanQuests = activeSeasonClanQuests.filter(q => clanActiveQuestIds.includes(q.id));
     const availableClanQuests = activeSeasonClanQuests.filter(q => !clanActiveQuestIds.includes(q.id));
     const questArenaName = activeSeason ? `Quests - Clã ${activeSeason.id}` : 'Quests - Clã';
@@ -1210,8 +1216,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                     key={quest.id}
                                                     variant="accent"
                                                     className={`p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border-2 shadow-lg mt-3 ${isActive
-                                                            ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]'
-                                                            : 'bg-gradient-to-br from-[#3d2b1f] to-[#1a100c] border-[#8b5cf6]/30 hover:border-[#8b5cf6]/60'
+                                                        ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]'
+                                                        : 'bg-gradient-to-br from-[#3d2b1f] to-[#1a100c] border-[#8b5cf6]/30 hover:border-[#8b5cf6]/60'
                                                         }`}
                                                     onClick={() => setSelectedQuest(quest)}
                                                 >
@@ -1322,8 +1328,8 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                             <div
                                                 key={quest.id}
                                                 className={`p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border-2 shadow-lg mt-3 ${isParticipating
-                                                        ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]'
-                                                        : 'bg-gradient-to-br from-[#3d2b1f] to-[#1a100c] border-[#8b5cf6]/30 hover:border-[#8b5cf6]/60'
+                                                    ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]'
+                                                    : 'bg-gradient-to-br from-[#3d2b1f] to-[#1a100c] border-[#8b5cf6]/30 hover:border-[#8b5cf6]/60'
                                                     }`}
                                             >
                                                 {/* Metallic sheen overlay */}
@@ -1436,12 +1442,12 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     onClose={() => setSelectedQuest(null)}
                     onTake={() => handleTakeQuest(selectedQuest)}
                     onActivate={
-                        (userClanRole === 'leader' && !activeClanQuests.some(q => q.id === selectedQuest.id)) 
-                        ? () => {
-                            activateClanQuest(selectedQuest.id);
-                            setSelectedQuest(null);
-                        }
-                        : undefined
+                        (userClanRole === 'leader' && !activeClanQuests.some(q => q.id === selectedQuest.id))
+                            ? () => {
+                                activateClanQuest(selectedQuest.id);
+                                setSelectedQuest(null);
+                            }
+                            : undefined
                     }
                     onClaim={() => handleClaimQuest(selectedQuest)}
                     canClaim={!userProfile.completedSeasonMissions?.includes(selectedQuest.id) && getQuestProgress(selectedQuest) >= 100}

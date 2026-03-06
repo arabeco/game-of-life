@@ -6,6 +6,7 @@ import { UploadIcon } from '../Icons';
 import { ImageCropper } from '../ImageCropper';
 import { useGame } from '../../contexts/GameContext';
 import { supabase } from '../../supabaseClient';
+import { compressDataUrlToWebP } from '../../utils/imageUtils';
 
 interface ImageUploadSlotProps {
     value: SlotValueImage;
@@ -35,18 +36,36 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
             reader.readAsDataURL(file);
         }
     };
-    
+
     const uploadDataUrl = async (dataUrl: string, pathPrefix: string) => {
         if (!(supabase as any)?.storage) return dataUrl;
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        if (blob.size > maxBytes) {
-            alert('Imagem muito grande. Limite de 2MB.');
-            return dataUrl;
+
+        let blobToUpload: Blob;
+        let extension = 'webp';
+
+        try {
+            // Convert DataUrl to WebP data url then to blob
+            const webpDataUrl = await compressDataUrlToWebP(dataUrl, { maxWidth: 1200, maxHeight: 1200, quality: 0.8 });
+            const response = await fetch(webpDataUrl);
+            blobToUpload = await response.blob();
+        } catch (e) {
+            console.error("Compression failed, falling back to original", e);
+            const response = await fetch(dataUrl);
+            blobToUpload = await response.blob();
+            extension = blobToUpload.type.split('/')[1] || 'png';
+            if (blobToUpload.size > maxBytes) {
+                alert('Imagem muito grande. Limite de 2MB.');
+                return dataUrl;
+            }
         }
-        const extension = blob.type.split('/')[1] || 'png';
+
         const filePath = `${pathPrefix}/${crypto.randomUUID()}.${extension}`;
-        const { error } = await supabase.storage.from(bucketName).upload(filePath, blob, { contentType: blob.type, upsert: true });
+        // Cache control 1 year
+        const { error } = await supabase.storage.from(bucketName).upload(filePath, blobToUpload, {
+            contentType: `image/${extension}`,
+            cacheControl: '31536000',
+            upsert: true
+        });
         if (error) {
             alert('Falha ao enviar imagem.');
             return dataUrl;
@@ -76,10 +95,10 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
         if (isUploading) return;
         fileInputRef.current?.click();
     };
-    
+
     if (imageToCrop) {
         return (
-            <ImageCropper 
+            <ImageCropper
                 imageSrc={imageToCrop}
                 cropShape="rect"
                 onCropComplete={handleCropComplete}

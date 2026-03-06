@@ -402,6 +402,10 @@ export interface GameContextType {
     setAppMode: (mode: AppMode) => void;
     activeTheme: ThemePreference;
     toggleTheme: () => void;
+    getSharedActionPoolProgress: (arenaId: string, actionId: string) => number;
+    getOrCreateOfficeArena: () => Promise<Arena | null>;
+    cleanupEmptyOfficeArena: (arenaId: string) => void;
+    setArenaAsShared: (arenaId: string, isShared: boolean) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -5751,6 +5755,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     if (normalized.includes('quests - season') || normalized.includes('quests - cla')) {
                         updateArena(arenaId, { isArchived: true });
                     }
+                    // Also cleanup empty Office arenas
+                    if (arena.name.startsWith('Clan Office')) {
+                        updateArena(arenaId, { isArchived: true });
+                        showToast('Arena Office arquivada (sem ações).', 'info');
+                    }
                     setTimeout(() => deleteArena(arenaId), 0);
                 }
             }
@@ -6245,6 +6254,93 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return getClanQuestForActionName(action.name);
     };
 
+    const [sharedActionCompletions, setSharedActionCompletions] = useState<Record<string, Record<string, number>>>(() => ({}));
+
+    // [NEW] Subscribe to shared completions for real-time pool updates
+    useEffect(() => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        // Initial fetch
+        supabase.from('shared_action_completions')
+            .select('*')
+            .then(({ data, error }) => {
+                if (data) {
+                    const newCompletions: Record<string, Record<string, number>> = {};
+                    data.forEach((comp: any) => {
+                        if (!newCompletions[comp.arena_id]) newCompletions[comp.arena_id] = {};
+                        newCompletions[comp.arena_id][comp.action_id] = (newCompletions[comp.arena_id][comp.action_id] || 0) + 1;
+                    });
+                    setSharedActionCompletions(newCompletions);
+                }
+            });
+
+        // Subscription
+        const channel = supabase.channel('shared_completions_sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'shared_action_completions' }, (payload) => {
+                // Simplified refresh: fetch all again for consistency
+                // In a larger app, we'd granularly update the state from payload.new/old
+                supabase.from('shared_action_completions')
+                    .select('*')
+                    .then(({ data }) => {
+                        if (data) {
+                            const newCompletions: Record<string, Record<string, number>> = {};
+                            data.forEach((comp: any) => {
+                                if (!newCompletions[comp.arena_id]) newCompletions[comp.arena_id] = {};
+                                newCompletions[comp.arena_id][comp.action_id] = (newCompletions[comp.arena_id][comp.action_id] || 0) + 1;
+                            });
+                            setSharedActionCompletions(newCompletions);
+                        }
+                    });
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [session?.user.id]);
+
+    const getSharedActionPoolProgress = (arenaId: string, actionId: string) => {
+        return sharedActionCompletions[arenaId]?.[actionId] || 0;
+    };
+
+    // --- Office Mode: Auto-create / cleanup "Clan Office" arena ---
+    const getOrCreateOfficeArena = async (): Promise<Arena | null> => {
+        if (clan?.clanType !== 'Office') return null;
+        const OFFICE_ARENA_NAME = `Clan Office • ${clan.name}`;
+        // Check if an existing Office arena already exists
+        const existing = getArenas().find(a => a.name === OFFICE_ARENA_NAME && !a.isArchived);
+        if (existing) return existing;
+        // Create a new one under the first asset
+        const targetAssetId = assets[0]?.id || 'outros';
+        const newArena = await addArena(targetAssetId, {
+            name: OFFICE_ARENA_NAME,
+            description: `Arena automática do clã ${clan.name} (Office Mode)`,
+            icon: '🏢',
+        } as any);
+        showToast('Arena Office criada automaticamente!', 'success');
+        return newArena;
+    };
+
+    const cleanupEmptyOfficeArena = (arenaId: string) => {
+        if (clan?.clanType !== 'Office') return;
+        const OFFICE_ARENA_NAME = `Clan Office • ${clan?.name}`;
+        const arena = getArenas().find(a => a.id === arenaId);
+        if (!arena || arena.name !== OFFICE_ARENA_NAME) return;
+        const remaining = getActionsForArena(arenaId);
+        if (remaining.length === 0) {
+            updateArena(arenaId, { isArchived: true });
+            showToast('Arena Office arquivada (sem ações).', 'info');
+        }
+    };
+
+    // --- Leader Shared Arena Selection ---
+    const setArenaAsShared = (arenaId: string, isShared: boolean) => {
+        // Mark an arena as shared for all clan members to see in their planner
+        updateArena(arenaId, { description: isShared ? '[SHARED]' : '' } as any);
+        if (isShared) {
+            showToast('Arena marcada como compartilhada para o clã!', 'success');
+        }
+    };
+
     const updateCustomClanMissionProgress = async (missionId: string, increment: number) => {
         const { data, error } = await supabase.rpc('update_clan_mission_progress', {
             p_mission_id: missionId,
@@ -6278,25 +6374,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             date: date,
             startTime: startTime,
             duration: action.duration,
-            completed: true,
+            completed: true, // Auto-complete
+            createdAt: now.toISOString()
         };
 
-        setTasks(prevTasks => [...prevTasks, newTask]);
-
-        // Handle Clan Quest Progress
-        // Check if this action corresponds to a clan quest, regardless of arena
-        const clanQuest = getClanQuestForAction(action);
-
-        if (clanQuest) {
-            updateClanMissionProgress(clanQuest.id, 1);
-        }
-
-        // Handle Custom Clan Mission Progress
-        if (action.originCodexId?.startsWith('clan_quest:')) {
-            const questId = action.originCodexId.split(':')[1];
-            updateCustomClanMissionProgress(questId, 1);
-        }
-
+        // Add to tasks and immediately toggle completion to trigger DB/Logic
+        setTasks(prev => [...prev, newTask]);
+        // We call it after state update potentially, but simpler here:
+        // Since we explicitly want it completed, we record it.
         // If it's today, add to daily commitment so it shows in SITREP
         if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
             setDailyCommitmentState(prev => ({
@@ -6311,6 +6396,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             supabase.from('scheduled_tasks').insert(snakeCaseData).then(({ error }) => {
                 if (error) console.error("Supabase schedule task now error:", error.message);
             });
+
+            // Shared record if applicable
+            const arena = getArenas().find(a => a.id === action.arenaId);
+            if (arena && (clan?.clanType === 'Office')) {
+                supabase.from('shared_action_completions').insert({
+                    arena_id: arena.id,
+                    action_id: action.id,
+                    user_id: userId
+                });
+            }
         }
     };
     const scheduleAndCompleteMilestoneNow = (actionId: string) => {
@@ -6491,19 +6586,69 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                 });
                             }
 
-                            // Check for PVP Arena Completion
+                            // Check for Shared Arena / Competitive Challenge
                             const arena = getArenas().find(a => a.id === action.arenaId);
-                            if (arena && arena.name === "Quem corre 15km antes") {
-                                const allArenaActions = getActionsForArena(arena.id);
-                                const completedCount = prevTasks.filter(t =>
-                                    allArenaActions.some(a => a.id === t.actionId) && t.completed && t.id !== taskId
-                                ).length + 1;
+                            if (arena) {
+                                // [NEW] Shared Action Pool Logic
+                                // Check if this arena is linked to others or is part of a Clan Office Mode
+                                const isOfficeMode = clan?.clanType === 'Office';
 
-                                if (completedCount >= 15) {
-                                    showToast("PARABÉNS! DESAFIO DE 15KM COMPLETADO!", 'success');
-                                    // Future: Send notification to opponent
+                                // Record completion in shared_action_completions if it's a shared context
+                                const userId = getSupabaseUserId();
+                                if (userId) {
+                                    // We'll try to find if there's a relationship_link for this arena
+                                    // or if it's a clan quest arena.
+                                    const isClanQuestArena = getClanQuestForAction(action);
+
+                                    if (!isClanQuestArena) {
+                                        // For linked arenas (Challenges/Partnerships), we record a shared completion
+                                        supabase.from('relationship_links')
+                                            .select('id')
+                                            .or(`user_id.eq.${userId},target_user_id.eq.${userId}`)
+                                            .eq('arena_id', arena.id)
+                                            .single()
+                                            .then(({ data: linkData }) => {
+                                                if (linkData || isOfficeMode) {
+                                                    // This is a shared arena, record global completion
+                                                    supabase.from('shared_action_completions').insert({
+                                                        arena_id: arena.id,
+                                                        action_id: action.id,
+                                                        user_id: userId
+                                                    }).then(({ error }) => {
+                                                        if (error) console.error("Error recording shared completion:", error);
+                                                        else showToast("Ação compartilhada registrada!", 'success');
+                                                    });
+                                                }
+                                            });
+                                    }
+                                }
+
+                                if (arena.name === "Quem corre 15km antes") {
+                                    const allArenaActions = getActionsForArena(arena.id);
+                                    const completedCount = prevTasks.filter(t =>
+                                        allArenaActions.some(a => a.id === t.actionId) && t.completed && t.id !== taskId
+                                    ).length + 1;
+
+                                    if (completedCount >= 15) {
+                                        showToast("PARABÉNS! DESAFIO DE 15KM COMPLETADO!", 'success');
+                                        // Future: Send notification to opponent
+                                    }
                                 }
                             }
+                        }
+                    } else {
+                        // Handle un-completion for shared pools
+                        const action = getActionById(task.actionId);
+                        const userId = getSupabaseUserId();
+                        if (action && userId) {
+                            supabase.from('shared_action_completions')
+                                .delete()
+                                .eq('arena_id', action.arenaId)
+                                .eq('action_id', action.id)
+                                .eq('user_id', userId)
+                                .then(({ error }) => {
+                                    if (error) console.error("Error removing shared completion:", error);
+                                });
                         }
                     }
 
@@ -6979,7 +7124,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         icon: "🏃",
                         priority: 'alta'
                     });
-    
+     
                     if (newArena) {
                         const actionsToCreate = Array.from({ length: 15 }, (_, i) => ({
                             name: "Correr 1km",
@@ -6991,7 +7136,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             actionType: 'Ação Recorrente' as any,
                             difficulty: 3
                         }));
-    
+     
                         for (const actionData of actionsToCreate) {
                              await addAction(actionData);
                         }
@@ -7014,7 +7159,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, updateTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex,
+            getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared
         }}>
             {children}
         </GameContext.Provider>

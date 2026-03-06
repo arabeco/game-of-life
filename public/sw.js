@@ -1,4 +1,5 @@
-const CACHE_VERSION = 'glyph-app-v2';
+const CACHE_VERSION = 'glyph-app-v3';
+const SUPABASE_CACHE = 'glyph-supabase-assets-v1';
 const ASSETS = [
   '/',
   '/index.html',
@@ -7,6 +8,9 @@ const ASSETS = [
   '/logo-diamond.png',
   '/logo-core.png'
 ];
+
+// Pattern to detect Supabase Storage public URLs
+const SUPABASE_STORAGE_PATTERN = 'supabase.co/storage/v1/object/public/';
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -18,7 +22,11 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
-      keys.map(key => (key === CACHE_VERSION ? null : caches.delete(key)))
+      keys.map(key => {
+        // Keep only current caches
+        if (key === CACHE_VERSION || key === SUPABASE_CACHE) return null;
+        return caches.delete(key);
+      })
     ))
   );
   self.clients.claim();
@@ -27,6 +35,29 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
+  const url = event.request.url;
+
+  // ─── SUPABASE STORAGE: Cache-First ───
+  // Images and videos from Supabase are cached locally forever.
+  // On first load they download once; every subsequent load serves from cache.
+  if (url.includes(SUPABASE_STORAGE_PATTERN)) {
+    event.respondWith(
+      caches.open(SUPABASE_CACHE).then(cache =>
+        cache.match(event.request).then(cached => {
+          if (cached) return cached; // HIT → instant, zero egress
+          return fetch(event.request).then(response => {
+            if (response.ok) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          });
+        })
+      )
+    );
+    return;
+  }
+
+  // ─── NAVIGATION: Network-First with offline fallback ───
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -36,8 +67,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  const url = new URL(event.request.url);
-  if (url.origin === self.location.origin) {
+  // ─── SAME-ORIGIN STATIC: Cache-First ───
+  const reqUrl = new URL(url);
+  if (reqUrl.origin === self.location.origin) {
     event.respondWith(
       caches.match(event.request).then(cached => cached || fetch(event.request))
     );

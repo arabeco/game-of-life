@@ -348,6 +348,7 @@ export interface ScheduledTask {
   startTime: number; // minutes from midnight
   duration: number; // minutes
   completed?: boolean;
+  createdAt?: string;
 }
 
 export interface ChecklistItem {

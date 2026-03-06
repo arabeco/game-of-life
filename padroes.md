@@ -32,6 +32,6 @@ Você pode usar o script `push.sh` criado na raiz:
 ## Push Atual (Copie e cole no terminal)
 ```bash
 git add .
-git commit -m "Glyph1.001h - [x] Fix Mastery View z-index, cooldown grace period and UI polish"
+git commit -m "Glyph1.001h - [x] Polish Terms, Tutorial Navigation and Feedback Viewer"
 git push
 ```

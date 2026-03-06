@@ -276,4 +276,22 @@ export class SupabaseService {
       return [];
     }
   }
+
+  static async getFeedbackReports(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('feedback_reports')
+        .select(`
+          *,
+          user_profiles:user_id (nickname)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar relatórios de feedback:', error);
+      return [];
+    }
+  }
 }

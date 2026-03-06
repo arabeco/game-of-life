@@ -117,22 +117,42 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                 setIsTyping(false);
             }
             if (isLast) handleAccept();
-            else setStep(prev => Math.min(prev + 1, clauses.length - 1));
+            // REMOVED: setStep auto-advance from long press on non-last steps to avoid confusion
         },
         onLongPressCancel: () => setIsHolding(false),
         onLongPressRelease: () => setIsHolding(false),
-        onClick: () => setIsHolding(false),
+        onClick: () => {
+            setIsHolding(false);
+            if (isTyping) {
+                setTypedText(currentClause.text);
+                setIsTyping(false);
+                return;
+            }
+            if (!isLast) {
+                setStep(prev => Math.min(prev + 1, clauses.length - 1));
+            }
+        },
         delay: holdDurationMs,
     });
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        setIsHolding(true);
-        longPressEvents.onMouseDown?.(e);
+        if (isLast) {
+            setIsHolding(true);
+            (longPressEvents as any).onMouseDown?.(e);
+        } else {
+            // Click only behavior for non-last steps
+            (longPressEvents as any).onClick?.(e as any);
+        }
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {
-        setIsHolding(true);
-        longPressEvents.onTouchStart?.(e);
+        if (isLast) {
+            setIsHolding(true);
+            (longPressEvents as any).onTouchStart?.(e);
+        } else {
+            // Click only behavior for non-last steps
+            (longPressEvents as any).onClick?.(e as any);
+        }
     };
 
     if (!open) return null;
@@ -175,37 +195,58 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                                 </p>
                             </div>
 
-                            {/* Seal / Action Button */}
-                            <div className="flex justify-center mt-4 pb-2">
+                            <div className="flex justify-center w-full mt-4">
                                 <div
-                                    className="relative px-8 py-3 rounded-lg border border-[var(--gold)] flex flex-col items-center justify-center gap-1 cursor-pointer select-none active:scale-95 transition-transform"
+                                    className={`relative flex flex-col items-center justify-center gap-1 cursor-pointer select-none active:scale-95 transition-all shadow-[0_0_15px_rgba(184,134,11,0.2)] hover:shadow-[0_0_25px_rgba(184,134,11,0.4)] border-2 border-[var(--gold)] ${isLast
+                                        ? 'w-24 h-24 md:w-32 md:h-32 rounded-full'
+                                        : 'px-10 py-4 rounded-xl w-full'
+                                        }`}
                                     onMouseDown={handleMouseDown}
                                     onTouchStart={handleTouchStart}
-                                    onContextMenu={longPressEvents.onContextMenu}
+                                    onContextMenu={(longPressEvents as any).onContextMenu}
                                     style={{ touchAction: 'none' }}
                                 >
-                                    <span className="text-[var(--gold)] font-black tracking-[0.3em] text-[10px] md:text-xs">
-                                        {isLast ? (isHolding ? 'FIRMAR PACTO...' : 'SEAL PACT') : 'NEXT'}
+                                    <span className={`text-[var(--gold)] font-black uppercase luxe-title-shadow ${isLast ? 'text-sm md:text-base tracking-widest' : 'text-xs md:text-sm tracking-[0.4em]'
+                                        }`}>
+                                        {isLast ? (isHolding ? 'FIRMAR...' : 'ACEITAR') : 'PRÓXIMO'}
                                     </span>
-                                    <span className="text-[8px] md:text-[9px] text-[#9b9b9b] uppercase tracking-widest">
-                                        {isHolding ? 'RECONHECENDO ASSINATURA' : 'HOLD TO CONFIRM'}
+                                    <span className="text-[9px] md:text-[10px] text-gray-400 uppercase tracking-[0.1em] font-bold text-center px-2">
+                                        {isHolding ? 'ASSINANDO' : (isLast ? 'SEGURE' : 'AVANÇAR')}
                                     </span>
 
-                                    {/* Progress Ritual Signature Line */}
-                                    <div className="absolute bottom-0 left-0 h-0.5 bg-[var(--gold)] shadow-[0_0_15px_var(--gold)] transition-all duration-100 ease-linear rounded-full"
-                                        style={{ width: `${isHolding ? 100 : 0}%`, opacity: isHolding ? 1 : 0 }} />
+                                    {/* Progress Ritual Signature Line (Round for last, linear for others) */}
+                                    {isLast ? (
+                                        <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                                            <circle
+                                                cx="50%"
+                                                cy="50%"
+                                                r="48%"
+                                                stroke="var(--gold)"
+                                                strokeWidth="4"
+                                                fill="transparent"
+                                                strokeDasharray="100 100"
+                                                strokeDashoffset={isHolding ? 100 - (100 * 1) : 100} // Simplified since animation is handled by wide width transition below
+                                                className="transition-all duration-100 ease-linear"
+                                                style={{ strokeDashoffset: isHolding ? 0 : 315, strokeDasharray: 315, opacity: isHolding ? 1 : 0 }}
+                                            />
+                                        </svg>
+                                    ) : (
+                                        <div className="absolute bottom-0 left-0 h-0.5 bg-[var(--gold)] shadow-[0_0_15px_var(--gold)] transition-all duration-100 ease-linear rounded-full"
+                                            style={{ width: `${isHolding ? 100 : 0}%`, opacity: isHolding ? 1 : 0 }} />
+                                    )}
 
                                     {/* Signature Glow Effect */}
                                     {isHolding && isLast && (
-                                        <div className="absolute inset-0 bg-[var(--gold)]/5 animate-pulse rounded-lg pointer-events-none" />
+                                        <div className="absolute inset-0 bg-[var(--gold)]/10 animate-pulse rounded-full pointer-events-none" />
                                     )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <style>{`
+            <style>{`
                 .animate-pulse-slow {
                     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                 }
@@ -224,7 +265,6 @@ const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void; }> = ({ open
                     to { opacity: 1; transform: translateY(0); }
                 }
                 `}</style>
-            </div>
         </Portal>
     );
 };
@@ -764,12 +804,16 @@ const MainApp: React.FC = () => {
     useEffect(() => {
         if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms || needsModeSelection) return;
 
-        if (!isTutorialCompleted && !isTutorialActive && !tutorialShownInSession) {
+        // CRITICAL: Check both the flag and the context state
+        const tutorialFlags = userProfile.completedSeasonMissions || [];
+        const tutorialAlreadyDone = isTutorialCompleted || tutorialFlags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
+
+        if (!tutorialAlreadyDone && !isTutorialActive && !tutorialShownInSession) {
             console.log('App: Starting tutorial after Terms and Mode Selection');
             startTutorial(0);
             setTutorialShownInSession(true);
         }
-    }, [userProfile.id, userProfile.appMode, isProfileLoaded, showTerms, needsModeSelection, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession]);
+    }, [userProfile.id, userProfile.appMode, isProfileLoaded, showTerms, needsModeSelection, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession, userProfile.completedSeasonMissions]);
 
     const handleAcceptTerms = () => {
         if (forceShowTerms) {

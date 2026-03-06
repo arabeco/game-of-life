@@ -248,14 +248,12 @@ export const OracleTutorialOverlay: React.FC = () => {
 
                             {/* Footer / Indicator */}
                             <div className="flex justify-end mt-1">
-                                {!isTyping && (
-                                    <button
-                                        onClick={handleNext}
-                                        className="text-[var(--gold)] text-[10px] md:text-xs font-bold animate-bounce flex items-center gap-1 hover:text-white transition-colors"
-                                    >
-                                        {currentStep === tutorialSteps.length - 1 ? 'CONCLUIR' : 'PRÓXIMO'} ▼
-                                    </button>
-                                )}
+                                <button
+                                    onClick={handleNext}
+                                    className={`text-[var(--gold)] text-[10px] md:text-xs font-bold flex items-center gap-1 hover:text-white transition-colors ${!isTyping ? 'animate-bounce' : 'opacity-80'}`}
+                                >
+                                    {currentStep === tutorialSteps.length - 1 ? 'FINALIZAR' : 'PRÓXIMO'} ▼
+                                </button>
                             </div>
                         </div>
                     </div>

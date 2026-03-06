@@ -31,7 +31,7 @@ const InviteManager: React.FC = () => {
         const baseCodes = GM_CONFIG.goldenInvites.seedCodes.length > 0
             ? GM_CONFIG.goldenInvites.seedCodes
             : Array.from({ length: GM_CONFIG.goldenInvites.seedCount }, (_, i) => `${GM_CONFIG.goldenInvites.codePrefix}${new Date().getFullYear()}-${String(i + 1).padStart(3, '0')}`);
-            
+
         const updated = await SupabaseService.seedGoldenInvites(baseCodes);
         setInvites(updated);
     };
@@ -93,7 +93,7 @@ const SeasonEditorModal: React.FC<{ season: Season | null; onClose: () => void; 
                     </div>
                     <input type="text" placeholder="URL da Imagem de Fundo" value={formData.background_png_url} onChange={e => setFormData(p => ({ ...p, background_png_url: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
                     <textarea placeholder="Lore / Descrição" value={formData.lore_text} onChange={e => setFormData(p => ({ ...p, lore_text: e.target.value }))} rows={3} className="w-full p-2 bg-black/30 rounded-lg border border-white/20" />
-                    <label className="flex items-center space-x-2"><input type="checkbox" checked={formData.is_active} onChange={e => setFormData(p => ({...p, is_active: e.target.checked}))} /> <span>Ativar esta Season?</span></label>
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={formData.is_active} onChange={e => setFormData(p => ({ ...p, is_active: e.target.checked }))} /> <span>Ativar esta Season?</span></label>
                     <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
                 </GlassCard>
             </div>
@@ -111,7 +111,7 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
 
     const handleAddMission = async () => {
         await addSeasonMission(formData);
-        setFormData({ 
+        setFormData({
             season_id: season.id, title: '', description: '', goal_type: 'actions_completed', goal_value: 10, reward_type: 'exp', reward_value: 100,
             action_name: '', icon: '🛡️', type: 'individual'
         });
@@ -137,27 +137,27 @@ const MissionEditorModal: React.FC<{ season: Season; onClose: () => void; }> = (
                     <div className='flex-shrink-0 border-t border-white/10 pt-3 space-y-2'>
                         <h4 className="text-center font-bold text-sm">Nova Missão</h4>
                         <div className="grid grid-cols-2 gap-2">
-                             <select value={formData.type} onChange={e => setFormData(p => ({...p, type: e.target.value as any}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="individual">Individual</option><option value="clan">Clã</option></select>
-                             <input type="text" placeholder="Ícone (ex: 🛡️)" value={formData.icon} onChange={e => setFormData(p => ({ ...p, icon: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
+                            <select value={formData.type} onChange={e => setFormData(p => ({ ...p, type: e.target.value as any }))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="individual">Individual</option><option value="clan">Clã</option></select>
+                            <input type="text" placeholder="Ícone (ex: 🛡️)" value={formData.icon} onChange={e => setFormData(p => ({ ...p, icon: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
                         </div>
                         <input type="text" placeholder="Título" value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
                         <input type="text" placeholder="Descrição" value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
-                        
+
                         <div className="space-y-1">
                             <label className="text-[10px] text-gray-400 ml-1">Vincular a Ação (Nome exato)</label>
                             <input type="text" placeholder="Nome da Ação (opcional)" value={formData.action_name} onChange={e => setFormData(p => ({ ...p, action_name: e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
-                            <select value={formData.goal_type} onChange={e => setFormData(p => ({...p, goal_type: e.target.value as SeasonMission['goal_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="actions_completed">Ações Completas</option><option value="km_run">KM Corridos</option><option value="books_read">Livros Lidos</option><option value="meditation_days">Dias de Meditação</option></select>
+                            <select value={formData.goal_type} onChange={e => setFormData(p => ({ ...p, goal_type: e.target.value as SeasonMission['goal_type'] }))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="actions_completed">Ações Completas</option><option value="km_run">KM Corridos</option><option value="books_read">Livros Lidos</option><option value="meditation_days">Dias de Meditação</option></select>
                             <input type="number" placeholder="Meta" value={formData.goal_value} onChange={e => setFormData(p => ({ ...p, goal_value: Number(e.target.value) }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-2">
-                            <select value={formData.reward_type} onChange={e => setFormData(p => ({...p, reward_type: e.target.value as SeasonMission['reward_type']}))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="exp">EXP</option><option value="item_id">Item ID</option></select>
+                            <select value={formData.reward_type} onChange={e => setFormData(p => ({ ...p, reward_type: e.target.value as SeasonMission['reward_type'] }))} className="w-full p-2 bg-black/30 rounded-lg text-sm"><option value="exp">EXP</option><option value="item_id">Item ID</option></select>
                             <input type="text" placeholder="Recompensa" value={String(formData.reward_value)} onChange={e => setFormData(p => ({ ...p, reward_value: p.reward_type === 'exp' ? Number(e.target.value) : e.target.value }))} className="w-full p-2 bg-black/30 rounded-lg text-sm" />
                         </div>
-                        
+
                         <button onClick={handleAddMission} className="w-full py-2 rounded-xl luxe-skin-button">Adicionar Missão</button>
                     </div>
                 </GlassCard>
@@ -191,6 +191,64 @@ const SeasonCard: React.FC<{ season: Season; onEdit: () => void; onMissions: () 
     );
 };
 
+const FeedbackViewer: React.FC = () => {
+    const [reports, setReports] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchReports = async () => {
+            const data = await SupabaseService.getFeedbackReports();
+            setReports(data);
+            setLoading(false);
+        };
+        fetchReports();
+    }, []);
+
+    if (loading) return <div className="text-center py-4 text-xs text-gray-400">Carregando feedbacks...</div>;
+
+    return (
+        <div className="space-y-4">
+            <h2 className="text-lg font-bold tracking-wider">Relatórios de Feedback</h2>
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                {reports.length === 0 ? (
+                    <p className="text-xs text-center text-gray-500 py-4">Nenhum feedback recebido ainda.</p>
+                ) : (
+                    reports.map(report => (
+                        <GlassCard key={report.id} variant="neutral" className="p-4 space-y-2">
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] font-black text-[var(--gold)] uppercase tracking-widest">
+                                    Soberano: {report.user_profiles?.nickname || 'Anônimo'}
+                                </span>
+                                <span className="text-[9px] text-gray-500 font-mono">
+                                    {new Date(report.created_at).toLocaleString('pt-BR')}
+                                </span>
+                            </div>
+                            <div className="space-y-3 pt-2">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">1. O que mais te impressionou?</p>
+                                    <p className="text-xs text-gray-200 bg-black/30 p-2 rounded-lg border border-white/5">{report.q1_impression || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">2. O que foi confuso ou difícil?</p>
+                                    <p className="text-xs text-gray-200 bg-black/30 p-2 rounded-lg border border-white/5">{report.q2_confusing || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">3. O que você gostaria de ver a seguir?</p>
+                                    <p className="text-xs text-gray-200 bg-black/30 p-2 rounded-lg border border-white/5">{report.q3_next || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">Outros Comentários</p>
+                                    <p className="text-xs text-gray-200 bg-black/30 p-2 rounded-lg border border-white/5 italic">{report.other_comments || '-'}</p>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+};
+
 const SeasonManager: React.FC = () => {
     const { seasons } = useGame();
     const [editorModal, setEditorModal] = useState<{ open: boolean, season: Season | null }>({ open: false, season: null });
@@ -201,23 +259,23 @@ const SeasonManager: React.FC = () => {
     const activeSeason = sortedSeasons.find(s => s.is_active);
     const futureSeasons = sortedSeasons.filter(s => !s.is_active && new Date(s.start_date) > new Date());
     const pastSeasons = sortedSeasons.filter(s => !s.is_active && new Date(s.start_date) <= new Date() && s.id !== activeSeason?.id);
-    
+
     return (
         <div className="space-y-4">
             <h2 className="text-lg font-bold tracking-wider">Gerenciar Seasons</h2>
             <button onClick={() => setEditorModal({ open: true, season: null })} className="w-full py-2 rounded-xl luxe-skin-button">Criar Nova Era</button>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({open: true, season: activeSeason})} onMissions={() => setMissionsModal({open: true, season: activeSeason})} onOpen={() => setDetailSeason(activeSeason)} />}
-                
+                {activeSeason && <SeasonCard season={activeSeason} onEdit={() => setEditorModal({ open: true, season: activeSeason })} onMissions={() => setMissionsModal({ open: true, season: activeSeason })} onOpen={() => setDetailSeason(activeSeason)} />}
+
                 {futureSeasons.length > 0 && <h3 className="text-xs font-bold text-gray-400 pt-2">FUTURAS</h3>}
-                {futureSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onMissions={() => setMissionsModal({open: true, season: s})} onOpen={() => setDetailSeason(s)} />)}
-                
+                {futureSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({ open: true, season: s })} onMissions={() => setMissionsModal({ open: true, season: s })} onOpen={() => setDetailSeason(s)} />)}
+
                 {pastSeasons.length > 0 && <h3 className="text-xs font-bold text-gray-400 pt-2">ENCERRADAS</h3>}
-                {pastSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({open: true, season: s})} onMissions={() => setMissionsModal({open: true, season: s})} onOpen={() => setDetailSeason(s)} />)}
+                {pastSeasons.map(s => <SeasonCard key={s.id} season={s} onEdit={() => setEditorModal({ open: true, season: s })} onMissions={() => setMissionsModal({ open: true, season: s })} onOpen={() => setDetailSeason(s)} />)}
             </div>
-            
-            {editorModal.open && <SeasonEditorModal season={editorModal.season} onClose={() => setEditorModal({open: false, season: null})} />}
-            {missionsModal.open && missionsModal.season && <MissionEditorModal season={missionsModal.season} onClose={() => setMissionsModal({open: false, season: null})} />}
+
+            {editorModal.open && <SeasonEditorModal season={editorModal.season} onClose={() => setEditorModal({ open: false, season: null })} />}
+            {missionsModal.open && missionsModal.season && <MissionEditorModal season={missionsModal.season} onClose={() => setMissionsModal({ open: false, season: null })} />}
             {detailSeason && <SeasonDetailModal season={detailSeason} onClose={() => setDetailSeason(null)} />}
         </div>
     );
@@ -227,10 +285,12 @@ export const SovereignPanelView: React.FC = () => {
     return (
         <div className="space-y-8 animate-fade-in">
             <h1 className="text-xl font-black text-center uppercase tracking-widest text-white luxe-title-shadow">Painel do Soberano</h1>
-            
+
             <InviteManager />
-            
+
             <SeasonManager />
+
+            <FeedbackViewer />
         </div>
     );
 };

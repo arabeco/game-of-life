@@ -2161,14 +2161,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     }, [setClan, setEnrichedClanMembers, fetchClanQuestProgress, session?.user.id, userProfile.id, loadClanJoinRequestsIncoming]);
 
-    const migrateGuestDataToSupabase = useCallback(async (userId: string) => {
+    const migrateGuestDataToSupabase = useCallback(async (userId: string, sessionMetadata?: { email: string, nickname: string, avatarUrl: string }) => {
         if (!isUuid(userId)) {
             console.error("Invalid userId for migration to Supabase");
             return;
         }
 
         const errors: string[] = [];
-        const syncedProfile = await SupabaseService.syncUserProfile({ ...userProfile, id: userId, isOnline: true });
+        const baseProfile = { ...userProfile, id: userId, isOnline: true };
+
+        // Ensure session metadata is used if provided ( crucial for brand new social logins)
+        if (sessionMetadata) {
+            baseProfile.email = sessionMetadata.email || baseProfile.email;
+            baseProfile.nickname = sessionMetadata.nickname || baseProfile.nickname;
+            baseProfile.avatarUrl = sessionMetadata.avatarUrl || baseProfile.avatarUrl;
+        }
+
+        const syncedProfile = await SupabaseService.syncUserProfile(baseProfile);
         if (!syncedProfile) errors.push('profile');
 
         if (arenaFolders.length > 0) {
@@ -2329,8 +2338,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ];
                 const hasExistingData = counts.some(count => typeof count === 'number' && count > 0);
 
+                const sessionUser = session?.user;
                 if (hasExistingData) {
-                    const sessionUser = session?.user;
                     const newProfile = {
                         ...DEFAULT_USER_PROFILE,
                         id: userId,
@@ -2343,7 +2352,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     setUserProfile(newProfile);
                 } else {
                     // Use the ref to access the latest version of migrateGuestDataToSupabase without triggering effect
-                    await migrateGuestDataToSupabaseRef.current(userId);
+                    const metadata = {
+                        email: sessionUser?.email || '',
+                        nickname: sessionUser?.user_metadata?.full_name || sessionUser?.user_metadata?.name || DEFAULT_USER_PROFILE.nickname,
+                        avatarUrl: sessionUser?.user_metadata?.avatar_url || DEFAULT_USER_PROFILE.avatarUrl
+                    };
+                    await migrateGuestDataToSupabaseRef.current(userId, metadata);
                 }
             }
 

@@ -18,7 +18,7 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     const rank = nobilityRanks.find(r => r.id === member.nobility.rankId);
     const isSelf = member.id === userProfile.id;
-    
+
     const timeSince = (date: string) => {
         const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
         const days = Math.floor(seconds / 86400);
@@ -38,21 +38,21 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
                     {isSelf && <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] bg-[var(--gold)]/10 px-2 py-0.5 rounded-full flex-shrink-0">Você</span>}
                     {member.role === 'leader' && (
                         <span className="flex items-center space-x-1 text-[10px] font-bold uppercase tracking-wider text-yellow-300 bg-yellow-400/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                            {isOfficeClan || isBasicMode ? null : <CrownIcon className="w-3 h-3" />}
-                            <span>{isOfficeClan || isBasicMode ? 'Diretor' : 'Líder'}</span>
+                            {isOfficeClan ? null : <CrownIcon className="w-3 h-3" />}
+                            <span>{isOfficeClan ? 'Diretor' : 'Líder'}</span>
                         </span>
                     )}
                 </div>
-                <p className="text-xs text-gray-400 truncate">{isOfficeClan || isBasicMode ? 'Na equipe' : 'Membro'} há {timeSince(member.joined_at)}</p>
+                <p className="text-xs text-gray-400 truncate">{isOfficeClan ? 'Na equipe' : 'Membro'} há {timeSince(member.joined_at)}</p>
             </div>
-             {isLeaderView && member.role !== 'leader' && onKick && (
+            {isLeaderView && member.role !== 'leader' && onKick && (
                 <button onClick={() => onKick(member)} className="p-1 text-red-500 hover:text-red-400">
                     <XIcon className="w-5 h-5" />
                 </button>
             )}
             <div className="text-right flex-shrink-0">
                 <p className="font-bold text-sm text-[var(--gold)]">{rank?.name || 'N/A'}</p>
-                 <p className="text-xs text-gray-500">{isOfficeClan || isBasicMode ? 'Cargo' : 'Patente'}</p>
+                <p className="text-xs text-gray-500">{isOfficeClan ? 'Cargo' : 'Patente'}</p>
             </div>
         </div>
     );

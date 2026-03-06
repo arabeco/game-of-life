@@ -149,6 +149,7 @@ export type ArenaSetupChange = {
 const getTodayString = () => getLocalDateString();
 const SITREP_BONUS_A = 60;
 const SITREP_BONUS_S = 120;
+const MAX_VILLAGE_BONUS_PERCENT = 0.10; // 10% max bonus from Sanctuary Order
 
 const createDefaultDailyCommitment = (): DailyCommitment => ({
     date: getTodayString(),
@@ -366,6 +367,8 @@ export interface GameContextType {
     getAldeiaPresence: (clanId: string) => Promise<AldeiaPresence[]>;
     enterAldeiaSlot: (clanId: string, slotId: AldeiaSlotId) => Promise<void>;
     performAldeiaDailyUpdate: (clanId: string) => Promise<void>;
+    setAldeiaSlots: React.Dispatch<React.SetStateAction<AldeiaSlot[]>>;
+    setAldeiaPresence: React.Dispatch<React.SetStateAction<AldeiaPresence[]>>;
 
     showToast: (message: string) => void;
     toast: { message: string; visible: boolean; style?: React.CSSProperties };
@@ -406,6 +409,9 @@ export interface GameContextType {
     getOrCreateOfficeArena: () => Promise<Arena | null>;
     cleanupEmptyOfficeArena: (arenaId: string) => void;
     setArenaAsShared: (arenaId: string, isShared: boolean) => void;
+    aldeiaSlots: AldeiaSlot[];
+    aldeiaPresence: AldeiaPresence[];
+    loadAldeiaData: (clanId: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -446,6 +452,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const setArenasViewMode = async (mode: ArenasViewMode) => {
         setArenasViewModeState(mode);
         updateUserProfile({ arenasViewMode: mode });
+    };
+    const [aldeiaSlots, setAldeiaSlots] = useState<AldeiaSlot[]>([]);
+    const [aldeiaPresence, setAldeiaPresence] = useState<AldeiaPresence[]>([]);
+    const lastAldeiaUpdateRef = useRef<number>(0);
+
+    const loadAldeiaData = async (clanId: string) => {
+        if (!clanId) return;
+
+        // Anti-flicker: if we just updated, don't refetch immediately
+        if (Date.now() - lastAldeiaUpdateRef.current < 2000) return;
+
+        const [slots, presence] = await Promise.all([
+            getAldeiaSlots(clanId),
+            getAldeiaPresence(clanId)
+        ]);
+
+        // Deduplicate presence by userId (keep latest startedAt) to fix visual multiplication bug
+        const uniquePresence = Object.values(presence.reduce((acc, p) => {
+            const userId = p.userId;
+            const existing = acc[userId];
+            if (!existing || (p.startedAt && existing.startedAt && new Date(p.startedAt) > new Date(existing.startedAt))) {
+                acc[userId] = p;
+            } else if (!existing.startedAt && p.startedAt) {
+                acc[userId] = p;
+            }
+            return acc;
+        }, {} as Record<string, AldeiaPresence>));
+
+        setAldeiaSlots(slots);
+        setAldeiaPresence(uniquePresence);
     };
 
     useEffect(() => {
@@ -2023,6 +2059,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
+        // Fetch member count to scale decay
+        const { count: memberCount } = await supabase.from('clan_members').select('*', { count: 'exact', head: true }).eq('clan_id', clanId);
+        const members = memberCount || 1;
+
+        // Fetch all presence for the clan to calculate stays
+        const { data: presenceData } = await supabase.from('clan_aldeia_presence').select('*').eq('clan_id', clanId);
+        const presences = presenceData ? (mapToCamelCase(presenceData) as AldeiaPresence[]) : [];
+
+        // Calculate total clan energy for Resonance (25% of all stay minutes)
+        let totalClanMinutes = 0;
+        const now = new Date();
+        presences.forEach(p => {
+            const startedAt = new Date(p.startedAt).getTime();
+            const elapsedMinutes = Math.floor((now.getTime() - startedAt) / 60000);
+            totalClanMinutes += Math.max(0, Math.min(30, elapsedMinutes));
+        });
+        const villageResonanceBonus = (totalClanMinutes * 0.25) / 6; // 25% split across 6 slots
+
         for (const slot of slots) {
             // If already updated today, skip
             if (slot.lastDecayCalculation === today) continue;
@@ -2035,44 +2089,56 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 continue;
             }
 
-            // Calculate days passed since last visited
-            const lastVisit = slot.lastVisitedAt ? new Date(slot.lastVisitedAt) : null;
-            let daysSinceVisit = 100; // Default large number if never visited
-            if (lastVisit) {
-                const now = new Date();
-                const diffTime = Math.abs(now.getTime() - lastVisit.getTime());
-                daysSinceVisit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            // CASUAL CLAN: Refined Session-based growth
+            const slotPresences = presences.filter(p => p.slotId === slot.slotId);
+            let slotGain = 0;
+
+            // First member to complete 30 mins gives +15. Others give +5.
+            // We sort by elapsed time to find who "did 30 mins" first or most.
+            const participantsByTime = slotPresences.map(p => {
+                const startedAt = new Date(p.startedAt).getTime();
+                return Math.floor((now.getTime() - startedAt) / 60000);
+            }).filter(minutes => minutes >= 30);
+
+            if (participantsByTime.length > 0) {
+                slotGain = 15 + (participantsByTime.length - 1) * 5;
+            } else if (slotPresences.length > 0) {
+                // If no one hit 30m, but they stayed, give partial first-member bonus
+                const maxStay = Math.max(...slotPresences.map(p => {
+                    const startedAt = new Date(p.startedAt).getTime();
+                    return Math.min(30, Math.floor((now.getTime() - startedAt) / 60000));
+                }));
+                slotGain = (maxStay / 30) * 15;
             }
 
-            // Apply logic
-            // FORMULA:
-            // Gain: If visited within 24h (daysSinceVisit === 0) -> +2 + (streak * 0.5) (Max 10)
-            // Decay: If not visited (daysSinceVisit > 0) -> -2 - (streak * 0.8) (Max 15)
+            // Add resonance from the rest of the village
+            slotGain += villageResonanceBonus;
+
+            // Scaled Decay: 5 base + 0.5 per member
+            const dailyDecay = 5 + (members * 0.5);
+            const netChange = slotGain - dailyDecay;
+
             let newHealth = slot.health;
             let newStreakGood = slot.streakGood;
             let newStreakBad = slot.streakBad;
 
-            // If visited today (0 days ago), it's a gain.
-            if (daysSinceVisit === 0) {
+            if (netChange > 0) {
                 newStreakGood += 1;
                 newStreakBad = 0;
-                const gain = Math.min(2 + (newStreakGood * 0.5), 10);
-                newHealth = Math.min(newHealth + gain, 100);
-            } else {
-                // Missed days - Decay
-                newStreakBad += 1; // Increment bad streak
+            } else if (netChange < 1) { // Slighly more forgiving
+                newStreakBad += 1;
                 newStreakGood = 0;
-
-                const loss = Math.min(2 + (newStreakBad * 0.8), 15);
-                newHealth = Math.max(newHealth - loss, 0);
             }
+
+            newHealth = Math.min(100, Math.max(0, newHealth + netChange));
 
             // Update DB
             await updateAldeiaSlot(clanId, slot.slotId, {
-                health: newHealth,
+                health: Math.round(newHealth),
                 streakGood: newStreakGood,
                 streakBad: newStreakBad,
-                lastDecayCalculation: today
+                lastDecayCalculation: today,
+                lastVisitedAt: slotPresences.length > 0 ? new Date().toISOString() : slot.lastVisitedAt
             });
         }
     };
@@ -3274,6 +3340,57 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         checkDailyReset();
         const intervalId = window.setInterval(checkDailyReset, 60000);
+
+        // [NEW] Retroactive EXP Safeguard (Phase 4)
+        const checkRetroactiveExp = async () => {
+            const userId = getSupabaseUserId();
+            if (!userId) return;
+
+            const today = getTodayString();
+            const { data: pendingDays, error } = await supabase
+                .from('daily_commitments')
+                .select('*')
+                .lt('date', today)
+                .neq('stage', 'judgment'); // Not yet closed
+
+            if (pendingDays && pendingDays.length > 0) {
+                console.log(`[RETROACTIVE] Found ${pendingDays.length} unclosed days. Processing...`);
+                // For each unclosed day, we'll try to find its tasks and close it
+                for (const day of pendingDays) {
+                    const { data: dayTasks } = await supabase
+                        .from('scheduled_tasks')
+                        .select('duration, completed, action_id')
+                        .eq('user_id', userId)
+                        .eq('date', day.date);
+
+                    if (dayTasks && dayTasks.length > 0) {
+                        const completedTasks = dayTasks.filter(t => t.completed);
+                        if (completedTasks.length > 0) {
+                            // Calculate EXP similar to endDailyBattle
+                            const baseExp = completedTasks.reduce((acc, t) => acc + (t.duration || 0), 0);
+                            const score = Math.round((completedTasks.length / dayTasks.length) * 100);
+                            const bonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
+                            const totalRetroExp = baseExp + bonus;
+
+                            if (totalRetroExp > 0) {
+                                // Deposit into Active Cycle or Profile
+                                applyExp(totalRetroExp);
+                                showToast(`EXP de ${day.date} recuperada: +${totalRetroExp}!`, 'success');
+                            }
+                        }
+                    }
+
+                    // Mark day as closed to avoid duplicate processing
+                    await supabase
+                        .from('daily_commitments')
+                        .update({ stage: 'judgment', score: 0, exp_deposited: 0 })
+                        .eq('user_id', userId)
+                        .eq('date', day.date);
+                }
+            }
+        };
+        checkRetroactiveExp();
+
         return () => window.clearInterval(intervalId);
     }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
 
@@ -3299,7 +3416,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return sum + duration;
         }, 0);
         const sitrepBonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
-        const expDeposited = expDepositBase + sitrepBonus;
+
+        // [NEW] Village Order Bonus (Nerfed to 10% max)
+        const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
+        const villageOrder = mainSlots.length > 0 ? (mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length) : 0;
+        const villageBonusFactor = (villageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
+        const villageBonusExp = Math.round((expDepositBase + sitrepBonus) * villageBonusFactor);
+
+        const expDeposited = expDepositBase + sitrepBonus + villageBonusExp;
+
+        if (villageBonusExp > 0) {
+            showToast(`Bônus de Ordem da Aldeia: +${villageBonusExp} EXP!`, 'success');
+        }
 
         setAchievementUnlocked({
             type: 'REPORT_COMPLETED',
@@ -7160,7 +7288,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, updateTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex,
-            getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared
+            getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
+            aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>
             {children}
         </GameContext.Provider>

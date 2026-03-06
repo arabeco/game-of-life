@@ -5,7 +5,7 @@
 
 # Configuração da Versão
 VERSION="1.001"
-DEFAULT_SUFFIX="b"
+DEFAULT_SUFFIX="h"
 
 # Argumentos
 MSG=$1

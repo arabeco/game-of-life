@@ -990,6 +990,7 @@ const NobrezaHierarchyView: React.FC = () => {
 
 const GeralTab: React.FC = () => {
     const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall, appMode, setAppMode, activeTheme, toggleTheme } = useGame();
+    const { isTutorialActive, currentStep } = useTutorial();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1047,8 +1048,14 @@ const GeralTab: React.FC = () => {
             setShowMastery(true);
         };
         window.addEventListener('tutorialOpenMasteryQuiz', handleOpenMastery);
+
+        // Robustness: If we just mounted and we are already at step 11, open it
+        if (isTutorialActive && currentStep === 11) {
+            setShowMastery(true);
+        }
+
         return () => window.removeEventListener('tutorialOpenMasteryQuiz', handleOpenMastery);
-    }, [cycleEndDate, cycleName]);
+    }, [cycleEndDate, cycleName, isTutorialActive, currentStep]);
 
     if (isHierarchyVisible) return (<div><button onClick={() => setIsHierarchyVisible(false)} className="mb-4 text-sm font-bold text-gray-400 hover:text-white">&larr; Voltar</button><NobrezaHierarchyView /></div>);
 

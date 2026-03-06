@@ -77,7 +77,7 @@ const UnifiedSovereignDisplay: React.FC<{
         >
             {/* Background Gradient/Texture */}
             <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black z-0 opacity-80" />
-            <div className="absolute inset-0 opacity-20 bg-[url('/assets/noise.png')] z-0 mix-blend-overlay" />
+
 
             {/* Content */}
             <div className="relative z-10 w-full h-full flex items-center justify-center">

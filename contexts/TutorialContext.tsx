@@ -31,7 +31,7 @@ interface TutorialContextType {
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { userProfile, completeTutorialMission, appMode, setAppMode, addProfileFlag } = useGame();
+    const { userProfile, completeTutorialMission, appMode, setAppMode, addProfileFlag, updateUserProfile } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [didForceGameMode, setDidForceGameMode] = useState(false);
@@ -85,9 +85,10 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             } else {
                 // Original full tutorial completion
                 completeTutorialMission();
+                updateUserProfile({ tutorialCompletedAt: Date.now() });
             }
         }
-    }, [completeTutorialMission, activeLevel, addProfileFlag, originalMode, setAppMode, didForceGameMode, startedFromSettings]);
+    }, [completeTutorialMission, activeLevel, addProfileFlag, originalMode, setAppMode, didForceGameMode, startedFromSettings, updateUserProfile]);
 
     const startTutorial = useCallback((startIndex: number | null = null, levelIndicator: number | null = null, fromSettings: boolean = false) => {
         const index = startIndex !== null ? startIndex : 0;

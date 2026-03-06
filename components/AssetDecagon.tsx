@@ -19,22 +19,22 @@ const CustomDot = (props: any) => {
 
     return (
         <g>
-            <circle 
-                cx={cx} 
-                cy={cy} 
-                r={7} 
-                fill="#000" 
-                stroke={goldMetallic} 
-                strokeWidth={1} 
+            <circle
+                cx={cx}
+                cy={cy}
+                r={7}
+                fill="#000"
+                stroke={goldMetallic}
+                strokeWidth={1}
                 className="drop-shadow-[0_0_3px_rgba(112,94,67,0.4)]"
             />
-            <text 
-                x={cx} 
-                y={cy} 
-                dy={3} 
-                textAnchor="middle" 
-                fill={goldBright} 
-                fontSize="7px" 
+            <text
+                x={cx}
+                y={cy}
+                dy={3}
+                textAnchor="middle"
+                fill={goldBright}
+                fontSize="7px"
                 fontWeight="900"
                 className="pointer-events-none"
             >
@@ -44,15 +44,15 @@ const CustomDot = (props: any) => {
     );
 };
 
-export const AssetDecagon: React.FC<AssetDecagonProps> = ({ 
-    assets, 
-    tempLevels, 
+export const AssetDecagon: React.FC<AssetDecagonProps> = ({
+    assets,
+    tempLevels,
     size = 280,
-    showCentralLevel = true 
+    showCentralLevel = true
 }) => {
     // Filter out 'geral' and map to data format
     const filteredAssets = assets.filter(a => a.id !== 'geral');
-    
+
     const radarData = filteredAssets.map(asset => {
         const level = tempLevels ? (tempLevels[asset.id] || 1) : asset.level;
         return {
@@ -63,7 +63,7 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
         };
     });
 
-    const totalLevel = tempLevels 
+    const totalLevel = tempLevels
         ? Object.entries(tempLevels)
             .filter(([id]) => id !== 'geral')
             .reduce((sum: number, [, level]) => sum + (level as number), 0)
@@ -75,11 +75,11 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
 
     return (
         <div className="relative flex flex-col items-center justify-center w-full overflow-visible" style={{ height: size }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                     <PolarGrid stroke="rgba(255, 255, 255, 0.05)" />
-                    <PolarAngleAxis 
-                        dataKey="displayName" 
+                    <PolarAngleAxis
+                        dataKey="displayName"
                         tick={(props) => {
                             const { x, y, payload, textAnchor, index } = props;
                             // Custom labels to avoid truncation and improve spacing
@@ -87,7 +87,7 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
                             if (label === 'TRABALHO/ESTUDOS') label = 'TRABALHO';
                             if (label === 'ESPAÇO MENTAL') label = 'MENTAL';
                             if (label === 'ESPIRITUALIDADE') label = 'ESPIRIT.';
-                            
+
                             return (
                                 <g transform={`translate(${x},${y})`}>
                                     <text
@@ -106,11 +106,11 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
                             );
                         }}
                     />
-                    <PolarRadiusAxis 
-                        angle={30} 
-                        domain={[0, 10]} 
-                        tick={false} 
-                        axisLine={false} 
+                    <PolarRadiusAxis
+                        angle={30}
+                        domain={[0, 10]}
+                        tick={false}
+                        axisLine={false}
                     />
                     <Radar
                         name="Nível"
@@ -123,11 +123,11 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
                     />
                 </RadarChart>
             </ResponsiveContainer>
-            
+
             {showCentralLevel && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-[6px] uppercase tracking-[0.5em] text-white/10 font-black mb-[-2px] translate-y-[-14px]">TOTAL</span>
-                    <span 
+                    <span
                         className="text-2xl font-black drop-shadow-[0_0_8px_rgba(197,160,33,0.4)]"
                         style={{ color: goldBright }}
                     >

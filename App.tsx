@@ -15,7 +15,8 @@ import { CodexBuilderProvider, useCodexBuilder } from './contexts/CodexBuilderCo
 import { TutorialProvider, useTutorial } from './contexts/TutorialContext';
 import { OracleTutorialOverlay } from './components/OracleTutorialOverlay';
 import { ModeSelectionOverlay } from './components/ModeSelectionOverlay';
-import { TutorialHub } from './components/TutorialHub';
+// Removed TutorialHub import
+
 import { TUTORIAL_STEPS } from './constants/tutorialSteps';
 import { View as TutorialView } from './types';
 import { TutorialOverlay } from './components/TutorialOverlay';
@@ -606,7 +607,7 @@ const AppWithTutorial: React.FC = () => {
             data-skin={activeUIMode === 'BASIC' ? 'default' : userProfile.skin}
         >
             <OracleTutorialOverlay />
-            <TutorialHub isOpen={isHubOpen} onClose={() => setIsHubOpen(false)} />
+
             {isBuilderMode && (
                 <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/15 backdrop-blur-lg border-b border-yellow-500/40">
                     <div className="max-w-[420px] mx-auto px-4 h-11 flex items-center gap-2">

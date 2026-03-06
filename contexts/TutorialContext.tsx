@@ -16,8 +16,6 @@ interface TutorialContextType {
     spotlightTarget: DOMRect | null;
     tooltipContent: TooltipContent | null;
     tutorialSteps: TutorialStep[];
-    isHubOpen: boolean;
-    setIsHubOpen: (open: boolean) => void;
     didForceGameMode: boolean;
     originalMode: 'BASIC' | 'GAME' | null;
     startedFromSettings: boolean;
@@ -38,7 +36,6 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [currentStep, setCurrentStep] = useState(0);
     const [didForceGameMode, setDidForceGameMode] = useState(false);
     const [originalMode, setOriginalMode] = useState<'BASIC' | 'GAME' | null>(null);
-    const [isHubOpen, setIsHubOpen] = useState(false);
     const [activeLevel, setActiveLevel] = useState<number | null>(null);
     const [startedFromSettings, setStartedFromSettings] = useState(false);
 
@@ -85,22 +82,9 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (finishedLevel !== null) {
                 // Mark specific level as completed
                 addProfileFlag(`tutorial_level_${finishedLevel}_completed`);
-                if (startedFromSettings) {
-                    setIsHubOpen(false);
-                    setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { view: 'settings' } }));
-                        setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('tutorialSettingsReturn'));
-                        }, 100);
-                    }, 100);
-                }
             } else {
                 // Original full tutorial completion
                 completeTutorialMission();
-                // If it was the full tutorial, maybe we don't open the HUB automatically
-                if (!startedFromSettings) {
-                    setIsHubOpen(false);
-                }
             }
         }
     }, [completeTutorialMission, activeLevel, addProfileFlag, originalMode, setAppMode, didForceGameMode, startedFromSettings]);
@@ -117,7 +101,6 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         console.log(`Tutorial Engine: Jump to Index ${index} (Target: ${TUTORIAL_STEPS[index]?.title})`);
         setCurrentStep(index);
         setIsTutorialActive(true);
-        setIsHubOpen(false);
     }, [appMode]);
 
     // Real mode switching based on current step
@@ -157,9 +140,6 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             console.log(`Tutorial Engine: End of station reached (${currentCategory}).`);
             // Every end of station represents a completed section
             endTutorial(true);
-            if (!startedFromSettings) {
-                setIsHubOpen(true);
-            }
         } else {
             setCurrentStep(nextIdx);
         }
@@ -196,8 +176,6 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             spotlightTarget: null,
             tooltipContent: null,
             tutorialSteps,
-            isHubOpen,
-            setIsHubOpen,
             didForceGameMode,
             originalMode,
             startedFromSettings,

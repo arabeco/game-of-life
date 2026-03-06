@@ -32,6 +32,6 @@ Você pode usar o script `push.sh` criado na raiz:
 ## Push Atual (Copie e cole no terminal)
 ```bash
 git add .
-git commit -m "Glyph1.001i - [x] Implementação do Pacto de Soberania (Oracle Style) + Integração em Configurações"
+git commit -m "Glyph1.001j - [x] Implementação de Esqueci Senha + ResetPasswordOverlay (Oráculo Style)"
 git push
 ```

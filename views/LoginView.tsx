@@ -496,6 +496,27 @@ export const LoginView: React.FC = () => {
         setIsSigningUp(!isSigningUp);
     };
 
+    const handleResetPassword = async () => {
+        if (!email) {
+            setError('Digite seu email para recuperar a senha.');
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        setMessage(null);
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            });
+            if (error) throw error;
+            setMessage('Email de recuperação enviado! Verifique sua caixa de entrada.');
+        } catch (err: any) {
+            setError(err.message || 'Erro ao enviar email de recuperação.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black animate-fade-in">
             <div className="w-full max-w-sm mx-auto text-center border border-[var(--skin-accent-color)]/50 rounded-2xl p-6 space-y-6 overflow-hidden bg-black/50 backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.6)]">
@@ -550,6 +571,16 @@ export const LoginView: React.FC = () => {
                                     <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 2 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
                                     <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 3 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
                                 </div>
+                            </div>
+                        )}
+                        {!isSigningUp && (
+                            <div className="flex justify-end px-1">
+                                <button
+                                    onClick={handleResetPassword}
+                                    className="text-[10px] font-bold text-white/40 hover:text-[var(--skin-accent-color)] transition-colors uppercase tracking-widest"
+                                >
+                                    Esqueci minha senha
+                                </button>
                             </div>
                         )}
                     </div>

@@ -825,10 +825,80 @@ const MainApp: React.FC = () => {
 
 import { SplashScreen } from './components/SplashScreen';
 
+const ResetPasswordOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const [newPassword, setNewPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
+
+    const handleReset = async () => {
+        if (newPassword.length < 6) {
+            setError('A senha deve ter pelo menos 6 caracteres.');
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) throw error;
+            setSuccess(true);
+            window.setTimeout(onClose, 2000);
+        } catch (err: any) {
+            setError(err.message || 'Erro ao redefinir senha.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Portal>
+            <div className="fixed inset-0 z-[30000] flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in">
+                <div className="w-full max-w-sm mx-auto p-6 space-y-6 border border-[var(--gold)]/30 rounded-2xl bg-black/40 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent opacity-50" />
+
+                    <div className="text-center space-y-2">
+                        <div className="w-16 h-16 rounded-full bg-black/60 border border-[var(--gold)]/50 mx-auto flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(184,134,11,0.2)]">
+                            <OracleIcon className="w-10 h-10 text-[var(--gold)] animate-pulse-slow" />
+                        </div>
+                        <h2 className="text-[var(--gold)] font-black tracking-[0.2em] uppercase text-sm">Redefinir Consciência</h2>
+                        <p className="text-gray-500 text-[10px] tracking-widest uppercase">Digite sua nova chave de acesso</p>
+                    </div>
+
+                    {success ? (
+                        <div className="py-8 text-center animate-fade-in">
+                            <div className="text-green-500 mb-2">✓</div>
+                            <p className="text-white font-bold text-xs tracking-widest uppercase">CONSCIÊNCIA RESTAURADA</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <input
+                                type="password"
+                                placeholder="Nova Senha"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl focus:outline-none focus:border-[var(--gold)] transition-colors text-white placeholder-gray-600 text-sm font-mono"
+                            />
+                            {error && <p className="text-red-500 text-[10px] text-center uppercase font-bold tracking-tight">{error}</p>}
+                            <button
+                                onClick={handleReset}
+                                disabled={loading}
+                                className="w-full py-3 rounded-xl bg-gradient-to-b from-[var(--gold)] to-[#8B6508] text-black font-black text-xs tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                            >
+                                {loading ? 'RESTAURANDO...' : 'ATUALIZAR CHAVE'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Portal>
+    );
+};
+
 const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [showBootRitual, setShowBootRitual] = useState(false);
+    const [showResetPassword, setShowResetPassword] = useState(false);
     // Inicia mostrando o splash sempre
     const [showSplash, setShowSplash] = useState(true);
 
@@ -858,6 +928,7 @@ const App: React.FC = () => {
         checkSession();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log("Auth Event:", event);
             // Handle refresh errors silently by clearing session
             if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_ERROR') {
                 setSession(null);
@@ -865,6 +936,9 @@ const App: React.FC = () => {
                     // Force logout on refresh error to clean local storage
                     supabase.auth.signOut();
                 }
+            } else if (event === 'PASSWORD_RECOVERY') {
+                setShowResetPassword(true);
+                setSession(session);
             } else {
                 setSession(session);
             }
@@ -926,9 +1000,10 @@ const App: React.FC = () => {
         <CodexBuilderProvider>
             <GameProvider session={session}>
                 <TutorialProvider>
-                    {renderContent()}
-                    <BootRitualOverlay open={showBootRitual} />
-                    {showSplash && !loading && <SplashScreen onComplete={handleSplashComplete} />}
+                    <div className="min-h-screen bg-black text-white relative overflow-hidden flex flex-col font-sans">
+                        {renderContent()}
+                        {showResetPassword && <ResetPasswordOverlay onClose={() => setShowResetPassword(false)} />}
+                    </div>
                 </TutorialProvider>
             </GameProvider>
         </CodexBuilderProvider>

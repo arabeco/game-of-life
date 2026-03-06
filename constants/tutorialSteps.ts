@@ -206,5 +206,12 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         view: 'social',
         tab: 'social',
         targetId: 'clans-section'
+    },
+    {
+        category: 'ARQUITETO',
+        title: "TUTORIAL CONCLUÍDO",
+        text: "Sua jornada de iniciação termina aqui, Soberano.\n\nSe precisar ver estes ensinamentos novamente, acesse as Preferências no menu de Configurações.",
+        view: 'assets',
+        targetId: 'header-oracle'
     }
 ];

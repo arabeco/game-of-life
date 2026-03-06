@@ -207,24 +207,8 @@ const OfflineOverlay: React.FC<{ open: boolean }> = ({ open }) => {
     );
 };
 
-const TutorialGateOverlay: React.FC<{ open: boolean; onStart: () => void; onSkip: () => void; }> = ({ open, onStart, onSkip }) => {
-    if (!open) return null;
+// Removed TutorialGateOverlay as requested - skipping straight to tutorial after mode selection
 
-    return (
-        <Portal>
-            <div className="fixed inset-0 bg-black/80 z-[9998] flex items-center justify-center p-4">
-                <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 space-y-4 max-w-sm text-center animate-fade-in">
-                    <h2 className="text-2xl font-bold text-white">Você já viu o tutorial?</h2>
-                    <p className="text-gray-300">Se já concluiu, seguimos direto. Se não, te guio pelos primeiros passos.</p>
-                    <div className="flex space-x-2">
-                        <button onClick={onSkip} className="w-full py-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all">Já vi</button>
-                        <button onClick={onStart} className="w-full py-2 rounded-lg luxe-skin-button">Quero ver</button>
-                    </div>
-                </div>
-            </div>
-        </Portal>
-    );
-};
 
 const BootRitualOverlay: React.FC<{ open: boolean }> = ({ open }) => {
     if (!open) return null;
@@ -723,12 +707,17 @@ const MainApp: React.FC = () => {
     const [tutorialShownInSession, setTutorialShownInSession] = useState(false);
 
     useEffect(() => {
-        if (userProfile.id === 'placeholder_user' || !isProfileLoaded) return;
-        if (!isTutorialCompleted && !isTutorialActive && !tutorialShownInSession) {
-            startTutorial();
+        if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms) return;
+
+        // Start tutorial ONLY if AppMode is already selected (sequencing: Terms -> Mode -> Tutorial)
+        const hasMode = userProfile.appMode === 'GAME' || userProfile.appMode === 'BASIC';
+
+        if (hasMode && !isTutorialCompleted && !isTutorialActive && !tutorialShownInSession) {
+            console.log('App: Starting tutorial directly after mode selection');
+            startTutorial(0); // Start from Intro (Step 0)
             setTutorialShownInSession(true);
         }
-    }, [userProfile.id, isProfileLoaded, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession]);
+    }, [userProfile.id, userProfile.appMode, isProfileLoaded, showTerms, isTutorialCompleted, isTutorialActive, startTutorial, tutorialShownInSession]);
 
     useEffect(() => {
         // Não mostrar termos para contas privilegiadas
@@ -779,7 +768,7 @@ const MainApp: React.FC = () => {
     return (
         <>
             <AppWithTutorial />
-            <ModeSelectionOverlay />
+            {!showTerms && <ModeSelectionOverlay />}
             <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
             <OfflineOverlay open={!isOnline} />
             {achievementUnlocked && (

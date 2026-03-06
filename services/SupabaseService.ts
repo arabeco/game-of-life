@@ -138,6 +138,7 @@ export class SupabaseService {
           id: profile.id,
           email: profile.email,
           nickname: profile.nickname,
+          app_mode: profile.appMode || 'GAME',
           sovereign: profile.sovereign,
           avatar_url: profile.avatarUrl,
           border: profile.border,
@@ -155,8 +156,6 @@ export class SupabaseService {
           mood: profile.mood,
           chests: profile.chests,
           wallet: profile.wallet,
-          inventory: profile.inventory,
-          role: profile.role,
           is_premium: profile.isPremium ?? false
         })
         .select()

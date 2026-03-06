@@ -2348,7 +2348,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         avatarUrl: sessionUser?.user_metadata?.avatar_url || DEFAULT_USER_PROFILE.avatarUrl,
                         isOnline: true
                     };
-                    await supabase.from('user_profiles').insert(mapToSnakeCase(newProfile));
+                    await supabase.from('user_profiles').insert(mapToSnakeCase(newProfile)).then(({ error }) => {
+                        if (error) console.error("Error creating initial profile:", error);
+                    });
                     setUserProfile(newProfile);
                 } else {
                     // Use the ref to access the latest version of migrateGuestDataToSupabase without triggering effect

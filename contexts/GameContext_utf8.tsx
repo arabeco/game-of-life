@@ -62,8 +62,8 @@ export const PROFILE_FLAG_TUTORIAL_COMPLETED = '__flag_tutorial_completed_v1';
 const TUTORIAL_ACTION: Action = {
     id: TUTORIAL_ACTION_ID,
     arenaId: 'arena_outros',
-    name: 'Missão: Concluir Tutorial de Iniciação',
-    icon: '🎓',
+    name: 'MissÃ£o: Concluir Tutorial de IniciaÃ§Ã£o',
+    icon: 'ð',
     duration: 15,
     repetitions: 1,
     actionType: 'Marco',
@@ -74,12 +74,12 @@ const isNewUserCheck = () => true;
 
 const CLAN_RANKS: ClanRank[] = [
     { id: 'feudo', name: 'Feudo', expRequired: 0 },
-    { id: 'bastiao', name: 'Bastião', expRequired: 10000 },
-    { id: 'provincia', name: 'Província', expRequired: 50000 },
+    { id: 'bastiao', name: 'BastiÃ£o', expRequired: 10000 },
+    { id: 'provincia', name: 'ProvÃ­ncia', expRequired: 50000 },
     { id: 'principado', name: 'Principado', expRequired: 150000 },
     { id: 'reino', name: 'Reino', expRequired: 400000 },
     { id: 'dinastia', name: 'Dinastia', expRequired: 1000000 },
-    { id: 'imperio', name: 'Império', expRequired: 2500000 },
+    { id: 'imperio', name: 'ImpÃ©rio', expRequired: 2500000 },
 ];
 
 
@@ -744,7 +744,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const percent = Math.round(villageBonusFactor * 100);
         if (percent <= 0) return;
 
-        showToast(`Dever Cumprido: Ordem da Aldeia ativa (+${percent}% de b�nus de EXP).`, 'success');
+        showToast(`Dever Cumprido: Ordem da Aldeia ativa (+${percent}% de bônus de EXP).`, 'success');
         localStorage.setItem(key, '1');
     };
 
@@ -754,7 +754,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const timeoutId = setTimeout(() => {
             if (!isComplete) {
-                showToast("Sincronizando operação com o servidor...", "info");
+                showToast("Sincronizando operaÃ§Ã£o com o servidor...", "info");
             }
         }, timeoutMs);
 
@@ -946,7 +946,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } else {
             if (hour >= 6 && hour < 12) category = 'frases_inspiradoras';
             else if (hour >= 12 && hour < 18) category = 'dicas_produtividade';
-            else if (hour >= 18 && hour < 22) category = 'reflexoes_filosoficas'; // Reflexão
+            else if (hour >= 18 && hour < 22) category = 'reflexoes_filosoficas'; // ReflexÃ£o
             else category = 'fragmentos_sabedoria'; // Madrugada
         }
 
@@ -962,9 +962,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 5. Build Context
-        let timeOfDay: "madrugada" | "manhã" | "tarde" | "noite" = "manhã";
+        let timeOfDay: "madrugada" | "manhÃ£" | "tarde" | "noite" = "manhÃ£";
         if (hour >= 0 && hour < 6) timeOfDay = "madrugada";
-        else if (hour >= 6 && hour < 12) timeOfDay = "manhã";
+        else if (hour >= 6 && hour < 12) timeOfDay = "manhÃ£";
         else if (hour >= 12 && hour < 18) timeOfDay = "tarde";
         else timeOfDay = "noite";
 
@@ -1003,23 +1003,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     selectedMode = 'coach'; // Coach cobra produtividade
                     break;
                 case 'frases_inspiradoras':
-                    selectedMode = 'calmo'; // Inspiração serena
+                    selectedMode = 'calmo'; // InspiraÃ§Ã£o serena
                     break;
                 case 'reflexoes_filosoficas':
                 case 'fragmentos_sabedoria':
-                    selectedMode = 'reflexivo'; // Filósofo reflete
+                    selectedMode = 'reflexivo'; // FilÃ³sofo reflete
                     break;
                 case 'rituais_lifestyle':
                     selectedMode = 'calmo'; // Lifestyle pede calma
                     break;
                 case 'provocacoes':
-                    selectedMode = 'tatico'; // Provocação direta
+                    selectedMode = 'tatico'; // ProvocaÃ§Ã£o direta
                     break;
                 case 'analise_padroes':
-                    selectedMode = 'estrategico'; // Análise pede estratégia
+                    selectedMode = 'estrategico'; // AnÃ¡lise pede estratÃ©gia
                     break;
                 case 'sussurros_maestria':
-                    selectedMode = 'neutro'; // Mistério
+                    selectedMode = 'neutro'; // MistÃ©rio
                     break;
                 default:
                     selectedMode = oraclePreferences.activeMode;
@@ -1029,7 +1029,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
         const systemPrompt = modeConfig.systemPromptTemplate(contextData);
 
-        const userPrompt = `Gere uma mensagem curta (máximo 3 frases) para o feed do usuário.
+        const userPrompt = `Gere uma mensagem curta (mÃ¡ximo 3 frases) para o feed do usuÃ¡rio.
       Categoria solicitada: ${category}
       Contexto atual: ${JSON.stringify(contextData)}
       `;
@@ -1125,7 +1125,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             // IDs definidos no LOJA.MD e items.ts
                         const starterItemIds = [
-                'item_skin_1_001', // N�ufrago
+                'item_skin_1_001', // Náufrago
                 'item_skin_1_002', // Casual
                 'cachos',          // Cabelo 1
                 'medio_reto',      // Cabelo 2
@@ -1134,7 +1134,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'item_artifact_1_001', // Adaga Aprendiz
                 'item_orb_1_002',  // Orbe de Cobre
                 'item_plate_1_001', // Placa Madeira
-                'BASIC'            // Tema B�sico
+                'BASIC'            // Tema Básico
             ];
 
             const starterItems = ITEMS_DB.filter(i => starterItemIds.includes(i.id));
@@ -1153,11 +1153,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     await addChest('Skin Comum');
 
                     // Set initial rank and exp if needed (Vagante Level 1)
-                    // O level do usuário é a soma dos níveis dos assets.
+                    // O level do usuÃ¡rio Ã© a soma dos nÃ­veis dos assets.
                     // Vamos garantir que o perfil comece com os dados corretos.
                     updateUserProfile({
                         nobility: { exp: 0, rankId: 'vagante' },
-                        level: 1 // Forçar nível 1 inicial
+                        level: 1 // ForÃ§ar nÃ­vel 1 inicial
                     });
 
                     const newItems = starterItems.map(i => ({
@@ -1225,13 +1225,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error buying gold pack:", error);
-            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
+            showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
             return;
         }
 
         if (data && data.success) {
             updateUserProfile({ wallet: { ...userProfile.wallet, gold: data.new_gold } });
-            showToast(`Crédito de ${pack.total} Ouro identificado.`, "success");
+            showToast(`CrÃ©dito de ${pack.total} Ouro identificado.`, "success");
         }
     };
 
@@ -1263,7 +1263,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if ((userProfile.wallet?.gold || 0) < cost) {
-            showToast("Saldo insuficiente para esta operação.", "error");
+            showToast("Saldo insuficiente para esta operaÃ§Ã£o.", "error");
             setTimeout(() => {
                 const mundoContainer = document.getElementById('social-container');
                 if (mundoContainer) {
@@ -1286,7 +1286,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error buying store item:", error);
-            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
+            showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
             return;
         }
 
@@ -1303,7 +1303,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             unlockPremiumPack();
         }
 
-        showToast(`Débito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
+        showToast(`DÃ©bito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
     };
 
     const recycleItem = async (instanceId: string) => {
@@ -1318,7 +1318,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error recycling:", error);
-            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
+            showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
             return;
         }
 
@@ -1327,7 +1327,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
             updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
 
-            showToast(`Item desconstruído. ${data.fragments_gained} Fragmentos adicionados ao inventário.`, "success");
+            showToast(`Item desconstruÃ­do. ${data.fragments_gained} Fragmentos adicionados ao inventÃ¡rio.`, "success");
         }
     };
 
@@ -1345,7 +1345,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error crafting:", error);
-            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
+            showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
             return null;
         }
 
@@ -1419,7 +1419,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 updateUserProfile({ border: 'default' });
             } else if (itemDef.category === 'ui_skin') {
                 updateUserProfile({ skin: 'GOLD' }); // Default skin
-                showToast('Configuração estética alterada. Novo ativo equipado.', 'success');
+                showToast('ConfiguraÃ§Ã£o estÃ©tica alterada. Novo ativo equipado.', 'success');
             } else if (itemDef.category === 'banner') {
                 updateUserProfile({ bannerUrl: '' });
             } else {
@@ -1443,7 +1443,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 updateUserProfile({ border: itemDef.id });
             } else if (itemDef.category === 'ui_skin') {
                 updateUserProfile({ skin: itemDef.id });
-                showToast(`Configuração estética alterada. Novo ativo equipado.`, 'success');
+                showToast(`ConfiguraÃ§Ã£o estÃ©tica alterada. Novo ativo equipado.`, 'success');
             } else if (itemDef.category === 'banner') {
                 updateUserProfile({ bannerUrl: itemDef.imageUrl || '' });
             } else {
@@ -1494,7 +1494,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setChecklistItems([...defaultChecklistItems]);
             setFeed([]);
             setActiveCycle(null);
-            // Sincronização inicial do Sitrep (Daily Commitment) - Será carregado via effect abaixo
+            // SincronizaÃ§Ã£o inicial do Sitrep (Daily Commitment) - SerÃ¡ carregado via effect abaixo
             setDailyCommitmentState(createDefaultDailyCommitment());
             setCycleExpBonus(0);
             setLevelUnlocks(buildDefaultLevelUnlocks());
@@ -1597,7 +1597,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!dbError && dbCount !== null) {
             setClanQuestParticipants(prev => ({ ...prev, [questId]: dbCount }));
 
-            // Verificar se o usuário atual está participando
+            // Verificar se o usuÃ¡rio atual estÃ¡ participando
             const userId = getSupabaseUserId();
             if (userId) {
                 const { data: myPart } = await supabase
@@ -1613,8 +1613,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        // Fallback para o método antigo (contar ações) se a tabela nova estiver vazia ou der erro
-        // Contar usuários que têm a ação correspondente
+        // Fallback para o mÃ©todo antigo (contar aÃ§Ãµes) se a tabela nova estiver vazia ou der erro
+        // Contar usuÃ¡rios que tÃªm a aÃ§Ã£o correspondente
         const { count, error } = await supabase
             .from('actions')
             .select('user_id', { count: 'exact', head: true })
@@ -1623,7 +1623,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (!error && count !== null) {
             setClanQuestParticipants(prev => ({ ...prev, [questId]: count }));
-            // No fallback, assumimos que se tem a ação, está participando (aproximação)
+            // No fallback, assumimos que se tem a aÃ§Ã£o, estÃ¡ participando (aproximaÃ§Ã£o)
             const hasAction = actions.some(a => a.name === actionName);
             setUserMissionParticipations(prev => ({ ...prev, [questId]: hasAction }));
         }
@@ -1671,7 +1671,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setClanQuestParticipants(prev => ({ ...prev, [questId]: (prev[questId] || 0) + 1 }));
         }
 
-        // Garantir que o progresso da missão existe (caso tenha sido deletado manualmente)
+        // Garantir que o progresso da missÃ£o existe (caso tenha sido deletado manualmente)
         const quest = SEASONS[ACTIVE_SEASON_ID]?.quests.find(q => q.id === questId);
         const targetValue = quest?.requirements?.clanGoal || 50;
 
@@ -1679,8 +1679,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             clan_id: clan.id,
             mission_id: questId,
             target_value: targetValue,
-            current_value: 0 // Começa com 0 se não existir
-        }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se já existir, NÃO sobrescreve (mantém o progresso atual)
+            current_value: 0 // ComeÃ§a com 0 se nÃ£o existir
+        }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se jÃ¡ existir, NÃO sobrescreve (mantÃ©m o progresso atual)
     };
 
     const leaveClanMission = async (questId: string) => {
@@ -1804,7 +1804,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 name: m.action_name || m.title,
                 description: m.description,
                 duration: 15,
-                icon: m.icon || '📜',
+                icon: m.icon || 'ð',
                 repetitions: m.goal_value || 1,
                 isMilestone: m.requirements?.milestone || false
             },
@@ -1891,7 +1891,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const mapped = mapToCamelCase(profilesData) as any[];
         return mapped.reduce((acc, profileData) => {
-            // Extrair informações do clã se existirem
+            // Extrair informaÃ§Ãµes do clÃ£ se existirem
             const clanInfo = profileData.clanMembers?.[0]?.clans;
 
             const profile = {
@@ -1916,7 +1916,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         try {
-            // Usar rate limiter para controlar número de requisições simultâneas
+            // Usar rate limiter para controlar nÃºmero de requisiÃ§Ãµes simultÃ¢neas
             const results = await rateLimiter.batchRequests([
                 () => supabase.from('friends').select('*').eq('user_id', userId),
                 () => supabase.from('friend_requests').select('*').eq('recipient_id', userId),
@@ -2449,7 +2449,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
 
         const loadDataFromSupabase = async () => {
-            // Verificar se o userId é válido antes de fazer queries
+            // Verificar se o userId Ã© vÃ¡lido antes de fazer queries
             if (!isUuid(userId)) {
                 console.error("Invalid userId for loading data from Supabase");
                 return;
@@ -2791,17 +2791,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         .eq('cycle_id', cycle.id); // Melhor usar cycle_id do que data, mais seguro
 
                     if (sitreps) {
-                        // Recalcula o score de fidelidade baseado em % de ações completas vs totais
-                        // O usuário pediu: "renomear pra progresso e mostrar as ações completas/ ações totais"
+                        // Recalcula o score de fidelidade baseado em % de aÃ§Ãµes completas vs totais
+                        // O usuÃ¡rio pediu: "renomear pra progresso e mostrar as aÃ§Ãµes completas/ aÃ§Ãµes totais"
                         const totalCompleted = sitreps.reduce((acc, r) => acc + (r.completed_tasks_count || 0), 0);
                         const totalTasks = sitreps.reduce((acc, r) => acc + (r.total_tasks_count || 0), 0);
 
-                        // Progresso é a média ponderada de execução (ações completas / ações totais)
+                        // Progresso Ã© a mÃ©dia ponderada de execuÃ§Ã£o (aÃ§Ãµes completas / aÃ§Ãµes totais)
                         const progress = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
                         setCycleProgress(progress); // Set the calculated progress in state
 
                         // --- AUTO FINISH CYCLE CHECK ---
-                        // Se a data de término passou, finaliza automaticamente
+                        // Se a data de tÃ©rmino passou, finaliza automaticamente
                         const endDate = new Date(cycle.endDate);
                         const now = new Date();
                         if (now >= endDate && !cycle.isFinished) {
@@ -2811,9 +2811,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             }, 2000);
                         }
 
-                        // Vamos apenas calcular o bônus de EXP acumulado.
+                        // Vamos apenas calcular o bÃ´nus de EXP acumulado.
                         const totalExpBonus = sitreps.reduce((sum, r) => {
-                            // Lógica antiga de bônus por score diário
+                            // LÃ³gica antiga de bÃ´nus por score diÃ¡rio
                             const bonus = r.score >= 95 ? 120 : r.score >= 85 ? 60 : 0;
                             return sum + bonus;
                         }, 0);
@@ -2838,10 +2838,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // EXPOSE MANUAL CLEANUP FUNCTION TO WINDOW
         (window as any).cleanOrphans = async () => {
-            console.log("🧹 Iniciando limpeza manual de tarefas órfãs...");
+            console.log("ð§¹ Iniciando limpeza manual de tarefas Ã³rfÃ£s...");
             const uid = session?.user.id;
             if (!uid) {
-                console.error("❌ Usuário não autenticado.");
+                console.error("â UsuÃ¡rio nÃ£o autenticado.");
                 return;
             }
 
@@ -2851,12 +2851,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { data: allArenas, error: arErr } = await supabase.from('arenas').select('id').eq('user_id', uid);
 
             if (tErr || aErr || arErr) {
-                console.error("❌ Erro ao buscar dados para limpeza:", tErr, aErr, arErr);
+                console.error("â Erro ao buscar dados para limpeza:", tErr, aErr, arErr);
                 return;
             }
 
             if (!allTasks || !allActions || !allArenas) {
-                console.log("⚠️ Dados insuficientes para limpeza.");
+                console.log("â ï¸ Dados insuficientes para limpeza.");
                 return;
             }
 
@@ -2869,14 +2869,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             allTasks.forEach(task => {
                 // Check 0: Action ID is missing?
                 if (!task.action_id) {
-                    console.log(`🗑️ Tarefa ${task.id} -> Action ID nulo/vazio.`);
+                    console.log(`ðï¸ Tarefa ${task.id} -> Action ID nulo/vazio.`);
                     tasksToDelete.push(task.id);
                     return;
                 }
 
                 // Check 1: Action exists?
                 if (!validActionIds.has(task.action_id)) {
-                    console.log(`🗑️ Tarefa ${task.id} (Action ${task.action_id}) -> Ação não existe.`);
+                    console.log(`ðï¸ Tarefa ${task.id} (Action ${task.action_id}) -> AÃ§Ã£o nÃ£o existe.`);
                     tasksToDelete.push(task.id);
                     return;
                 }
@@ -2884,13 +2884,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 // Check 2: Arena exists?
                 const arenaId = actionArenaMap.get(task.action_id);
                 if (arenaId && !validArenaIds.has(arenaId)) {
-                    console.log(`🗑️ Tarefa ${task.id} (Arena ${arenaId}) -> Arena não existe.`);
+                    console.log(`ðï¸ Tarefa ${task.id} (Arena ${arenaId}) -> Arena nÃ£o existe.`);
                     tasksToDelete.push(task.id);
                     return;
                 }
             });
 
-            console.log(`🔍 Encontradas ${tasksToDelete.length} tarefas órfãs para deletar.`);
+            console.log(`ð Encontradas ${tasksToDelete.length} tarefas Ã³rfÃ£s para deletar.`);
 
             if (tasksToDelete.length > 0) {
                 // Delete in batches of 100 to be safe
@@ -2898,24 +2898,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     const batch = tasksToDelete.slice(i, i + 100);
                     const { error } = await supabase.from('scheduled_tasks').delete().in('id', batch);
                     if (error) {
-                        console.error("❌ Erro ao deletar lote:", error);
+                        console.error("â Erro ao deletar lote:", error);
                     } else {
-                        console.log(`✅ Lote ${i / 100 + 1} deletado com sucesso.`);
+                        console.log(`â Lote ${i / 100 + 1} deletado com sucesso.`);
                     }
                 }
 
                 // Refresh local state
                 setTasks(prev => prev.filter(t => !tasksToDelete.includes(t.id)));
-                console.log("✨ Limpeza concluída e estado atualizado!");
-                alert(`Limpeza concluída! ${tasksToDelete.length} tarefas órfãs removidas.`);
+                console.log("â¨ Limpeza concluÃ­da e estado atualizado!");
+                alert(`Limpeza concluÃ­da! ${tasksToDelete.length} tarefas Ã³rfÃ£s removidas.`);
 
                 // Optional reload to force sync
-                if (confirm("Deseja recarregar a página para garantir que todas as mudanças sejam aplicadas?")) {
+                if (confirm("Deseja recarregar a pÃ¡gina para garantir que todas as mudanÃ§as sejam aplicadas?")) {
                     window.location.reload();
                 }
             } else {
-                console.log("✨ Nenhuma tarefa órfã encontrada.");
-                alert("Nenhuma tarefa órfã encontrada no banco de dados. Se você ainda vê tarefas quebradas, elas podem ser fantasmas locais. Tente recarregar a página.");
+                console.log("â¨ Nenhuma tarefa Ã³rfÃ£ encontrada.");
+                alert("Nenhuma tarefa Ã³rfÃ£ encontrada no banco de dados. Se vocÃª ainda vÃª tarefas quebradas, elas podem ser fantasmas locais. Tente recarregar a pÃ¡gina.");
             }
         };
 
@@ -3121,7 +3121,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 asset_id: assetId,
                 name: level.title,
                 description: level.description,
-                icon: '📜', // Default Codex Icon
+                icon: 'ð', // Default Codex Icon
                 origin_codex_id: codex.id,
                 codex_level: level.level,
                 is_archived: false,
@@ -3139,7 +3139,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     arena_id: arenaId,
                     name: action.name,
                     description: action.description,
-                    icon: action.icon || '⚔️', // Default icon if missing
+                    icon: action.icon || 'âï¸', // Default icon if missing
                     duration: action.duration || 0,
                     repetitions: action.repetitions || 0,
                     action_type: action.actionType || 'check',
@@ -3211,7 +3211,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return false;
 
-        // Lógica especial para o Baú de Skin Comum (Exclusivo para Skins)
+        // LÃ³gica especial para o BaÃº de Skin Comum (Exclusivo para Skins)
         if (chestType === 'Skin Comum') {
             // Filtrar apenas skins
             const allSkins = ITEMS_DB.filter(i => i.category === 'skin' && !i.isGoldExclusive && !i.isSeasonExclusive);
@@ -3235,14 +3235,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 p_item_id: selectedSkin.id
             });
 
-            // Se o RPC open_chest_specific não existir, vamos tentar o open_chest padrão 
-            // mas o ideal é que o backend suporte esse novo baú.
-            // Como não podemos mudar o backend, vamos usar a lógica local e atualizar o DB manualmente se necessário.
-            // Mas o sistema já tem recycle_item e craft_item que usam RPCs.
+            // Se o RPC open_chest_specific nÃ£o existir, vamos tentar o open_chest padrÃ£o 
+            // mas o ideal Ã© que o backend suporte esse novo baÃº.
+            // Como nÃ£o podemos mudar o backend, vamos usar a lÃ³gica local e atualizar o DB manualmente se necessÃ¡rio.
+            // Mas o sistema jÃ¡ tem recycle_item e craft_item que usam RPCs.
 
             if (error) {
                 console.error("Error opening Skin Chest:", error);
-                // Fallback: Tentar usar o open_chest normal se o específico falhar
+                // Fallback: Tentar usar o open_chest normal se o especÃ­fico falhar
                 const { data: fallbackData, error: fallbackError } = await supabase.rpc('open_chest', {
                     p_chest_type: 'Comum' // Fallback para comum se der erro no custom
                 });
@@ -3285,7 +3285,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
 
         // Show reward (item + fragments)
-        const rewardMsg = `✦ +${data.item_name} (Tier ${data.tier}) · +${data.fragments_gained} Fragmentos!`;
+        const rewardMsg = `â¦ +${data.item_name} (Tier ${data.tier}) Â· +${data.fragments_gained} Fragmentos!`;
         showToast(rewardMsg);
 
         // Update local state
@@ -3402,7 +3402,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (data) {
                 setDailyCommitmentState(mapToCamelCase(data) as DailyCommitment);
             } else {
-                // Se não existe para hoje, garante que está resetado
+                // Se nÃ£o existe para hoje, garante que estÃ¡ resetado
                 setDailyCommitmentState(createDefaultDailyCommitment());
             }
         };
@@ -3482,7 +3482,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const now = new Date();
         const todayString = getLocalDateString(now);
         if (dailyCommitment.date > todayString) {
-            showToast("Você não pode fechar o dia em datas futuras.", "error");
+            showToast("VocÃª nÃ£o pode fechar o dia em datas futuras.", "error");
             return;
         }
 
@@ -3509,13 +3509,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const expDeposited = expDepositBase + sitrepBonus + villageBonusExp;
 
         if (villageBonusExp > 0) {
-            showToast(`Bônus de Ordem da Aldeia: +${villageBonusExp} EXP!`, 'success');
+            showToast(`BÃ´nus de Ordem da Aldeia: +${villageBonusExp} EXP!`, 'success');
         }
 
         setAchievementUnlocked({
             type: 'REPORT_COMPLETED',
             data: {
-                title: `Relatório Diário - ${score}%`,
+                title: `RelatÃ³rio DiÃ¡rio - ${score}%`,
                 reward: {
                     exp: expDeposited
                 }
@@ -3570,7 +3570,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 return;
             }
 
-            // Usar Supabase para salvar posição, garantindo que user_id seja o do usuário logado
+            // Usar Supabase para salvar posiÃ§Ã£o, garantindo que user_id seja o do usuÃ¡rio logado
             const { error } = await supabase
                 .from('sanctuary_positions')
                 .upsert({
@@ -3595,7 +3595,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const getSanctuaryPositionsForClan = async (clanId: string): Promise<Record<string, { row: number; col: number; area: string; action: string; timestamp: string }>> => {
         try {
-            // Buscar posições do Supabase
+            // Buscar posiÃ§Ãµes do Supabase
             const { data, error } = await supabase
                 .from('sanctuary_positions')
                 .select('*')
@@ -3697,7 +3697,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
 
-    // Função para atualizar estatísticas do santuário baseada em tempo (Crescimento/Decaimento suave)
+    // FunÃ§Ã£o para atualizar estatÃ­sticas do santuÃ¡rio baseada em tempo (Crescimento/Decaimento suave)
     const applySanctuaryAreaDecay = async (clanId: string, occupancy: Record<string, number>, totalMembers: number = 1) => {
         try {
             const currentTime = new Date();
@@ -3705,17 +3705,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             // Constantes de Balanceamento (Baseado em 28800s = 100%)
             const MAX_POINTS = 28800;
-            // Ganho de 30% (8640s) por dia (86400s) -> mais rápido para incentivar
+            // Ganho de 30% (8640s) por dia (86400s) -> mais rÃ¡pido para incentivar
             const MAX_DAILY_GROWTH = MAX_POINTS * 0.30;
             const GROWTH_RATE_PER_SECOND = MAX_DAILY_GROWTH / 86400;
 
-            // Perda de 25% (7200s) por dia (86400s) -> decaimento visível
+            // Perda de 25% (7200s) por dia (86400s) -> decaimento visÃ­vel
             const DECAY_RATE_PER_SECOND = (MAX_POINTS * 0.25) / 86400;
 
-            // Intervalo mínimo de atualização reduzido para 10s para ser muito fluido
+            // Intervalo mÃ­nimo de atualizaÃ§Ã£o reduzido para 10s para ser muito fluido
             const MIN_UPDATE_INTERVAL = 10;
 
-            // OTIMIZAÇÃO: Buscar todos de uma vez para reduzir reads
+            // OTIMIZAÃÃO: Buscar todos de uma vez para reduzir reads
             const { data: allStats, error: fetchError } = await supabase
                 .from('sanctuary_area_stats')
                 .select('area, total_seconds, last_updated')
@@ -3735,21 +3735,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const currentStats = statsMap.get(area);
 
                 const lastUpdated = currentStats?.last_updated ? new Date(currentStats.last_updated) : currentTime;
-                // Se não existir, assume 50%
+                // Se nÃ£o existir, assume 50%
                 let totalSeconds = currentStats ? Number(currentStats.total_seconds) : 14400;
 
                 // Calcular tempo passado em segundos
                 const secondsPassed = (currentTime.getTime() - lastUpdated.getTime()) / 1000;
 
-                // Ignorar atualizações muito frequentes para economizar writes
+                // Ignorar atualizaÃ§Ãµes muito frequentes para economizar writes
                 if (secondsPassed < MIN_UPDATE_INTERVAL && currentStats) continue;
 
                 let change = 0;
                 const activeUsers = occupancy[area] || 0;
 
                 if (activeUsers > 0) {
-                    // Se ocupado: Cresce proporcionalmente à participação do clã
-                    // Meta: 10% ao dia se 100% do clã estiver participando
+                    // Se ocupado: Cresce proporcionalmente Ã  participaÃ§Ã£o do clÃ£
+                    // Meta: 10% ao dia se 100% do clÃ£ estiver participando
                     const participationRatio = Math.min(1, activeUsers / Math.max(1, totalMembers));
                     change = secondsPassed * GROWTH_RATE_PER_SECOND * participationRatio;
                 } else {
@@ -3761,10 +3761,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 // Clamp entre 0 e Max
                 nextTotalSeconds = Math.max(0, Math.min(MAX_POINTS, nextTotalSeconds));
 
-                // Arredondar para inteiro para evitar "dígitos quebrados"
+                // Arredondar para inteiro para evitar "dÃ­gitos quebrados"
                 const finalSeconds = Math.floor(nextTotalSeconds);
 
-                // Se não mudou nada (devido ao arredondamento), ignora
+                // Se nÃ£o mudou nada (devido ao arredondamento), ignora
                 if (finalSeconds === Math.floor(totalSeconds) && currentStats) continue;
 
                 // Atualizar no banco
@@ -3896,35 +3896,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         // Create a count map of scheduled tasks to avoid nested loops.
-        // MODIFICAÇÃO FINAL SOLICITADA PELO USUÁRIO:
-        // A Bay Area (e o Pool) deve ser um espelho das Arenas. TODAS as ações devem aparecer.
-        // Ao agendar, a ação NÃO deve sumir do pool. Ela continua lá, disponível para ser agendada novamente se quiser.
-        // O controle de "o que eu fiz hoje" é visual no Planner (arrastou pro dia) ou no Sitrep (clicou pra adicionar).
-        // O pool é a fonte de "tudo que posso fazer".
+        // MODIFICAÃÃO FINAL SOLICITADA PELO USUÃRIO:
+        // A Bay Area (e o Pool) deve ser um espelho das Arenas. TODAS as aÃ§Ãµes devem aparecer.
+        // Ao agendar, a aÃ§Ã£o NÃO deve sumir do pool. Ela continua lÃ¡, disponÃ­vel para ser agendada novamente se quiser.
+        // O controle de "o que eu fiz hoje" Ã© visual no Planner (arrastou pro dia) ou no Sitrep (clicou pra adicionar).
+        // O pool Ã© a fonte de "tudo que posso fazer".
 
-        // Verificação de Segurança Extra:
-        // Garantir que a ação realmente pertence a uma arena ativa e existente.
-        // activeActions já faz isso (activeActions = actions.filter(a => activeArenaIds.has(a.arenaId)))
+        // VerificaÃ§Ã£o de SeguranÃ§a Extra:
+        // Garantir que a aÃ§Ã£o realmente pertence a uma arena ativa e existente.
+        // activeActions jÃ¡ faz isso (activeActions = actions.filter(a => activeArenaIds.has(a.arenaId)))
         // Mas activeArenaIds pode conter IDs de arenas deletadas se o activeCycle tiver IDs antigos?
-        // activeArenaIds é derivado de activeCycle.arenaIds filtrado por lockedArenaIds OU de activeArenas.
+        // activeArenaIds Ã© derivado de activeCycle.arenaIds filtrado por lockedArenaIds OU de activeArenas.
         // Se activeCycle.arenaIds tiver lixo, pode causar isso.
-        // Vamos garantir que activeArenaIds contenha APENAS arenas que existem em 'activeArenas' (que vem de assets -> arenas não arquivadas).
+        // Vamos garantir que activeArenaIds contenha APENAS arenas que existem em 'activeArenas' (que vem de assets -> arenas nÃ£o arquivadas).
 
-        // Reconstruindo activeArenaIds para ser mais seguro e DINÂMICO:
-        // O usuário quer que a Bay Area seja um ESPELHO das Arenas ativas.
+        // Reconstruindo activeArenaIds para ser mais seguro e DINÃMICO:
+        // O usuÃ¡rio quer que a Bay Area seja um ESPELHO das Arenas ativas.
         // Se ele cria uma arena nova, ela TEM que aparecer, independente se o ciclo foi criado antes.
-        // Se ele deleta (arquiva), ela some (activeArenas já filtra isArchived).
-        // A restrição do activeCycle.arenaIds estava impedindo novas arenas de aparecerem.
-        // Vamos ignorar a restrição do ciclo para fins de disponibilidade no Pool/Bay Area.
+        // Se ele deleta (arquiva), ela some (activeArenas jÃ¡ filtra isArchived).
+        // A restriÃ§Ã£o do activeCycle.arenaIds estava impedindo novas arenas de aparecerem.
+        // Vamos ignorar a restriÃ§Ã£o do ciclo para fins de disponibilidade no Pool/Bay Area.
 
-        // VERSÃO CORRIGIDA: O Pool deve respeitar o Ciclo Ativo como o usuário solicitou ("estoque do ciclo").
-        // Se houver ciclo ativo, as arenas disponíveis são apenas as do ciclo.
-        // Se NÃO houver ciclo ativo (ou as arenas do ciclo forem vázias), mostra todas as arenas não trancadas por campanhas.
+        // VERSÃO CORRIGIDA: O Pool deve respeitar o Ciclo Ativo como o usuÃ¡rio solicitou ("estoque do ciclo").
+        // Se houver ciclo ativo, as arenas disponÃ­veis sÃ£o apenas as do ciclo.
+        // Se NÃO houver ciclo ativo (ou as arenas do ciclo forem vÃ¡zias), mostra todas as arenas nÃ£o trancadas por campanhas.
 
         const activeArenaIds = new Set(activeArenas.map(a => a.id).filter(id => !lockedArenaIds.has(id)));
 
 
-        // Agora sim filtra ações
+        // Agora sim filtra aÃ§Ãµes
         const activeActions = actions.filter(a => activeArenaIds.has(a.arenaId));
 
         const poolableActions = activeActions.filter(action => action.actionType !== 'Marco');
@@ -3932,11 +3932,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const pool = poolableActions.flatMap(action => {
             if (isClanQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
 
-            // Simplesmente retorna todas as repetições disponíveis base da ação.
-            // Se a ação tem 1 repetição configurada na arena, o pool tem 1 item.
-            // Se eu agendar essa 1 repetição, o pool CONTINUA com 1 item (pois é um espelho da arena).
-            // Isso permite agendar múltiplas vezes se quiser, ou apenas ver que a ação existe.
-            // O usuário foi enfático: "AO AGENDAR, APARECEM TODAS DA POOL."
+            // Simplesmente retorna todas as repetiÃ§Ãµes disponÃ­veis base da aÃ§Ã£o.
+            // Se a aÃ§Ã£o tem 1 repetiÃ§Ã£o configurada na arena, o pool tem 1 item.
+            // Se eu agendar essa 1 repetiÃ§Ã£o, o pool CONTINUA com 1 item (pois Ã© um espelho da arena).
+            // Isso permite agendar mÃºltiplas vezes se quiser, ou apenas ver que a aÃ§Ã£o existe.
+            // O usuÃ¡rio foi enfÃ¡tico: "AO AGENDAR, APARECEM TODAS DA POOL."
 
             const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
 
@@ -3971,8 +3971,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const oldRankIndex = nobilityRanks.findIndex(r => r.id === oldRankId);
             const newRankIndex = nobilityRanks.findIndex(r => r.id === newRankId);
 
-            // MODIFICAÇÃO: Só dispara se subiu de fato e não é o carregamento inicial (oldRankIndex !== -1)
-            // E também não dispara se o novo rank for o inicial (Vagante) para evitar aviso no login para nível 1
+            // MODIFICAÃÃO: SÃ³ dispara se subiu de fato e nÃ£o Ã© o carregamento inicial (oldRankIndex !== -1)
+            // E tambÃ©m nÃ£o dispara se o novo rank for o inicial (Vagante) para evitar aviso no login para nÃ­vel 1
             if (newRankIndex > oldRankIndex && oldRankIndex !== -1 && newRankIndex > 0) {
                 if (newRank) {
                     // Determine rank insignia ID
@@ -4014,7 +4014,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             }
                         });
                         if (rewardNames.length > 0) {
-                            showToast(`Patente ${newRank.name} alcançada. Itens de Legado integrados ao Arsenal: ${rewardNames.join(', ')}.`, 'success');
+                            showToast(`Patente ${newRank.name} alcanÃ§ada. Itens de Legado integrados ao Arsenal: ${rewardNames.join(', ')}.`, 'success');
                         }
                     }
                 }
@@ -4159,16 +4159,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const isInsignia = itemDef?.category === 'insignias' || itemDef?.category === 'insignia';
 
             if (isInsignia) {
-                console.log(`[Supabase] Insígnia persistida com sucesso: ${itemId} (ID: ${data.id})`);
+                console.log(`[Supabase] InsÃ­gnia persistida com sucesso: ${itemId} (ID: ${data.id})`);
             }
 
             if (!silent) {
                 let toastMsg = '';
                 if (isInsignia) {
-                    toastMsg = `Insígnia ${itemDef?.name || itemId} foi adicionada ao seu inventário.`;
+                    toastMsg = `InsÃ­gnia ${itemDef?.name || itemId} foi adicionada ao seu inventÃ¡rio.`;
                 } else {
                     const prefix = itemDef?.category === 'skin' ? 'Skin' : 'Item';
-                    const suffix = itemDef?.category === 'skin' ? 'foi adicionada ao seu inventário.' : 'foi adicionado ao seu inventário.';
+                    const suffix = itemDef?.category === 'skin' ? 'foi adicionada ao seu inventÃ¡rio.' : 'foi adicionado ao seu inventÃ¡rio.';
                     toastMsg = `${prefix} ${itemDef?.name || itemId} ${suffix}`;
                 }
 
@@ -4193,7 +4193,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await addChest('Raro');
 
         localStorage.setItem(storageKey, 'true');
-        showToast('👑 Pack Gênesis Desbloqueado: Seu legado Premium começa agora!', 'success');
+        showToast('ð Pack GÃªnesis Desbloqueado: Seu legado Premium comeÃ§a agora!', 'success');
     };
 
     const addCompletedMission = (mission: SeasonMission) => {
@@ -4207,7 +4207,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 setCycleExpBonus(prev => prev + xpAmount);
                 addFeedEvent({
                     type: 'LEVEL_UP',
-                    content: { title: `Missão Concluída: ${mission.title} (+${xpAmount} XP)`, icon: '✨' }
+                    content: { title: `MissÃ£o ConcluÃ­da: ${mission.title} (+${xpAmount} XP)`, icon: 'â¨' }
                 });
             }
         }
@@ -4288,10 +4288,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const isTutorialActive = window.location.search.includes('tutorial=true') || (window as any).__GOL_TUTORIAL_ACTIVE__;
 
         if (userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm' || isTutorialActive || isGracePeriod) {
-            // Permite atualização imediata
+            // Permite atualizaÃ§Ã£o imediata
         } else if (Date.now() - lastUpdate < threeDays) {
             const remainingHours = Math.ceil((threeDays - (Date.now() - lastUpdate)) / (60 * 60 * 1000));
-            showToast(`Maestria em lockdown. Disponível em ${remainingHours}h.`);
+            showToast(`Maestria em lockdown. DisponÃ­vel em ${remainingHours}h.`);
             return false;
         }
 
@@ -4379,7 +4379,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const completedQuests = questTasks.filter(t => t.completed);
 
         // 2. Calculate Progress (Base Score)
-        // progresso = (ações realizadas / ações planejadas) × 100
+        // progresso = (aÃ§Ãµes realizadas / aÃ§Ãµes planejadas) Ã 100
         const progress = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
 
         // 3. Calculate Bonuses
@@ -4426,7 +4426,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             volumeBonus
         );
 
-        // Arenas e Ações envolvidas (baseado nas tarefas do ciclo)
+        // Arenas e AÃ§Ãµes envolvidas (baseado nas tarefas do ciclo)
         const actionIdsInCycle = new Set(cycleTasks.map(t => t.actionId));
         const involvedActions = currentActions.filter(a => actionIdsInCycle.has(a.id));
 
@@ -4523,7 +4523,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         });
 
-        // maxStreak (consecutive days with ≥1 completed task)
+        // maxStreak (consecutive days with â¥1 completed task)
         const activeDates = completedTasks.map(t => t.date).filter((v, i, a) => a.indexOf(v) === i).sort();
         let maxStreak = 0;
         let currentStreak = 1;
@@ -4603,7 +4603,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }).filter(Boolean) as { asset: string; value: number }[]
         };
 
-        // Salvar relatório e atualizar ciclo no Supabase se logado
+        // Salvar relatÃ³rio e atualizar ciclo no Supabase se logado
         if (supabaseUserId) {
             const snakeCaseReport = {
                 id: newReport.id,
@@ -4637,7 +4637,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setActiveCycle(null);
         setCycleExpBonus(0);
 
-        // Adicionar relatório à lista
+        // Adicionar relatÃ³rio Ã  lista
         setReports(prev => [newReport, ...prev]);
 
         return { report: newReport, expGained };
@@ -4706,7 +4706,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        showToast("Ciclo excluído com sucesso.");
+        showToast("Ciclo excluÃ­do com sucesso.");
 
         // If it was the active cycle, try to fetch another one or just clear state
         if (activeCycle?.id === cycleId) {
@@ -5538,7 +5538,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             // FALLBACK: If action name doesn't match, check for "Ler" vs "Socializar" mismatch
             if (!quest && activeSeason) {
-                // Check if the action name is "Leitura Focada" (old bug) and we have a "Unidade do Clã" quest
+                // Check if the action name is "Leitura Focada" (old bug) and we have a "Unidade do ClÃ£" quest
                 if (action.name.includes('Leitura') || action.name.includes('Ler')) {
                     // quest = activeSeason.quests.find(q => q.id === 'quest-scholar'); // Should be scholar? Assuming existing logic was trying to fix something specific.
                 }
@@ -5581,7 +5581,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        // If no quest was found via action matching, but the arena name is "1" or "Quests - Clã", 
+        // If no quest was found via action matching, but the arena name is "1" or "Quests - ClÃ£", 
         // and the user has a participation, maybe we should just remove them from the active clan quest?
         if (!clanQuestFound && clan) {
             const normalized = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
@@ -5693,11 +5693,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const actionsWithHistory = arenaActions.filter(action => actionsWithHistoryIds.has(action.id));
 
-        // MODIFICAÇÃO DE LIMPEZA: Se o usuário quer deletar, e a arena tem histórico,
-        // nós ainda a arquivamos para preservar o histórico.
-        // MAS, precisamos garantir que as ações fiquem "ocultas" ou "arquivadas" também.
-        // No modelo atual, se a arena é arquivada, suas ações não aparecem no `activeActions` (pois activeArenas filtra arquivadas).
-        // ENTRETANTO, se o usuário disse "deletei as arenas e as ações ficaram", isso pode ser porque o filtro de `activeActions` falhou ou o cache local não atualizou.
+        // MODIFICAÃÃO DE LIMPEZA: Se o usuÃ¡rio quer deletar, e a arena tem histÃ³rico,
+        // nÃ³s ainda a arquivamos para preservar o histÃ³rico.
+        // MAS, precisamos garantir que as aÃ§Ãµes fiquem "ocultas" ou "arquivadas" tambÃ©m.
+        // No modelo atual, se a arena Ã© arquivada, suas aÃ§Ãµes nÃ£o aparecem no `activeActions` (pois activeArenas filtra arquivadas).
+        // ENTRETANTO, se o usuÃ¡rio disse "deletei as arenas e as aÃ§Ãµes ficaram", isso pode ser porque o filtro de `activeActions` falhou ou o cache local nÃ£o atualizou.
 
         if (actionsWithHistory.length > 0) {
             console.log(`Arena ${arenaId} has history (${actionsWithHistory.length} actions). Archiving instead of deleting.`);
@@ -5723,14 +5723,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return; // Exit, do not fully delete the arena
         }
 
-        // Se não tem histórico, DELETA TUDO SEM DÓ.
+        // Se nÃ£o tem histÃ³rico, DELETA TUDO SEM DÃ.
         // Remove do estado de assets (arenas)
         setAssets(prevAssets => prevAssets.map(asset => ({
             ...asset,
             arenas: asset.arenas.filter(arena => arena.id !== arenaId)
         })));
 
-        // Remove TODAS as ações dessa arena do estado global
+        // Remove TODAS as aÃ§Ãµes dessa arena do estado global
         setActions(prevActions => prevActions.filter(action => action.arenaId !== arenaId));
 
         // Cleanup empty folder if needed
@@ -5854,7 +5854,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { error } = await supabase.from('actions').insert(actionPayload);
             if (error) {
                 console.error("Supabase add action error:", error.message);
-                showToast("Erro ao salvar ação: " + error.message);
+                showToast("Erro ao salvar aÃ§Ã£o: " + error.message);
                 throw error;
             }
         }
@@ -5969,7 +5969,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     // Also cleanup empty Office arenas
                     if (arena.name.startsWith('Clan Office')) {
                         updateArena(arenaId, { isArchived: true });
-                        showToast('Arena Office arquivada (sem ações).', 'info');
+                        showToast('Arena Office arquivada (sem aÃ§Ãµes).', 'info');
                     }
                     setTimeout(() => deleteArena(arenaId), 0);
                 }
@@ -6001,9 +6001,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error activating clan quest:", error);
-            showToast("Erro ao ativar missão do clã.");
+            showToast("Erro ao ativar missÃ£o do clÃ£.");
         } else {
-            showToast("Missão ativada para o clã!");
+            showToast("MissÃ£o ativada para o clÃ£!");
             // Refresh clan progress/state if needed
             fetchClanQuestProgress(clan.id);
         }
@@ -6016,15 +6016,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const quest = activeSeason.quests.find(q => q.id === questId);
         if (!quest) return;
 
-        // Se for quest de clã, garante participação
+        // Se for quest de clÃ£, garante participaÃ§Ã£o
         if (quest.type === 'clan') {
-            // VERIFICAÇÃO DE SEGURANÇA: Só permite entrar se o líder já ativou
+            // VERIFICAÃÃO DE SEGURANÃA: SÃ³ permite entrar se o lÃ­der jÃ¡ ativou
             if (clan) {
                 const clanProgress = clanQuestProgress[clan.id];
                 const isActiveForClan = clanProgress && clanProgress[quest.id] !== undefined;
 
                 if (!isActiveForClan) {
-                    showToast("Esta missão precisa ser ativada pelo líder do clã primeiro.");
+                    showToast("Esta missÃ£o precisa ser ativada pelo lÃ­der do clÃ£ primeiro.");
                     return;
                 }
             }
@@ -6032,7 +6032,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             joinClanMission(quest.id);
         }
 
-        // 1. Verificar se a ação já existe
+        // 1. Verificar se a aÃ§Ã£o jÃ¡ existe
         const arenas = getArenas();
         const existingAction = actions.find(a => a.name === quest.actionTemplate.name);
         const isActionValid = existingAction && arenas.some(ar => ar.id === existingAction.arenaId);
@@ -6045,33 +6045,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     return;
                 }
             }
-            alert("Você já aceitou esta missão!");
+            alert("VocÃª jÃ¡ aceitou esta missÃ£o!");
             return;
         }
 
         const isClanQuest = quest.type === 'clan';
-        // NOME DA ARENA = TÍTULO DA MISSÃO
-        // O usuário solicitou explicitamente: "quero que cada quest de cla e de missao crie uma arena nova com o nome daquela missao"
+        // NOME DA ARENA = TÃTULO DA MISSÃO
+        // O usuÃ¡rio solicitou explicitamente: "quero que cada quest de cla e de missao crie uma arena nova com o nome daquela missao"
         const seasonArenaName = quest.title; // Ex: "Correr 15km", "Ler Livro X"
 
-        // 2. Buscar ou Criar Arena (Específica para esta missão)
+        // 2. Buscar ou Criar Arena (EspecÃ­fica para esta missÃ£o)
         const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
         const targetName = normalize(seasonArenaName);
 
-        // Busca exata pelo nome da missão para evitar agrupar em "Quests - Clã"
+        // Busca exata pelo nome da missÃ£o para evitar agrupar em "Quests - ClÃ£"
         let arena = getArenas().find(a => normalize(a.name) === targetName);
 
         if (!arena) {
-            // Se não existe, cria uma nova arena dedicada
+            // Se nÃ£o existe, cria uma nova arena dedicada
             const assetId = assets[0]?.id || 'geral';
             arena = await addArena(assetId, {
                 name: seasonArenaName,
-                description: quest.description || (isClanQuest ? 'Missão de Clã' : 'Missão de Temporada'),
-                icon: quest.actionTemplate.icon || (isClanQuest ? '🛡️' : '📜'),
-                priority: 'alta' // Destaque para missões ativas
+                description: quest.description || (isClanQuest ? 'MissÃ£o de ClÃ£' : 'MissÃ£o de Temporada'),
+                icon: quest.actionTemplate.icon || (isClanQuest ? 'ð¡ï¸' : 'ð'),
+                priority: 'alta' // Destaque para missÃµes ativas
             }, true);
 
-            // Persistência Manual
+            // PersistÃªncia Manual
             const userId = getSupabaseUserId();
             if (userId) {
                 try {
@@ -6082,32 +6082,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        // Garantir que não está arquivada
+        // Garantir que nÃ£o estÃ¡ arquivada
         if (arena?.isArchived) {
             updateArena(arena.id, { isArchived: false });
         }
 
-        // 3. Criar a Ação na Arena
+        // 3. Criar a AÃ§Ã£o na Arena
         await addAction({
             arenaId: arena.id,
             name: quest.actionTemplate.name,
             description: quest.actionTemplate.description,
-            icon: isClanQuest ? '🛡️' : quest.actionTemplate.icon,
+            icon: isClanQuest ? 'ð¡ï¸' : quest.actionTemplate.icon,
             duration: quest.actionTemplate.duration,
             repetitions: isClanQuest ? 50 : (quest.actionTemplate.repetitions || 1),
-            actionType: quest.actionTemplate.isMilestone ? 'Marco' : 'Ação Recorrente',
+            actionType: quest.actionTemplate.isMilestone ? 'Marco' : 'AÃ§Ã£o Recorrente',
             difficulty: 3
         });
 
-        // Configuração adicional para quests de clã
+        // ConfiguraÃ§Ã£o adicional para quests de clÃ£
         if (isClanQuest && clan) {
-            // REMOVIDO: Upsert automático em clan_mission_progress. 
-            // Agora o líder deve ativar explicitamente via activateClanQuest.
-            // Apenas juntamos o membro à missão.
+            // REMOVIDO: Upsert automÃ¡tico em clan_mission_progress. 
+            // Agora o lÃ­der deve ativar explicitamente via activateClanQuest.
+            // Apenas juntamos o membro Ã  missÃ£o.
             await joinClanMission(quest.id);
         }
 
-        alert(`Missão "${quest.title}" aceita! Verifique a arena "${seasonArenaName}" no seu Planner.`);
+        alert(`MissÃ£o "${quest.title}" aceita! Verifique a arena "${seasonArenaName}" no seu Planner.`);
     };
 
     const abortSeasonQuest = async (questId: string) => {
@@ -6136,7 +6136,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        showToast(`Missão "${quest.title}" abandonada.`);
+        showToast(`MissÃ£o "${quest.title}" abandonada.`);
     };
 
     const claimSeasonQuest = async (questId: string) => {
@@ -6146,7 +6146,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!quest) return;
 
         if (userProfile.completedSeasonMissions?.includes(questId)) {
-            showToast("Recompensa já resgatada!");
+            showToast("Recompensa jÃ¡ resgatada!");
             return;
         }
 
@@ -6157,12 +6157,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Check for chest rewards in description
         let earnedChest: ChestType | null = null;
-        if (quest.description.includes("Baú Comum")) earnedChest = 'Comum';
-        else if (quest.description.includes("Baú Incomum")) earnedChest = 'Incomum';
-        else if (quest.description.includes("Baú Ciclo")) earnedChest = 'Ciclo';
-        else if (quest.description.includes("Baú Raro")) earnedChest = 'Raro';
-        else if (quest.description.includes("Baú Épico")) earnedChest = 'Épico';
-        else if (quest.description.includes("Baú Lendário")) earnedChest = 'Lendário';
+        if (quest.description.includes("BaÃº Comum")) earnedChest = 'Comum';
+        else if (quest.description.includes("BaÃº Incomum")) earnedChest = 'Incomum';
+        else if (quest.description.includes("BaÃº Ciclo")) earnedChest = 'Ciclo';
+        else if (quest.description.includes("BaÃº Raro")) earnedChest = 'Raro';
+        else if (quest.description.includes("BaÃº Ãpico")) earnedChest = 'Ãpico';
+        else if (quest.description.includes("BaÃº LendÃ¡rio")) earnedChest = 'LendÃ¡rio';
 
         if (earnedChest) await addChest(earnedChest);
 
@@ -6202,7 +6202,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         addFeedEvent({
             type: 'QUEST_COMPLETED', // Changed from MILESTONE_COMPLETED
-            content: { title: `Quest Completada: ${quest.title}`, icon: '🏆', score: addedExp }
+            content: { title: `Quest Completada: ${quest.title}`, icon: 'ð', score: addedExp }
         });
 
         // Determine all insignias to show in modal
@@ -6243,7 +6243,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!mission) return;
 
         if (userProfile.completedSeasonMissions?.includes(missionId)) {
-            showToast("Recompensa já resgatada!");
+            showToast("Recompensa jÃ¡ resgatada!");
             return;
         }
 
@@ -6253,12 +6253,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const nextExp = currentExp + addedExp;
 
         // Check for chest rewards in description
-        if (mission.description.includes("Baú Comum")) await addChest('Comum');
-        if (mission.description.includes("Baú Incomum")) await addChest('Incomum');
-        if (mission.description.includes("Baú Ciclo")) await addChest('Ciclo');
-        if (mission.description.includes("Baú Raro")) await addChest('Raro');
-        if (mission.description.includes("Baú Épico")) await addChest('Épico');
-        if (mission.description.includes("Baú Lendário")) await addChest('Lendário');
+        if (mission.description.includes("BaÃº Comum")) await addChest('Comum');
+        if (mission.description.includes("BaÃº Incomum")) await addChest('Incomum');
+        if (mission.description.includes("BaÃº Ciclo")) await addChest('Ciclo');
+        if (mission.description.includes("BaÃº Raro")) await addChest('Raro');
+        if (mission.description.includes("BaÃº Ãpico")) await addChest('Ãpico');
+        if (mission.description.includes("BaÃº LendÃ¡rio")) await addChest('LendÃ¡rio');
 
         // Grant items if it's an item reward
         const earnedItemIds: string[] = [];
@@ -6296,7 +6296,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         addFeedEvent({
             type: 'QUEST_COMPLETED',
-            content: { title: `Missão de Temporada: ${mission.title}`, icon: '🌟', score: Number(addedExp) }
+            content: { title: `MissÃ£o de Temporada: ${mission.title}`, icon: 'ð', score: Number(addedExp) }
         });
 
         // Determine all insignias to show in modal
@@ -6386,7 +6386,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { error } = await supabase.from('scheduled_tasks').insert(snakeCaseData);
             if (error) {
                 console.error("Supabase schedule multiple tasks error:", error.message);
-                showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
+                showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
                 throw error;
             }
         }
@@ -6422,7 +6422,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { error } = await supabase.from('scheduled_tasks').insert(snakeCaseData);
             if (error) {
                 console.error("Supabase schedule task error:", error.message);
-                showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
+                showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
                 throw error;
             }
         }
@@ -6516,7 +6516,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     // --- Office Mode: Auto-create / cleanup "Clan Office" arena ---
     const getOrCreateOfficeArena = async (): Promise<Arena | null> => {
         if (clan?.clanType !== 'Office') return null;
-        const OFFICE_ARENA_NAME = `Clan Office • ${clan.name}`;
+        const OFFICE_ARENA_NAME = `Clan Office â¢ ${clan.name}`;
         // Check if an existing Office arena already exists
         const existing = getArenas().find(a => a.name === OFFICE_ARENA_NAME && !a.isArchived);
         if (existing) return existing;
@@ -6524,8 +6524,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const targetAssetId = assets[0]?.id || 'outros';
         const newArena = await addArena(targetAssetId, {
             name: OFFICE_ARENA_NAME,
-            description: `Arena automática do clã ${clan.name} (Office Mode)`,
-            icon: '🏢',
+            description: `Arena automÃ¡tica do clÃ£ ${clan.name} (Office Mode)`,
+            icon: 'ð¢',
         } as any);
         showToast('Arena Office criada automaticamente!', 'success');
         return newArena;
@@ -6533,13 +6533,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const cleanupEmptyOfficeArena = (arenaId: string) => {
         if (clan?.clanType !== 'Office') return;
-        const OFFICE_ARENA_NAME = `Clan Office • ${clan?.name}`;
+        const OFFICE_ARENA_NAME = `Clan Office â¢ ${clan?.name}`;
         const arena = getArenas().find(a => a.id === arenaId);
         if (!arena || arena.name !== OFFICE_ARENA_NAME) return;
         const remaining = getActionsForArena(arenaId);
         if (remaining.length === 0) {
             updateArena(arenaId, { isArchived: true });
-            showToast('Arena Office arquivada (sem ações).', 'info');
+            showToast('Arena Office arquivada (sem aÃ§Ãµes).', 'info');
         }
     };
 
@@ -6548,7 +6548,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Mark an arena as shared for all clan members to see in their planner
         updateArena(arenaId, { description: isShared ? '[SHARED]' : '' } as any);
         if (isShared) {
-            showToast('Arena marcada como compartilhada para o clã!', 'success');
+            showToast('Arena marcada como compartilhada para o clÃ£!', 'success');
         }
     };
 
@@ -6576,7 +6576,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const now = new Date();
         const date = getLocalDateString(now);
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-        // O horário de início retrocede para que o fim da ação seja exatamente AGORA
+        // O horÃ¡rio de inÃ­cio retrocede para que o fim da aÃ§Ã£o seja exatamente AGORA
         const startTime = Math.max(0, nowInMinutes - action.duration);
 
         const newTask: ScheduledTask = {
@@ -6635,7 +6635,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const now = new Date();
         const date = getLocalDateString(now);
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-        // O horário de início retrocede para que o fim da ação seja exatamente AGORA
+        // O horÃ¡rio de inÃ­cio retrocede para que o fim da aÃ§Ã£o seja exatamente AGORA
         const startTime = Math.max(0, nowInMinutes - action.duration);
 
         const newTask: ScheduledTask = {
@@ -6745,7 +6745,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateTask(taskId, { date: newDate, startTime: newStartTime });
     };
     const toggleTaskCompletion = (taskId: string) => {
-        // [MOD] Removida trava de tempo para permitir ativação imediata via Sitrep/Planner
+        // [MOD] Removida trava de tempo para permitir ativaÃ§Ã£o imediata via Sitrep/Planner
         const taskToCheck = tasks.find(t => t.id === taskId);
         if (!taskToCheck) return;
 
@@ -6755,27 +6755,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     const willComplete = !task.completed;
                     const updatedTask = { ...task, completed: willComplete };
 
-                    // [ATIVAÇÃO] Se está completando e não tem horário (ou está no topo/plan), bota no horário de AGORA
-                    // Isso garante que a ação "nasça" no Planner cronologicamente e riscada.
+                    // [ATIVAÃÃO] Se estÃ¡ completando e nÃ£o tem horÃ¡rio (ou estÃ¡ no topo/plan), bota no horÃ¡rio de AGORA
+                    // Isso garante que a aÃ§Ã£o "nasÃ§a" no Planner cronologicamente e riscada.
                     if (willComplete) {
                         const now = new Date();
                         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-                        // Se a tarefa está no horário padrão (ex: 8:00 do Sitrep) ou não tem horário, movemos para agora
+                        // Se a tarefa estÃ¡ no horÃ¡rio padrÃ£o (ex: 8:00 do Sitrep) ou nÃ£o tem horÃ¡rio, movemos para agora
                         // para garantir visibilidade no ponto atual do Planner.
                         const action = getActionById(task.actionId);
                         const duration = action?.duration || 15;
 
                         // [MOD] Se completar agora, a tarefa deve TERMINAR agora.
-                        // Então o startTime = now - duration.
+                        // EntÃ£o o startTime = now - duration.
                         // Isso faz com que o bloco termine exatamente no momento do clique.
-                        // SÓ ATUALIZA O HORÁRIO SE ELA AINDA NÃO TIVER UM VÁLIDO (>=0)
+                        // SÃ ATUALIZA O HORÃRIO SE ELA AINDA NÃO TIVER UM VÃLIDO (>=0)
                         // OU SE ELA ESTIVER NA BAY AREA (-1)
                         if (updatedTask.startTime < 0) {
                             updatedTask.startTime = Math.max(0, nowInMinutes - duration);
                         }
                     } else {
-                        // Se estiver DESCOMPLETANDO, ela mantém o horário que tinha (seja -1 ou horário fixo)
-                        // Se o usuário quiser devolver para o estoque, ele deve deletar a tarefa.
+                        // Se estiver DESCOMPLETANDO, ela mantÃ©m o horÃ¡rio que tinha (seja -1 ou horÃ¡rio fixo)
+                        // Se o usuÃ¡rio quiser devolver para o estoque, ele deve deletar a tarefa.
                     }
 
                     // Update in daily commitment if it exists there
@@ -6827,7 +6827,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                                         user_id: userId
                                                     }).then(({ error }) => {
                                                         if (error) console.error("Error recording shared completion:", error);
-                                                        else showToast("Ação compartilhada registrada!", 'success');
+                                                        else showToast("AÃ§Ã£o compartilhada registrada!", 'success');
                                                     });
                                                 }
                                             });
@@ -6841,7 +6841,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                     ).length + 1;
 
                                     if (completedCount >= 15) {
-                                        showToast("PARABÉNS! DESAFIO DE 15KM COMPLETADO!", 'success');
+                                        showToast("PARABÃNS! DESAFIO DE 15KM COMPLETADO!", 'success');
                                         // Future: Send notification to opponent
                                     }
                                 }
@@ -6996,7 +6996,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (countError) { console.error("Error checking clan size:", countError.message); return; }
 
         if (count !== null && count >= MAX_CLAN_MEMBERS) {
-            alert(`O clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+            alert(`O clÃ£ atingiu o limite mÃ¡ximo de ${MAX_CLAN_MEMBERS} membros.`);
             return;
         }
 
@@ -7065,7 +7065,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (countError) { console.error("Error checking clan size:", countError.message); return; }
 
         if (count !== null && count >= MAX_CLAN_MEMBERS) {
-            alert(`Este clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+            alert(`Este clÃ£ atingiu o limite mÃ¡ximo de ${MAX_CLAN_MEMBERS} membros.`);
             return;
         }
 
@@ -7084,7 +7084,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (countError) { console.error("Error checking clan size:", countError.message); return; }
         if (count !== null && count >= MAX_CLAN_MEMBERS) {
-            alert(`O clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+            alert(`O clÃ£ atingiu o limite mÃ¡ximo de ${MAX_CLAN_MEMBERS} membros.`);
             return;
         }
 
@@ -7332,7 +7332,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     const newArena = await addArena('fisico', {
                         name: arenaName,
                         description: "Desafio PVP de corrida. Quem completar 15km primeiro vence.",
-                        icon: "🏃",
+                        icon: "ð",
                         priority: 'alta'
                     });
      
@@ -7341,10 +7341,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             name: "Correr 1km",
                             description: `Km ${i + 1} de 15`,
                             arenaId: newArena.id,
-                            icon: "🏃",
+                            icon: "ð",
                             duration: 10,
                             repetitions: 1,
-                            actionType: 'Ação Recorrente' as any,
+                            actionType: 'AÃ§Ã£o Recorrente' as any,
                             difficulty: 3
                         }));
      

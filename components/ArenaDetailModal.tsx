@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Arena, Action, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIcon, SendIcon } from './Icons';
@@ -13,26 +13,38 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
     const { getActionBackgroundStyle, tasks, getArenas, getClanQuestProgress, getClanQuestForActionName, getSharedActionPoolProgress, clan } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
 
-    const arena = getArenas().find(ar => ar.id === action.arenaId);
+    const arena = getArenas?.()?.find(ar => ar.id === action.arenaId);
     const isOfficeMode = clan?.clanType === 'Office';
-    const isSharedPool = isOfficeMode || !!currentLinkType; // currentLinkType might need to be passed down or fetched
+    const isSharedPool = isOfficeMode || !!currentLinkType;
 
     const personalCompleted = tasks.filter(t => t.actionId === action.id && t.completed).length;
-    const sharedCompleted = getSharedActionPoolProgress(action.arenaId, action.id);
 
-    // For shared pools, we show the collective count. Otherwise, personal.
+    // SAFE ACCESS: Only call shared progress if it's a shared pool AND the function exists
+    let sharedCompleted = 0;
+    if (isSharedPool && typeof getSharedActionPoolProgress === 'function') {
+        try {
+            sharedCompleted = getSharedActionPoolProgress(action.arenaId, action.id) || 0;
+        } catch (e) {
+            console.error("Error fetching shared progress:", e);
+        }
+    }
+
     const completedCount = isSharedPool ? sharedCompleted : personalCompleted;
-    const totalProposed = action.repetitions;
+    const totalProposed = action.repetitions || 1;
 
     const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-    const isSeasonQuest = normalizedArena.includes('quests - season');
 
-    const clanQuest = getClanQuestForActionName(action.name);
+    // SAFE ACCESS: Clan Quest logic
+    const clanQuest = typeof getClanQuestForActionName === 'function' ? getClanQuestForActionName(action.name) : null;
     const isClanQuest = !!clanQuest;
 
-    const clanProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
+    let clanProgress = 0;
+    if (isClanQuest && typeof getClanQuestProgress === 'function') {
+        clanProgress = getClanQuestProgress(clanQuest.id) || 0;
+    }
+
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
-    const displayProgress = clanQuest ? `${clanProgress}/${target}` : `${completedCount}/${totalProposed}`;
+    const displayProgress = isClanQuest ? `${clanProgress}/${target}` : `${completedCount}/${totalProposed}`;
     const displayIcon = action.icon || '🏆';
 
     return (
@@ -62,7 +74,7 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ name: arena.name, description: arena.description, icon: arena.icon });
@@ -73,6 +85,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const newActionRef = useRef<HTMLButtonElement>(null);
     const [skinColor, setSkinColor] = useState('#F0C843');
     const [currentLinkType, setCurrentLinkType] = useState<string | null>(null);
+    const [selectionType, setSelectionType] = useState<'mentoria' | 'competicao' | 'parceria'>('mentoria');
 
     useEffect(() => {
         const fetchLinkType = async () => {
@@ -95,12 +108,23 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     }, [arena.id]);
 
     const parentAsset = assets.find(a => a.id === arena.assetId);
-    const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const allActions = getActionsForArena(arena.id);
-    const clanQuests = getClanQuestsForArena(arena, allActions);
-    const isClanQuestArena = clanQuests.length > 0 || normalizedArena.includes('quests - cla');
+    const normalizedArena = arena.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
 
-    const isSeasonQuestArena = normalizedArena.includes('quests - season');
+    const allActions = useMemo(() => {
+        if (typeof getActionsForArena !== 'function') return [];
+        return getActionsForArena(arena.id) || [];
+    }, [arena.id, getActionsForArena]);
+
+    const clanQuests = useMemo(() => {
+        if (!arena || typeof getClanQuestsForArena !== 'function') return [];
+        return getClanQuestsForArena(arena, allActions) || [];
+    }, [arena, allActions, getClanQuestsForArena]);
+
+    const isClanQuestArena = useMemo(() => {
+        return (clanQuests && clanQuests.length > 0) || normalizedArena.includes('quests - cla');
+    }, [clanQuests, normalizedArena]);
+
+    const isSeasonQuestArena = useMemo(() => normalizedArena.includes('quests - season'), [normalizedArena]);
     const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
 
     useEffect(() => {
@@ -125,37 +149,52 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     }, [skinColor]);
 
     useEffect(() => {
-        if (!isClanQuestArena || clanQuests.length === 0) return;
+        if (!isClanQuestArena || !clanQuests || clanQuests.length === 0) return;
+
         clanQuests.forEach(quest => {
-            if (quest.actionTemplate?.name) {
-                fetchClanQuestParticipants(quest.id, quest.actionTemplate.name);
+            if (quest?.id) {
+                if (quest.actionTemplate?.name && typeof fetchClanQuestParticipants === 'function') {
+                    fetchClanQuestParticipants(quest.id, quest.actionTemplate.name).catch(e => console.error("Error fetching participants:", e));
+                }
+                if (typeof joinClanMission === 'function') {
+                    joinClanMission(quest.id).catch(e => console.error("Error joining clan mission:", e));
+                }
             }
-            joinClanMission(quest.id);
         });
     }, [isClanQuestArena, clanQuests, fetchClanQuestParticipants, joinClanMission]);
 
-    const milestoneActions = allActions.filter(a => a.actionType === 'Marco');
-    const bronzeActions = allActions.filter(a => a.actionType !== 'Marco');
+    const milestoneActions = useMemo(() => allActions.filter(a => a.actionType === 'Marco'), [allActions]);
+    const bronzeActions = useMemo(() => allActions.filter(a => a.actionType !== 'Marco'), [allActions]);
 
-    const clanQuestTotals = clanQuests.reduce((acc, quest) => {
-        const progressValue = getClanQuestProgress(quest.id);
-        const goal = quest.requirements?.clanGoal || quest.goal_value || 50;
-        return {
-            totalProgress: acc.totalProgress + progressValue,
-            totalGoal: acc.totalGoal + goal
-        };
-    }, { totalProgress: 0, totalGoal: 0 });
+    const clanQuestTotals = useMemo(() => {
+        if (!clanQuests) return { totalProgress: 0, totalGoal: 0 };
+        return clanQuests.reduce((acc, quest) => {
+            let progressValue = 0;
+            if (typeof getClanQuestProgress === 'function') {
+                progressValue = getClanQuestProgress(quest.id) || 0;
+            }
+            const goal = quest.requirements?.clanGoal || quest.goal_value || 50;
+            return {
+                totalProgress: acc.totalProgress + progressValue,
+                totalGoal: acc.totalGoal + goal
+            };
+        }, { totalProgress: 0, totalGoal: 0 });
+    }, [clanQuests, getClanQuestProgress]);
+
     const isOfficeMode = clan?.clanType === 'Office';
-    const isLeader = clan?.leaderId === useGame().userProfile?.id;
+    const isLeader = clan?.leaderId === userProfile?.id;
     const isSharedPool = isOfficeMode || !!currentLinkType;
 
-    const allActionInstances = allActions.reduce((acc, action) => acc + action.repetitions, 0);
-    const allCompletedInstances = allActions.reduce((acc, action) => {
-        const completed = isSharedPool
-            ? useGame().getSharedActionPoolProgress(arena.id, action.id)
-            : tasks.filter(t => t.actionId === action.id && t.completed).length;
+    const allActionInstances = allActions?.reduce((acc, action) => acc + (action.repetitions || 1), 0) || 0;
+    const allCompletedInstances = allActions?.reduce((acc, action) => {
+        let completed = 0;
+        if (isSharedPool && typeof getSharedActionPoolProgress === 'function') {
+            completed = getSharedActionPoolProgress(arena.id, action.id) || 0;
+        } else {
+            completed = tasks.filter(t => t.actionId === action.id && t.completed).length;
+        }
         return acc + completed;
-    }, 0);
+    }, 0) || 0;
 
     const progress = isClanQuestArena
         ? (clanQuestTotals.totalGoal > 0
@@ -276,10 +315,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 {/* Shared Arena Toggle for Leaders */}
                                 {isEditing && isLeader && !isSpecialArena && (
                                     <button
-                                        onClick={() => setArenaAsShared(arena.id, !arena.description?.includes('[SHARED]'))}
+                                        onClick={() => typeof setArenaAsShared === 'function' && setArenaAsShared(arena.id, !arena.description?.includes('[SHARED]'))}
                                         className={`p-2 rounded-full transition-colors border ${arena.description?.includes('[SHARED]')
-                                                ? 'border-green-500/50 bg-green-500/20 hover:bg-green-500/30'
-                                                : 'border-white/15 bg-black/30 hover:bg-black/40'
+                                            ? 'border-green-500/50 bg-green-500/20 hover:bg-green-500/30'
+                                            : 'border-white/15 bg-black/30 hover:bg-black/40'
                                             }`}
                                         title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada ✓' : 'Compartilhar arena para o clã'}
                                     >
@@ -310,12 +349,12 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                             <UsersIcon className="w-3 h-3" />
                                             <span className="font-mono font-bold">
                                                 {(() => {
-                                                    const quest = seasonQuests.find(q => q.type === 'clan' && (
+                                                    const quest = seasonQuests?.find(q => q.type === 'clan' && (
                                                         q.title === arena.name ||
-                                                        q.actionTemplate.name === arena.name ||
-                                                        allActions.some(a => a.name === q.actionTemplate.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
+                                                        q.actionTemplate?.name === arena.name ||
+                                                        allActions?.some(a => a.name === q.actionTemplate?.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
                                                     ));
-                                                    return quest ? (clanQuestParticipants[quest.id] || 0) : 0;
+                                                    return quest ? (clanQuestParticipants?.[quest.id] || 0) : 0;
                                                 })()}
                                             </span>
                                         </div>
@@ -471,9 +510,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                         <div className="text-xs text-gray-400">Escolha o tipo de vínculo e convide um amigo para {editableArena.name || arena.name}.</div>
 
                         <div className="flex gap-2 mb-2">
-                            <button onClick={() => setCurrentLinkType('mentoria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${currentLinkType === 'mentoria' ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/30 text-gray-400 border-white/10'}`}>Mentoria</button>
-                            <button onClick={() => setCurrentLinkType('competicao')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${currentLinkType === 'competicao' ? 'bg-red-500 text-white border-red-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Desafio</button>
-                            <button onClick={() => setCurrentLinkType('parceria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${currentLinkType === 'parceria' ? 'bg-blue-500 text-white border-blue-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Parceria</button>
+                            <button onClick={() => setSelectionType('mentoria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'mentoria' ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/30 text-gray-400 border-white/10'}`}>Mentoria</button>
+                            <button onClick={() => setSelectionType('competicao')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'competicao' ? 'bg-red-500 text-white border-red-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Desafio</button>
+                            <button onClick={() => setSelectionType('parceria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'parceria' ? 'bg-blue-500 text-white border-blue-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Parceria</button>
                         </div>
 
                         {availableFriends.length === 0 ? (
@@ -483,7 +522,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 {availableFriends.map(friend => (
                                     <button
                                         key={friend.id}
-                                        onClick={() => sendObserverInvite(friend, (currentLinkType as any) || 'mentoria')}
+                                        onClick={() => sendObserverInvite(friend, selectionType)}
                                         className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-black/30 border border-white/10 flex items-center gap-3"
                                     >
                                         <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">

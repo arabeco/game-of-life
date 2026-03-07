@@ -59,7 +59,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     );
 
     // NEW: Task duration override state
-    const currentTask = tasks.find(t => t.id === taskId);
+    const currentTask = taskId ? tasks.find(t => t.id === taskId) : null;
     const [editableTaskDuration, setEditableTaskDuration] = useState<number>(currentTask?.duration || action?.duration || 60);
 
     // New View Mode State
@@ -99,7 +99,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isConfirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
-    const arenas = getArenas();
+    const arenas = typeof getArenas === 'function' ? getArenas() : [];
     const currentArena = arenas.find(a => a.id === editableAction.arenaId);
 
     // Office Mode specific
@@ -158,27 +158,33 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         }
 
         const executeSave = async () => {
-            if (taskId) {
-                // If we are editing a specific task from the planner
-                let scheduledStartTime: number | undefined;
-                if (startTime && startTime !== 'Sem Horário') {
-                    const [h, m] = startTime.split(':').map(Number);
-                    scheduledStartTime = h * 60 + m;
-                }
+            try {
+                if (taskId && typeof updateTask === 'function') {
+                    // If we are editing a specific task from the planner
+                    let scheduledStartTime: number | undefined;
+                    if (startTime && startTime !== 'Sem Horário') {
+                        const [h, m] = startTime.split(':').map(Number);
+                        scheduledStartTime = h * 60 + m;
+                    }
 
-                updateTask(taskId, {
-                    duration: editableTaskDuration,
-                    startTime: scheduledStartTime
-                });
-            } else if (isNew) {
-                // Let the context generate the ID to ensure consistency
-                const newAction = await addAction(actionData);
-                await scheduleTasks(newAction.id);
-            } else if (action) {
-                updateAction(action.id, actionData);
-                await scheduleTasks(action.id);
+                    updateTask(taskId, {
+                        duration: editableTaskDuration,
+                        startTime: scheduledStartTime
+                    });
+                } else if (isNew && typeof addAction === 'function') {
+                    // Let the context generate the ID to ensure consistency
+                    const newAction = await addAction(actionData);
+                    if (newAction?.id) {
+                        await scheduleTasks(newAction.id);
+                    }
+                } else if (action?.id && typeof updateAction === 'function') {
+                    updateAction(action.id, actionData);
+                    await scheduleTasks(action.id);
+                }
+                onClose();
+            } catch (err) {
+                console.error("Error executing save:", err);
             }
-            onClose();
         };
 
         executeSave().catch(err => console.error("Error saving action:", err));

@@ -10,10 +10,11 @@ import { NewArenaModal } from './NewArenaModal';
 import { ArenaCard } from './ArenaCard';
 
 const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void }> = ({ slot, isEditing, onClick }) => {
+    if (!slot) return null;
     const editableClasses = isEditing ? "hover:bg-black/80 cursor-pointer ring-1 ring-[var(--skin-accent-color)]/50 bg-[var(--skin-accent-color)]/5" : "cursor-default";
 
     const getGridClasses = (type: SlotLayoutType) => {
-        switch(type) {
+        switch (type) {
             case 1: return 'col-span-6'; // Wide
             case 2: return 'col-span-2 aspect-square'; // Square
             case 3: return 'col-span-3'; // Rect
@@ -41,12 +42,12 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
     const rarityDotColor = getRarityDotColor(rarity);
 
     const valueDisplay = typeof slot.value === 'object' && slot.value.imageUrl ? (
-         <div className="relative w-full h-full rounded-xl overflow-hidden group">
-             <img src={slot.value.imageUrl} alt={slot.value.caption} className="w-full h-full object-cover" />
-             <div className="absolute bottom-0 inset-x-0 bg-black/70 p-1 text-[9px] text-white font-bold truncate text-center">
-                 {slot.value.caption}
-             </div>
-         </div>
+        <div className="relative w-full h-full rounded-xl overflow-hidden group">
+            <img src={slot.value.imageUrl} alt={slot.value.caption} className="w-full h-full object-cover" />
+            <div className="absolute bottom-0 inset-x-0 bg-black/70 p-1 text-[9px] text-white font-bold truncate text-center">
+                {slot.value.caption}
+            </div>
+        </div>
     ) : (
         <span className="truncate font-semibold text-white">{String(slot.value)}</span>
     );
@@ -76,25 +77,39 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
     const { updateAssetSlotValue, getActionsForArena } = useGame();
 
     useEffect(() => {
+        if (!asset?.id) return;
         const timer = setTimeout(() => {
             setPlayShimmer(false);
         }, 1500); // Animation duration
         return () => clearTimeout(timer);
-    }, [asset.id]); // Re-trigger animation if asset changes
+    }, [asset?.id]); // Re-trigger animation if asset changes
+
+    if (!asset) {
+        return (
+            <div className="dossier-bg border border-red-500/30 rounded-2xl p-8 flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="text-4xl text-red-500/50">⚠️</div>
+                <h2 className="text-xl font-bold text-white uppercase italic">Ativo não encontrado</h2>
+                <p className="text-sm text-gray-400">Os dados deste dossiê estão indisponíveis ou incompletos.</p>
+                <button onClick={onBack} className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white font-bold transition-colors border border-white/20">
+                    VOLTAR
+                </button>
+            </div>
+        );
+    }
 
     const handleSave = (value: SlotValue) => {
         if (editingSlot) updateAssetSlotValue(asset.id, editingSlot.id, value);
         setEditingSlot(null);
     }
-    
+
     const handleMainButton = () => {
-        if(isEditing) {
+        if (isEditing) {
             setIsEditing(false);
         } else {
             onBack();
         }
     }
-    
+
     const viewingArena = asset.arenas.find(a => a.id === viewingArenaId);
 
     return (
@@ -122,18 +137,23 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                             </p>
                         </div>
                     </div>
-                    
+
                     {/* Scrollable Slots Area - Flexible but doesn't force expansion */}
                     <div className="flex-shrink-0 overflow-y-auto pr-1 -mr-2 pl-1 pb-2 custom-scrollbar min-h-0">
                         <div className="grid grid-cols-6 gap-1.5">
-                             {asset.slots.map(slot => (
-                                <SlotWidget 
-                                    key={slot.id} 
-                                    slot={slot} 
-                                    isEditing={isEditing} 
-                                    onClick={() => setEditingSlot(slot)} 
+                            {asset.slots?.map(slot => (
+                                <SlotWidget
+                                    key={slot.id}
+                                    slot={slot}
+                                    isEditing={isEditing}
+                                    onClick={() => setEditingSlot(slot)}
                                 />
-                             ))}
+                            ))}
+                            {(!asset.slots || asset.slots.length === 0) && (
+                                <div className="col-span-6 py-6 text-center text-[10px] text-gray-500 uppercase tracking-widest border border-dashed border-white/5 rounded-xl">
+                                    Nenhum espaço de dado configurado.
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -142,11 +162,11 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                         <h3 className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#101010] px-2 text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-widest z-10 border border-[var(--skin-accent-color)]/30 rounded-full">
                             Arenas
                         </h3>
-                        
+
                         <div className="overflow-y-auto pr-1 pt-2 custom-scrollbar">
                             <div className="grid grid-cols-3 gap-2 pb-1">
-                                {asset.arenas.map(arena => {
-                                    const arenaActions = getActionsForArena(arena.id);
+                                {asset.arenas?.map(arena => {
+                                    const arenaActions = typeof getActionsForArena === 'function' ? getActionsForArena(arena.id) : [];
                                     return (
                                         <div key={arena.id} className="aspect-[3/4] w-full">
                                             <ArenaCard
@@ -158,13 +178,13 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                                         </div>
                                     );
                                 })}
-                                
-                                <button 
-                                    onClick={() => setIsCreatingArena(true)} 
+
+                                <button
+                                    onClick={() => setIsCreatingArena(true)}
                                     className="aspect-[3/4] w-full border border-dashed border-[var(--skin-accent-color)]/40 rounded-lg flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/5 transition-all group bg-black/20"
                                 >
-                                    <PlusIcon className="w-5 h-5 text-gray-500 group-hover:text-[var(--skin-accent-color)] transition-colors mb-1"/>
-                                    <span className="text-[8px] font-bold text-gray-500 group-hover:text-[var(--skin-accent-color)] uppercase tracking-wider text-center leading-tight px-1">Add<br/>Arena</span>
+                                    <PlusIcon className="w-5 h-5 text-gray-500 group-hover:text-[var(--skin-accent-color)] transition-colors mb-1" />
+                                    <span className="text-[8px] font-bold text-gray-500 group-hover:text-[var(--skin-accent-color)] uppercase tracking-wider text-center leading-tight px-1">Add<br />Arena</span>
                                 </button>
                             </div>
                         </div>

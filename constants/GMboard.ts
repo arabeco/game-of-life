@@ -235,6 +235,8 @@ export const buildDefaultLevelUnlocks = (): LevelUnlocks => ({
   orbs: buildUnlockMap(SOVEREIGN_ASSETS.orbs),
   plates: buildUnlockMap(SOVEREIGN_ASSETS.plates),
   ornament: {},
+  insignias: {},
+  ui_skins: {},
 });
 
 // --- GM CONFIG & MASTERY ---
@@ -652,3 +654,4 @@ export const ASSETS_DATA: Asset[] = [
     slots: []
   },
 ];
+

@@ -3,6 +3,7 @@ import { Arena, Action } from '../types';
 import { DollarSignIcon, FlameIcon, CheckIcon, UsersIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
+import { calculateArenaProgress } from '../utils/progressUtils';
 
 const ASSET_ACCENT_COLORS: Record<string, string> = {
     consciencia: '#1a2a4a',
@@ -218,7 +219,7 @@ interface ArenaCardProps {
     actions: Action[];
     onClick: () => void;
     assetName?: string; // For overview
-    variant: 'overview' | 'dossier';
+    variant: 'overview' | 'dossier' | 'compact';
 }
 
 export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ 
@@ -229,7 +230,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     variant, 
     tasks: propTasks
 }) => {
-    const { appMode, tasks: contextTasks, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, reorderAction } = useGame();
+    const { appMode, tasks: contextTasks, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, reorderAction } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const [skinTone, setSkinTone] = useState('#F0C843');
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
@@ -296,8 +297,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const isClanQuestArena = clanQuests.length > 0 || normalizedArena.includes('quests - cla');
     const isSeasonQuestArena = normalizedArena.includes('quests - season');
     
-    let progress = 0;
-    const isGold = isClanQuestArena; // Default to gold if clan arena
     
     // Clan Quest Data
     useEffect(() => {
@@ -357,27 +356,15 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
     const participants = clanQuests.reduce((acc, quest) => acc + (clanQuestParticipants[quest.id] || 0), 0);
 
-    if (isClanQuestArena && clanQuests.length > 0) {
-        const clanQuestTotals = clanQuests.reduce((acc, quest) => {
-            const goal = quest.requirements?.clanGoal || quest.goal_value || 50;
-            const progressValue = getClanQuestProgress(quest.id);
-            return {
-                totalProgress: acc.totalProgress + progressValue,
-                totalGoal: acc.totalGoal + goal
-            };
-        }, { totalProgress: 0, totalGoal: 0 });
-
-        progress = clanQuestTotals.totalGoal > 0
-            ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
-            : (clanQuestTotals.totalProgress > 0 ? 100 : 0);
-    } else {
-        // Standard progress: Completed vs Planned (Repetitions)
-        const totalPlanned = actions.reduce((acc, a) => acc + (a.repetitions || 0), 0);
-        const totalCompleted = tasks.filter(t => actions.some(a => a.id === t.actionId) && t.completed).length;
-        progress = totalPlanned > 0 ? (totalCompleted / totalPlanned) * 100 : 0;
-    }
-    
-    progress = Math.min(100, Math.max(0, progress));
+    const progress = calculateArenaProgress({
+        arena,
+        actions,
+        tasks,
+        clanQuests,
+        getClanQuestProgress,
+        getSharedActionPoolProgress,
+        forceSharedPool: !!linkType,
+    }).progressPercent;
 
     const getIcon = () => {
         return <span className="text-xl leading-none">{arena.icon}</span>;
@@ -503,3 +490,5 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         </div>
     );
 };
+
+

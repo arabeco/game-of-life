@@ -169,3 +169,73 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+.accent-text {
+  color: var(--skin-accent-color);
+}
+
+.luxe-title-shadow {
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.65), 0 0 18px rgba(0, 0, 0, 0.35);
+}
+
+.arena-plasma {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.arena-plasma-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.arena-icon-slot {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arena-icon {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.arena-title-wrap {
+  min-height: 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 0.2rem;
+}
+
+.arena-title-text {
+  text-wrap: balance;
+}
+
+.arena-plate-progress {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.arena-plate-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+  transition: width 180ms ease, background-color 180ms ease;
+}

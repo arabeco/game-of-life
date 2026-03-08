@@ -377,6 +377,10 @@ export interface Report {
     maxStreak?: number;
     bestDay?: string;
     bestDayCount?: number;
+    daysWithoutCompletion?: number;
+    executionRatePct?: number;
+    timeElapsedPct?: number;
+    paceDeltaPct?: number;
     top3Actions?: { name: string; count: number }[];
     scoreBreakdown?: {
       progressPts: number;
@@ -602,6 +606,7 @@ export interface SeasonQuest {
   reward_type?: 'exp' | 'item_id' | 'chest';
   reward_value?: number | string;
   maxParticipants?: number;
+  tutorialLevel?: number;
 }
 
 // --- Hall of Fame / Feed Types ---
@@ -779,5 +784,7 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
+
+
 
 

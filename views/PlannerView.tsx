@@ -12,6 +12,8 @@ import { MilestonePoolAction } from '../components/MilestonePoolAction';
 import { ActionModal } from '../components/ActionModal';
 import { GlassCard } from '../components/GlassCard';
 import { useTutorial } from '../contexts/TutorialContext';
+import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
+import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
 
 const DayHeader: React.FC<{ currentDate: Date }> = ({ currentDate }) => {
@@ -1032,64 +1034,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const currentDayStr = toDateString(currentDate);
 
     // Recalculate Available Task Pool based on ACTIONS (Mirror Arenas) - Scheduled Tasks for Current Date
-    const availableTaskPool = useMemo(() => {
-        const pool: Record<string, { count: number; isUnlimited: boolean; taskIds?: string[] }> = {};
-        const activeArenaIds = new Set(assets.flatMap(a => a.arenas).filter(ar => !ar.isArchived).map(ar => ar.id));
-        
-        // Filter actions that belong to active arenas
-        const validActions = actions.filter(a => activeArenaIds.has(a.arenaId));
-
-        // DIAGNOSTIC LOG START
-        // console.log("--- BAY AREA CALC START ---");
-        // console.log("Date:", currentDayStr);
-
-        validActions.forEach(action => {
-            const maxRepetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
-            const isUnlimited = !!action.unlimited;
-            
-            // Count scheduled instances for the CURRENT VIEW DATE
-            // CRITICAL FIX 1: Count ONLY tasks that are SCHEDULED (startTime >= 0) or COMPLETED.
-            // Tasks in Bay Area (startTime < 0 AND !completed) should NOT count against the STOCK, 
-            // because they ARE the stock (just instantiated).
-            // NO! Wait. If I drag from Bay Area (stock) to Bay Area (instantiated), does it consume stock?
-            // "as ações do planner ao ser agendadas, deiminuem um do bay" -> Agendada = startTime >= 0.
-            // "ao voltar elas voltam pro bay somando ao total daquela acao."
-            
-            // Let's look at the tasks for this action today:
-            const allTasksForActionToday = tasks.filter(t => t.actionId === action.id && t.date === currentDayStr);
-            
-            // Scheduled or Completed tasks consume stock from the "Pool"
-            // Bay Area tasks (startTime < 0 and !completed) are effectively "in the pool" but instantiated.
-            
-            const consumedCount = allTasksForActionToday.filter(t => t.startTime >= 0 || t.completed).length;
-            
-            // The "Pool" display should show: (Max - Consumed)
-            // But wait, if I have 3 Max, and I instantiate 1 in Bay Area (startTime=-1), consumed is 0.
-            // So Pool shows 3. 
-            // And Bay Area shows the instantiated one too? No.
-            
-            // User says: "as ações da bay area sao as ações das arenas ativas menos as ações completas ou agendadas num horario."
-            // So: Stock = Total - (Scheduled_With_Time + Completed)
-            
-            const remaining = isUnlimited ? 99 : Math.max(0, maxRepetitions - consumedCount);
-
-            pool[action.id] = {
-                count: remaining,
-                isUnlimited,
-                taskIds: []
-            };
-        });
-
-        return pool;
-    }, [actions, tasks, currentDayStr, assets]);
-
+    const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, currentDayStr), [actions, taskPool, tasks, currentDayStr]);
 
     const getActionById = (id: string) => actions.find(a => a.id === id);
     const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
     
     const dailyTasks = getTasksForDate(currentDate);
-    const bayAreaTasks = dailyTasks.filter(t => t.startTime < 0 && !t.completed); // Only uncompleted tasks in Bay Area
-    const scheduledTasks = dailyTasks.filter(t => t.startTime >= 0); // For DailyView
+    const bayAreaTasks = dailyTasks.filter(isTaskInPool); // Only uncompleted tasks in Bay Area
+    const scheduledTasks = dailyTasks.filter(hasScheduledTime); // For DailyView
     
     const allTasksCompleted = checklistItems.every(item => item.completed);
     const isToday = currentDate.toDateString() === new Date().toDateString();

@@ -8,7 +8,7 @@ import { Portal } from './Portal';
 import { SitrepContent } from './SitrepContent';
 
 const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment) => {
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id));
+    const committedTasks = tasks.filter(t => t.date === dailyCommitment.date && dailyCommitment.taskIds.includes(t.id));
 
     const tasksWithStatus = committedTasks.map(task => {
         return {
@@ -23,21 +23,12 @@ const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyComm
 };
 
 export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, tasks, actions, getArenas } = useGame();
-
-    const isClanQuestActionId = (actionId: string) => {
-        const action = actions.find(a => a.id === actionId);
-        if (!action) return false;
-        const arena = getArenas().find(ar => ar.id === action.arenaId);
-        if (!arena?.name) return false;
-        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        return normalized.includes('quests - cla');
-    };
+    const { activeCycle, dailyCommitment, tasks } = useGame();
 
     const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment), [tasks, dailyCommitment]);
 
     const getLightbulbColor = () => {
-        if (!dailyCommitment.isLocked) return 'accent-text';
+        if (dailyCommitment.stage !== 'battle') return 'accent-text';
         if (commitmentStats.totalCount === 0) return 'accent-text';
         const ratio = commitmentStats.completedCount / commitmentStats.totalCount;
         if (ratio === 1) return 'text-green-400';
@@ -64,3 +55,4 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </Portal>
     );
 };
+

@@ -1,4 +1,4 @@
-
+﻿
 
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -8,17 +8,20 @@ import { Report, Cycle, ChestType, FeedEvent } from '../types';
 import { GlassCard } from '../components/GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, Trash2Icon } from '../components/Icons';
 import { CycleComparator } from '../components/CycleComparator';
-import { handleShare } from '../components/Share';
+import { exportElementAsImage, handleShare } from '../components/Share';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { NewCycleSetupView } from './NewCycleSetupView';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { supabase } from '../supabaseClient';
 import { ReportGenerationModal } from '../components/ReportGenerationModal';
+import { LegacyExportDocument, LegacyEraSummary } from '../components/LegacyExportDocument';
+import { LegacyGenerationModal } from '../components/LegacyGenerationModal';
 import { ChestOpeningModal } from '../components/ChestOpeningModal';
 import { Portal } from '../components/Portal';
 
 import { NOBILITY_RANKS } from '../constants/nobility';
 import { resolveItemDef } from '../constants/items';
+import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 
 // --- Helper Functions ---
 import { parseDate, daysBetween, formatDate, getScoreGrade } from '../utils/dateUtils';
@@ -49,6 +52,7 @@ const toRoman = (num: number) => {
     return result;
 };
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+const LEGACY_EXPORT_CAPTURE_ID = 'legacy-complete-capture';
 
 // --- Sub-components for Active Cycle HUD ---
 const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
@@ -59,7 +63,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm("Tem certeza que deseja excluir este ciclo? Isso não pode ser desfeito.")) {
+        if (confirm("Tem certeza que deseja excluir este ciclo? Isso nÃ£o pode ser desfeito.")) {
             deleteCycle(cycle.id);
         }
     };
@@ -82,7 +86,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
         return normalized.includes('quests - cla');
     };
 
-    // Cálculo de dias
+    // CÃ¡lculo de dias
     const startD = parseDate(startDate);
     const endD = parseDate(endDate);
     const todayD = parseDate(today);
@@ -91,12 +95,10 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const daysElapsed = Math.max(0, daysBetween(startD, todayD) + 1);
     const timeProgress = Math.min(100, (daysElapsed / totalDays) * 100);
 
-    // Filtrar tarefas apenas do usuário atual e dentro do período do ciclo
-    // Incluir Quests na contagem principal conforme solicitação do usuário
-    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate);
+    const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, startDate, endDate);
     const completedTasks = cycleTasks.filter(t => t.completed);
 
-    // Quest Tasks (mantidas para exibição de bônus específica se necessário)
+    // Quest Tasks (mantidas para exibiÃ§Ã£o de bÃ´nus especÃ­fica se necessÃ¡rio)
     const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId) || isClanQuestActionId(t.actionId));
     const completedQuests = questTasks.filter(t => t.completed);
 
@@ -171,11 +173,11 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                 <p className={`text-4xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</p>
                 <p className="text-sm font-bold text-white mt-1">Score: {currentScore}</p>
                 <div className="flex justify-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-gray-500 uppercase font-mono">
-                    <span>🏆 {milestonesCompleted} Marcos</span>
-                    <span>⚔️ {questsCompletedCount} Quests</span>
-                    <span>🔥 {uniqueDays} Dias</span>
-                    <span>⏱️ {avgHoursPerDay} h/dia</span>
-                    <span>🔗 {maxStreakHUD} Streak</span>
+                    <span>ðŸ† {milestonesCompleted} Marcos</span>
+                    <span>âš”ï¸ {questsCompletedCount} Quests</span>
+                    <span>ðŸ”¥ {uniqueDays} Dias</span>
+                    <span>â±ï¸ {avgHoursPerDay} h/dia</span>
+                    <span>ðŸ”— {maxStreakHUD} Streak</span>
                 </div>
             </div>
         </GlassCard>
@@ -199,7 +201,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant='neutral' className='p-4 space-y-4 w-full max-w-sm' onClick={e => e.stopPropagation()}>
                     <h2 className='text-center font-bold text-lg uppercase'>Definir Ciclo de Soberania</h2>
-                    <p className="text-center text-sm text-gray-400">Dê um nome à sua campanha e escolha a data de término para formalizar seu compromisso.</p>
+                    <p className="text-center text-sm text-gray-400">DÃª um nome Ã  sua campanha e escolha a data de tÃ©rmino para formalizar seu compromisso.</p>
                     <div>
                         <label className='text-sm font-bold'>Nome do Ciclo</label>
                         <input
@@ -211,7 +213,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
                         />
                     </div>
                     <div>
-                        <label className='text-sm font-bold'>Data de Término</label>
+                        <label className='text-sm font-bold'>Data de TÃ©rmino</label>
                         <input
                             type='date'
                             value={endDate}
@@ -281,14 +283,14 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                 <div className={`flex items-center flex-wrap gap-3 mt-2 pt-2 border-t ${isLatest ? 'border-[var(--skin-accent-color)]/20' : 'border-white/5'}`}>
                     {report.highlight?.mostFocusedArena && (
                         <div className="flex items-center gap-2 text-xs min-w-0">
-                            <span className="text-[var(--skin-accent-color)]">🎯</span>
+                            <span className="text-[var(--skin-accent-color)]">ðŸŽ¯</span>
                             <span className="text-gray-400 truncate">Foco: <span className="text-gray-300">{report.highlight.mostFocusedArena}</span></span>
                         </div>
                     )}
                     {report.highlight?.mostRepeatedAction && (
                         <div className="flex items-center gap-2 text-xs min-w-0">
-                            <span className="text-blue-400">⚡</span>
-                            <span className="text-gray-400 truncate">Hábito: <span className="text-gray-300">{report.highlight.mostRepeatedAction}</span></span>
+                            <span className="text-blue-400">âš¡</span>
+                            <span className="text-gray-400 truncate">HÃ¡bito: <span className="text-gray-300">{report.highlight.mostRepeatedAction}</span></span>
                         </div>
                     )}
                 </div>
@@ -320,6 +322,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [scanError, setScanError] = useState<string | null>(null);
     const [scanAttempt, setScanAttempt] = useState(0);
     const [showChestModal, setShowChestModal] = useState(false);
+    const [isExportingLegacy, setIsExportingLegacy] = useState(false);
+    const [showLegacyGenerationModal, setShowLegacyGenerationModal] = useState(false);
     const assetsRef = useRef(assets);
     const actionsRef = useRef(actions);
     const endCycleRef = useRef(endCycle);
@@ -405,7 +409,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const performEndOfCycle = () => {
         try {
             const result = endCycleRef.current(assetsRef.current, actionsRef.current);
-            if (!result?.report) throw new Error('Relatório inválido');
+            if (!result?.report) throw new Error('RelatÃ³rio invÃ¡lido');
             const { report, expGained } = result;
             setSelectedReport(report);
             setExpGained(expGained);
@@ -468,7 +472,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             return chestType;
         } catch (error) {
             console.error('Erro ao analisar ciclo:', error);
-            setScanError('Não foi possível analisar o ciclo. Tente novamente.');
+            setScanError('NÃ£o foi possÃ­vel analisar o ciclo. Tente novamente.');
             return null;
         }
     };
@@ -608,7 +612,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setAchievementUnlocked({
                 type: 'REPORT_COMPLETED',
                 data: {
-                    title: `Relatório de Ciclo - ${selectedReport?.performanceScore || 0}%`,
+                    title: `RelatÃ³rio de Ciclo - ${selectedReport?.performanceScore || 0}%`,
                     reward: {
                         exp: expGained,
                         items: allEarnedItems,
@@ -632,6 +636,119 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return '#6B7280';
     };
     const getEraLabel = (index: number) => `ERA ${toRoman(index + 1)}`;
+    const normalizedEraBreaks = useMemo(
+        () => Array.from<number>(new Set(eraBreaks.filter((b): b is number => typeof b === 'number' && b > 0 && b < sortedReports.length))).sort((a, b) => a - b),
+        [eraBreaks, sortedReports.length]
+    );
+    const eraSegments = useMemo(() => {
+        if (sortedReports.length === 0) return [] as Array<{ start: number; end: number }>;
+        const segments: Array<{ start: number; end: number }> = [];
+        let start = 0;
+        normalizedEraBreaks.forEach((breakIndex) => {
+            segments.push({ start, end: breakIndex - 1 });
+            start = breakIndex;
+        });
+        segments.push({ start, end: sortedReports.length - 1 });
+        return segments;
+    }, [sortedReports, normalizedEraBreaks]);
+    const eraSummaries = useMemo<LegacyEraSummary[]>(() => {
+        return eraSegments.map((segment, index) => {
+            const segmentReports = sortedReports.slice(segment.start, segment.end + 1);
+            const newestReport = segmentReports[0];
+            const oldestReport = segmentReports[segmentReports.length - 1];
+            const avgScore = Math.round(segmentReports.reduce((sum, report) => sum + report.performanceScore, 0) / Math.max(segmentReports.length, 1));
+            const totalHours = segmentReports.reduce((sum, report) => sum + (report.metrics.totalHours || 0), 0);
+            const bestStreak = segmentReports.reduce((best, report) => Math.max(best, report.metrics.maxStreak || 0), 0);
+            const grade = getScoreGrade(avgScore).grade;
+            const color = getEraTone(grade);
+
+            const arenaCounts = new Map<string, number>();
+            const actionCounts = new Map<string, number>();
+
+            segmentReports.forEach((report) => {
+                const arenaName = report.highlight?.mostFocusedArena?.trim() || 'Sem arena dominante';
+                arenaCounts.set(arenaName, (arenaCounts.get(arenaName) || 0) + 1);
+
+                const dominantActions = report.metrics.top3Actions && report.metrics.top3Actions.length > 0
+                    ? report.metrics.top3Actions
+                    : (report.highlight?.mostRepeatedAction
+                        ? [{ name: report.highlight.mostRepeatedAction, count: report.highlight.mostRepeatedActionCount || 1 }]
+                        : []);
+
+                dominantActions.forEach((action) => {
+                    const actionName = action.name?.trim();
+                    if (!actionName) return;
+                    actionCounts.set(actionName, (actionCounts.get(actionName) || 0) + Math.max(action.count || 1, 1));
+                });
+            });
+
+            const dominantArena = [...arenaCounts.entries()]
+                .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))[0]?.[0] || 'Sem arena dominante';
+
+            const topActions = [...actionCounts.entries()]
+                .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))
+                .slice(0, 3)
+                .map(([name, count]) => ({ name, count }));
+
+            return {
+                label: getEraLabel(index),
+                startDate: oldestReport?.startDate || newestReport?.startDate || '',
+                endDate: newestReport?.endDate || oldestReport?.endDate || '',
+                avgScore,
+                totalHours,
+                cycleCount: segmentReports.length,
+                dominantArena,
+                topActions,
+                bestStreak,
+                grade,
+                color,
+            };
+        });
+    }, [eraSegments, sortedReports]);
+    const sovereignName = userProfile.nickname || userProfile.username || 'Soberano';
+    const historicalAverageScore = useMemo(
+        () => sortedReports.length > 0 ? sortedReports.reduce((sum, report) => sum + report.performanceScore, 0) / sortedReports.length : 0,
+        [sortedReports]
+    );
+    const totalHistoricalHours = useMemo(
+        () => sortedReports.reduce((sum, report) => sum + (report.metrics.totalHours || 0), 0),
+        [sortedReports]
+    );
+    const historyStartDate = eraSummaries[eraSummaries.length - 1]?.startDate;
+    const historyEndDate = eraSummaries[0]?.endDate;
+
+    const handleExportLegacy = async () => {
+        if (eraSummaries.length === 0) {
+            showToast('Nao ha Eras concluidas para exportar.');
+            return;
+        }
+
+        setIsExportingLegacy(true);
+        try {
+            await exportElementAsImage(LEGACY_EXPORT_CAPTURE_ID, {
+                fileName: `glyph-registro-de-soberania-${getLocalDateString()}.png`,
+                title: `Registro de Soberania - ${sovereignName}`,
+                backgroundColor: '#050505',
+                preferShare: false,
+            });
+            showToast('Registro de Soberania exportado.');
+        } catch (error) {
+            console.error('Erro ao exportar legado completo:', error);
+            showToast('Nao foi possivel exportar o Legado Completo.');
+        } finally {
+            setIsExportingLegacy(false);
+        }
+    };
+
+    const handleStartLegacyExport = () => {
+        if (eraSummaries.length === 0) {
+            showToast('Nao ha Eras concluidas para exportar.');
+            return;
+        }
+
+        setShowLegacyGenerationModal(true);
+    };
+
 
     const handleStartEraEdit = () => setIsEditingEras(true);
     const handleResetEras = async () => {
@@ -714,7 +831,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20">
-                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p>
+                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando RelatÃ³rio...</p>
                             </div>
                         )}
                     </div>
@@ -744,22 +861,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     }
                 });
 
-                const uniqueBreaks = Array.from<number>(new Set(eraBreaks.filter((b): b is number => typeof b === 'number' && b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
-                const eraSegments = sortedReports.length > 0 ? (() => {
-                    const segments: Array<{ start: number; end: number }> = [];
-                    let start = 0;
-                    uniqueBreaks.forEach(b => {
-                        segments.push({ start, end: b - 1 });
-                        start = b;
-                    });
-                    segments.push({ start, end: sortedReports.length - 1 });
-                    return segments;
-                })() : [];
-
                 return (
                     <div className="pb-12">
                         {reportForComparison && (
-                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
+                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatÃ³rio para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
                         {activeCycle ? (
@@ -771,7 +876,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         ) : (
                             <div className="relative z-20 space-y-2">
                                 <button id="start-new-cycle-button" onClick={() => setIsStartingCycle(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
-                                {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem histórico. Inicie sua jornada.</div>}
+                                {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem histÃ³rico. Inicie sua jornada.</div>}
                                 <button id="eras-button" onClick={handleStartEraEdit} disabled={isEditingEras || sortedReports.length < 2} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">SETAR ERAS</button>
                                 <button onClick={handleResetEras} disabled={sortedReports.length < 2 || (!hasCustomEras && eraBreaks.length === defaultEraBreaks.length)} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">RESETAR ERAS</button>
                             </div>
@@ -890,7 +995,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 </div>
                                 {reports.length >= 2 && !activeCycle && !reportForComparison && (
                                     <div className="mt-4">
-                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÚLTIMOS 2 CICLOS</button>
+                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÃšLTIMOS 2 CICLOS</button>
+                                    </div>
+                                )}
+                                {sortedReports.length > 0 && (
+                                    <div className="mt-4 space-y-2">
+                                        <button
+                                            onClick={handleStartLegacyExport}
+                                            disabled={isExportingLegacy || showLegacyGenerationModal}
+                                            className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {(isExportingLegacy || showLegacyGenerationModal) ? 'SELANDO LEGADO...' : 'EXPORTAR LEGADO COMPLETO'}
+                                        </button>
+                                        <p className="text-[10px] text-center text-gray-500 uppercase tracking-[0.25em]">
+                                            Gera uma imagem longa com todas as Eras, scores historicos e acoes dominantes.
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -904,10 +1023,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         report={selectedReport}
                         onOk={isPostCycleFlow ? handlePostCycleResultsOk : handleCloseDynamic}
                         onCompare={() => { setReportForComparison(selectedReport); setView('hub'); }}
-                        onShare={() => handleShare('report-summary-card-capture', `Relatório de Ciclo ${formatDate(selectedReport.startDate)} - Life OS`)}
+                        onShare={() => handleShare('report-summary-card-capture', `RelatÃ³rio de Ciclo ${formatDate(selectedReport.startDate)} - Life OS`)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onDelete={() => {
-                            if (confirm("Tem certeza que deseja excluir este relatório?")) {
+                            if (confirm("Tem certeza que deseja excluir este relatÃ³rio?")) {
                                 // We need a way to delete historical reports.
                                 // For now, maybe just hide it or we need a proper deleteReport function
                                 // But the user asked to delete "cycles". A past report IS a cycle.
@@ -931,13 +1050,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             if (earnedChest) {
                                 addChest(earnedChest);
                                 const msg = grantedInsignias.length > 0
-                                    ? `✦ Baú ${earnedChest} e ${grantedInsignias.length} Insígnia(s) adicionados\n✦ +${expGained} XP computados`
-                                    : `✦ Baú ${earnedChest} adicionado ao inventário\n✦ +${expGained} XP computados`;
+                                    ? `âœ¦ BaÃº ${earnedChest} e ${grantedInsignias.length} InsÃ­gnia(s) adicionados\nâœ¦ +${expGained} XP computados`
+                                    : `âœ¦ BaÃº ${earnedChest} adicionado ao inventÃ¡rio\nâœ¦ +${expGained} XP computados`;
                                 showToast(msg);
                             } else {
                                 const msg = grantedInsignias.length > 0
-                                    ? `✦ ${grantedInsignias.length} Insígnia(s) adicionada(s) ao inventário\n✦ +${expGained} XP computados`
-                                    : `✦ +${expGained} XP foram computados ao seu perfil`;
+                                    ? `âœ¦ ${grantedInsignias.length} InsÃ­gnia(s) adicionada(s) ao inventÃ¡rio\nâœ¦ +${expGained} XP computados`
+                                    : `âœ¦ +${expGained} XP foram computados ao seu perfil`;
                                 showToast(msg);
                             }
                             setIsPostCycleFlow(false);
@@ -948,21 +1067,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         expGained={isPostCycleFlow ? expGained : undefined}
                         insignias={isPostCycleFlow ? grantedInsignias : []}
                     />
-                ) : <p>Erro ao carregar relatório.</p>;
+                ) : <p>Erro ao carregar relatÃ³rio.</p>;
             case 'comparing':
                 return reportsToCompare ? (
                     <CycleComparator
                         currentCycleReport={reportsToCompare[0]}
                         pastCycleReport={reportsToCompare[1]}
                     />
-                ) : <p>Erro ao carregar comparação.</p>;
+                ) : <p>Erro ao carregar comparaÃ§Ã£o.</p>;
         }
     };
 
     const getTitle = () => {
         switch (view) {
             case 'results': return 'Resultados';
-            case 'comparing': return 'Análise Comparativa';
+            case 'comparing': return 'AnÃ¡lise Comparativa';
             case 'reward':
                 return 'Fim do Ciclo';
             default: return 'Ciclos';
@@ -991,11 +1110,32 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
                 </div>
             </div>
+            {showLegacyGenerationModal && (
+                <LegacyGenerationModal
+                    onComplete={handleExportLegacy}
+                    onClose={() => setShowLegacyGenerationModal(false)}
+                />
+            )}
+            {eraSummaries.length > 0 && (
+                <div className="fixed left-[-20000px] top-0 pointer-events-none z-[-1]" aria-hidden="true">
+                    <LegacyExportDocument
+                        id={LEGACY_EXPORT_CAPTURE_ID}
+                        userName={sovereignName}
+                        generatedAt={new Date().toLocaleString('pt-BR')}
+                        eraSummaries={eraSummaries}
+                        totalCycles={sortedReports.length}
+                        historicalAverageScore={historicalAverageScore}
+                        totalHistoricalHours={totalHistoricalHours}
+                        historyStartDate={historyStartDate}
+                        historyEndDate={historyEndDate}
+                    />
+                </div>
+            )}
             {isStartingCycle && <StartCycleModal onClose={() => setIsStartingCycle(false)} onStart={startCycle} />}
             {showConfirmEndCycle && (
                 <ConfirmationModal
                     title="Encerrar Ciclo?"
-                    message="Ao fechar este ciclo, suas ações não concluídas no grid serão movidas para o pool de ações e suas arenas serão revisadas."
+                    message="Ao fechar este ciclo, suas aÃ§Ãµes nÃ£o concluÃ­das no grid serÃ£o movidas para o pool de aÃ§Ãµes e suas arenas serÃ£o revisadas."
                     onConfirm={confirmEndCycle}
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
@@ -1014,3 +1154,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
+
+
+
+
+
+
+

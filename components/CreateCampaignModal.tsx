@@ -20,7 +20,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ select
 
     const selectedArenas = getArenas().filter(a => selectedArenaIds.includes(a.id));
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!title.trim()) return;
 
         const arenaConfig = selectedArenaIds.reduce((acc, id, index) => ({
@@ -31,7 +31,8 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ select
             }
         }), {});
 
-        addCampaign({
+        try {
+            await addCampaign({
             title: title.trim(),
             description: description.trim(),
             deadline: deadline || undefined,
@@ -42,10 +43,13 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ select
             order: 0,
             priority: 'media',
             priorityOrder: 0
-        });
+            });
 
-        onCreated();
-        onClose();
+            onCreated();
+            onClose();
+        } catch (error) {
+            console.error('Failed to create campaign:', error);
+        }
     };
 
     return (

@@ -97,6 +97,13 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const plannedDuration = Math.max(1, daysBetween(new Date(report.startDate), plannedEndDate));
     const timePercentage = Math.min(100, (duration / plannedDuration) * 100);
     const consistencyPct = metrics.consistencyDays ? Math.min(100, Math.round((metrics.consistencyDays / totalDays) * 100)) : 0;
+    const executionPercentage = metrics.executionRatePct ?? Math.min(100, Math.round((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100));
+    const timeElapsedPercentage = metrics.timeElapsedPct ?? Math.round(timePercentage);
+    const zeroDays = metrics.daysWithoutCompletion ?? Math.max(0, totalDays - (metrics.consistencyDays || 0));
+    const paceDelta = metrics.paceDeltaPct ?? (executionPercentage - timeElapsedPercentage);
+    const paceLabel = paceDelta >= 5 ? 'Adiantado' : paceDelta <= -5 ? 'Atrasado' : 'No compasso';
+    const paceColor = paceDelta >= 5 ? 'text-green-400' : paceDelta <= -5 ? 'text-red-400' : 'text-white';
+
 
     // Prepare data for Radar Chart
     const radarData = assetProgress.map(ap => ({
@@ -105,19 +112,18 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         fullMark: 100
     }));
 
-    // Slide 1: ExecuÃ§Ã£o
+    // Slide 1: Execução
     const renderExecutionSlide = () => (
         <div className="flex flex-col h-full space-y-8 p-6">
             <div className="text-center">
-                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">ExecuÃ§Ã£o</h3>
+                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Execução</h3>
                 <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
             </div>
 
             <div className="space-y-6">
-                {/* Actions Bar */}
                 <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
                     <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                        <span>AÃ§Ãµes</span>
+                        <span>Ações</span>
                         <span className="text-white">{metrics.actionsCompleted} <span className="text-gray-600">/</span> {metrics.totalPlannedActions}</span>
                     </div>
                     <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
@@ -128,7 +134,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
                 </div>
 
-                {/* Time Bar */}
                 <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
                     <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
                         <span>Tempo</span>
@@ -150,14 +155,26 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 </div>
                 <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
                     <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.avgHoursPerDay ?? (metrics.totalHours / totalDays).toFixed(1)}</p>
-                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">MÃ©dia h/dia</p>
+                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Média h/dia</p>
                 </div>
             </div>
 
-            {/* ConsistÃªncia */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
+                    <p className="text-3xl font-black text-white mb-1 tracking-tighter">{zeroDays}</p>
+                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Dias Zerados</p>
+                    <p className="text-[9px] text-gray-600 mt-1">{metrics.consistencyDays || 0}/{totalDays} dias ativos</p>
+                </div>
+                <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
+                    <p className={`text-3xl font-black mb-1 tracking-tighter ${paceColor}`}>{paceDelta > 0 ? `+${paceDelta}` : paceDelta}</p>
+                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Ritmo</p>
+                    <p className="text-[9px] text-gray-600 mt-1">{paceLabel} • exec {executionPercentage}% x tempo {timeElapsedPercentage}%</p>
+                </div>
+            </div>
+
             <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
                 <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                    <span>ConsistÃªncia</span>
+                    <span>Consistência</span>
                     <span className="text-white">{metrics.consistencyDays || 0} <span className="text-gray-600">/</span> {totalDays} <span className="text-gray-600 text-[8px]">DIAS</span></span>
                 </div>
                 <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
@@ -547,3 +564,4 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </Portal>
     );
 };
+

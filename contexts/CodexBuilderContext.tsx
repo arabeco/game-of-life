@@ -168,15 +168,17 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const addArena: GameContextType['addArena'] = async (assetId, arenaData) => {
     // In Builder Mode, we create a temporary arena object
     // We mock the properties that would usually come from DB or be auto-generated
+    const extendedArenaData = arenaData as Omit<Arena, 'id' | 'assetId' | 'actionIds'>;
     const newArena: Arena = {
         id: crypto.randomUUID(),
         assetId: assetId,
-        name: arenaData.name,
-        description: arenaData.description || '',
-        icon: arenaData.icon || '⚔️',
-        folderId: arenaData.folderId || null,
-        originCodexId: arenaData.originCodexId,
-        codexLevel: arenaData.codexLevel,
+        name: extendedArenaData.name,
+        description: extendedArenaData.description || '',
+        icon: extendedArenaData.icon || '⚔️',
+        actionIds: [],
+        folderId: extendedArenaData.folderId,
+        originCodexId: extendedArenaData.originCodexId,
+        codexLevel: extendedArenaData.codexLevel,
         isArchived: false,
         priority: 'media',
         order: draftArenas.length, // Append to end
@@ -208,8 +210,6 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
       repetitions: actionData.repetitions || 1,
       actionType: actionData.actionType || 'Ação Recorrente',
       difficulty: actionData.difficulty || 1,
-      xpReward: actionData.xpReward || 10,
-      goldReward: actionData.goldReward || 0,
       scheduledDays: actionData.scheduledDays,
       scheduledStartTime: actionData.scheduledStartTime,
       originCodexId: actionData.originCodexId
@@ -280,3 +280,5 @@ export const useCodexBuilder = () => {
   }
   return context;
 };
+
+

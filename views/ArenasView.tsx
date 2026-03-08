@@ -13,6 +13,7 @@ import { FolderDetailModal } from '../components/FolderDetailModal';
 import { CampaignDetailModal } from '../components/CampaignDetailModal';
 import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
+import { calculateCampaignProgress } from '../utils/progressUtils';
 
 type PendingAction = {
     id: string;
@@ -26,7 +27,7 @@ type PendingAction = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile } = useGame();
+    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress } = useGame();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
 
@@ -400,7 +401,7 @@ export const ArenasView: React.FC = () => {
 
                 console.log('CREATING NEW CAMPAIGN');
                 // Create new campaign without confirmation (Edit Mode)
-                addCampaign({
+                await addCampaign({
                     title: "Nova Campanha",
                     description: "",
                     arenaIds: [targetId, finalDraggedId],
@@ -446,6 +447,20 @@ export const ArenasView: React.FC = () => {
 
     const getAssetById = (id: string) => assets.find(a => a.id === id);
     const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
+    const getCampaignProgress = (campaign: Campaign) => {
+        const arenasById = Object.fromEntries(getArenas().map(arena => [arena.id, arena]));
+        const actionsByArena = Object.fromEntries(getArenas().map(arena => [arena.id, getActionsForArena(arena.id)]));
+
+        return calculateCampaignProgress({
+            campaign,
+            arenasById,
+            actionsByArena,
+            tasks,
+            getClanQuestsForArena,
+            getClanQuestProgress,
+            getSharedActionPoolProgress,
+        });
+    };
     const assetOptions = assets;
 
     const handleAddPendingAction = () => {
@@ -547,14 +562,12 @@ export const ArenasView: React.FC = () => {
                         <span className="text-sm">📁</span>
                         <span className="text-[9px] font-bold text-gray-300 truncate leading-none pt-0.5">{campaign.title}</span>
                     </div>
-                    {isParallel && (
-                         <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden shrink-0 ml-1">
+                    <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden shrink-0 ml-1">
                             <div 
                                 className="h-full bg-[var(--skin-accent-color)] transition-all duration-500"
                                 style={{ width: `${progress}%` }}
                             />
                         </div>
-                    )}
                 </div>
 
                 {/* Content / Thumbnails - Adjusted for taller/wider layout */}
@@ -789,15 +802,59 @@ export const ArenasView: React.FC = () => {
         );
     }
 
+    function renderArenaBoardCard(arena: Arena, options: { assetName?: string; showInsertionIndicator?: boolean } = {}) {
+        const alreadyInCampaign = allCampaignArenaIds.includes(arena.id);
+        const isBlocked = isSelectionMode && alreadyInCampaign;
+        const isDragOver = dragOverId === arena.id;
+        const isDragged = draggedId === arena.id;
+
+        return (
+            <div
+                key={arena.id}
+                data-drop-id={arena.id}
+                onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
+                onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
+                className={`relative transition-all duration-200 select-none cursor-grab active:cursor-grabbing ${isDragOver ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : 'z-10'} ${isDragged ? 'opacity-30 brightness-50' : ''} ${isBlocked ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                style={{ touchAction: 'none' }}
+                onClick={() => {
+                    if (!isSelectionMode && !isBlocked) {
+                        setSelectedArenaId(arena.id);
+                    }
+                }}
+            >
+                <div className="absolute inset-0 z-50 pointer-events-auto" />
+                {options.showInsertionIndicator && isDragOver && (
+                    <div
+                        className={`absolute top-0 bottom-0 w-1 bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--skin-accent-color)] z-30 pointer-events-none rounded-full ${dragOverSide === 'left' ? '-left-1.5' : '-right-1.5'}`}
+                    />
+                )}
+                <div className={`relative transition-transform duration-200 ${options.showInsertionIndicator && isDragOver ? (dragOverSide === 'left' ? 'translate-x-1' : '-translate-x-1') : ''}`}>
+                    <ArenaCard
+                        arena={arena}
+                        assetName={options.assetName}
+                        actions={getActionsForArena(arena.id)}
+                        onClick={() => {}}
+                        variant="overview"
+                    />
+                    {isBlocked && (
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center border-gray-400 bg-black/50">
+                            <span className="text-gray-500 font-bold text-[10px]">⛔</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             {renderDragPreview()}
             <div className="px-4 pb-4 pt-4 relative min-h-full">
                 <div className="flex items-center justify-end gap-2 mb-4 z-[60]" id="campaigns-section">
-                    <button 
-                        onClick={handleCreateCampaignClick} 
+                    <button
+                        onClick={handleCreateCampaignClick}
                         className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                            isSelectionMode 
+                            isSelectionMode
                                 ? 'bg-[var(--skin-accent-color)] text-black animate-pulse'
                                 : 'bg-white/10 text-gray-400 hover:bg-white/20'
                         }`}
@@ -805,7 +862,7 @@ export const ArenasView: React.FC = () => {
                         {isSelectionMode ? 'Modo Organização (Ativo)' : 'Organizar Campanhas'}
                     </button>
                     <div className="flex items-center bg-black/40 rounded-full px-1 border border-white/5">
-                        <button 
+                        <button
                             onClick={handleCycleViewMode}
                             className={`p-1.5 rounded-full transition-colors flex items-center gap-1.5 ${arenasViewMode !== 'free' ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
                             title={`Modo: ${arenasViewMode === 'free' ? 'Livre' : arenasViewMode === 'priorities' ? 'Prioridades' : 'Por Ativo'}`}
@@ -831,22 +888,19 @@ export const ArenasView: React.FC = () => {
                 <div id="arenas-container" className="space-y-8">
                     {arenasViewMode === 'free' && (
                         <div className="grid grid-cols-4 gap-3">
-                            {/* Render Folders First */}
                             {arenaFolders.map(folder => {
-                                const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id)); 
-                                const isDragOver = dragOverId === folder.id;
-                                
+                                const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id));
+                                const isFolderDragOver = dragOverId === folder.id;
+
                                 return (
-                                     <div 
+                                    <div
                                         key={folder.id}
                                         data-drop-id={folder.id}
                                         onClick={() => setSelectedFolderId(folder.id)}
-                                        className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
+                                        className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isFolderDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
                                     >
-                                        {/* Stack visual effect */}
                                         <div className="absolute top-1 right-1 w-full h-full bg-gray-700/50 rounded-2xl -z-10 transform translate-x-1 -translate-y-1" />
                                         <div className="absolute top-2 right-2 w-full h-full bg-gray-600/30 rounded-2xl -z-20 transform translate-x-2 -translate-y-2" />
-                                        
                                         <div className="flex flex-col items-center p-2 text-center">
                                             <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{folder.icon}</span>
                                             <span className="text-sm font-bold text-gray-200 line-clamp-2">{folder.name}</span>
@@ -856,167 +910,76 @@ export const ArenasView: React.FC = () => {
                                 );
                             })}
 
-                            {/* Render Mixed Items (Campaigns + Arenas) Sorted by Order */}
                             {[
-                                ...campaigns.map(c => ({ ...c, type: 'campaign' as const, order: c.order || 0 })),
-                                ...rootArenas.map(a => ({ ...a, type: 'arena' as const, order: a.order || 0 }))
+                                ...campaigns.map(campaign => ({ itemType: 'campaign' as const, value: campaign, sortOrder: campaign.order || 0 })),
+                                ...rootArenas.map(arena => ({ itemType: 'arena' as const, value: arena, sortOrder: arena.order || 0 })),
                             ]
-                            .sort((a, b) => a.order - b.order)
-                            .map(item => {
-                                if (item.type === 'campaign') {
-                                    const campaign = item as unknown as Campaign;
-                                    const campaignArenas = getArenas().filter(a => campaign.arenaIds.includes(a.id));
-                                    const isParallel = campaign.type === 'parallel';
-                                    let progress = 0;
-                                    if (isParallel && campaignArenas.length > 0) {
-                                        const totalActions = campaignArenas.reduce((acc, arena) => acc + getActionsForArena(arena.id).length, 0);
-                                        const completedActions = campaignArenas.reduce((acc, arena) => {
-                                            const completedIds = campaign.arenaConfig?.[arena.id]?.completedActionIds || [];
-                                            return acc + completedIds.length;
-                                        }, 0);
-                                        progress = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
+                                .sort((a, b) => a.sortOrder - b.sortOrder)
+                                .map(item => {
+                                    if (item.itemType === 'campaign') {
+                                        const campaign = item.value as Campaign;
+                                        return renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign));
                                     }
-                                    return renderCampaignCard(campaign, isParallel, progress);
-                                } else {
-                                    const arena = item as unknown as Arena;
-                                    const asset = getAssetById(arena.assetId);
-                                    const arenaActions = getActionsForArena(arena.id);
-                                    const isDragOver = dragOverId === arena.id;
-                                    const isDragged = draggedId === arena.id;
-                                    const isSelected = selectedForCampaign.includes(arena.id);
-                                    
-                                    // Check if arena is already in a campaign to visually disable it in selection mode
-                                    const alreadyInCampaign = allCampaignArenaIds.includes(arena.id);
 
-                                    return (
-                                        <div
-                                            key={arena.id}
-                                            data-drop-id={arena.id}
-                                            onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                                            onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                                            className={`relative transition-all duration-200 select-none cursor-grab active:cursor-grabbing
-                                                ${isDragOver ? 'z-50' : 'z-10'} 
-                                                ${isDragged ? 'opacity-30 brightness-50' : ''} 
-                                                ${isSelectionMode && alreadyInCampaign ? 'opacity-30 grayscale cursor-not-allowed' : ''}
-                                            `}
-                                            onClick={() => isSelectionMode ? null : setSelectedArenaId(arena.id)}
-                                        >
-                                            <div className="absolute inset-0 z-50 pointer-events-auto" />
-                                            {/* Indicador visual de inserção magnética */}
-                                            {isDragOver && (
-                                                <div className={`absolute top-0 bottom-0 w-1 bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--skin-accent-color)] z-30 pointer-events-none rounded-full
-                                                    ${dragOverSide === 'left' ? '-left-1.5' : '-right-1.5'}`} 
-                                                />
-                                            )}
-
-                                            <div className={`relative transition-transform duration-200 ${isDragOver ? (dragOverSide === 'left' ? 'translate-x-1' : '-translate-x-1') : ''}`}>
-                                                <ArenaCard 
-                                                    arena={arena}
-                                                    assetName={asset?.name || ''}
-                                                    actions={arenaActions}
-                                                    onClick={() => {}} // Click handled by parent div
-                                                    variant="overview"
-                                                />
-                                                {isSelectionMode && alreadyInCampaign && (
-                                                    <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center border-gray-400 bg-black/50`}>
-                                                        <span className="text-gray-500 font-bold text-[10px]">⛔</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )
-                                }
-                            })}
+                                    const arena = item.value as Arena;
+                                    return renderArenaBoardCard(arena, {
+                                        assetName: getAssetById(arena.assetId)?.name || '',
+                                        showInsertionIndicator: true,
+                                    });
+                                })}
                         </div>
                     )}
 
                     {arenasViewMode === 'priorities' && (
                         <div className="space-y-6">
-                            {(['alta', 'media', 'baixa'] as const).map(p => {
-                                const isCollapsed = collapsedSections[`priority-${p}`];
-                                const isDragOverGroup = dragOverId === p;
-                                const itemsInPriority = [
-                                    ...campaigns.filter(c => (c.priority === p) || (!c.priority && p === 'media')),
-                                    ...rootArenas.filter(a => (a.priority === p) || (!a.priority && p === 'media'))
-                                ];
-                                const isEmpty = itemsInPriority.length === 0;
+                            {(['alta', 'media', 'baixa'] as const).map(priority => {
+                                const sectionId = `priority-${priority}`;
+                                const isCollapsed = collapsedSections[sectionId];
+                                const isPriorityDragOver = dragOverId === priority;
+                                const items = [
+                                    ...campaigns
+                                        .filter(campaign => (campaign.priority === priority) || (!campaign.priority && priority === 'media'))
+                                        .map(campaign => ({ itemType: 'campaign' as const, value: campaign, sortOrder: campaign.priorityOrder || 0 })),
+                                    ...rootArenas
+                                        .filter(arena => (arena.priority === priority) || (!arena.priority && priority === 'media'))
+                                        .map(arena => ({ itemType: 'arena' as const, value: arena, sortOrder: arena.priorityOrder || 0 })),
+                                ].sort((a, b) => a.sortOrder - b.sortOrder);
+                                const isEmpty = items.length === 0;
 
                                 return (
-                                    <div 
-                                        key={p} 
-                                        data-drop-id={p} // Drop zone for priority group
-                                        className={`space-y-2 rounded-2xl transition-all duration-200 ${isDragOverGroup ? 'bg-[var(--skin-accent-color)]/10 ring-2 ring-[var(--skin-accent-color)] p-2' : ''}`}
+                                    <div
+                                        key={priority}
+                                        data-drop-id={priority}
+                                        className={`space-y-2 rounded-2xl transition-all duration-200 ${isPriorityDragOver ? 'bg-[var(--skin-accent-color)]/10 ring-2 ring-[var(--skin-accent-color)] p-2' : ''}`}
                                     >
-                                        <div 
+                                        <div
                                             className="flex items-center gap-2 px-2 cursor-pointer group"
-                                            onClick={() => toggleSection(`priority-${p}`)}
+                                            onClick={() => toggleSection(sectionId)}
                                         >
-                                            <div className={`w-2 h-2 rounded-full ${p === 'alta' ? 'bg-red-500' : p === 'media' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
+                                            <div className={`w-2 h-2 rounded-full ${priority === 'alta' ? 'bg-red-500' : priority === 'media' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">
-                                                {p === 'alta' ? 'Alta Prioridade' : p === 'media' ? 'Média Prioridade' : 'Baixa Prioridade'}
+                                                {priority === 'alta' ? 'Alta Prioridade' : priority === 'media' ? 'Média Prioridade' : 'Baixa Prioridade'}
                                             </span>
                                             <div className="flex-1 h-[1px] bg-white/5" />
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
-                                            <div className={`grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'min-h-[80px] border-2 border-dashed border-white/5 rounded-xl flex items-center justify-center' : ''}`}>
-                                                {isEmpty && (
-                                                    <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">
-                                                        Arraste aqui
-                                                    </span>
-                                                )}
-                                                {[
-                                                    ...campaigns.filter(c => (c.priority === p) || (!c.priority && p === 'media')).map(c => ({ ...c, type: 'campaign' as const, priorityOrder: c.priorityOrder || 0 })),
-                                                    ...rootArenas.filter(a => (a.priority === p) || (!a.priority && p === 'media')).map(a => ({ ...a, type: 'arena' as const, priorityOrder: a.priorityOrder || 0 }))
-                                                ]
-                                                .sort((a, b) => a.priorityOrder - b.priorityOrder)
-                                                .map((item: any) => {
-                                                    const isCampaign = item.type === 'campaign';
-                                                    
-                                                    if (isCampaign) {
-                                                        const campaign = item as Campaign;
-                                                        const campaignArenas = getArenas().filter(a => campaign.arenaIds.includes(a.id));
-                                                        const isParallel = campaign.type === 'parallel';
-                                                        let progress = 0;
-                                                        if (isParallel && campaignArenas.length > 0) {
-                                                            const totalActions = campaignArenas.reduce((acc, arena) => acc + getActionsForArena(arena.id).length, 0);
-                                                            const completedActions = campaignArenas.reduce((acc, arena) => {
-                                                                const completedIds = campaign.arenaConfig?.[arena.id]?.completedActionIds || [];
-                                                                return acc + completedIds.length;
-                                                            }, 0);
-                                                            progress = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
+                                            <div className={`grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : ''}`}>
+                                                {isEmpty ? (
+                                                    <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Arraste aqui</span>
+                                                ) : (
+                                                    items.map(item => {
+                                                        if (item.itemType === 'campaign') {
+                                                            const campaign = item.value as Campaign;
+                                                            return renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign));
                                                         }
 
-                                                        return renderCampaignCard(campaign, isParallel, progress);
-                                                    }
-
-                                                    const arena = item as Arena;
-                                                    const isDragOver = dragOverId === arena.id;
-                                                    const isDragged = draggedId === arena.id;
-                                                    
-                                                    return (
-                                        <div
-                                            key={arena.id}
-                                            data-drop-id={arena.id}
-                                            onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                                            onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                                            className={`relative transition-all duration-300 select-none cursor-grab active:cursor-grabbing 
-                                                ${isDragOver ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : 'z-10'} 
-                                                ${isDragged ? 'opacity-30 brightness-50' : ''}`}
-                                            style={{ touchAction: 'none' }}
-                                            onClick={() => isSelectionMode ? null : setSelectedArenaId(arena.id)} // Disable selection click, enable detail click only if not selection mode
-                                        >
-                                                            <div className="absolute inset-0 z-50 pointer-events-auto" />
-                                                            <ArenaCard 
-                                                                arena={arena} 
-                                                                assetName={getAssetById(arena.assetId)?.name}
-                                                                actions={getActionsForArena(arena.id)}
-                                                                onClick={() => {}} // Handled by parent
-                                                                variant="overview"
-                                                            />
-                                                        </div>
-                                                    );
-                                                })}
+                                                        const arena = item.value as Arena;
+                                                        return renderArenaBoardCard(arena, {
+                                                            assetName: getAssetById(arena.assetId)?.name,
+                                                        });
+                                                    })
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1027,10 +990,9 @@ export const ArenasView: React.FC = () => {
 
                     {arenasViewMode === 'assets' && (
                         <div className="space-y-6">
-                            {/* Render Campaigns at the top of Assets View */}
                             {campaigns.length > 0 && (
                                 <div className="space-y-2">
-                                     <div 
+                                    <div
                                         className="flex items-center gap-2 px-2 cursor-pointer group"
                                         onClick={() => toggleSection('campaigns')}
                                     >
@@ -1042,32 +1004,21 @@ export const ArenasView: React.FC = () => {
                                     </div>
                                     {!collapsedSections['campaigns'] && (
                                         <div className="grid grid-cols-4 gap-3">
-                                             {campaigns.map(campaign => {
-                                                const campaignArenas = getArenas().filter(a => campaign.arenaIds.includes(a.id));
-                                                const isParallel = campaign.type === 'parallel';
-                                                let progress = 0;
-                                                if (isParallel && campaignArenas.length > 0) {
-                                                    const totalActions = campaignArenas.reduce((acc, arena) => acc + getActionsForArena(arena.id).length, 0);
-                                                    const completedActions = campaignArenas.reduce((acc, arena) => {
-                                                        const completedIds = campaign.arenaConfig?.[arena.id]?.completedActionIds || [];
-                                                        return acc + completedIds.length;
-                                                    }, 0);
-                                                    progress = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
-                                                }
-                                                return renderCampaignCard(campaign, isParallel, progress);
-                                             })}
+                                            {campaigns.map(campaign => renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign)))}
                                         </div>
                                     )}
                                 </div>
                             )}
 
                             {assetGroups.map(group => {
-                                const isCollapsed = collapsedSections[`asset-${group.id}`];
+                                const sectionId = `asset-${group.id}`;
+                                const isCollapsed = collapsedSections[sectionId];
+
                                 return (
                                     <div key={group.id} className="space-y-2">
-                                        <div 
+                                        <div
                                             className="flex items-center gap-2 px-2 cursor-pointer group"
-                                            onClick={() => toggleSection(`asset-${group.id}`)}
+                                            onClick={() => toggleSection(sectionId)}
                                         >
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">
                                                 {group.name}
@@ -1077,39 +1028,7 @@ export const ArenasView: React.FC = () => {
                                         </div>
                                         {!isCollapsed && (
                                             <div className="grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                {group.arenas.map(arena => {
-                                                    // In Assets view, disable selection if arena is in campaign
-                                                    const alreadyInCampaign = allCampaignArenaIds.includes(arena.id);
-                                                    const isSelected = selectedForCampaign.includes(arena.id);
-
-                                                    return (
-                                                        <div 
-                                                            key={arena.id} 
-                                                            data-drop-id={arena.id}
-                                                            onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                                                            onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                                                            className={`relative select-none cursor-grab active:cursor-grabbing z-10
-                                                                ${isSelectionMode && alreadyInCampaign ? 'opacity-30 grayscale cursor-not-allowed' : ''}
-                                                                ${dragOverId === arena.id ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-xl' : ''}
-                                                            `}
-                                                            onClick={() => isSelectionMode && alreadyInCampaign ? null : (isSelectionMode ? null : setSelectedArenaId(arena.id))}
-                                                        >
-                                                            <div className="absolute inset-0 z-50 pointer-events-auto" />
-                                                            <ArenaCard 
-                                                                arena={arena} 
-                                                                assetName={group.name}
-                                                                actions={getActionsForArena(arena.id)}
-                                                                onClick={() => {}} // Click handled by parent div
-                                                                variant="overview"
-                                                            />
-                                                             {isSelectionMode && alreadyInCampaign && (
-                                                                <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center border-gray-400 bg-black/50`}>
-                                                                    <span className="text-gray-500 font-bold text-[10px]">⛔</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
+                                                {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                             </div>
                                         )}
                                     </div>
@@ -1118,7 +1037,8 @@ export const ArenasView: React.FC = () => {
                         </div>
                     )}
                 </div>
-                 <button 
+
+                <button
                     ref={fabRef}
                     id="new-action-button"
                     onClick={handleOpenCreateArena}
@@ -1150,9 +1070,9 @@ export const ArenasView: React.FC = () => {
                 />
             )}
             {isCreatingArena && (
-                <NewArenaModal 
+                <NewArenaModal
                     isOpen={true}
-                    onClose={() => setIsCreatingArena(false)} 
+                    onClose={() => setIsCreatingArena(false)}
                     onArenaCreated={handleArenaCreated}
                 />
             )}

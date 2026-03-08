@@ -6,6 +6,8 @@ import { ScheduledTask, Action, DailyCommitment } from '../types';
 import { handleShare } from './Share';
 import { resolveItemDef } from '../constants/items';
 import { PoolAction } from './PoolAction';
+import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
+import { isClanQuestAction } from '../utils/taskDomain.js';
 
 const parseDate = (value: string) => {
     const [year, month, day] = value.split('-').map(Number);
@@ -14,8 +16,8 @@ const parseDate = (value: string) => {
 
 const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, isClanQuestActionId: (actionId: string) => boolean) => {
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id));
+const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment) => {
+    const committedTasks = tasks.filter(t => t.date === dailyCommitment.date && dailyCommitment.taskIds.includes(t.id));
 
     const tasksWithStatus = committedTasks.map(task => {
         return {
@@ -117,92 +119,17 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
     const [isAdjusting, setIsAdjusting] = useState(false);
 
-    const isClanQuestActionId = (actionId: string) => {
-        const action = actions.find(a => a.id === actionId);
-        if (!action) return false;
-        const arena = getArenas().find(ar => ar.id === action.arenaId);
-        if (!arena?.name) return false;
-        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        return normalized.includes('quests - cla');
-    };
+    const arenas = getArenas();
+    const isClanQuestActionId = (actionId: string) => isClanQuestAction(actionId, actions, arenas);
 
     const getActionById = (id: string) => actions.find(a => a.id === id);
 
-    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment, isClanQuestActionId), [tasks, dailyCommitment, actions, getArenas]);
+    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment), [tasks, dailyCommitment]);
+
+    const dailyArenaFocus = useMemo(() => buildDailyArenaFocus(commitmentStats.tasksWithStatus, actions, arenas), [commitmentStats.tasksWithStatus, actions, arenas]);
 
     // --- Lógica de Opções do SITREP baseada no taskPool (Alinhada com Planner/Bay Area) ---
-    const groupedAvailableOptions = useMemo(() => {
-        const today = dailyCommitment.date;
-
-        // 1. Calcular Estoque Baseado nas Ações ATIVAS (Arena -> Ação) - Igual ao PlannerView
-        const activeArenas = getArenas().filter(a => !a.isArchived);
-        const activeArenaIds = new Set(activeArenas.map(a => a.id));
-        const validActions = actions.filter(a => activeArenaIds.has(a.arenaId));
-
-        const optionsById: Record<string, { count: number, action: any }> = {};
-
-        validActions.forEach(action => {
-            const maxRepetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
-            const isUnlimited = !!action.unlimited;
-            
-            // Conta quantas vezes essa ação já aparece nas tarefas do dia (planejadas ou completadas)
-            // Isso garante que o estoque diminua conforme elas entram no dia.
-            // Tasks in Bay Area (startTime < 0) are considered "scheduled" for Sitrep logic?
-            // User says: "ao devolver um ele nao atualiza a lista de disponiveis".
-            // When we return to pool (via Uncommit), we set startTime = -1 (Bay Area).
-            // Should this count as "scheduledToday"?
-            // If it counts as scheduled, stock decreases.
-            // If I uncommit from SITREP, it means I want to return it to stock to be picked again?
-            // "ao devolver um ele nao atualiza a lista de disponiveis" -> implies stock should INCREASE.
-            
-            // Wait. If I uncommit in Sitrep (click X), 'handleUncommitTask' calls 'returnTaskToPool'.
-            // 'returnTaskToPool' now sets startTime = -1 (Bay Area).
-            // So the task STILL EXISTS in 'tasks' list for today.
-            // So 'scheduledToday' count remains the same.
-            // So 'remaining' stock remains the same (low).
-            
-            // This is the conflict.
-            // If I uncommit in SITREP, I want to see it back in the SITREP STOCK list.
-            // But 'returnTaskToPool' puts it in Bay Area (which is technically "scheduled" just without time).
-            
-            // If I uncommit from SITREP, I am removing it from 'dailyCommitment.taskIds'.
-            // Does Sitrep Stock show items that are NOT in dailyCommitment?
-            
-            // Let's change the logic:
-            // Stock = Max - (Tasks that are IN dailyCommitment OR Completed OR Scheduled with Time >= 0)
-            // If a task is startTime=-1 AND NOT in dailyCommitment, it should be considered "Available Stock" (just pre-instantiated).
-            
-            const tasksForAction = tasks.filter(t => t.actionId === action.id && t.date === today);
-            
-            // We consume stock if:
-            // 1. Task is completed
-            // 2. Task has a valid time (>= 0)
-            // 3. Task is in the current Daily Commitment (even if startTime is -1)
-            
-            const consumedCount = tasksForAction.filter(t => 
-                t.completed || 
-                t.startTime >= 0 || 
-                dailyCommitment.taskIds.includes(t.id)
-            ).length;
-            
-            const remaining = isUnlimited ? 99 : Math.max(0, maxRepetitions - consumedCount);
-            
-            // Só mostra se tiver estoque
-            if (remaining > 0) {
-                optionsById[action.id] = { count: remaining, action };
-            }
-        });
-
-        // 3. SEM INFERÊNCIA DE NOME/ICONE PRA EVITAR ARENAS CLONADAS
-        // Agrupamento visual se necessário, mas mantendo IDs únicos
-        const grouped = Object.entries(optionsById).map(([id, data]) => ({
-            count: data.count,
-            action: data.action,
-            ids: [id]
-        }));
-
-        return grouped;
-    }, [actions, tasks, dailyCommitment, getArenas]);
+    const groupedAvailableOptions = useMemo(() => buildSitrepStockOptions(actions, taskPool, tasks, dailyCommitment), [actions, dailyCommitment, taskPool, tasks]);
 
     const handleCommitAction = async (actionId: string) => {
         const today = dailyCommitment.date;
@@ -232,7 +159,6 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
     const handleUncommitTask = (taskId: string) => {
         returnTaskToPool(taskId);
-        setDailyCommitment(dailyCommitment.taskIds.filter(id => id !== taskId));
     };
 
     const handleQuickComplete = async (actionId: string) => {
@@ -310,18 +236,18 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const progress = commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 0;
 
         const [y, m, d] = dailyCommitment.date.split('-').map(Number);
-        const dateObj = new Date(y, m - 1, d);
-        const monthNames = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+        const monthNames = ['JANEIRO', 'FEVEREIRO', 'MAR�O', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
         const todayStr = `${d.toString().padStart(2, '0')} DE ${monthNames[m - 1]} DE ${y}`;
 
-        const workTasks = commitmentStats.tasksWithStatus.filter(({ task }) => {
+        const keyTasks = commitmentStats.tasksWithStatus.filter(({ task }) => {
             const action = getActionById(task.actionId);
-            return action?.name?.includes('[CLÃ]') || action?.name?.includes('[URGENTE]');
+            return action?.actionType === 'Compromisso' || action?.actionType === 'Marco';
         });
-
-        const workCompleted = workTasks.filter(t => t.isCompleted).length;
-        const workTotal = workTasks.length;
-        const productivityScore = workTotal > 0 ? (workCompleted / workTotal) * 100 : 0;
+        const coreTasks = keyTasks.length > 0 ? keyTasks : commitmentStats.tasksWithStatus;
+        const coreCompleted = coreTasks.filter(task => task.isCompleted).length;
+        const coreTotal = coreTasks.length;
+        const coreScore = coreTotal > 0 ? (coreCompleted / coreTotal) * 100 : 0;
+        const coreLabel = keyTasks.length > 0 ? 'Compromissos-chave' : 'Ritmo do dia';
 
         return (
             <>
@@ -338,29 +264,37 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                             Hoje {todayStr}
                         </div>
                     </div>
-                    <div className="w-9"></div> {/* Balanço para centralização */}
+                    <div className="w-9"></div>
                 </div>
                 <CycleHeader />
                 <div className='text-center'>
                     <div className="w-full bg-black/30 rounded-full h-1.5 mt-1"><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
-                    <p className="text-xs text-gray-400 mt-1">Progresso: {progress.toFixed(0)}% • {commitmentStats.completedCount}/{commitmentStats.totalCount} ações</p>
+                    <p className="text-xs text-gray-400 mt-1">Progresso: {progress.toFixed(0)}% � {commitmentStats.completedCount}/{commitmentStats.totalCount} a��es</p>
                 </div>
 
-                {workTotal > 0 && (
+                {coreTotal > 0 && (
                     <div className="grid grid-cols-2 gap-2 my-2">
                         <div className="bg-black/20 p-2 rounded-lg text-center border border-white/5">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Produtividade</p>
-                            <p className={`text-xl arena-title-text luxe-title-shadow leading-tight ${productivityScore >= 80 ? 'text-green-400' : 'text-white'}`}>{productivityScore.toFixed(0)}%</p>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wider">{coreLabel}</p>
+                            <p className={`text-xl arena-title-text luxe-title-shadow leading-tight ${coreScore >= 80 ? 'text-green-400' : 'text-white'}`}>{coreScore.toFixed(0)}%</p>
                         </div>
                         <div className="bg-black/20 p-2 rounded-lg text-center border border-white/5">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Entregas</p>
-                            <p className="text-xl arena-title-text text-white luxe-title-shadow leading-tight">{workCompleted}/{workTotal}</p>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Feitas</p>
+                            <p className="text-xl arena-title-text text-white luxe-title-shadow leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
                         </div>
                     </div>
                 )}
 
+                {dailyArenaFocus && (
+                    <div className="bg-black/20 p-2 rounded-lg border border-white/5 text-center mb-2">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">Arena foco do dia</p>
+                        <p className="text-sm font-bold text-white truncate">{dailyArenaFocus.name}</p>
+                        <p className="text-[10px] text-gray-500">{dailyArenaFocus.completed}/{dailyArenaFocus.total} a��es conclu�das</p>
+                    </div>
+                )}
+
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-1">🎯 ALVOS TRAVADOS:</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-1">?? ALVOS TRAVADOS:</h3>
                     {commitmentStats.tasksWithStatus.map(({ task, isCompleted }) => {
                         const action = getActionById(task.actionId);
                         return (
@@ -378,12 +312,12 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 </div>
 
                 <p className="text-center text-xs text-gray-500 mt-2">
-                    Complete as ações no Planner para atualizar seu progresso aqui.
+                    Complete as a��es no Planner para atualizar seu progresso aqui.
                 </p>
 
                 <div className="py-2"></div>
 
-                <button onClick={endDailyBattle} className="w-full py-2 rounded-xl luxe-skin-button">⚡ GERAR SCORE FINAL</button>
+                <button onClick={endDailyBattle} className="w-full py-2 rounded-xl luxe-skin-button">? GERAR SCORE FINAL</button>
             </>
         );
     }
@@ -415,10 +349,12 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const rankColor = getRankColor(rankLetter);
 
         let verdict = "Guerreiro. Mantenha a disciplina.";
-        if (score === 100) verdict = "Soberano. A vitória foi absoluta.";
+        if (score === 100) verdict = "Soberano. A vit�ria foi absoluta.";
         else if (score < 50) verdict = "A Batalha foi dura. Recupere e avance.";
 
         const earnedInsignia = dailyCommitment.earnedInsigniaId ? resolveItemDef(dailyCommitment.earnedInsigniaId) : null;
+        const checklistDone = checklistItems.filter(i => i.completed).length;
+        const checklistTotal = checklistItems.length;
 
         return (
             <>
@@ -445,7 +381,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                     </div>
                                 </div>
                                 <div className="mt-3 text-center">
-                                    <p className="text-[10px] text-[var(--skin-accent-color)] uppercase font-black tracking-[0.25em] animate-pulse">Nova Insígnia Conquistada!</p>
+                                    <p className="text-[10px] text-[var(--skin-accent-color)] uppercase font-black tracking-[0.25em] animate-pulse">Nova Ins�gnia Conquistada!</p>
                                     <p className="text-sm text-white font-bold tracking-tight">{earnedInsignia.name}</p>
                                 </div>
                             </div>
@@ -454,36 +390,49 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         <div className="pt-3">
                             <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
                             <p className="text-xl arena-title-text accent-text luxe-title-shadow leading-tight">{expDeposited}</p>
-                            {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus Painel Diário: +{sitrepBonus}</p>}
+                            {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">B�nus Painel Di�rio: +{sitrepBonus}</p>}
                         </div>
 
-                        <div className="pt-4 flex items-center justify-center space-x-2 text-gray-400">
-                            <CheckIcon className={`w-5 h-5 ${checklistItems.every(i => i.completed) && checklistItems.length > 0 ? 'accent-text' : ''}`} />
-                            <span className="text-sm uppercase tracking-wider">Checklist: {checklistItems.filter(i => i.completed).length}/{checklistItems.length}</span>
+                        <div className="grid grid-cols-3 gap-2 pt-4 text-center">
+                            <div className="bg-black/20 p-2 rounded-xl border border-white/5">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Feitas</p>
+                                <p className="text-lg arena-title-text text-white luxe-title-shadow leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
+                                <p className="text-[10px] text-gray-500">travadas</p>
+                            </div>
+                            <div className="bg-black/20 p-2 rounded-xl border border-white/5">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Arena Foco</p>
+                                <p className="text-xs font-bold text-white leading-tight line-clamp-2 min-h-[2rem] flex items-center justify-center">{dailyArenaFocus?.name || 'Nenhuma'}</p>
+                                <p className="text-[10px] text-gray-500">{dailyArenaFocus ? `${dailyArenaFocus.completed}/${dailyArenaFocus.total}` : '0/0'}</p>
+                            </div>
+                            <div className="bg-black/20 p-2 rounded-xl border border-white/5">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Checklist</p>
+                                <p className="text-lg arena-title-text text-white luxe-title-shadow leading-tight">{checklistDone}/{checklistTotal}</p>
+                                <p className="text-[10px] text-gray-500">itens</p>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={() => {
-                            if (expDeposited > 0) showToast(`✦ +${expDeposited} XP foram adicionados ao seu ciclo`);
+                            if (expDeposited > 0) showToast(`? +${expDeposited} XP foram adicionados ao seu ciclo`);
                             if (onClose) onClose();
                         }}
                         className="w-full py-2 rounded-xl luxe-button-secondary text-sm"
                     >
-                        🛌 DESCANSAR
+                        ?? DESCANSAR
                     </button>
-                    <button onClick={() => handleShare('sitrep-capture-area', 'Meu Painel Diário - Life OS')} className="p-3 rounded-xl luxe-button-secondary">
+                    <button onClick={() => handleShare('sitrep-capture-area', 'Meu Painel Di�rio - Life OS')} className="p-3 rounded-xl luxe-button-secondary">
                         <ShareIcon className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => {
-                            if (expDeposited > 0) showToast(`✦ +${expDeposited} XP foram adicionados ao seu ciclo`);
+                            if (expDeposited > 0) showToast(`? +${expDeposited} XP foram adicionados ao seu ciclo`);
                             resetDailyCommitment();
                         }}
                         className="w-full py-2 rounded-xl luxe-skin-button text-sm"
                     >
-                        🌙 NOVO PLANO
+                        ?? NOVO PLANO
                     </button>
                 </div>
             </>
@@ -554,3 +503,11 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         default: return null;
     }
 };
+
+
+
+
+
+
+
+

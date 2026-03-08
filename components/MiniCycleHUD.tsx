@@ -3,6 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { parseDate, daysBetween, formatDate, getScoreGrade } from '../utils/dateUtils';
 import { Cycle } from '../types';
+import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 
 interface MiniCycleHUDProps {
     cycle: Cycle;
@@ -40,7 +41,7 @@ export const MiniCycleHUD: React.FC<MiniCycleHUDProps> = ({ cycle }) => {
     const daysElapsed = Math.max(0, daysBetween(startD, todayD) + 1);
     const timeProgress = Math.min(100, (daysElapsed / totalDays) * 100);
 
-    const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate);
+    const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, startDate, endDate);
     const completedTasks = cycleTasks.filter(t => t.completed);
 
     const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId) || isClanQuestActionId(t.actionId));
@@ -106,3 +107,4 @@ export const MiniCycleHUD: React.FC<MiniCycleHUDProps> = ({ cycle }) => {
         </div>
     );
 };
+

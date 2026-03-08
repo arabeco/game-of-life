@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { PROFILE_FLAG_TERMS_PENDING, useGame } from '../contexts/GameContext';
@@ -7,6 +7,7 @@ import { GoldenInvite, UserProfile, AppMode } from '../types';
 import { GM_CONFIG } from '../constants';
 import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GoogleIcon } from '../components/Icons';
 import { AchievementModal } from '../components/AchievementModal';
+import { parseBooleanEnvFlag } from '../utils/envFlags';
 
 export const LoginView: React.FC = () => {
     const { updateUserProfile } = useGame();
@@ -18,6 +19,8 @@ export const LoginView: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
+    const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
 
     // Auto-seed golden invites when login page is opened
     React.useEffect(() => {
@@ -40,14 +43,14 @@ export const LoginView: React.FC = () => {
         const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
 
         if (hasNumber || hasSpecial) return { score: 3, label: 'FORTE', color: 'bg-green-500' };
-        return { score: 2, label: 'MÉDIA', color: 'bg-yellow-500' };
+        return { score: 2, label: 'MÃ‰DIA', color: 'bg-yellow-500' };
     };
 
     const handleSignUp = async () => {
         const normalizedInvite = inviteCode.trim();
         let inviteRecord: GoldenInvite | null = null;
 
-        if (!normalizedInvite) {
+        if (isGoldenInviteGateEnabled && !normalizedInvite) {
             setError('Informe um Convite Dourado.');
             return;
         }
@@ -55,24 +58,26 @@ export const LoginView: React.FC = () => {
         // Password Validation
         const strength = getPasswordStrength(password);
         if (strength.score < 3) {
-            setError('A senha deve ter pelo menos 8 caracteres e incluir um número ou caractere especial.');
+            setError('A senha deve ter pelo menos 8 caracteres e incluir um nÃºmero ou caractere especial.');
             return;
         }
 
-        console.log('Validando convite:', normalizedInvite);
         const multiUseCodes = (GM_CONFIG.goldenInvites as any)?.multiUseCodes as string[] | undefined;
-        const isMultiUseInvite = (multiUseCodes || []).includes(normalizedInvite);
+        const isMultiUseInvite = isGoldenInviteGateEnabled && (multiUseCodes || []).includes(normalizedInvite);
 
-        if (!isMultiUseInvite) {
-            inviteRecord = await SupabaseService.getGoldenInviteByCode(normalizedInvite);
-            console.log('Resultado da busca no DB:', inviteRecord);
-            if (!inviteRecord) {
-                setError(`Convite Dourado "${normalizedInvite}" não encontrado no banco de dados.`);
-                return;
-            }
-            if (inviteRecord.is_used) {
-                setError('Convite Dourado já utilizado.');
-                return;
+        if (isGoldenInviteGateEnabled) {
+            console.log('Validando convite:', normalizedInvite);
+            if (!isMultiUseInvite) {
+                inviteRecord = await SupabaseService.getGoldenInviteByCode(normalizedInvite);
+                console.log('Resultado da busca no DB:', inviteRecord);
+                if (!inviteRecord) {
+                    setError(`Convite Dourado "${normalizedInvite}" nÃ£o encontrado no banco de dados.`);
+                    return;
+                }
+                if (inviteRecord.is_used) {
+                    setError('Convite Dourado jÃ¡ utilizado.');
+                    return;
+                }
             }
         }
         setLoading(true);
@@ -93,16 +98,16 @@ export const LoginView: React.FC = () => {
             if (error) throw error;
 
             if (data.user) {
-                if (!isMultiUseInvite && inviteRecord) {
+                if (isGoldenInviteGateEnabled && !isMultiUseInvite && inviteRecord) {
                     const consumed = await SupabaseService.consumeGoldenInvite(inviteRecord.id, data.user.id);
                     if (!consumed) {
-                        setError('Convite Dourado já utilizado.');
+                        setError('Convite Dourado jÃ¡ utilizado.');
                         await supabase.auth.signOut();
                         setLoading(false);
                         return;
                     }
                 }
-                // Criar perfil do usuário
+                // Criar perfil do usuÃ¡rio
                 const newProfile: UserProfile = {
                     id: data.user.id,
                     username: email.split('@')[0],
@@ -216,7 +221,7 @@ export const LoginView: React.FC = () => {
                     .maybeSingle();
 
                 if (nicknameLookupError) throw nicknameLookupError;
-                if (!profileByNickname?.email) throw new Error('Nickname n�o encontrado');
+                if (!profileByNickname?.email) throw new Error('Nickname nï¿½o encontrado');
 
                 emailForLogin = profileByNickname.email;
             }
@@ -226,7 +231,7 @@ export const LoginView: React.FC = () => {
             if (error) throw error;
 
             if (data.user) {
-                // Buscar perfil do usuário
+                // Buscar perfil do usuÃ¡rio
                 const { data: profile } = await supabase
                     .from('user_profiles')
                     .select('*')
@@ -328,7 +333,7 @@ export const LoginView: React.FC = () => {
             });
 
             if (signInError && (signInError.message.includes('Invalid login credentials') || signInError.message.includes('User not found'))) {
-                // Criar conta admin se não existir
+                // Criar conta admin se nÃ£o existir
                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                     email: adminEmail,
                     password: adminPassword,
@@ -526,9 +531,9 @@ export const LoginView: React.FC = () => {
                 redirectTo: `${window.location.origin}/auth/callback`,
             });
             if (error) throw error;
-            setMessage('Email de recuperação enviado! Verifique sua caixa de entrada.');
+            setMessage('Email de recuperaÃ§Ã£o enviado! Verifique sua caixa de entrada.');
         } catch (err: any) {
-            setError(err.message || 'Erro ao enviar email de recuperação.');
+            setError(err.message || 'Erro ao enviar email de recuperaÃ§Ã£o.');
         } finally {
             setLoading(false);
         }
@@ -578,8 +583,8 @@ export const LoginView: React.FC = () => {
                         {isSigningUp && password.length > 0 && (
                             <div className="px-1 py-1">
                                 <div className="flex justify-between items-center mb-1">
-                                    <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Força da Senha</span>
-                                    <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÉDIA' ? 'text-yellow-500' : 'text-red-500'}`}>
+                                    <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">ForÃ§a da Senha</span>
+                                    <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÃ‰DIA' ? 'text-yellow-500' : 'text-red-500'}`}>
                                         {getPasswordStrength(password).label}
                                     </span>
                                 </div>
@@ -610,7 +615,7 @@ export const LoginView: React.FC = () => {
                             className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                         />
                     )}
-                    {isSigningUp && (
+                    {isSigningUp && isGoldenInviteGateEnabled && (
                         <input
                             type="text"
                             placeholder="Cole aqui seu Convite Dourado..."
@@ -658,7 +663,7 @@ export const LoginView: React.FC = () => {
                             onClick={() => setIsSigningUp(!isSigningUp)}
                             className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
                         >
-                            {isSigningUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastrar'}
+                            {isSigningUp ? 'JÃ¡ tem uma conta? Entrar' : 'NÃ£o tem conta? Cadastrar'}
                         </button>
                     </div>
                 </div>
@@ -666,3 +671,5 @@ export const LoginView: React.FC = () => {
         </div>
     );
 };
+
+

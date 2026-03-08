@@ -1,0 +1,40 @@
+import { Action, Arena, Campaign, ScheduledTask, SeasonQuest } from '../types';
+export { calculateArenaProgress, getCampaignArenaStates, calculateCampaignProgress } from './progressUtilsEngine.js';
+
+type SharedProgressGetter = (arenaId: string, actionId: string) => number;
+
+interface ArenaProgressOptions {
+  arena: Arena;
+  actions: Action[];
+  tasks: ScheduledTask[];
+  clanQuests?: SeasonQuest[];
+  getClanQuestProgress?: (questId: string) => number;
+  getSharedActionPoolProgress?: SharedProgressGetter;
+  forceSharedPool?: boolean;
+}
+
+export interface ArenaProgressResult {
+  progressPercent: number;
+  totalCompleted: number;
+  totalPlanned: number;
+  completedActionIds: string[];
+  isClanQuestArena: boolean;
+  isSeasonQuestArena: boolean;
+  isSharedPool: boolean;
+  isCleared: boolean;
+}
+
+interface CampaignArenaStatesOptions {
+  campaign: Campaign;
+  arenasById: Record<string, Arena>;
+  actionsByArena: Record<string, Action[]>;
+  tasks: ScheduledTask[];
+  getClanQuestsForArena?: (arena: Arena, arenaActions: Action[]) => SeasonQuest[];
+  getClanQuestProgress?: (questId: string) => number;
+  getSharedActionPoolProgress?: SharedProgressGetter;
+}
+
+export interface CampaignArenaState extends ArenaProgressResult {
+  isLocked: boolean;
+  prerequisiteArenaIds: string[];
+}

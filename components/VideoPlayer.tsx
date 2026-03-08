@@ -1,26 +1,31 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { XIcon } from './Icons';
+﻿import React, { useEffect, useRef, useState } from 'react';
 
 interface VideoPlayerProps {
     src?: string;
     onEnd: () => void;
     className?: string;
     placeholderLabel?: string;
-    duration?: number; // Duration for placeholder
-    playbackRate?: number; // Control video speed (default 1.0)
-    startTime?: number; // Start playing from this time (in seconds)
-    maxDuration?: number; // Force end after this duration (safety timeout)
+    duration?: number;
+    playbackRate?: number;
+    startTime?: number;
+    maxDuration?: number;
+    loop?: boolean;
+    audioFadeOut?: boolean;
+    preload?: 'none' | 'metadata' | 'auto';
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     src,
     onEnd,
-    className = "",
-    placeholderLabel = "Playing Video...",
+    className = '',
+    placeholderLabel = 'Playing Video...',
     duration = 4000,
     playbackRate = 1.0,
     startTime = 0,
-    maxDuration
+    maxDuration,
+    loop = false,
+    audioFadeOut = false,
+    preload = 'metadata',
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [hasError, setHasError] = useState(false);
@@ -33,37 +38,32 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
 
     useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.playbackRate = playbackRate;
-            // Only set currentTime once on mount if startTime > 0 to avoid loops
-            if (startTime > 0 && videoRef.current.currentTime === 0) {
-                videoRef.current.currentTime = startTime;
-            }
+        if (!videoRef.current) return;
 
-            // Ensure play is triggered
-            const playPromise = videoRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.warn("Auto-play was prevented:", error);
-                    // Fallback handled by user interaction or just visual placeholder if needed
-                });
-            }
+        videoRef.current.playbackRate = playbackRate;
+        if (startTime > 0 && videoRef.current.currentTime === 0) {
+            videoRef.current.currentTime = startTime;
+        }
+
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+                console.warn('Auto-play was prevented:', error);
+            });
         }
     }, [playbackRate, startTime, src]);
 
-    // Placeholder timeout
     useEffect(() => {
         if (!src || hasError) {
-            const timer = setTimeout(handleEnd, duration);
-            return () => clearTimeout(timer);
+            const timer = window.setTimeout(handleEnd, duration);
+            return () => window.clearTimeout(timer);
         }
     }, [src, hasError, duration]);
 
-    // Safety timeout for video if maxDuration is provided
     useEffect(() => {
         if (src && maxDuration && !hasError) {
-            const timer = setTimeout(handleEnd, maxDuration);
-            return () => clearTimeout(timer);
+            const timer = window.setTimeout(handleEnd, maxDuration);
+            return () => window.clearTimeout(timer);
         }
     }, [src, maxDuration, hasError]);
 
@@ -75,14 +75,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (!src || hasError) {
         return (
             <div className={`flex flex-col items-center justify-center bg-black text-gray-400 ${className}`}>
-                <div className="w-16 h-16 border-4 border-gray-600 border-t-white rounded-full animate-spin mb-4"></div>
+                <div className="w-16 h-16 border-4 border-gray-600 border-t-white rounded-full animate-spin mb-4" />
                 <p className="text-sm font-mono animate-pulse">{placeholderLabel}</p>
             </div>
         );
     }
 
     return (
-        <div className={`relative bg-black ${className}`}>
+        <div className={`relative bg-black transform-gpu ${className}`}>
             <video
                 ref={videoRef}
                 src={src}
@@ -90,11 +90,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 autoPlay
                 playsInline
                 muted
-                preload="none"
+                preload={preload}
+                loop={loop}
                 onEnded={handleEnd}
                 onError={handleError}
                 controls={false}
+                disablePictureInPicture
             />
         </div>
     );
 };
+

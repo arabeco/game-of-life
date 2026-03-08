@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Campaign } from '../types';
 import { XIcon, PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from './Icons';
@@ -7,6 +7,7 @@ import { NewArenaModal } from './NewArenaModal';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
+import { getCampaignArenaStates } from '../utils/progressUtils';
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -14,7 +15,7 @@ interface CampaignsCodexProps {
 }
 
 export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId }) => {
-    const { campaigns, getArenas, actions, updateCampaign, deleteCampaign, addCampaign } = useGame();
+    const { campaigns, getArenas, actions, tasks, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -58,12 +59,10 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     });
 
     const handleCreateCampaign = async () => {
-        const newId = crypto.randomUUID();
         const title = `Nova Campanha ${validCampaigns.length + 1}`;
-        await addCampaign({
+        const createdCampaign = await addCampaign({
             title,
-            description: 'DescriÃ§Ã£o da campanha...',
-            status: 'active',
+            description: 'Descrição da campanha...',
             type: 'sequential',
             arenaIds: [],
             arenaConfig: {},
@@ -71,8 +70,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
             order: validCampaigns.length,
             priorityOrder: 0
         });
-        setSelectedCampaignId(newId); // Open it immediately
-        setIsEditing(true); // Auto-enter edit mode
+        setSelectedCampaignId(createdCampaign.id);
+        setIsEditing(true);
     };
 
     const handleSaveCampaign = () => {
@@ -86,14 +85,15 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
     const handleDeleteCampaign = () => {
         if (!selectedCampaign) return;
-        if (confirm('Tem certeza que deseja excluir esta campanha? TODAS as arenas e aÃ§Ãµes dentro dela serÃ£o excluÃ­das permanentemente.')) {
+        if (confirm('Tem certeza que deseja excluir esta campanha? TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
             deleteCampaign(selectedCampaign.id);
             setSelectedCampaignId(null);
         }
     };
     
+    const allArenas = getArenas();
     const campaignArenas = selectedCampaign 
-        ? getArenas().filter(a => selectedCampaign.arenaIds.includes(a.id))
+        ? allArenas.filter(a => selectedCampaign.arenaIds.includes(a.id))
         : [];
 
     const sortedArenas = selectedCampaign 
@@ -103,13 +103,30 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
             return indexA - indexB;
         })
         : [];
+
+    const campaignArenaStates = useMemo(() => {
+        if (!selectedCampaign) return {};
+
+        const arenasById = Object.fromEntries(allArenas.map(arena => [arena.id, arena]));
+        const actionsByArena = Object.fromEntries(allArenas.map(arena => [arena.id, actions.filter(action => action.arenaId === arena.id)]));
+
+        return getCampaignArenaStates({
+            campaign: selectedCampaign,
+            arenasById,
+            actionsByArena,
+            tasks,
+            getClanQuestsForArena,
+            getClanQuestProgress,
+            getSharedActionPoolProgress,
+        });
+    }, [selectedCampaign, allArenas, actions, tasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress]);
     
     const handleRemoveArena = (arenaId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (!selectedCampaign) return;
         
         if (isCodexCampaign) {
-            alert("NÃ£o Ã© possÃ­vel remover arenas de uma campanha de Codex.");
+            alert("Não é possível remover arenas de uma campanha de Codex.");
             return;
         }
 
@@ -138,7 +155,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     const handleMoveArena = (arenaId: string, direction: 'left' | 'right', e: React.MouseEvent) => {
         e.stopPropagation();
         if (!selectedCampaign) return;
-        if (isCodexCampaign) return; // Prevent reordering codex arenas
+        if (isCodexCampaign) return;
         
         const currentIds = [...selectedCampaign.arenaIds];
         const currentIndex = currentIds.indexOf(arenaId);
@@ -153,34 +170,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     };
     
     const isArenaLocked = (arenaId: string) => {
-        if (!selectedCampaign) return false;
-        const config = selectedCampaign.arenaConfig?.[arenaId];
-        
-        // Manual lock override is effectively removed from UI but respected if set
-        if (config?.isLocked) return true;
-
-        // Check prerequisites
-        const prerequisites = config?.prerequisiteArenaIds || [];
-        
-        // In Codex campaigns (sequential), check if previous arena is cleared
-        if (isCodexCampaign) {
-            const arenaIndex = selectedCampaign.arenaIds.indexOf(arenaId);
-            if (arenaIndex > 0) {
-                const prevArenaId = selectedCampaign.arenaIds[arenaIndex - 1];
-                const prevConfig = selectedCampaign.arenaConfig?.[prevArenaId];
-                if (!prevConfig?.isCleared) return true;
-            }
-        }
-
-        if (prerequisites.length === 0) return false;
-
-        // Check if all prerequisites are cleared
-        const allPrereqsCleared = prerequisites.every(prereqId => {
-            const prereqConfig = selectedCampaign.arenaConfig?.[prereqId];
-            return prereqConfig?.isCleared;
-        });
-
-        return !allPrereqsCleared;
+        return campaignArenaStates[arenaId]?.isLocked || false;
     };
 
     const handleArenaClick = (arenaId: string) => {
@@ -547,7 +537,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                         }
                                     } else {
                                         if (locked) borderClass = 'border-red-900/50 grayscale-[0.5] opacity-75';
-                                        else if (config.isCleared) borderClass = 'border-green-500/30';
+                                        else if (campaignArenaStates[arena.id]?.isCleared) borderClass = 'border-green-500/30';
                                     }
 
                                     return (
@@ -598,7 +588,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 )}
 
                                                 {/* Status Header Overlay */}
-                                                {(locked || config.isCleared) && !isLinkingMode && (
+                                                {(locked || campaignArenaStates[arena.id]?.isCleared) && !isLinkingMode && (
                                                     <div className={`absolute top-0 left-0 right-0 h-1 z-10 ${
                                                         locked ? 'bg-red-500' : 'bg-green-500'
                                                     }`} />
@@ -630,7 +620,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                         <div className="flex flex-wrap gap-1 justify-center w-full">
                                                             {prereqs.map(pid => {
                                                                 const pArena = getArenas().find(a => a.id === pid);
-                                                                const pCleared = selectedCampaign.arenaConfig?.[pid]?.isCleared;
+                                                                const pCleared = campaignArenaStates[pid]?.isCleared;
                                                                 return (
                                                                     <div key={pid} className={`px-1.5 py-0.5 rounded-full flex items-center gap-1 text-[8px] font-bold border ${
                                                                         pCleared 
@@ -672,3 +662,6 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         </Portal>
     );
 };
+
+
+

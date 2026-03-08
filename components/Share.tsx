@@ -1,61 +1,119 @@
-import { toPng } from 'html-to-image';
+﻿import { toPng } from 'html-to-image';
 
-export const handleShare = async (elementId: string, title: string = 'Meu Progresso - Life OS') => {
+interface ExportElementOptions {
+    fileName?: string;
+    title?: string;
+    backgroundColor?: string;
+    preferShare?: boolean;
+}
+
+const CAPTURE_DELAY_MS = 800;
+
+const waitForCapture = () => new Promise(resolve => setTimeout(resolve, CAPTURE_DELAY_MS));
+
+const getTargetElement = (elementId: string) => {
     const element = document.getElementById(elementId);
     if (!element) {
-        alert('Elemento para compartilhar não encontrado.');
-        return;
+        throw new Error('Elemento para exportacao nao encontrado.');
     }
+    return element;
+};
+
+const captureElementBlob = async (element: HTMLElement, backgroundColor: string) => {
+    await waitForCapture();
+
+    const dataUrl = await toPng(element, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor,
+        filter: (node) => {
+            if (node instanceof HTMLElement && node.hasAttribute('data-html2canvas-ignore')) {
+                return false;
+            }
+            return true;
+        },
+        style: {
+            fontFamily: 'Inter, sans-serif'
+        }
+    });
+
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    if (!blob) {
+        throw new Error('Falha ao gerar blob da imagem.');
+    }
+    return blob;
+};
+
+const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+};
+
+const tryShareFile = async (file: File, title: string) => {
+    if (!navigator.share) return false;
+
+    try {
+        if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+            return false;
+        }
+        await navigator.share({
+            files: [file],
+            title,
+        });
+        return true;
+    } catch (error) {
+        console.info('Share cancelled or unavailable', error);
+        return false;
+    }
+};
+
+export const handleShare = async (elementId: string, title: string = 'Meu Progresso - Life OS') => {
     if (!navigator.share) {
-        alert('A função de compartilhar não é suportada neste navegador.');
+        alert('A funcao de compartilhar nao e suportada neste navegador.');
         return;
     }
 
     try {
-        // Give the browser more time to ensure all assets are rendered.
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        // Using toPng instead of toBlob, as it can sometimes handle CSS rules better
-        const dataUrl = await toPng(element, {
-            cacheBust: true,
-            pixelRatio: 2,
-            backgroundColor: '#101010',
-            imageTimeout: 30000,
-            filter: (node) => {
-                if (node instanceof HTMLElement && node.hasAttribute('data-html2canvas-ignore')) {
-                    return false;
-                }
-                return true;
-            },
-            // Try to avoid the SecurityError by providing a custom style that doesn't trigger the rule access
-            style: {
-                // Ensure fonts are correctly rendered if we can
-                'font-family': 'Inter, sans-serif'
-            }
-        });
-        
-        // Convert dataUrl to blob
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        
-        if (blob) {
-            const file = new File([blob], 'share.png', { type: 'image/png' });
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: title,
-                });
-            } catch (shareError) {
-                // This can happen if the user cancels the share dialog
-                console.info('Share cancelled or failed', shareError);
-            }
-        } else {
-            throw new Error('Falha ao criar blob da imagem.');
+        const element = getTargetElement(elementId);
+        const blob = await captureElementBlob(element, '#101010');
+        const file = new File([blob], 'share.png', { type: 'image/png' });
+        const shared = await tryShareFile(file, title);
+        if (!shared) {
+            throw new Error('Compartilhamento indisponivel.');
         }
     } catch (error: any) {
         console.error('Erro ao gerar imagem para compartilhar:', error);
-        // Provide more context in the error message for debugging
         const errorMessage = error?.message || 'Desconhecido';
-        alert(`Ocorreu um erro ao gerar a imagem (Erro: ${errorMessage}). Verifique se as imagens do perfil estão carregando corretamente.`);
+        alert(`Ocorreu um erro ao gerar a imagem (Erro: ${errorMessage}). Verifique se as imagens do perfil estao carregando corretamente.`);
     }
+};
+
+export const exportElementAsImage = async (
+    elementId: string,
+    {
+        fileName = 'glyph-export.png',
+        title = 'Glyph Export',
+        backgroundColor = '#050505',
+        preferShare = false,
+    }: ExportElementOptions = {}
+) => {
+    const element = getTargetElement(elementId);
+    const blob = await captureElementBlob(element, backgroundColor);
+    const normalizedFileName = fileName.toLowerCase().endsWith('.png') ? fileName : `${fileName}.png`;
+    const file = new File([blob], normalizedFileName, { type: 'image/png' });
+
+    if (preferShare) {
+        const shared = await tryShareFile(file, title);
+        if (shared) return 'shared' as const;
+    }
+
+    downloadBlob(blob, normalizedFileName);
+    return 'downloaded' as const;
 };

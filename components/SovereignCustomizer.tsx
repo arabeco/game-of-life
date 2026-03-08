@@ -72,7 +72,6 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     // Mock Report for Testing
     const mockReport: Report = {
         id: 'test-report',
-        userId: userProfile.id,
         startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
         endDate: new Date().toISOString(),
         performanceScore: 95,
@@ -96,8 +95,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
             { asset: 'Alma', value: 70 }
         ],
         clanPoints: 120,
-        expGained: 500,
-        generatedAt: new Date().toISOString()
+        expGained: 500
     };
 
     // Parse initial body state for selectors
@@ -688,3 +686,4 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         </Portal>
     );
 };
+

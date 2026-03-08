@@ -11,6 +11,11 @@ import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
 import { useCodexBuilder } from './CodexBuilderContext';
+import { getCampaignArenaStates } from '../utils/progressUtils';
+import { createTaskDomain } from './gameDomains/taskDomain';
+import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
+import { buildCyclePaceMetrics, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds } from '../utils/coreLoopUtils.js';
+import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -261,7 +266,7 @@ export interface GameContextType {
     addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
     updateAssetSlotValue: (assetId: string, slotId: string, value: SlotValue) => void;
     getArenas: () => Arena[];
-    addArena: (assetId: string, arenaData: Pick<Arena, 'name' | 'description' | 'icon'>, skipDb?: boolean) => Promise<Arena>;
+    addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived'>>) => void;
     deleteArena: (arenaId: string) => void;
     createArenaFolder: (name: string, icon: string, assetId?: string) => Promise<ArenaFolder | null>;
@@ -283,14 +288,14 @@ export interface GameContextType {
     deleteAction: (actionId: string) => void;
     scheduleTask: (actionOrId: string | Action, date: string, startTime: number) => Promise<ScheduledTask | undefined>;
     scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
-    scheduleAndCompleteNow: (actionId: string) => void;
-    scheduleAndCompleteMilestoneNow: (actionId: string) => void;
+    scheduleAndCompleteNow: (actionId: string, taskId?: string) => Promise<void>;
+    scheduleAndCompleteMilestoneNow: (actionId: string) => Promise<void>;
     returnTaskToPool: (taskId: string) => void;
     deleteTask: (taskId: string) => void;
     getTasksForDate: (date: Date) => ScheduledTask[];
     rescheduleTask: (taskId: string, newDate: string, newStartTime: number) => void;
     updateTask: (taskId: string, updates: Partial<ScheduledTask>) => void;
-    toggleTaskCompletion: (taskId: string) => void;
+    toggleTaskCompletion: (taskId: string) => Promise<void>;
     completeTutorialMission: () => void;
     toggleChecklistItem: (id: string) => void;
     addChecklistItem: (text: string) => void;
@@ -493,9 +498,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [arenaFolders, setArenaFolders] = useState<ArenaFolder[]>(() => []);
 
     const [actions, setActions] = useState<Action[]>(() => createDefaultActions(true));
+    const allArenas = useMemo(() => assets.flatMap(asset => asset.arenas), [assets]);
 
     const [tasks, setTasks] = useState<ScheduledTask[]>(() => []);
-    const [taskPool, setTaskPool] = useState<TaskPoolItem[]>([]);
 
     const [reports, setReports] = useState<Report[]>(() => []);
 
@@ -577,21 +582,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             status: 'active'
         };
 
-        // Optimistic update
         setCampaigns(prev => [...prev, newCampaign]);
 
-        // Persist to Supabase
-        const { error } = await supabase.from('campaigns').insert(mapToSnakeCase({
-            ...newCampaign,
-            userId
-        }));
+        try {
+            const { error } = await supabase.from('campaigns').insert(mapToSnakeCase({
+                ...newCampaign,
+                userId
+            }));
 
-        if (error) {
+            if (error) throw error;
+            return newCampaign;
+        } catch (error) {
             console.error("Error creating campaign:", error);
-            // Revert optimistic update? Or retry?
+            setCampaigns(prev => prev.filter(c => c.id !== newCampaign.id));
+            showToast("Erro ao criar campanha.", 'error');
+            throw error;
         }
-
-        return newCampaign;
     };
 
     const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
@@ -744,7 +750,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const percent = Math.round(villageBonusFactor * 100);
         if (percent <= 0) return;
 
-        showToast(`Dever Cumprido: Ordem da Aldeia ativa (+${percent}% de b�nus de EXP).`, 'success');
+        showToast(`Dever Cumprido: Ordem da Aldeia ativa (+${percent}% de b�nus de EXP).`, 'success');
         localStorage.setItem(key, '1');
     };
 
@@ -1125,7 +1131,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             // IDs definidos no LOJA.MD e items.ts
                         const starterItemIds = [
-                'item_skin_1_001', // N�ufrago
+                'item_skin_1_001', // N�ufrago
                 'item_skin_1_002', // Casual
                 'cachos',          // Cabelo 1
                 'medio_reto',      // Cabelo 2
@@ -1134,7 +1140,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'item_artifact_1_001', // Adaga Aprendiz
                 'item_orb_1_002',  // Orbe de Cobre
                 'item_plate_1_001', // Placa Madeira
-                'BASIC'            // Tema B�sico
+                'BASIC'            // Tema B�sico
             ];
 
             const starterItems = ITEMS_DB.filter(i => starterItemIds.includes(i.id));
@@ -3087,113 +3093,148 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
 
         const codex = userCodexes.find(c => c.id === userCodexId);
-        if (!codex || !codex.template) return;
+        if (!codex || !codex.template || !Array.isArray(codex.template.levels)) return;
 
         const template = codex.template;
-
-        // 1. Create Campaign
-        const campaignId = crypto.randomUUID();
+        const assetId = assets.find(a => a.id === 'fisico')?.id || assets[0]?.id || 'geral';
         const arenaIds: string[] = [];
-        const arenaConfig: Record<string, any> = {};
+        const createdArenaIds: string[] = [];
+        const createdActionIds: string[] = [];
+        let createdCampaignId: string | null = null;
+        const arenaConfig: NonNullable<Campaign['arenaConfig']> = {};
+        const baseArenaOrder = getArenas().length;
+        const baseCampaignOrder = campaigns.length;
+        const baseCampaignPriorityOrder = campaigns.filter(c => (c.priority ?? 'media') === 'media').length;
+        const previousCycleArenaIds = activeCycle ? [...activeCycle.arenaIds] : null;
 
-        // 2. Create Arenas & Actions for each level
-        for (const level of template.levels) {
-            // Find asset ID (default to 'fisico' or first available)
-            const assetId = assets.find(a => a.id === 'fisico')?.id || assets[0]?.id || 'geral';
+        const rollbackInstalledCodex = async () => {
+            const arenaIdSet = new Set(createdArenaIds);
+            const actionIdSet = new Set(createdActionIds);
 
-            const arenaId = crypto.randomUUID();
-            arenaIds.push(arenaId);
-
-            // Determine if locked (Level 1 is unlocked, others locked)
-            const isLocked = level.level > 1;
-            const prereqIds = level.level > 1 ? [arenaIds[arenaIds.length - 2]] : []; // Simple linear dependency on previous arena
-
-            arenaConfig[arenaId] = {
-                isLocked,
-                isHidden: false,
-                prerequisiteArenaIds: prereqIds
-            };
-
-            // Insert Arena
-            await supabase.from('arenas').insert({
-                id: arenaId,
-                user_id: userId,
-                asset_id: assetId,
-                name: level.title,
-                description: level.description,
-                icon: '📜', // Default Codex Icon
-                origin_codex_id: codex.id,
-                codex_level: level.level,
-                is_archived: false,
-                priority: 'media',
-                order: 0,
-                priority_order: 0
-            });
-
-            // Insert Actions
-            // Fix: Ensure we wait for actions to be inserted before proceeding or catching errors
-            for (const action of level.actions) {
-                const { error: actionError } = await supabase.from('actions').insert({
-                    id: crypto.randomUUID(), // Ensure ID is generated
-                    user_id: userId,
-                    arena_id: arenaId,
-                    name: action.name,
-                    description: action.description,
-                    icon: action.icon || '⚔️', // Default icon if missing
-                    duration: action.duration || 0,
-                    repetitions: action.repetitions || 0,
-                    action_type: action.actionType || 'check',
-                    difficulty: action.difficulty || 'easy',
-                    origin_codex_id: codex.id,
-                });
-
-                if (actionError) {
-                    console.error("Error inserting action:", actionError);
-                }
+            if (createdCampaignId) {
+                setCampaigns(prev => prev.filter(campaign => campaign.id !== createdCampaignId));
             }
-        }
 
-        // 3. Insert Campaign
-        const newCampaign: Campaign = {
-            id: campaignId,
-            userId,
-            title: template.title,
-            description: template.description,
-            status: 'active',
-            type: 'sequential', // Codexes are usually sequential levels
-            arenaIds,
-            arenaConfig,
-            createdAt: new Date().toISOString(),
-            priority: 'media',
-            order: 0,
-            priorityOrder: 0
+            if (createdActionIds.length > 0) {
+                setTasks(prev => prev.filter(task => !actionIdSet.has(task.actionId)));
+                setActions(prev => prev.filter(action => !actionIdSet.has(action.id)));
+            }
+
+            if (createdArenaIds.length > 0 || createdActionIds.length > 0) {
+                setAssets(prevAssets => prevAssets.map(asset => ({
+                    ...asset,
+                    arenas: asset.arenas
+                        .filter(arena => !arenaIdSet.has(arena.id))
+                        .map(arena => {
+                            const actionIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+                            return actionIds.some(id => actionIdSet.has(id))
+                                ? { ...arena, actionIds: actionIds.filter(id => !actionIdSet.has(id)) }
+                                : arena;
+                        })
+                })));
+            }
+
+            if (activeCycle && previousCycleArenaIds) {
+                setActiveCycle(prev => prev?.id === activeCycle.id ? { ...prev, arenaIds: previousCycleArenaIds } : prev);
+            }
+
+            const rollbackOps: PromiseLike<any>[] = [];
+            if (createdCampaignId) {
+                rollbackOps.push(supabase.from('campaigns').delete().eq('id', createdCampaignId));
+            }
+            if (createdActionIds.length > 0) {
+                rollbackOps.push(supabase.from('scheduled_tasks').delete().in('action_id', createdActionIds));
+                rollbackOps.push(supabase.from('actions').delete().in('id', createdActionIds));
+            }
+            if (createdArenaIds.length > 0) {
+                rollbackOps.push(supabase.from('arenas').delete().in('id', createdArenaIds));
+            }
+            if (activeCycle && previousCycleArenaIds) {
+                rollbackOps.push(supabase.from('cycles').update({ arena_ids: previousCycleArenaIds }).eq('id', activeCycle.id));
+            }
+
+            if (rollbackOps.length > 0) {
+                await Promise.allSettled(rollbackOps);
+            }
         };
 
-        const { error } = await supabase.from('campaigns').insert({
-            id: campaignId,
-            user_id: userId,
-            title: newCampaign.title,
-            description: newCampaign.description,
-            status: newCampaign.status,
-            type: newCampaign.type,
-            arena_ids: newCampaign.arenaIds,
-            arena_config: newCampaign.arenaConfig,
-            priority: 'media',
-            order: 0,
-            priority_order: 0
-        });
+        try {
+            for (const [index, level] of template.levels.entries()) {
+                const createdArena = await addArena(assetId, {
+                    name: level.title,
+                    description: level.description || '',
+                    icon: level.actions?.[0]?.icon || '📜',
+                    originCodexId: codex.id,
+                    codexLevel: level.level,
+                    priority: 'media',
+                    order: baseArenaOrder + index,
+                    priorityOrder: index
+                });
 
-        if (error) {
+                createdArenaIds.push(createdArena.id);
+                arenaIds.push(createdArena.id);
+                const previousArenaId = arenaIds[arenaIds.length - 2];
+                arenaConfig[createdArena.id] = {
+                    isLocked: level.level > 1,
+                    isHidden: false,
+                    prerequisiteArenaIds: level.level > 1 && previousArenaId ? [previousArenaId] : []
+                };
+
+                for (const levelAction of level.actions || []) {
+                    const actionType = levelAction.actionType === 'Marco' || levelAction.actionType === 'Compromisso' || levelAction.actionType === 'Ação Recorrente'
+                        ? levelAction.actionType
+                        : 'Ação Recorrente';
+
+                    const createdAction = await addAction({
+                        arenaId: createdArena.id,
+                        name: levelAction.name,
+                        description: levelAction.description || '',
+                        icon: levelAction.icon || '⚔️',
+                        duration: Number.isFinite(levelAction.duration) ? levelAction.duration : 15,
+                        repetitions: Number.isFinite(levelAction.repetitions) ? Math.max(1, Math.floor(levelAction.repetitions)) : 1,
+                        actionType,
+                        difficulty: typeof levelAction.difficulty === 'number' ? levelAction.difficulty : 1,
+                        scheduledDays: Array.isArray(levelAction.scheduledDays) ? levelAction.scheduledDays : undefined,
+                        scheduledStartTime: typeof levelAction.scheduledStartTime === 'number' ? levelAction.scheduledStartTime : undefined,
+                        briefing: levelAction.briefing,
+                        assets: levelAction.assets,
+                        preFlight: levelAction.preFlight,
+                        context: levelAction.context,
+                        originCodexId: codex.id,
+                    });
+
+                    createdActionIds.push(createdAction.id);
+
+                    if (
+                        createdAction.actionType === 'Ação Recorrente' &&
+                        createdAction.scheduledDays &&
+                        createdAction.scheduledDays.length > 0 &&
+                        typeof createdAction.scheduledStartTime === 'number'
+                    ) {
+                        await scheduleMultipleTasks(createdAction, createdAction.scheduledDays, createdAction.scheduledStartTime);
+                    }
+                }
+            }
+
+            const createdCampaign = await addCampaign({
+                userId,
+                title: template.title,
+                description: template.description,
+                arenaIds,
+                arenaConfig,
+                type: 'sequential',
+                priority: 'media',
+                order: baseCampaignOrder,
+                priorityOrder: baseCampaignPriorityOrder
+            });
+            createdCampaignId = createdCampaign.id;
+
+            showToast(`Codex "${codex.name}" instalado com sucesso!`);
+        } catch (error: any) {
+            await rollbackInstalledCodex();
             console.error("Error creating campaign from codex:", error);
-            showToast("Erro ao criar campanha: " + error.message);
-            return;
+            showToast("Erro ao instalar codex: " + (error?.message || 'falha desconhecida'), 'error');
         }
-
-        showToast(`Codex "${codex.name}" instalado com sucesso!`);
-        // Give DB a moment to index before reloading
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
     };
 
     const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
@@ -3313,28 +3354,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
 
-    const isQuestActionId = (actionId: string) => {
-        const action = actions.find(a => a.id === actionId);
-        if (!action) return false;
-        const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
-        if (!arena?.name) return false;
-        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        return normalized.includes('quests');
-    };
+    const isQuestActionId = useCallback((actionId: string) => isQuestAction(actionId, actions, allArenas), [actions, allArenas]);
 
-    const isClanQuestActionId = (actionId: string) => {
-        const action = actions.find(a => a.id === actionId);
-        if (!action) return false;
-        const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
-        if (!arena?.name) return false;
-        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        return normalized.includes('quests - cla');
-    };
+    const isClanQuestActionId = useCallback((actionId: string) => isClanQuestAction(actionId, actions, allArenas), [actions, allArenas]);
 
     const resetDailyCommitment = () => {
+        const today = getTodayString();
         setDailyCommitmentState({
-            date: getTodayString(),
-            taskIds: [],
+            date: today,
+            taskIds: getInitialDailyCommitmentTaskIds(tasks, today, isClanQuestActionId),
             stage: 'planning',
             score: null,
             expDeposited: null,
@@ -3343,7 +3371,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
     };
-    const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds }));
+    const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds: [...new Set(taskIds)] }));
     const lockDailyCommitment = () => setDailyCommitmentState(prev => ({ ...prev, stage: 'battle' }));
     const unlockDailyCommitment = () => setDailyCommitmentState(prev => ({ ...prev, stage: 'planning' }));
 
@@ -3402,8 +3430,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (data) {
                 setDailyCommitmentState(mapToCamelCase(data) as DailyCommitment);
             } else {
-                // Se não existe para hoje, garante que está resetado
-                setDailyCommitmentState(createDefaultDailyCommitment());
+                setDailyCommitmentState({
+                    date: today,
+                    taskIds: getInitialDailyCommitmentTaskIds(tasks, today, isClanQuestActionId),
+                    stage: 'planning',
+                    score: null,
+                    expDeposited: null,
+                    sitrepBonus: null,
+                    earnedInsigniaId: null
+                });
             }
         };
 
@@ -3880,71 +3915,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     }, [clan?.id]);
 
-    useEffect(() => {
-        const activeArenas = assets.flatMap(asset => asset.arenas.filter(a => !a.isArchived));
-
-        // Filter out arenas that are locked by any active campaign
-        const lockedArenaIds = new Set<string>();
-        campaigns.forEach(campaign => {
-            if (campaign.status === 'active' && campaign.arenaConfig) {
-                Object.entries(campaign.arenaConfig).forEach(([arenaId, config]: [string, any]) => {
-                    if (config.isLocked) {
-                        lockedArenaIds.add(arenaId);
-                    }
-                });
-            }
-        });
-
-        // Create a count map of scheduled tasks to avoid nested loops.
-        // MODIFICAÇÃO FINAL SOLICITADA PELO USUÁRIO:
-        // A Bay Area (e o Pool) deve ser um espelho das Arenas. TODAS as ações devem aparecer.
-        // Ao agendar, a ação NÃO deve sumir do pool. Ela continua lá, disponível para ser agendada novamente se quiser.
-        // O controle de "o que eu fiz hoje" é visual no Planner (arrastou pro dia) ou no Sitrep (clicou pra adicionar).
-        // O pool é a fonte de "tudo que posso fazer".
-
-        // Verificação de Segurança Extra:
-        // Garantir que a ação realmente pertence a uma arena ativa e existente.
-        // activeActions já faz isso (activeActions = actions.filter(a => activeArenaIds.has(a.arenaId)))
-        // Mas activeArenaIds pode conter IDs de arenas deletadas se o activeCycle tiver IDs antigos?
-        // activeArenaIds é derivado de activeCycle.arenaIds filtrado por lockedArenaIds OU de activeArenas.
-        // Se activeCycle.arenaIds tiver lixo, pode causar isso.
-        // Vamos garantir que activeArenaIds contenha APENAS arenas que existem em 'activeArenas' (que vem de assets -> arenas não arquivadas).
-
-        // Reconstruindo activeArenaIds para ser mais seguro e DINÂMICO:
-        // O usuário quer que a Bay Area seja um ESPELHO das Arenas ativas.
-        // Se ele cria uma arena nova, ela TEM que aparecer, independente se o ciclo foi criado antes.
-        // Se ele deleta (arquiva), ela some (activeArenas já filtra isArchived).
-        // A restrição do activeCycle.arenaIds estava impedindo novas arenas de aparecerem.
-        // Vamos ignorar a restrição do ciclo para fins de disponibilidade no Pool/Bay Area.
-
-        // VERSÃO CORRIGIDA: O Pool deve respeitar o Ciclo Ativo como o usuário solicitou ("estoque do ciclo").
-        // Se houver ciclo ativo, as arenas disponíveis são apenas as do ciclo.
-        // Se NÃO houver ciclo ativo (ou as arenas do ciclo forem vázias), mostra todas as arenas não trancadas por campanhas.
-
-        const activeArenaIds = new Set(activeArenas.map(a => a.id).filter(id => !lockedArenaIds.has(id)));
-
-
-        // Agora sim filtra ações
-        const activeActions = actions.filter(a => activeArenaIds.has(a.arenaId));
-
-        const poolableActions = activeActions.filter(action => action.actionType !== 'Marco');
-
-        const pool = poolableActions.flatMap(action => {
-            if (isClanQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
-
-            // Simplesmente retorna todas as repetições disponíveis base da ação.
-            // Se a ação tem 1 repetição configurada na arena, o pool tem 1 item.
-            // Se eu agendar essa 1 repetição, o pool CONTINUA com 1 item (pois é um espelho da arena).
-            // Isso permite agendar múltiplas vezes se quiser, ou apenas ver que a ação existe.
-            // O usuário foi enfático: "AO AGENDAR, APARECEM TODAS DA POOL."
-
-            const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
-
-            return Array.from({ length: repetitions }, () => ({ actionId: action.id }));
-        });
-
-        setTaskPool(pool);
-    }, [actions, tasks, assets, activeCycle?.arenaIds, campaigns]);
 
     useEffect(() => { document.body.setAttribute('data-skin', userProfile.skin); }, [userProfile.skin]);
 
@@ -4370,12 +4340,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const cycleSeasonId = cycle?.seasonId || ACTIVE_SEASON_ID; // Use stored season or default to current
 
         // 1. Filter Tasks
-        // Standard Tasks (Planned) - Include Quests now as per user request
-        const cycleTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate);
+        const cycleTasks = filterCycleTasksByScope(tasks, currentActions, cycle, startDate, endDate);
         const completedTasks = cycleTasks.filter(t => t.completed);
 
         // Quest Tasks (kept for bonus calculation)
-        const questTasks = tasks.filter(t => t.date >= startDate && t.date <= endDate && isQuestActionId(t.actionId));
+        const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId));
         const completedQuests = questTasks.filter(t => t.completed);
 
         // 2. Calculate Progress (Base Score)
@@ -4399,10 +4368,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const questBonus = questsCompletedCount * 10; // Increased importance of quests
 
         // Consistency (Unique Days)
-        const uniqueDays = new Set([...completedTasks, ...completedQuests].map(t => t.date)).size;
-        const startD = new Date(startDate);
-        const endD = new Date(endDate);
-        const durationDays = Math.max(1, Math.ceil((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        const {
+            executionRatePct,
+            timeElapsedPct,
+            paceDeltaPct,
+            daysWithoutCompletion,
+            consistencyDays: uniqueDays,
+            durationDays,
+        } = buildCyclePaceMetrics(cycleTasks, startDate, endDate, plannedEndDate);
 
         // Consistency Bonus: 20 points if consistent (>80% of days active), scaled down
         const consistencyRatio = uniqueDays / durationDays;
@@ -4571,6 +4544,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 maxStreak,
                 bestDay,
                 bestDayCount,
+                daysWithoutCompletion,
+                executionRatePct,
+                timeElapsedPct,
+                paceDeltaPct,
                 top3Actions,
                 scoreBreakdown,
             },
@@ -5021,37 +4998,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const getArenas = () => assets.flatMap(asset => asset.arenas);
+    const getArenas = () => allArenas;
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
         const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
 
-        // Optimistic Update
         setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
 
         const userId = getSupabaseUserId();
-        if (userId && !skipDb) {
-            const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
-            delete snakeCaseData.action_ids; // Not a column
-            delete snakeCaseData.folder_id;
-
-            // Fix for relationship_id if present (not in standard Arena type yet but passed via arenaData)
-            // If arenaData has relationshipId, it will be in snakeCaseData
-            // Ensure we don't send undefined/null fields that don't exist in DB schema yet if not migrated
-
-            if (snakeCaseData.origin_codex_id && !isUuid(String(snakeCaseData.origin_codex_id))) {
-                delete snakeCaseData.origin_codex_id;
-            }
-
-            // Non-blocking DB insert to prevent UI freeze
-            supabase.from('arenas').insert(snakeCaseData).then(({ error }) => {
-                if (error) {
-                    console.error("Supabase add arena error:", error.message);
-                    showToast("Erro ao salvar arena no servidor: " + error.message);
-                    // In a real app, we might want to rollback the optimistic update here
-                }
-            });
+        if (!userId || skipDb) {
+            return newArena;
         }
-        return newArena;
+
+        const snakeCaseData = { ...mapToSnakeCase(newArena), user_id: userId };
+        delete snakeCaseData.action_ids;
+        delete snakeCaseData.folder_id;
+
+        if (snakeCaseData.origin_codex_id && !isUuid(String(snakeCaseData.origin_codex_id))) {
+            delete snakeCaseData.origin_codex_id;
+        }
+
+        try {
+            const { error } = await supabase.from('arenas').insert(snakeCaseData);
+            if (error) throw error;
+            return newArena;
+        } catch (error: any) {
+            console.error("Supabase add arena error:", error?.message || error);
+            setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: asset.arenas.filter(arena => arena.id !== newArena.id) } : asset));
+            showToast("Erro ao salvar arena no servidor: " + (error?.message || 'falha desconhecida'), 'error');
+            throw error;
+        }
     };
 
     const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => {
@@ -5521,10 +5496,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         const arena = getArenas().find(a => a.id === arenaId);
         const folderId = arena?.folderId;
-        const normalizedArenaName = arena?.name
-            ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-            : '';
-        const isQuestArena = normalizedArenaName.includes('quests - season') || normalizedArenaName.includes('quests - cla');
+        const arenaFlags = getArenaDomainFlags(arena);
+        const isQuestArenaType = arenaFlags.isQuest;
 
         // Check if the arena contains any clan mission actions and remove participation
         // We iterate ALL actions in the arena to see if they correspond to a clan quest
@@ -5584,8 +5557,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // If no quest was found via action matching, but the arena name is "1" or "Quests - Clã", 
         // and the user has a participation, maybe we should just remove them from the active clan quest?
         if (!clanQuestFound && clan) {
-            const normalized = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-            if (normalized === '1' || normalized.includes('quests - cla') || normalized.includes('socializar') || normalized.includes('unidade')) {
+            if (looksLikeClanQuestArena(arena)) {
                 const activeSeason = SEASONS[ACTIVE_SEASON_ID];
                 const defaultClanQuest = activeSeason?.quests.find(q => q.type === 'clan');
                 if (defaultClanQuest) {
@@ -5614,14 +5586,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        if (isQuestArena) {
+        if (isQuestArenaType) {
             // If it's a season/clan quest arena, deleting it implies leaving/abandoning all quests within it
             if (userId && arenaActions.length > 0) {
                 const activeSeason = SEASONS[ACTIVE_SEASON_ID];
 
                 for (const action of arenaActions) {
                     // Check for clan mission participation
-                    if (clan && normalizedArenaName.includes('quests - cla')) {
+                    if (clan && arenaFlags.isClanQuest) {
                         // Try to match action to quest
                         let quest = activeSeason?.quests?.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
 
@@ -5764,11 +5736,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const action = actions.find(a => a.id === actionId);
         if (!action) return { background: 'var(--asset-grad-default)' };
         const arena = getArenas().find(ar => ar.id === action.arenaId);
-        if (arena?.name) {
-            const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-            if (normalized.includes('quests - season')) return { background: 'var(--quest-grad-season)' };
-            if (normalized.includes('quests - cla')) return { background: 'var(--quest-grad-clan)' };
-            if (normalized.includes('outros') || normalized.includes('sidequest') || normalized.includes('side quest')) return { background: 'var(--quest-grad-sidequest)' };
+        if (arena) {
+            const arenaFlags = getArenaDomainFlags(arena);
+            if (arenaFlags.isSeasonQuest) return { background: 'var(--quest-grad-season)' };
+            if (arenaFlags.isClanQuest) return { background: 'var(--quest-grad-clan)' };
+            if (arenaFlags.isSideQuest) return { background: 'var(--quest-grad-sidequest)' };
         }
         const asset = getAssetForAction(actionId);
         return { background: `var(--asset-grad-${asset?.id || 'default'})` };
@@ -5787,6 +5759,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const addAction = async (actionData: Omit<Action, 'id'>): Promise<Action> => {
         const newAction: Action = { ...actionData, id: crypto.randomUUID() };
+        const userId = getSupabaseUserId();
+        const previousCycleArenaIds = activeCycle ? [...activeCycle.arenaIds] : null;
+        const shouldAttachArenaToCycle = Boolean(activeCycle && !activeCycle.arenaIds.includes(newAction.arenaId));
+
         setActions(prev => [...prev, newAction]);
         setAssets(prevAssets => prevAssets.map(asset => {
             const arena = asset.arenas.find(ar => ar.id === newAction.arenaId);
@@ -5803,36 +5779,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return asset;
         }));
 
-        // --- NEW: Ensure Arena is in Active Cycle ---
-        if (activeCycle) {
+        if (shouldAttachArenaToCycle) {
             const arenaId = newAction.arenaId;
-            // Check if arena is already in cycle
-            if (!activeCycle.arenaIds.includes(arenaId)) {
-                console.log(`[GameContext] Adding Arena ${arenaId} to Active Cycle ${activeCycle.id} via addAction`);
+            console.log('[GameContext] Adding Arena ' + arenaId + ' to Active Cycle ' + activeCycle!.id + ' via addAction');
 
-                // Update Local State
-                setActiveCycle(prev => {
-                    if (!prev) return null;
-                    if (prev.arenaIds.includes(arenaId)) return prev;
-                    return { ...prev, arenaIds: [...prev.arenaIds, arenaId] };
+            setActiveCycle(prev => {
+                if (!prev) return null;
+                if (prev.arenaIds.includes(arenaId)) return prev;
+                return { ...prev, arenaIds: [...prev.arenaIds, arenaId] };
+            });
+
+            if (userId) {
+                const nextArenaIds = [...(previousCycleArenaIds || []), arenaId];
+                supabase.from('cycles').update({ arena_ids: nextArenaIds }).eq('id', activeCycle!.id).then(({ error }) => {
+                    if (error) console.error("Error updating cycle arena_ids:", error.message);
                 });
-
-                // Update DB
-                const userId = getSupabaseUserId();
-                if (userId) {
-                    const nextArenaIds = [...activeCycle.arenaIds, arenaId];
-                    supabase.from('cycles').update({ arena_ids: nextArenaIds }).eq('id', activeCycle.id).then(({ error }) => {
-                        if (error) console.error("Error updating cycle arena_ids:", error.message);
-                    });
-                }
             }
         }
 
-        const userId = getSupabaseUserId();
-        if (userId) {
+        if (!userId) {
+            return newAction;
+        }
+
+        try {
             const contextPayload = mergeScheduleIntoContext(newAction.context, newAction.scheduledDays, newAction.scheduledStartTime);
             const originCodexId = newAction.originCodexId && isUuid(newAction.originCodexId) ? newAction.originCodexId : null;
-            // Explicit payload construction to ensure compatibility with Supabase schema
             const actionPayload = {
                 id: newAction.id,
                 user_id: userId,
@@ -5852,15 +5823,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
 
             const { error } = await supabase.from('actions').insert(actionPayload);
-            if (error) {
-                console.error("Supabase add action error:", error.message);
-                showToast("Erro ao salvar ação: " + error.message);
-                throw error;
-            }
-        }
+            if (error) throw error;
 
-        return newAction;
+            return newAction;
+        } catch (error: any) {
+            console.error("Supabase add action error:", error?.message || error);
+            setActions(prev => prev.filter(action => action.id !== newAction.id));
+            setTasks(prev => prev.filter(task => task.actionId !== newAction.id));
+            setAssets(prevAssets => prevAssets.map(asset => ({
+                ...asset,
+                arenas: asset.arenas.map(arena => {
+                    if (arena.id !== newAction.arenaId) return arena;
+                    const actionIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+                    return { ...arena, actionIds: actionIds.filter(id => id !== newAction.id) };
+                })
+            })));
+
+            if (shouldAttachArenaToCycle && activeCycle && previousCycleArenaIds) {
+                setActiveCycle(prev => prev?.id === activeCycle.id ? { ...prev, arenaIds: previousCycleArenaIds } : prev);
+                await supabase.from('cycles').update({ arena_ids: previousCycleArenaIds }).eq('id', activeCycle.id);
+            }
+
+            showToast("Erro ao salvar ação: " + (error?.message || 'falha desconhecida'), 'error');
+            throw error;
+        }
     };
+
     const updateAction = (actionId: string, actionData: Partial<Action>) => {
         setActions(prev => prev.map(a => a.id === actionId ? { ...a, ...actionData } : a));
         const userId = getSupabaseUserId();
@@ -5962,12 +5950,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (arena) {
                 const remainingActions = actions.filter(a => a.arenaId === arenaId && a.id !== actionId);
                 if (remainingActions.length === 0) {
-                    const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-                    if (normalized.includes('quests - season') || normalized.includes('quests - cla')) {
+                    if (isQuestArena(arena)) {
                         updateArena(arenaId, { isArchived: true });
                     }
                     // Also cleanup empty Office arenas
-                    if (arena.name.startsWith('Clan Office')) {
+                    if (isOfficeArena(arena)) {
                         updateArena(arenaId, { isArchived: true });
                         showToast('Arena Office arquivada (sem ações).', 'info');
                     }
@@ -6055,7 +6042,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const seasonArenaName = quest.title; // Ex: "Correr 15km", "Ler Livro X"
 
         // 2. Buscar ou Criar Arena (Específica para esta missão)
-        const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        const normalize = (s: string) => normalizeDomainLabel(s);
         const targetName = normalize(seasonArenaName);
 
         // Busca exata pelo nome da missão para evitar agrupar em "Quests - Clã"
@@ -6331,572 +6318,69 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
-        const action = typeof actionOrId === 'string' ? getActionById(actionOrId) : actionOrId;
-        if (!action) return;
-        const actionId = action.id;
+    const questSharedDomain = useQuestSharedDomain({
+        seasonQuests,
+        sessionUserId: session?.user.id,
+        supabase,
+        getSupabaseUserId,
+        clan,
+        assets,
+        getArenas,
+        getActionsForArena,
+        addArena,
+        updateArena,
+        showToast,
+    });
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const dayMap: DayOfWeek[] = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
-        // Check existing tasks for duplicates
-        const existingKeys = new Set(tasks.map(t => `${t.actionId}_${t.date}_${t.startTime}`));
-        const newTasks: ScheduledTask[] = [];
+    const {
+        getClanQuestForActionName,
+        getClanQuestsForArena,
+        getClanQuestForAction,
+        getSharedActionPoolProgress,
+        getOrCreateOfficeArena,
+        cleanupEmptyOfficeArena,
+        setArenaAsShared,
+        updateCustomClanMissionProgress,
+    } = questSharedDomain;
 
-        for (let i = 0; i < 7; i += 1) {
-            const date = new Date(today);
-            date.setDate(today.getDate() + i);
-            const dayKey = dayMap[date.getDay()];
-            if (!daysOfWeek.includes(dayKey)) continue;
+    const taskDomain = createTaskDomain({
+        tasks,
+        dailyCommitment,
+        clan,
+        supabase,
+        setTasks,
+        setDailyCommitmentState,
+        getActionById,
+        getArenas,
+        getActionsForArena,
+        getClanQuestForAction,
+        getSupabaseUserId,
+        isClanQuestActionId,
+        showToast,
+        updateClanMissionProgress,
+        updateCustomClanMissionProgress,
+        setAchievementUnlocked,
+        addFeedEvent,
+        getLocalDateString,
+        mapToSnakeCase,
+        addProfileFlag,
+        tutorialActionId: TUTORIAL_ACTION_ID,
+        tutorialCompletedFlag: PROFILE_FLAG_TUTORIAL_COMPLETED,
+    });
 
-            const dateString = getLocalDateString(date);
-            const key = `${actionId}_${dateString}_${startTimeInMinutes}`;
-            if (existingKeys.has(key)) continue;
-
-            newTasks.push({
-                id: crypto.randomUUID(),
-                actionId: actionId,
-                date: dateString,
-                startTime: startTimeInMinutes,
-                duration: action.duration,
-                completed: false,
-            });
-            existingKeys.add(key);
-        }
-
-        if (newTasks.length === 0) return;
-
-        setTasks(prevTasks => [...prevTasks, ...newTasks]);
-
-        // --- NEW: Add to Daily Commitment if Today ---
-        if (!isClanQuestActionId(actionId)) {
-            const todayStr = getLocalDateString();
-            const todayTasks = newTasks.filter(t => t.date === todayStr);
-            if (todayTasks.length > 0) {
-                setDailyCommitmentState(prev => ({
-                    ...prev,
-                    taskIds: [...new Set([...prev.taskIds, ...todayTasks.map(t => t.id)])]
-                }));
-            }
-        }
-
-        const userId = getSupabaseUserId();
-        if (userId) {
-            const snakeCaseData = newTasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
-            const { error } = await supabase.from('scheduled_tasks').insert(snakeCaseData);
-            if (error) {
-                console.error("Supabase schedule multiple tasks error:", error.message);
-                showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
-                throw error;
-            }
-        }
-    };
-    const scheduleTask = async (actionOrId: string | Action, date: string, startTime: number): Promise<ScheduledTask | undefined> => {
-        const action = typeof actionOrId === 'string' ? getActionById(actionOrId) : actionOrId;
-        if (!action) return undefined;
-        const actionId = action.id;
-
-        const newTask: ScheduledTask = {
-            id: crypto.randomUUID(),
-            actionId: actionId,
-            date: date,
-            startTime: startTime,
-            duration: action.duration,
-            completed: false,
-        };
-
-        setTasks(prevTasks => [...prevTasks, newTask]);
-
-        // --- NEW: Add to Daily Commitment if Today ---
-        const todayStr = getLocalDateString();
-        if (newTask.date === todayStr && !isClanQuestActionId(actionId)) {
-            setDailyCommitmentState(prev => {
-                if (prev.taskIds.includes(newTask.id)) return prev;
-                return { ...prev, taskIds: [...prev.taskIds, newTask.id] };
-            });
-        }
-
-        const userId = getSupabaseUserId();
-        if (userId) {
-            const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-            const { error } = await supabase.from('scheduled_tasks').insert(snakeCaseData);
-            if (error) {
-                console.error("Supabase schedule task error:", error.message);
-                showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
-                throw error;
-            }
-        }
-
-        showToast("Cronograma atualizado no banco de dados.", "success");
-        return newTask;
-    };
-
-    const normalizeQuestLabel = (value?: string) => {
-        if (!value) return '';
-        return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    };
-
-    const getClanQuestForActionName = (actionName?: string): SeasonQuest | null => {
-        if (!actionName) return null;
-        const normalized = normalizeQuestLabel(actionName);
-        const direct = seasonQuests.find(q => q.type === 'clan' && normalizeQuestLabel(q.actionTemplate?.name) === normalized);
-        if (direct) return direct;
-        const byTitle = seasonQuests.find(q => q.type === 'clan' && normalizeQuestLabel(q.title) === normalized);
-        if (byTitle) return byTitle;
-        if (normalized.includes('socializar')) {
-            return seasonQuests.find(q => q.id === 'quest-clan-unity') || null;
-        }
-        return null;
-    };
-
-    const getClanQuestsForArena = (arena: Arena, arenaActions: Action[]) => {
-        const map = new Map<string, SeasonQuest>();
-        const byArenaName = seasonQuests.find(q => q.type === 'clan' && normalizeQuestLabel(q.title) === normalizeQuestLabel(arena.name));
-        if (byArenaName) map.set(byArenaName.id, byArenaName);
-        arenaActions.forEach(action => {
-            const quest = getClanQuestForActionName(action.name);
-            if (quest) map.set(quest.id, quest);
-        });
-        return Array.from(map.values());
-    };
-
-    const getClanQuestForAction = (action: Action | undefined) => {
-        if (!action) return null;
-        return getClanQuestForActionName(action.name);
-    };
-
-    const [sharedActionCompletions, setSharedActionCompletions] = useState<Record<string, Record<string, number>>>(() => ({}));
-
-    // [NEW] Subscribe to shared completions for real-time pool updates
-    useEffect(() => {
-        const userId = getSupabaseUserId();
-        if (!userId) return;
-
-        // Initial fetch
-        supabase.from('shared_action_completions')
-            .select('*')
-            .then(({ data, error }) => {
-                if (data) {
-                    const newCompletions: Record<string, Record<string, number>> = {};
-                    data.forEach((comp: any) => {
-                        if (!newCompletions[comp.arena_id]) newCompletions[comp.arena_id] = {};
-                        newCompletions[comp.arena_id][comp.action_id] = (newCompletions[comp.arena_id][comp.action_id] || 0) + 1;
-                    });
-                    setSharedActionCompletions(newCompletions);
-                }
-            });
-
-        // Subscription
-        const channel = supabase.channel('shared_completions_sync')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'shared_action_completions' }, (payload) => {
-                // Simplified refresh: fetch all again for consistency
-                // In a larger app, we'd granularly update the state from payload.new/old
-                supabase.from('shared_action_completions')
-                    .select('*')
-                    .then(({ data }) => {
-                        if (data) {
-                            const newCompletions: Record<string, Record<string, number>> = {};
-                            data.forEach((comp: any) => {
-                                if (!newCompletions[comp.arena_id]) newCompletions[comp.arena_id] = {};
-                                newCompletions[comp.arena_id][comp.action_id] = (newCompletions[comp.arena_id][comp.action_id] || 0) + 1;
-                            });
-                            setSharedActionCompletions(newCompletions);
-                        }
-                    });
-            })
-            .subscribe();
-
-        return () => { supabase.removeChannel(channel); };
-    }, [session?.user.id]);
-
-    const getSharedActionPoolProgress = (arenaId: string, actionId: string) => {
-        return sharedActionCompletions[arenaId]?.[actionId] || 0;
-    };
-
-    // --- Office Mode: Auto-create / cleanup "Clan Office" arena ---
-    const getOrCreateOfficeArena = async (): Promise<Arena | null> => {
-        if (clan?.clanType !== 'Office') return null;
-        const OFFICE_ARENA_NAME = `Clan Office • ${clan.name}`;
-        // Check if an existing Office arena already exists
-        const existing = getArenas().find(a => a.name === OFFICE_ARENA_NAME && !a.isArchived);
-        if (existing) return existing;
-        // Create a new one under the first asset
-        const targetAssetId = assets[0]?.id || 'outros';
-        const newArena = await addArena(targetAssetId, {
-            name: OFFICE_ARENA_NAME,
-            description: `Arena automática do clã ${clan.name} (Office Mode)`,
-            icon: '🏢',
-        } as any);
-        showToast('Arena Office criada automaticamente!', 'success');
-        return newArena;
-    };
-
-    const cleanupEmptyOfficeArena = (arenaId: string) => {
-        if (clan?.clanType !== 'Office') return;
-        const OFFICE_ARENA_NAME = `Clan Office • ${clan?.name}`;
-        const arena = getArenas().find(a => a.id === arenaId);
-        if (!arena || arena.name !== OFFICE_ARENA_NAME) return;
-        const remaining = getActionsForArena(arenaId);
-        if (remaining.length === 0) {
-            updateArena(arenaId, { isArchived: true });
-            showToast('Arena Office arquivada (sem ações).', 'info');
-        }
-    };
-
-    // --- Leader Shared Arena Selection ---
-    const setArenaAsShared = (arenaId: string, isShared: boolean) => {
-        // Mark an arena as shared for all clan members to see in their planner
-        updateArena(arenaId, { description: isShared ? '[SHARED]' : '' } as any);
-        if (isShared) {
-            showToast('Arena marcada como compartilhada para o clã!', 'success');
-        }
-    };
-
-    const updateCustomClanMissionProgress = async (missionId: string, increment: number) => {
-        const { data, error } = await supabase.rpc('update_clan_mission_progress', {
-            p_mission_id: missionId,
-            p_increment: increment
-        });
-        if (error) {
-            console.error("Error updating clan mission progress:", error);
-        } else {
-            console.log("Clan mission progress updated:", data);
-        }
-    };
-
-    const scheduleAndCompleteNow = (actionId: string, taskId?: string) => {
-        if (taskId) {
-            toggleTaskCompletion(taskId);
-            return;
-        }
-
-        const action = getActionById(actionId);
-        if (!action || action.actionType === 'Marco') return;
-
-        const now = new Date();
-        const date = getLocalDateString(now);
-        const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-        // O horário de início retrocede para que o fim da ação seja exatamente AGORA
-        const startTime = Math.max(0, nowInMinutes - action.duration);
-
-        const newTask: ScheduledTask = {
-            id: crypto.randomUUID(),
-            actionId: actionId,
-            date: date,
-            startTime: startTime,
-            duration: action.duration,
-            completed: true, // Auto-complete
-            createdAt: now.toISOString()
-        };
-
-        // Add to tasks and immediately toggle completion to trigger DB/Logic
-        setTasks(prev => [...prev, newTask]);
-        // We call it after state update potentially, but simpler here:
-        // Since we explicitly want it completed, we record it.
-        // If it's today, add to daily commitment so it shows in SITREP
-        if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
-            setDailyCommitmentState(prev => ({
-                ...prev,
-                taskIds: [...prev.taskIds, newTask.id]
-            }));
-        }
-
-        const userId = getSupabaseUserId();
-        if (userId) {
-            const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-            supabase.from('scheduled_tasks').insert(snakeCaseData).then(({ error }) => {
-                if (error) console.error("Supabase schedule task now error:", error.message);
-            });
-
-            // Shared record if applicable
-            const arena = getArenas().find(a => a.id === action.arenaId);
-            if (arena && (clan?.clanType === 'Office')) {
-                supabase.from('shared_action_completions').insert({
-                    arena_id: arena.id,
-                    action_id: action.id,
-                    user_id: userId
-                });
-            }
-        }
-    };
-    const scheduleAndCompleteMilestoneNow = (actionId: string) => {
-        const action = getActionById(actionId);
-        if (!action || action.actionType !== 'Marco') return;
-
-        const alreadyExists = tasks.some(t => t.actionId === actionId);
-        if (alreadyExists) {
-            const existingTask = tasks.find(t => t.actionId === actionId);
-            if (existingTask && !existingTask.completed) {
-                toggleTaskCompletion(existingTask.id);
-            }
-            return;
-        }
-
-        const now = new Date();
-        const date = getLocalDateString(now);
-        const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-        // O horário de início retrocede para que o fim da ação seja exatamente AGORA
-        const startTime = Math.max(0, nowInMinutes - action.duration);
-
-        const newTask: ScheduledTask = {
-            id: crypto.randomUUID(),
-            actionId: actionId,
-            date: date,
-            startTime: startTime,
-            duration: action.duration,
-            completed: true,
-        };
-
-        setTasks(prevTasks => [...prevTasks, newTask]);
-
-        // Handle Clan Quest Progress for Milestones
-        // Check if this action corresponds to a clan quest, regardless of arena
-        const activeSeasonConfig = SEASONS[ACTIVE_SEASON_ID];
-        const clanQuest = activeSeasonConfig?.quests.find(q =>
-            (q.type === 'clan' && q.actionTemplate.name === action.name) ||
-            (q.id === 'quest-clan-unity' && (action.name.includes('Socializar') || action.name.includes('socializar')))
-        );
-
-        if (clanQuest) {
-            updateClanMissionProgress(clanQuest.id, 1);
-        }
-
-        // Handle Custom Clan Mission Progress
-        if (action.originCodexId?.startsWith('clan_quest:')) {
-            const questId = action.originCodexId.split(':')[1];
-            updateCustomClanMissionProgress(questId, 1);
-        }
-
-        // If it's today, add to daily commitment
-        if (date === dailyCommitment.date) {
-            setDailyCommitmentState(prev => ({
-                ...prev,
-                taskIds: [...prev.taskIds, newTask.id]
-            }));
-        }
-
-        setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
-        addFeedEvent({
-            type: 'MILESTONE_COMPLETED',
-            content: { title: action.name, icon: action.icon }
-        });
-
-        const userId = getSupabaseUserId();
-        if (userId) {
-            const snakeCaseData = { ...mapToSnakeCase(newTask), user_id: userId };
-            supabase.from('scheduled_tasks').insert(snakeCaseData).then(({ error }) => {
-                if (error) console.error("Supabase schedule milestone now error:", error.message);
-            });
-        }
-    };
-    const completeTutorialMission = () => {
-        const tutorialTask = tasks.find(t => t.actionId === TUTORIAL_ACTION_ID);
-        if (tutorialTask && !tutorialTask.completed) {
-            toggleTaskCompletion(tutorialTask.id);
-        } else if (!tutorialTask) {
-            scheduleAndCompleteMilestoneNow(TUTORIAL_ACTION_ID);
-        }
-
-        // Ensure the flag is added to user profile for persistence
-        addProfileFlag(PROFILE_FLAG_TUTORIAL_COMPLETED);
-    };
-    const deleteTask = (taskId: string) => {
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-        const userId = getSupabaseUserId();
-        if (userId) {
-            supabase.from('scheduled_tasks').delete().eq('id', taskId).then(({ error }) => {
-                if (error) console.error("Supabase delete task error:", error.message);
-            });
-        }
-    };
-    const returnTaskToPool = (taskId: string) => {
-        // [MOD] If task is in daily commitment, DO NOT DELETE. Just set startTime to -1 (Bay Area)
-        if (dailyCommitment.taskIds.includes(taskId)) {
-            updateTask(taskId, { startTime: -1, completed: false });
-        } else {
-            deleteTask(taskId);
-        }
-    };
-    const updateTask = (taskId: string, updates: Partial<ScheduledTask>) => {
-        setTasks(prevTasks => prevTasks.map(task =>
-            task.id === taskId ? { ...task, ...updates } : task
-        ));
-        const userId = getSupabaseUserId();
-        if (userId) {
-            // Map camelCase updates to snake_case for Supabase if needed
-            const snakeCaseUpdates: any = {};
-            if (updates.date !== undefined) snakeCaseUpdates.date = updates.date;
-            if (updates.startTime !== undefined) snakeCaseUpdates.start_time = updates.startTime;
-            if (updates.duration !== undefined) snakeCaseUpdates.duration = updates.duration;
-            if (updates.completed !== undefined) snakeCaseUpdates.completed = updates.completed;
-
-            if (Object.keys(snakeCaseUpdates).length > 0) {
-                supabase.from('scheduled_tasks')
-                    .update(snakeCaseUpdates)
-                    .eq('id', taskId)
-                    .then(({ error }) => {
-                        if (error) console.error("Supabase update task error:", error.message);
-                    });
-            }
-        }
-    };
-
-    const rescheduleTask = (taskId: string, newDate: string, newStartTime: number) => {
-        updateTask(taskId, { date: newDate, startTime: newStartTime });
-    };
-    const toggleTaskCompletion = (taskId: string) => {
-        // [MOD] Removida trava de tempo para permitir ativação imediata via Sitrep/Planner
-        const taskToCheck = tasks.find(t => t.id === taskId);
-        if (!taskToCheck) return;
-
-        setTasks(prevTasks => {
-            const newTasks = prevTasks.map(task => {
-                if (task.id === taskId) {
-                    const willComplete = !task.completed;
-                    const updatedTask = { ...task, completed: willComplete };
-
-                    // [ATIVAÇÃO] Se está completando e não tem horário (ou está no topo/plan), bota no horário de AGORA
-                    // Isso garante que a ação "nasça" no Planner cronologicamente e riscada.
-                    if (willComplete) {
-                        const now = new Date();
-                        const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-                        // Se a tarefa está no horário padrão (ex: 8:00 do Sitrep) ou não tem horário, movemos para agora
-                        // para garantir visibilidade no ponto atual do Planner.
-                        const action = getActionById(task.actionId);
-                        const duration = action?.duration || 15;
-
-                        // [MOD] Se completar agora, a tarefa deve TERMINAR agora.
-                        // Então o startTime = now - duration.
-                        // Isso faz com que o bloco termine exatamente no momento do clique.
-                        // SÓ ATUALIZA O HORÁRIO SE ELA AINDA NÃO TIVER UM VÁLIDO (>=0)
-                        // OU SE ELA ESTIVER NA BAY AREA (-1)
-                        if (updatedTask.startTime < 0) {
-                            updatedTask.startTime = Math.max(0, nowInMinutes - duration);
-                        }
-                    } else {
-                        // Se estiver DESCOMPLETANDO, ela mantém o horário que tinha (seja -1 ou horário fixo)
-                        // Se o usuário quiser devolver para o estoque, ele deve deletar a tarefa.
-                    }
-
-                    // Update in daily commitment if it exists there
-                    if (dailyCommitment.taskIds.includes(taskId)) {
-                        setDailyCommitmentState(prev => ({ ...prev }));
-                    }
-
-                    // If we are completing a milestone, trigger achievement
-                    if (updatedTask.completed) {
-                        const action = getActionById(task.actionId);
-                        if (action) {
-                            const expValue = task.duration > 0 ? task.duration : (action.duration || 10);
-                            // showToast(`+${expValue} EXP: ${action.name}`, 'success'); // REMOVED: EXP is now banked and shown at SITREP
-                            if (action.actionType === 'Marco') {
-                                setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
-                                addFeedEvent({
-                                    type: 'MILESTONE_COMPLETED',
-                                    content: { title: action.name, icon: action.icon }
-                                });
-                            }
-
-                            // Check for Shared Arena / Competitive Challenge
-                            const arena = getArenas().find(a => a.id === action.arenaId);
-                            if (arena) {
-                                // [NEW] Shared Action Pool Logic
-                                // Check if this arena is linked to others or is part of a Clan Office Mode
-                                const isOfficeMode = clan?.clanType === 'Office';
-
-                                // Record completion in shared_action_completions if it's a shared context
-                                const userId = getSupabaseUserId();
-                                if (userId) {
-                                    // We'll try to find if there's a relationship_link for this arena
-                                    // or if it's a clan quest arena.
-                                    const isClanQuestArena = getClanQuestForAction(action);
-
-                                    if (!isClanQuestArena) {
-                                        // For linked arenas (Challenges/Partnerships), we record a shared completion
-                                        supabase.from('relationship_links')
-                                            .select('id')
-                                            .or(`user_id.eq.${userId},target_user_id.eq.${userId}`)
-                                            .eq('arena_id', arena.id)
-                                            .single()
-                                            .then(({ data: linkData }) => {
-                                                if (linkData || isOfficeMode) {
-                                                    // This is a shared arena, record global completion
-                                                    supabase.from('shared_action_completions').insert({
-                                                        arena_id: arena.id,
-                                                        action_id: action.id,
-                                                        user_id: userId
-                                                    }).then(({ error }) => {
-                                                        if (error) console.error("Error recording shared completion:", error);
-                                                        else showToast("Ação compartilhada registrada!", 'success');
-                                                    });
-                                                }
-                                            });
-                                    }
-                                }
-
-                                if (arena.name === "Quem corre 15km antes") {
-                                    const allArenaActions = getActionsForArena(arena.id);
-                                    const completedCount = prevTasks.filter(t =>
-                                        allArenaActions.some(a => a.id === t.actionId) && t.completed && t.id !== taskId
-                                    ).length + 1;
-
-                                    if (completedCount >= 15) {
-                                        showToast("PARABÉNS! DESAFIO DE 15KM COMPLETADO!", 'success');
-                                        // Future: Send notification to opponent
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Handle un-completion for shared pools
-                        const action = getActionById(task.actionId);
-                        const userId = getSupabaseUserId();
-                        if (action && userId) {
-                            supabase.from('shared_action_completions')
-                                .delete()
-                                .eq('arena_id', action.arenaId)
-                                .eq('action_id', action.id)
-                                .eq('user_id', userId)
-                                .then(({ error }) => {
-                                    if (error) console.error("Error removing shared completion:", error);
-                                });
-                        }
-                    }
-
-                    const actionForClanQuest = getActionById(task.actionId);
-                    const clanQuest = getClanQuestForAction(actionForClanQuest);
-                    if (clanQuest) {
-                        updateClanMissionProgress(clanQuest.id, updatedTask.completed ? 1 : -1);
-                    }
-
-                    // Handle Custom Clan Mission Progress
-                    if (actionForClanQuest?.originCodexId?.startsWith('clan_quest:')) {
-                        const questId = actionForClanQuest.originCodexId.split(':')[1];
-                        updateCustomClanMissionProgress(questId, updatedTask.completed ? 1 : -1);
-                    }
-
-                    // Update in Supabase
-                    const userId = getSupabaseUserId();
-                    if (userId) {
-                        supabase.from('scheduled_tasks')
-                            .update({
-                                completed: updatedTask.completed,
-                                start_time: updatedTask.startTime
-                            })
-                            .eq('id', taskId)
-                            .then(({ error }) => {
-                                if (error) console.error("Supabase toggle task completion error:", error.message);
-                            });
-                    }
-
-                    return updatedTask;
-                }
-                return task;
-            });
-            return newTasks;
-        });
-    };
-    const getTasksForDate = (date: Date) => { const dateString = getLocalDateString(date); return tasks.filter(t => t.date === dateString); };
+    const {
+        scheduleMultipleTasks,
+        scheduleTask,
+        scheduleAndCompleteNow,
+        scheduleAndCompleteMilestoneNow,
+        returnTaskToPool,
+        deleteTask,
+        getTasksForDate,
+        rescheduleTask,
+        updateTask,
+        toggleTaskCompletion,
+        completeTutorialMission,
+    } = taskDomain;
 
     // --- Clan Functions ---
     const createClan = async (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => {
@@ -7362,13 +6846,46 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         */
     }, [isProfileLoaded, hasHydratedFromSupabase, assets.length]); // Check assets length to ensure they are loaded
 
+    const taskPool = useMemo(() => {
+        const activeArenas = allArenas.filter(arena => !arena.isArchived);
+        const lockedArenaIds = new Set<string>();
+        const arenasById = Object.fromEntries(activeArenas.map(arena => [arena.id, arena]));
+        const actionsByArena = Object.fromEntries(activeArenas.map(arena => [arena.id, actions.filter(action => action.arenaId === arena.id)]));
+
+        campaigns.forEach(campaign => {
+            if (campaign.status !== 'active') return;
+
+            const arenaStates = getCampaignArenaStates({
+                campaign,
+                arenasById,
+                actionsByArena,
+                tasks,
+                getClanQuestsForArena,
+                getClanQuestProgress,
+            });
+
+            Object.entries(arenaStates).forEach(([arenaId, state]) => {
+                if (state.isLocked) {
+                    lockedArenaIds.add(arenaId);
+                }
+            });
+        });
+
+        const cycleArenaIds = activeCycle?.arenaIds?.length ? new Set(activeCycle.arenaIds) : null;
+        const cycleScopedArenas = cycleArenaIds ? activeArenas.filter(arena => cycleArenaIds.has(arena.id)) : activeArenas;
+        const availableArenas = cycleScopedArenas.length > 0 ? cycleScopedArenas : activeArenas;
+        const activeArenaIds: Set<string> = new Set(availableArenas.map(arena => arena.id).filter(id => !lockedArenaIds.has(id)));
+
+        return buildTaskPoolEntries(actions, activeArenaIds, isClanQuestActionId);
+    }, [actions, allArenas, activeCycle?.arenaIds, campaigns, getClanQuestProgress, getClanQuestsForArena, isClanQuestActionId, tasks]);
+
     return (
         <GameContext.Provider value={{
-            getSharedActionPoolProgress, getClanQuestForActionName, getClanQuestProgress, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
+            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
-            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, scheduleTask, getTasksForDate, rescheduleTask, updateTask, toggleTaskCompletion, updateAction, deleteAction, scheduleAndCompleteNow, returnTaskToPool, deleteTask, completeTutorialMission, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, scheduleMultipleTasks, getAssetForAction, getActionBackgroundStyle, scheduleAndCompleteMilestoneNow, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
@@ -7395,3 +6912,15 @@ export const useGame = () => {
     if (!builder.isBuilderMode) return context;
     return { ...context, ...builder.gameOverrides };
 };
+
+
+
+
+
+
+
+
+
+
+
+

@@ -426,15 +426,16 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
         // Quests are treated as missions for the completion modal
         setCompletedMission({
             id: quest.id,
+            season_id: season.id,
             title: quest.title,
             description: quest.description,
             icon: quest.actionTemplate.icon,
+            reward_type: 'exp',
             reward_value: quest.rewards.xp || 0,
-            goal_value: quest.goal_value,
+            goal_value: quest.goal_value || quest.requirements.totalReps || 1,
             goal_type: 'actions_completed',
             type: quest.type,
-            status: 'completed'
-        } as SeasonMission);
+        });
         setSelectedQuest(null);
     };
 
@@ -634,3 +635,4 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void }
         </Portal>
     );
 };
+

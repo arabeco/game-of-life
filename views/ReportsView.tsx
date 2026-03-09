@@ -15,7 +15,6 @@ import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { supabase } from '../supabaseClient';
 import { ReportGenerationModal } from '../components/ReportGenerationModal';
 import { LegacyExportDocument, LegacyEraSummary } from '../components/LegacyExportDocument';
-import { LegacyGenerationModal } from '../components/LegacyGenerationModal';
 import { EraCustomizationModal } from '../components/EraCustomizationModal';
 import { LegacyPlaqueModal } from '../components/LegacyPlaqueModal';
 import { LegacyPlaqueForgeModal } from '../components/LegacyPlaqueForgeModal';
@@ -364,7 +363,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [scanAttempt, setScanAttempt] = useState(0);
     const [showChestModal, setShowChestModal] = useState(false);
     const [isExportingLegacy, setIsExportingLegacy] = useState(false);
-    const [showLegacyGenerationModal, setShowLegacyGenerationModal] = useState(false);
     const [showLegacyProjectionModal, setShowLegacyProjectionModal] = useState(false);
     const [eraMetadata, setEraMetadata] = useState<Record<string, { name?: string; skinId?: string; description?: string; finalSummary?: string }>>({});
     const [hasLoadedEraMetadata, setHasLoadedEraMetadata] = useState(false);
@@ -1136,10 +1134,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
                         <button
                             onClick={handleStartLegacyExport}
-                            disabled={showLegacyGenerationModal}
-                            className="rounded-xl luxe-skin-button px-4 py-3 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-xl luxe-skin-button px-4 py-3 text-xs"
                         >
-                            {showLegacyGenerationModal ? 'PROJETANDO...' : 'GERAR LEGADO'}
+                            VER LEGADO
                         </button>
                         <button
                             onClick={() => { void handleExportLegacy(); }}
@@ -1245,10 +1242,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             return;
         }
 
-        setShowLegacyGenerationModal(true);
-    };
-
-    const handleCompleteLegacyGeneration = () => {
         setShowLegacyProjectionModal(true);
     };
 
@@ -1576,18 +1569,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
                 </div>
             </div>
-            {showLegacyGenerationModal && (
-                <LegacyGenerationModal
-                    onComplete={handleCompleteLegacyGeneration}
-                    onClose={() => setShowLegacyGenerationModal(false)}
-                />
-            )}
             {showLegacyProjectionModal && (
                 <LegacyProjectionModal
                     eras={eraSummaries}
                     sovereignName={sovereignName}
                     onToast={showToast}
                     onClose={() => setShowLegacyProjectionModal(false)}
+                    isPremium={!!userProfile.isPremium}
                     onOpenCycle={handleOpenLegacyCycle}
                     onOpenEra={(era) => {
                         setShowLegacyProjectionModal(false);
@@ -1670,6 +1658,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
+
+
 
 
 

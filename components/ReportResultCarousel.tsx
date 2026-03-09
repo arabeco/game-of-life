@@ -116,7 +116,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const paceLabel = paceDelta >= 5 ? 'Adiantado' : paceDelta <= -5 ? 'Atrasado' : 'No compasso';
     const paceColor = paceDelta >= 5 ? 'text-green-400' : paceDelta <= -5 ? 'text-red-400' : 'text-white';
 
-    const handleExportRewardCard = async () => {
+    const handleExportRewardCard = async (forcePreferShare?: boolean) => {
         if (isExportingRewardCard) return;
         setIsExportingRewardCard(true);
         try {
@@ -124,7 +124,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 fileName: `glyph-card-ciclo-${formatDate(report.endDate).replace(/\//g, '-')}-${scoreInfo.grade}.png`,
                 title: 'Card do ciclo - Glyph',
                 backgroundColor: '#050505',
-                preferShare: preferNativeShare,
+                preferShare: forcePreferShare ?? preferNativeShare,
             });
         } catch (error) {
             console.error('Erro ao exportar card do relatorio:', error);
@@ -560,7 +560,9 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         ) : (
                             <div className="w-full flex gap-3 items-center">
                                 <button
-                                    onClick={onShare}
+                                    onClick={() => {
+                                        void handleExportRewardCard(true);
+                                    }}
                                     className="report-icon-button shrink-0"
                                     title="Compartilhar"
                                 >
@@ -568,9 +570,11 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 </button>
 
                                 <button
-                                    onClick={handleExportRewardCard}
+                                    onClick={() => {
+                                        void handleExportRewardCard(false);
+                                    }}
                                     className="report-icon-button shrink-0"
-                                    title={preferNativeShare ? 'Compartilhar card' : 'Baixar card'}
+                                    title="Baixar card"
                                     disabled={isExportingRewardCard}
                                 >
                                     <ImageIcon className="w-5 h-5" />

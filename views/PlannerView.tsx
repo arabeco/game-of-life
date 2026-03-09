@@ -1093,8 +1093,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
             <div className="flex-shrink-0 z-0 bg-[#0f0f10]/95 backdrop-blur-sm border-b border-white/6 transition-all duration-300 relative -mt-4 pt-4">
                 <div className="bg-transparent">
-                    <div className="relative flex items-center justify-between px-3 text-lg font-bold h-11 mt-1">
-                        <div className="flex items-center space-x-1" id="planner-tools">
+                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 text-lg font-bold h-11 mt-1">
+                        <div className="flex items-center space-x-1 min-w-0" id="planner-tools">
                             <button onClick={() => setChecklistVisible(true)} className="p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors">
                                 {allTasksCompleted ? <FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}
                             </button>
@@ -1105,12 +1105,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                 <ClockIcon className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1" id="cycle-hud">
-                            <button onClick={() => changeDate(-1)} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
-                            <span className="tracking-[0.08em] text-[13px] font-semibold w-32 text-center text-gray-200 capitalize">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
-                            <button onClick={() => changeDate(1)} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
+                        <div className="flex min-w-0 items-center justify-center space-x-0.5" id="cycle-hud">
+                            <button onClick={() => changeDate(-1)} className="p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
+                            <span className="tracking-[0.06em] text-[12px] font-semibold w-[5.75rem] text-center text-gray-200 capitalize truncate">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
+                            <button onClick={() => changeDate(1)} className="p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
                         </div>
-                        <div className="flex items-center bg-white/[0.03] rounded-full p-0.5 text-[10px] border border-white/6" id="view-mode-selector">
+                        <div className="flex items-center justify-self-end bg-white/[0.03] rounded-full p-0.5 text-[10px] border border-white/6" id="view-mode-selector">
                             <button onClick={() => setViewMode('day')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'day' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Dia</button>
                             <button id="eras-button" onClick={() => setViewMode('week')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'week' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Semana</button>
                         </div>

@@ -1,4 +1,4 @@
-
+﻿
 
 
 import React, { Suspense, useState, useEffect, useMemo, useRef } from 'react';
@@ -14,6 +14,7 @@ import type { LegacyEraSummary } from '../components/LegacyExportDocument';
 import { LegacyPlaqueArtifact } from '../components/LegacyPlaqueArtifact';
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
 import { ChestOpeningModal } from '../components/ChestOpeningModal';
+import { MetalReportCard } from '../components/MetalReportCard';
 import { Portal } from '../components/Portal';
 
 import { NOBILITY_RANKS } from '../constants/nobility';
@@ -103,7 +104,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm("Tem certeza que deseja excluir este ciclo? Isso não pode ser desfeito.")) {
+        if (confirm("Tem certeza que deseja excluir este ciclo? Isso nao pode ser desfeito.")) {
             deleteCycle(cycle.id);
         }
     };
@@ -126,7 +127,6 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
         return normalized.includes('quests - cla');
     };
 
-    // Cálculo de dias
     const startD = parseDate(startDate);
     const endD = parseDate(endDate);
     const todayD = parseDate(today);
@@ -137,41 +137,30 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
 
     const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, startDate, endDate);
     const completedTasks = cycleTasks.filter(t => t.completed);
-
-    // Quest Tasks (mantidas para exibição de bônus específica se necessário)
     const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId) || isClanQuestActionId(t.actionId));
     const completedQuests = questTasks.filter(t => t.completed);
 
-    // 1. Progress
     const progress = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
 
-    // 2. Bonuses
-    // Milestones
     const milestonesCompleted = completedTasks.filter(t => {
         const action = actions.find(a => a.id === t.actionId);
         return action?.actionType === 'Marco';
     }).length;
     const milestoneBonus = milestonesCompleted * 15;
-
-    // Quests
     const questsCompletedCount = completedQuests.length;
     const questBonus = questsCompletedCount * 10;
 
-    // Consistency
     const uniqueDays = new Set([...completedTasks, ...completedQuests].map(t => t.date)).size;
     const consistencyRatio = uniqueDays / totalDays;
     const consistencyBonus = consistencyRatio >= 0.8 ? 20 : (consistencyRatio >= 0.5 ? 10 : 0);
 
-    // Volume Bonus
     const totalMinutes = completedTasks.reduce((sum, t) => sum + (t.duration || 0), 0);
     const totalHours = Math.floor(totalMinutes / 60);
     const volumeBonus = Math.min(30, Math.floor(totalHours / 2));
 
-    // Score
     const currentScore = Math.round((progress * 0.4) + milestoneBonus + questBonus + consistencyBonus + volumeBonus);
     const scoreInfo = getScoreGrade(currentScore);
 
-    // Avg Hours per Day + Max Streak (Phase 10)
     const avgHoursPerDay = totalDays > 0 ? (totalHours / totalDays).toFixed(1) : '0';
     const activeDatesHUD = completedTasks.map(t => t.date).filter((v, i, a) => a.indexOf(v) === i).sort();
     let maxStreakHUD = activeDatesHUD.length > 0 ? 1 : 0;
@@ -183,47 +172,43 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     }
 
     return (
-        <GlassCard variant="accent" className="p-4 space-y-4 relative group">
-            <div className="text-center relative">
-                <p className="font-bold text-lg">"{cycle.name}"</p>
-                <p className="text-xs text-gray-400">{formatDate(cycle.startDate)} - {formatDate(cycle.endDate)}</p>
-                <p className="font-bold text-sm mt-1">Dia {daysElapsed} de {totalDays}</p>
-
+        <div className="relative pl-8 group">
+            <div className="absolute left-0 top-4 w-6 h-6 rounded-full border-2 border-[var(--skin-accent-color)] bg-black flex items-center justify-center z-10">
+                <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] animate-pulse" />
+            </div>
+            <div className="relative">
                 <button
                     onClick={handleDelete}
-                    className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-full text-red-500"
+                    className="absolute right-3 top-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-full text-red-500"
                     title="Excluir Ciclo"
                 >
                     <Trash2Icon className="w-4 h-4" />
                 </button>
+                <MetalReportCard
+                    rank={scoreInfo.grade}
+                    score={currentScore}
+                    title={cycle.name || 'Ciclo ativo'}
+                    subtitle={`Dia ${daysElapsed} de ${totalDays}`}
+                    dateRange={`${formatDate(cycle.startDate)} - ${formatDate(cycle.endDate)}`}
+                    summary={scoreInfo.phrase}
+                    metrics={[
+                        { label: 'Tempo', value: `${timeProgress.toFixed(0)}%` },
+                        { label: 'Progresso', value: `${progress.toFixed(0)}%` },
+                        { label: 'Horas/dia', value: `${avgHoursPerDay}` },
+                        { label: 'Streak', value: `${maxStreakHUD}` },
+                    ]}
+                    badges={[
+                        { label: 'Marcos', value: `${milestonesCompleted}` },
+                        { label: 'Quests', value: `${questsCompletedCount}` },
+                        { label: 'Dias', value: `${uniqueDays}` },
+                    ]}
+                    compact
+                    className="w-full"
+                />
             </div>
-
-            <div className='space-y-3'>
-                <div>
-                    <div className="flex justify-between text-xs font-bold text-gray-400"><span>TEMPO</span><span>{timeProgress.toFixed(0)}%</span></div>
-                    <div className="w-full bg-red-900/50 rounded-full h-2.5 mt-1 border border-red-500/20"><div className="bg-red-500 h-full rounded-full" style={{ width: `${timeProgress}%` }}></div></div>
-                </div>
-                <div>
-                    <div className="flex justify-between text-xs font-bold text-gray-400"><span>PROGRESSO</span><span>{progress.toFixed(0)}%</span></div>
-                    <div className="w-full bg-green-900/50 rounded-full h-2.5 mt-1 border border-green-500/20"><div className="bg-green-500 h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
-                </div>
-            </div>
-            <div className='text-center border-t border-[var(--skin-accent-color)]/20 pt-3'>
-                <p className="text-xs font-bold text-gray-400">RANK PROJETADO</p>
-                <p className={`text-4xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</p>
-                <p className="text-sm font-bold text-white mt-1">Score: {currentScore}</p>
-                <div className="flex justify-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-gray-500 uppercase font-mono">
-                    <span>🏆 {milestonesCompleted} Marcos</span>
-                    <span>⚔️ {questsCompletedCount} Quests</span>
-                    <span>🔥 {uniqueDays} Dias</span>
-                    <span>⏱️ {avgHoursPerDay} h/dia</span>
-                    <span>🔗 {maxStreakHUD} Streak</span>
-                </div>
-            </div>
-        </GlassCard>
+        </div>
     );
 };
-
 const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, endDate: string) => void; }> = ({ onClose, onStart }) => {
     const [name, setName] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -241,7 +226,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant='neutral' className='p-4 space-y-4 w-full max-w-sm' onClick={e => e.stopPropagation()}>
                     <h2 className='text-center font-bold text-lg uppercase'>Definir Ciclo de Soberania</h2>
-                    <p className="text-center text-sm text-gray-400">Dê um nome à sua campanha e escolha a data de término para formalizar seu compromisso.</p>
+                    <p className="text-center text-sm text-gray-400">DÃª um nome Ã  sua campanha e escolha a data de tÃ©rmino para formalizar seu compromisso.</p>
                     <div>
                         <label className='text-sm font-bold'>Nome do Ciclo</label>
                         <input
@@ -253,7 +238,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
                         />
                     </div>
                     <div>
-                        <label className='text-sm font-bold'>Data de Término</label>
+                        <label className='text-sm font-bold'>Data de TÃ©rmino</label>
                         <input
                             type='date'
                             value={endDate}
@@ -277,98 +262,48 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
     const endDate = formatDate(report.endDate);
     const eraSkin = getEraRibbonSkin(eraSkinId);
     const hasEraAccent = Boolean(eraLabel && eraSkinId);
-    const cardStyle = !isLatest && hasEraAccent ? {
-        borderColor: `${eraSkin.edge}55`,
-        boxShadow: `0 0 0 1px ${eraSkin.edge}12, 0 12px 24px ${eraSkin.baseBottom}66`,
-        backgroundImage: `linear-gradient(135deg, ${eraSkin.baseTop}66 0%, rgba(0,0,0,0.5) 38%, rgba(0,0,0,0.82) 100%)`,
+    const wrapperStyle = hasEraAccent ? {
+        boxShadow: `0 0 0 1px ${eraSkin.edge}12, 0 14px 30px ${eraSkin.baseBottom}55`,
     } : undefined;
     const editHighlightStyle = isEditing && isSelectedForEraEdit ? {
-        boxShadow: `0 0 0 1px ${eraSkin.edge}55, 0 0 0 4px ${eraSkin.glow}12, 0 12px 28px ${eraSkin.baseBottom}88`,
+        boxShadow: `0 0 0 1px ${eraSkin.edge}65, 0 0 0 4px ${eraSkin.glow}18, 0 14px 30px ${eraSkin.baseBottom}88`,
     } : undefined;
+    const rewardBadges = [
+        eraLabel ? { label: 'Era', value: eraLabel } : null,
+        seasonName ? { label: 'Season', value: seasonName } : null,
+        report.highlight?.mostFocusedArena ? { label: 'Foco', value: report.highlight.mostFocusedArena } : null,
+        report.highlight?.mostRepeatedAction ? { label: 'Habito', value: report.highlight.mostRepeatedAction } : null,
+    ].filter(Boolean) as Array<{ label: string; value?: string }>;
 
     return (
         <div className="relative pl-8">
             <div className={`absolute left-0 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ? 'bg-black border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)] scale-110' : 'bg-black border-white/20'}`}>
                 {isLatest && <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>}
             </div>
-            <div
+            <button
                 onClick={onClick}
-                style={{ ...cardStyle, ...editHighlightStyle }}
-                className={`
-                    relative overflow-hidden rounded-xl p-3 cursor-pointer transition-all duration-300 group
-                    ${isLatest
-                        ? 'bg-gradient-to-br from-gray-900 to-black border border-[var(--skin-accent-color)] shadow-[0_0_20px_rgba(var(--skin-accent-rgb),0.1)] transform scale-[1.02]'
-                        : 'bg-black/40 border border-white/10 hover:bg-white/5 hover:border-white/20'
-                    }
-                    ${isEditing ? 'scale-[0.98]' : ''}
-                    ${isSelectedForEraEdit ? 'ring-1 ring-[var(--skin-accent-color)]/35' : ''}
-                `}
+                style={{ ...wrapperStyle, ...editHighlightStyle }}
+                className={`relative block w-full cursor-pointer rounded-[1.75rem] text-left transition-all duration-300 ${isLatest ? 'scale-[1.01]' : 'hover:-translate-y-0.5'} ${isEditing ? 'scale-[0.985]' : ''}`}
             >
-                {hasEraAccent && !isLatest && (
-                    <>
-                        <div className="pointer-events-none absolute inset-y-3 left-0 w-[3px] rounded-r-full" style={{ background: `linear-gradient(180deg, ${eraSkin.edge} 0%, ${eraSkin.glow} 55%, ${eraSkin.metal} 100%)` }} />
-                        <div className="pointer-events-none absolute inset-x-3 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent 0%, ${eraSkin.glow} 20%, ${eraSkin.edge} 50%, ${eraSkin.glow} 80%, transparent 100%)` }} />
-                    </>
+                {hasEraAccent && (
+                    <div className="pointer-events-none absolute inset-y-5 left-0 z-10 w-[3px] rounded-r-full" style={{ background: `linear-gradient(180deg, ${eraSkin.edge} 0%, ${eraSkin.glow} 55%, ${eraSkin.metal} 100%)` }} />
                 )}
-                {isLatest && (
-                    <div className="absolute top-0 right-0 px-3 py-1 bg-[var(--skin-accent-color)] text-black text-[10px] font-black uppercase tracking-wider rounded-bl-lg shadow-lg">
-                        Atual
-                    </div>
-                )}
-
-                <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                        <h4 className={`font-bold text-sm truncate ${isLatest ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
-                            {report.cycleName || 'Ciclo'}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            {eraLabel && (
-                                <span
-                                    className="text-[9px] px-1.5 py-0.5 rounded uppercase tracking-[0.24em] font-black"
-                                    style={{
-                                        color: hasEraAccent ? eraSkin.edge : '#9ca3af',
-                                        backgroundColor: hasEraAccent ? `${eraSkin.baseTop}aa` : 'rgba(255,255,255,0.05)',
-                                        border: hasEraAccent ? `1px solid ${eraSkin.edge}33` : '1px solid rgba(255,255,255,0.06)',
-                                        boxShadow: hasEraAccent ? `inset 0 0 0 1px ${eraSkin.glow}12` : 'none',
-                                    }}
-                                >
-                                    {eraLabel}
-                                </span>
-                            )}
-                            {seasonName && (
-                                <span className="text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500 uppercase tracking-widest border border-white/5">
-                                    {seasonName}
-                                </span>
-                            )}
-                            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-mono">
-                                {startDate} - {endDate}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <span className={`text-2xl font-black ${scoreInfo.color}`}>{scoreInfo.grade}</span>
-                        <p className="text-[10px] text-gray-500">Score {report.performanceScore}</p>
-                    </div>
-                </div>
-
-                <div
-                    className={`flex items-center flex-wrap gap-3 mt-2 pt-2 border-t ${isLatest ? 'border-[var(--skin-accent-color)]/20' : 'border-white/5'}`}
-                    style={!isLatest && hasEraAccent ? { borderColor: `${eraSkin.edge}22` } : undefined}
-                >
-                    {report.highlight?.mostFocusedArena && (
-                        <div className="flex items-center gap-2 text-xs min-w-0">
-                            <span className="text-[var(--skin-accent-color)]">🎯</span>
-                            <span className="text-gray-400 truncate">Foco: <span className="text-gray-300">{report.highlight.mostFocusedArena}</span></span>
-                        </div>
-                    )}
-                    {report.highlight?.mostRepeatedAction && (
-                        <div className="flex items-center gap-2 text-xs min-w-0">
-                            <span className="text-blue-400">⚡</span>
-                            <span className="text-gray-400 truncate">Hábito: <span className="text-gray-300">{report.highlight.mostRepeatedAction}</span></span>
-                        </div>
-                    )}
-                </div>
-            </div>
+                <MetalReportCard
+                    rank={scoreInfo.grade}
+                    score={report.performanceScore}
+                    title={report.cycleName || 'Ciclo'}
+                    subtitle={isLatest ? 'Ciclo mais recente' : 'Resumo de ciclo'}
+                    dateRange={`${startDate} - ${endDate}`}
+                    summary={scoreInfo.phrase}
+                    metrics={[
+                        { label: 'XP', value: `+${report.expGained || 0}` },
+                        { label: 'Horas', value: `${report.metrics.totalHours || 0}` },
+                    ]}
+                    badges={rewardBadges}
+                    compact
+                    className="w-full"
+                />
+            </button>
         </div>
     );
 };
@@ -619,7 +554,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const performEndOfCycle = (): { ok: boolean; chest: ChestType | null } => {
         try {
             const result = endCycleRef.current(assetsRef.current, actionsRef.current);
-            if (!result?.report) throw new Error('Relatório inválido');
+            if (!result?.report) throw new Error('RelatÃ³rio invÃ¡lido');
             const { report, expGained } = result;
             setSelectedReport(report);
             setExpGained(expGained);
@@ -683,7 +618,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         } catch (error) {
             console.error('Erro ao analisar ciclo:', error);
-            setScanError('Não foi possível analisar o ciclo. Tente novamente.');
+            setScanError('NÃ£o foi possÃ­vel analisar o ciclo. Tente novamente.');
             return { ok: false, chest: null };
         }
     };
@@ -870,7 +805,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setAchievementUnlocked({
                 type: 'REPORT_COMPLETED',
                 data: {
-                    title: `Relatório de Ciclo - ${selectedReport?.performanceScore || 0}%`,
+                    title: `RelatÃ³rio de Ciclo - ${selectedReport?.performanceScore || 0}%`,
                     reward: {
                         exp: expGained,
                         items: allEarnedItems,
@@ -1439,14 +1374,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const renderLegacySummary = () => {
         return (
-            <GlassCard variant="neutral" className="mb-6 p-4 space-y-4">
-                <div className="flex items-start justify-between gap-4">
+            <GlassCard variant="neutral" className="mb-4 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
                         <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--skin-accent-color)] font-black">Historico</p>
-                        <h2 className="mt-2 text-2xl font-black tracking-tight">Historico vertical de ciclos</h2>
-                        <p className="mt-2 text-sm leading-relaxed text-gray-400">{legacySummaryLine}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">
+                            <span>{sortedReports.length} ciclos</span>
+                            <span className="text-white/15">/</span>
+                            <span>{eraSummaries.length} eras</span>
+                            <span className="text-white/15">/</span>
+                            <span>{Math.round(totalHistoricalHours)}h</span>
+                            <span className="text-white/15">/</span>
+                            <span>score {Math.round(historicalAverageScore)}</span>
+                        </div>
                     </div>
-                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                    <div className="flex shrink-0 flex-wrap gap-2">
                         <button
                             onClick={handleStartLegacyExport}
                             className="rounded-xl luxe-skin-button px-4 py-3 text-xs"
@@ -1462,72 +1404,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         </button>
                     </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Ciclos</p>
-                        <p className="mt-2 text-3xl font-black">{sortedReports.length}</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Eras</p>
-                        <p className="mt-2 text-3xl font-black">{eraSummaries.length}</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Score medio</p>
-                        <p className="mt-2 text-3xl font-black">{Math.round(historicalAverageScore)}</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Horas totais</p>
-                        <p className="mt-2 text-3xl font-black">{Math.round(totalHistoricalHours)}</p>
-                    </div>
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-                    <div className="space-y-4 rounded-[26px] border border-white/10 bg-black/20 p-5">
-                        <div>
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Regra visual</p>
-                            <p className="mt-2 text-sm leading-relaxed text-gray-300">
-                                O historico continua vertical: ciclos em linha do tempo e Eras como faixa lateral com nome, skin e faixa de abrangencia. O legado projetado fica separado, em modo horizontal e exportavel.
-                            </p>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                                <p className="text-[10px] uppercase tracking-[0.28em] text-gray-500 font-black">Era em destaque</p>
-                                <p className="mt-2 text-lg font-black">{bestEra?.label || 'Sem era dominante'}</p>
-                                <p className="mt-1 text-sm text-gray-400">
-                                    {bestEra
-                                        ? `${bestEra.avgScore} de score medio, ${Math.round(bestEra.totalHours)}h e foco em ${bestEra.dominantArena}.`
-                                        : 'Feche mais ciclos para consolidar uma Era dominante.'}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                                <p className="text-[10px] uppercase tracking-[0.28em] text-gray-500 font-black">Placa do Legado</p>
-                                <p className="mt-2 text-lg font-black">{legacyPlaqueUnlocked ? (legacyPlaqueForged ? 'Forjada' : 'Pronta para forja') : 'Bloqueada'}</p>
-                                <p className="mt-1 text-sm text-gray-400">
-                                    {legacyPlaqueUnlocked
-                                        ? 'A placa resume a trajetoria total e tambem abre o artefato final.'
-                                        : 'Desbloqueia no premium ou ao consolidar 3 Eras reais.'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={handleOpenLegacyPlaque}
-                        className="text-left transition-transform hover:-translate-y-1"
-                    >
-                        <LegacyPlaqueArtifact
-                            eras={eraSummaries}
-                            sovereignName={sovereignName}
-                            plaqueUnlocked={legacyPlaqueUnlocked}
-                            compact
-                        />
-                    </button>
-                </div>
             </GlassCard>
         );
-    };
+    }; 
     const handleCreateLegacyRenderJob = async () => {
         const userId = getUserId();
         if (!userId) {
@@ -1770,13 +1649,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (!isEditingEras) {
             return (
                 <div className="relative z-20 mt-3 rounded-[22px] border border-white/10 bg-black/20 p-4">
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center justify-between gap-4">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Eras</p>
                             <p className="mt-2 text-sm font-black text-white">{hasCustomEras ? 'Cortes manuais ativos' : 'Cortes automaticos por temporada'}</p>
-                            <p className="mt-1 text-xs leading-relaxed text-gray-400">
-                                A faixa da Era fica no historico vertical. Clique no canto do banner para nome e skin. Clique em ajustar para redistribuir os ciclos entre as Eras.
-                            </p>
                         </div>
                         <div className="flex shrink-0 gap-2">
                             <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs">AJUSTAR ERAS</button>
@@ -1789,13 +1665,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         return (
             <div className="relative z-20 mt-3 rounded-[22px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,_rgba(212,175,55,0.08),_rgba(255,255,255,0.02))] p-4 space-y-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center justify-between gap-4">
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[var(--skin-accent-color)]">Ajustar Eras</p>
-                        <p className="mt-2 text-sm font-black text-white">Selecione uma Era e clique nos ciclos que pertencem a ela.</p>
-                        <p className="mt-1 text-xs leading-relaxed text-gray-400">
-                            Os ciclos clicados entram na Era ativa e saem da anterior. O canto do banner abre a edicao discreta de nome e skin.
-                        </p>
+                        <p className="mt-2 text-sm font-black text-white">Escolha a Era ativa e clique nos ciclos.</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap justify-end gap-2">
                         <button type="button" onClick={handleAddDraftEra} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">NOVA ERA</button>
@@ -1819,7 +1692,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getEraRibbonSkin(slot.skinId).edge }} />
                                     <span className="text-[11px] font-black uppercase tracking-[0.18em]">{slot.name?.trim() || slot.defaultLabel}</span>
                                 </div>
-                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` · ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
+                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` Â· ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
                             </button>
                         );
                     })}
@@ -1857,7 +1730,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20">
-                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p>
+                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando RelatÃ³rio...</p>
                             </div>
                         )}
                     </div>
@@ -1866,7 +1739,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 const items: Array<
                     | { type: 'active'; cycle: Cycle }
                     | { type: 'report'; report: Report; reportIndex: number; seasonName?: string }
-                    | { type: 'boundary'; boundaryIndex: number; seasonDate?: string }
                 > = [];
                 const reportRowIndexMap = new Map<number, number>();
 
@@ -1878,19 +1750,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     const season = getSeasonById(report.seasonId) || getSeasonByDate(report.endDate);
                     items.push({ type: 'report', report, reportIndex: index, seasonName: season?.name });
                     reportRowIndexMap.set(index, items.length - 1);
-
-                    if (index < sortedReports.length - 1) {
-                        const nextReport = sortedReports[index + 1];
-                        const seasonChanged = report.seasonId !== nextReport.seasonId;
-                        const seasonDate = seasonChanged ? (season?.end_date || report.endDate) : undefined;
-                        items.push({ type: 'boundary', boundaryIndex: index + 1, seasonDate });
-                    }
                 });
 
                 return (
                     <div className="pb-12">
                         {reportForComparison && (
-                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
+                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatÃ³rio para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
                         {renderLegacySummary()}
@@ -1955,32 +1820,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             );
                                         }
 
-                                        return (
-                                            <React.Fragment key={`boundary-${item.boundaryIndex}-${rowIndex}`}>
-                                                <div className="relative py-2 flex items-center justify-end">
-                                                    {item.seasonDate && (
-                                                        <div className="flex items-center justify-end w-full">
-                                                            <span className="text-[10px] text-gray-400 font-mono">{formatDate(item.seasonDate)}</span>
-                                                            <div className="ml-2 h-px w-4 bg-white/20"></div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="relative py-2">
-                                                    <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
-                                                    {item.seasonDate && (
-                                                        <>
-                                                            <div className="absolute left-[11px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white/20"></div>
-                                                            <div className="absolute left-[11px] right-0 top-1/2 h-px bg-white/10"></div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                                <div className="relative py-2 flex items-center justify-center">
-                                                    {isEditingEras && (
-                                                        <div className="h-px w-10 bg-[var(--skin-accent-color)]/20" />
-                                                    )}
-                                                </div>
-                                            </React.Fragment>
-                                        );
+                                        return null;
                                     })}
                                     {displayedEraBands.map((band) => {
                                         const rowStart = reportRowIndexMap.get(band.start);
@@ -2028,7 +1868,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         title="Editar nome e skin da Era"
                                                         className="absolute -right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-black/75 text-[10px] text-white/80 shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:border-[var(--skin-accent-color)]/45 hover:text-white"
                                                     >
-                                                        ✦
+                                                        âœ¦
                                                     </button>
                                                     {inlineEraEditor?.key === band.key && (
                                                         <div className="absolute left-full top-2 z-20 ml-3 w-56 rounded-[20px] border border-white/10 bg-black/90 p-3 shadow-[0_18px_44px_rgba(0,0,0,0.45)] backdrop-blur-md">
@@ -2070,7 +1910,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 </div>
                                 {reports.length >= 2 && !activeCycle && !reportForComparison && (
                                     <div className="mt-4">
-                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÚLTIMOS 2 CICLOS</button>
+                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÃšLTIMOS 2 CICLOS</button>
                                     </div>
                                 )}
                             </div>
@@ -2087,7 +1927,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onShare={() => handleShareReport(selectedReport)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onDelete={() => {
-                            if (confirm("Tem certeza que deseja excluir este relatório?")) {
+                            if (confirm("Tem certeza que deseja excluir este relatÃ³rio?")) {
                                 // We need a way to delete historical reports.
                                 // For now, maybe just hide it or we need a proper deleteReport function
                                 // But the user asked to delete "cycles". A past report IS a cycle.
@@ -2102,21 +1942,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         expGained={isPostCycleFlow ? expGained : undefined}
                         insignias={isPostCycleFlow ? grantedInsignias : []}
                     />
-                ) : <p>Erro ao carregar relatório.</p>;
+                ) : <p>Erro ao carregar relatÃ³rio.</p>;
             case 'comparing':
                 return reportsToCompare ? (
                     <CycleComparator
                         currentCycleReport={reportsToCompare[0]}
                         pastCycleReport={reportsToCompare[1]}
                     />
-                ) : <p>Erro ao carregar comparação.</p>;
+                ) : <p>Erro ao carregar comparaÃ§Ã£o.</p>;
         }
     };
 
     const getTitle = () => {
         switch (view) {
             case 'results': return 'Resultados';
-            case 'comparing': return 'Análise Comparativa';
+            case 'comparing': return 'AnÃ¡lise Comparativa';
             case 'reward':
                 return 'Fim do Ciclo';
             default: return 'Historico';
@@ -2201,7 +2041,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             {showConfirmEndCycle && (
                 <ConfirmationModal
                     title="Encerrar Ciclo?"
-                    message="Ao fechar este ciclo, suas ações não concluídas no grid serão movidas para o pool de ações e suas arenas serão revisadas."
+                    message="Ao fechar este ciclo, suas aÃ§Ãµes nÃ£o concluÃ­das no grid serÃ£o movidas para o pool de aÃ§Ãµes e suas arenas serÃ£o revisadas."
                     onConfirm={confirmEndCycle}
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
@@ -2220,6 +2060,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
+
+
 
 
 

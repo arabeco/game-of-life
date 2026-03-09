@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import {
     buildActionPoolByDate,
     buildCyclePaceMetrics,
@@ -26,8 +26,65 @@ import {
     removeTaskIds,
     restoreTaskSnapshot,
 } from '../utils/taskMutationUtils.js';
-
+import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 const tests = [
+    {
+        name: 'weekly atlas divide o ciclo em semanas sequenciais do periodo real',
+        run() {
+            const atlas = buildCycleWeeklyAtlas(
+                [
+                    { id: 'task-1', actionId: 'action-1', date: '2026-03-01', startTime: 480, duration: 60, completed: true },
+                    { id: 'task-2', actionId: 'action-1', date: '2026-03-08', startTime: 480, duration: 30, completed: false },
+                ],
+                [
+                    { id: 'action-1', arenaId: 'arena-1', name: 'Deep Work', icon: 'A', duration: 60, repetitions: 1, actionType: 'Compromisso' },
+                ],
+                [
+                    { id: 'arena-1', assetId: 'asset-1', name: 'Projeto', description: '', icon: 'P', actionIds: [] },
+                ],
+                '2026-03-01',
+                '2026-03-08',
+            );
+
+            assert.equal(atlas.length, 2);
+            assert.equal(atlas[0].days.length, 7);
+            assert.equal(atlas[1].days.length, 1);
+            assert.equal(atlas[0].startDate, '2026-03-01');
+            assert.equal(atlas[1].endDate, '2026-03-08');
+            assert.equal(atlas[0].days[0].scheduledItems.length, 1);
+            assert.equal(atlas[1].days[0].scheduledItems[0].startTime, 480);
+        },
+    },
+    {
+        name: 'weekly atlas agrega buckets por arena e define arena dominante',
+        run() {
+            const atlas = buildCycleWeeklyAtlas(
+                [
+                    { id: 'task-1', actionId: 'action-focus', date: '2026-03-01', startTime: 480, duration: 60, completed: true },
+                    { id: 'task-2', actionId: 'action-focus', date: '2026-03-01', startTime: 600, duration: 60, completed: false },
+                    { id: 'task-3', actionId: 'action-side', date: '2026-03-02', startTime: 540, duration: 30, completed: true },
+                ],
+                [
+                    { id: 'action-focus', arenaId: 'arena-focus', name: 'Escrever', icon: 'A', duration: 60, repetitions: 1, actionType: 'Compromisso' },
+                    { id: 'action-side', arenaId: 'arena-side', name: 'Alongar', icon: 'B', duration: 30, repetitions: 1, actionType: 'Compromisso' },
+                ],
+                [
+                    { id: 'arena-focus', assetId: 'asset-1', name: 'Projeto Principal', description: '', icon: 'P', actionIds: [] },
+                    { id: 'arena-side', assetId: 'asset-1', name: 'Saude', description: '', icon: 'S', actionIds: [] },
+                ],
+                '2026-03-01',
+                '2026-03-03',
+            );
+
+            assert.equal(atlas[0].dominantArenaName, 'Projeto Principal');
+            assert.equal(atlas[0].plannedCount, 3);
+            assert.equal(atlas[0].completedCount, 2);
+            assert.equal(atlas[0].days[0].arenaBuckets[0].arenaName, 'Projeto Principal');
+            assert.equal(atlas[0].days[0].arenaBuckets[0].completed, 1);
+            assert.equal(atlas[0].days[0].scheduledItems.length, 2);
+            assert.equal(atlas[0].days[1].unscheduledItems.length, 0);
+        },
+    },
     {
         name: 'rollback util remove apenas ids afetados',
         run() {
@@ -386,5 +443,7 @@ if (failed > 0) {
 }
 
 console.log(`\n${tests.length} cenarios do core loop validados.`);
+
+
 
 

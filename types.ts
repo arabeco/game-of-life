@@ -1,4 +1,4 @@
-
+﻿
 
 export interface CodexLevel {
   level: number;
@@ -235,7 +235,7 @@ export interface SovereignConfig {
   outfit: string;
   head_under: string; // mascara, oculos, tapa-olho
   helmet: string; // elmos
-  head_over: string; // coroa, boné, chapéu
+  head_over: string; // coroa, bonÃ©, chapÃ©u
   artifact: string;
   glyph: string; // NEW: Glifo slot
   aura: string; // NEW: Aura slot
@@ -357,6 +357,50 @@ export interface ChecklistItem {
   completed: boolean;
 }
 
+export interface ReportAtlasDayArenaBucket {
+  arenaId: string;
+  arenaName: string;
+  total: number;
+  completed: number;
+}
+
+export interface ReportAtlasTaskItem {
+  taskId: string;
+  actionId: string;
+  actionName: string;
+  actionIcon: string;
+  arenaId: string;
+  arenaName: string;
+  startTime: number;
+  duration: number;
+  completed: boolean;
+  actionType: ActionType;
+}
+
+export interface ReportAtlasDay {
+  date: string;
+  plannedCount: number;
+  completedCount: number;
+  plannedMinutes: number;
+  completedMinutes: number;
+  arenaBuckets: ReportAtlasDayArenaBucket[];
+  scheduledItems: ReportAtlasTaskItem[];
+  unscheduledItems: ReportAtlasTaskItem[];
+}
+
+export interface ReportAtlasWeek {
+  weekIndex: number;
+  startDate: string;
+  endDate: string;
+  plannedCount: number;
+  completedCount: number;
+  plannedMinutes: number;
+  completedMinutes: number;
+  dominantArenaId?: string;
+  dominantArenaName: string;
+  days: ReportAtlasDay[];
+}
+
 export interface Report {
   id: string;
   cycleId?: string;
@@ -382,6 +426,7 @@ export interface Report {
     timeElapsedPct?: number;
     paceDeltaPct?: number;
     top3Actions?: { name: string; count: number }[];
+    weeklyAtlas?: ReportAtlasWeek[];
     scoreBreakdown?: {
       progressPts: number;
       milestonePts: number;
@@ -463,7 +508,7 @@ export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
   joined_at: string;
 };
 
-// Sistema de Santuário - Posicionamento e Tempo
+// Sistema de SantuÃ¡rio - Posicionamento e Tempo
 export type SanctuaryArea = 'meditation' | 'devotion' | 'rest' | 'garden';
 export type GardenAction = 'working' | 'watering' | 'walking';
 
@@ -508,7 +553,7 @@ export interface Cycle {
   startDate: string;
   endDate: string;
   arenaIds: string[]; // IDs das arenas ativas neste ciclo
-  userId: string; // ID do usuário dono do ciclo
+  userId: string; // ID do usuÃ¡rio dono do ciclo
   seasonId?: string;
   isFinished?: boolean; // FIX: Added isFinished to Cycle interface
   arenaConfig?: Record<string, {
@@ -784,6 +829,10 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
+
+
+
+
 
 
 

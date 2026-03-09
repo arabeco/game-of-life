@@ -6,6 +6,7 @@ import { SKINS_DATA } from '../constants/GMboard';
 import { Report, ChestType } from '../types';
 import { getScoreGrade } from '../utils/dateUtils';
 import { VideoPlayer } from './VideoPlayer';
+import { CycleAtlasPanel } from './CycleAtlasPanel';
 import { resolveItemDef } from '../constants/items';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon } from './Icons';
 
@@ -82,12 +83,12 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const skinColor = userSkin?.color || '#ffffff';
 
     const [currentSlide, setCurrentSlide] = useState(0);
-    const totalSlides = 5;
 
     const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, totalSlides - 1));
     const prevSlide = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
 
     const { metrics, highlight, assetProgress } = report;
+    const weeklyAtlas = metrics.weeklyAtlas || [];
     const scoreInfo = getScoreGrade(report.performanceScore);
     const duration = daysBetween(new Date(report.startDate), new Date(report.endDate));
     const totalDays = Math.max(1, duration + 1);
@@ -188,6 +189,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     );
 
     // Slide 2: Território
+    const renderAtlasSlide = () => (
+        <CycleAtlasPanel weeks={weeklyAtlas} />
+    );
+
     const renderTerritorySlide = () => (
         <div className="flex flex-col h-full space-y-6 p-6">
             <div className="text-center">
@@ -444,11 +449,13 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
     const slides = [
         renderExecutionSlide,
+        ...(weeklyAtlas.length > 0 ? [renderAtlasSlide] : []),
         renderTerritorySlide,
         renderAchievementsSlide,
         renderVerdictSlide,
         renderRewardSlide
     ];
+    const totalSlides = slides.length;
 
     // If it's the reward slide, hide the standard footer and show the special action button
     const isRewardSlide = currentSlide === totalSlides - 1;
@@ -550,6 +557,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 )}
 
                                 <button
+                                    id={onStartNewCycle ? 'report-new-cycle-button' : undefined}
                                     onClick={onStartNewCycle || onOk}
                                     className="flex-1 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl relative overflow-hidden group luxe-skin-button"
                                 >

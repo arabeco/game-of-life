@@ -1,0 +1,8 @@
+
+> glyph-app@0.0.0 preview
+> vite preview --host 127.0.0.1 --port 3005
+
+Port 3005 is in use, trying another one...
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m3006[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+^C

@@ -1,7 +1,28 @@
-﻿import React from 'react';
+import React from 'react';
+import type { ReportAtlasWeek } from '../types';
 import { formatDate, getScoreGrade } from '../utils/dateUtils';
+import { EraRibbon } from './EraRibbon';
+import { LegacyPlaqueArtifact } from './LegacyPlaqueArtifact';
+
+export interface LegacyEraCycleDigest {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    score: number;
+    focusArena?: string;
+    signatureAction?: string;
+    weeklyAtlas?: ReportAtlasWeek[];
+}
 
 export interface LegacyEraSummary {
+    key?: string;
+    defaultLabel?: string;
+    skinId?: string;
+    description?: string;
+    finalSummary?: string;
+    aiSummary?: string;
+    cycles?: LegacyEraCycleDigest[];
     label: string;
     startDate: string;
     endDate: string;
@@ -90,13 +111,19 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
 
                 <div className="p-8 space-y-6">
                     {eraSummaries.map((era) => (
-                        <section key={era.label} className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0.01))] overflow-hidden">
+                        <section key={era.key || era.label} className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0.01))] overflow-hidden">
                             <div className="px-8 py-7 border-b border-white/10" style={{ background: `linear-gradient(135deg, ${era.color}1F 0%, rgba(0,0,0,0.12) 55%, rgba(0,0,0,0.3) 100%)` }}>
                                 <div className="flex items-start justify-between gap-8">
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400 font-black">{era.label}</p>
-                                        <h2 className="text-3xl font-black tracking-tight mt-2">{formatDate(era.startDate)} - {formatDate(era.endDate)}</h2>
-                                        <p className="text-sm text-gray-300 mt-2">{era.cycleCount} ciclos consolidados neste periodo.</p>
+                                    <div className="flex items-start gap-5">
+                                        <div className="h-28 shrink-0">
+                                            <EraRibbon label="" skinId={era.skinId} className="h-full" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400 font-black">{era.label}</p>
+                                            <h2 className="text-3xl font-black tracking-tight mt-2">{formatDate(era.startDate)} - {formatDate(era.endDate)}</h2>
+                                            <p className="text-sm text-gray-300 mt-2">{era.cycleCount} ciclos consolidados neste periodo.</p>
+                                            {era.finalSummary && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-200">{era.finalSummary}</p>}
+                                        </div>
                                     </div>
                                     <div className="min-w-[180px] rounded-[24px] border p-5 text-right" style={{ borderColor: `${era.color}55`, backgroundColor: `${era.color}12` }}>
                                         <p className="text-[10px] uppercase tracking-[0.35em] text-gray-300 font-black">Score medio</p>
@@ -128,6 +155,13 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                     </div>
                                 </div>
 
+                                {(era.description || era.aiSummary) && (
+                                    <div className="rounded-[24px] border border-white/10 bg-black/25 p-6">
+                                        <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 font-black">Leitura da Era</p>
+                                        <p className="mt-3 text-sm leading-relaxed text-gray-300">{era.description || era.aiSummary}</p>
+                                    </div>
+                                )}
+
                                 <div className="rounded-[24px] border border-white/10 bg-black/25 p-6">
                                     <div className="flex items-center justify-between gap-4 mb-4">
                                         <div>
@@ -138,7 +172,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                     </div>
                                     <div className="grid grid-cols-3 gap-4">
                                         {era.topActions.length > 0 ? era.topActions.map((action, actionIndex) => (
-                                            <div key={`${era.label}-${action.name}`} className="rounded-[20px] border border-white/10 bg-white/[0.02] p-5">
+                                            <div key={`${era.key || era.label}-${action.name}`} className="rounded-[20px] border border-white/10 bg-white/[0.02] p-5">
                                                 <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 font-black">{['I', 'II', 'III'][actionIndex] || 'IV'}</p>
                                                 <p className="text-lg font-black mt-3 leading-tight min-h-[56px]">{action.name}</p>
                                                 <p className="text-3xl font-black mt-4" style={{ color: era.color }}>{action.count}</p>
@@ -154,6 +188,25 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                             </div>
                         </section>
                     ))}
+                </div>
+
+                <div className="px-8 pb-8">
+                    <section className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0.01))] overflow-hidden">
+                        <div className="px-8 py-7 border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.12),_transparent_44%),linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.01))]">
+                            <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400 font-black">Artefato final</p>
+                            <h2 className="mt-3 text-3xl font-black tracking-tight">Placa do Legado</h2>
+                            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-gray-300">
+                                Condensacao final da jornada. Esta placa grava em pedra o numero de Eras, ciclos, score medio e a inscricao dominante da sua trajetoria no Glyph.
+                            </p>
+                        </div>
+                        <div className="p-8">
+                            <LegacyPlaqueArtifact
+                                eras={eraSummaries}
+                                sovereignName={userName}
+                                plaqueUnlocked={true}
+                            />
+                        </div>
+                    </section>
                 </div>
 
                 <div className="px-8 py-6 border-t border-white/10 bg-black/30 flex items-end justify-between gap-6">
@@ -172,3 +225,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
         </div>
     );
 };
+
+
+
+

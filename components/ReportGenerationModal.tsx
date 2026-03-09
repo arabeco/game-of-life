@@ -1,38 +1,38 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { VideoPlayer } from './VideoPlayer';
 
 interface ReportGenerationModalProps {
-    onComplete: () => void; // Triggered when video ends/progress 100%
-    onOpen: () => void;     // Triggered when user clicks [Abrir]
-    onClose: () => void;    // Triggered when user clicks [Fechar]
+    onFinish: () => Promise<void> | void;
 }
 
 const PHRASES = [
     { threshold: 20, text: 'Consultando registros...' },
     { threshold: 40, text: 'Analisando arenas...' },
-    { threshold: 60, text: 'Contabilizando ações...' },
+    { threshold: 60, text: 'Contabilizando acoes...' },
     { threshold: 80, text: 'Calculando score...' },
     { threshold: 100, text: 'Selando pergaminho...' },
 ];
 
-export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ onComplete, onOpen, onClose }) => {
+export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ onFinish }) => {
     const [progress, setProgress] = useState(0);
     const [isReady, setIsReady] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+    const [isFinishing, setIsFinishing] = useState(false);
+    const [finishError, setFinishError] = useState<string | null>(null);
 
-    // Simulate progress alongside video
     useEffect(() => {
         const duration = 6000;
         const intervalTime = 50;
         const steps = duration / intervalTime;
         const increment = 100 / steps;
 
-        const timer = setInterval(() => {
-            setProgress(prev => {
-                const next = prev + increment;
+        const timer = window.setInterval(() => {
+            setProgress((previous) => {
+                const next = previous + increment;
                 if (next >= 100) {
-                    clearInterval(timer);
+                    window.clearInterval(timer);
                     setIsReady(true);
                     return 100;
                 }
@@ -40,45 +40,66 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
             });
         }, intervalTime);
 
-        return () => clearInterval(timer);
+        return () => window.clearInterval(timer);
     }, []);
 
-    // Fire callbacks AFTER render, not inside setProgress
     useEffect(() => {
-        if (isReady) {
-            onComplete();
-            onOpen();
-            onClose();
-        }
-    }, [isReady, onComplete, onOpen, onClose]);
+        if (!isReady || isFinishing) return;
 
-    if (progress >= 100) return null;
+        let isMounted = true;
+        const finalize = async () => {
+            setIsFinishing(true);
+            setIsClosing(true);
+            await new Promise((resolve) => window.setTimeout(resolve, 320));
 
-    const currentPhrase = PHRASES.find(p => progress <= p.threshold)?.text || 'Relatório pronto';
+            try {
+                await onFinish();
+            } catch (error) {
+                console.error('Erro ao finalizar geracao do relatorio:', error);
+                if (isMounted) {
+                    setFinishError('Nao foi possivel abrir o relatorio.');
+                    setIsClosing(false);
+                    setIsFinishing(false);
+                }
+            }
+        };
+
+        finalize();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isFinishing, isReady, onFinish]);
+
+    const currentPhrase = useMemo(() => {
+        if (finishError) return finishError;
+        if (isFinishing) return 'Abrindo relatorio...';
+        return PHRASES.find((phrase) => progress <= phrase.threshold)?.text || 'Relatorio pronto';
+    }, [finishError, isFinishing, progress]);
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[9999] flex items-center justify-center animate-fade-in">
-                <GlassCard className="w-full max-w-[280px] aspect-[9/16] relative overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-xl transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'animate-fade-in opacity-100'}`}>
+                <GlassCard className={`relative aspect-[9/16] w-full max-w-[280px] overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)] transition-all duration-300 ${isClosing ? 'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
                     <VideoPlayer
                         src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`}
-                        onEnd={() => { }} // Progress controls completion
-                        className="w-full h-full object-cover"
+                        onEnd={() => {}}
+                        className="h-full w-full object-cover"
                         placeholderLabel="Sincronizando..."
                         duration={5000}
                         playbackRate={0.85}
                         startTime={0.5}
+                        preload="auto"
                     />
 
-                    {/* Overlay with subtle progress */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none flex flex-col justify-end p-6">
+                    <div className="pointer-events-none absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-6">
                         <div className="space-y-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--skin-accent-color)] text-center animate-pulse drop-shadow-lg">
+                            <p className="animate-pulse text-center text-[10px] font-black uppercase tracking-[0.3em] text-[var(--skin-accent-color)] drop-shadow-lg">
                                 {currentPhrase}
                             </p>
-                            <div className="w-full bg-black/40 h-1 rounded-full overflow-hidden border border-white/5 backdrop-blur-sm">
+                            <div className="h-1 w-full overflow-hidden rounded-full border border-white/5 bg-black/40 backdrop-blur-sm">
                                 <div
-                                    className="h-full bg-[var(--skin-accent-color)] transition-all duration-100 ease-linear shadow-[0_0_8px_var(--skin-accent-color)]"
+                                    className="h-full bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--skin-accent-color)] transition-all duration-100 ease-linear"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>

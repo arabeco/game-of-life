@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { VideoPlayer } from './VideoPlayer';
@@ -9,16 +9,17 @@ interface LegacyGenerationModalProps {
 }
 
 const PHRASES = [
-    { threshold: 18, text: 'Consultando eras...' },
-    { threshold: 38, text: 'Agrupando ciclos...' },
-    { threshold: 58, text: 'Condensando acoes dominantes...' },
-    { threshold: 78, text: 'Calculando score historico...' },
-    { threshold: 100, text: 'Selando registro de soberania...' },
+    { threshold: 18, text: 'Consultando historico...' },
+    { threshold: 38, text: 'Agrupando eras...' },
+    { threshold: 58, text: 'Condensando ciclos...' },
+    { threshold: 78, text: 'Acionando a placa...' },
+    { threshold: 100, text: 'Projetando legado...' },
 ];
 
 export const LegacyGenerationModal: React.FC<LegacyGenerationModalProps> = ({ onComplete, onClose }) => {
     const [progress, setProgress] = useState(0);
     const [isFinalizing, setIsFinalizing] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
 
     useEffect(() => {
         const duration = 6800;
@@ -27,8 +28,8 @@ export const LegacyGenerationModal: React.FC<LegacyGenerationModalProps> = ({ on
         const increment = 100 / steps;
 
         const timer = window.setInterval(() => {
-            setProgress((prev) => {
-                const next = prev + increment;
+            setProgress((previous) => {
+                const next = previous + increment;
                 if (next >= 100) {
                     window.clearInterval(timer);
                     return 100;
@@ -41,11 +42,15 @@ export const LegacyGenerationModal: React.FC<LegacyGenerationModalProps> = ({ on
     }, []);
 
     useEffect(() => {
-        if (progress < 100 || isFinalizing) return;
+        if (progress < 100 || isFinalizing || isClosing) return;
 
         let isMounted = true;
         const finalize = async () => {
             setIsFinalizing(true);
+            setIsClosing(true);
+
+            await new Promise((resolve) => window.setTimeout(resolve, 320));
+
             try {
                 await onComplete();
             } finally {
@@ -60,40 +65,41 @@ export const LegacyGenerationModal: React.FC<LegacyGenerationModalProps> = ({ on
         return () => {
             isMounted = false;
         };
-    }, [progress, isFinalizing, onComplete, onClose]);
+    }, [isClosing, isFinalizing, onClose, onComplete, progress]);
 
     const currentPhrase = useMemo(() => {
-        if (isFinalizing) return 'Gravando registro final...';
+        if (isFinalizing) return 'Abrindo linha de projecao...';
         return PHRASES.find((phrase) => progress <= phrase.threshold)?.text || 'Legado pronto';
     }, [isFinalizing, progress]);
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[9999] flex items-center justify-center animate-fade-in">
-                <GlassCard className="w-full max-w-[300px] aspect-[9/16] relative overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-xl transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'animate-fade-in opacity-100'}`}>
+                <GlassCard className={`relative aspect-[9/16] w-full max-w-[300px] overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)] transition-all duration-300 ${isClosing ? 'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
                     <VideoPlayer
                         src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/legado.mp4`}
                         onEnd={() => {}}
-                        className="w-full h-full object-cover"
-                        placeholderLabel="Selando legado..."
+                        className="h-full w-full object-cover"
+                        placeholderLabel="Projetando legado..."
                         duration={6500}
                         playbackRate={0.9}
                         startTime={0}
+                        preload="auto"
                     />
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent pointer-events-none flex flex-col justify-end p-6">
+                    <div className="pointer-events-none absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/10 to-transparent p-6">
                         <div className="space-y-3">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--skin-accent-color)] text-center animate-pulse drop-shadow-lg">
+                            <p className="animate-pulse text-center text-[10px] font-black uppercase tracking-[0.3em] text-[var(--skin-accent-color)] drop-shadow-lg">
                                 {currentPhrase}
                             </p>
-                            <div className="w-full bg-black/40 h-1 rounded-full overflow-hidden border border-white/5 backdrop-blur-sm">
+                            <div className="h-1 w-full overflow-hidden rounded-full border border-white/5 bg-black/40 backdrop-blur-sm">
                                 <div
-                                    className="h-full bg-[var(--skin-accent-color)] transition-all duration-100 ease-linear shadow-[0_0_8px_var(--skin-accent-color)]"
+                                    className="h-full bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--skin-accent-color)] transition-all duration-100 ease-linear"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
-                            <p className="text-[10px] text-center text-gray-400 uppercase tracking-[0.25em]">
-                                Registro de soberania em consolidacao
+                            <p className="text-center text-[10px] uppercase tracking-[0.25em] text-gray-400">
+                                Preparando a projecao horizontal do legado
                             </p>
                         </div>
                     </div>

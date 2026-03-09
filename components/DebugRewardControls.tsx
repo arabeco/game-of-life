@@ -304,12 +304,11 @@ export const DebugRewardControls: React.FC = () => {
 
             {showReportModal && (
                 <ReportGenerationModal
-                    onComplete={() => showToast("Relatório Gerado!")}
-                    onOpen={() => {
-                        setShowReportModal(false);
+                    onFinish={() => {
+                        showToast("Relat?rio Gerado!");
                         setShowReportResult(mockReport);
+                        setShowReportModal(false);
                     }}
-                    onClose={() => setShowReportModal(false)}
                 />
             )}
 

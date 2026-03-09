@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, Trash2Icon, ShareIcon, CheckIcon } from './Icons';
 import { ChestType, UnlockCategory, ItemRarity } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { GM_CONFIG, SKINS_DATA, SKIN_CHEST_POOL } from '../constants';
-import { SOVEREIGN_ASSETS } from '../constants/avatar';
+import { SKINS_DATA } from '../constants';
 import { VideoPlayer } from './VideoPlayer';
-import { ItemDef, ITEMS_DB } from '../constants/items';
+import { ITEMS_DB } from '../constants/items';
+import { useVideoStageTransition } from '../hooks/useVideoStageTransition';
 
 interface ChestOpeningModalProps {
     chestType: ChestType;
     onClose: () => void;
-    predefinedReward?: any; // For testing/forcing a specific reward
+    predefinedReward?: any;
 }
 
 interface Reward {
@@ -23,35 +23,32 @@ interface Reward {
     skinUnlock?: string;
 }
 
-type Stage = 'video' | 'reward';
-
 const getRandomReward = (chestType: ChestType): Reward => {
     const rarityMap: Record<string, ItemRarity> = {
-        'Comum': 'common',
-        'Incomum': 'uncommon',
-        'Raro': 'rare',
-        'Épico': 'epic',
-        'Lendário': 'legendary',
-        'Ciclo': 'rare', // Cycle chests give rare items for now
-        // Fallbacks for lowercase or typos
-        'comum': 'common',
-        'incomum': 'uncommon',
-        'raro': 'rare',
-        'épico': 'epic',
-        'epico': 'epic',
-        'lendário': 'legendary',
-        'lendario': 'legendary',
-        'commum': 'common'
+        Comum: 'common',
+        Incomum: 'uncommon',
+        Raro: 'rare',
+        Épico: 'epic',
+        Lendário: 'legendary',
+        Ciclo: 'rare',
+        comum: 'common',
+        incomum: 'uncommon',
+        raro: 'rare',
+        épico: 'epic',
+        epico: 'epic',
+        lendário: 'legendary',
+        lendario: 'legendary',
+        commum: 'common',
     };
 
     const targetRarity = rarityMap[chestType] || 'common';
-    const pool = ITEMS_DB.filter(item => item.rarity === targetRarity && !item.isRankExclusive && !item.isGoldExclusive && !item.isSeasonExclusive);
+    const pool = ITEMS_DB.filter((item) => item.rarity === targetRarity && !item.isRankExclusive && !item.isGoldExclusive && !item.isSeasonExclusive);
 
     if (pool.length === 0) {
         return {
             type: 'Nada',
             value: 'Vazio',
-            rarity: chestType
+            rarity: chestType,
         };
     }
 
@@ -59,16 +56,16 @@ const getRandomReward = (chestType: ChestType): Reward => {
 
     const getUnlockCategory = (category: string): UnlockCategory | null => {
         const map: Record<string, UnlockCategory> = {
-            'skin': 'skins',
-            'hair': 'hairStyles',
-            'border': 'borders',
-            'banner': 'banners',
-            'glyph': 'glyphs',
-            'aura': 'auras',
-            'ui_skin': 'skins',
-            'artifact': 'artifacts',
-            'orb': 'orbs',
-            'plate': 'plates'
+            skin: 'skins',
+            hair: 'hairStyles',
+            border: 'borders',
+            banner: 'banners',
+            glyph: 'glyphs',
+            aura: 'auras',
+            ui_skin: 'skins',
+            artifact: 'artifacts',
+            orb: 'orbs',
+            plate: 'plates',
         };
         return map[category] || null;
     };
@@ -80,36 +77,34 @@ const getRandomReward = (chestType: ChestType): Reward => {
         value: randomItem.name,
         rarity: chestType,
         itemUnlock: unlockCategory ? { category: unlockCategory, itemId: randomItem.id } : undefined,
-        skinUnlock: (randomItem.category === 'skin' || randomItem.category === 'ui_skin') ? randomItem.id : undefined
+        skinUnlock: randomItem.category === 'skin' || randomItem.category === 'ui_skin' ? randomItem.id : undefined,
     };
 };
 
 const CHEST_VIDEOS: Record<string, string> = {
-    'commum': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
-    'incomum': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
-    'raro': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
-    'epico': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
-    'lendario': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
-    // Map capitalized keys just in case
-    'Comum': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
-    'Incomum': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
-    'Raro': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
-    'Épico': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
-    'Lendário': `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    commum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
+    incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
+    raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
+    epico: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
+    lendario: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    Comum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
+    Incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
+    Raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
+    Épico: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
+    Lendário: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
 };
 
 const RARITY_COLORS: Record<string, string> = {
-    'Comum': '#A0522D', // Marrom
-    'Incomum': '#C0C0C0', // Prata
-    'Raro': '#FFD700', // Ouro
-    'Épico': '#3B82F6', // Azul
-    'Lendário': '#A855F7', // Roxo
-    'Ciclo': '#FFD700', // Ouro (same as Rare)
+    Comum: '#A0522D',
+    Incomum: '#C0C0C0',
+    Raro: '#FFD700',
+    Épico: '#3B82F6',
+    Lendário: '#A855F7',
+    Ciclo: '#FFD700',
 };
 
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose, predefinedReward }) => {
-    const { addFeedEvent, userProfile, grantUserUnlock, grantInventoryItem, showToast, appMode, oraclePreferences, updateUserProfile } = useGame();
-    const [stage, setStage] = useState<Stage>('video');
+    const { userProfile, grantUserUnlock, showToast, appMode, oraclePreferences, updateUserProfile } = useGame();
     const [reward, setReward] = useState<Reward | null>(null);
 
     useEffect(() => {
@@ -122,175 +117,156 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
     const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
     if (appMode !== 'GAME' && !isGM) return null;
 
-    const rarityColor = RARITY_COLORS[chestType] || RARITY_COLORS['Comum'];
-
-    // Get user skin color
-    const userSkinId = userProfile.skin;
-    const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
-    const skinBorderColor = userSkin?.color || '#ffffff'; // Fallback to white
+    const rarityColor = RARITY_COLORS[chestType] || RARITY_COLORS.Comum;
+    const userSkin = SKINS_DATA.find((skin) => skin.id === userProfile.skin);
+    const skinBorderColor = userSkin?.color || '#ffffff';
+    const animationsEnabled = oraclePreferences?.animationsEnabled ?? true;
+    const { showVideoStage, showContentStage, isVideoFading, triggerReveal } = useVideoStageTransition({
+        enabled: animationsEnabled,
+        revealDelayMs: 4000,
+        fadeDurationMs: 320,
+    });
 
     useEffect(() => {
-        // Use predefined reward or calculate random one
-        const finalReward = predefinedReward || getRandomReward(chestType);
-        setReward(finalReward);
-
-        const animationsEnabled = oraclePreferences?.animationsEnabled ?? true;
-
-        if (animationsEnabled) {
-            setStage('video');
-            // Force end video after 4 seconds as requested
-            const timer = setTimeout(() => {
-                setStage('reward');
-            }, 4000);
-            return () => clearTimeout(timer);
-        } else {
-            setStage('reward');
-        }
-    }, [chestType, oraclePreferences?.animationsEnabled, predefinedReward]);
-
-    // ... (keep sound effect)
+        setReward(predefinedReward || getRandomReward(chestType));
+    }, [chestType, predefinedReward]);
 
     const handleCollect = () => {
         if (!predefinedReward) {
-            const rewardValue = reward as (Reward & { itemUnlock?: { category: UnlockCategory; itemId: string }; skinUnlock?: string }) | null;
-            if (rewardValue?.itemUnlock) {
-                grantUserUnlock(rewardValue.itemUnlock.category, rewardValue.itemUnlock.itemId);
+            if (reward?.itemUnlock) {
+                grantUserUnlock(reward.itemUnlock.category, reward.itemUnlock.itemId);
             }
-            if (rewardValue?.skinUnlock) {
-                const nextUnlockedSkins = { ...(userProfile.unlockedSkins || {}), [rewardValue.skinUnlock]: true };
+            if (reward?.skinUnlock) {
+                const nextUnlockedSkins = { ...(userProfile.unlockedSkins || {}), [reward.skinUnlock]: true };
                 updateUserProfile({ unlockedSkins: nextUnlockedSkins });
             }
 
-            // Show toast for collected item
-            if (reward) {
-                const name = reward.value;
-                const typeLabel = reward.type === 'Item' ? 'Item' :
-                    reward.type === 'Skin' ? 'Skin' :
-                        reward.type === 'EXP' ? 'XP' :
-                            reward.type === 'Conselho' ? 'Conselho' : 'Recompensa';
-
-                if (reward.type !== 'Nada') {
-                    showToast(`✦ ${typeLabel} ${name} adicionado ao inventário`);
-                }
+            if (reward && reward.type !== 'Nada') {
+                const typeLabel = reward.type === 'Item'
+                    ? 'Item'
+                    : reward.type === 'Skin'
+                        ? 'Skin'
+                        : reward.type === 'EXP'
+                            ? 'XP'
+                            : reward.type === 'Conselho'
+                                ? 'Conselho'
+                                : 'Recompensa';
+                showToast(`✦ ${typeLabel} ${reward.value} adicionado ao inventario`);
             }
         }
+
         onClose();
     };
 
     const handleRecycle = () => {
-        const confirm = window.confirm(`Tem certeza que deseja reciclar ${reward?.value}? (Simulação)`);
-        if (confirm) {
-            alert(`Você reciclou ${reward?.value}!`);
+        const confirmed = window.confirm(`Tem certeza que deseja reciclar ${reward?.value}? (Simulacao)`);
+        if (confirmed) {
+            alert(`Voce reciclou ${reward?.value}!`);
             onClose();
         }
     };
 
     const handleDonate = () => {
-        alert(`Você doou ${reward?.value}! (Simulação)`);
-        // Logic to donate would go here
+        alert(`Voce doou ${reward?.value}! (Simulacao)`);
     };
 
     const renderContent = () => {
-        switch (stage) {
-            case 'video':
-                return (
-                    <div className="relative aspect-[9/16] w-full bg-black rounded-t-3xl overflow-hidden">
+        if (!reward && showContentStage) return null;
+
+        return (
+            <>
+                {showVideoStage && (
+                    <div className={`relative aspect-[9/16] w-full overflow-hidden rounded-t-3xl bg-black transition-all duration-300 ease-out ${isVideoFading ? 'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
                         <VideoPlayer
                             src={CHEST_VIDEOS[chestType]}
-                            onEnd={() => setStage('reward')}
-                            className="w-full h-full object-cover"
+                            onEnd={triggerReveal}
+                            className="h-full w-full object-cover"
                             placeholderLabel={`Opening ${chestType} Chest...`}
                             duration={4000}
+                            preload="auto"
                         />
                     </div>
-                );
-            case 'reward':
-                if (!reward) return null;
+                )}
 
-                // Determine visuals based on reward type
-                // If it's an item/skin, we might want an image. 
-                // For now, using the text/icon representation similar to ItemDetailModal but simplified if no image available.
-
-                return (
-                    <div className={`flex flex-col items-center p-6 gap-4 animate-fade-in-up w-full`}>
-                        {/* Item Image/Icon with Glow */}
-                        <div className="relative z-10 group mt-2">
-                            <div className={`absolute inset-0 bg-gradient-to-tr from-${rarityColor}/20 to-transparent rounded-full blur-xl opacity-50`}
+                {showContentStage && reward && (
+                    <div className="flex w-full animate-fade-in-up flex-col items-center gap-4 p-6">
+                        <div className="group relative z-10 mt-2">
+                            <div
+                                className="absolute inset-0 rounded-full bg-gradient-to-tr blur-xl"
                                 style={{ backgroundColor: rarityColor, opacity: 0.3, filter: 'blur(20px)' }}
                             />
-                            <div className="w-24 h-24 rounded-2xl flex items-center justify-center relative z-10 bg-black/40 border border-white/10 shadow-lg">
-                                {/* If we had imageUrl, use it. Else use generic icon/text */}
+                            <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-2xl border border-white/10 bg-black/40 shadow-lg">
                                 <span className="text-4xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-                                    {reward.type === 'Item' ? '⚔️' :
-                                        reward.type === 'Skin' ? '👕' :
-                                            reward.type === 'EXP' ? '✨' : '🎁'}
+                                    {reward.type === 'Item' ? '⚔️' : reward.type === 'Skin' ? '👕' : reward.type === 'EXP' ? '✨' : '🎁'}
                                 </span>
                             </div>
                         </div>
 
-                        {/* Info */}
-                        <div className="text-center space-y-1 z-10 w-full">
-                            <h2 className="text-xl font-black text-white uppercase tracking-widest drop-shadow-lg" style={{ color: rarityColor }}>
+                        <div className="z-10 w-full space-y-1 text-center">
+                            <h2 className="text-xl font-black uppercase tracking-widest text-white drop-shadow-lg" style={{ color: rarityColor }}>
                                 {reward.value}
                             </h2>
                             <div className="flex justify-center">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg"
-                                    style={{ color: rarityColor, borderColor: `${rarityColor}40` }}>
+                                <span
+                                    className="rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg backdrop-blur-sm"
+                                    style={{ color: rarityColor, borderColor: `${rarityColor}40` }}
+                                >
                                     {reward.rarity}
                                 </span>
                             </div>
-                            <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto my-3" />
-                            <p className="text-xs text-white/60 px-2">
-                                {reward.type === 'Conselho' ? 'Um conselho para sua jornada.' :
-                                    reward.type === 'Nada' ? 'Melhor sorte na próxima vez.' :
-                                        `Uma recompensa ${reward.rarity} para sua coleção.`}
+                            <div className="mx-auto my-3 h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                            <p className="px-2 text-xs text-white/60">
+                                {reward.type === 'Conselho'
+                                    ? 'Um conselho para sua jornada.'
+                                    : reward.type === 'Nada'
+                                        ? 'Melhor sorte na proxima vez.'
+                                        : `Uma recompensa ${reward.rarity} para sua colecao.`}
                             </p>
                         </div>
 
-                        {/* Actions */}
-                        <div className="w-full grid grid-cols-2 gap-2 z-10 mt-2">
+                        <div className="z-10 mt-2 grid w-full grid-cols-2 gap-2">
                             <button
                                 onClick={handleCollect}
-                                className="col-span-2 py-3 rounded-xl font-bold uppercase tracking-[0.1em] text-[10px] transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center justify-center gap-2 luxe-skin-button"
+                                className="luxe-skin-button col-span-2 flex items-center justify-center gap-2 rounded-xl py-3 text-[10px] font-bold uppercase tracking-[0.1em] shadow-lg transition-all hover:scale-105 active:scale-95"
                             >
-                                <CheckIcon className="w-4 h-4" />
+                                <CheckIcon className="h-4 w-4" />
                                 <span>OK</span>
                             </button>
 
                             <button
                                 onClick={handleRecycle}
-                                className="py-2 rounded-xl bg-red-500/10 text-red-400 font-bold uppercase tracking-wider border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
+                                className="flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 py-2 font-bold uppercase tracking-wider text-red-400 transition-all hover:bg-red-500/20"
                             >
-                                <Trash2Icon className="w-3 h-3" />
+                                <Trash2Icon className="h-3 w-3" />
                                 <span className="text-[10px]">Reciclar</span>
                             </button>
 
                             <button
                                 onClick={handleDonate}
-                                className="py-2 rounded-xl bg-blue-500/10 text-blue-400 font-bold uppercase tracking-wider border border-blue-500/20 hover:bg-blue-500/20 transition-all flex items-center justify-center gap-2"
+                                className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 py-2 font-bold uppercase tracking-wider text-blue-400 transition-all hover:bg-blue-500/20"
                             >
-                                <ShareIcon className="w-3 h-3" />
+                                <ShareIcon className="h-3 w-3" />
                                 <span className="text-[10px]">Doar</span>
                             </button>
                         </div>
                     </div>
-                );
-        }
+                )}
+            </>
+        );
     };
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
-                {/* Reduced width to max-w-xs (approx 320px) as requested "30% menos" */}
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
                 <GlassCard
                     variant="neutral"
-                    className="w-full max-w-xs rounded-3xl overflow-hidden relative shadow-2xl transform transition-all bg-zinc-900"
-                    onClick={e => e.stopPropagation()}
+                    className="relative w-full max-w-xs overflow-hidden rounded-3xl bg-zinc-900 shadow-2xl transition-all"
+                    onClick={(event) => event.stopPropagation()}
                     style={{ borderColor: `${skinBorderColor}40`, borderWidth: '1px' }}
                 >
-                    <div className="absolute top-3 right-3 z-50">
-                        <button onClick={onClose} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-all backdrop-blur-md border border-white/10">
-                            <XIcon className="w-4 h-4" />
+                    <div className="absolute right-3 top-3 z-50">
+                        <button onClick={onClose} className="rounded-full border border-white/10 bg-black/40 p-2 text-white/80 backdrop-blur-md transition-all hover:bg-black/60 hover:text-white">
+                            <XIcon className="h-4 w-4" />
                         </button>
                     </div>
                     {renderContent()}

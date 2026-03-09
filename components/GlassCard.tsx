@@ -24,7 +24,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(({ chi
   };
   
   const useGradient = variant !== 'neutral';
-  const baseClasses = `bg-glass-bg backdrop-blur-lg rounded-2xl p-4 ${useGradient ? 'gradient-border' : 'border'}`;
+  const baseClasses = `glass-card bg-glass-bg backdrop-blur-md rounded-[22px] p-4 ${useGradient ? 'gradient-border' : 'border'}`;
 
   const finalClasses = `${baseClasses} ${borderClasses[variant]} ${className}`;
 

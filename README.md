@@ -10,8 +10,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/16hnjyElorZDXLIeKqq_q73
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
    `npm install`
@@ -21,37 +20,34 @@ View your app in AI Studio: https://ai.studio/apps/drive/16hnjyElorZDXLIeKqq_q73
 
 ---
 
-## ðŸ›ï¸ Sistema A FORJA e GM Board
+## Sistema A FORJA e GM Board
 
-Este projeto inclui o ecossistema "A FORJA" para economia, crafting e inventÃ¡rio.
+Este projeto inclui o ecossistema "A FORJA" para economia, crafting e inventario.
 
 ### 1. Database & Migrations
-Execute o script SQL em `supabase/migrations/20260219_forge_system.sql` no seu Supabase para criar as tabelas necessÃ¡rias:
+Execute o script SQL em `supabase/migrations/20260219_forge_system.sql` no seu Supabase para criar as tabelas necessarias:
 - `items`
 - `user_inventory`
 - `user_currency`
 - `transaction_log`
 
 ### 2. GM Board (Painel Admin)
-Para editar a economia do jogo (preÃ§os, drop rates, loot tables), acesse:
+Para editar a economia do jogo (precos, drop rates, loot tables), acesse:
 `http://localhost:3000/gmboard.html`
 
 Este painel permite:
-- Visualizar e editar o JSON de configuraÃ§Ã£o da economia.
-- Simular abertura de baÃºs com as loot tables atuais.
+- Visualizar e editar o JSON de configuracao da economia.
+- Simular abertura de baus com as loot tables atuais.
 - Exportar o arquivo `economy.json`.
 
-### 3. ConfiguraÃ§Ã£o de Economia
-O arquivo base de economia estÃ¡ em `constants/economy.ts`. 
-Para alterar valores em produÃ§Ã£o, atualize este arquivo ou implemente um fetch dinÃ¢mico do `economy.json` gerado pelo GM Board.
+### 3. Configuracao de Economia
+O arquivo base de economia esta em `constants/economy.ts`.
+Para alterar valores em producao, atualize este arquivo ou implemente um fetch dinamico do `economy.json` gerado pelo GM Board.
 
 ### 4. Funcionalidades Implementadas
 - **Loja de Ouro**: Compra de pacotes e Premium.
 - **A Forja**: Crafting (T1-T5) e Reciclagem de itens.
-- **InventÃ¡rio**: GestÃ£o de itens e equipamento (Skins, Glifos, Auras).
+- **Inventario**: Gestao de itens e equipamento (Skins, Glifos, Auras).
 - **Biblioteca**: Sistema de Codexes (Legado + Novo).
 
-
 For gateway.ts, use OPENROUTER_API_KEY in your shell environment (never hardcode keys).
-
-

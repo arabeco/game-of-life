@@ -1,12 +1,14 @@
 
-
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { SlotValueImage } from '../../types';
 import { UploadIcon } from '../Icons';
-import { ImageCropper } from '../ImageCropper';
 import { useGame } from '../../contexts/GameContext';
 import { supabase } from '../../supabaseClient';
 import { compressDataUrlToWebP } from '../../utils/imageUtils';
+
+const ImageCropper = lazy(() =>
+    import('../ImageCropper').then((module) => ({ default: module.ImageCropper }))
+);
 
 interface ImageUploadSlotProps {
     value: SlotValueImage;
@@ -98,12 +100,14 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
 
     if (imageToCrop) {
         return (
-            <ImageCropper
-                imageSrc={imageToCrop}
-                cropShape="rect"
-                onCropComplete={handleCropComplete}
-                onClose={() => setImageToCrop(null)}
-            />
+            <Suspense fallback={<div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm" />}>
+                <ImageCropper
+                    imageSrc={imageToCrop}
+                    cropShape="rect"
+                    onCropComplete={handleCropComplete}
+                    onClose={() => setImageToCrop(null)}
+                />
+            </Suspense>
         );
     }
 

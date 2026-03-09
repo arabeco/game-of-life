@@ -12,6 +12,7 @@ import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
 
 import { Portal } from './Portal';
+import './core-ui.css';
 
 interface ActionModalProps {
     arenaId: string;
@@ -25,10 +26,10 @@ interface ActionModalProps {
 
 const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement> }> =
     ({ label, value, min, max, step, unit, onChange, inputRef }) => (
-        <div ref={inputRef} className="p-2 bg-black/20 rounded-xl space-y-1">
+        <div ref={inputRef} className="p-2.5 core-surface rounded-xl space-y-1.5">
             <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-gray-400 uppercase">{label}</label>
-                <span className="text-sm font-bold">{value} {unit}</span>
+                <label className="core-label">{label}</label>
+                <span className="text-sm font-semibold text-white">{value} {unit}</span>
             </div>
             <input
                 type="range"
@@ -43,7 +44,7 @@ const StyledRangeInput: React.FC<{ label: string, value: number, min: number, ma
     );
 
 const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => void }> = ({ day, selected, onClick }) => (
-    <button type="button" onClick={onClick} className={`w-10 h-10 rounded-xl text-sm font-bold transition-colors ${selected ? 'bg-[var(--skin-accent-color)] text-white' : 'bg-black/20 hover:bg-black/40'}`}>
+    <button type="button" onClick={onClick} className={`w-10 h-10 rounded-xl text-sm font-semibold transition-colors border ${selected ? 'bg-[var(--skin-accent-color)] text-white border-[var(--skin-accent-color)]' : 'core-surface text-gray-300 hover:bg-white/[0.06]'}`}>
         {day.slice(0, 3)}
     </button>
 );
@@ -262,37 +263,37 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick} style={modalStyle}>
-                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[85vh] h-auto p-0 relative overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick} style={modalStyle}>
+                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-[26px] flex flex-col max-h-[85vh] h-auto p-0 relative overflow-hidden border-[var(--skin-accent-color)]/20 shadow-[0_24px_70px_rgba(0,0,0,0.45)]">
 
                     {/* Header Fixed */}
-                    <div className="flex-none p-4 bg-black/40 backdrop-blur-md flex justify-between items-center z-30 relative">
+                    <div className="flex-none p-4 bg-black/30 backdrop-blur-md flex justify-between items-center z-30 relative border-b border-white/6">
                         <div className="flex items-center gap-3">
                             {!isPreview && (
                                 <button
                                     onClick={mode === 'view' ? () => setMode('edit') : handleCancel}
-                                    className={`p-2 rounded-lg transition-all ${mode === 'edit' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'hover:bg-white/5 text-[var(--skin-accent-color)]/50 hover:text-[var(--skin-accent-color)]'}`}
+                                    className={`p-2 rounded-lg transition-all ${mode === 'edit' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'hover:bg-white/6 text-[var(--skin-accent-color)]/60 hover:text-[var(--skin-accent-color)]'}`}
                                 >
                                     {mode === 'view' ? <EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
                                 </button>
                             )}
-                            <span className="text-xs font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)]/80 truncate max-w-[200px]">
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--skin-accent-color)]/85 truncate max-w-[220px]">
                                 {mode === 'edit' ? (isNew ? 'Nova Quest' : 'Editando') : (displayAction?.name || (isPreview ? 'Preview • Codex' : 'Quests • Clã'))}
                             </span>
                         </div>
-                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition-all group">
+                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/6 transition-all group">
                             <XIcon className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
                         </button>
                     </div>
 
                     {/* Assignment field for Office Mode */}
                     {isOfficeMode && mode === 'edit' && (
-                        <div className="px-4 py-2 bg-black/20 border-b border-white/5">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Quem vai fazer? (Atribuição)</label>
+                        <div className="px-4 py-2 bg-black/[0.18] border-b border-white/[0.06]">
+                            <label className="core-label mb-1 block">Quem vai fazer? (Atribuição)</label>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                                 <button
                                     onClick={() => setEditableAction(prev => ({ ...prev, originCodexId: undefined }))}
-                                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${!editableAction.originCodexId?.startsWith('assign:') ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/20 text-gray-400 border-white/5'}`}
+                                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${!editableAction.originCodexId?.startsWith('assign:') ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'core-surface text-gray-300 border-white/8'}`}
                                 >
                                     MESA (QUALQUER UM)
                                 </button>
@@ -300,7 +301,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     <button
                                         key={member.id}
                                         onClick={() => setEditableAction(prev => ({ ...prev, originCodexId: `assign:${member.id}` }))}
-                                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${editableAction.originCodexId === `assign:${member.id}` ? 'bg-blue-500 text-white border-blue-500' : 'bg-black/20 text-gray-400 border-white/5'}`}
+                                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${editableAction.originCodexId === `assign:${member.id}` ? 'bg-blue-500 text-white border-blue-500' : 'core-surface text-gray-300 border-white/8'}`}
                                     >
                                         {member.nickname.toUpperCase()}
                                     </button>
@@ -310,25 +311,25 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     )}
 
                     {/* Tabs Fixed */}
-                    <div className="flex-none px-4 pb-4 bg-black/40 backdrop-blur-md border-b border-white/10 z-20 relative">
-                        <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5">
+                    <div className="flex-none px-4 pb-4 bg-black/[0.26] backdrop-blur-md border-b border-white/[0.06] z-20 relative">
+                        <div className="flex bg-black/[0.26] p-1 rounded-xl border border-white/[0.06]">
                             <button
                                 onClick={() => setActiveTab('basic')}
-                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-lg transition-all duration-300 ${activeTab === 'basic'
-                                    ? 'bg-white/10 text-white shadow-lg border border-white/5'
-                                    : 'text-gray-600 hover:text-gray-400'
+                                className={`flex-1 py-2 text-[11px] font-semibold tracking-[0.08em] rounded-lg transition-all duration-300 ${activeTab === 'basic'
+                                    ? 'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
+                                    : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                [ Básico ]
+                                Básico
                             </button>
                             <button
                                 onClick={() => setActiveTab('advanced')}
-                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.15em] rounded-lg transition-all duration-300 ${activeTab === 'advanced'
-                                    ? 'bg-white/10 text-white shadow-lg border border-white/5'
-                                    : 'text-gray-600 hover:text-gray-400'
+                                className={`flex-1 py-2 text-[11px] font-semibold tracking-[0.08em] rounded-lg transition-all duration-300 ${activeTab === 'advanced'
+                                    ? 'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
+                                    : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                [ Avançado ]
+                                Avançado
                             </button>
                         </div>
                     </div>
@@ -754,7 +755,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     </div>
 
                     {/* 3. FOOTER (Fixed) */}
-                    <div className="flex-none p-4 bg-[#120f0d]/90 backdrop-blur-xl border-t border-white/10 space-y-3 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                    <div className="flex-none p-4 bg-[#120f0d]/88 backdrop-blur-xl border-t border-white/8 space-y-3 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.35)]">
                         {/* Main Button */}
                         <div className="flex gap-2">
                             {mode === 'edit' && !isNew && (
@@ -768,10 +769,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                             <button
                                 ref={saveButtonRef}
                                 onClick={isPreview ? onClose : (mode === 'view' ? handleStartMission : handleSave)}
-                                className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_20px_var(--sephirot-glow-color)] hover:shadow-[0_0_30px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[var(--skin-accent-color)]/20 group relative overflow-hidden ${mode === 'view' ? 'luxe-skin-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
+                                className={`flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden ${mode === 'view' ? 'luxe-skin-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
                             >
                                 <span className="relative z-10 group-hover:text-black transition-colors">
-                                    {isPreview ? '[ FECHAR ]' : (mode === 'view' ? '[ INICIAR MISSÃO ]' : '[ SALVAR ALTERAÇÕES ]')}
+                                    {isPreview ? 'Fechar' : (mode === 'view' ? 'Iniciar missão' : 'Salvar alterações')}
                                 </span>
                                 <div className={`absolute inset-0 transition-colors ${mode === 'view' ? 'bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10' : ''}`} />
                             </button>

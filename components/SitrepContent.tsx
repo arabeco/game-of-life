@@ -8,6 +8,7 @@ import { resolveItemDef } from '../constants/items';
 import { PoolAction } from './PoolAction';
 import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
 import { isClanQuestAction } from '../utils/taskDomain.js';
+import './core-ui.css';
 
 const parseDate = (value: string) => {
     const [year, month, day] = value.split('-').map(Number);
@@ -42,8 +43,8 @@ const CycleHeader: React.FC = () => {
     const daysElapsed = Math.max(0, daysBetween(startDate, today) + 1);
 
     return (
-        <div className="text-center space-y-3 text-xs p-2 rounded-xl bg-black/20">
-            <h3 className="arena-title-text text-[11px] text-white luxe-title-shadow leading-tight">📅 {activeCycle.name} | Dia {daysElapsed}/{totalDays}</h3>
+        <div className="text-center space-y-2 text-xs p-2 rounded-xl core-surface">
+            <h3 className="arena-title-text text-[11px] text-white leading-tight tracking-[0.08em]">{activeCycle.name} · Dia {daysElapsed}/{totalDays}</h3>
         </div>
     );
 };
@@ -191,8 +192,8 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         <>
             <CycleHeader />
 
-            <div className="bg-black/20 p-2 rounded-xl">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-2">🛒 TAREFAS DISPONÍVEIS</h3>
+            <div className="core-surface p-3 rounded-xl">
+                <h3 className="core-label text-center mb-2">Tarefas disponíveis</h3>
                 <div className="max-h-24 overflow-y-auto pr-1 space-y-1">
                     {groupedAvailableOptions.map((group) => {
                         const isStockOut = group.count <= 0;
@@ -201,7 +202,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                 key={group.ids[0]}
                                 onClick={() => handleGroupClick(group)}
                                 disabled={isStockOut}
-                                className={`w-full flex items-center justify-between text-left p-1.5 rounded-lg transition-colors ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10' : 'bg-black/20 hover:bg-black/40'}`}
+                                className={`w-full flex items-center justify-between text-left p-2 rounded-lg transition-colors border ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'bg-black/20 hover:bg-white/[0.04] border-white/6'}`}
                             >
                                 <span className={`text-sm ${isStockOut ? 'text-gray-500' : ''}`}><PlusIcon className="w-4 h-4 inline-block mr-2" />{group.action.name}</span>
                                 <span className={`text-xs font-mono px-1.5 rounded ${isStockOut ? 'bg-gray-800 text-gray-600' : 'bg-gray-700 text-white'}`}>x{group.count}</span>
@@ -212,13 +213,13 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 </div>
             </div>
 
-            <div className="bg-black/20 p-2 rounded-xl">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-2">Metas de Hoje</h3>
+            <div className="core-surface p-3 rounded-xl">
+                <h3 className="core-label text-center mb-2">Metas de hoje</h3>
                 <div className="max-h-24 overflow-y-auto pr-1 space-y-1">
                     {commitmentStats.committedTasks.map(task => {
                         const action = getActionById(task.actionId);
                         return (
-                            <div key={task.id} className="w-full flex items-center justify-between text-left p-1.5 bg-black/20 rounded-lg">
+                            <div key={task.id} className="w-full flex items-center justify-between text-left p-2 bg-black/20 border border-white/6 rounded-lg">
                                 <span className="text-sm">{action?.icon} {action?.name}</span>
                                 <button onClick={() => handleUncommitTask(task.id)}><XIcon className="w-4 h-4 text-red-400" /></button>
                             </div>
@@ -228,7 +229,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 </div>
             </div>
 
-            <button disabled={commitmentStats.committedTasks.length === 0} onClick={lockDailyCommitment} className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50">🔒 TRAVAR METAS DE HOJE</button>
+            <button disabled={commitmentStats.committedTasks.length === 0} onClick={lockDailyCommitment} className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50">Travar metas de hoje</button>
         </>
     );
 
@@ -236,7 +237,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const progress = commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 0;
 
         const [y, m, d] = dailyCommitment.date.split('-').map(Number);
-        const monthNames = ['JANEIRO', 'FEVEREIRO', 'MAR�O', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+        const monthNames = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
         const todayStr = `${d.toString().padStart(2, '0')} DE ${monthNames[m - 1]} DE ${y}`;
 
         const keyTasks = commitmentStats.tasksWithStatus.filter(({ task }) => {
@@ -269,32 +270,32 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 <CycleHeader />
                 <div className='text-center'>
                     <div className="w-full bg-black/30 rounded-full h-1.5 mt-1"><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
-                    <p className="text-xs text-gray-400 mt-1">Progresso: {progress.toFixed(0)}% � {commitmentStats.completedCount}/{commitmentStats.totalCount} a��es</p>
+                    <p className="text-xs text-gray-400 mt-1">Progresso: {progress.toFixed(0)}% · {commitmentStats.completedCount}/{commitmentStats.totalCount} ações</p>
                 </div>
 
                 {coreTotal > 0 && (
                     <div className="grid grid-cols-2 gap-2 my-2">
-                        <div className="bg-black/20 p-2 rounded-lg text-center border border-white/5">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wider">{coreLabel}</p>
-                            <p className={`text-xl arena-title-text luxe-title-shadow leading-tight ${coreScore >= 80 ? 'text-green-400' : 'text-white'}`}>{coreScore.toFixed(0)}%</p>
+                        <div className="core-surface p-2 rounded-lg text-center">
+                            <p className="core-label">{coreLabel}</p>
+                            <p className={`text-xl arena-title-text leading-tight ${coreScore >= 80 ? 'text-green-400' : 'text-white'}`}>{coreScore.toFixed(0)}%</p>
                         </div>
-                        <div className="bg-black/20 p-2 rounded-lg text-center border border-white/5">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Feitas</p>
-                            <p className="text-xl arena-title-text text-white luxe-title-shadow leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
+                        <div className="core-surface p-2 rounded-lg text-center">
+                            <p className="core-label">Feitas</p>
+                            <p className="text-xl arena-title-text text-white leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
                         </div>
                     </div>
                 )}
 
                 {dailyArenaFocus && (
-                    <div className="bg-black/20 p-2 rounded-lg border border-white/5 text-center mb-2">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">Arena foco do dia</p>
+                    <div className="core-surface p-2 rounded-lg text-center mb-2">
+                        <p className="core-label">Arena foco do dia</p>
                         <p className="text-sm font-bold text-white truncate">{dailyArenaFocus.name}</p>
-                        <p className="text-[10px] text-gray-500">{dailyArenaFocus.completed}/{dailyArenaFocus.total} a��es conclu�das</p>
+                        <p className="text-[10px] text-gray-500">{dailyArenaFocus.completed}/{dailyArenaFocus.total} ações concluídas</p>
                     </div>
                 )}
 
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-center mb-1">?? ALVOS TRAVADOS:</h3>
+                    <h3 className="core-label text-center mb-1">Alvos travados</h3>
                     {commitmentStats.tasksWithStatus.map(({ task, isCompleted }) => {
                         const action = getActionById(task.actionId);
                         return (
@@ -312,12 +313,12 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 </div>
 
                 <p className="text-center text-xs text-gray-500 mt-2">
-                    Complete as a��es no Planner para atualizar seu progresso aqui.
+                    Complete as ações no Planner para atualizar seu progresso aqui.
                 </p>
 
                 <div className="py-2"></div>
 
-                <button onClick={endDailyBattle} className="w-full py-2 rounded-xl luxe-skin-button">? GERAR SCORE FINAL</button>
+                <button onClick={endDailyBattle} className="w-full py-2 rounded-xl luxe-skin-button">Gerar score final</button>
             </>
         );
     }
@@ -349,7 +350,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const rankColor = getRankColor(rankLetter);
 
         let verdict = "Guerreiro. Mantenha a disciplina.";
-        if (score === 100) verdict = "Soberano. A vit�ria foi absoluta.";
+        if (score === 100) verdict = "Soberano. A vitória foi absoluta.";
         else if (score < 50) verdict = "A Batalha foi dura. Recupere e avance.";
 
         const earnedInsignia = dailyCommitment.earnedInsigniaId ? resolveItemDef(dailyCommitment.earnedInsigniaId) : null;
@@ -381,7 +382,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                     </div>
                                 </div>
                                 <div className="mt-3 text-center">
-                                    <p className="text-[10px] text-[var(--skin-accent-color)] uppercase font-black tracking-[0.25em] animate-pulse">Nova Ins�gnia Conquistada!</p>
+                                    <p className="text-[10px] text-[var(--skin-accent-color)] uppercase font-black tracking-[0.25em] animate-pulse">Nova Insígnia Conquistada!</p>
                                     <p className="text-sm text-white font-bold tracking-tight">{earnedInsignia.name}</p>
                                 </div>
                             </div>
@@ -390,49 +391,49 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         <div className="pt-3">
                             <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
                             <p className="text-xl arena-title-text accent-text luxe-title-shadow leading-tight">{expDeposited}</p>
-                            {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">B�nus Painel Di�rio: +{sitrepBonus}</p>}
+                            {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus Painel Diário: +{sitrepBonus}</p>}
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 pt-4 text-center">
-                            <div className="bg-black/20 p-2 rounded-xl border border-white/5">
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Feitas</p>
-                                <p className="text-lg arena-title-text text-white luxe-title-shadow leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
+                            <div className="core-surface p-2 rounded-xl">
+                                <p className="core-label">Feitas</p>
+                                <p className="text-lg arena-title-text text-white leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
                                 <p className="text-[10px] text-gray-500">travadas</p>
                             </div>
-                            <div className="bg-black/20 p-2 rounded-xl border border-white/5">
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Arena Foco</p>
+                            <div className="core-surface p-2 rounded-xl">
+                                <p className="core-label">Arena foco</p>
                                 <p className="text-xs font-bold text-white leading-tight line-clamp-2 min-h-[2rem] flex items-center justify-center">{dailyArenaFocus?.name || 'Nenhuma'}</p>
                                 <p className="text-[10px] text-gray-500">{dailyArenaFocus ? `${dailyArenaFocus.completed}/${dailyArenaFocus.total}` : '0/0'}</p>
                             </div>
-                            <div className="bg-black/20 p-2 rounded-xl border border-white/5">
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Checklist</p>
-                                <p className="text-lg arena-title-text text-white luxe-title-shadow leading-tight">{checklistDone}/{checklistTotal}</p>
+                            <div className="core-surface p-2 rounded-xl">
+                                <p className="core-label">Checklist</p>
+                                <p className="text-lg arena-title-text text-white leading-tight">{checklistDone}/{checklistTotal}</p>
                                 <p className="text-[10px] text-gray-500">itens</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <button
-                        onClick={() => {
-                            if (expDeposited > 0) showToast(`? +${expDeposited} XP foram adicionados ao seu ciclo`);
+                        <button
+                            onClick={() => {
+                            if (expDeposited > 0) showToast(`+${expDeposited} XP foram adicionados ao seu ciclo`);
                             if (onClose) onClose();
                         }}
                         className="w-full py-2 rounded-xl luxe-button-secondary text-sm"
                     >
-                        ?? DESCANSAR
+                        Descansar
                     </button>
-                    <button onClick={() => handleShare('sitrep-capture-area', 'Meu Painel Di�rio - Life OS')} className="p-3 rounded-xl luxe-button-secondary">
+                    <button onClick={() => handleShare('sitrep-capture-area', 'Meu Painel Diário - Life OS')} className="p-3 rounded-xl luxe-button-secondary">
                         <ShareIcon className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => {
-                            if (expDeposited > 0) showToast(`? +${expDeposited} XP foram adicionados ao seu ciclo`);
+                            if (expDeposited > 0) showToast(`+${expDeposited} XP foram adicionados ao seu ciclo`);
                             resetDailyCommitment();
                         }}
                         className="w-full py-2 rounded-xl luxe-skin-button text-sm"
                     >
-                        ?? NOVO PLANO
+                        Novo plano
                     </button>
                 </div>
             </>
@@ -503,8 +504,6 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         default: return null;
     }
 };
-
-
 
 
 

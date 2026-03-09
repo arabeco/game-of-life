@@ -1,140 +1,80 @@
-
-import React from 'react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Text } from 'recharts';
+﻿import React from 'react';
 import { Asset } from '../types';
+import { SvgRadarChart } from './SvgRadarChart';
 
 interface AssetDecagonProps {
-    assets: Asset[];
-    tempLevels?: Record<string, number>; // Optional for MasteryView preview
-    size?: number | string;
-    showCentralLevel?: boolean;
+  assets: Asset[];
+  tempLevels?: Record<string, number>;
+  size?: number | string;
+  showCentralLevel?: boolean;
 }
 
-const CustomDot = (props: any) => {
-    const { cx, cy, payload, value } = props;
-    if (!cx || !cy) return null;
-
-    const goldMetallic = "#705E43";
-    const goldBright = "#C5A021";
-
-    return (
-        <g>
-            <circle
-                cx={cx}
-                cy={cy}
-                r={7}
-                fill="#000"
-                stroke={goldMetallic}
-                strokeWidth={1}
-                className="drop-shadow-[0_0_3px_rgba(112,94,67,0.4)]"
-            />
-            <text
-                x={cx}
-                y={cy}
-                dy={3}
-                textAnchor="middle"
-                fill={goldBright}
-                fontSize="7px"
-                fontWeight="900"
-                className="pointer-events-none"
-            >
-                {value}
-            </text>
-        </g>
-    );
-};
-
 export const AssetDecagon: React.FC<AssetDecagonProps> = ({
-    assets,
-    tempLevels,
-    size = 280,
-    showCentralLevel = true
+  assets,
+  tempLevels,
+  size = 280,
+  showCentralLevel = true,
 }) => {
-    // Filter out 'geral' and map to data format
-    const filteredAssets = assets.filter(a => a.id !== 'geral');
+  const filteredAssets = assets.filter((asset) => asset.id !== 'geral');
+  const levels = filteredAssets.map((asset) => (tempLevels ? tempLevels[asset.id] || 1 : asset.level));
 
-    const radarData = filteredAssets.map(asset => {
-        const level = tempLevels ? (tempLevels[asset.id] || 1) : asset.level;
-        return {
-            subject: asset.name.toUpperCase(),
-            level: level,
-            fullMark: 10,
-            displayName: asset.name.toUpperCase()
-        };
-    });
+  const totalLevel = tempLevels
+    ? Object.entries(tempLevels)
+        .filter(([id]) => id !== 'geral')
+        .reduce((sum, [, level]) => sum + Number(level), 0)
+    : filteredAssets.reduce((sum, asset) => sum + asset.level, 0);
 
-    const totalLevel = tempLevels
-        ? Object.entries(tempLevels)
-            .filter(([id]) => id !== 'geral')
-            .reduce((sum: number, [, level]) => sum + (level as number), 0)
-        : filteredAssets.reduce((sum, asset) => sum + asset.level, 0);
+  const labels = filteredAssets.map((asset) => {
+    const normalized = asset.name.toUpperCase();
+    if (normalized === 'TRABALHO/ESTUDOS') return 'TRABALHO';
+    if (normalized === 'ESPAÇO MENTAL' || normalized === 'ESPAÃ‡O MENTAL') return 'MENTAL';
+    if (normalized === 'ESPIRITUALIDADE') return 'ESPIRIT.';
+    return normalized;
+  });
 
-    const goldMetallic = "#705E43"; // Bronze/Ouro envelhecido escuro
-    const goldBright = "#C5A021";   // Dourado metálico principal
-    const goldHighlight = "#E5C158"; // Brilho de ouro
+  const goldMetallic = '#705E43';
+  const goldBright = '#C5A021';
 
-    return (
-        <div className="relative flex flex-col items-center justify-center w-full overflow-visible" style={{ height: size }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                    <PolarGrid stroke="rgba(255, 255, 255, 0.05)" />
-                    <PolarAngleAxis
-                        dataKey="displayName"
-                        tick={(props) => {
-                            const { x, y, payload, textAnchor, index } = props;
-                            // Custom labels to avoid truncation and improve spacing
-                            let label = payload.value;
-                            if (label === 'TRABALHO/ESTUDOS') label = 'TRABALHO';
-                            if (label === 'ESPAÇO MENTAL') label = 'MENTAL';
-                            if (label === 'ESPIRITUALIDADE') label = 'ESPIRIT.';
+  return (
+    <div className="relative flex flex-col items-center justify-center w-full overflow-visible" style={{ height: size }}>
+      <SvgRadarChart
+        labels={labels}
+        maxValue={10}
+        levels={5}
+        height="100%"
+        labelColor="rgba(255,255,255,0.4)"
+        labelSize={3.2}
+        series={[
+          {
+            id: 'asset-levels',
+            values: levels,
+            stroke: goldBright,
+            fill: goldBright,
+            fillOpacity: 0.4,
+            strokeWidth: 1.2,
+            showDots: true,
+            dotRadius: 2.2,
+            dotFill: '#000',
+            dotStroke: goldMetallic,
+            valueLabel: (value) => String(value),
+            valueLabelColor: goldBright,
+            valueLabelSize: 3,
+            valueLabelWeight: 900,
+          },
+        ]}
+      />
 
-                            return (
-                                <g transform={`translate(${x},${y})`}>
-                                    <text
-                                        x={0}
-                                        y={0}
-                                        dy={index > 2 && index < 8 ? 10 : -5}
-                                        textAnchor={textAnchor}
-                                        fill="rgba(255, 255, 255, 0.4)"
-                                        fontSize="8px"
-                                        fontWeight="900"
-                                        letterSpacing="0.02em"
-                                    >
-                                        {label}
-                                    </text>
-                                </g>
-                            );
-                        }}
-                    />
-                    <PolarRadiusAxis
-                        angle={30}
-                        domain={[0, 10]}
-                        tick={false}
-                        axisLine={false}
-                    />
-                    <Radar
-                        name="Nível"
-                        dataKey="level"
-                        stroke={goldBright}
-                        strokeWidth={1.5}
-                        fill={goldBright}
-                        fillOpacity={0.4}
-                        dot={<CustomDot />}
-                    />
-                </RadarChart>
-            </ResponsiveContainer>
-
-            {showCentralLevel && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[6px] uppercase tracking-[0.5em] text-white/10 font-black mb-[-2px] translate-y-[-14px]">TOTAL</span>
-                    <span
-                        className="text-2xl font-black drop-shadow-[0_0_8px_rgba(197,160,33,0.4)]"
-                        style={{ color: goldBright }}
-                    >
-                        {totalLevel}
-                    </span>
-                </div>
-            )}
+      {showCentralLevel ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-[6px] uppercase tracking-[0.5em] text-white/10 font-black mb-[-2px] translate-y-[-14px]">TOTAL</span>
+          <span
+            className="text-2xl font-black drop-shadow-[0_0_8px_rgba(197,160,33,0.4)]"
+            style={{ color: goldBright }}
+          >
+            {totalLevel}
+          </span>
         </div>
-    );
+      ) : null}
+    </div>
+  );
 };

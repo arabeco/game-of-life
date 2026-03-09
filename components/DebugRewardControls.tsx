@@ -1,14 +1,84 @@
-import React, { useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
-import { ChestType, SeasonMission } from '../types';
+import { ChestType, Report, ReportAtlasWeek, ReportIdentitySnapshot, SeasonMission } from '../types';
 import { GlassCard } from './GlassCard';
 import { ChestOpeningModal } from './ChestOpeningModal';
 import { ReportGenerationModal } from './ReportGenerationModal';
 import { MissionCompletionModal } from './MissionCompletionModal';
-
 import { ReportResultCarousel } from './ReportResultCarousel';
-import { Report } from '../types';
+import { MetalReportCard } from './MetalReportCard';
+import { LegacyProjectionModal } from './LegacyProjectionModal';
+import type { LegacyEraSummary } from './LegacyExportDocument';
+import { getScoreGrade } from '../utils/dateUtils';
+
+const buildMockAtlasWeeks = (seed: number, accentAction: string): ReportAtlasWeek[] => {
+    const baseDate = new Date(Date.UTC(2026, 0, 6 + seed * 7));
+    return Array.from({ length: 2 }).map((_, weekIndex) => {
+        const weekStart = new Date(baseDate);
+        weekStart.setUTCDate(baseDate.getUTCDate() + weekIndex * 7);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+        return {
+            weekIndex,
+            startDate: weekStart.toISOString().slice(0, 10),
+            endDate: weekEnd.toISOString().slice(0, 10),
+            plannedCount: 8,
+            completedCount: 6,
+            plannedMinutes: 480,
+            completedMinutes: 360,
+            dominantArenaId: `arena-${seed}`,
+            dominantArenaName: accentAction,
+            days: Array.from({ length: 7 }).map((__, dayIndex) => {
+                const dayDate = new Date(weekStart);
+                dayDate.setUTCDate(weekStart.getUTCDate() + dayIndex);
+                return {
+                    date: dayDate.toISOString().slice(0, 10),
+                    plannedCount: dayIndex % 2 === 0 ? 2 : 1,
+                    completedCount: dayIndex % 3 === 0 ? 2 : 1,
+                    plannedMinutes: dayIndex % 2 === 0 ? 120 : 60,
+                    completedMinutes: dayIndex % 3 === 0 ? 120 : 45,
+                    arenaBuckets: [
+                        {
+                            arenaId: `arena-${seed}`,
+                            arenaName: accentAction,
+                            total: dayIndex % 2 === 0 ? 2 : 1,
+                            completed: dayIndex % 3 === 0 ? 2 : 1,
+                        },
+                    ],
+                    scheduledItems: [
+                        {
+                            taskId: `task-${seed}-${weekIndex}-${dayIndex}`,
+                            actionId: `action-${seed}`,
+                            actionName: accentAction,
+                            actionIcon: dayIndex % 2 === 0 ? '??' : '??',
+                            arenaId: `arena-${seed}`,
+                            arenaName: accentAction,
+                            startTime: 8 * 60 + dayIndex * 20,
+                            duration: dayIndex % 2 === 0 ? 90 : 45,
+                            completed: dayIndex % 3 !== 1,
+                            actionType: dayIndex % 2 === 0 ? 'Compromisso' : 'Marco',
+                        },
+                    ],
+                    unscheduledItems: dayIndex % 3 === 0 ? [] : [
+                        {
+                            taskId: `task-unscheduled-${seed}-${weekIndex}-${dayIndex}`,
+                            actionId: `action-unscheduled-${seed}`,
+                            actionName: `Reserva ${accentAction}`,
+                            actionIcon: '?',
+                            arenaId: `arena-${seed}`,
+                            arenaName: accentAction,
+                            startTime: -1,
+                            duration: 30,
+                            completed: false,
+                            actionType: 'A\u00e7\u00e3o Recorrente',
+                        },
+                    ],
+                };
+            }),
+        };
+    });
+};
 
 export const DebugRewardControls: React.FC = () => {
     const { userProfile, updateUserProfile, showToast, setAchievementUnlocked } = useGame();
@@ -17,6 +87,7 @@ export const DebugRewardControls: React.FC = () => {
     const [showReportModal, setShowReportModal] = useState(false);
     const [showReportResult, setShowReportResult] = useState<Report | null>(null);
     const [testMission, setTestMission] = useState<SeasonMission | null>(null);
+    const [showLegacyPreview, setShowLegacyPreview] = useState(false);
 
     const mockReport: Report = {
         id: 'debug-report',
@@ -58,7 +129,7 @@ export const DebugRewardControls: React.FC = () => {
             mostRepeatedActionCount: 50
         },
         assetProgress: [
-            { asset: 'Físico', value: 80 },
+            { asset: 'Fisico', value: 80 },
             { asset: 'Mental', value: 90 },
             { asset: 'Social', value: 60 },
             { asset: 'Espiritual', value: 70 },
@@ -68,57 +139,186 @@ export const DebugRewardControls: React.FC = () => {
         clanPoints: 50
     };
 
+    const mockFallbackIdentity: ReportIdentitySnapshot = useMemo(() => ({
+        avatarUrl: userProfile.avatarUrl,
+        nickname: userProfile.nickname || 'Soberano Demo',
+        title: userProfile.title,
+        level: Math.max(userProfile.level || 1, 12),
+        nobilityRankId: userProfile.nobility?.rankId,
+        nobilityRankName: 'Vagante',
+        clanName: userProfile.clanName || 'Cla Atlas',
+        clanIcon: userProfile.clanIcon || '???',
+        clanRankName: 'Feudo',
+        capturedAt: new Date().toISOString(),
+    }), [userProfile.avatarUrl, userProfile.clanIcon, userProfile.clanName, userProfile.level, userProfile.nickname, userProfile.nobility, userProfile.title]);
+
+    const mockLegacyEras: LegacyEraSummary[] = useMemo(() => ([
+        {
+            key: 'gm-era-1',
+            label: 'Fundacao',
+            defaultLabel: 'ERA I',
+            skinId: 'foundry',
+            startDate: '2026-01-06',
+            endDate: '2026-02-02',
+            avgScore: 78,
+            totalHours: 31,
+            cycleCount: 2,
+            dominantArena: 'Alicerce',
+            topActions: [{ name: 'Planejar', count: 8 }, { name: 'Codar', count: 6 }, { name: 'Treinar', count: 4 }],
+            bestStreak: 5,
+            grade: 'A',
+            color: '#f59e0b',
+            description: 'Primeira fase de organizacao do sistema e das rotinas-base.',
+            finalSummary: 'A base foi erguida e a rotina deixou de depender de impulso.',
+            aiSummary: 'Fase de fundacao, consistencia e estrutura.',
+            cycles: [
+                {
+                    id: 'gm-cycle-1',
+                    name: 'Ciclo de Fundacao',
+                    startDate: '2026-01-06',
+                    endDate: '2026-01-19',
+                    score: 74,
+                    focusArena: 'Alicerce',
+                    signatureAction: 'Planejar',
+                    weeklyAtlas: buildMockAtlasWeeks(1, 'Alicerce'),
+                    identitySnapshot: { ...mockFallbackIdentity, level: 7, nobilityRankName: 'Vagante', clanName: 'Sem cla', clanIcon: null, capturedAt: '2026-01-19T23:59:59.000Z' },
+                },
+                {
+                    id: 'gm-cycle-2',
+                    name: 'Ciclo de Ritual Diario',
+                    startDate: '2026-01-20',
+                    endDate: '2026-02-02',
+                    score: 82,
+                    focusArena: 'Protocolo',
+                    signatureAction: 'Codar',
+                    weeklyAtlas: buildMockAtlasWeeks(2, 'Protocolo'),
+                    identitySnapshot: { ...mockFallbackIdentity, level: 9, nobilityRankName: 'Escudeiro', clanName: 'Cla Atlas', clanIcon: '???', capturedAt: '2026-02-02T23:59:59.000Z' },
+                },
+            ],
+        },
+        {
+            key: 'gm-era-2',
+            label: 'Cerco',
+            defaultLabel: 'ERA II',
+            skinId: 'royal-gold',
+            startDate: '2026-02-03',
+            endDate: '2026-03-02',
+            avgScore: 88,
+            totalHours: 46,
+            cycleCount: 2,
+            dominantArena: 'Dominio',
+            topActions: [{ name: 'Publicar', count: 9 }, { name: 'Mentorar', count: 5 }, { name: 'Fechar loop', count: 5 }],
+            bestStreak: 7,
+            grade: 'S',
+            color: '#eab308',
+            description: 'Fase de expansao, pressao externa e consolidacao do uso diario.',
+            finalSummary: 'A ofensiva elevou o ritmo e trouxe peso historico ao progresso.',
+            aiSummary: 'Fase de expansao, consistencia alta e ganho de autoridade.',
+            cycles: [
+                {
+                    id: 'gm-cycle-3',
+                    name: 'Ciclo de Cerco Externo',
+                    startDate: '2026-02-03',
+                    endDate: '2026-02-16',
+                    score: 86,
+                    focusArena: 'Dominio',
+                    signatureAction: 'Publicar',
+                    weeklyAtlas: buildMockAtlasWeeks(3, 'Dominio'),
+                    identitySnapshot: { ...mockFallbackIdentity, level: 12, nobilityRankName: 'Cavaleiro', clanName: 'Cla Atlas', clanIcon: '???', capturedAt: '2026-02-16T23:59:59.000Z' },
+                },
+                {
+                    id: 'gm-cycle-4',
+                    name: 'Ciclo de Fecho Tatico',
+                    startDate: '2026-02-17',
+                    endDate: '2026-03-02',
+                    score: 91,
+                    focusArena: 'Tesouro',
+                    signatureAction: 'Fechar loop',
+                    weeklyAtlas: buildMockAtlasWeeks(4, 'Tesouro'),
+                    identitySnapshot: { ...mockFallbackIdentity, level: 14, nobilityRankName: 'Barao', clanName: 'Cla Atlas', clanIcon: '???', capturedAt: '2026-03-02T23:59:59.000Z' },
+                },
+            ],
+        },
+        {
+            key: 'gm-era-3',
+            label: 'Ascensao',
+            defaultLabel: 'ERA III',
+            skinId: 'verdigris-relic',
+            startDate: '2026-03-03',
+            endDate: '2026-03-28',
+            avgScore: 93,
+            totalHours: 52,
+            cycleCount: 2,
+            dominantArena: 'Legado',
+            topActions: [{ name: 'Gravar legado', count: 7 }, { name: 'Ensinar', count: 5 }, { name: 'Refinar ciclo', count: 4 }],
+            bestStreak: 8,
+            grade: 'SS',
+            color: '#34d399',
+            description: 'Fase de consolidacao historica e leitura de identidade.',
+            finalSummary: 'A soberania deixou de ser rotina e virou memoria estrategica.',
+            aiSummary: 'Fase de maturacao e leitura historica do proprio sistema.',
+            cycles: [
+                {
+                    id: 'gm-cycle-5',
+                    name: 'Ciclo de Memoria',
+                    startDate: '2026-03-03',
+                    endDate: '2026-03-14',
+                    score: 92,
+                    focusArena: 'Legado',
+                    signatureAction: 'Gravar legado',
+                    weeklyAtlas: buildMockAtlasWeeks(5, 'Legado'),
+                    identitySnapshot: { ...mockFallbackIdentity, level: 17, nobilityRankName: 'Visconde', clanName: 'Cla Atlas', clanIcon: '???', capturedAt: '2026-03-14T23:59:59.000Z' },
+                },
+                {
+                    id: 'gm-cycle-6',
+                    name: 'Ciclo de Projecao',
+                    startDate: '2026-03-15',
+                    endDate: '2026-03-28',
+                    score: 95,
+                    focusArena: 'Soberania',
+                    signatureAction: 'Ensinar',
+                    weeklyAtlas: buildMockAtlasWeeks(6, 'Soberania'),
+                    identitySnapshot: { ...mockFallbackIdentity, level: 20, nobilityRankName: 'Conde', clanName: 'Cla Atlas', clanIcon: '???', capturedAt: '2026-03-28T23:59:59.000Z' },
+                },
+            ],
+        },
+    ]), [mockFallbackIdentity]);
+
+    const rankPreviewScores = [100, 90, 76, 60, 38].map((score, index) => ({
+        score,
+        grade: getScoreGrade(score),
+        title: ['Ascensao Total', 'Ciclo Ouro', 'Ciclo Prata', 'Ciclo Bronze', 'Ferro Velho'][index],
+    }));
+
     const addChests = async () => {
         setLoading(true);
         try {
-            const types: ChestType[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendário', 'Ciclo'];
-
-            // 1. Add to user_chests table (if exists)
+            const types: ChestType[] = ['Comum', 'Incomum', 'Raro', '\u00c9pico', 'Lend\u00e1rio', 'Ciclo'];
             const newChests = [];
             for (const type of types) {
                 for (let i = 0; i < 5; i++) {
-                    newChests.push({
-                        user_id: userProfile.id,
-                        chest_type: type,
-                        is_opened: false,
-                        earned_at: new Date().toISOString()
-                    });
+                    newChests.push({ user_id: userProfile.id, chest_type: type, is_opened: false, earned_at: new Date().toISOString() });
                 }
             }
 
             const { error: insertError } = await supabase.from('user_chests').insert(newChests);
+            if (insertError) console.warn('Could not insert into user_chests:', insertError);
 
-            if (insertError) {
-                console.warn("Could not insert into user_chests (table might not exist or RLS issue):", insertError);
-            }
-
-            // 2. Update user_profiles JSONB for immediate UI update
             const currentChests = userProfile.chests ? [...userProfile.chests] : [];
-
             types.forEach(type => {
                 const existing = currentChests.find(c => c.type === type);
-                if (existing) {
-                    existing.count += 5;
-                } else {
-                    currentChests.push({ type, count: 5 });
-                }
+                if (existing) existing.count += 5;
+                else currentChests.push({ type, count: 5 });
             });
 
-            // Optimistic update
             await updateUserProfile({ chests: currentChests });
-
-            // Force sync with DB for profile
-            const { error: profileError } = await supabase
-                .from('user_profiles')
-                .update({ chests: currentChests })
-                .eq('id', userProfile.id);
-
+            const { error: profileError } = await supabase.from('user_profiles').update({ chests: currentChests }).eq('id', userProfile.id);
             if (profileError) throw profileError;
 
-            showToast("5 Baús de cada tipo adicionados com sucesso!");
+            showToast('5 baus de cada tipo adicionados com sucesso.');
         } catch (error: any) {
             console.error(error);
-            showToast(`Erro ao adicionar baús: ${error.message}`);
+            showToast(`Erro ao adicionar baus: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -127,60 +327,26 @@ export const DebugRewardControls: React.FC = () => {
     const addInsignias = async () => {
         setLoading(true);
         try {
-            const insignias = [
-                'insignia_rank_5_barao', // Ouro
-                'insignia_quest_incomum', // Prata
-                'insignia_sitrep_s' // Bronze
-            ];
-
-            // 1. Add to user_inventory table
-            const newItems = insignias.map(id => ({
-                user_id: userProfile.id,
-                item_id: id,
-                acquired_at: new Date().toISOString()
-            }));
-
+            const insignias = ['insignia_rank_5_barao', 'insignia_quest_incomum', 'insignia_sitrep_s'];
+            const newItems = insignias.map(id => ({ user_id: userProfile.id, item_id: id, acquired_at: new Date().toISOString() }));
             const { error: insertError } = await supabase.from('user_inventory').insert(newItems);
+            if (insertError) throw insertError;
 
-            if (insertError) {
-                console.warn("Could not insert into user_inventory:", insertError);
-                throw insertError;
-            }
-
-            // 2. Add to unlocked items (JSONB)
             const newUnlocked = { ...userProfile.unlockedItems };
             if (!newUnlocked.insignias) newUnlocked.insignias = {};
+            insignias.forEach(id => { newUnlocked.insignias[id] = true; });
 
-            insignias.forEach(id => {
-                newUnlocked.insignias[id] = true;
-            });
-
-            // Optimistic update
             const currentInventory = userProfile.inventory || [];
-            const newInventoryItems = insignias.map(id => ({
-                id,
-                instanceId: crypto.randomUUID(),
-                acquiredAt: new Date().toISOString(),
-                isEquipped: false
-            }));
+            const newInventoryItems = insignias.map(id => ({ id, instanceId: crypto.randomUUID(), acquiredAt: new Date().toISOString(), isEquipped: false }));
 
-            await updateUserProfile({
-                unlockedItems: newUnlocked,
-                inventory: [...currentInventory, ...newInventoryItems]
-            });
-
-            // Force sync with DB
-            const { error: profileError } = await supabase
-                .from('user_profiles')
-                .update({ unlocked_items: newUnlocked })
-                .eq('id', userProfile.id);
-
+            await updateUserProfile({ unlockedItems: newUnlocked, inventory: [...currentInventory, ...newInventoryItems] });
+            const { error: profileError } = await supabase.from('user_profiles').update({ unlocked_items: newUnlocked }).eq('id', userProfile.id);
             if (profileError) throw profileError;
 
-            showToast("1 Insígnia de cada tipo adicionada com sucesso!");
+            showToast('1 insignia de cada tipo adicionada com sucesso.');
         } catch (error: any) {
             console.error(error);
-            showToast(`Erro ao adicionar insígnias: ${error.message}`);
+            showToast(`Erro ao adicionar insignias: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -190,14 +356,14 @@ export const DebugRewardControls: React.FC = () => {
         setTestMission({
             id: 'test-mission-01',
             season_id: 'season-debug',
-            title: 'Missão de Teste',
-            description: 'Conclua uma tarefa para ganhar XP e Insígnia.',
+            title: 'Missao de Teste',
+            description: 'Conclua uma tarefa para ganhar XP e insignia.',
             goal_type: 'actions_completed',
             goal_value: 1,
             reward_type: 'item_id',
             reward_value: 'insignia_quest_incomum',
             type: 'individual',
-            icon: '🎯'
+            icon: '??'
         });
     };
 
@@ -205,11 +371,11 @@ export const DebugRewardControls: React.FC = () => {
         setAchievementUnlocked({
             type: 'PLAYER_RANK_UP',
             data: {
-                name: 'Soberano Nível 5',
-                icon: '👑',
+                name: 'Soberano Nivel 5',
+                icon: '??',
                 rewards: {
                     exp: 1000,
-                    chest: 'Lendário',
+                    chest: 'Lendario',
                     items: ['insignia_rank_5_barao']
                 }
             }
@@ -217,95 +383,96 @@ export const DebugRewardControls: React.FC = () => {
     };
 
     return (
-        <GlassCard className="p-4 mt-4 space-y-4 border-yellow-500/30">
-            <h3 className="text-yellow-400 font-bold flex items-center gap-2">
-                <span>🛠️</span>
+        <GlassCard className="mt-4 space-y-4 border-yellow-500/30 p-4">
+            <h3 className="flex items-center gap-2 font-bold text-yellow-400">
+                <span>??</span>
                 Painel de Teste de Recompensas (GM)
             </h3>
 
             <div className="grid grid-cols-2 gap-2">
-                <button
-                    onClick={addChests}
-                    disabled={loading}
-                    className="p-3 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-200 rounded-lg text-xs font-bold transition-all border border-yellow-500/20 hover:border-yellow-500/50 flex flex-col items-center justify-center gap-1"
-                >
-                    <span>🎁 +5 Baús de Cada</span>
-                    <span className="text-[10px] opacity-70">(Adiciona ao Inventário)</span>
+                <button onClick={addChests} disabled={loading} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-yellow-500/20 bg-yellow-600/20 p-3 text-xs font-bold text-yellow-200 transition-all hover:border-yellow-500/50 hover:bg-yellow-600/40">
+                    <span>?? +5 Baus de Cada</span>
+                    <span className="text-[10px] opacity-70">(Adiciona ao inventario)</span>
                 </button>
 
-                <button
-                    onClick={addInsignias}
-                    disabled={loading}
-                    className="p-3 bg-amber-600/20 hover:bg-amber-600/40 text-amber-200 rounded-lg text-xs font-bold transition-all border border-amber-500/20 hover:border-amber-500/50 flex flex-col items-center justify-center gap-1"
-                >
-                    <span>🎖️ +1 Insígnia de Cada</span>
-                    <span className="text-[10px] opacity-70">(Adiciona ao Inventário)</span>
+                <button onClick={addInsignias} disabled={loading} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-amber-500/20 bg-amber-600/20 p-3 text-xs font-bold text-amber-200 transition-all hover:border-amber-500/50 hover:bg-amber-600/40">
+                    <span>??? +1 insignia de Cada</span>
+                    <span className="text-[10px] opacity-70">(Adiciona ao inventario)</span>
                 </button>
 
-                <button
-                    onClick={handleTestMission}
-                    className="p-3 bg-green-600/20 hover:bg-green-600/40 text-green-200 rounded-lg text-xs font-bold transition-all border border-green-500/20 hover:border-green-500/50 flex flex-col items-center justify-center gap-1"
-                >
-                    <span>✅ Testar Completar Missão</span>
+                <button onClick={handleTestMission} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-green-500/20 bg-green-600/20 p-3 text-xs font-bold text-green-200 transition-all hover:border-green-500/50 hover:bg-green-600/40">
+                    <span>?? Testar Completar Missao</span>
                     <span className="text-[10px] opacity-70">(Simula Modal)</span>
                 </button>
 
-                <button
-                    onClick={() => setShowChestModal('Lendário')}
-                    className="p-3 bg-blue-600/20 hover:bg-blue-600/40 text-blue-200 rounded-lg text-xs font-bold transition-all border border-blue-500/20 hover:border-blue-500/50 flex flex-col items-center justify-center gap-1"
-                >
-                    <span>📦 Testar Modal Baú</span>
-                    <span className="text-[10px] opacity-70">(Visualização Apenas)</span>
+                <button onClick={() => setShowChestModal('Lend\u00e1rio')} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-blue-500/20 bg-blue-600/20 p-3 text-xs font-bold text-blue-200 transition-all hover:border-blue-500/50 hover:bg-blue-600/40">
+                    <span>?? Testar Modal Bau</span>
+                    <span className="text-[10px] opacity-70">(Visualizacao Apenas)</span>
                 </button>
 
-                <button
-                    onClick={() => {
-                        setShowReportModal(true);
-                        // We will inject the chest in the onOpen callback
-                    }}
-                    className="p-3 bg-purple-600/20 hover:bg-purple-600/40 text-purple-200 rounded-lg text-xs font-bold transition-all border border-purple-500/20 hover:border-purple-500/50 flex flex-col items-center justify-center gap-1"
-                >
-                    <span>📜 Testar Relatório</span>
-                    <span className="text-[10px] opacity-70">(Animação Vídeo)</span>
+                <button onClick={() => setShowReportModal(true)} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-purple-500/20 bg-purple-600/20 p-3 text-xs font-bold text-purple-200 transition-all hover:border-purple-500/50 hover:bg-purple-600/40">
+                    <span>?? Testar Relatorio</span>
+                    <span className="text-[10px] opacity-70">(Animacao de video)</span>
                 </button>
 
-                <button
-                    onClick={() => {
-                        setShowReportResult({
-                            ...mockReport,
-                            id: 'debug-report-chest'
-                        });
-                        // Directly show result with chest for testing UI
-                    }}
-                    className="p-3 bg-purple-600/20 hover:bg-purple-600/40 text-purple-200 rounded-lg text-xs font-bold transition-all border border-purple-500/20 hover:border-purple-500/50 flex flex-col items-center justify-center gap-1"
-                >
-                    <span>🎁 Testar Relatório + Baú</span>
+                <button onClick={() => setShowReportResult({ ...mockReport, id: 'debug-report-chest' })} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-purple-500/20 bg-purple-600/20 p-3 text-xs font-bold text-purple-200 transition-all hover:border-purple-500/50 hover:bg-purple-600/40">
+                    <span>?? Testar Relatorio + Bau</span>
                     <span className="text-[10px] opacity-70">(Resumo Final)</span>
                 </button>
 
-                <button
-                    onClick={handleTestLevelUp}
-                    className="p-3 bg-orange-600/20 hover:bg-orange-600/40 text-orange-200 rounded-lg text-xs font-bold transition-all border border-orange-500/20 hover:border-orange-500/50 flex flex-col items-center justify-center gap-1 col-span-2"
-                >
-                    <span>⭐ Testar Subir Nível</span>
+                <button onClick={handleTestLevelUp} className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-lg border border-orange-500/20 bg-orange-600/20 p-3 text-xs font-bold text-orange-200 transition-all hover:border-orange-500/50 hover:bg-orange-600/40">
+                    <span>?? Testar Subir Nivel</span>
                     <span className="text-[10px] opacity-70">(Simula Conquista)</span>
                 </button>
+
+                <button onClick={() => setShowLegacyPreview(true)} className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-600/20 p-3 text-xs font-bold text-cyan-200 transition-all hover:border-cyan-500/50 hover:bg-cyan-600/40">
+                    <span>??? Testar Legacy Scene</span>
+                    <span className="text-[10px] opacity-70">(3 Eras mockadas com timeline, placa e planner mini)</span>
+                </button>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Galeria metalica</p>
+                    <p className="mt-1 text-xs text-gray-500">Teste rapido dos ranks S, A, B, C e ferro gasto antes de ligar no fluxo real.</p>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-1">
+                    {rankPreviewScores.map(({ score, grade, title }) => (
+                        <div key={title} className="w-[280px] shrink-0">
+                            <MetalReportCard
+                                rank={grade.grade}
+                                score={score}
+                                title={title}
+                                subtitle="Preview GM"
+                                dateRange="01/03 - 14/03"
+                                summary={grade.phrase}
+                                metrics={[
+                                    { label: 'XP', value: `+${score * 10}` },
+                                    { label: 'Foco', value: 'Dominio' },
+                                ]}
+                                badges={[
+                                    { label: 'Assinatura', value: 'Codar' },
+                                    { label: 'Era', value: 'Fundacao' },
+                                ]}
+                                compact
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {showChestModal && (
                 <ChestOpeningModal
                     chestType={showChestModal}
                     onClose={() => setShowChestModal(null)}
-                    onRewardClaimed={(reward) => {
-                        showToast(`Recompensa reclamada: ${reward.name}`);
-                    }}
+                    onRewardClaimed={(reward) => showToast(`Recompensa reclamada: ${reward.name}`)}
                 />
             )}
 
             {showReportModal && (
                 <ReportGenerationModal
                     onFinish={() => {
-                        showToast("Relat?rio Gerado!");
+                        showToast('Relatorio gerado.');
                         setShowReportResult(mockReport);
                         setShowReportModal(false);
                     }}
@@ -316,18 +483,18 @@ export const DebugRewardControls: React.FC = () => {
                 <ReportResultCarousel
                     report={showReportResult}
                     onOk={() => setShowReportResult(null)}
-                    onCompare={() => showToast("Comparar (Simulação)")}
-                    onShare={() => showToast("Compartilhar (Simulação)")}
-                    onPostToFeed={() => showToast("Postar no Feed (Simulação)")}
+                    onCompare={() => showToast('Comparar (simulacao)')}
+                    onShare={() => showToast('Compartilhar (simulacao)')}
+                    onPostToFeed={() => showToast('Postar no Feed (simulacao)')}
                     onStartNewCycle={() => {
                         const msg = showReportResult.id === 'debug-report-chest'
-                            ? `✦ Baú Lendário e 1 Insígnia(s) adicionados\n✦ +1000 XP computados`
-                            : `✦ 1 Insígnia(s) adicionada(s) ao inventário\n✦ +1000 XP computados`;
+                            ? 'Bau lendario e XP simulados no teste.'
+                            : 'XP e insignia simulados no teste.';
                         showToast(msg);
                         setShowReportResult(null);
                     }}
                     expGained={1000}
-                    chest={showReportResult.id === 'debug-report-chest' ? 'Lendário' : null}
+                    chest={showReportResult.id === 'debug-report-chest' ? 'Lend\u00e1rio' : null}
                     insignias={['insignia_sitrep_s']}
                 />
             )}
@@ -340,6 +507,23 @@ export const DebugRewardControls: React.FC = () => {
                     insignia="insignia_quest_incomum"
                 />
             )}
+
+            {showLegacyPreview && (
+                <LegacyProjectionModal
+                    eras={mockLegacyEras}
+                    sovereignName={mockFallbackIdentity.nickname}
+                    isPremium={true}
+                    fallbackIdentity={mockFallbackIdentity}
+                    onClose={() => setShowLegacyPreview(false)}
+                    onToast={showToast}
+                    onOpenCycle={(cycleId) => showToast(`Abrir ciclo mockado: ${cycleId}`)}
+                    onOpenEra={(era) => showToast(`Abrir Era mockada: ${era.label}`)}
+                    onOpenPlaque={() => showToast('Placa do legado ativada.')}
+                    onExportRecord={() => showToast('Export do legado mockado acionado.')}
+                />
+            )}
         </GlassCard>
     );
 };
+
+

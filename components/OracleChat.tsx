@@ -1,23 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { createOpenAI } from '@ai-sdk/openai';
-import { streamText } from 'ai';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 import { OracleContext, OracleMode } from '../types';
 import { Portal } from './Portal';
-
-// API Key from OpenRouter
-const API_KEY = "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";
-
-const openrouter = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: API_KEY,
-  headers: {
-    'HTTP-Referer': 'https://glyph-life-os.vercel.app', // Substitua pelo seu domínio se souber
-    'X-Title': 'GLYPH Life OS',
-  }
-});
+import { supabase } from '../supabaseClient';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -268,11 +255,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     setInput('');
     setIsLoading(true);
 
-    // Check for commands
     if (input.startsWith('?') || input.startsWith('!')) {
         const commandResponse = await handleCommand(input);
         if (commandResponse) {
-             // Simulate small delay for natural feel
              setTimeout(() => {
                  setMessages(prev => [...prev, { role: 'assistant', content: commandResponse, timestamp: new Date() }]);
                  setIsLoading(false);
@@ -282,39 +267,32 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
 
     try {
-      // TESTE: Enviando apenas a mensagem ATUAL do usuário (sem histórico)
-      // Isso evita erros de 400 acumulados e garante que cada pergunta seja "nova" para a API
-      const apiMessages = [
-        { role: 'user', content: userMessage.content }
-      ];
-
-      const result = await streamText({
-        model: openrouter('openrouter/auto'),
-        system: systemPrompt,
-        messages: apiMessages as any, 
+      const { data, error } = await supabase.functions.invoke('oracle', {
+        body: {
+          systemPrompt,
+          userPrompt: userMessage.content,
+          model: 'google/gemini-2.0-flash-001',
+        }
       });
 
-      let fullResponse = '';
-      const assistantMessage: Message = { role: 'assistant', content: '', timestamp: new Date(), mode: currentMode };
-      
-      // Optimistic update
-      setMessages(prev => [...prev, assistantMessage]);
-
-      for await (const textPart of result.textStream) {
-        fullResponse += textPart;
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMsg = newMessages[newMessages.length - 1];
-          // Ensure we are updating the last assistant message
-          if (lastMsg.role === 'assistant') {
-              lastMsg.content = fullResponse;
-          }
-          return newMessages;
-        });
+      if (error) {
+        throw error;
       }
+
+      const text = String(data?.text || '').trim();
+      if (!text) {
+        throw new Error('Oracle function returned empty content.');
+      }
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: text,
+        timestamp: new Date(),
+        mode: currentMode,
+      }]);
     } catch (error) {
       console.error('Oracle Error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'O Oráculo está em silêncio momentâneo. Tente novamente.', timestamp: new Date() }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'O Oraculo esta em silencio momentaneo. Tente novamente.', timestamp: new Date() }]);
     } finally {
       setIsLoading(false);
     }

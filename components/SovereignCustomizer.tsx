@@ -13,6 +13,7 @@ import { ChestOpeningModal } from './ChestOpeningModal';
 import { ReportResultCarousel } from './ReportResultCarousel';
 import { Portal } from './Portal';
 import { Report } from '../types';
+import { getRarityVisual, withAlpha } from '../constants/rarityVisuals';
 
 interface SovereignCustomizerProps {
     initialConfig?: SovereignConfig;
@@ -55,7 +56,7 @@ const Selector: React.FC<{
 );
 
 export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initialConfig, onSave, onClose }) => {
-    const { userProfile, showToast } = useGame();
+    const { userProfile, inventory, showToast } = useGame();
     const [config, setConfig] = useState<SovereignConfig>({
         ...DEFAULT_SOVEREIGN_CONFIG,
         ...(initialConfig || {}),
@@ -133,7 +134,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         return allItems.filter(item => {
             if (item.id === 'none') return true;
             // Allow if in inventory
-            if (userProfile.inventory?.some(inv => inv.id === item.id)) return true;
+            if (inventory?.some(inv => inv.id === item.id)) return true;
             // Allow if unlocked via legacy (if needed, but relying on inventory for now)
             return false;
         });
@@ -539,13 +540,10 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             <div className="flex-1 flex flex-col min-h-0">
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block text-center mb-2">Selecione um Artefato</span>
                                 <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1 pb-2 custom-scrollbar">
-                                    {SOVEREIGN_ASSETS.artifacts.map(item => {
+                                    {getOwnedList(SOVEREIGN_ASSETS.artifacts).map(item => {
                                         const isSelected = config.artifact === item.id;
                                         const assetWithRarity = item as any;
-                const tierColor = assetWithRarity.rarity === 'legendary' ? 'bg-yellow-500 shadow-[0_0_4px_rgba(234,179,8,0.5)]' :
-                          assetWithRarity.rarity === 'epic' ? 'bg-purple-500' :
-                          assetWithRarity.rarity === 'rare' ? 'bg-blue-500' :
-                          assetWithRarity.rarity === 'uncommon' ? 'bg-green-500' : 'bg-gray-600';
+                                        const rarityVisual = getRarityVisual(assetWithRarity.rarity);
                                         
                                         return (
                                             <button
@@ -563,7 +561,13 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                                     </div>
                                                 )}
 
-                                                <div className={`absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full ${tierColor}`} />
+                                                <div
+                                                    className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full"
+                                                    style={{
+                                                        backgroundColor: rarityVisual.hex,
+                                                        boxShadow: assetWithRarity.rarity === 'legendary' ? `0 0 4px ${withAlpha(rarityVisual.rgb, 0.55)}` : undefined,
+                                                    }}
+                                                />
                                             </button>
                                         );
                                     })}

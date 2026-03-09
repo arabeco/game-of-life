@@ -1,40 +1,13 @@
-import React from 'react';
-import type { ReportAtlasWeek } from '../types';
+﻿import React from 'react';
+import type { LegacyRenderCycleDigest, LegacyRenderEraSummary } from '../types';
 import { formatDate, getScoreGrade } from '../utils/dateUtils';
 import { EraRibbon } from './EraRibbon';
 import { LegacyPlaqueArtifact } from './LegacyPlaqueArtifact';
+import './legacy-ui.css';
 
-export interface LegacyEraCycleDigest {
-    id: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-    score: number;
-    focusArena?: string;
-    signatureAction?: string;
-    weeklyAtlas?: ReportAtlasWeek[];
-}
+export type LegacyEraCycleDigest = LegacyRenderCycleDigest;
 
-export interface LegacyEraSummary {
-    key?: string;
-    defaultLabel?: string;
-    skinId?: string;
-    description?: string;
-    finalSummary?: string;
-    aiSummary?: string;
-    cycles?: LegacyEraCycleDigest[];
-    label: string;
-    startDate: string;
-    endDate: string;
-    avgScore: number;
-    totalHours: number;
-    cycleCount: number;
-    dominantArena: string;
-    topActions: { name: string; count: number }[];
-    bestStreak: number;
-    grade: string;
-    color: string;
-}
+export type LegacyEraSummary = LegacyRenderEraSummary;
 
 interface LegacyExportDocumentProps {
     id?: string;
@@ -78,31 +51,31 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                 Consolidado definitivo do legado construido no Glyph. Todas as Eras abaixo foram agrupadas a partir dos ciclos e relatorios reais da jornada.
                             </p>
                         </div>
-                        <div className="min-w-[220px] rounded-[28px] border border-white/10 bg-black/30 p-6 text-right">
-                            <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 font-black">Score medio historico</p>
+                        <div className="legacy-panel-strong min-w-[220px] p-6 text-right">
+                            <p className="legacy-kicker legacy-kicker-muted">Score medio historico</p>
                             <p className={`text-6xl font-black mt-3 ${historicalGrade.color}`}>{Math.round(historicalAverageScore)}</p>
                             <p className="text-xs uppercase tracking-[0.25em] text-gray-400 mt-2">Patamar {historicalGrade.grade}</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-4 gap-4 mt-8">
-                        <div className="rounded-[24px] border border-white/10 bg-black/25 p-5">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Soberano</p>
+                        <div className="legacy-panel-soft p-5">
+                            <p className="legacy-kicker legacy-kicker-muted">Soberano</p>
                             <p className="text-2xl font-black mt-2 tracking-tight">{userName}</p>
                             <p className="text-xs text-gray-500 mt-2">{historyStartDate && historyEndDate ? `${formatDate(historyStartDate)} - ${formatDate(historyEndDate)}` : 'Sem periodo fechado'}</p>
                         </div>
-                        <div className="rounded-[24px] border border-white/10 bg-black/25 p-5">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Eras</p>
+                        <div className="legacy-panel-soft p-5">
+                            <p className="legacy-kicker legacy-kicker-muted">Eras</p>
                             <p className="text-4xl font-black mt-2 tracking-tight">{eraSummaries.length}</p>
                             <p className="text-xs text-gray-500 mt-2">Segmentos historicos consolidados</p>
                         </div>
-                        <div className="rounded-[24px] border border-white/10 bg-black/25 p-5">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Ciclos</p>
+                        <div className="legacy-panel-soft p-5">
+                            <p className="legacy-kicker legacy-kicker-muted">Ciclos</p>
                             <p className="text-4xl font-black mt-2 tracking-tight">{totalCycles}</p>
                             <p className="text-xs text-gray-500 mt-2">Base completa do legado</p>
                         </div>
-                        <div className="rounded-[24px] border border-white/10 bg-black/25 p-5">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Horas totais</p>
+                        <div className="legacy-panel-soft p-5">
+                            <p className="legacy-kicker legacy-kicker-muted">Horas totais</p>
                             <p className="text-4xl font-black mt-2 tracking-tight">{formatHours(totalHistoricalHours)}</p>
                             <p className="text-xs text-gray-500 mt-2">Tempo investido em soberania</p>
                         </div>
@@ -119,14 +92,14 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                             <EraRibbon label="" skinId={era.skinId} className="h-full" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400 font-black">{era.label}</p>
+                                            <p className="legacy-kicker legacy-kicker-soft">{era.label}</p>
                                             <h2 className="text-3xl font-black tracking-tight mt-2">{formatDate(era.startDate)} - {formatDate(era.endDate)}</h2>
                                             <p className="text-sm text-gray-300 mt-2">{era.cycleCount} ciclos consolidados neste periodo.</p>
                                             {era.finalSummary && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-200">{era.finalSummary}</p>}
                                         </div>
                                     </div>
                                     <div className="min-w-[180px] rounded-[24px] border p-5 text-right" style={{ borderColor: `${era.color}55`, backgroundColor: `${era.color}12` }}>
-                                        <p className="text-[10px] uppercase tracking-[0.35em] text-gray-300 font-black">Score medio</p>
+                                        <p className="legacy-kicker legacy-kicker-soft">Score medio</p>
                                         <p className="text-5xl font-black mt-3" style={{ color: era.color }}>{era.avgScore}</p>
                                         <p className="text-xs uppercase tracking-[0.25em] text-gray-300 mt-2">Patamar {era.grade}</p>
                                     </div>
@@ -135,37 +108,37 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
 
                             <div className="p-8 space-y-6">
                                 <div className="grid grid-cols-4 gap-4">
-                                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-5">
-                                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Horas totais</p>
+                                    <div className="legacy-stat-card p-5">
+                                        <p className="legacy-kicker legacy-kicker-muted">Horas totais</p>
                                         <p className="text-3xl font-black mt-2 tracking-tight">{formatHours(era.totalHours)}</p>
                                     </div>
-                                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-5">
-                                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Arena dominante</p>
+                                    <div className="legacy-stat-card p-5">
+                                        <p className="legacy-kicker legacy-kicker-muted">Arena dominante</p>
                                         <p className="text-lg font-black mt-2 tracking-tight leading-tight">{era.dominantArena}</p>
                                     </div>
-                                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-5">
-                                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Melhor streak</p>
+                                    <div className="legacy-stat-card p-5">
+                                        <p className="legacy-kicker legacy-kicker-muted">Melhor streak</p>
                                         <p className="text-3xl font-black mt-2 tracking-tight">{era.bestStreak}</p>
                                         <p className="text-xs text-gray-500 mt-2">dias seguidos de execucao</p>
                                     </div>
-                                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-5">
-                                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-black">Assinatura da Era</p>
+                                    <div className="legacy-stat-card p-5">
+                                        <p className="legacy-kicker legacy-kicker-muted">Assinatura da Era</p>
                                         <p className="text-lg font-black mt-2 tracking-tight">{era.topActions[0]?.name || 'Sem acao dominante'}</p>
                                         <p className="text-xs text-gray-500 mt-2">acao mais recorrente do periodo</p>
                                     </div>
                                 </div>
 
                                 {(era.description || era.aiSummary) && (
-                                    <div className="rounded-[24px] border border-white/10 bg-black/25 p-6">
-                                        <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 font-black">Leitura da Era</p>
+                                    <div className="legacy-panel-soft p-6">
+                                        <p className="legacy-kicker legacy-kicker-muted">Leitura da Era</p>
                                         <p className="mt-3 text-sm leading-relaxed text-gray-300">{era.description || era.aiSummary}</p>
                                     </div>
                                 )}
 
-                                <div className="rounded-[24px] border border-white/10 bg-black/25 p-6">
+                                <div className="legacy-panel-soft p-6">
                                     <div className="flex items-center justify-between gap-4 mb-4">
                                         <div>
-                                            <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 font-black">Acoes dominantes</p>
+                                            <p className="legacy-kicker legacy-kicker-muted">Acoes dominantes</p>
                                             <p className="text-sm text-gray-400 mt-1">As tres acoes que mais definiram esta fase.</p>
                                         </div>
                                         <p className="text-xs text-gray-500">Registro consolidado da {era.label.toLowerCase()}</p>
@@ -173,7 +146,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                     <div className="grid grid-cols-3 gap-4">
                                         {era.topActions.length > 0 ? era.topActions.map((action, actionIndex) => (
                                             <div key={`${era.key || era.label}-${action.name}`} className="rounded-[20px] border border-white/10 bg-white/[0.02] p-5">
-                                                <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 font-black">{['I', 'II', 'III'][actionIndex] || 'IV'}</p>
+                                                <p className="legacy-kicker legacy-kicker-muted">{['I', 'II', 'III'][actionIndex] || 'IV'}</p>
                                                 <p className="text-lg font-black mt-3 leading-tight min-h-[56px]">{action.name}</p>
                                                 <p className="text-3xl font-black mt-4" style={{ color: era.color }}>{action.count}</p>
                                                 <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 mt-1">repeticoes</p>
@@ -193,7 +166,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                 <div className="px-8 pb-8">
                     <section className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0.01))] overflow-hidden">
                         <div className="px-8 py-7 border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.12),_transparent_44%),linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.01))]">
-                            <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400 font-black">Artefato final</p>
+                            <p className="legacy-kicker legacy-kicker-soft">Artefato final</p>
                             <h2 className="mt-3 text-3xl font-black tracking-tight">Placa do Legado</h2>
                             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-gray-300">
                                 Condensacao final da jornada. Esta placa grava em pedra o numero de Eras, ciclos, score medio e a inscricao dominante da sua trajetoria no Glyph.
@@ -211,13 +184,13 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
 
                 <div className="px-8 py-6 border-t border-white/10 bg-black/30 flex items-end justify-between gap-6">
                     <div>
-                        <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 font-black">Memoria final</p>
+                        <p className="legacy-kicker legacy-kicker-muted">Memoria final</p>
                         <p className="text-sm text-gray-300 mt-2 max-w-2xl">
                             Se o app desaparecer, este registro continua como prova visual da sua trajetoria: eras, ciclos, score medio e acoes dominantes que sustentaram o seu sistema pessoal.
                         </p>
                     </div>
                     <div className="text-right shrink-0">
-                        <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 font-black">Emitido em</p>
+                        <p className="legacy-kicker legacy-kicker-muted">Emitido em</p>
                         <p className="text-sm text-white mt-2">{generatedAt}</p>
                     </div>
                 </div>
@@ -225,6 +198,9 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
         </div>
     );
 };
+
+
+
 
 
 

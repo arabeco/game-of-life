@@ -1,0 +1,82 @@
+.auth-shell {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+  background: #000;
+  font-family: var(--font-body);
+  color: #fff;
+}
+
+.auth-app-root {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  color: #e5e7eb;
+}
+
+.auth-app-root--builder {
+  border: 4px dashed #facc15;
+}
+
+.auth-builder-banner {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(234, 179, 8, 0.4);
+  background: rgba(234, 179, 8, 0.15);
+  backdrop-filter: blur(16px);
+}
+
+.auth-builder-banner__inner {
+  margin-inline: auto;
+  display: flex;
+  height: 2.75rem;
+  max-width: 420px;
+  align-items: center;
+  gap: 0.5rem;
+  padding-inline: 1rem;
+}
+
+.auth-view-fallback {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-nav-active {
+  color: var(--skin-accent-color);
+}
+
+.auth-footer {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  padding-bottom: var(--safe-area-bottom);
+}
+
+.auth-footer--basic {
+  background: var(--nav-bg);
+  border-top: 1px solid var(--nav-border);
+}
+
+.auth-footer--game {
+  background: rgba(0, 0, 0, 0.8);
+  border-top: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+}
+
+.auth-nav-indicator {
+  position: absolute;
+  bottom: 0.25rem;
+  height: 0.25rem;
+  border-radius: 9999px;
+  background: var(--skin-accent-color);
+  box-shadow: 0 0 10px var(--skin-accent-color);
+  transition: all 300ms cubic-bezier(0.25, 0.8, 0.25, 1);
+}

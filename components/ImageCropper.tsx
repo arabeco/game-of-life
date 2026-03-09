@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Point, Area } from 'react-easy-crop';
+import 'react-easy-crop/react-easy-crop.css';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 

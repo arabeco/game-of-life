@@ -23,6 +23,92 @@ const GLYPHS_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/obj
 const INTERFACE_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/interface';
 const ROOT_IMAGES_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
 
+type CatalogItemInput = Omit<ItemDef, 'category'>;
+type AssetBackedItemInput = Omit<ItemDef, 'category' | 'imageUrl'> & { asset?: string };
+
+const catalogItem = <TCategory extends ItemCategory>(category: TCategory, item: CatalogItemInput): ItemDef => ({
+    category,
+    ...item,
+});
+
+const assetItem = <TCategory extends ItemCategory>(
+    category: TCategory,
+    baseUrl: string,
+    { asset, ...item }: AssetBackedItemInput,
+): ItemDef => catalogItem(category, {
+    ...item,
+    imageUrl: asset ? `${baseUrl}/${asset}` : undefined,
+});
+
+export const avatarAsset = (filename: string): string => `${BASE_URL}/${filename}`;
+export const glyphAsset = (filename: string): string => `${GLYPHS_BASE_URL}/${filename}`;
+export const interfaceAsset = (filename: string): string => `${INTERFACE_BASE_URL}/${filename}`;
+export const rootImageAsset = (filename: string): string => `${ROOT_IMAGES_URL}/${filename}`;
+
+const avatarItem = <TCategory extends Extract<ItemCategory, 'skin' | 'artifact'>>(category: TCategory, item: AssetBackedItemInput): ItemDef =>
+    assetItem(category, BASE_URL, item);
+
+const glyphCatalogItem = <TCategory extends Extract<ItemCategory, 'glyph' | 'aura' | 'orb' | 'plate'>>(category: TCategory, item: AssetBackedItemInput): ItemDef =>
+    assetItem(category, GLYPHS_BASE_URL, item);
+
+const interfaceCatalogItem = <TCategory extends Extract<ItemCategory, 'border' | 'banner'>>(category: TCategory, item: AssetBackedItemInput): ItemDef =>
+    assetItem(category, INTERFACE_BASE_URL, item);
+
+const themeCatalogItem = (item: AssetBackedItemInput): ItemDef =>
+    assetItem('ui_skin', ROOT_IMAGES_URL, item);
+
+// Para criar item novo:
+// 1. use o builder da categoria (`avatarItem`, `glyphCatalogItem`, `interfaceCatalogItem`, `themeCatalogItem` ou `catalogItem`)
+// 2. se houver PNG/JPG, passe `asset: 'NOME_DO_ARQUIVO.png'`
+// 3. se a categoria exige PNG e `asset` ficar vazio, o item entra automaticamente como pendencia de arte
+// 4. `ui_skin` pode continuar so com emoji, sem asset
+//
+// Templates rapidos:
+//
+// avatarItem('skin', {
+//     id: 'item_skin_x_001',
+//     name: 'Meu Visual',
+//     tier: 3,
+//     rarity: 'rare',
+//     icon: '🧥',
+//     asset: 'SKIN_X_MEU_VISUAL.png',
+// });
+//
+// glyphCatalogItem('aura', {
+//     id: 'item_aura_x_001',
+//     name: 'Minha Aura',
+//     tier: 2,
+//     rarity: 'uncommon',
+//     icon: '✨',
+//     asset: 'AURA_X_MINHA_AURA.png',
+// });
+//
+// interfaceCatalogItem('border', {
+//     id: 'item_border_x_001',
+//     name: 'Minha Borda',
+//     tier: 1,
+//     rarity: 'common',
+//     icon: '🛡️',
+//     asset: 'borders/minha_borda.png',
+// });
+//
+// catalogItem('border', {
+//     id: 'item_border_x_sem_png',
+//     name: 'Minha Borda sem Arte',
+//     tier: 1,
+//     rarity: 'common',
+//     icon: '🛡️',
+// });
+//
+// themeCatalogItem({
+//     id: 'SOLAR',
+//     name: 'Tema: Solar',
+//     tier: 4,
+//     rarity: 'epic',
+//     icon: '☀️',
+//     asset: 'solar.jpg',
+// });
+
 export const ITEMS_DB: ItemDef[] = [
     // --- SKINS ---
     // T1 (Comum)
@@ -42,7 +128,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${BASE_URL}/SKIN_T4_ARMADURA_PLACA.png` },
     { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙‍♂️', imageUrl: `${BASE_URL}/SKIN_T4_MAGO_CIRCULO.png`, isRankExclusive: true },
     // T5 (Lendário)
-    { id: 'item_skin_5_001', name: 'Entidade de Luz', category: 'skin', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true },
+    avatarItem('skin', { id: 'item_skin_5_001', name: 'Entidade de Luz', tier: 5, rarity: 'legendary', icon: '✨', asset: 'SKIN_T5_ENTIDADE_LUZ.png', isRankExclusive: true }),
 
     // Season
     { id: 'item_skin_season_001', name: 'O Criador', category: 'skin', tier: 4, rarity: 'epic', icon: '🎨', isSeasonExclusive: true, imageUrl: `${BASE_URL}/SKIN_SEASON_CRIADOR.png` },
@@ -212,14 +298,15 @@ export const ITEMS_DB: ItemDef[] = [
     // T4
     { id: 'EMBER', name: 'Tema: Chama Viva', category: 'ui_skin', tier: 4, rarity: 'epic', icon: '🔥' },
     { id: 'CYBER', name: 'Tema: Cyberpunk', category: 'ui_skin', tier: 4, rarity: 'epic', icon: '🦾' },
-    { id: 'AURORA', name: 'Tema: Aurora Boreal', category: 'ui_skin', tier: 4, rarity: 'epic', icon: '🌌', imageUrl: `${ROOT_IMAGES_URL}/aurora.jpg` },
+    themeCatalogItem({ id: 'AURORA', name: 'Tema: Aurora Boreal', tier: 4, rarity: 'epic', icon: '🌌', asset: 'aurora.jpg' }),
     // T5
-    { id: 'VOID', name: 'Tema: Vazio Primordial', category: 'ui_skin', tier: 5, rarity: 'legendary', icon: '🔮', imageUrl: `${ROOT_IMAGES_URL}/void.jpg` },
+    themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '🔮', asset: 'void.jpg' }),
 
     // --- EXCLUSIVOS (Store) ---
-    { id: 'item_skin_exclusive_001', name: 'Empreendedor', category: 'skin', tier: 4, rarity: 'epic', icon: '💼', costGold: 500, isGoldExclusive: true },
-    { id: 'item_aura_exclusive_001', name: 'Fênix Dourada', category: 'aura', tier: 5, rarity: 'legendary', icon: '🐦', costGold: 800, isGoldExclusive: true },
-    { id: 'item_border_exclusive_001', name: 'Fundador', category: 'border', tier: 4, rarity: 'epic', icon: '🏛️', costGold: 400, isGoldExclusive: true },
+    // Itens abaixo entram automaticamente como pendencia de arte ate receberem `asset`.
+    catalogItem('skin', { id: 'item_skin_exclusive_001', name: 'Empreendedor', tier: 4, rarity: 'epic', icon: '💼', costGold: 500, isGoldExclusive: true }),
+    catalogItem('aura', { id: 'item_aura_exclusive_001', name: 'Fênix Dourada', tier: 5, rarity: 'legendary', icon: '🐦', costGold: 800, isGoldExclusive: true }),
+    catalogItem('border', { id: 'item_border_exclusive_001', name: 'Fundador', tier: 4, rarity: 'epic', icon: '🏛️', costGold: 400, isGoldExclusive: true }),
 
     // --- INSÍGNIAS ---
     // NOBREZA (Ouro)
@@ -282,28 +369,78 @@ export const XP_BOOSTS = [
 ];
 
 // === Premium Genesis Pack ===
-const GENESIS_BORDER: ItemDef = {
-    id: 'item_border_genesis_01', name: 'Borda Gênesis', category: 'border',
+const GENESIS_BORDER: ItemDef = interfaceCatalogItem('border', {
+    id: 'item_border_genesis_01', name: 'Borda Gênesis',
     tier: 4, rarity: 'epic', icon: '✦',
     description: 'A primeira marca do Soberano Premium.',
     isPremiumOnly: true, isRankExclusive: true,
-    imageUrl: `${INTERFACE_BASE_URL}/borders/genesis.png`
-};
-const GENESIS_BANNER: ItemDef = {
-    id: 'item_banner_origin_01', name: 'Banner Origem', category: 'banner',
+    asset: 'borders/genesis.png',
+});
+const GENESIS_BANNER: ItemDef = interfaceCatalogItem('banner', {
+    id: 'item_banner_origin_01', name: 'Banner Origem',
     tier: 4, rarity: 'epic', icon: '⛊',
     description: 'O estandarte dos que escolheram evoluir.',
     isPremiumOnly: true, isRankExclusive: true,
-    imageUrl: `${INTERFACE_BASE_URL}/banners/origin.png`
-};
-const GENESIS_THEME: ItemDef = {
-    id: 'item_theme_nebulosa', name: 'Interface Nebulosa', category: 'ui_skin',
+    asset: 'banners/origin.png',
+});
+const GENESIS_THEME: ItemDef = catalogItem('ui_skin', {
+    id: 'item_theme_nebulosa', name: 'Interface Nebulosa',
     tier: 4, rarity: 'epic', icon: '◈',
     description: 'Interface visual de camadas cósmicas.',
-    isPremiumOnly: true, isRankExclusive: true
-};
+    isPremiumOnly: true, isRankExclusive: true,
+});
 
 export const PREMIUM_PACK_GENESIS = [GENESIS_BORDER, GENESIS_BANNER, GENESIS_THEME];
 
 // Add Genesis items to main DB
 ITEMS_DB.push(GENESIS_BORDER, GENESIS_BANNER, GENESIS_THEME);
+
+const PNG_REQUIRED_CATEGORIES = new Set<ItemCategory>([
+    'skin',
+    'artifact',
+    'aura',
+    'border',
+    'banner',
+    'glyph',
+    'orb',
+    'plate',
+]);
+
+const PNG_OPTIONAL_CATEGORIES = new Set<ItemCategory>([
+    'hair',
+    'ui_skin',
+    'chest',
+    'insignia',
+    'insignias',
+]);
+
+const hasRasterAsset = (item: ItemDef): boolean => typeof item.imageUrl === 'string' && item.imageUrl.trim().length > 0;
+
+export const ITEM_IDS_PENDING_ART = ITEMS_DB
+    .filter(item => PNG_REQUIRED_CATEGORIES.has(item.category) && !hasRasterAsset(item))
+    .map(item => item.id);
+
+const PENDING_ART_ID_SET = new Set<string>(ITEM_IDS_PENDING_ART);
+
+export const isItemPendingArt = (itemOrId?: ItemDef | string): boolean => {
+    if (!itemOrId) return false;
+    const item = typeof itemOrId === 'string' ? resolveItemDef(itemOrId) : itemOrId;
+    if (!item) return false;
+    if (PNG_OPTIONAL_CATEGORIES.has(item.category)) return false;
+    if (!PNG_REQUIRED_CATEGORIES.has(item.category)) return false;
+    return PENDING_ART_ID_SET.has(item.id);
+};
+
+export const isItemCatalogVisible = (itemOrId?: ItemDef | string): boolean => !isItemPendingArt(itemOrId);
+
+export const getCatalogItems = (predicate?: (item: ItemDef) => boolean): ItemDef[] => {
+    return ITEMS_DB.filter(item => isItemCatalogVisible(item) && (!predicate || predicate(item)));
+};
+
+export const getCatalogItemsByCategory = (category: ItemCategory): ItemDef[] => {
+    return getCatalogItems(item => item.category === category);
+};
+
+export const getPendingArtItems = (): ItemDef[] => {
+    return ITEMS_DB.filter(item => isItemPendingArt(item));
+};

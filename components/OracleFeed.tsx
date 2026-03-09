@@ -1,12 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { XIcon, SparklesIcon, MessageIcon, TrashIcon, UsersIcon } from './Icons';
-import { OracleChat } from './OracleChat';
 import { ClanChat } from './ClanChat';
 import { DirectMessages } from './DirectMessages';
 import { Notification } from '../types';
 import { Portal } from './Portal';
+
+const OracleChat = lazy(() =>
+    import('./OracleChat').then((module) => ({ default: module.OracleChat }))
+);
 
 interface OracleFeedProps {
     onClose: () => void;
@@ -94,7 +97,9 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
                 <div className="flex-1 overflow-hidden relative">
                     {activeTab === 'chat' && (
                         <div className="absolute inset-0 animate-in slide-in-from-left-4 duration-200">
-                            <OracleChat onClose={onClose} isEmbedded={true} />
+                            <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
+                                <OracleChat onClose={onClose} isEmbedded={true} />
+                            </Suspense>
                         </div>
                     )}
 

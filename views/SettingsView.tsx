@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
@@ -6,21 +6,37 @@ import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotifica
 import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon, SendIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { MasteryView } from './MasteryView';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
-import { OracleChat } from '../components/OracleChat';
 import { supabase } from '../supabaseClient';
-import { SovereignCustomizer } from '../components/SovereignCustomizer';
-import { SovereignPanelView } from './SovereignPanelView';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
-import { SeasonDetailModal } from '../components/SeasonDetailModal';
-import { DebugRewardControls } from '../components/DebugRewardControls';
 import { CODEXES } from '../constants/items';
-import { NewArenaModal } from '../components/NewArenaModal';
-
-import { CodexModal } from '../components/CodexModal';
-import { CampaignsCodex } from '../components/CampaignsCodex';
 import { Portal } from '../components/Portal';
+import './settings-ui.css';
+
+const OracleChat = lazy(() =>
+    import('../components/OracleChat').then((module) => ({ default: module.OracleChat }))
+);
+const MasteryView = lazy(() =>
+    import('./MasteryView').then((module) => ({ default: module.MasteryView }))
+);
+const SovereignCustomizer = lazy(() =>
+    import('../components/SovereignCustomizer').then((module) => ({ default: module.SovereignCustomizer }))
+);
+const SovereignPanelView = lazy(() =>
+    import('./SovereignPanelView').then((module) => ({ default: module.SovereignPanelView }))
+);
+const DebugRewardControls = lazy(() =>
+    import('../components/DebugRewardControls').then((module) => ({ default: module.DebugRewardControls }))
+);
+const NewArenaModal = lazy(() =>
+    import('../components/NewArenaModal').then((module) => ({ default: module.NewArenaModal }))
+);
+const CodexModal = lazy(() =>
+    import('../components/CodexModal').then((module) => ({ default: module.CodexModal }))
+);
+const CampaignsCodex = lazy(() =>
+    import('../components/CampaignsCodex').then((module) => ({ default: module.CampaignsCodex }))
+);
 
 type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
@@ -78,13 +94,13 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <h2 className="text-lg font-bold uppercase tracking-wider text-center">Configurar Notificações</h2>
                     <div className="grid grid-cols-2 gap-2">
                         {notificationModes.map(mode => (<button key={mode.id} onClick={() => setSelectedMode(mode.id)} className={`p-3 rounded-xl transition-colors text-center ${selectedMode === mode.id ? 'bg-white/20 ring-2 ring-white/30' : 'bg-black/20 hover:bg-white/10'}`}><span className="text-2xl">{mode.icon}</span><p className="text-sm font-bold">{mode.name}</p></button>))}
                     </div>
-                    <div className="p-3 bg-black/20 rounded-xl min-h-[150px] flex flex-col justify-center">{renderPreview()}</div>
+                    <div className="settings-panel-card settings-preview-surface">{renderPreview()}</div>
                     <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
                 </GlassCard>
             </div>
@@ -93,7 +109,7 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
 };
 
 const SettingSelector: React.FC<{ label: string; value: string; onClick: () => void; }> = ({ label, value, onClick }) => (
-    <div className="p-3 bg-black/20 rounded-xl">
+    <div className="settings-panel-card">
         <div className="flex justify-between items-center">
             <label className="text-sm font-semibold">{label}</label>
             <button onClick={onClick} className="flex items-center space-x-2 text-sm text-gray-400"><span>{value}</span><ChevronRightIcon className="w-4 h-4" /></button>
@@ -112,7 +128,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
     ];
 
     return (
-        <div className="p-3 bg-black/20 rounded-xl space-y-3">
+        <div className="settings-panel-card settings-panel-card--stacked">
             {levels.map((lvl) => {
                 const isCompleted = isFlagCompleted(lvl.flag);
                 return (
@@ -141,7 +157,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
 
 const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
     <Portal>
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center animate-fade-in" onClick={onClose}>
+        <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
             <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                 <h2 className="text-lg font-bold uppercase tracking-wider text-center">Tutoriais</h2>
                 <TutorialSettings onStart={onClose} />
@@ -686,15 +702,17 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 )}
 
                 {selectedFriendForChallenge && (
-                    <NewArenaModal
-                        isOpen={true}
-                        onClose={() => setSelectedFriendForChallenge(null)}
-                        initialRelationship={{
-                            type: 'competition',
-                            friendId: selectedFriendForChallenge.id,
-                            friendName: selectedFriendForChallenge.nickname
-                        }}
-                    />
+                    <Suspense fallback={<div className="fixed inset-0 z-[210] bg-black/40 backdrop-blur-sm" />}>
+                        <NewArenaModal
+                            isOpen={true}
+                            onClose={() => setSelectedFriendForChallenge(null)}
+                            initialRelationship={{
+                                type: 'competition',
+                                friendId: selectedFriendForChallenge.id,
+                                friendName: selectedFriendForChallenge.nickname
+                            }}
+                        />
+                    </Suspense>
                 )}
             </div>
         </Portal>
@@ -1264,7 +1282,9 @@ const GeralTab: React.FC = () => {
             {showMastery && (
                 <Portal>
                     <div className="fixed inset-0 bg-black z-[10000] flex flex-col animate-fade-in overflow-hidden">
-                        <MasteryView onClose={() => setShowMastery(false)} />
+                        <Suspense fallback={<div className="flex-1 bg-black" />}>
+                            <MasteryView onClose={() => setShowMastery(false)} />
+                        </Suspense>
                     </div>
                 </Portal>
             )}
@@ -1412,8 +1432,10 @@ const PremiumTab: React.FC = () => {
 
             {(userProfile.role === 'admin' || userProfile.role === 'gm') && (
                 <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
-                    <SovereignPanelView />
-                    <DebugRewardControls />
+                    <Suspense fallback={<div className="h-24 rounded-2xl bg-black/20 animate-pulse" />}>
+                        <SovereignPanelView />
+                        <DebugRewardControls />
+                    </Suspense>
                 </div>
             )}
 
@@ -1437,10 +1459,18 @@ const PremiumTab: React.FC = () => {
                 />
             )}
 
-            {isOracleChatOpen && <OracleChat onClose={() => setOracleChatOpen(false)} />}
+            {isOracleChatOpen && (
+                <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />}>
+                    <OracleChat onClose={() => setOracleChatOpen(false)} />
+                </Suspense>
+            )}
 
             {isCodexOpen && <CodexListModal onClose={() => setCodexOpen(false)} />}
-            {showCampaignsCodex && <CampaignsCodex onClose={() => setShowCampaignsCodex(false)} />}
+            {showCampaignsCodex && (
+                <Suspense fallback={<div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm" />}>
+                    <CampaignsCodex onClose={() => setShowCampaignsCodex(false)} />
+                </Suspense>
+            )}
         </div>
     );
 };
@@ -1685,7 +1715,11 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         />
                     )}
                 </GlassCard>
-                {isCreatorOpen && <CodexModal onClose={() => setCreatorOpen(false)} />}
+                {isCreatorOpen && (
+                    <Suspense fallback={<div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm" />}>
+                        <CodexModal onClose={() => setCreatorOpen(false)} />
+                    </Suspense>
+                )}
             </div>
         </Portal>
     );
@@ -1755,11 +1789,13 @@ export const SettingsView: React.FC = () => {
                 </div>
             </div>
             {isSovereignEditorOpen && (
-                <SovereignCustomizer
-                    initialConfig={userProfile?.sovereign}
-                    onClose={() => setSovereignEditorOpen(false)}
-                    onSave={handleSovereignSave}
-                />
+                <Suspense fallback={<div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm" />}>
+                    <SovereignCustomizer
+                        initialConfig={userProfile?.sovereign}
+                        onClose={() => setSovereignEditorOpen(false)}
+                        onSave={handleSovereignSave}
+                    />
+                </Suspense>
             )}
         </>
     );

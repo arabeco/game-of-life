@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+﻿import React, { Suspense, useEffect, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Portal } from './Portal';
 import { SKINS_DATA } from '../constants/GMboard';
@@ -8,7 +7,11 @@ import { getScoreGrade } from '../utils/dateUtils';
 import { VideoPlayer } from './VideoPlayer';
 import { CycleAtlasPanel } from './CycleAtlasPanel';
 import { resolveItemDef } from '../constants/items';
-import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, ImageIcon } from './Icons';
+import { MetalReportCard } from './MetalReportCard';
+import { exportElementAsImage, shouldPreferNativeShare } from './Share';
+import './report-ui.css';
+const ReportRadarChart = React.lazy(() => import('./ReportRadarChart').then((m) => ({ default: m.ReportRadarChart })));
 
 // Helper functions (duplicated to avoid circular dependencies)
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
@@ -26,6 +29,7 @@ interface ReportResultCarouselProps {
     insignias?: string[];         // Added for reward slide
     onOpenChest?: () => void;     // Trigger chest opening
     onDelete?: () => void;        // Added for delete action
+    autoPlay?: boolean;
 }
 
 const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
@@ -33,8 +37,8 @@ const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
         switch (t) {
             case 'Incomum': return { base: '#C0C0C0', highlight: '#E0E0E0', glow: 'rgba(192, 192, 192, 0.6)' }; // Prata
             case 'Raro': return { base: '#FFD700', highlight: '#FFFACD', glow: 'rgba(255, 215, 0, 0.6)' };      // Ouro
-            case 'Épico': return { base: '#3B82F6', highlight: '#60A5FA', glow: 'rgba(59, 130, 246, 0.6)' };    // Azul
-            case 'Lendário': return { base: '#A855F7', highlight: '#C084FC', glow: 'rgba(168, 85, 247, 0.6)' }; // Roxo
+            case '\u00c9pico': return { base: '#3B82F6', highlight: '#60A5FA', glow: 'rgba(59, 130, 246, 0.6)' };    // Azul
+            case 'Lend\u00e1rio': return { base: '#A855F7', highlight: '#C084FC', glow: 'rgba(168, 85, 247, 0.6)' }; // Roxo
             default: return { base: '#A0522D', highlight: '#CD853F', glow: 'rgba(160, 82, 45, 0.6)' };          // Comum (Marrom)
         }
     };
@@ -75,14 +79,21 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     expGained,
     insignias = [],
     onOpenChest,
-    onDelete
+    onDelete,
+    autoPlay = true
 }) => {
+    const REWARD_CARD_CAPTURE_ID = 'report-metal-card-capture';
+    const preferNativeShare = shouldPreferNativeShare();
     const { userProfile } = useGame();
     const userSkinId = userProfile.skin;
     const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
     const skinColor = userSkin?.color || '#ffffff';
 
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [autoPlayPaused, setAutoPlayPaused] = useState(false);
+    const [rewardReveal, setRewardReveal] = useState(false);
+    const [rewardFlashActive, setRewardFlashActive] = useState(false);
+    const [isExportingRewardCard, setIsExportingRewardCard] = useState(false);
 
     const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, totalSlides - 1));
     const prevSlide = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
@@ -105,6 +116,24 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const paceLabel = paceDelta >= 5 ? 'Adiantado' : paceDelta <= -5 ? 'Atrasado' : 'No compasso';
     const paceColor = paceDelta >= 5 ? 'text-green-400' : paceDelta <= -5 ? 'text-red-400' : 'text-white';
 
+    const handleExportRewardCard = async () => {
+        if (isExportingRewardCard) return;
+        setIsExportingRewardCard(true);
+        try {
+            await exportElementAsImage(REWARD_CARD_CAPTURE_ID, {
+                fileName: `glyph-card-ciclo-${formatDate(report.endDate).replace(/\//g, '-')}-${scoreInfo.grade}.png`,
+                title: 'Card do ciclo - Glyph',
+                backgroundColor: '#050505',
+                preferShare: preferNativeShare,
+            });
+        } catch (error) {
+            console.error('Erro ao exportar card do relatorio:', error);
+            alert('Nao foi possivel exportar o card do ciclo.');
+        } finally {
+            setIsExportingRewardCard(false);
+        }
+    };
+
 
     // Prepare data for Radar Chart
     const radarData = assetProgress.map(ap => ({
@@ -113,21 +142,21 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         fullMark: 100
     }));
 
-    // Slide 1: Execu��o
+    // Slide 1: ExecuÃ§Ã£o
     const renderExecutionSlide = () => (
         <div className="flex flex-col h-full space-y-8 p-6">
             <div className="text-center">
-                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Execu��o</h3>
-                <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">ExecuÃ§Ã£o</h3>
+                <div className="report-rule" />
             </div>
 
             <div className="space-y-6">
-                <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
+                <div className="report-panel p-4">
                     <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                        <span>A��es</span>
+                        <span>AÃ§Ãµes</span>
                         <span className="text-white">{metrics.actionsCompleted} <span className="text-gray-600">/</span> {metrics.totalPlannedActions}</span>
                     </div>
-                    <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div className="report-track">
                         <div
                             className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-1000 shadow-[0_0_10px_var(--skin-accent-color)]"
                             style={{ width: `${Math.min((metrics.actionsCompleted / Math.max(metrics.totalPlannedActions, 1)) * 100, 100)}%` }}
@@ -135,12 +164,12 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
                 </div>
 
-                <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
+                <div className="report-panel p-4">
                     <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
                         <span>Tempo</span>
                         <span className="text-white">{duration} <span className="text-gray-600">/</span> {plannedDuration} <span className="text-gray-600 text-[8px]">DIAS</span></span>
                     </div>
-                    <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                    <div className="report-track">
                         <div
                             className="h-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-1000 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
                             style={{ width: `${timePercentage}%` }}
@@ -150,35 +179,35 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
+                <div className="report-panel report-panel-hover p-6 text-center group">
                     <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.totalHours}</p>
-                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Horas Totais</p>
+                    <p className="report-micro">Horas Totais</p>
                 </div>
-                <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
+                <div className="report-panel report-panel-hover p-6 text-center group">
                     <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.avgHoursPerDay ?? (metrics.totalHours / totalDays).toFixed(1)}</p>
-                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">M�dia h/dia</p>
+                    <p className="report-micro">MÃ©dia h/dia</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
+                <div className="report-panel report-panel-hover p-6 text-center group">
                     <p className="text-3xl font-black text-white mb-1 tracking-tighter">{zeroDays}</p>
-                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Dias Zerados</p>
+                    <p className="report-micro">Dias Zerados</p>
                     <p className="text-[9px] text-gray-600 mt-1">{metrics.consistencyDays || 0}/{totalDays} dias ativos</p>
                 </div>
-                <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/[0.05] text-center group hover:bg-white/[0.05] transition-all">
+                <div className="report-panel report-panel-hover p-6 text-center group">
                     <p className={`text-3xl font-black mb-1 tracking-tighter ${paceColor}`}>{paceDelta > 0 ? `+${paceDelta}` : paceDelta}</p>
-                    <p className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em]">Ritmo</p>
-                    <p className="text-[9px] text-gray-600 mt-1">{paceLabel} � exec {executionPercentage}% x tempo {timeElapsedPercentage}%</p>
+                    <p className="report-micro">Ritmo</p>
+                    <p className="text-[9px] text-gray-600 mt-1">{paceLabel} Â· exec {executionPercentage}% x tempo {timeElapsedPercentage}%</p>
                 </div>
             </div>
 
-            <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
+            <div className="report-panel p-4">
                 <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                    <span>Consist�ncia</span>
+                    <span>ConsistÃªncia</span>
                     <span className="text-white">{metrics.consistencyDays || 0} <span className="text-gray-600">/</span> {totalDays} <span className="text-gray-600 text-[8px]">DIAS</span></span>
                 </div>
-                <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                <div className="report-track">
                     <div
                         className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white/80 transition-all duration-1000 shadow-[0_0_10px_var(--skin-accent-color)]"
                         style={{ width: `${consistencyPct}%` }}
@@ -188,7 +217,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </div>
     );
 
-    // Slide 2: Território
+    // Slide 2: TerritÃ³rio
     const renderAtlasSlide = () => (
         <CycleAtlasPanel weeks={weeklyAtlas} />
     );
@@ -196,23 +225,18 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const renderTerritorySlide = () => (
         <div className="flex flex-col h-full space-y-6 p-6">
             <div className="text-center">
-                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Território</h3>
-                <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">TerritÃ³rio</h3>
+                <div className="report-rule" />
             </div>
 
             <div className="flex-1 relative bg-white/[0.02] rounded-3xl border border-white/[0.03] p-2" style={{ minHeight: 200 }}>
-                <ResponsiveContainer width="100%" height={200}>
-                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                        <PolarGrid stroke="rgba(255,255,255,0.05)" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#666', fontSize: 9, fontWeight: 900, letterSpacing: '0.1em' }} />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar name="Nível" dataKey="A" stroke="var(--skin-accent-color)" fill="var(--skin-accent-color)" fillOpacity={0.4} />
-                    </RadarChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<div className="w-full h-[200px] rounded-2xl bg-white/[0.02] border border-white/[0.03]" />}>
+                    <ReportRadarChart data={radarData} />
+                </Suspense>
             </div>
 
             <div className="space-y-3">
-                <div className="flex items-center justify-between bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] hover:bg-white/[0.05] transition-all">
+                <div className="flex items-center justify-between report-panel p-4 hover:bg-white/[0.05] transition-all">
                     <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 flex items-center justify-center shadow-inner">
                             <ZapIcon className="w-5 h-5 text-[var(--skin-accent-color)] filter drop-shadow-[0_0_5px_var(--skin-accent-color)]" />
@@ -224,17 +248,17 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
                 </div>
 
-                {/* Top 3 Ações — Roman Numeral Indicators */}
+                {/* Top 3 AÃ§Ãµes  Roman Numeral Indicators */}
                 {metrics.top3Actions && metrics.top3Actions.length > 0 && (
-                    <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] space-y-2">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-2">Ações Dominantes</p>
+                    <div className="report-panel p-4 space-y-2">
+                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-2">AÃ§Ãµes Dominantes</p>
                         {metrics.top3Actions.map((action, idx) => (
                             <div key={idx} className="flex items-center justify-between py-1.5">
                                 <div className="flex items-center gap-3">
                                     <span className="text-[10px] font-black text-gray-600 w-5 text-right tracking-widest">{['I', 'II', 'III'][idx]}</span>
                                     <span className="text-xs font-bold text-white truncate max-w-[180px]">{action.name}</span>
                                 </div>
-                                <span className="text-sm font-black text-[var(--skin-accent-color)] tabular-nums">{action.count}<span className="text-[9px] ml-0.5 opacity-40">×</span></span>
+                                <span className="text-sm font-black text-[var(--skin-accent-color)] tabular-nums">{action.count}<span className="text-[9px] ml-0.5 opacity-40">Ã—</span></span>
                             </div>
                         ))}
                     </div>
@@ -251,18 +275,18 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             <div className="flex flex-col h-full space-y-6 p-6">
                 <div className="text-center">
                     <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Conquistas</h3>
-                    <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+                    <div className="report-rule" />
                 </div>
 
                 {hasAchievements ? (
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] flex flex-col items-center group hover:bg-white/[0.05] transition-all">
+                            <div className="report-panel p-4 flex flex-col items-center group hover:bg-white/[0.05] transition-all">
                                 <TrophyIcon className="w-5 h-5 text-[var(--skin-accent-color)] mb-2 filter drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
                                 <span className="text-2xl font-black text-[var(--skin-accent-color)] tabular-nums">{metrics.goalsMet}</span>
                                 <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Marcos</span>
                             </div>
-                            <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] flex flex-col items-center group hover:bg-white/[0.05] transition-all">
+                            <div className="report-panel p-4 flex flex-col items-center group hover:bg-white/[0.05] transition-all">
                                 <CrownIcon className="w-5 h-5 text-purple-500 mb-2 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
                                 <span className="text-2xl font-black text-purple-500 tabular-nums">{metrics.questsCompleted || 0}</span>
                                 <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Quests</span>
@@ -272,14 +296,14 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         {/* Best Day + Max Streak */}
                         <div className="grid grid-cols-2 gap-3">
                             {metrics.bestDay && (
-                                <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] flex flex-col items-center hover:bg-white/[0.05] transition-all">
+                                <div className="report-panel p-4 flex flex-col items-center hover:bg-white/[0.05] transition-all">
                                     <span className="text-2xl font-black text-white tabular-nums">{metrics.bestDayCount || 0}</span>
                                     <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Melhor Dia</span>
                                     <span className="text-[9px] text-gray-600 font-mono mt-0.5">{formatDate(metrics.bestDay)}</span>
                                 </div>
                             )}
                             {(metrics.maxStreak ?? 0) > 0 && (
-                                <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] flex flex-col items-center hover:bg-white/[0.05] transition-all">
+                                <div className="report-panel p-4 flex flex-col items-center hover:bg-white/[0.05] transition-all">
                                     <span className="text-2xl font-black text-white tabular-nums">{metrics.maxStreak}</span>
                                     <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Maior Streak</span>
                                     <span className="text-[9px] text-gray-600 font-mono mt-0.5">dias</span>
@@ -300,7 +324,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <XIcon className="w-10 h-10 text-gray-700" />
                         </div>
                         <p className="text-gray-500 text-xs font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px] opacity-60">
-                            "Nenhum marco registrado. <br />A disciplina é a única saída."
+                            "Nenhum marco registrado. <br />A disciplina Ã© a Ãºnica saÃ­da."
                         </p>
                     </div>
                 )}
@@ -313,7 +337,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         <div className="flex flex-col h-full items-center justify-center p-6 text-center space-y-8">
             <div className="absolute top-10 text-center">
                 <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Veredito</h3>
-                <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+                <div className="report-rule" />
             </div>
 
             <div className="relative group">
@@ -327,23 +351,23 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             </div>
 
             <div className="pt-12 space-y-2 relative z-10">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">{formatDate(report.startDate)} — {formatDate(report.endDate)}</p>
-                <p className="text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-[0.1em] opacity-60">{duration} dias de operação</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">{formatDate(report.startDate)}  {formatDate(report.endDate)}</p>
+                <p className="text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-[0.1em] opacity-60">{duration} dias de operaÃ§Ã£o</p>
             </div>
 
             <p className="text-xl font-black text-white leading-tight tracking-tight max-w-[300px] italic opacity-90 relative z-10">
                 "{scoreInfo.phrase}"
             </p>
 
-            {/* Score Decomposition — Mono-tone accent bars */}
+            {/* Score Decomposition  Mono-tone accent bars */}
             {metrics.scoreBreakdown && (
                 <div className="w-full max-w-[280px] mx-auto mt-6 space-y-2 relative z-10">
-                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em] text-center mb-3">Decomposição</p>
+                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em] text-center mb-3">DecomposiÃ§Ã£o</p>
                     {[
                         { label: 'Progresso', pts: metrics.scoreBreakdown.progressPts, max: 40, opacity: 1 },
                         { label: 'Marcos', pts: metrics.scoreBreakdown.milestonePts, max: Math.max(metrics.scoreBreakdown.milestonePts, 30), opacity: 0.8 },
                         { label: 'Quests', pts: metrics.scoreBreakdown.questPts, max: Math.max(metrics.scoreBreakdown.questPts, 20), opacity: 0.65 },
-                        { label: 'Consistência', pts: metrics.scoreBreakdown.consistencyPts, max: 20, opacity: 0.5 },
+                        { label: 'ConsistÃªncia', pts: metrics.scoreBreakdown.consistencyPts, max: 20, opacity: 0.5 },
                         { label: 'Volume', pts: metrics.scoreBreakdown.volumePts, max: 30, opacity: 0.4 },
                         ...((metrics.scoreBreakdown.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium +10%', pts: metrics.scoreBreakdown.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
                     ].map(({ label, pts, max, opacity, ...rest }) => (
@@ -363,86 +387,50 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </div>
     );
 
-    // Slide 5: Resumo do Relatório
+    // Slide 5: Resumo do Relatorio
     const renderRewardSlide = () => {
+        const rewardBadges = [
+            chest ? { label: 'Bau', value: chest } : null,
+            ((report.expGained || expGained) && (report.expGained || expGained) > 0)
+                ? { label: 'XP', value: `+${report.expGained || expGained}` }
+                : null,
+            ...(insignias || []).slice(0, 3).map((insigniaId) => ({
+                label: 'Insignia',
+                value: resolveItemDef(insigniaId)?.name || insigniaId.replace(/_/g, ' '),
+            })),
+        ].filter(Boolean) as { label: string; value?: string }[];
+
         return (
-            <div className="flex flex-col h-full items-center p-6 text-center space-y-6 relative overflow-hidden">
+            <div className={`flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-700 ${rewardReveal ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.98]'}`}>
                 <div className="text-center">
                     <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Resumo</h3>
-                    <div className="h-0.5 w-12 bg-[var(--skin-accent-color)] mx-auto shadow-[0_0_10px_var(--skin-accent-color)]" />
+                    <div className="report-rule" />
                 </div>
 
-                {/* Stats Header */}
-                <div className="flex w-full justify-around bg-white/[0.03] p-5 rounded-[24px] border border-white/[0.05] shadow-2xl backdrop-blur-sm">
-                    <div className="text-center">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Total XP</p>
-                        <p className="text-2xl font-black text-white tracking-tighter">+{report.expGained || expGained || 0}</p>
-                    </div>
-                    <div className="w-px bg-white/[0.05] h-10 self-center" />
-                    <div className="text-center">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Nota</p>
-                        <p className={`text-2xl font-black ${scoreInfo.color}`}>{report.performanceScore}</p>
-                    </div>
+                <div className="flex w-full flex-1 items-center justify-center py-4">
+                    <MetalReportCard
+                        captureId={REWARD_CARD_CAPTURE_ID}
+                        entryFlash={rewardFlashActive}
+                        rank={scoreInfo.grade}
+                        score={report.performanceScore}
+                        title="Card de encerramento"
+                        subtitle="Ciclo consolidado"
+                        dateRange={`${formatDate(report.startDate)} - ${formatDate(report.endDate)}`}
+                        summary={scoreInfo.phrase}
+                        metrics={[
+                            { label: 'XP selado', value: `+${report.expGained || expGained || 0}` },
+                            { label: 'Arena foco', value: highlight.mostFocusedArena || 'Nenhuma' },
+                            { label: 'Acoes', value: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
+                            { label: 'Horas', value: `${metrics.totalHours}` },
+                        ]}
+                        badges={rewardBadges}
+                        className="w-full max-w-[360px]"
+                    />
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center w-full space-y-3">
-                    {/* Reward Miniature - Standardized Pattern */}
-                    <div className="w-full flex flex-col gap-2 justify-center">
-                        {chest && (
-                            <div className="flex items-center gap-3 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all text-left">
-                                <div className="w-9 h-9 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
-                                    <div className="transform scale-[0.3]">
-                                        <ChestVisual type={chest} />
-                                    </div>
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-[7px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Recompensa</p>
-                                    <p className="text-[10px] font-black text-white whitespace-nowrap tracking-tight truncate">
-                                        {chest} Chest
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex gap-2 w-full flex-wrap justify-center">
-                            {((report.expGained || expGained) && (report.expGained || expGained) > 0) && (
-                                <div className="flex-1 flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all text-left min-w-[120px]">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
-                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">✨</span>
-                                    </div>
-                                    <div className="overflow-hidden min-w-0">
-                                        <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Bônus Ciclo</p>
-                                        <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
-                                            +{report.expGained || expGained} <span className="text-[var(--skin-accent-color)] opacity-70">XP</span>
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {insignias && insignias.length > 0 && insignias.map((insigniaId, idx) => (
-                                <div key={idx} className="flex-1 flex items-center gap-2.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05] group hover:bg-white/[0.04] transition-all text-left min-w-[120px]">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent rounded-lg border border-[var(--skin-accent-color)]/20 flex items-center justify-center shrink-0">
-                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">
-                                            {resolveItemDef(insigniaId)?.icon || '🎖️'}
-                                        </span>
-                                    </div>
-                                    <div className="overflow-hidden min-w-0">
-                                        <p className="text-[6px] text-gray-500 uppercase tracking-[0.2em] font-black truncate">Insígnia</p>
-                                        <p className="text-[9px] font-black text-white whitespace-nowrap tracking-tight truncate">
-                                            {resolveItemDef(insigniaId)?.name || insigniaId.replace(/_/g, ' ')}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {!chest && (!report.expGained && !expGained) && (!insignias || insignias.length === 0) && (
-                            <p className="text-gray-500 font-black uppercase text-[10px] tracking-[0.3em] opacity-40 max-w-[200px] leading-relaxed italic mx-auto">
-                                "A disciplina <br />é a liberdade."
-                            </p>
-                        )}
-                    </div>
-                </div>
+                <p className={`max-w-[280px] text-[11px] font-black uppercase tracking-[0.18em] text-gray-500 transition-all duration-700 ${rewardReveal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+                    Compartilhe o card ou sele o proximo ciclo.
+                </p>
             </div>
         );
     };
@@ -460,11 +448,37 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     // If it's the reward slide, hide the standard footer and show the special action button
     const isRewardSlide = currentSlide === totalSlides - 1;
 
+    useEffect(() => {
+        if (!isRewardSlide) {
+            setRewardReveal(false);
+            setRewardFlashActive(false);
+            return;
+        }
+        setRewardReveal(false);
+        setRewardFlashActive(false);
+        const revealTimer = window.setTimeout(() => setRewardReveal(true), 160);
+        const flashTimer = window.setTimeout(() => setRewardFlashActive(true), 320);
+        const flashResetTimer = window.setTimeout(() => setRewardFlashActive(false), 1450);
+        return () => {
+            window.clearTimeout(revealTimer);
+            window.clearTimeout(flashTimer);
+            window.clearTimeout(flashResetTimer);
+        };
+    }, [isRewardSlide]);
+
+    useEffect(() => {
+        if (!autoPlay || autoPlayPaused || isRewardSlide) return;
+        const timer = window.setTimeout(() => {
+            setCurrentSlide((prev) => Math.min(prev + 1, totalSlides - 1));
+        }, 3300);
+        return () => window.clearTimeout(timer);
+    }, [autoPlay, autoPlayPaused, currentSlide, isRewardSlide, totalSlides]);
+
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[10001] flex items-center justify-center p-4 animate-fade-in">
                 <div
-                    className="w-full max-w-[420px] h-[85vh] max-h-[800px] bg-[#050505] border-t border-x rounded-[32px] shadow-[0_0_100px_rgba(0,0,0,1)] relative flex flex-col overflow-hidden transition-all duration-500"
+                    className="report-shell"
                     style={{
                         borderColor: `${skinColor}30`,
                         boxShadow: `0 0 60px ${skinColor}10, inset 0 0 30px ${skinColor}05`
@@ -477,7 +491,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
 
                     {/* Header */}
-                    <div className="h-14 flex items-center justify-between px-6 border-b border-white/[0.03] bg-white/[0.02]">
+                    <div className="report-header h-14 flex items-center justify-between px-6 border-b">
                         <div className="flex space-x-1.5">
                             {slides.map((_, idx) => (
                                 <div
@@ -486,16 +500,23 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 />
                             ))}
                         </div>
-                        <button
-                            onClick={onOk}
+                        <div className="flex items-center gap-3">
+                            {autoPlay && !isRewardSlide && (
+                                <span className={`text-[9px] font-black uppercase tracking-[0.22em] ${autoPlayPaused ? 'text-gray-500' : 'text-[var(--skin-accent-color)]'}`}>
+                                    {autoPlayPaused ? 'Pausado' : 'Auto'}
+                                </span>
+                            )}
+                            <button
+                                onClick={onOk}
                             className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all border border-transparent hover:border-white/[0.05]"
-                        >
-                            <XIcon className="w-5 h-5" />
-                        </button>
+                            >
+                                <XIcon className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 relative overflow-hidden bg-[#050505]" id="report-summary-card-capture">
+                    <div className="flex-1 relative overflow-hidden bg-[#050505]" id="report-summary-card-capture" onMouseEnter={() => setAutoPlayPaused(true)} onMouseLeave={() => setAutoPlayPaused(false)}>
                         {/* Background decoration */}
                         <div className="absolute inset-0 z-0 opacity-20">
                             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,_var(--skin-accent-color)_0%,_transparent_70%)]" />
@@ -507,7 +528,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
 
                     {/* Footer Navigation */}
-                    <div className="h-16 flex items-center justify-between px-6 border-t border-white/[0.03] bg-white/[0.02]">
+                    <div className="report-footer h-16 flex items-center justify-between px-6 border-t">
                         {!isRewardSlide ? (
                             <>
                                 <button
@@ -521,7 +542,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 <div className="flex items-center gap-4">
                                     <button
                                         onClick={onShare}
-                                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:text-white border border-white/[0.05] hover:bg-white/[0.05] transition-all"
+                                        className="report-icon-button"
                                         title="Compartilhar"
                                     >
                                         <ShareIcon className="w-5 h-5" />
@@ -540,16 +561,25 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <div className="w-full flex gap-3 items-center">
                                 <button
                                     onClick={onShare}
-                                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:text-white border border-white/[0.05] hover:bg-white/[0.05] transition-all shrink-0"
+                                    className="report-icon-button shrink-0"
                                     title="Compartilhar"
                                 >
                                     <ShareIcon className="w-5 h-5" />
                                 </button>
 
+                                <button
+                                    onClick={handleExportRewardCard}
+                                    className="report-icon-button shrink-0"
+                                    title={preferNativeShare ? 'Compartilhar card' : 'Baixar card'}
+                                    disabled={isExportingRewardCard}
+                                >
+                                    <ImageIcon className="w-5 h-5" />
+                                </button>
+
                                 {onDelete && (
                                     <button
                                         onClick={onDelete}
-                                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-red-500 hover:text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all shrink-0"
+                                        className="report-icon-button report-danger-button shrink-0"
                                         title="Deletar Ciclo"
                                     >
                                         <Trash2Icon className="w-5 h-5" />
@@ -559,7 +589,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 <button
                                     id={onStartNewCycle ? 'report-new-cycle-button' : undefined}
                                     onClick={onStartNewCycle || onOk}
-                                    className="flex-1 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl relative overflow-hidden group luxe-skin-button"
+                                    className="report-primary-cta luxe-skin-button group shadow-xl"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                     {onStartNewCycle ? 'Novo Ciclo' : 'OK'}
@@ -572,4 +602,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </Portal>
     );
 };
+
+
+
 

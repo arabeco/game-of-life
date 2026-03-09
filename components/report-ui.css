@@ -1,0 +1,155 @@
+.report-shell {
+  width: 100%;
+  max-width: 420px;
+  height: 85vh;
+  max-height: 800px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top-left-radius: 32px;
+  border-top-right-radius: 32px;
+  border-width: 1px 1px 0 1px;
+  background: #050505;
+  box-shadow: 0 0 100px rgba(0, 0, 0, 1);
+  transition: all 0.5s ease;
+}
+
+.report-shell::before,
+.report-shell::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.report-shell::before {
+  top: 0;
+  background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.4), transparent);
+}
+
+.report-shell::after {
+  bottom: 0;
+  background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.1), transparent);
+}
+
+.report-header,
+.report-footer {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.03);
+}
+
+.report-kicker {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgb(107 114 128);
+}
+
+.report-micro {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(107 114 128);
+}
+
+.report-panel {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+}
+
+.report-panel-hover {
+  transition: all 0.2s ease;
+}
+
+.report-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.report-track {
+  height: 0.375rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.report-rule {
+  width: 3rem;
+  height: 0.125rem;
+  margin: 0 auto;
+  background: var(--skin-accent-color);
+  box-shadow: 0 0 10px var(--skin-accent-color);
+}
+
+.report-nav-button {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.report-nav-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.report-icon-button {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgb(107 114 128);
+  transition: all 0.2s ease;
+}
+
+.report-icon-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.report-danger-button {
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgb(239 68 68);
+}
+
+.report-danger-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgb(248 113 113);
+}
+
+.report-primary-cta {
+  flex: 1;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  position: relative;
+  border-radius: 0.75rem;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: transform 0.2s ease;
+}
+
+.report-primary-cta:hover {
+  transform: scale(1.02);
+}
+
+.report-primary-cta:active {
+  transform: scale(0.98);
+}

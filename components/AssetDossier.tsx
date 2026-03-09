@@ -1,4 +1,4 @@
-
+﻿
 
 import React, { useState, useEffect } from 'react';
 import { Asset, Arena, Slot, SlotValue, SlotLayoutType } from '../types';
@@ -8,6 +8,7 @@ import { InputModal } from './inputs/InputModal';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { NewArenaModal } from './NewArenaModal';
 import { ArenaCard } from './ArenaCard';
+import { getRarityVisual } from '../constants/rarityVisuals';
 
 const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void }> = ({ slot, isEditing, onClick }) => {
     if (!slot) return null;
@@ -24,22 +25,7 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
     }
 
     const rarity = slot.rarity || (typeof slot.value === 'object' && 'rarity' in slot.value ? slot.value.rarity : undefined);
-    const getRarityDotColor = (r?: string) => {
-        if (!r) return null;
-        const lower = r.toLowerCase();
-        // Comum: Marrom
-        if (lower === 'common' || lower === 'comum') return 'bg-[#A0522D]';
-        // Incomum: Prata
-        if (lower === 'uncommon' || lower === 'incomum') return 'bg-[#C0C0C0]';
-        // Raro: Ouro
-        if (lower === 'rare' || lower === 'raro') return 'bg-[#FFD700]';
-        // Épico: Azul
-        if (lower === 'epic' || lower === 'épico' || lower === 'epico') return 'bg-blue-500';
-        // Lendário: Roxo
-        if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return 'bg-purple-500';
-        return null;
-    };
-    const rarityDotColor = getRarityDotColor(rarity);
+    const rarityVisual = rarity ? getRarityVisual(rarity) : null;
 
     const valueDisplay = typeof slot.value === 'object' && slot.value.imageUrl ? (
         <div className="relative w-full h-full rounded-xl overflow-hidden group">
@@ -60,8 +46,8 @@ const SlotWidget: React.FC<{ slot: Slot, isEditing: boolean, onClick: () => void
                 className={`relative w-full flex-grow mx-auto p-1 rounded-lg bg-black/40 border border-[color:var(--skin-accent-color)] transition-colors flex items-center justify-center ${editableClasses} min-h-[2rem]`}
             >
                 {valueDisplay}
-                {rarityDotColor && (
-                    <div className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${rarityDotColor} shadow-sm z-10`} />
+                {rarityVisual && (
+                    <div className="absolute top-1 right-1 z-10 h-1.5 w-1.5 rounded-full shadow-sm" style={{ backgroundColor: rarityVisual.hex }} />
                 )}
             </button>
         </div>
@@ -87,9 +73,9 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
     if (!asset) {
         return (
             <div className="dossier-bg border border-red-500/30 rounded-2xl p-8 flex flex-col items-center justify-center space-y-4 text-center">
-                <div className="text-4xl text-red-500/50">⚠️</div>
-                <h2 className="text-xl font-bold text-white uppercase italic">Ativo não encontrado</h2>
-                <p className="text-sm text-gray-400">Os dados deste dossiê estão indisponíveis ou incompletos.</p>
+                <div className="text-4xl text-red-500/50">âš ï¸</div>
+                <h2 className="text-xl font-bold text-white uppercase italic">Ativo nÃ£o encontrado</h2>
+                <p className="text-sm text-gray-400">Os dados deste dossiÃª estÃ£o indisponÃ­veis ou incompletos.</p>
                 <button onClick={onBack} className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white font-bold transition-colors border border-white/20">
                     VOLTAR
                 </button>
@@ -133,7 +119,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                                 {asset.level}
                             </div>
                             <p className="pl-10 pr-2 text-xs font-medium text-gray-100 text-center leading-tight m-0 line-clamp-2">
-                                {(asset.levelDescriptions[asset.level] || 'Descrição não disponível.').replace(/^Nível\s+\d+:\s*/, '')}
+                                {(asset.levelDescriptions[asset.level] || 'DescriÃ§Ã£o nÃ£o disponÃ­vel.').replace(/^NÃ­vel\s+\d+:\s*/, '')}
                             </p>
                         </div>
                     </div>
@@ -151,7 +137,7 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
                             ))}
                             {(!asset.slots || asset.slots.length === 0) && (
                                 <div className="col-span-6 py-6 text-center text-[10px] text-gray-500 uppercase tracking-widest border border-dashed border-white/5 rounded-xl">
-                                    Nenhum espaço de dado configurado.
+                                    Nenhum espaÃ§o de dado configurado.
                                 </div>
                             )}
                         </div>
@@ -198,3 +184,5 @@ export const AssetDossier: React.FC<{ asset: Asset; onBack: () => void; }> = ({ 
         </>
     );
 };
+
+

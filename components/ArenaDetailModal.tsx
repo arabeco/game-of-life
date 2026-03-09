@@ -8,6 +8,8 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { Portal } from './Portal';
 import { PlasmaCanvas } from './PlasmaCanvas';
 import { supabase } from '../supabaseClient';
+import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
+import './arena-ui.css';
 
 const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: string; currentLinkType?: string | null }> = ({ action, onClick, skinColor, currentLinkType }) => {
     const { getActionBackgroundStyle, tasks, getArenas, getClanQuestProgress, getClanQuestForActionName, getSharedActionPoolProgress, clan } = useGame();
@@ -52,21 +54,28 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
             <button
                 onClick={onClick}
                 style={isClanQuest ? {
-                    backgroundColor: 'rgba(88, 28, 135, 0.4)', // Purple-900/40
-                    borderColor: '#a855f7', // Purple-500
-                    boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)'
+                    backgroundColor: withAlpha(QUEST_VISUAL.rgb, 0.22),
+                    borderColor: QUEST_VISUAL.hex,
+                    boxShadow: `0 0 15px ${withAlpha(QUEST_VISUAL.rgb, 0.3)}`
                 } : backgroundStyle}
-                className={`relative w-24 h-24 border rounded-xl hover:opacity-80 transition-all overflow-hidden ${isClanQuest ? 'border-purple-500' : 'border-[var(--skin-accent-color)]'}`}
+                className={`relative w-24 h-24 border rounded-xl hover:opacity-80 transition-all overflow-hidden ${isClanQuest ? '' : 'border-[var(--skin-accent-color)]'}`}
             >
                 <div className="arena-plasma">
-                    <PlasmaCanvas color={isClanQuest ? '#a855f7' : skinColor} opacity={isClanQuest ? 0.3 : 0.189} className="arena-plasma-canvas" />
+                    <PlasmaCanvas color={isClanQuest ? QUEST_VISUAL.hex : skinColor} opacity={isClanQuest ? 0.3 : 0.189} className="arena-plasma-canvas" />
                 </div>
                 <div className="relative z-10 flex flex-col items-center justify-center text-center p-1 space-y-1">
                     <span className="text-3xl">{displayIcon}</span>
                     <p className="text-xs font-bold leading-tight line-clamp-2 text-white">{action.name}</p>
                 </div>
             </button>
-            <div className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border ${isClanQuest ? 'bg-purple-900/80 text-purple-200 border-purple-500/30' : 'bg-black/50 text-white border-white/10'}`}>
+            <div
+                className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border ${isClanQuest ? '' : 'bg-black/50 text-white border-white/10'}`}
+                style={isClanQuest ? {
+                    backgroundColor: withAlpha(QUEST_VISUAL.rgb, 0.24),
+                    color: QUEST_VISUAL.hex,
+                    borderColor: withAlpha(QUEST_VISUAL.rgb, 0.35),
+                } : undefined}
+            >
                 <span>{displayProgress}</span>
             </div>
         </div>

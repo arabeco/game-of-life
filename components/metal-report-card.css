@@ -1,0 +1,254 @@
+.metal-report-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2rem;
+  min-height: 19rem;
+  isolation: isolate;
+  box-shadow:
+    0 24px 44px rgba(0, 0, 0, 0.38),
+    0 0 0 1px color-mix(in srgb, var(--metal-edge) 18%, transparent),
+    0 0 42px var(--metal-glow);
+}
+
+.metal-report-card--entry-flash::after {
+  content: "";
+  position: absolute;
+  inset: -18% -42%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(45deg, transparent 28%, rgba(255,255,255,0.04) 42%, rgba(255,255,255,0.58) 50%, rgba(255,255,255,0.08) 56%, transparent 72%);
+  mix-blend-mode: screen;
+  animation: metal-card-entry-flash 980ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.metal-report-card--compact {
+  min-height: 14.5rem;
+  border-radius: 1.7rem;
+}
+
+.metal-report-card__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.metal-report-card__sheen {
+  position: absolute;
+  inset: -20% -35%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.02) 44%, rgba(255,255,255,0.46) 50%, rgba(255,255,255,0.02) 56%, transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0.6;
+  transform: translateX(-75%);
+  animation: metal-card-sheen 8s linear infinite;
+  pointer-events: none;
+}
+
+.metal-report-card__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  min-height: inherit;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.2rem 1.2rem 1.05rem;
+  color: var(--metal-text);
+}
+
+.metal-report-card--compact .metal-report-card__content {
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.metal-report-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.metal-report-card__title-block {
+  min-width: 0;
+}
+
+.metal-report-card__kicker {
+  margin: 0;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--metal-edge) 74%, white);
+  opacity: 0.86;
+}
+
+.metal-report-card__title {
+  margin: 0.45rem 0 0;
+  font-size: 1.4rem;
+  font-weight: 900;
+  line-height: 0.96;
+  letter-spacing: -0.03em;
+}
+
+.metal-report-card--compact .metal-report-card__title {
+  font-size: 1.06rem;
+}
+
+.metal-report-card__subtitle {
+  margin: 0.45rem 0 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.84;
+}
+
+.metal-report-card__rank-block {
+  flex-shrink: 0;
+  display: flex;
+  min-width: 4.8rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
+
+.metal-report-card__rank {
+  font-size: 2.65rem;
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.08em;
+}
+
+.metal-report-card--compact .metal-report-card__rank {
+  font-size: 2rem;
+}
+
+.metal-report-card__score {
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.metal-report-card__rank-label {
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--metal-edge) 22%, transparent);
+  background: color-mix(in srgb, var(--metal-base-deep) 72%, transparent);
+  padding: 0.24rem 0.6rem;
+  font-size: 0.54rem;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--metal-edge) 82%, white);
+}
+
+.metal-report-card__summary {
+  margin: 0;
+  max-width: 30rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.metal-report-card--compact .metal-report-card__summary {
+  font-size: 0.74rem;
+}
+
+.metal-report-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.metal-report-card__metric,
+.metal-report-card__badge {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border-radius: 1rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.metal-report-card__metric-label,
+.metal-report-card__badge-label {
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--metal-edge) 72%, white);
+  opacity: 0.82;
+}
+
+.metal-report-card__metric-value,
+.metal-report-card__badge-value {
+  font-size: 0.92rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.metal-report-card--compact .metal-report-card__metric-value,
+.metal-report-card--compact .metal-report-card__badge-value {
+  font-size: 0.8rem;
+}
+
+.metal-report-card__badges {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.metal-report-card__badge {
+  min-width: 5.3rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.16));
+}
+
+.engraved-text {
+  color: color-mix(in srgb, var(--metal-edge) 88%, white);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.14),
+    0 -1px 0 rgba(0,0,0,0.58),
+    0 0 16px rgba(255,255,255,0.08);
+}
+
+.engraved-text-soft {
+  color: color-mix(in srgb, var(--metal-edge) 72%, white);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.1),
+    0 -1px 0 rgba(0,0,0,0.45);
+}
+
+.engraved-panel {
+  border: 1px solid color-mix(in srgb, var(--metal-edge) 18%, transparent);
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.2));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -2px 5px rgba(0,0,0,0.26),
+    0 0 18px rgba(255,255,255,0.03);
+}
+
+@keyframes metal-card-sheen {
+  from {
+    transform: translateX(-78%);
+  }
+  to {
+    transform: translateX(78%);
+  }
+}
+
+@keyframes metal-card-entry-flash {
+  0% {
+    opacity: 0;
+    transform: translateX(-92%);
+  }
+  16% {
+    opacity: 0.18;
+  }
+  48% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(92%);
+  }
+}

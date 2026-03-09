@@ -1,16 +1,14 @@
-﻿
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { PROFILE_FLAG_TERMS_PENDING, useGame } from '../contexts/GameContext';
 import { SupabaseService } from '../services/SupabaseService';
-import { GoldenInvite, UserProfile, AppMode } from '../types';
+import { GoldenInvite, UserProfile } from '../types';
 import { GM_CONFIG } from '../constants';
-import { AssetIcon, ArenaIcon, PlannerIcon, SocialIcon, ConfigIcon, GoogleIcon } from '../components/Icons';
-import { AchievementModal } from '../components/AchievementModal';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
+import './login-ui.css';
+
+const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 
 export const LoginView: React.FC = () => {
-    const { updateUserProfile } = useGame();
     const [isSigningUp, setIsSigningUp] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -43,7 +41,7 @@ export const LoginView: React.FC = () => {
         const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
 
         if (hasNumber || hasSpecial) return { score: 3, label: 'FORTE', color: 'bg-green-500' };
-        return { score: 2, label: 'MÃ‰DIA', color: 'bg-yellow-500' };
+        return { score: 2, label: 'MÉDIA', color: 'bg-yellow-500' };
     };
 
     const handleSignUp = async () => {
@@ -58,7 +56,7 @@ export const LoginView: React.FC = () => {
         // Password Validation
         const strength = getPasswordStrength(password);
         if (strength.score < 3) {
-            setError('A senha deve ter pelo menos 8 caracteres e incluir um nÃºmero ou caractere especial.');
+            setError('A senha deve ter pelo menos 8 caracteres e incluir um número ou caractere especial.');
             return;
         }
 
@@ -71,11 +69,11 @@ export const LoginView: React.FC = () => {
                 inviteRecord = await SupabaseService.getGoldenInviteByCode(normalizedInvite);
                 console.log('Resultado da busca no DB:', inviteRecord);
                 if (!inviteRecord) {
-                    setError(`Convite Dourado "${normalizedInvite}" nÃ£o encontrado no banco de dados.`);
+                    setError(`Convite Dourado "${normalizedInvite}" não encontrado no banco de dados.`);
                     return;
                 }
                 if (inviteRecord.is_used) {
-                    setError('Convite Dourado jÃ¡ utilizado.');
+                    setError('Convite Dourado já utilizado.');
                     return;
                 }
             }
@@ -101,13 +99,13 @@ export const LoginView: React.FC = () => {
                 if (isGoldenInviteGateEnabled && !isMultiUseInvite && inviteRecord) {
                     const consumed = await SupabaseService.consumeGoldenInvite(inviteRecord.id, data.user.id);
                     if (!consumed) {
-                        setError('Convite Dourado jÃ¡ utilizado.');
+                        setError('Convite Dourado já utilizado.');
                         await supabase.auth.signOut();
                         setLoading(false);
                         return;
                     }
                 }
-                // Criar perfil do usuÃ¡rio
+                // Criar perfil do usuário
                 const newProfile: UserProfile = {
                     id: data.user.id,
                     username: email.split('@')[0],
@@ -221,7 +219,7 @@ export const LoginView: React.FC = () => {
                     .maybeSingle();
 
                 if (nicknameLookupError) throw nicknameLookupError;
-                if (!profileByNickname?.email) throw new Error('Nickname nï¿½o encontrado');
+                if (!profileByNickname?.email) throw new Error('Nickname n?o encontrado');
 
                 emailForLogin = profileByNickname.email;
             }
@@ -231,7 +229,7 @@ export const LoginView: React.FC = () => {
             if (error) throw error;
 
             if (data.user) {
-                // Buscar perfil do usuÃ¡rio
+                // Buscar perfil do usuário
                 const { data: profile } = await supabase
                     .from('user_profiles')
                     .select('*')
@@ -286,7 +284,6 @@ export const LoginView: React.FC = () => {
                         role: profile.role,
                         isPremium: profile.is_premium ?? false,
                     };
-                    updateUserProfile(userProfileForState);
                 }
             }
         } catch (error: any) {
@@ -333,7 +330,7 @@ export const LoginView: React.FC = () => {
             });
 
             if (signInError && (signInError.message.includes('Invalid login credentials') || signInError.message.includes('User not found'))) {
-                // Criar conta admin se nÃ£o existir
+                // Criar conta admin se não existir
                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                     email: adminEmail,
                     password: adminPassword,
@@ -436,7 +433,6 @@ export const LoginView: React.FC = () => {
 
                     if (profileError) throw profileError;
 
-                    updateUserProfile(adminProfileForState);
                 }
             } else if (signInData.user) {
                 // Buscar perfil admin existente
@@ -492,7 +488,6 @@ export const LoginView: React.FC = () => {
                         role: profile.role,
                         isPremium: profile.is_premium ?? false,
                     };
-                    updateUserProfile(userProfileForState);
                 }
             } else if (signInError) {
                 throw signInError;
@@ -531,36 +526,34 @@ export const LoginView: React.FC = () => {
                 redirectTo: `${window.location.origin}/auth/callback`,
             });
             if (error) throw error;
-            setMessage('Email de recuperaÃ§Ã£o enviado! Verifique sua caixa de entrada.');
+            setMessage('Email de recuperação enviado! Verifique sua caixa de entrada.');
         } catch (err: any) {
-            setError(err.message || 'Erro ao enviar email de recuperaÃ§Ã£o.');
+            setError(err.message || 'Erro ao enviar email de recuperação.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black animate-fade-in">
-            <div className="w-full max-w-sm mx-auto text-center border border-[var(--skin-accent-color)]/50 rounded-2xl p-6 space-y-6 overflow-hidden bg-black/50 backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.6)]">
-                <div className="relative w-40 h-40 mx-auto flex items-center justify-center mb-8">
-                    <div className="absolute w-[190%] h-[190%] rounded-full bg-[radial-gradient(circle,var(--skin-accent-color)_0%,transparent_70%)] opacity-20 blur-2xl aura-glow"></div>
-                    <div className="absolute w-[210%] h-[210%] rounded-full bg-[conic-gradient(from_0deg,var(--skin-accent-color),transparent,var(--skin-accent-color))] opacity-10 blur-3xl aura-plasma"></div>
+        <div className="login-shell animate-fade-in">
+            <div className="login-card space-y-6">
+                <div className="login-logo-stage">
+                    <div className="login-logo-halo" />
+                    <div className="login-logo-plasma" />
                     <img
                         src="/logo-diamond.png"
                         alt="GLYPH"
-                        className="w-full h-full drop-shadow-[0_0_15px_var(--skin-accent-color)]"
-                        style={{ transform: 'scale(1.35)' }}
+                        className="login-logo-diamond"
                     />
-                    <div className="absolute w-[135%] h-[135%] animate-spin" style={{ animationDuration: '12s' }}>
+                    <div className="login-logo-core-ring">
                         <img
                             src="/logo-core.png"
                             alt="GLYPH Core"
-                            className="w-full h-full rounded-full object-cover"
                         />
                     </div>
                 </div>
 
-                <h1 className="luxe-title-ornate text-4xl font-black uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-b from-[var(--skin-accent-color)] to-white/50 drop-shadow-[0_0_15px_var(--skin-accent-color)] transform scale-110 mb-8">
+                <h1 className="login-title luxe-title-ornate mb-8 scale-110 bg-gradient-to-b from-[var(--skin-accent-color)] to-white/50 bg-clip-text text-4xl font-black uppercase tracking-[0.3em] text-transparent drop-shadow-[0_0_15px_var(--skin-accent-color)]">
                     GLYPH
                 </h1>
 
@@ -583,8 +576,8 @@ export const LoginView: React.FC = () => {
                         {isSigningUp && password.length > 0 && (
                             <div className="px-1 py-1">
                                 <div className="flex justify-between items-center mb-1">
-                                    <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">ForÃ§a da Senha</span>
-                                    <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÃ‰DIA' ? 'text-yellow-500' : 'text-red-500'}`}>
+                                    <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Força da Senha</span>
+                                    <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÉDIA' ? 'text-yellow-500' : 'text-red-500'}`}>
                                         {getPasswordStrength(password).label}
                                     </span>
                                 </div>
@@ -633,7 +626,7 @@ export const LoginView: React.FC = () => {
                     <button
                         onClick={isSigningUp ? handleSignUp : handleLogin}
                         disabled={loading}
-                        className="w-full py-2.5 rounded-xl luxe-skin-button font-black text-sm transition-all flex items-center justify-center gap-2"
+                        className="login-primary-button luxe-skin-button flex items-center justify-center gap-2 text-sm font-black transition-all"
                     >
                         {loading ? (
                             <div className="w-5 h-5 border-4 border-black/30 border-t-black rounded-full animate-spin" />
@@ -646,7 +639,7 @@ export const LoginView: React.FC = () => {
                         <button
                             onClick={handleGoogleLogin}
                             disabled={loading}
-                            className="w-full py-3 rounded-xl bg-white text-black font-bold flex items-center justify-center gap-3 hover:bg-gray-100 transition-all shadow-[0_4px_15px_rgba(255,255,255,0.1)] active:scale-[0.98]"
+                            className="login-google-button"
                         >
                             <svg className="w-5 h-5" viewBox="0 0 24 24">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -663,7 +656,7 @@ export const LoginView: React.FC = () => {
                             onClick={() => setIsSigningUp(!isSigningUp)}
                             className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
                         >
-                            {isSigningUp ? 'JÃ¡ tem uma conta? Entrar' : 'NÃ£o tem conta? Cadastrar'}
+                            {isSigningUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastrar'}
                         </button>
                     </div>
                 </div>
@@ -671,5 +664,3 @@ export const LoginView: React.FC = () => {
         </div>
     );
 };
-
-

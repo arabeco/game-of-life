@@ -72,7 +72,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                 <div className="max-w-[220px]">
                                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Preview</p>
                                     <p className="mt-2 text-sm font-black text-white">{previewLabel}</p>
-                                    <p className="mt-1 text-xs text-gray-500">{era.cycleCount} ciclos � score medio {era.avgScore}</p>
+                                    <p className="mt-1 text-xs text-gray-500">{era.cycleCount} ciclos · score médio {era.avgScore}</p>
                                     <p className="mt-3 text-[11px] leading-relaxed text-gray-400">{currentNarrative}</p>
                                 </div>
                             </div>
@@ -115,7 +115,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Leitura da fase</p>
-                                            <p className="mt-1 text-xs text-gray-500">Resumo sintetico do periodo. Serve como contexto da Era, nao como novo relat�rio.</p>
+                                            <p className="mt-1 text-xs text-gray-500">Resumo sintético do período. Serve como contexto da Era, não como novo relatório.</p>
                                         </div>
                                         <span className="rounded-full border border-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.24em] text-gray-400">IA local</span>
                                     </div>
@@ -129,7 +129,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <label className="text-xs font-bold uppercase tracking-[0.22em] text-gray-400">Skin da Era</label>
-                                        {!isPremium && <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/75">1 gratis � 3 premium</span>}
+                                        {!isPremium && <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/75">1 grátis · 3 premium</span>}
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                         {availableSkins.map((skin) => {

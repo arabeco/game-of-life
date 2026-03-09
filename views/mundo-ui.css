@@ -1,0 +1,11 @@
+.mundo-section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.mundo-inline-search {
+  display: flex;
+  gap: 0.5rem;
+}

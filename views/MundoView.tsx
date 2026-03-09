@@ -15,6 +15,7 @@ import { ArsenalView } from './ArsenalView';
 import { SeasonView } from './SeasonView';
 import { UserAvatar } from '../components/UserAvatar';
 import { ProfileView } from './ProfileView';
+import './mundo-ui.css';
 
 const JoinClanBox: React.FC<{ onCreate: () => void }> = ({ onCreate }) => {
     return (
@@ -98,7 +99,7 @@ const SocialSearch: React.FC<{ onSearchResults: (results: { players: UserProfile
     };
 
     return (
-        <div className="flex space-x-2" id="allies-search">
+        <div className="mundo-inline-search" id="allies-search">
             <div className="relative flex-1">
                 <input
                     type="text"
@@ -140,7 +141,7 @@ const SocialTab: React.FC = () => {
     });
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="mundo-section-stack">
             {clan ? (
                 <>
                     <ClanInfoBox onClick={() => setModal('sanctuary')} />

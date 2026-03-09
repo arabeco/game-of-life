@@ -1,5 +1,3 @@
-﻿
-
 export interface CodexLevel {
   level: number;
   title: string;
@@ -235,7 +233,7 @@ export interface SovereignConfig {
   outfit: string;
   head_under: string; // mascara, oculos, tapa-olho
   helmet: string; // elmos
-  head_over: string; // coroa, bonÃ©, chapÃ©u
+  head_over: string; // coroa, boné, chapéu
   artifact: string;
   glyph: string; // NEW: Glifo slot
   aura: string; // NEW: Aura slot
@@ -249,6 +247,17 @@ export interface SovereignConfig {
 export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+
+export interface ChestOpenResult {
+  success: boolean;
+  chestType: ChestType;
+  itemId?: string;
+  itemName?: string;
+  tier?: number;
+  rarity?: ItemRarity;
+  fragmentsGained: number;
+  isDuplicate?: boolean;
+}
 
 export type LevelUnlocks = Record<UnlockCategory, Record<string, number>>;
 
@@ -401,6 +410,82 @@ export interface ReportAtlasWeek {
   days: ReportAtlasDay[];
 }
 
+export interface ReportIdentitySnapshot {
+  avatarUrl?: string;
+  nickname: string;
+  title?: string;
+  level: number;
+  nobilityRankId?: string;
+  nobilityRankName?: string;
+  clanName?: string | null;
+  clanIcon?: string | null;
+  clanRankName?: string | null;
+  capturedAt: string;
+}
+
+export interface LegacyRenderCycleDigest {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  score: number;
+  focusArena?: string;
+  signatureAction?: string;
+  weeklyAtlas?: ReportAtlasWeek[];
+  identitySnapshot?: ReportIdentitySnapshot;
+}
+
+export interface LegacyRenderEraSummary {
+  key?: string;
+  defaultLabel?: string;
+  skinId?: string;
+  description?: string;
+  finalSummary?: string;
+  aiSummary?: string;
+  cycles?: LegacyRenderCycleDigest[];
+  label: string;
+  startDate: string;
+  endDate: string;
+  avgScore: number;
+  totalHours: number;
+  cycleCount: number;
+  dominantArena: string;
+  topActions: { name: string; count: number }[];
+  bestStreak: number;
+  grade: string;
+  color: string;
+}
+
+export interface LegacyRenderPayload {
+  version: number;
+  createdAt: string;
+  sovereignName: string;
+  fallbackIdentity?: ReportIdentitySnapshot;
+  eras: LegacyRenderEraSummary[];
+  timing?: {
+    normalMs?: number;
+    importantMs?: number;
+    identityMs?: number;
+    eraMs?: number;
+    finalHoldMs?: number;
+  };
+  theme?: {
+    aspectRatio?: string;
+    resolution?: string;
+    background?: string;
+  };
+}
+
+export interface LegacyRenderJobStatus {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'canceled';
+  videoPath?: string | null;
+  posterPath?: string | null;
+  errorMessage?: string | null;
+  createdAt: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+}
 export interface Report {
   id: string;
   cycleId?: string;
@@ -446,6 +531,7 @@ export interface Report {
   seasonId?: string;
   clanPoints?: number;
   expGained?: number;
+  identitySnapshot?: ReportIdentitySnapshot;
   assetProgress: { asset: string; value: number }[];
 }
 
@@ -508,7 +594,7 @@ export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
   joined_at: string;
 };
 
-// Sistema de SantuÃ¡rio - Posicionamento e Tempo
+// Sistema de Santuário - Posicionamento e Tempo
 export type SanctuaryArea = 'meditation' | 'devotion' | 'rest' | 'garden';
 export type GardenAction = 'working' | 'watering' | 'walking';
 
@@ -553,7 +639,7 @@ export interface Cycle {
   startDate: string;
   endDate: string;
   arenaIds: string[]; // IDs das arenas ativas neste ciclo
-  userId: string; // ID do usuÃ¡rio dono do ciclo
+  userId: string; // ID do usuário dono do ciclo
   seasonId?: string;
   isFinished?: boolean; // FIX: Added isFinished to Cycle interface
   arenaConfig?: Record<string, {
@@ -829,6 +915,8 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
+
+
 
 
 

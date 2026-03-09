@@ -1,6 +1,4 @@
-﻿import { toPng } from 'html-to-image';
-
-interface ExportElementOptions {
+﻿interface ExportElementOptions {
     fileName?: string;
     title?: string;
     backgroundColor?: string;
@@ -8,8 +6,22 @@ interface ExportElementOptions {
 }
 
 const CAPTURE_DELAY_MS = 800;
+let toPngLoader: null | ((node: HTMLElement, options?: Record<string, unknown>) => Promise<string>) = null;
 
 const waitForCapture = () => new Promise(resolve => setTimeout(resolve, CAPTURE_DELAY_MS));
+
+export const shouldPreferNativeShare = () => (
+    typeof navigator !== 'undefined'
+    && typeof navigator.share === 'function'
+    && (navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+);
+
+const loadToPng = async () => {
+    if (toPngLoader) return toPngLoader;
+    const module = await import('html-to-image');
+    toPngLoader = module.toPng;
+    return toPngLoader;
+};
 
 const getTargetElement = (elementId: string) => {
     const element = document.getElementById(elementId);
@@ -21,6 +33,7 @@ const getTargetElement = (elementId: string) => {
 
 const captureElementBlob = async (element: HTMLElement, backgroundColor: string) => {
     await waitForCapture();
+    const toPng = await loadToPng();
 
     const dataUrl = await toPng(element, {
         cacheBust: true,

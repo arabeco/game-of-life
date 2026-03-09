@@ -16,6 +16,41 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
+            const normalizedId = id.replace(/\\/g, '/');
+
+            if (normalizedId.includes('html-to-image') || normalizedId.includes('html2canvas')) return 'capture';
+            if (
+              normalizedId.includes('/components/Legacy') ||
+              normalizedId.includes('/views/LegacyRenderView') ||
+              normalizedId.includes('/utils/legacyRenderPayload') ||
+              normalizedId.includes('/scripts/legacy-render-worker')
+            ) return 'legacy';
+            if (
+              normalizedId.includes('/constants/GMboard') ||
+              normalizedId.includes('/constants/items') ||
+              normalizedId.includes('/constants/nobility') ||
+              normalizedId.includes('/constants/oracle') ||
+              normalizedId.includes('/data/initialCodex')
+            ) return 'game-data';
+            if (
+              normalizedId.includes('/contexts/GameContext') ||
+              normalizedId.includes('/contexts/CodexBuilderContext') ||
+              normalizedId.includes('/contexts/TutorialContext') ||
+              normalizedId.includes('/contexts/gameDomains/') ||
+              normalizedId.includes('/utils/coreLoopUtils') ||
+              normalizedId.includes('/utils/progressUtils') ||
+              normalizedId.includes('/utils/reportAtlasUtils') ||
+              normalizedId.includes('/utils/taskDomain') ||
+              normalizedId.includes('/utils/taskMutationUtils') ||
+              normalizedId.includes('/services/SupabaseService') ||
+              normalizedId.includes('/services/SimpleRateLimiter')
+            ) return 'game-core';
+            if (
+              normalizedId.includes('/node_modules/@ai-sdk/') ||
+              normalizedId.includes('/node_modules/ai/')
+            ) return 'oracle-ai';
+            if (normalizedId.includes('/node_modules/react-easy-crop/')) return 'cropper';
+
             if (id.includes('node_modules')) {
               if (id.includes('@supabase') || id.includes('supabase')) return 'supabase';
               if (id.includes('recharts') || id.includes('d3-') || id.includes('chart')) return 'charts';

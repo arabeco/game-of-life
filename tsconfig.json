@@ -50,6 +50,7 @@
                     "public",
                     "supabase/functions",
                     "api_checkout_nextjs_sample.ts",
-                    "contexts/GameContext_utf8.tsx"
+                    "contexts/GameContext_utf8.tsx",
+                    "temp_sephirotfog_original.tsx"
                 ]
 }

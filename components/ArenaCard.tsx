@@ -4,20 +4,9 @@ import { DollarSignIcon, FlameIcon, CheckIcon, UsersIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { calculateArenaProgress } from '../utils/progressUtils';
-
-const ASSET_ACCENT_COLORS: Record<string, string> = {
-    consciencia: '#1a2a4a',
-    'espaco-mental': '#0f2238',
-    espiritualidade: '#1a0a2a',
-    proposito: '#2a0f1a',
-    projetos: '#1a2a2a',
-    conexoes: '#1a2a1a',
-    trabalho: '#2a2a1a',
-    financas: '#2a1a00',
-    hobbies: '#2a0f2a',
-    fisico: '#3a0a0a',
-    geral: '#1f1f1f',
-};
+import { EmojiGlyph } from './EmojiGlyph';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import './arena-ui.css';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -183,7 +172,7 @@ const ActionIcon: React.FC<{
         if (isClanQuest) {
              return (
                  <div className="relative w-full h-full flex items-center justify-center">
-                     <span className="text-sm text-white">{displayIcon}</span>
+                     <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />
                      {actionsRemaining > 0 && (
                          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full min-w-[12px] text-center border border-black">
                              {actionsRemaining}
@@ -192,12 +181,12 @@ const ActionIcon: React.FC<{
                  </div>
              );
         }
-        if (isSeasonQuest) return <span className="text-sm text-white">{displayIcon}</span>;
+        if (isSeasonQuest) return <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />;
 
         switch (displayIcon) {
             case '$': return <DollarSignIcon className="w-4 h-4 text-white/80" />;
             case '🔥': return <FlameIcon className="w-4 h-4 text-white/80" />;
-            default: return <span className="text-sm text-white">{displayIcon}</span>;
+            default: return <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />;
         }
     };
     return (
@@ -367,7 +356,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     }).progressPercent;
 
     const getIcon = () => {
-        return <span className="text-xl leading-none">{arena.icon}</span>;
+        return <EmojiGlyph symbol={arena.icon || '🏆'} size="arena" className="text-white" />;
     };
 
     const isOverview = variant === 'overview';
@@ -450,7 +439,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                             className={`w-full h-full border ${isDragOver ? 'border-white' : 'border-[var(--accent-bronze)]'} rounded-sm relative`}
                                         >
                                             <div className="transform flex items-center justify-center h-full w-full">
-                                                <span className="transform -rotate-45 text-sm">{action.icon}</span>
+                                                <EmojiGlyph symbol={action.icon || '🏆'} size="milestone" className="transform -rotate-45 text-white" />
                                             </div>
                                             {isCompleted && (
                                                 <div className="absolute inset-0 bg-black/60 rounded-sm flex items-center justify-center">

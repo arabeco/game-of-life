@@ -15,11 +15,12 @@ import { useTutorial } from '../contexts/TutorialContext';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
+import '../components/core-ui.css';
 
 const DayHeader: React.FC<{ currentDate: Date }> = ({ currentDate }) => {
-    const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase();
+    const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' });
     return (
-        <div className="text-center text-sm font-bold text-gray-400 py-2 bg-[#111111]">
+        <div className="text-center text-[12px] font-semibold text-gray-400 py-2 bg-[#0f0f10] tracking-[0.04em] capitalize border-b border-white/6">
             {day}
         </div>
     );
@@ -1083,42 +1084,42 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const bayGridRows = isSingleRow ? 'grid-rows-1' : 'grid-rows-2';
 
     return (
-        <div id="planner-container" className="flex flex-col h-full min-h-0 bg-[#111111] overflow-hidden">
+        <div id="planner-container" className="flex flex-col h-full min-h-0 bg-[#0d0d0e] overflow-hidden">
             {dragState.isDragging && (
                 <div style={{ position: 'fixed', top: dragState.currentPosition.y, left: dragState.currentPosition.x, transform: `translate(-${dragState.pointerOffset.x}px, -${dragState.pointerOffset.y}px)`, pointerEvents: 'none', zIndex: 1000 }}>
                     {dragState.ghostElement}
                 </div>
             )}
 
-            <div className="flex-shrink-0 z-0 bg-[#111111]/95 backdrop-blur-sm border-b border-white/5 transition-all duration-300 relative -mt-4 pt-4">
+            <div className="flex-shrink-0 z-0 bg-[#0f0f10]/95 backdrop-blur-sm border-b border-white/6 transition-all duration-300 relative -mt-4 pt-4">
                 <div className="bg-transparent">
-                    <div className="relative flex items-center justify-between px-2 text-lg font-bold h-10 mt-1">
+                    <div className="relative flex items-center justify-between px-3 text-lg font-bold h-11 mt-1">
                         <div className="flex items-center space-x-1" id="planner-tools">
-                            <button onClick={() => setChecklistVisible(true)} className="p-1 rounded-full hover:bg-white/10 relative text-gray-400 hover:text-white transition-colors">
+                            <button onClick={() => setChecklistVisible(true)} className="p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors">
                                 {allTasksCompleted ? <FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}
                             </button>
-                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
                                 <LightbulbIcon className="w-4 h-4" />
                             </button>
-                            <button id="report-button" onClick={onReportsClick} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                            <button id="report-button" onClick={onReportsClick} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
                                 <ClockIcon className="w-4 h-4" />
                             </button>
                         </div>
                         <div className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-1" id="cycle-hud">
-                            <button onClick={() => changeDate(-1)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
-                            <span className="uppercase tracking-wider text-sm w-28 text-center text-gray-300">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
-                            <button onClick={() => changeDate(1)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
+                            <button onClick={() => changeDate(-1)} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
+                            <span className="tracking-[0.08em] text-[13px] font-semibold w-32 text-center text-gray-200 capitalize">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
+                            <button onClick={() => changeDate(1)} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
                         </div>
-                        <div className="flex items-center bg-black/40 rounded-full p-0.5 text-[10px] border border-white/5" id="view-mode-selector">
-                            <button onClick={() => setViewMode('day')} className={`px-2 py-0.5 rounded-full transition-colors ${viewMode === 'day' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>D</button>
-                            <button id="eras-button" onClick={() => setViewMode('week')} className={`px-2 py-0.5 rounded-full transition-colors ${viewMode === 'week' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>S</button>
+                        <div className="flex items-center bg-white/[0.03] rounded-full p-0.5 text-[10px] border border-white/6" id="view-mode-selector">
+                            <button onClick={() => setViewMode('day')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'day' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Dia</button>
+                            <button id="eras-button" onClick={() => setViewMode('week')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'week' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Semana</button>
                         </div>
                     </div>
 
                     <div className={`flex items-center space-x-2 my-0 w-full overflow-visible pb-1 px-2 transition-all duration-300`}>
                         <div
                             data-testid="bay-area"
-                            className={`flex-grow min-w-0 bg-black/20 border border-white/5 rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
+                            className={`flex-grow min-w-0 core-surface rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
                         >
                             <div className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden pr-2 scrollbar-hide items-center`}>
                                 {Object.entries(unifiedBayAreaItems).filter(([_, payload]) => {
@@ -1134,12 +1135,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                          const nextTaskId = payload.taskIds && payload.taskIds.length > 0 ? payload.taskIds[0] : undefined;
                                          
                                          return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} taskId={nextTaskId} onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })} />);
-                                     }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 uppercase tracking-wider row-span-full col-span-full">Sem ações</div>)}
+                                     }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 tracking-[0.12em] row-span-full col-span-full">Sem ações</div>)}
                             </div>
                         </div>
                         <div className={`relative flex-shrink-0 ${bayAreaHeight} transition-all duration-300`}>
-                            <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-10 h-full bg-black/20 border border-white/5 rounded-2xl flex items-center justify-center hover:bg-white/5 transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" /></svg></button>
-                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 bg-[#1a1a1a] border border-white/10 rounded-xl p-2 space-y-1 z-50 shadow-2xl animate-fade-in"><h4 className="text-[10px] font-bold text-center text-gray-500 pb-1 border-b border-white/5 uppercase tracking-widest">MARCOS</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
+                            <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-10 h-full core-surface rounded-2xl flex items-center justify-center hover:bg-white/[0.05] transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" /></svg></button>
+                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 core-surface-strong rounded-xl p-2 space-y-1 z-50 animate-fade-in"><h4 className="core-label text-center pb-1 border-b border-white/6">Marcos</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
                         </div>
                     </div>
                 </div>
@@ -1178,9 +1179,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 {/* Oracle Input Panel */}
                 {showOracleInput && (
                     <div className="absolute bottom-full mb-4 right-0 w-72 z-30">
-                        <GlassCard variant="gold" className="p-2 backdrop-blur-xl border border-[var(--skin-accent-color)]/30 shadow-2xl">
+                        <GlassCard variant="gold" className="p-2 backdrop-blur-xl border border-[var(--skin-accent-color)]/20 shadow-[0_16px_40px_rgba(0,0,0,0.32)]">
                             <div className="flex flex-col space-y-2">
-                                <label className="text-[10px] uppercase font-bold text-[var(--skin-accent-color)] tracking-wider ml-1">Oráculo</label>
+                                <label className="core-label text-[var(--skin-accent-color)] ml-1">Oráculo</label>
                                 <div className="flex items-center space-x-2">
                                     <input
                                         ref={oracleInputRef}
@@ -1206,7 +1207,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     </div>
                 )}
 
-                <div className="flex flex-col items-center bg-black/50 backdrop-blur-lg border border-[var(--glass-border)] rounded-full p-1 space-y-1">
+                <div className="flex flex-col items-center bg-black/50 backdrop-blur-lg border border-white/8 rounded-full p-1 space-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
                     <button
                         id="focus-mode-button"
                         onClick={() => setShowOracleInput(!showOracleInput)}

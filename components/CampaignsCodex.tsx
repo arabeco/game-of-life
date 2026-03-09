@@ -62,7 +62,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         const title = `Nova Campanha ${validCampaigns.length + 1}`;
         const createdCampaign = await addCampaign({
             title,
-            description: 'Descrição da campanha...',
+            description: 'DescriÃ§Ã£o da campanha...',
             type: 'sequential',
             arenaIds: [],
             arenaConfig: {},
@@ -85,7 +85,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
     const handleDeleteCampaign = () => {
         if (!selectedCampaign) return;
-        if (confirm('Tem certeza que deseja excluir esta campanha? TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
+        if (confirm('Tem certeza que deseja excluir esta campanha? TODAS as arenas e aÃ§Ãµes dentro dela serÃ£o excluÃ­das permanentemente.')) {
             deleteCampaign(selectedCampaign.id);
             setSelectedCampaignId(null);
         }
@@ -126,7 +126,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         if (!selectedCampaign) return;
         
         if (isCodexCampaign) {
-            alert("Não é possível remover arenas de uma campanha de Codex.");
+            alert("NÃ£o Ã© possÃ­vel remover arenas de uma campanha de Codex.");
             return;
         }
 

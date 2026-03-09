@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { ITEMS_DB, ItemDef } from '../../constants/items';
+import { resolveItemDef, getCatalogItems } from '../../constants/items';
 import { ECONOMY } from '../../constants/economy';
 import { CheckIcon, SparklesIcon, RefreshCwIcon, Trash2Icon } from '../Icons';
+import { getTierVisual, withAlpha } from '../../constants/rarityVisuals';
 
 type ForgeTab = 'craft' | 'recycle';
 
@@ -16,7 +17,7 @@ export const TheForge: React.FC = () => {
 
     // --- CRAFTING LOGIC ---
     const craftableItems = useMemo(() => {
-        return ITEMS_DB.filter(item => item.tier === selectedTier && !item.isGoldExclusive && !item.isSeasonExclusive && !item.isRankExclusive);
+        return getCatalogItems(item => item.tier === selectedTier && !item.isGoldExclusive && !item.isSeasonExclusive && !item.isRankExclusive);
     }, [selectedTier]);
 
     // Group by category for T4/T5
@@ -57,7 +58,7 @@ export const TheForge: React.FC = () => {
     // --- RECYCLING LOGIC ---
     const recyclables = useMemo(() => {
         return inventory.filter(inst => !inst.isEquipped).map(inst => {
-            const def = ITEMS_DB.find(d => d.id === inst.id);
+            const def = resolveItemDef(inst.id);
             return { ...inst, def };
         }).filter(i => i.def); // Ensure definition exists
     }, [inventory]);
@@ -92,14 +93,11 @@ export const TheForge: React.FC = () => {
     };
 
     const getRarityColor = (tier: number) => {
-        switch (tier) {
-            case 1: return 'text-[#A0522D] border-[#A0522D]/30'; // Comum: Marrom
-            case 2: return 'text-[#C0C0C0] border-[#C0C0C0]/30'; // Incomum: Prata
-            case 3: return 'text-[#FFD700] border-[#FFD700]/30'; // Raro: Ouro
-            case 4: return 'text-blue-500 border-blue-500/30';   // Épico: Azul
-            case 5: return 'text-purple-500 border-purple-500/30'; // Lendário: Roxo
-            default: return 'text-gray-400 border-gray-400/30';
-        }
+        const visual = getTierVisual(tier);
+        return {
+            textColor: visual.hex,
+            borderColor: withAlpha(visual.rgb, 0.3),
+        };
     };
 
     return (
@@ -147,10 +145,10 @@ export const TheForge: React.FC = () => {
                         {selectedTier <= 3 ? (
                             // T1-T3: Specific Items
                             craftableItems.map(item => (
-                                <GlassCard key={item.id} className={`p-4 flex flex-col items-center space-y-3 group hover:bg-white/5 transition-all border ${getRarityColor(item.tier).split(' ')[1]}`}>
+                                <GlassCard key={item.id} className="p-4 flex flex-col items-center space-y-3 group hover:bg-white/5 transition-all border" style={{ borderColor: getRarityColor(item.tier).borderColor }}>
                                     <div className="text-4xl group-hover:scale-110 transition-transform">{item.icon}</div>
                                     <div className="text-center">
-                                        <div className={`font-bold text-sm ${getRarityColor(item.tier).split(' ')[0]}`}>{item.name}</div>
+                                        <div className="font-bold text-sm" style={{ color: getRarityColor(item.tier).textColor }}>{item.name}</div>
                                         <div className="text-[10px] text-gray-500 uppercase">{item.category}</div>
                                     </div>
                                     <button
@@ -165,10 +163,10 @@ export const TheForge: React.FC = () => {
                         ) : (
                             // T4-T5: Category Lottery
                             categories.map(cat => (
-                                <GlassCard key={cat} className={`p-6 flex flex-col items-center space-y-4 group hover:bg-white/5 transition-all border ${getRarityColor(selectedTier).split(' ')[1]}`}>
+                                <GlassCard key={cat} className="p-6 flex flex-col items-center space-y-4 group hover:bg-white/5 transition-all border" style={{ borderColor: getRarityColor(selectedTier).borderColor }}>
                                     <div className="text-5xl group-hover:animate-pulse">❓</div>
                                     <div className="text-center">
-                                        <div className={`font-bold text-lg ${getRarityColor(selectedTier).split(' ')[0]}`}>{cat.toUpperCase()}</div>
+                                        <div className="font-bold text-lg" style={{ color: getRarityColor(selectedTier).textColor }}>{cat.toUpperCase()}</div>
                                         <div className="text-xs text-gray-500">Item Aleatório</div>
                                     </div>
                                     <button
@@ -208,7 +206,7 @@ export const TheForge: React.FC = () => {
                                     <div className="flex items-center space-x-4">
                                         <div className="text-2xl">{item.def?.icon}</div>
                                         <div>
-                                            <div className={`font-bold text-sm ${getRarityColor(item.def?.tier || 1).split(' ')[0]}`}>{item.def?.name}</div>
+                                            <div className="font-bold text-sm" style={{ color: getRarityColor(item.def?.tier || 1).textColor }}>{item.def?.name}</div>
                                             <div className="text-[10px] text-gray-500 uppercase">T{item.def?.tier} • {item.def?.category}</div>
                                         </div>
                                     </div>

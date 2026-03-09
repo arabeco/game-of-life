@@ -1,21 +1,28 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { ITEMS_DB, ItemDef, resolveItemDef } from '../../constants/items';
-import { CheckIcon, SovereignIcon, GlyphIcon } from '../Icons';
+import { ItemDef, resolveItemDef, isItemCatalogVisible } from '../../constants/items';
+import { CheckIcon, SovereignIcon } from '../Icons';
 import { SovereignCustomizer } from '../SovereignCustomizer';
 import { ItemDetailModal } from '../ItemDetailModal';
 import { ChestType } from '../../types';
 import { ChestOpeningModal } from '../ChestOpeningModal';
+import { getChestVisual, getTierVisual, normalizeVisualRarity, withAlpha } from '../../constants/rarityVisuals';
 
-type InventoryTab = 'all' | 'skins' | 'character' | 'ui' | 'glyphs' | 'insignias' | 'chests';
+type InventoryTab = 'all' | 'sovereign' | 'glyph' | 'interface' | 'insignias' | 'chests';
+type InventoryEntry = {
+    id: string;
+    instanceId: string;
+    acquiredAt: string;
+    isEquipped?: boolean;
+    def?: ItemDef;
+};
 
 const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'all', label: 'Tudo', categories: [] },
-    { id: 'skins', label: 'Skins', categories: ['skin', 'hair', 'ui_skin'] },
-    { id: 'character', label: 'Personagem', categories: ['skin', 'hair'] },
-    { id: 'ui', label: 'Interface', categories: ['border', 'ui_skin', 'banner', 'aura'] },
-    { id: 'glyphs', label: 'Glifos', categories: ['glyph', 'orb', 'plate'] },
+    { id: 'sovereign', label: 'Soberano', categories: ['skin', 'hair', 'artifact'] },
+    { id: 'glyph', label: 'Glifo', categories: ['glyph', 'aura', 'orb', 'plate'] },
+    { id: 'interface', label: 'Interface', categories: ['border', 'ui_skin', 'banner'] },
     { id: 'insignias', label: 'Insígnias', categories: ['insignia'] },
     { id: 'chests', label: 'Baús', categories: ['chest'] },
 ];
@@ -27,38 +34,47 @@ export const Inventory: React.FC = () => {
     // --- Editors State ---
     const [showSovereignEditor, setShowSovereignEditor] = useState(false);
     const [selectedItem, setSelectedItem] = useState<{ def: ItemDef, instanceId: string } | null>(null);
-    const [showGlyphEditor, setShowGlyphEditor] = useState(false);
     const [showChestOpeningModal, setShowChestOpeningModal] = useState<ChestType | null>(null);
-
-    const normalizedRole = userProfile?.role?.toLowerCase?.() || '';
-    const isGM = normalizedRole === 'admin' || normalizedRole === 'gm';
 
     // Filter Tabs based on App Mode
     const visibleTabs = useMemo(() => {
         if (appMode === 'BASIC') {
             // Hide cosmetic tabs and chests in BASIC mode (Focus on productivity)
-            return TABS.filter(t => !['skins', 'character', 'ui', 'glyphs', 'insignias', 'chests'].includes(t.id));
+            return TABS.filter(t => !['sovereign', 'glyph', 'interface', 'insignias', 'chests'].includes(t.id));
         }
         return TABS;
     }, [appMode]);
 
     // Reset active tab if it becomes invisible
     useEffect(() => {
-        if (appMode === 'BASIC' && ['skins', 'character', 'ui', 'glyphs', 'insignias', 'chests'].includes(activeTab)) {
+        if (appMode === 'BASIC' && ['sovereign', 'glyph', 'interface', 'insignias', 'chests'].includes(activeTab)) {
             setActiveTab('all');
         }
     }, [appMode, activeTab]);
 
+    const isEquipped = (itemId: string, category: string, imageUrl?: string) => {
+        if (category === 'skin') return userProfile.sovereign.outfit === itemId;
+        if (category === 'hair') return userProfile.sovereign.hairStyle === itemId;
+        if (category === 'artifact') return userProfile.sovereign.artifact === itemId;
+        if (category === 'glyph') return userProfile.sovereign.glyph === itemId;
+        if (category === 'aura') return userProfile.sovereign.aura === itemId;
+        if (category === 'orb') return userProfile.sovereign.orb === itemId;
+        if (category === 'plate') return [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate, userProfile.sovereign.glyphPlate].includes(itemId);
+        if (category === 'border') return userProfile.border === itemId;
+        if (category === 'ui_skin') return userProfile.skin === itemId;
+        if (category === 'banner') return !!imageUrl && userProfile.bannerUrl === imageUrl;
+        return false;
+    };
+
     const sourceItems = useMemo(() => {
-        // Normal user sees their inventory
-        return inventory.map(inst => {
+        return inventory.map<InventoryEntry>(inst => {
             const def = resolveItemDef(inst.id);
-            // Use item_id from DB if resolving fails (though inst.id is usually item_id in local context if mapped)
-            // But let's be robust: inst.id should be the ITEM ID (e.g., 'skin_gold')
-            const resolvedId = def?.id || inst.id;
-            return { ...inst, id: resolvedId, def };
-        }).filter(i => i.def); // Filter out items with missing definitions
-    }, [inventory]);
+            return { ...inst, id: def?.id || inst.id, def };
+        }).filter((item): item is InventoryEntry & { def: ItemDef } => {
+            if (!item.def) return false;
+            return isItemCatalogVisible(item.def) || isEquipped(item.id, item.def.category, item.def.imageUrl);
+        });
+    }, [inventory, userProfile]);
 
     const filteredItems = useMemo(() => {
         return sourceItems.filter(item => {
@@ -69,31 +85,34 @@ export const Inventory: React.FC = () => {
         }).sort((a, b) => (b.def?.tier || 0) - (a.def?.tier || 0)); // Sort by Tier Desc
     }, [sourceItems, activeTab]);
 
-    const isEquipped = (itemId: string, category: string) => {
-        if (category === 'skin') return userProfile.sovereign.outfit === itemId;
-        if (category === 'hair') return userProfile.sovereign.hairStyle === itemId;
-        if (category === 'glyph') return userProfile.sovereign.glyph === itemId;
-        if (category === 'aura') return userProfile.sovereign.aura === itemId;
-        if (category === 'orb') return userProfile.sovereign.orb === itemId;
-        if (category === 'plate') return [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate, userProfile.sovereign.glyphPlate].includes(itemId);
-        if (category === 'border') return userProfile.border === itemId;
-        if (category === 'ui_skin') return userProfile.skin === itemId;
-        return false;
-    };
+    const equippedSummary = useMemo(() => {
+        const slots = [
+            { label: 'Traje', itemId: userProfile.sovereign.outfit },
+            { label: 'Artefato', itemId: userProfile.sovereign.artifact },
+            { label: 'Glifo', itemId: userProfile.sovereign.glyph },
+            { label: 'Orbe', itemId: userProfile.sovereign.orb || 'none' },
+            { label: 'Placa S', itemId: userProfile.sovereign.sovereignPlate || 'none' },
+            { label: 'Placa A', itemId: userProfile.sovereign.artifactPlate || 'none' },
+            { label: 'Placa G', itemId: userProfile.sovereign.glyphPlate || 'none' },
+            { label: 'Borda', itemId: userProfile.border },
+            { label: 'Tema', itemId: userProfile.skin },
+        ];
+
+        return slots.map(slot => ({
+            label: slot.label,
+            name: slot.itemId && slot.itemId !== 'none' && slot.itemId !== 'default'
+                ? (resolveItemDef(slot.itemId)?.name || slot.itemId)
+                : 'Nenhum',
+        }));
+    }, [userProfile]);
 
     const getRarityStyles = (tier: number) => {
-        switch(tier) {
-            case 1: return { text: 'text-[#A0522D]', bg: 'bg-[#A0522D]', shadow: '' }; // Comum: Marrom
-            case 2: return { text: 'text-[#C0C0C0]', bg: 'bg-[#C0C0C0]', shadow: '' }; // Incomum: Prata
-            case 3: return { text: 'text-[#FFD700]', bg: 'bg-[#FFD700]', shadow: '' }; // Raro: Ouro
-            case 4: return { text: 'text-blue-500', bg: 'bg-blue-500', shadow: '' };   // Épico: Azul
-            case 5: return { 
-                text: 'text-purple-500', 
-                bg: 'bg-purple-500', 
-                shadow: 'shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
-            }; // Lendário: Roxo
-            default: return { text: 'text-gray-400', bg: 'bg-gray-400', shadow: '' };
-        }
+        const visual = getTierVisual(tier);
+        return {
+            textColor: visual.hex,
+            dotColor: visual.hex,
+            shadow: tier >= 4 ? `0 0 15px ${withAlpha(visual.rgb, 0.28)}` : undefined,
+        };
     };
 
     const userChests = userProfile.chests || [];
@@ -108,16 +127,6 @@ export const Inventory: React.FC = () => {
         return '📦'; // Fallback
     };
 
-    const getChestColor = (type: string) => {
-        const normalized = type.toLowerCase();
-        if (normalized.includes('comum')) return 'text-[#A0522D]'; // Marrom
-        if (normalized.includes('incomum')) return 'text-[#C0C0C0]'; // Prata
-        if (normalized.includes('ciclo') || normalized.includes('raro')) return 'text-[#FFD700]'; // Ouro
-        if (normalized.includes('radiante') || normalized.includes('épico') || normalized.includes('epico')) return 'text-blue-500'; // Azul
-        if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) return 'text-purple-500'; // Roxo
-        return 'text-gray-400';
-    };
-
     const getChestLabel = (type: string) => {
         const normalized = type.toLowerCase();
         if (normalized === 'ciclo') return 'RARO';
@@ -126,18 +135,14 @@ export const Inventory: React.FC = () => {
 
     const getChestItemDef = (type: string): ItemDef => {
         const normalized = type.toLowerCase();
-        let rarity: any = 'common';
-        if (normalized.includes('incomum')) rarity = 'uncommon';
-        else if (normalized.includes('raro') || normalized.includes('ciclo')) rarity = 'rare';
-        else if (normalized.includes('épico') || normalized.includes('epico') || normalized.includes('radiante')) rarity = 'epic';
-        else if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) rarity = 'legendary';
+        const rarity = normalizeVisualRarity(type) || (normalized.includes('ciclo') ? 'rare' : 'common');
 
         return {
             id: `chest_${normalized}`,
             name: type,
             category: 'chest',
             tier: rarity === 'legendary' ? 5 : rarity === 'epic' ? 4 : rarity === 'rare' ? 3 : rarity === 'uncommon' ? 2 : 1,
-            rarity,
+            rarity: rarity === 'quest' ? 'rare' : rarity,
             icon: getChestIcon(type),
             description: 'Um baú contendo recompensas misteriosas. Abra para descobrir o que há dentro!'
         };
@@ -154,6 +159,18 @@ export const Inventory: React.FC = () => {
                     <SovereignIcon className="w-5 h-5 text-black/70 group-hover:scale-110 transition-transform" />
                     <span className="text-xs font-bold uppercase tracking-widest text-black/80">Editor Soberano</span>
                 </button>
+            </div>
+
+            <div className="flex-none">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500">Espelho do soberano</div>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700">
+                    {equippedSummary.map(slot => (
+                        <div key={slot.label} className="min-w-[110px] rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+                            <div className="text-[9px] font-black uppercase tracking-[0.22em] text-gray-500">{slot.label}</div>
+                            <div className="mt-1 truncate text-xs font-semibold text-white">{slot.name}</div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Filter Tabs */}
@@ -190,7 +207,7 @@ export const Inventory: React.FC = () => {
                                     <span className="text-4xl">{getChestIcon(chest.type)}</span>
                                 </div>
                                 <div className="absolute bottom-2 left-1 right-1 text-center">
-                                    <span className={`text-[9px] font-bold uppercase tracking-wider truncate block w-full drop-shadow-md ${getChestColor(chest.type)}`}>
+                                    <span className="block w-full truncate text-[9px] font-bold uppercase tracking-wider drop-shadow-md" style={{ color: getChestVisual(chest.type).hex }}>
                                         {getChestLabel(chest.type)}
                                     </span>
                                 </div>
@@ -208,14 +225,14 @@ export const Inventory: React.FC = () => {
                         </div>
                     ) : (
                         filteredItems.map(item => {
-                            const equipped = isEquipped(item.id, item.def?.category || '');
+                            const equipped = isEquipped(item.id, item.def?.category || '', item.def?.imageUrl);
                             const styles = getRarityStyles(item.def?.tier || 1);
 
                             return (
                                 <GlassCard 
                                     key={item.instanceId} 
-                                    className={`relative group aspect-square p-2 flex flex-col items-center justify-center transition-all border cursor-pointer hover:border-white/50 ${equipped ? 'bg-white/5 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : styles.shadow}`}
-                                    style={{ borderColor: 'var(--skin-accent-color)' }}
+                                    className="relative group aspect-square p-2 flex flex-col items-center justify-center transition-all border cursor-pointer hover:border-white/50"
+                                    style={{ borderColor: 'var(--skin-accent-color)', boxShadow: equipped ? '0 0 15px rgba(34,197,94,0.1)' : styles.shadow }}
                                     onClick={() => item.def && setSelectedItem({ def: item.def, instanceId: item.instanceId })}
                                 >
                                     {equipped && (
@@ -240,7 +257,7 @@ export const Inventory: React.FC = () => {
                                     </div>
                                     
                                     {/* Rarity Indicator - Discrete Dot */}
-                                    <div className={`absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full ${styles.bg} ${item.def?.tier === 5 ? 'animate-pulse shadow-[0_0_4px_rgba(250,204,21,0.6)]' : ''}`} title={`Tier ${item.def?.tier}`} />
+                                    <div className={`absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full ${item.def?.tier === 5 ? 'animate-pulse' : ''}`} style={{ backgroundColor: styles.dotColor, boxShadow: styles.shadow || undefined }} title={`Tier ${item.def?.tier}`} />
                                 </GlassCard>
                             );
                         })
@@ -262,7 +279,8 @@ export const Inventory: React.FC = () => {
                             let type: ChestType = 'Comum';
                             const normalized = chestName.toLowerCase();
                             
-                            if (normalized.includes('incomum')) type = 'Incomum';
+                            if (normalized.includes('skin') && normalized.includes('comum')) type = 'Skin Comum';
+                            else if (normalized.includes('incomum')) type = 'Incomum';
                             else if (normalized.includes('raro') || normalized.includes('ciclo')) type = 'Raro';
                             else if (normalized.includes('épico') || normalized.includes('epico') || normalized.includes('radiante')) type = 'Épico';
                             else if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) type = 'Lendário';

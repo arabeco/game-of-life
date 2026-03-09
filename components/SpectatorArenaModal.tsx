@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { CheckIcon, CloseIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
 import { Portal } from './Portal';
+import './arena-ui.css';
 
 // Helper to render plasma background (reused from ArenaDetailModal)
 const hexToRgb = (hex: string) => {

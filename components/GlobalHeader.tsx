@@ -1,12 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
-import { MoodModal } from './MoodModal';
-import { OracleFeed } from './OracleFeed';
-import { ClanDetailModal } from './ClanDetailModal';
-import { RestScreen } from './RestScreen';
 import { SparklesIcon, LockIcon } from './Icons';
+import './global-header.css';
+
+const MoodModal = React.lazy(() => import('./MoodModal').then(m => ({ default: m.MoodModal })));
+const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default: m.OracleFeed })));
+const ClanDetailModal = React.lazy(() => import('./ClanDetailModal').then(m => ({ default: m.ClanDetailModal })));
+const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default: m.RestScreen })));
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
     const { userProfile, oracleMessages, notifications, appMode, clan } = useGame();
@@ -80,16 +82,16 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     };
 
     // Common style for header chips
-    const chipStyle = "flex flex-col items-center justify-center w-20 h-9 flex-shrink-0 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl relative z-50 shadow-lg";
+    const chipStyle = "shell-chip";
 
     return (
         <>
-            <header className="fixed left-0 right-0 z-40 bg-gradient-to-b from-black/90 via-black/70 to-transparent backdrop-blur-sm safe-area-top" style={{ top: topOffsetPx }}>
+            <header className="shell-header fixed left-0 right-0 z-40 safe-area-top" style={{ top: topOffsetPx }}>
                 <div className="max-w-7xl mx-auto relative flex items-center justify-between h-20 px-4 text-xs font-semibold text-gray-300">
                     {/* Date Chip */}
-                    <div className="flex flex-col items-center justify-center w-20 h-9 flex-shrink-0 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl relative z-50 shadow-lg">
-                        <span className="text-[10px] font-black tracking-widest text-[var(--skin-accent-color)] uppercase leading-none mb-0.5 luxe-title-ornate">{day}</span>
-                        <span className="text-[12px] font-bold text-[var(--skin-accent-color)] tracking-widest leading-none luxe-title-ornate">{dateStr}</span>
+                    <div className={chipStyle}>
+                        <span className="text-[10px] font-semibold tracking-[0.12em] text-[var(--skin-accent-color)] uppercase leading-none mb-0.5">{day}</span>
+                        <span className="text-[12px] font-semibold text-[var(--skin-accent-color)] tracking-[0.08em] leading-none">{dateStr}</span>
                     </div>
                     
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[calc(100%-12rem)] flex items-center justify-center pointer-events-none">
@@ -119,7 +121,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                 <button
                                     id="lock-icon-button"
                                     onClick={() => setRestScreenOpen(true)}
-                                    className="absolute right-full mr-2 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-[var(--skin-accent-color)] transition-all group shadow-lg backdrop-blur-sm"
+                                    className="shell-float-button absolute right-full mr-2 group"
                                     aria-label="Tela de Descanso"
                                 >
                                     <LockIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
@@ -152,7 +154,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         />
                                         )}
                                     </div>
-                                    <div className="absolute top-[3.3rem] bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border group-hover:scale-110 transition-transform z-10" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
+                                    <div className="shell-level-badge absolute top-[3.3rem] z-10 group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
                                         <span className="text-[11px] font-black text-white">{userProfile.level}</span>
                                     </div>
                                 </button>
@@ -161,7 +163,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                 <button
                                     id="header-oracle"
                                     onClick={handleOracleClick}
-                                    className={`absolute left-full ml-2 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-white/10 hover:bg-white/10 hover:border-amber-500/50 transition-all group shadow-lg backdrop-blur-sm ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
+                                    className={`shell-float-button absolute left-full ml-2 group ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
                                     aria-label="Oracle Assistant"
                                 >
                                     <SparklesIcon className={`w-5 h-5 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'text-amber-200/80 group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />
@@ -176,23 +178,25 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                     </div>
 
                     {/* Time Chip */}
-                    <div className="flex flex-col items-center justify-center w-20 h-9 flex-shrink-0 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl relative z-50 shadow-lg">
-                        <span className="text-[16px] font-black tracking-widest text-[var(--skin-accent-color)] leading-none luxe-title-ornate">{timeStr}</span>
+                    <div className={chipStyle}>
+                        <span className="text-[15px] font-semibold tracking-[0.08em] text-[var(--skin-accent-color)] leading-none">{timeStr}</span>
                     </div>
                 </div>
             </header>
-            {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
-            {isOracleOpen && <OracleFeed onClose={() => setOracleOpen(false)} />}
-            {isClanOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanOpen(false)} />}
-            {isRestScreenOpen && (
-                <RestScreen 
-                    onClose={() => setRestScreenOpen(false)} 
-                    onOpenMood={() => setMoodModalOpen(true)}
-                    onOpenOracle={() => setOracleOpen(true)}
-                    onOpenClan={() => setClanOpen(true)}
-                    onOpenDeepWork={() => setDeepWorkOpen(true)}
-                />
-            )}
+            <Suspense fallback={null}>
+                {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
+                {isOracleOpen && <OracleFeed onClose={() => setOracleOpen(false)} />}
+                {isClanOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanOpen(false)} />}
+                {isRestScreenOpen && (
+                    <RestScreen 
+                        onClose={() => setRestScreenOpen(false)} 
+                        onOpenMood={() => setMoodModalOpen(true)}
+                        onOpenOracle={() => setOracleOpen(true)}
+                        onOpenClan={() => setClanOpen(true)}
+                        onOpenDeepWork={() => setDeepWorkOpen(true)}
+                    />
+                )}
+            </Suspense>
         </>
     );
 };

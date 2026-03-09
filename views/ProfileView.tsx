@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon, CrownIcon, ImageIcon } from '../components/Icons';
@@ -12,10 +12,10 @@ import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { Sovereign } from '../components/Avatar';
 import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
-import { AssetDecagon } from '../components/AssetDecagon';
 import { handleShare } from '../components/Share';
 import { Portal } from '../components/Portal';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
+const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
 
 const UnifiedSovereignDisplay: React.FC<{
     sovereignConfig: UserProfile['sovereign'];
@@ -705,11 +705,13 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         )
                                     ) : (
                                         <div className="bg-black/30 backdrop-blur-sm p-1 rounded-2xl border border-white/5 w-full flex items-center justify-center">
-                                            <AssetDecagon
-                                                assets={assets}
-                                                tempLevels={!isOwnProfile ? viewedLevels : undefined}
-                                                size={220}
-                                            />
+                                            <Suspense fallback={<div className="w-[220px] h-[220px]" />}>
+                                                <AssetDecagon
+                                                    assets={assets}
+                                                    tempLevels={!isOwnProfile ? viewedLevels : undefined}
+                                                    size={220}
+                                                />
+                                            </Suspense>
                                         </div>
                                     )}
                                 </div>

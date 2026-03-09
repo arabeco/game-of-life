@@ -1,14 +1,14 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Asset } from '../types';
 import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { GlassCard } from '../components/GlassCard';
 import { Portal } from '../components/Portal';
-import { AssetDecagon } from '../components/AssetDecagon';
 import { ShareIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon } from '../components/Icons';
 import { handleShare } from '../components/Share';
+const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
 
 type MasteryMode = 'LEGADO' | 'SOBERANO';
 
@@ -101,11 +101,13 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                 {/* Decágono Centralizado e Visível */}
                 <div className="mb-2 w-full flex justify-center h-[160px] relative overflow-visible">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] h-[220px]">
-                        <AssetDecagon
-                            assets={assets}
-                            tempLevels={tempLevels}
-                            size="100%"
-                        />
+                        <Suspense fallback={<div className="w-full h-full" />}>
+                            <AssetDecagon
+                                assets={assets}
+                                tempLevels={tempLevels}
+                                size="100%"
+                            />
+                        </Suspense>
                     </div>
                 </div>
 

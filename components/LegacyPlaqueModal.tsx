@@ -1,7 +1,7 @@
 import React from 'react';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
-import { exportElementAsImage, handleShare } from './Share';
+import { exportElementAsImage, handleShare, shouldPreferNativeShare } from './Share';
 import { LegacyPlaqueArtifact } from './LegacyPlaqueArtifact';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 
@@ -16,15 +16,17 @@ interface LegacyPlaqueModalProps {
 const PLAQUE_CAPTURE_ID = 'legacy-plaque-artifact-capture';
 
 export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sovereignName, plaqueForged, onClose, onToast }) => {
+    const preferNativeShare = shouldPreferNativeShare();
+
     const handleExport = async () => {
         try {
-            await exportElementAsImage(PLAQUE_CAPTURE_ID, {
+            const result = await exportElementAsImage(PLAQUE_CAPTURE_ID, {
                 fileName: `glyph-placa-do-legado-${new Date().toISOString().slice(0, 10)}.png`,
                 title: `Placa do Legado - ${sovereignName}`,
                 backgroundColor: '#0a0907',
-                preferShare: false,
+                preferShare: preferNativeShare,
             });
-            onToast('Placa do Legado exportada.');
+            onToast(result === 'shared' ? 'Placa do Legado compartilhada.' : 'Placa do Legado exportada.');
         } catch (error) {
             console.error('Erro ao exportar a Placa do Legado:', error);
             onToast('Nao foi possivel exportar a Placa do Legado.');
@@ -70,7 +72,7 @@ export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sove
                         <div className="mt-5 flex gap-3">
                             <button type="button" onClick={onClose} className="flex-1 rounded-xl luxe-button-secondary py-3 text-xs">Fechar</button>
                             <button type="button" onClick={handleSharePlaque} className="flex-1 rounded-xl luxe-button-secondary py-3 text-xs">Compartilhar</button>
-                            <button id="legacy-plaque-export-button" type="button" onClick={handleExport} className="flex-1 rounded-xl luxe-skin-button py-3 text-xs">Baixar Placa</button>
+                            <button id="legacy-plaque-export-button" type="button" onClick={handleExport} className="flex-1 rounded-xl luxe-skin-button py-3 text-xs">{preferNativeShare ? 'Compartilhar Placa' : 'Baixar Placa'}</button>
                         </div>
                     </div>
                 </GlassCard>

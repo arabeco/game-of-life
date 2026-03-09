@@ -3,7 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, Trash2Icon, ShareIcon } from './Icons';
-import { ITEMS_DB, ItemDef, ItemCategory } from '../constants/items';
+import { ITEMS_DB, ItemDef, ItemCategory, isItemCatalogVisible } from '../constants/items';
 import { UnlockCategory } from '../types';
 
 interface ItemDetailModalProps {
@@ -38,8 +38,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
     }, [initialItem]);
 
     const relatedItems = React.useMemo(() => {
-        return ITEMS_DB.filter(i => i.category === currentItem.category);
-    }, [currentItem.category]);
+        return ITEMS_DB.filter(i => i.category === currentItem.category && (isItemCatalogVisible(i) || i.id === currentItem.id));
+    }, [currentItem.category, currentItem.id]);
 
     // Check ownership
     const checkOwnership = (itemId: string, category: ItemCategory) => {
@@ -91,6 +91,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         (currentItem.category === 'ui_skin' && userProfile.skin === currentItem.id) ||
         (currentItem.category === 'skin' && userProfile.sovereign?.outfit === currentItem.id) ||
         (currentItem.category === 'hair' && userProfile.sovereign?.hairStyle === currentItem.id) ||
+        (currentItem.category === 'artifact' && userProfile.sovereign?.artifact === currentItem.id) ||
         (currentItem.category === 'glyph' && userProfile.sovereign?.glyph === currentItem.id) ||
         (currentItem.category === 'aura' && userProfile.sovereign?.aura === currentItem.id) ||
         (currentItem.category === 'orb' && userProfile.sovereign?.orb === currentItem.id) ||

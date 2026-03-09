@@ -1,24 +1,16 @@
 
 
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import React, { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Report, Cycle, ChestType, FeedEvent } from '../types';
+import { Report, Cycle, ChestType, FeedEvent, LegacyRenderJobStatus } from '../types';
 import { GlassCard } from '../components/GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, Trash2Icon } from '../components/Icons';
-import { CycleComparator } from '../components/CycleComparator';
-import { exportElementAsImage, handleShare } from '../components/Share';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { NewCycleSetupView } from './NewCycleSetupView';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { supabase } from '../supabaseClient';
-import { ReportGenerationModal } from '../components/ReportGenerationModal';
-import { LegacyExportDocument, LegacyEraSummary } from '../components/LegacyExportDocument';
-import { EraCustomizationModal } from '../components/EraCustomizationModal';
-import { LegacyPlaqueModal } from '../components/LegacyPlaqueModal';
-import { LegacyPlaqueForgeModal } from '../components/LegacyPlaqueForgeModal';
-import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
+import type { LegacyEraSummary } from '../components/LegacyExportDocument';
 import { LegacyPlaqueArtifact } from '../components/LegacyPlaqueArtifact';
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
 import { ChestOpeningModal } from '../components/ChestOpeningModal';
@@ -28,6 +20,13 @@ import { NOBILITY_RANKS } from '../constants/nobility';
 import { resolveItemDef } from '../constants/items';
 import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
+import { buildLegacyRenderPayload } from '../utils/legacyRenderPayload';
+const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
+const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
+const LegacyExportDocument = React.lazy(() => import('../components/LegacyExportDocument').then(m => ({ default: m.LegacyExportDocument })));
+const LegacyPlaqueModal = React.lazy(() => import('../components/LegacyPlaqueModal').then(m => ({ default: m.LegacyPlaqueModal })));
+const LegacyPlaqueForgeModal = React.lazy(() => import('../components/LegacyPlaqueForgeModal').then(m => ({ default: m.LegacyPlaqueForgeModal })));
+const LegacyProjectionModal = React.lazy(() => import('../components/LegacyProjectionModal').then(m => ({ default: m.LegacyProjectionModal })));
 
 // --- Helper Functions ---
 import { parseDate, daysBetween, formatDate, getScoreGrade } from '../utils/dateUtils';
@@ -61,8 +60,39 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 const LEGACY_EXPORT_CAPTURE_ID = 'legacy-complete-capture';
 const ERA_METADATA_STORAGE_PREFIX = 'glyph-era-metadata-v1';
 const LEGACY_PLAQUE_STORAGE_PREFIX = 'glyph-legacy-plaque-v1';
+const LEGACY_RENDER_BUCKET = 'legacy-renders';
 const FREE_ERA_RIBBON_SKIN_ID = ERA_RIBBON_SKINS.find((skin) => !skin.isPremium)?.id || ERA_RIBBON_SKINS[0].id;
 const PREMIUM_ERA_RIBBON_SKIN_IDS = ERA_RIBBON_SKINS.filter((skin) => skin.isPremium).map((skin) => skin.id);
+
+type EraMetadataEntry = {
+    name?: string;
+    skinId?: string;
+    description?: string;
+    finalSummary?: string;
+};
+
+type DraftEraSlot = {
+    id: string;
+    sourceKey?: string;
+    defaultLabel: string;
+    name?: string;
+    skinId: string;
+    description?: string;
+    finalSummary?: string;
+};
+
+type DraftEraSegment = {
+    start: number;
+    end: number;
+    slotId: string;
+};
+
+type InlineEraEditorState = {
+    mode: 'saved' | 'draft';
+    key: string;
+    defaultLabel: string;
+    eraIndex: number;
+};
 
 // --- Sub-components for Active Cycle HUD ---
 const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
@@ -241,7 +271,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
 
 // --- Timeline Components ---
 
-const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId }) => {
+const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string, isSelectedForEraEdit?: boolean }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId, isSelectedForEraEdit }) => {
     const scoreInfo = getScoreGrade(report.performanceScore);
     const startDate = formatDate(report.startDate);
     const endDate = formatDate(report.endDate);
@@ -252,6 +282,9 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
         boxShadow: `0 0 0 1px ${eraSkin.edge}12, 0 12px 24px ${eraSkin.baseBottom}66`,
         backgroundImage: `linear-gradient(135deg, ${eraSkin.baseTop}66 0%, rgba(0,0,0,0.5) 38%, rgba(0,0,0,0.82) 100%)`,
     } : undefined;
+    const editHighlightStyle = isEditing && isSelectedForEraEdit ? {
+        boxShadow: `0 0 0 1px ${eraSkin.edge}55, 0 0 0 4px ${eraSkin.glow}12, 0 12px 28px ${eraSkin.baseBottom}88`,
+    } : undefined;
 
     return (
         <div className="relative pl-8">
@@ -260,7 +293,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
             </div>
             <div
                 onClick={onClick}
-                style={cardStyle}
+                style={{ ...cardStyle, ...editHighlightStyle }}
                 className={`
                     relative overflow-hidden rounded-xl p-3 cursor-pointer transition-all duration-300 group
                     ${isLatest
@@ -268,6 +301,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                         : 'bg-black/40 border border-white/10 hover:bg-white/5 hover:border-white/20'
                     }
                     ${isEditing ? 'scale-[0.98]' : ''}
+                    ${isSelectedForEraEdit ? 'ring-1 ring-[var(--skin-accent-color)]/35' : ''}
                 `}
             >
                 {hasEraAccent && !isLatest && (
@@ -339,6 +373,17 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
     );
 };
 
+const mapLegacyRenderJob = (row: any): LegacyRenderJobStatus => ({
+    id: row.id,
+    status: row.status,
+    videoPath: row.video_path ?? null,
+    posterPath: row.poster_path ?? null,
+    errorMessage: row.error_message ?? null,
+    createdAt: row.created_at,
+    startedAt: row.started_at ?? null,
+    finishedAt: row.finished_at ?? null,
+});
+
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const {
@@ -364,9 +409,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [showChestModal, setShowChestModal] = useState(false);
     const [isExportingLegacy, setIsExportingLegacy] = useState(false);
     const [showLegacyProjectionModal, setShowLegacyProjectionModal] = useState(false);
-    const [eraMetadata, setEraMetadata] = useState<Record<string, { name?: string; skinId?: string; description?: string; finalSummary?: string }>>({});
+    const [latestLegacyRenderJob, setLatestLegacyRenderJob] = useState<LegacyRenderJobStatus | null>(null);
+    const [isLoadingLegacyRenderJob, setIsLoadingLegacyRenderJob] = useState(false);
+    const [isDownloadingLegacyRenderVideo, setIsDownloadingLegacyRenderVideo] = useState(false);
+    const [eraMetadata, setEraMetadata] = useState<Record<string, EraMetadataEntry>>({});
     const [hasLoadedEraMetadata, setHasLoadedEraMetadata] = useState(false);
-    const [customizingEra, setCustomizingEra] = useState<LegacyEraSummary | null>(null);
     const [legacyPlaqueForged, setLegacyPlaqueForged] = useState(false);
     const [hasLoadedLegacyPlaqueState, setHasLoadedLegacyPlaqueState] = useState(false);
     const [showLegacyPlaqueModal, setShowLegacyPlaqueModal] = useState(false);
@@ -378,7 +425,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [isEditingEras, setIsEditingEras] = useState(false);
     const [eraBreaks, setEraBreaks] = useState<number[]>([]);
     const [hasCustomEras, setHasCustomEras] = useState(false);
-    const [draggingBoundary, setDraggingBoundary] = useState<number | null>(null);
+    const [draftEraSlots, setDraftEraSlots] = useState<DraftEraSlot[]>([]);
+    const [draftReportEraIds, setDraftReportEraIds] = useState<Record<string, string>>({});
+    const [activeDraftEraId, setActiveDraftEraId] = useState<string | null>(null);
+    const [inlineEraEditor, setInlineEraEditor] = useState<InlineEraEditorState | null>(null);
+    const [inlineEraName, setInlineEraName] = useState('');
+    const [inlineEraSkinId, setInlineEraSkinId] = useState(FREE_ERA_RIBBON_SKIN_ID);
     const sortedReports = useMemo(() => [...reports].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()), [reports]);
     const defaultEraBreaks = useMemo(() => {
         const breaks: number[] = [];
@@ -841,7 +893,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (grade === 'C') return '#CD7F32';
         return '#6B7280';
     };
-    const getEraLabel = (index: number) => `ERA ${toRoman(index + 1)}`;
+    const getEraLabel = (index: number) => `ERA ${index + 1}`;
     const getEraSegmentKey = (oldestReport?: Report, newestReport?: Report, index = 0) => `${oldestReport?.id || oldestReport?.startDate || 'start'}:${newestReport?.id || newestReport?.endDate || 'end'}:${index}`;
     const normalizedEraBreaks = useMemo(
         () => Array.from<number>(new Set(eraBreaks.filter((b): b is number => typeof b === 'number' && b > 0 && b < sortedReports.length))).sort((a, b) => a - b),
@@ -928,6 +980,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     score: report.performanceScore,
                     focusArena: report.highlight?.mostFocusedArena?.trim() || dominantArena,
                     signatureAction: report.metrics.top3Actions?.[0]?.name || report.highlight?.mostRepeatedAction || 'Nenhuma',
+                    weeklyAtlas: report.metrics.weeklyAtlas || [],
+                    identitySnapshot: report.identitySnapshot,
                 }));
 
             return {
@@ -963,6 +1017,128 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         });
         return map;
     }, [eraSegments, eraSummaries]);
+    const draftEraSegments = useMemo(() => {
+        if (sortedReports.length === 0 || draftEraSlots.length === 0) return [] as DraftEraSegment[];
+        const fallbackSlotId = draftEraSlots[0].id;
+        const segments: DraftEraSegment[] = [];
+        let start = 0;
+        let currentSlotId = draftReportEraIds[sortedReports[0].id] || fallbackSlotId;
+        for (let index = 1; index < sortedReports.length; index += 1) {
+            const nextSlotId = draftReportEraIds[sortedReports[index].id] || fallbackSlotId;
+            if (nextSlotId !== currentSlotId) {
+                segments.push({ start, end: index - 1, slotId: currentSlotId });
+                start = index;
+                currentSlotId = nextSlotId;
+            }
+        }
+        segments.push({ start, end: sortedReports.length - 1, slotId: currentSlotId });
+        return segments;
+    }, [draftEraSlots, draftReportEraIds, sortedReports]);
+    const draftEraByReportIndex = useMemo(() => {
+        const map = new Map<number, DraftEraSlot>();
+        if (!isEditingEras) return map;
+        sortedReports.forEach((report, reportIndex) => {
+            const slotId = draftReportEraIds[report.id];
+            const slot = draftEraSlots.find((entry) => entry.id === slotId);
+            if (slot) map.set(reportIndex, slot);
+        });
+        return map;
+    }, [draftEraSlots, draftReportEraIds, isEditingEras, sortedReports]);
+    const draftEraSelectionSummary = useMemo(() => {
+        const counts = new Map<string, number>();
+        const ranges = new Map<string, { newest?: string; oldest?: string }>();
+        sortedReports.forEach((report, reportIndex) => {
+            const slotId = draftReportEraIds[report.id];
+            if (!slotId) return;
+            counts.set(slotId, (counts.get(slotId) || 0) + 1);
+            const current = ranges.get(slotId) || {};
+            if (!current.newest) current.newest = report.endDate;
+            current.oldest = report.startDate;
+            ranges.set(slotId, current);
+        });
+        return draftEraSlots.map((slot) => ({
+            slot,
+            count: counts.get(slot.id) || 0,
+            newest: ranges.get(slot.id)?.newest,
+            oldest: ranges.get(slot.id)?.oldest,
+        }));
+    }, [draftEraSlots, draftReportEraIds, sortedReports]);
+    const displayedEraByReportIndex = useMemo(() => {
+        if (isEditingEras) {
+            const map = new Map<number, { label: string; skinId: string; isActive: boolean }>();
+            sortedReports.forEach((report, reportIndex) => {
+                const slotId = draftReportEraIds[report.id];
+                const slot = draftEraSlots.find((entry) => entry.id === slotId);
+                if (!slot) return;
+                map.set(reportIndex, {
+                    label: slot.name?.trim() || slot.defaultLabel,
+                    skinId: slot.skinId,
+                    isActive: slot.id === activeDraftEraId,
+                });
+            });
+            return map;
+        }
+
+        const map = new Map<number, { label: string; skinId: string; isActive: boolean }>();
+        eraSegments.forEach((segment, index) => {
+            const summary = eraSummaries[index];
+            if (!summary) return;
+            for (let reportIndex = segment.start; reportIndex <= segment.end; reportIndex += 1) {
+                map.set(reportIndex, {
+                    label: summary.label,
+                    skinId: resolveEraSkinId(summary, index),
+                    isActive: false,
+                });
+            }
+        });
+        return map;
+    }, [activeDraftEraId, draftEraSlots, draftReportEraIds, eraSegments, eraSummaries, isEditingEras, sortedReports]);
+    const displayedEraBands = useMemo(() => {
+        if (isEditingEras) {
+            return draftEraSegments.map((segment, index) => {
+                const slot = draftEraSlots.find((entry) => entry.id === segment.slotId);
+                if (!slot) return null;
+                return {
+                    key: slot.id,
+                    label: slot.name?.trim() || slot.defaultLabel,
+                    skinId: slot.skinId,
+                    start: segment.start,
+                    end: segment.end,
+                    eraIndex: index,
+                    isActive: slot.id === activeDraftEraId,
+                    slot,
+                };
+            }).filter(Boolean) as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; slot: DraftEraSlot }>;
+        }
+
+        return eraSegments.map((segment, index) => {
+            const summary = eraSummaries[index];
+            if (!summary) return null;
+            return {
+                key: summary.key,
+                label: summary.label,
+                skinId: resolveEraSkinId(summary, index),
+                start: segment.start,
+                end: segment.end,
+                eraIndex: index,
+                isActive: false,
+                summary,
+            };
+        }).filter(Boolean) as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; summary: LegacyEraSummary }>;
+    }, [activeDraftEraId, draftEraSegments, draftEraSlots, eraSegments, eraSummaries, isEditingEras]);
+
+    const legacyFallbackIdentity = useMemo(() => ({
+        avatarUrl: userProfile.avatarUrl,
+        nickname: userProfile.nickname || userProfile.username || 'Soberano',
+        title: userProfile.title,
+        level: userProfile.level || 1,
+        nobilityRankId: userProfile.nobility?.rankId,
+        nobilityRankName: NOBILITY_RANKS.find((rank) => rank.id === userProfile.nobility?.rankId)?.name || undefined,
+        clanName: userProfile.clanName || null,
+        clanIcon: userProfile.clanIcon || null,
+        clanRankName: null,
+        capturedAt: new Date().toISOString(),
+    }), [userProfile.avatarUrl, userProfile.clanIcon, userProfile.clanName, userProfile.level, userProfile.nickname, userProfile.nobility, userProfile.title, userProfile.username]);
 
     const sovereignName = userProfile.nickname || userProfile.username || 'Soberano';
     const historicalAverageScore = useMemo(
@@ -987,11 +1163,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return `${sortedReports.length} ciclos, ${eraSummaries.length} eras e ${Math.round(totalHistoricalHours)}h acumuladas em ${spanLabel}. Era em destaque: ${bestEra?.label || 'Sem era dominante'}.`;
     }, [bestEra, eraSummaries.length, historyEndDate, historyStartDate, sortedReports.length, totalHistoricalHours]);
 
-    const openEraCustomization = (summary: LegacyEraSummary) => {
-        if (!summary.key || isEditingEras) return;
-        setCustomizingEra(summary);
-    };
-
     const getEraRibbonSkinId = (index: number) => {
         if (!userProfile.isPremium || PREMIUM_ERA_RIBBON_SKIN_IDS.length === 0) {
             return FREE_ERA_RIBBON_SKIN_ID;
@@ -1006,6 +1177,86 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (!matchedSkin) return getEraRibbonSkinId(index);
         if (matchedSkin.isPremium && !userProfile.isPremium) return FREE_ERA_RIBBON_SKIN_ID;
         return matchedSkin.id;
+    };
+
+    const openInlineEraEditor = (payload: InlineEraEditorState, initialName: string, initialSkinId: string) => {
+        setInlineEraEditor(payload);
+        setInlineEraName(initialName);
+        setInlineEraSkinId(initialSkinId);
+    };
+
+    const buildDraftSegments = (assignments: Record<string, string>, slots: DraftEraSlot[]) => {
+        if (sortedReports.length === 0 || slots.length === 0) return [] as DraftEraSegment[];
+        const fallbackSlotId = slots[0].id;
+        const segments: DraftEraSegment[] = [];
+        let start = 0;
+        let currentSlotId = assignments[sortedReports[0].id] || fallbackSlotId;
+        for (let index = 1; index < sortedReports.length; index += 1) {
+            const nextSlotId = assignments[sortedReports[index].id] || fallbackSlotId;
+            if (nextSlotId !== currentSlotId) {
+                segments.push({ start, end: index - 1, slotId: currentSlotId });
+                start = index;
+                currentSlotId = nextSlotId;
+            }
+        }
+        segments.push({ start, end: sortedReports.length - 1, slotId: currentSlotId });
+        return segments;
+    };
+
+    const beginEraEditing = () => {
+        if (sortedReports.length === 0) return;
+        const slots = eraSummaries.map((summary, index) => ({
+            id: summary.key,
+            sourceKey: summary.key,
+            defaultLabel: summary.defaultLabel || getEraLabel(index),
+            name: eraMetadata[summary.key]?.name,
+            skinId: resolveEraSkinId(summary, index),
+            description: eraMetadata[summary.key]?.description,
+            finalSummary: eraMetadata[summary.key]?.finalSummary,
+        }));
+        const assignments = sortedReports.reduce<Record<string, string>>((accumulator, report, reportIndex) => {
+            const summary = reportEraSummaryByIndex.get(reportIndex);
+            accumulator[report.id] = summary?.key || slots[0]?.id || '';
+            return accumulator;
+        }, {});
+        setDraftEraSlots(slots);
+        setDraftReportEraIds(assignments);
+        setActiveDraftEraId(slots[0]?.id || null);
+        setInlineEraEditor(null);
+        setIsEditingEras(true);
+    };
+
+    const loadLatestLegacyRenderJob = async () => {
+        const userId = getUserId();
+        if (!userId) {
+            setLatestLegacyRenderJob(null);
+            return;
+        }
+
+        setIsLoadingLegacyRenderJob(true);
+        try {
+            const { data, error } = await supabase
+                .from('legacy_render_jobs')
+                .select('id,status,video_path,poster_path,error_message,created_at,started_at,finished_at')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (error) {
+                const message = String(error.message || '').toLowerCase();
+                if (message.includes('legacy_render_jobs') && (message.includes('does not exist') || message.includes('relation'))) {
+                    setLatestLegacyRenderJob(null);
+                    return;
+                }
+                console.error('Erro ao carregar status do render do legado:', error);
+                return;
+            }
+
+            setLatestLegacyRenderJob(data ? mapLegacyRenderJob(data) : null);
+        } finally {
+            setIsLoadingLegacyRenderJob(false);
+        }
     };
 
     const persistEraMetadataRemote = async (key: string, entry?: { name?: string; skinId?: string; description?: string; finalSummary?: string }) => {
@@ -1046,37 +1297,103 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
 
-    const handleSaveEraCustomization = async (payload: { name: string; skinId: string; description: string; finalSummary: string }) => {
-        if (!customizingEra?.key) {
-            setCustomizingEra(null);
+    const persistAllEraMetadataRemote = async (nextState: Record<string, EraMetadataEntry>) => {
+        if (eraMetadataRemoteMissingRef.current) return;
+        const userId = getUserId();
+        if (!userId) return;
+
+        const { error: deleteError } = await supabase.from('era_metadata').delete().eq('user_id', userId);
+        if (deleteError) {
+            const message = String(deleteError.message || '').toLowerCase();
+            if (message.includes('era_metadata') && (message.includes('does not exist') || message.includes('relation'))) {
+                eraMetadataRemoteMissingRef.current = true;
+                return;
+            }
+            console.error('Erro ao resetar metadata remota das Eras:', deleteError.message);
             return;
         }
 
-        const defaultName = customizingEra.defaultLabel || customizingEra.label;
-        const eraIndex = Math.max(eraSummaries.findIndex((summary) => summary.key === customizingEra.key), 0);
-        const defaultSkinId = getEraRibbonSkinId(eraIndex);
-        const normalizedName = payload.name.trim();
-        const normalizedDescription = payload.description.trim();
-        const normalizedFinalSummary = payload.finalSummary.trim();
-        const nextEntry = {
-            name: normalizedName && normalizedName !== defaultName ? normalizedName : undefined,
-            skinId: payload.skinId !== defaultSkinId ? payload.skinId : undefined,
-            description: normalizedDescription || undefined,
-            finalSummary: normalizedFinalSummary || undefined,
+        const payload = Object.entries(nextState).map(([key, entry]) => ({
+            user_id: userId,
+            era_key: key,
+            name: entry.name || null,
+            skin_id: entry.skinId || null,
+            description: entry.description || null,
+            final_summary: entry.finalSummary || null,
+            updated_at: new Date().toISOString(),
+        }));
+        if (payload.length === 0) return;
+
+        const { error } = await supabase.from('era_metadata').upsert(payload, { onConflict: 'user_id,era_key' });
+        if (error) {
+            const message = String(error.message || '').toLowerCase();
+            if (message.includes('era_metadata') && (message.includes('does not exist') || message.includes('relation'))) {
+                eraMetadataRemoteMissingRef.current = true;
+                return;
+            }
+            console.error('Erro ao salvar metadata remota das Eras:', error.message);
+        }
+    };
+
+    const openSavedEraInlineEditor = (summary: LegacyEraSummary, eraIndex: number) => {
+        if (!summary.key) return;
+        openInlineEraEditor({
+            mode: 'saved',
+            key: summary.key,
+            defaultLabel: summary.defaultLabel || getEraLabel(eraIndex),
+            eraIndex,
+        }, eraMetadata[summary.key]?.name || '', resolveEraSkinId(summary, eraIndex));
+    };
+
+    const openDraftEraInlineEditor = (slot: DraftEraSlot, eraIndex: number) => {
+        openInlineEraEditor({
+            mode: 'draft',
+            key: slot.id,
+            defaultLabel: slot.defaultLabel,
+            eraIndex,
+        }, slot.name || '', slot.skinId);
+    };
+
+    const handleSaveInlineEraEditor = async () => {
+        if (!inlineEraEditor) return;
+        const normalizedName = inlineEraName.trim();
+        const defaultSkinId = getEraRibbonSkinId(inlineEraEditor.eraIndex);
+
+        if (inlineEraEditor.mode === 'draft') {
+            setDraftEraSlots((previous) => previous.map((slot) => {
+                if (slot.id !== inlineEraEditor.key) return slot;
+                return {
+                    ...slot,
+                    name: normalizedName || undefined,
+                    skinId: inlineEraSkinId || defaultSkinId,
+                };
+            }));
+            setInlineEraEditor(null);
+            return;
+        }
+
+        const existing = eraMetadata[inlineEraEditor.key] || {};
+        const nextEntry: EraMetadataEntry = {
+            name: normalizedName && normalizedName !== inlineEraEditor.defaultLabel ? normalizedName : undefined,
+            skinId: inlineEraSkinId !== defaultSkinId ? inlineEraSkinId : undefined,
+            description: existing.description,
+            finalSummary: existing.finalSummary,
         };
+        const cleanedEntry = !nextEntry.name && !nextEntry.skinId && !nextEntry.description && !nextEntry.finalSummary
+            ? undefined
+            : nextEntry;
 
         setEraMetadata((previous) => {
             const nextState = { ...previous };
-            if (!nextEntry.name && !nextEntry.skinId && !nextEntry.description && !nextEntry.finalSummary) {
-                delete nextState[customizingEra.key as string];
+            if (!cleanedEntry) {
+                delete nextState[inlineEraEditor.key];
             } else {
-                nextState[customizingEra.key as string] = nextEntry;
+                nextState[inlineEraEditor.key] = cleanedEntry;
             }
             return nextState;
         });
-
-        await persistEraMetadataRemote(customizingEra.key, nextEntry);
-        setCustomizingEra(null);
+        await persistEraMetadataRemote(inlineEraEditor.key, cleanedEntry);
+        setInlineEraEditor(null);
     };
 
     useEffect(() => {
@@ -1121,8 +1438,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const renderLegacySummary = () => {
-        if (sortedReports.length === 0) return null;
-
         return (
             <GlassCard variant="neutral" className="mb-6 p-4 space-y-4">
                 <div className="flex items-start justify-between gap-4">
@@ -1213,6 +1528,83 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </GlassCard>
         );
     };
+    const handleCreateLegacyRenderJob = async () => {
+        const userId = getUserId();
+        if (!userId) {
+            showToast('Sessao invalida para gerar o legado.');
+            return;
+        }
+        if (eraSummaries.length === 0) {
+            showToast('Feche pelo menos um ciclo para gerar o video do legado.');
+            return;
+        }
+
+        const payload = buildLegacyRenderPayload({
+            eras: eraSummaries,
+            sovereignName,
+            fallbackIdentity: legacyFallbackIdentity,
+        });
+
+        const { data, error } = await supabase
+            .from('legacy_render_jobs')
+            .insert({
+                user_id: userId,
+                status: 'pending',
+                payload,
+            })
+            .select('id,status,video_path,poster_path,error_message,created_at,started_at,finished_at')
+            .single();
+
+        if (error) {
+            const message = String(error.message || '').toLowerCase();
+            if (message.includes('legacy_render_jobs') && (message.includes('does not exist') || message.includes('relation'))) {
+                showToast('A tabela de render do legado ainda nao existe no banco.');
+                return;
+            }
+            console.error('Erro ao enfileirar render do legado:', error);
+            showToast('Nao foi possivel enfileirar o render do legado.');
+            return;
+        }
+
+        setLatestLegacyRenderJob(data ? mapLegacyRenderJob(data) : null);
+        showToast(`Render do legado enfileirado (${data?.id?.slice(0, 8) || 'job'}).`);
+    };
+
+    const handleDownloadLegacyRenderVideo = async () => {
+        if (!latestLegacyRenderJob?.videoPath) {
+            showToast('O video do legado ainda nao esta pronto.');
+            return;
+        }
+
+        setIsDownloadingLegacyRenderVideo(true);
+        try {
+            const fileName = `glyph-legado-${getLocalDateString()}.mp4`;
+            const { data, error } = await supabase.storage
+                .from(LEGACY_RENDER_BUCKET)
+                .createSignedUrl(latestLegacyRenderJob.videoPath, 60 * 15, { download: fileName });
+
+            if (error || !data?.signedUrl) {
+                console.error('Erro ao gerar signed URL do legado:', error);
+                showToast('Nao foi possivel gerar o link do video do legado.');
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = data.signedUrl;
+            link.download = fileName;
+            link.rel = 'noopener';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showToast('Link temporario do video gerado.');
+        } catch (error) {
+            console.error('Erro ao baixar video do legado:', error);
+            showToast('Nao foi possivel baixar o video do legado.');
+        } finally {
+            setIsDownloadingLegacyRenderVideo(false);
+        }
+    };
+
     const handleExportLegacy = async () => {
         if (eraSummaries.length === 0) {
             showToast('Nao ha Eras concluidas para exportar.');
@@ -1221,13 +1613,16 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         setIsExportingLegacy(true);
         try {
-            await exportElementAsImage(LEGACY_EXPORT_CAPTURE_ID, {
+            await import('../components/LegacyExportDocument');
+            const { exportElementAsImage, shouldPreferNativeShare } = await import('../components/Share');
+            await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())));
+            const result = await exportElementAsImage(LEGACY_EXPORT_CAPTURE_ID, {
                 fileName: `glyph-registro-de-soberania-${getLocalDateString()}.png`,
                 title: `Registro de Soberania - ${sovereignName}`,
                 backgroundColor: '#050505',
-                preferShare: false,
+                preferShare: shouldPreferNativeShare(),
             });
-            showToast('Registro de Soberania exportado.');
+            showToast(result === 'shared' ? 'Registro de Soberania compartilhado.' : 'Registro de Soberania exportado.');
         } catch (error) {
             console.error('Erro ao exportar legado completo:', error);
             showToast('Nao foi possivel exportar o Legado Completo.');
@@ -1245,9 +1640,25 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setShowLegacyProjectionModal(true);
     };
 
-    const handleStartEraEdit = () => setIsEditingEras(true);
+    const handleShareReport = async (report: Report) => {
+        const { handleShare } = await import('../components/Share');
+        await handleShare('report-summary-card-capture', `Relatorio de Ciclo ${formatDate(report.startDate)} - Life OS`);
+    };
+
+    const handleCancelEraEdit = () => {
+        setIsEditingEras(false);
+        setDraftEraSlots([]);
+        setDraftReportEraIds({});
+        setActiveDraftEraId(null);
+        setInlineEraEditor(null);
+    };
+
     const handleResetEras = async () => {
         setIsEditingEras(false);
+        setDraftEraSlots([]);
+        setDraftReportEraIds({});
+        setActiveDraftEraId(null);
+        setInlineEraEditor(null);
         setHasCustomEras(false);
         setEraBreaks(defaultEraBreaks);
         const userId = getUserId();
@@ -1255,41 +1666,167 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const { error } = await supabase.from('era_boundaries').delete().eq('user_id', userId);
         if (error) console.error('Erro ao resetar Eras:', error.message);
     };
+
+    const handleAddDraftEra = () => {
+        const index = draftEraSlots.length;
+        const slot: DraftEraSlot = {
+            id: `draft-era-${Date.now()}-${index}`,
+            defaultLabel: getEraLabel(index),
+            skinId: getEraRibbonSkinId(index),
+        };
+        setDraftEraSlots((previous) => [...previous, slot]);
+        setActiveDraftEraId(slot.id);
+        openDraftEraInlineEditor(slot, index);
+    };
+
+    const handleAssignReportToDraftEra = (reportIndex: number) => {
+        if (!isEditingEras || !activeDraftEraId) return;
+        const report = sortedReports[reportIndex];
+        if (!report) return;
+
+        setDraftReportEraIds((previous) => {
+            const next = { ...previous };
+            const assignedIndexes = sortedReports.reduce<number[]>((accumulator, currentReport, currentIndex) => {
+                if ((previous[currentReport.id] || draftEraSlots[0]?.id) === activeDraftEraId) {
+                    accumulator.push(currentIndex);
+                }
+                return accumulator;
+            }, []);
+
+            if (assignedIndexes.length === 0) {
+                next[report.id] = activeDraftEraId;
+                return next;
+            }
+
+            const minIndex = Math.min(...assignedIndexes);
+            const maxIndex = Math.max(...assignedIndexes);
+            const start = Math.min(minIndex, reportIndex);
+            const end = Math.max(maxIndex, reportIndex);
+            for (let index = start; index <= end; index += 1) {
+                const candidate = sortedReports[index];
+                if (candidate) next[candidate.id] = activeDraftEraId;
+            }
+            return next;
+        });
+    };
+
     const handleConfirmEraEdit = async () => {
-        setIsEditingEras(false);
-        const normalized = Array.from<number>(new Set(eraBreaks.filter((b): b is number => typeof b === 'number' && b > 0 && b < sortedReports.length))).sort((a, b) => a - b);
+        const effectiveSlots = draftEraSlots.filter((slot) => sortedReports.some((report) => draftReportEraIds[report.id] === slot.id));
+        if (effectiveSlots.length === 0) {
+            handleResetEras();
+            return;
+        }
+
+        const segments = buildDraftSegments(draftReportEraIds, effectiveSlots);
+        const normalized = segments.slice(0, -1).map((segment) => segment.end + 1);
         setEraBreaks(normalized);
-        setHasCustomEras(true);
+        setHasCustomEras(JSON.stringify(normalized) !== JSON.stringify(defaultEraBreaks));
+
+        const nextMetadata: Record<string, EraMetadataEntry> = {};
+        segments.forEach((segment, index) => {
+            const slot = effectiveSlots.find((entry) => entry.id === segment.slotId);
+            if (!slot) return;
+            const segmentReports = sortedReports.slice(segment.start, segment.end + 1);
+            const newestReport = segmentReports[0];
+            const oldestReport = segmentReports[segmentReports.length - 1];
+            const key = getEraSegmentKey(oldestReport, newestReport, index);
+            const defaultLabel = getEraLabel(index);
+            const defaultSkinId = getEraRibbonSkinId(index);
+            const entry: EraMetadataEntry = {
+                name: slot.name?.trim() && slot.name.trim() !== defaultLabel ? slot.name.trim() : undefined,
+                skinId: slot.skinId !== defaultSkinId ? slot.skinId : undefined,
+                description: slot.description,
+                finalSummary: slot.finalSummary,
+            };
+            if (entry.name || entry.skinId || entry.description || entry.finalSummary) {
+                nextMetadata[key] = entry;
+            }
+        });
+        setEraMetadata(nextMetadata);
+        setIsEditingEras(false);
+        setDraftEraSlots([]);
+        setDraftReportEraIds({});
+        setActiveDraftEraId(null);
+        setInlineEraEditor(null);
 
         const userId = getUserId();
-        if (!userId) return;
-        await supabase.from('era_boundaries').delete().eq('user_id', userId);
-        const payload = normalized
-            .map(b => sortedReports[b - 1]?.id)
-            .filter(Boolean)
-            .map(afterReportId => ({ user_id: userId, after_report_id: afterReportId }));
-        if (payload.length > 0) {
-            const { error } = await supabase.from('era_boundaries').insert(payload);
-            if (error) console.error('Erro ao salvar Eras:', error.message);
+        if (userId) {
+            await supabase.from('era_boundaries').delete().eq('user_id', userId);
+            const payload = normalized
+                .map((boundary) => sortedReports[boundary - 1]?.id)
+                .filter(Boolean)
+                .map((afterReportId) => ({ user_id: userId, after_report_id: afterReportId }));
+            if (payload.length > 0) {
+                const { error } = await supabase.from('era_boundaries').insert(payload);
+                if (error) console.error('Erro ao salvar Eras:', error.message);
+            }
         }
+        await persistAllEraMetadataRemote(nextMetadata);
     };
-    const handleDragStart = (boundaryIndex: number) => (e: React.DragEvent<HTMLDivElement>) => {
-        e.dataTransfer.setData('text/plain', String(boundaryIndex));
-        setDraggingBoundary(boundaryIndex);
+
+    const renderEraControls = () => {
+        if (sortedReports.length < 2) return null;
+
+        if (!isEditingEras) {
+            return (
+                <div className="relative z-20 mt-3 rounded-[22px] border border-white/10 bg-black/20 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Eras</p>
+                            <p className="mt-2 text-sm font-black text-white">{hasCustomEras ? 'Cortes manuais ativos' : 'Cortes automaticos por temporada'}</p>
+                            <p className="mt-1 text-xs leading-relaxed text-gray-400">
+                                A faixa da Era fica no historico vertical. Clique no canto do banner para nome e skin. Clique em ajustar para redistribuir os ciclos entre as Eras.
+                            </p>
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                            <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs">AJUSTAR ERAS</button>
+                            <button onClick={handleResetEras} disabled={!hasCustomEras} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs disabled:opacity-40">VOLTAR AO PADRAO</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="relative z-20 mt-3 rounded-[22px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,_rgba(212,175,55,0.08),_rgba(255,255,255,0.02))] p-4 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[var(--skin-accent-color)]">Ajustar Eras</p>
+                        <p className="mt-2 text-sm font-black text-white">Selecione uma Era e clique nos ciclos que pertencem a ela.</p>
+                        <p className="mt-1 text-xs leading-relaxed text-gray-400">
+                            Os ciclos clicados entram na Era ativa e saem da anterior. O canto do banner abre a edicao discreta de nome e skin.
+                        </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                        <button type="button" onClick={handleAddDraftEra} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">NOVA ERA</button>
+                        <button type="button" onClick={handleCancelEraEdit} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">CANCELAR</button>
+                        <button type="button" onClick={handleResetEras} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">VOLTAR AO PADRAO</button>
+                        <button type="button" onClick={() => { void handleConfirmEraEdit(); }} className="rounded-xl luxe-skin-button px-3 py-2 text-[11px]">SALVAR ERAS</button>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    {draftEraSelectionSummary.map(({ slot, count, newest, oldest }, index) => {
+                        const active = activeDraftEraId === slot.id;
+                        return (
+                            <button
+                                key={slot.id}
+                                type="button"
+                                onClick={() => setActiveDraftEraId(slot.id)}
+                                className={`rounded-2xl border px-3 py-2 text-left transition-all ${active ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10 text-white' : 'border-white/10 bg-black/20 text-gray-300'}`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getEraRibbonSkin(slot.skinId).edge }} />
+                                    <span className="text-[11px] font-black uppercase tracking-[0.18em]">{slot.name?.trim() || slot.defaultLabel}</span>
+                                </div>
+                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` · ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
     };
-    const handleDragEnd = () => setDraggingBoundary(null);
-    const handleDropBoundary = (targetIndex: number) => (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        const source = Number(e.dataTransfer.getData('text/plain'));
-        if (!source || source === targetIndex) return;
-        setEraBreaks(prev => {
-            const next = prev.filter(b => b !== source);
-            if (!next.includes(targetIndex)) next.push(targetIndex);
-            return next.sort((a, b) => a - b);
-        });
-        setDraggingBoundary(null);
-    };
-    const allowDrop = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
 
     const renderContent = () => {
         switch (view) {
@@ -1297,11 +1834,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 // Show ReportGenerationModal only if animations enabled AND no error
                 if (oraclePreferences?.animationsEnabled && !scanError) {
                     return (
-                        <ReportGenerationModal
-                            onFinish={() => {
-                                finalizeReportGeneration();
-                            }}
-                        />
+                        <Suspense fallback={<div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20"><p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatorio...</p></div>}>
+                            <ReportGenerationModal
+                                onFinish={() => {
+                                    finalizeReportGeneration();
+                                }}
+                            />
+                        </Suspense>
                     );
                 }
 
@@ -1359,25 +1898,18 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         {activeCycle ? (
                             <div className="relative z-20 space-y-2">
                                 <button id="end-cycle-button" onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
-                                <button id="eras-button" onClick={handleStartEraEdit} disabled={isEditingEras || sortedReports.length < 2} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">EDITAR ERAS</button>
-                                <button onClick={handleResetEras} disabled={sortedReports.length < 2 || (!hasCustomEras && eraBreaks.length === defaultEraBreaks.length)} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">RESETAR ERAS</button>
                             </div>
                         ) : (
                             <div className="relative z-20 space-y-2">
                                 <button id="start-new-cycle-button" onClick={() => setIsStartingCycle(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
                                 {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem legado fechado ainda. Inicie sua jornada.</div>}
-                                <button id="eras-button" onClick={handleStartEraEdit} disabled={isEditingEras || sortedReports.length < 2} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">EDITAR ERAS</button>
-                                <button onClick={handleResetEras} disabled={sortedReports.length < 2 || (!hasCustomEras && eraBreaks.length === defaultEraBreaks.length)} className="w-full py-2 rounded-xl luxe-button-secondary text-xs disabled:opacity-40">RESETAR ERAS</button>
                             </div>
                         )}
 
+                        {renderEraControls()}
+
                         {(sortedReports.length > 0 || activeCycle) && (
                             <div className="relative mt-6">
-                                {isEditingEras && (
-                                    <div className="mb-3">
-                                        <button onClick={handleConfirmEraEdit} className="w-full py-2 rounded-xl luxe-skin-button text-xs">CONFIRMAR</button>
-                                    </div>
-                                )}
                                 <div className="grid grid-cols-[72px_1fr_36px] gap-x-2">
                                     {items.map((item, rowIndex) => {
                                         if (item.type === 'active') {
@@ -1401,7 +1933,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         }
 
                                         if (item.type === 'report') {
-                                            const eraSummary = reportEraSummaryByIndex.get(item.reportIndex);
+                                            const eraDisplay = displayedEraByReportIndex.get(item.reportIndex);
                                             return (
                                                 <React.Fragment key={item.report.id}>
                                                     <div className="relative py-3"></div>
@@ -1410,11 +1942,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         <TimelineCard
                                                             report={item.report}
                                                             isLatest={item.reportIndex === 0 && !activeCycle}
-                                                            onClick={() => handleViewReport(item.report)}
+                                                            onClick={() => isEditingEras ? handleAssignReportToDraftEra(item.reportIndex) : handleViewReport(item.report)}
                                                             seasonName={item.seasonName}
                                                             isEditing={isEditingEras}
-                                                            eraLabel={eraSummary?.label}
-                                                            eraSkinId={eraSummary?.skinId}
+                                                            eraLabel={eraDisplay?.label}
+                                                            eraSkinId={eraDisplay?.skinId}
+                                                            isSelectedForEraEdit={!!eraDisplay?.isActive}
                                                         />
                                                     </div>
                                                     <div className="relative py-3"></div>
@@ -1422,7 +1955,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             );
                                         }
 
-                                        const isBoundarySet = eraBreaks.includes(item.boundaryIndex);
                                         return (
                                             <React.Fragment key={`boundary-${item.boundaryIndex}-${rowIndex}`}>
                                                 <div className="relative py-2 flex items-center justify-end">
@@ -1444,50 +1976,94 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 </div>
                                                 <div className="relative py-2 flex items-center justify-center">
                                                     {isEditingEras && (
-                                                        <div
-                                                            onDragOver={allowDrop}
-                                                            onDrop={handleDropBoundary(item.boundaryIndex)}
-                                                            className={`w-6 h-6 rounded-full border flex items-center justify-center ${isBoundarySet ? 'border-[var(--skin-accent-color)]' : 'border-white/10'} ${draggingBoundary !== null ? 'bg-white/5' : ''}`}
-                                                        >
-                                                            {isBoundarySet && (
-                                                                <div
-                                                                    draggable
-                                                                    onDragStart={handleDragStart(item.boundaryIndex)}
-                                                                    onDragEnd={handleDragEnd}
-                                                                    className="w-3 h-3 rounded-full bg-[var(--skin-accent-color)] cursor-grab"
-                                                                />
-                                                            )}
-                                                        </div>
+                                                        <div className="h-px w-10 bg-[var(--skin-accent-color)]/20" />
                                                     )}
                                                 </div>
                                             </React.Fragment>
                                         );
                                     })}
-                                    {eraSegments.map((segment, index) => {
-                                        const rowStart = reportRowIndexMap.get(segment.start);
-                                        const rowEnd = reportRowIndexMap.get(segment.end);
+                                    {displayedEraBands.map((band) => {
+                                        const rowStart = reportRowIndexMap.get(band.start);
+                                        const rowEnd = reportRowIndexMap.get(band.end);
                                         if (rowStart === undefined || rowEnd === undefined) return null;
-                                        const eraSummary = eraSummaries[index];
 
                                         return (
                                             <div
-                                                key={`era-${segment.start}-${segment.end}`}
+                                                key={`era-${band.key}-${band.start}-${band.end}`}
                                                 className="col-start-3 flex justify-center"
-                                                style={{ gridRow: `${rowStart + 1} / ${rowEnd + 2}`, marginTop: index === 0 ? 0 : 8, marginBottom: index === eraSegments.length - 1 ? 0 : 8 }}
+                                                style={{ gridRow: `${rowStart + 1} / ${rowEnd + 2}`, marginTop: band.eraIndex === 0 ? 0 : 8, marginBottom: band.eraIndex === displayedEraBands.length - 1 ? 0 : 8 }}
                                             >
-                                                <button
-                                                    id={`era-ribbon-button-${index}`}
-                                                    type="button"
-                                                    onClick={() => eraSummary && openEraCustomization(eraSummary)}
-                                                    disabled={isEditingEras || !eraSummary}
-                                                    title={isEditingEras ? 'Confirme a edicao de Eras para renomear.' : 'Renomear Era'}
-                                                    className={`h-full rounded-sm transition-all ${isEditingEras ? 'cursor-default opacity-70' : 'cursor-pointer hover:scale-[1.02]'}`}
-                                                >
-                                                    <EraRibbon
-                                                        label={eraSummary?.label || getEraLabel(index)}
-                                                        skinId={resolveEraSkinId(eraSummary, index)}
-                                                    />
-                                                </button>
+                                                <div className="relative h-full">
+                                                    <button
+                                                        id={`era-ribbon-button-${band.eraIndex}`}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (isEditingEras && 'slot' in band) {
+                                                                setActiveDraftEraId(band.slot.id);
+                                                                return;
+                                                            }
+                                                        }}
+                                                        disabled={!isEditingEras || !('slot' in band)}
+                                                        title={isEditingEras ? 'Selecionar Era' : band.label}
+                                                        className={`h-full rounded-sm transition-all ${isEditingEras && band.isActive ? 'scale-[1.03]' : ''} ${isEditingEras && 'slot' in band ? 'cursor-pointer' : 'cursor-default'}`}
+                                                    >
+                                                        <EraRibbon
+                                                            label={band.label}
+                                                            skinId={band.skinId}
+                                                            className={band.isActive ? 'shadow-[0_0_0_1px_rgba(212,175,55,0.55),0_0_24px_rgba(212,175,55,0.16)]' : ''}
+                                                        />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if ('slot' in band) {
+                                                                openDraftEraInlineEditor(band.slot, band.eraIndex);
+                                                                setActiveDraftEraId(band.slot.id);
+                                                                return;
+                                                            }
+                                                            if ('summary' in band) {
+                                                                openSavedEraInlineEditor(band.summary, band.eraIndex);
+                                                            }
+                                                        }}
+                                                        title="Editar nome e skin da Era"
+                                                        className="absolute -right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-black/75 text-[10px] text-white/80 shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:border-[var(--skin-accent-color)]/45 hover:text-white"
+                                                    >
+                                                        ✦
+                                                    </button>
+                                                    {inlineEraEditor?.key === band.key && (
+                                                        <div className="absolute left-full top-2 z-20 ml-3 w-56 rounded-[20px] border border-white/10 bg-black/90 p-3 shadow-[0_18px_44px_rgba(0,0,0,0.45)] backdrop-blur-md">
+                                                            <p className="text-[9px] font-black uppercase tracking-[0.24em] text-gray-500">Era</p>
+                                                            <input
+                                                                value={inlineEraName}
+                                                                onChange={(event) => setInlineEraName(event.target.value.slice(0, 48))}
+                                                                placeholder={inlineEraEditor.defaultLabel}
+                                                                className="mt-3 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs outline-none transition-colors focus:border-[var(--skin-accent-color)]"
+                                                            />
+                                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                                {ERA_RIBBON_SKINS.map((skin) => {
+                                                                    const locked = skin.isPremium && !userProfile.isPremium;
+                                                                    const active = inlineEraSkinId === skin.id;
+                                                                    return (
+                                                                        <button
+                                                                            key={skin.id}
+                                                                            type="button"
+                                                                            disabled={locked}
+                                                                            onClick={() => setInlineEraSkinId(skin.id)}
+                                                                            className={`flex h-8 w-8 items-center justify-center rounded-full border text-[9px] ${active ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10' : 'border-white/10 bg-black/25'} ${locked ? 'cursor-not-allowed opacity-40' : ''}`}
+                                                                            title={locked ? 'Disponivel no premium' : skin.name}
+                                                                        >
+                                                                            <span className="inline-flex h-3 w-3 rounded-full" style={{ backgroundColor: skin.edge }} />
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <div className="mt-3 flex gap-2">
+                                                                <button type="button" onClick={() => setInlineEraEditor(null)} className="flex-1 rounded-xl luxe-button-secondary px-3 py-2 text-[10px]">Cancelar</button>
+                                                                <button type="button" onClick={() => { void handleSaveInlineEraEditor(); }} className="flex-1 rounded-xl luxe-skin-button px-3 py-2 text-[10px]">Salvar</button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -1508,7 +2084,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         report={selectedReport}
                         onOk={isPostCycleFlow ? handlePostCycleResultsOk : handleCloseDynamic}
                         onCompare={() => { setReportForComparison(selectedReport); setView('hub'); }}
-                        onShare={() => handleShare('report-summary-card-capture', `Relatório de Ciclo ${formatDate(selectedReport.startDate)} - Life OS`)}
+                        onShare={() => handleShareReport(selectedReport)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onDelete={() => {
                             if (confirm("Tem certeza que deseja excluir este relatório?")) {
@@ -1579,7 +2155,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onOpenCycle={handleOpenLegacyCycle}
                     onOpenEra={(era) => {
                         setShowLegacyProjectionModal(false);
-                        openEraCustomization(era);
+                        const eraIndex = Math.max(eraSummaries.findIndex((summary) => summary.key === era.key), 0);
+                        openSavedEraInlineEditor(era, eraIndex);
                     }}
                     onOpenPlaque={() => {
                         setShowLegacyProjectionModal(false);
@@ -1603,21 +2180,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     plaqueForged={legacyPlaqueForged}
                     onToast={showToast}
                     onClose={() => setShowLegacyPlaqueModal(false)}
-                />
-            )}
-            {customizingEra && (
-                <EraCustomizationModal
-                    era={customizingEra}
-                    initialName={eraMetadata[customizingEra.key || '']?.name || ''}
-                    initialDescription={eraMetadata[customizingEra.key || '']?.description || ''}
-                    initialFinalSummary={eraMetadata[customizingEra.key || '']?.finalSummary || ''}
-                    aiSummary={customizingEra.aiSummary || ''}
-                    cycles={customizingEra.cycles || []}
-                    selectedSkinId={resolveEraSkinId(customizingEra, Math.max(eraSummaries.findIndex((summary) => summary.key === customizingEra.key), 0))}
-                    defaultSkinId={getEraRibbonSkinId(Math.max(eraSummaries.findIndex((summary) => summary.key === customizingEra.key), 0))}
-                    isPremium={!!userProfile.isPremium}
-                    onClose={() => setCustomizingEra(null)}
-                    onSave={handleSaveEraCustomization}
                 />
             )}
             {eraSummaries.length > 0 && (

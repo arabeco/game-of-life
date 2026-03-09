@@ -8,8 +8,10 @@
     "build": "vite build",
     "test": "npm run test:core-loop",
     "test:core-loop": "node tests/core-loop.regression.mjs",
+    "check:encoding": "node scripts/check-encoding.mjs",
     "type-check": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "worker:legacy-render": "node scripts/legacy-render-worker.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.29",

@@ -78,7 +78,7 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
                                 <div
                                     className="relative h-[88px] w-full overflow-hidden rounded-[10px] border border-white/5 bg-white/[0.03]"
                                     style={{ boxShadow: day.isWeekStart ? `inset 1px 0 0 ${accentColor}` : undefined }}
-                                    title={`${day.date} • ${day.completedCount}/${day.plannedCount}`}
+                                    title={`${day.date} Â· ${day.completedCount}/${day.plannedCount}`}
                                 >
                                     <div
                                         className="absolute inset-x-0 bottom-0 bg-white/5"
@@ -103,7 +103,7 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
                                         </div>
                                     )}
                                 </div>
-                                <div className="text-[7px] font-black leading-none text-gray-500">{day.isWeekStart ? `S${day.weekIndex}` : '·'}</div>
+                                <div className="text-[7px] font-black leading-none text-gray-500">{day.isWeekStart ? `S${day.weekIndex}` : 'Â·'}</div>
                             </div>
                         );
                     })}

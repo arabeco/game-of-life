@@ -1,29 +1,33 @@
-.metal-report-card {
+﻿.metal-report-card {
   position: relative;
   overflow: hidden;
-  border-radius: 2rem;
-  min-height: 19rem;
   isolation: isolate;
+  border-radius: 2rem;
+  min-height: 20rem;
   box-shadow:
-    0 24px 44px rgba(0, 0, 0, 0.38),
-    0 0 0 1px color-mix(in srgb, var(--metal-edge) 18%, transparent),
-    0 0 42px var(--metal-glow);
+    0 24px 44px rgba(0, 0, 0, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--metal-edge) 16%, transparent),
+    0 0 34px var(--metal-glow);
+}
+
+.metal-report-card--compact {
+  min-height: 11.25rem;
+  border-radius: 1.65rem;
+  box-shadow:
+    0 18px 28px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 16px var(--metal-glow);
 }
 
 .metal-report-card--entry-flash::after {
   content: "";
   position: absolute;
   inset: -18% -42%;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
   background: linear-gradient(45deg, transparent 28%, rgba(255,255,255,0.04) 42%, rgba(255,255,255,0.58) 50%, rgba(255,255,255,0.08) 56%, transparent 72%);
   mix-blend-mode: screen;
   animation: metal-card-entry-flash 980ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.metal-report-card--compact {
-  min-height: 14.5rem;
-  border-radius: 1.7rem;
 }
 
 .metal-report-card__svg {
@@ -36,10 +40,10 @@
 .metal-report-card__sheen {
   position: absolute;
   inset: -20% -35%;
-  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.02) 44%, rgba(255,255,255,0.46) 50%, rgba(255,255,255,0.02) 56%, transparent 70%);
+  background: linear-gradient(45deg, transparent 28%, rgba(255,255,255,0.018) 44%, rgba(255,255,255,0.38) 50%, rgba(255,255,255,0.02) 56%, transparent 70%);
   mix-blend-mode: screen;
-  opacity: 0.6;
-  transform: translateX(-75%);
+  opacity: 0.58;
+  transform: translateX(-78%);
   animation: metal-card-sheen 8s linear infinite;
   pointer-events: none;
 }
@@ -48,183 +52,260 @@
   position: relative;
   z-index: 1;
   display: flex;
-  height: 100%;
   min-height: inherit;
+  height: 100%;
   flex-direction: column;
   gap: 1rem;
-  padding: 1.2rem 1.2rem 1.05rem;
+  padding: 1.1rem;
   color: var(--metal-text);
 }
 
 .metal-report-card--compact .metal-report-card__content {
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: 0.48rem;
+  padding: 0.72rem 0.74rem 0.76rem;
 }
 
-.metal-report-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+.metal-report-card__rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 1rem;
+  padding: 0.48rem 0.65rem;
 }
 
-.metal-report-card__title-block {
+.metal-report-card--compact .metal-report-card__rail {
+  gap: 0.35rem;
+  border-radius: 0.9rem;
+  padding: 0.38rem 0.5rem;
+}
+
+.metal-report-card__rail-label,
+.metal-report-card__rail-value {
   min-width: 0;
-}
-
-.metal-report-card__kicker {
-  margin: 0;
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 900;
-  letter-spacing: 0.38em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--metal-edge) 74%, white);
-  opacity: 0.86;
 }
 
-.metal-report-card__title {
-  margin: 0.45rem 0 0;
-  font-size: 1.4rem;
-  font-weight: 900;
-  line-height: 0.96;
-  letter-spacing: -0.03em;
+.metal-report-card__rail-value {
+  text-align: right;
 }
 
-.metal-report-card--compact .metal-report-card__title {
-  font-size: 1.06rem;
+.metal-report-card--compact .metal-report-card__rail-label,
+.metal-report-card--compact .metal-report-card__rail-value {
+  font-size: 0.48rem;
+  letter-spacing: 0.14em;
 }
 
-.metal-report-card__subtitle {
-  margin: 0.45rem 0 0;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  opacity: 0.84;
-}
-
-.metal-report-card__rank-block {
-  flex-shrink: 0;
+.metal-report-card__hero {
   display: flex;
-  min-width: 4.8rem;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.metal-report-card--compact .metal-report-card__hero {
+  gap: 0.42rem;
+}
+
+.metal-report-card__seal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.1rem;
+  height: 4.1rem;
+  border-radius: 999px;
+}
+
+.metal-report-card--compact .metal-report-card__seal {
+  width: 2.7rem;
+  height: 2.7rem;
+}
+
+.metal-report-card__seal-core {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid color-mix(in srgb, var(--metal-trim) 80%, transparent);
+  border-radius: 0.35rem;
+  transform: rotate(45deg);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25), 0 0 12px color-mix(in srgb, var(--metal-highlight) 22%, transparent);
+}
+
+.metal-report-card__seal-mark {
+  position: absolute;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid color-mix(in srgb, var(--metal-edge) 18%, transparent);
+  border-radius: 999px;
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.035);
+}
+
+.metal-report-card--compact .metal-report-card__seal-mark {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.metal-report-card__rank-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 0.15rem;
+  text-align: center;
 }
 
 .metal-report-card__rank {
-  font-size: 2.65rem;
+  font-size: 4.3rem;
   font-weight: 900;
-  line-height: 0.88;
+  line-height: 0.86;
   letter-spacing: -0.08em;
 }
 
-.metal-report-card--compact .metal-report-card__rank {
-  font-size: 2rem;
-}
-
 .metal-report-card__score {
-  font-size: 0.74rem;
-  font-weight: 900;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.metal-report-card__rank-label {
-  border-radius: 9999px;
-  border: 1px solid color-mix(in srgb, var(--metal-edge) 22%, transparent);
-  background: color-mix(in srgb, var(--metal-base-deep) 72%, transparent);
-  padding: 0.24rem 0.6rem;
-  font-size: 0.54rem;
+  font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--metal-edge) 82%, white);
+}
+
+.metal-report-card--compact .metal-report-card__rank {
+  font-size: 2.4rem;
+  line-height: 0.82;
+}
+
+.metal-report-card--compact .metal-report-card__score {
+  font-size: 0.54rem;
+  letter-spacing: 0.2em;
+}
+
+.metal-report-card__title-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.metal-report-card__title {
+  margin: 0;
+  font-size: 1.26rem;
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
 }
 
 .metal-report-card__summary {
   margin: 0;
-  max-width: 30rem;
-  font-size: 0.84rem;
-  line-height: 1.45;
+  max-width: 26rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.metal-report-card--compact .metal-report-card__title {
+  font-size: 0.88rem;
 }
 
 .metal-report-card--compact .metal-report-card__summary {
-  font-size: 0.74rem;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .metal-report-card__metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
+  gap: 0.6rem;
 }
 
 .metal-report-card__metric,
 .metal-report-card__badge {
-  position: relative;
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.16rem;
   border-radius: 1rem;
-  padding: 0.7rem 0.8rem;
+  padding: 0.62rem 0.72rem;
+}
+
+.metal-report-card--compact .metal-report-card__metric,
+.metal-report-card--compact .metal-report-card__badge {
+  border-radius: 0.88rem;
+  padding: 0.42rem 0.5rem;
 }
 
 .metal-report-card__metric-label,
 .metal-report-card__badge-label {
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   font-weight: 900;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--metal-edge) 72%, white);
-  opacity: 0.82;
+  color: color-mix(in srgb, var(--metal-trim) 68%, transparent);
 }
 
 .metal-report-card__metric-value,
 .metal-report-card__badge-value {
-  font-size: 0.92rem;
+  font-size: 0.94rem;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1.05;
+}
+
+.metal-report-card--compact .metal-report-card__metric-label,
+.metal-report-card--compact .metal-report-card__badge-label {
+  font-size: 0.45rem;
+  letter-spacing: 0.14em;
 }
 
 .metal-report-card--compact .metal-report-card__metric-value,
 .metal-report-card--compact .metal-report-card__badge-value {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
 }
 
 .metal-report-card__badges {
   margin-top: auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.52rem;
+}
+
+.metal-report-card--compact .metal-report-card__badges {
+  gap: 0.38rem;
+  margin-top: 0.05rem;
 }
 
 .metal-report-card__badge {
-  min-width: 5.3rem;
-  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.16));
+  min-width: 5rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(0,0,0,0.2));
 }
 
 .engraved-text {
-  color: color-mix(in srgb, var(--metal-edge) 88%, white);
+  color: color-mix(in srgb, var(--metal-trim) 88%, white);
   text-shadow:
-    0 1px 0 rgba(255,255,255,0.14),
+    0 1px 0 rgba(255,255,255,0.11),
     0 -1px 0 rgba(0,0,0,0.58),
-    0 0 16px rgba(255,255,255,0.08);
+    0 0 14px rgba(255,255,255,0.03);
 }
 
 .engraved-text-soft {
-  color: color-mix(in srgb, var(--metal-edge) 72%, white);
+  color: color-mix(in srgb, var(--metal-edge) 74%, white);
   text-shadow:
-    0 1px 0 rgba(255,255,255,0.1),
-    0 -1px 0 rgba(0,0,0,0.45);
+    0 1px 0 rgba(255,255,255,0.08),
+    0 -1px 0 rgba(0,0,0,0.46);
 }
 
 .engraved-panel {
   border: 1px solid color-mix(in srgb, var(--metal-edge) 18%, transparent);
-  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.2));
+  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(0,0,0,0.24));
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    inset 0 -2px 5px rgba(0,0,0,0.26),
-    0 0 18px rgba(255,255,255,0.03);
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -2px 7px rgba(0,0,0,0.28),
+    0 0 16px rgba(255,255,255,0.02);
 }
 
 @keyframes metal-card-sheen {

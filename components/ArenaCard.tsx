@@ -152,7 +152,8 @@ const ActionIcon: React.FC<{
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
     isDragOver?: boolean;
-}> = ({ action, onDragStart, onDragOver, onDrop, isDragOver }) => {
+    compact?: boolean;
+}> = ({ action, onDragStart, onDragOver, onDrop, isDragOver, compact = false }) => {
     const { getActionBackgroundStyle, getArenas, getClanQuestProgress, getClanQuestForActionName } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
     
@@ -196,7 +197,7 @@ const ActionIcon: React.FC<{
             onDragOver={onDragOver}
             onDrop={onDrop}
             style={backgroundStyle} 
-            className={`w-6 h-6 border ${isDragOver ? 'border-white scale-110' : 'border-[var(--accent-bronze)]'} rounded-md flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
+            className={`${compact ? 'w-5 h-5 rounded-[6px]' : 'w-6 h-6 rounded-md'} border ${isDragOver ? 'border-white scale-110' : 'border-[var(--accent-bronze)]'} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
         >
             {renderIcon()}
         </div>
@@ -361,11 +362,13 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
     const isOverview = variant === 'overview';
     const isCompactThumbnail = variant === 'overview' || variant === 'compact';
+    const visibleMilestones = isCompactThumbnail ? milestoneActions.slice(0, 1) : milestoneActions;
+    const visibleBronzeActions = isCompactThumbnail ? bronzeActions.slice(0, 3) : bronzeActions;
     const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
     const skinColor = 'var(--skin-accent-color)';
     const baseClasses = `arena-plate p-1 rounded-lg border flex flex-col justify-between relative overflow-hidden transition-all duration-300 select-none pointer-events-none`;
     const styleClasses = isOverview 
-        ? 'h-28' 
+        ? 'h-[8.85rem]' 
         : variant === 'dossier' ? 'h-full w-full' : 'h-24';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
     const cardStyle: React.CSSProperties = {
@@ -379,14 +382,14 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     return (
         <div 
             onClick={onClick} 
-            className={`${baseClasses} ${styleClasses} ${archivedClasses}`} 
+            className={`${baseClasses} ${styleClasses} ${archivedClasses} ${isCompactThumbnail ? 'justify-start gap-[2px]' : ''}`} 
             style={{ ...cardStyle, ...tiltStyle }}
         >
-            <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: accentColor }} />
+            {!isCompactThumbnail && <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: accentColor }} />}
             <div className="arena-plasma pointer-events-none">
                 <PlasmaCanvas color={skinTone} opacity={0.35} className="arena-plasma-canvas" width={320} height={220} />
             </div>
-            <div className="text-center relative z-10 pointer-events-none select-none">
+            <div className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'arena-thumb-layout flex-shrink-0' : ''}`}>
                 <div className="arena-icon-slot">
                     <span className="arena-icon">
                         {getIcon()}
@@ -394,12 +397,12 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 </div>
                 <div className="arena-title-wrap">
                     <div className="flex flex-col items-center justify-start">
-                        <h3 className={`arena-title arena-title-text text-[11px] text-white luxe-title-shadow leading-tight ${isCompactThumbnail ? 'line-clamp-1' : 'line-clamp-2'}`}>{arena.name}</h3>
+                        <h3 className={`arena-title arena-title-text text-white luxe-title-shadow leading-tight arena-thumb-title ${isCompactThumbnail ? 'text-[9px] line-clamp-2' : 'text-[11px] line-clamp-2'}`}>{arena.name}</h3>
                         {isOverview && assetName && <span className="arena-subtitle">{assetName}</span>}
                     </div>
                 </div>
                 
-                {isClanQuestArena && (
+                {!isCompactThumbnail && isClanQuestArena && (
                     <div className="flex justify-center gap-2 mt-1">
                          <div className="flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded text-[10px]" style={{ color: accentColor }}>
                             <UsersIcon className="w-3 h-3" />
@@ -417,10 +420,10 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 )}
             </div>
             
-            <div className={`flex flex-col items-center flex-shrink-0 relative z-10 pointer-events-auto ${isCompactThumbnail ? 'arena-mini-stack' : 'space-y-2'}`}>
-                {milestoneActions.length > 0 && (
-                    <div className={`w-full flex items-center justify-center ${isCompactThumbnail ? 'arena-mini-milestones gap-1.5' : 'h-8 gap-2'}`}>
-                        {milestoneActions.map(action => {
+            <div className={`flex flex-col items-center flex-shrink-0 relative z-10 pointer-events-auto ${isCompactThumbnail ? 'arena-mini-stack w-full' : 'space-y-2'}`}>
+                {visibleMilestones.length > 0 && (
+                    <div className={`w-full flex items-center justify-center ${isCompactThumbnail ? 'arena-mini-milestones gap-1' : 'h-8 gap-2'}`}>
+                        {visibleMilestones.map(action => {
                             const backgroundStyle = getActionBackgroundStyle(action.id);
                             const task = tasks.find(t => t.actionId === action.id);
                             const isCompleted = !!task?.completed;
@@ -429,7 +432,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                             return (
                                 <div 
                                     key={action.id} 
-                                    className={`relative ${isCompactThumbnail ? 'w-6 h-6' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
+                                    className={`relative ${isCompactThumbnail ? 'w-5 h-5' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
                                     title={action.name}
                                     draggable
                                     onDragStart={(e) => handleActionDragStart(e, action.id)}
@@ -446,7 +449,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                             </div>
                                             {isCompleted && (
                                                 <div className="absolute inset-0 bg-black/60 rounded-sm flex items-center justify-center">
-                                                    <CheckIcon className="w-4 h-4 text-white transform -rotate-45"/>
+                                                    <CheckIcon className={`${isCompactThumbnail ? 'w-3 h-3' : 'w-4 h-4'} text-white transform -rotate-45`}/>
                                                 </div>
                                             )}
                                         </div>
@@ -458,7 +461,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 )}
                 
                 <div className={`w-full flex items-center justify-center overflow-x-auto hide-scrollbar ${isCompactThumbnail ? 'arena-mini-actions gap-1' : 'h-6 gap-1.5'}`}>
-                    {bronzeActions.map(action => (
+                    {visibleBronzeActions.map(action => (
                         <ActionIcon 
                             key={action.id} 
                             action={action} 
@@ -466,10 +469,11 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                             onDragOver={(e) => handleActionDragOver(e, action.id)}
                             onDrop={(e) => handleActionDrop(e, action.id)}
                             isDragOver={dragOverActionId === action.id}
+                            compact={isCompactThumbnail}
                         />
                     ))}
                 </div>
-                <div className="arena-plate-progress mt-0.5">
+                <div className="arena-plate-progress mt-0.5 w-full">
                     <div
                         className="arena-plate-progress-fill"
                         style={{
@@ -482,5 +486,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         </div>
     );
 };
+
 
 

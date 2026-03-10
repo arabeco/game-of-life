@@ -12,15 +12,16 @@
 }
 
 .arena-icon-slot {
-  min-height: 28px;
+  min-height: 16px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 0;
 }
 
 .arena-icon {
-  width: 28px;
-  height: 28px;
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -33,39 +34,58 @@
 .arena-subtitle {
   display: block;
   margin-top: 1px;
-  font-size: 8px;
+  font-size: 6px;
   line-height: 1.05;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
   color: rgba(209, 213, 219, 0.75);
 }
 
 .arena-mini-stack {
-  gap: 0.3rem;
+  width: 100%;
+  margin-top: auto;
+  gap: 0.12rem;
 }
 
 .arena-mini-actions {
-  min-height: 18px;
+  min-height: 16px;
 }
 
 .arena-mini-milestones {
-  min-height: 24px;
+  min-height: 18px;
 }
 
 .arena-plate-progress {
   position: relative;
   width: 100%;
-  height: 7px;
+  height: 6px;
   border-radius: 9999px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 .arena-plate-progress-fill {
   height: 100%;
   border-radius: inherit;
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.45);
+  box-shadow:
+    0 0 12px rgba(255, 215, 0, 0.6),
+    0 0 4px rgba(255, 255, 255, 0.18);
   transition: width 180ms ease, background-color 180ms ease;
+}
+
+.arena-thumb-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-height: 0;
+}
+
+.arena-thumb-title {
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }

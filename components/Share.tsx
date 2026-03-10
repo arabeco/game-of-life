@@ -1,8 +1,14 @@
-﻿interface ExportElementOptions {
+interface ExportElementOptions {
     fileName?: string;
     title?: string;
     backgroundColor?: string;
     preferShare?: boolean;
+    pixelRatio?: number;
+    fontFamily?: string;
+}
+
+interface ExportSequenceItem extends ExportElementOptions {
+    elementId: string;
 }
 
 const CAPTURE_DELAY_MS = 800;
@@ -31,13 +37,20 @@ const getTargetElement = (elementId: string) => {
     return element;
 };
 
-const captureElementBlob = async (element: HTMLElement, backgroundColor: string) => {
+const captureElementBlob = async (
+    element: HTMLElement,
+    backgroundColor: string,
+    {
+        pixelRatio = 2,
+        fontFamily,
+    }: Pick<ExportElementOptions, 'pixelRatio' | 'fontFamily'> = {}
+) => {
     await waitForCapture();
     const toPng = await loadToPng();
 
     const dataUrl = await toPng(element, {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio,
         backgroundColor,
         filter: (node) => {
             if (node instanceof HTMLElement && node.hasAttribute('data-html2canvas-ignore')) {
@@ -45,9 +58,7 @@ const captureElementBlob = async (element: HTMLElement, backgroundColor: string)
             }
             return true;
         },
-        style: {
-            fontFamily: 'Inter, sans-serif'
-        }
+        style: fontFamily ? { fontFamily } : undefined,
     });
 
     const response = await fetch(dataUrl);
@@ -115,10 +126,12 @@ export const exportElementAsImage = async (
         title = 'Glyph Export',
         backgroundColor = '#050505',
         preferShare = false,
+        pixelRatio = 2,
+        fontFamily,
     }: ExportElementOptions = {}
 ) => {
     const element = getTargetElement(elementId);
-    const blob = await captureElementBlob(element, backgroundColor);
+    const blob = await captureElementBlob(element, backgroundColor, { pixelRatio, fontFamily });
     const normalizedFileName = fileName.toLowerCase().endsWith('.png') ? fileName : `${fileName}.png`;
     const file = new File([blob], normalizedFileName, { type: 'image/png' });
 
@@ -130,3 +143,27 @@ export const exportElementAsImage = async (
     downloadBlob(blob, normalizedFileName);
     return 'downloaded' as const;
 };
+
+export const exportElementsAsImageSequence = async (items: ExportSequenceItem[]) => {
+    const sequence = items.filter((item) => item.elementId);
+    if (sequence.length === 0) {
+        throw new Error('Nenhum slide encontrado para exportacao.');
+    }
+
+    for (const item of sequence) {
+        const element = getTargetElement(item.elementId);
+        const blob = await captureElementBlob(element, item.backgroundColor || '#050505', {
+            pixelRatio: item.pixelRatio ?? 3,
+            fontFamily: item.fontFamily,
+        });
+        const normalizedFileName = (item.fileName || item.elementId).toLowerCase().endsWith('.png')
+            ? (item.fileName || item.elementId)
+            : `${item.fileName || item.elementId}.png`;
+        downloadBlob(blob, normalizedFileName);
+        await new Promise((resolve) => setTimeout(resolve, 180));
+    }
+
+    return sequence.length;
+};
+
+export const exportLegadoKit = async (items: ExportSequenceItem[]) => exportElementsAsImageSequence(items);

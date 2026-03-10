@@ -142,18 +142,18 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         fullMark: 100
     }));
 
-    // Slide 1: ExecuÃ§Ã£o
+    // Slide 1: Execucao
     const renderExecutionSlide = () => (
         <div className="flex flex-col h-full space-y-8 p-6">
             <div className="text-center">
-                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">ExecuÃ§Ã£o</h3>
+                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Execucao</h3>
                 <div className="report-rule" />
             </div>
 
             <div className="space-y-6">
                 <div className="report-panel p-4">
                     <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                        <span>AÃ§Ãµes</span>
+                        <span>Acoes</span>
                         <span className="text-white">{metrics.actionsCompleted} <span className="text-gray-600">/</span> {metrics.totalPlannedActions}</span>
                     </div>
                     <div className="report-track">
@@ -185,7 +185,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 </div>
                 <div className="report-panel report-panel-hover p-6 text-center group">
                     <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.avgHoursPerDay ?? (metrics.totalHours / totalDays).toFixed(1)}</p>
-                    <p className="report-micro">MÃ©dia h/dia</p>
+                    <p className="report-micro">Media h/dia</p>
                 </div>
             </div>
 
@@ -198,13 +198,13 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 <div className="report-panel report-panel-hover p-6 text-center group">
                     <p className={`text-3xl font-black mb-1 tracking-tighter ${paceColor}`}>{paceDelta > 0 ? `+${paceDelta}` : paceDelta}</p>
                     <p className="report-micro">Ritmo</p>
-                    <p className="text-[9px] text-gray-600 mt-1">{paceLabel} Â· exec {executionPercentage}% x tempo {timeElapsedPercentage}%</p>
+                    <p className="text-[9px] text-gray-600 mt-1">{paceLabel} - exec {executionPercentage}% x tempo {timeElapsedPercentage}%</p>
                 </div>
             </div>
 
             <div className="report-panel p-4">
                 <div className="flex justify-between text-[10px] text-gray-500 mb-3 font-black tracking-widest uppercase">
-                    <span>ConsistÃªncia</span>
+                    <span>Consistencia</span>
                     <span className="text-white">{metrics.consistencyDays || 0} <span className="text-gray-600">/</span> {totalDays} <span className="text-gray-600 text-[8px]">DIAS</span></span>
                 </div>
                 <div className="report-track">
@@ -217,7 +217,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </div>
     );
 
-    // Slide 2: TerritÃ³rio
+    // Slide 2: Territorio
     const renderAtlasSlide = () => (
         <CycleAtlasPanel weeks={weeklyAtlas} />
     );
@@ -225,7 +225,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const renderTerritorySlide = () => (
         <div className="flex flex-col h-full space-y-6 p-6">
             <div className="text-center">
-                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">TerritÃ³rio</h3>
+                <h3 className="text-2xl font-black text-white uppercase tracking-[0.3em] mb-2">Territorio</h3>
                 <div className="report-rule" />
             </div>
 
@@ -248,17 +248,17 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
                 </div>
 
-                {/* Top 3 AÃ§Ãµes  Roman Numeral Indicators */}
+                {/* Top 3 Acoes - Roman Numeral Indicators */}
                 {metrics.top3Actions && metrics.top3Actions.length > 0 && (
                     <div className="report-panel p-4 space-y-2">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-2">AÃ§Ãµes Dominantes</p>
+                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-2">Acoes Dominantes</p>
                         {metrics.top3Actions.map((action, idx) => (
                             <div key={idx} className="flex items-center justify-between py-1.5">
                                 <div className="flex items-center gap-3">
                                     <span className="text-[10px] font-black text-gray-600 w-5 text-right tracking-widest">{['I', 'II', 'III'][idx]}</span>
                                     <span className="text-xs font-bold text-white truncate max-w-[180px]">{action.name}</span>
                                 </div>
-                                <span className="text-sm font-black text-[var(--skin-accent-color)] tabular-nums">{action.count}<span className="text-[9px] ml-0.5 opacity-40">Ã—</span></span>
+                                <span className="text-sm font-black text-[var(--skin-accent-color)] tabular-nums">{action.count}<span className="text-[9px] ml-0.5 opacity-40">x</span></span>
                             </div>
                         ))}
                     </div>
@@ -324,7 +324,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <XIcon className="w-10 h-10 text-gray-700" />
                         </div>
                         <p className="text-gray-500 text-xs font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px] opacity-60">
-                            "Nenhum marco registrado. <br />A disciplina Ã© a Ãºnica saÃ­da."
+                            "Nenhum marco registrado. <br />A disciplina e a unica saida."
                         </p>
                     </div>
                 )}
@@ -352,7 +352,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
             <div className="pt-12 space-y-2 relative z-10">
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">{formatDate(report.startDate)}  {formatDate(report.endDate)}</p>
-                <p className="text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-[0.1em] opacity-60">{duration} dias de operaÃ§Ã£o</p>
+                <p className="text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-[0.1em] opacity-60">{duration} dias de operacao</p>
             </div>
 
             <p className="text-xl font-black text-white leading-tight tracking-tight max-w-[300px] italic opacity-90 relative z-10">
@@ -362,12 +362,12 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             {/* Score Decomposition  Mono-tone accent bars */}
             {metrics.scoreBreakdown && (
                 <div className="w-full max-w-[280px] mx-auto mt-6 space-y-2 relative z-10">
-                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em] text-center mb-3">DecomposiÃ§Ã£o</p>
+                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em] text-center mb-3">Decomposicao</p>
                     {[
                         { label: 'Progresso', pts: metrics.scoreBreakdown.progressPts, max: 40, opacity: 1 },
                         { label: 'Marcos', pts: metrics.scoreBreakdown.milestonePts, max: Math.max(metrics.scoreBreakdown.milestonePts, 30), opacity: 0.8 },
                         { label: 'Quests', pts: metrics.scoreBreakdown.questPts, max: Math.max(metrics.scoreBreakdown.questPts, 20), opacity: 0.65 },
-                        { label: 'ConsistÃªncia', pts: metrics.scoreBreakdown.consistencyPts, max: 20, opacity: 0.5 },
+                        { label: 'Consistencia', pts: metrics.scoreBreakdown.consistencyPts, max: 20, opacity: 0.5 },
                         { label: 'Volume', pts: metrics.scoreBreakdown.volumePts, max: 30, opacity: 0.4 },
                         ...((metrics.scoreBreakdown.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium +10%', pts: metrics.scoreBreakdown.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
                     ].map(({ label, pts, max, opacity, ...rest }) => (

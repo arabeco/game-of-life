@@ -426,7 +426,7 @@ export const DebugRewardControls: React.FC = () => {
                 </button>
 
                 <button onClick={() => setShowLegacyPreview(true)} className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-600/20 p-3 text-xs font-bold text-cyan-200 transition-all hover:border-cyan-500/50 hover:bg-cyan-600/40">
-                    <span>??? Testar Legacy Scene</span>
+                    <span>Testar Legacy Scene</span>
                     <span className="text-[10px] opacity-70">(3 Eras mockadas com timeline, placa e planner mini)</span>
                 </button>
             </div>
@@ -525,5 +525,6 @@ export const DebugRewardControls: React.FC = () => {
         </GlassCard>
     );
 };
+
 
 

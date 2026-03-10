@@ -1,12 +1,15 @@
-﻿import React, { useMemo, useState } from 'react';
-import type { LegacyRenderJobStatus, ReportIdentitySnapshot } from '../types';
+﻿import React, { useMemo, useRef, useState } from 'react';
+import type { ReportIdentitySnapshot } from '../types';
 import { Portal } from './Portal';
-import { GlassCard } from './GlassCard';
-import { exportElementAsImage, shouldPreferNativeShare } from './Share';
+import { exportElementAsImage, exportLegadoKit, shouldPreferNativeShare } from './Share';
 import { LegacyProjectionScene } from './LegacyProjectionScene';
-import { LegacyPlaqueArtifact, buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
+import { buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
+import { LegacyGrandPlaque } from './LegacyGrandPlaque';
 import { LegacyGenerationModal } from './LegacyGenerationModal';
+import { LegacyProjectionConfirmModal } from './LegacyProjectionConfirmModal';
+import { LegacyExportKit, type LegacyExportKitHandle } from './LegacyExportKit';
 import type { LegacyEraSummary } from './LegacyExportDocument';
+import { DEFAULT_LEGACY_BACKDROP_SKIN_ID, type LegacyBackdropSkinId } from '../constants/legacyBackdropSkins';
 import './legacy-ui.css';
 
 interface LegacyProjectionModalProps {
@@ -20,12 +23,6 @@ interface LegacyProjectionModalProps {
     onOpenEra?: (era: LegacyEraSummary) => void;
     onOpenPlaque?: () => void;
     onExportRecord?: () => Promise<void> | void;
-    onCreateRenderJob?: () => Promise<void> | void;
-    latestRenderJob?: LegacyRenderJobStatus | null;
-    isLoadingRenderJob?: boolean;
-    onRefreshRenderJobStatus?: () => Promise<void> | void;
-    onDownloadRenderVideo?: () => Promise<void> | void;
-    isDownloadingRenderVideo?: boolean;
 }
 
 const LEGACY_PROJECTION_CAPTURE_ID = 'legacy-projection-capture';
@@ -41,40 +38,25 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     onOpenEra,
     onOpenPlaque,
     onExportRecord,
-    onCreateRenderJob,
-    latestRenderJob,
-    isLoadingRenderJob = false,
-    onRefreshRenderJobStatus,
-    onDownloadRenderVideo,
-    isDownloadingRenderVideo = false,
 }) => {
     const preferNativeShare = shouldPreferNativeShare();
     const [projectionActive, setProjectionActive] = useState(false);
     const [projectionCompleted, setProjectionCompleted] = useState(false);
     const [showGenerationVideo, setShowGenerationVideo] = useState(false);
+    const [showProjectionConfirm, setShowProjectionConfirm] = useState(false);
+    const [selectedBackdropSkinId, setSelectedBackdropSkinId] = useState<LegacyBackdropSkinId>(DEFAULT_LEGACY_BACKDROP_SKIN_ID);
     const [isProjectionTransitioning, setIsProjectionTransitioning] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
-    const [isCreatingRenderJob, setIsCreatingRenderJob] = useState(false);
+    const [isExportingKit, setIsExportingKit] = useState(false);
+    const exportKitRef = useRef<LegacyExportKitHandle | null>(null);
 
     const summary = useMemo(() => buildLegacyPlaqueSummary(eras), [eras]);
-
-    const renderStatusTone = latestRenderJob?.status === 'completed'
-        ? 'text-emerald-300 border-emerald-500/25 bg-emerald-500/10'
-        : latestRenderJob?.status === 'failed'
-            ? 'text-rose-300 border-rose-500/25 bg-rose-500/10'
-            : latestRenderJob?.status === 'processing'
-                ? 'text-amber-200 border-amber-400/25 bg-amber-400/10'
-                : 'text-gray-300 border-white/10 bg-white/5';
-
-    const renderStatusLabel = latestRenderJob?.status === 'completed'
-        ? 'Video pronto no storage'
-        : latestRenderJob?.status === 'failed'
-            ? 'Falha no render'
-            : latestRenderJob?.status === 'processing'
-                ? 'Worker renderizando'
-                : latestRenderJob?.status === 'pending'
-                    ? 'Na fila de render'
-                    : 'Sem render enfileirado';
+    const previewIdentity = useMemo(() => ({
+        nickname: fallbackIdentity?.nickname || sovereignName,
+        level: fallbackIdentity?.level || 1,
+        clanName: fallbackIdentity?.clanName || 'Sem cla',
+        title: fallbackIdentity?.nobilityRankName || fallbackIdentity?.title || 'Vagante',
+    }), [fallbackIdentity, sovereignName]);
 
     const handleExportLegacyImage = async () => {
         setIsExporting(true);
@@ -94,68 +76,54 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
         }
     };
 
-    const handleStartRecording = () => {
+    const handleExportLegacyKit = async () => {
+        if (summary.totalCycles === 0) {
+            onToast('Feche pelo menos um ciclo para exportar o kit do legado.');
+            return;
+        }
+
+        const slides = exportKitRef.current?.getSlides() || [];
+        if (slides.length === 0) {
+            onToast('Os slides do legado ainda nao estao prontos para captura.');
+            return;
+        }
+
+        setIsExportingKit(true);
+        try {
+            const exportedCount = await exportLegadoKit(
+                slides.map((slide) => ({
+                    elementId: slide.id,
+                    fileName: slide.fileName,
+                    title: slide.title,
+                    backgroundColor: '#050505',
+                    pixelRatio: 3,
+                }))
+            );
+            onToast(`${exportedCount} slides do legado exportados.`);
+        } catch (error) {
+            console.error('Erro ao exportar kit do legado:', error);
+            onToast('Nao foi possivel exportar o kit do legado.');
+        } finally {
+            setIsExportingKit(false);
+        }
+    };
+
+    const handlePromptProjection = () => {
         if (!isPremium) {
-            onToast('Gravar legado completo e um recurso premium.');
+            onToast('Abrir a projecao completa do legado e um recurso premium.');
             return;
         }
         if (summary.totalCycles === 0) {
-            onToast('Feche pelo menos um ciclo para gravar o legado.');
+            onToast('Feche pelo menos um ciclo para abrir o legado.');
             return;
         }
+        setShowProjectionConfirm(true);
+    };
+
+    const handleConfirmProjection = () => {
+        setShowProjectionConfirm(false);
         setShowGenerationVideo(true);
     };
-    const handleCreateRenderJob = async () => {
-        if (!isPremium) {
-            onToast('Render em video do legado e um recurso premium.');
-            return;
-        }
-        if (summary.totalCycles === 0) {
-            onToast('Feche pelo menos um ciclo para gerar o video do legado.');
-            return;
-        }
-        if (!onCreateRenderJob) {
-            onToast('Fila de render do legado ainda nao esta configurada.');
-            return;
-        }
-
-        setIsCreatingRenderJob(true);
-        try {
-            await onCreateRenderJob();
-        } finally {
-            setIsCreatingRenderJob(false);
-        }
-    };
-
-    const renderStatusPanel = (
-        <div className={`legacy-panel p-4 text-left ${renderStatusTone}`}>
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <p className="legacy-kicker">Render server-side</p>
-                    <p className="mt-2 text-sm font-black">{renderStatusLabel}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-gray-400">
-                        {latestRenderJob
-                            ? `Job ${latestRenderJob.id.slice(0, 8)} criado em ${new Date(latestRenderJob.createdAt).toLocaleString('pt-BR')}.`
-                            : 'Quando voce enfileirar o video, o worker vai processar o legado no background e subir o mp4 no Supabase Storage.'}
-                    </p>
-                    {latestRenderJob?.errorMessage && (
-                        <p className="mt-2 text-xs leading-relaxed text-rose-200">{latestRenderJob.errorMessage}</p>
-                    )}
-                    {latestRenderJob?.videoPath && (
-                        <p className="mt-2 text-[11px] text-gray-300">Arquivo: {latestRenderJob.videoPath}</p>
-                    )}
-                </div>
-                <button
-                    type="button"
-                    onClick={() => { void onRefreshRenderJobStatus?.(); }}
-                    disabled={isLoadingRenderJob}
-                    className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px] disabled:opacity-50"
-                >
-                    {isLoadingRenderJob ? 'ATUALIZANDO...' : 'Atualizar status'}
-                </button>
-            </div>
-        </div>
-    );
 
     const beginProjection = () => {
         setProjectionCompleted(false);
@@ -167,116 +135,125 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     };
 
     const renderPreviewStage = () => (
-        <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 py-6">
-            <div className="w-full max-w-[520px]">
-                <LegacyPlaqueArtifact eras={eras} sovereignName={sovereignName} plaqueUnlocked={isPremium} />
+        <div className="relative flex min-h-full w-full flex-col items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(66,86,120,0.18),_transparent_22%),linear-gradient(180deg,_#0b0d12,_#050607_56%,_#020203)] px-6 py-10">
+            <div className="pointer-events-none absolute inset-0 opacity-70">
+                <div className="absolute inset-x-[8%] top-[8%] h-px bg-[linear-gradient(90deg,_transparent,_rgba(212,175,55,0.2),_transparent)]" />
+                <div className="absolute inset-x-[8%] bottom-[14%] h-px bg-[linear-gradient(90deg,_transparent,_rgba(255,255,255,0.08),_transparent)]" />
+                <div className="absolute inset-x-[14%] top-[14%] h-[32%] rounded-full bg-[radial-gradient(circle_at_center,_rgba(102,182,255,0.08),_transparent_74%)] blur-2xl" />
             </div>
 
-            <div className="grid w-full max-w-3xl gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="legacy-panel-soft p-4 text-center">
-                    <p className="legacy-kicker legacy-kicker-muted">Eras</p>
-                    <p className="mt-2 text-3xl font-black text-white">{eras.length}</p>
-                </div>
-                <div className="legacy-panel-soft p-4 text-center">
-                    <p className="legacy-kicker legacy-kicker-muted">Ciclos</p>
-                    <p className="mt-2 text-3xl font-black text-white">{summary.totalCycles}</p>
-                </div>
-                <div className="legacy-panel-soft p-4 text-center">
-                    <p className="legacy-kicker legacy-kicker-muted">Score medio</p>
-                    <p className="mt-2 text-3xl font-black text-white">{summary.weightedAverageScore}</p>
-                </div>
-                <div className="legacy-panel-soft p-4 text-center">
-                    <p className="legacy-kicker legacy-kicker-muted">Horas</p>
-                    <p className="mt-2 text-3xl font-black text-white">{Number.isInteger(summary.totalHours) ? summary.totalHours : summary.totalHours.toFixed(1)}</p>
+            <div className="relative z-10 w-full max-w-[540px]">
+                <LegacyGrandPlaque eras={eras} sovereignName={sovereignName} />
+            </div>
+
+            <div className="legacy-panel-soft relative z-10 mt-6 w-full max-w-[760px] px-5 py-4">
+                <div className="grid gap-3 sm:grid-cols-4">
+                    <div>
+                        <p className="legacy-kicker legacy-kicker-muted">Soberano</p>
+                        <p className="mt-2 text-base font-black text-white">{previewIdentity.nickname}</p>
+                    </div>
+                    <div>
+                        <p className="legacy-kicker legacy-kicker-muted">Patente</p>
+                        <p className="mt-2 text-base font-black text-white">{previewIdentity.title}</p>
+                    </div>
+                    <div>
+                        <p className="legacy-kicker legacy-kicker-muted">Cla</p>
+                        <p className="mt-2 text-base font-black text-white">{previewIdentity.clanName}</p>
+                    </div>
+                    <div>
+                        <p className="legacy-kicker legacy-kicker-muted">Nivel</p>
+                        <p className="mt-2 text-base font-black text-white">{previewIdentity.level}</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="w-full max-w-3xl">{renderStatusPanel}</div>
-
-            <div className="flex flex-col items-center gap-3">
-                <div className={`flex h-16 w-16 items-center justify-center rounded-full border ${isPremium ? 'border-[var(--skin-accent-color)]/45 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)]' : 'border-white/10 bg-white/5 text-gray-500'}`}>
-                    <span className="text-xs font-black uppercase tracking-[0.22em]">GL</span>
-                </div>
-                <button type="button" onClick={handleStartRecording} disabled={!isPremium || summary.totalCycles === 0} className={`rounded-full px-6 py-3 text-xs font-black uppercase tracking-[0.24em] ${isPremium && summary.totalCycles > 0 ? 'luxe-skin-button' : 'cursor-not-allowed border border-white/10 bg-white/5 text-gray-500'}`}>
-                    Gravar legado
+            <div className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-3">
+                <button type="button" onClick={handlePromptProjection} disabled={!isPremium || summary.totalCycles === 0} className={`rounded-full px-6 py-3 text-xs font-black uppercase tracking-[0.24em] ${isPremium && summary.totalCycles > 0 ? 'luxe-skin-button' : 'cursor-not-allowed border border-white/10 bg-white/5 text-gray-500'}`}>
+                    Gerar legado
                 </button>
-                <p className="max-w-md text-center text-[11px] leading-relaxed text-gray-500">
-                    {isPremium
-                        ? 'A gravacao abre a placa no topo e percorre a timeline uma unica vez, do primeiro ao ultimo ciclo.'
-                        : 'Nao premium enxerga so o condensado final. A projecao completa da linha viva fica no premium.'}
-                </p>
+                <button type="button" onClick={() => { void handleExportLegacyKit(); }} disabled={isExportingKit || summary.totalCycles === 0} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-xs font-black uppercase tracking-[0.24em] text-white disabled:cursor-not-allowed disabled:opacity-50">
+                    {isExportingKit ? 'EXPORTANDO KIT...' : 'Exportar kit'}
+                </button>
+                {onExportRecord && (
+                    <button type="button" onClick={() => { void onExportRecord(); }} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-xs font-black uppercase tracking-[0.24em] text-white">
+                        Registro completo
+                    </button>
+                )}
             </div>
         </div>
     );
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-[10003] bg-black/92 backdrop-blur-xl" onClick={onClose}>
-                <div className="flex h-full w-full items-center justify-center p-4" onClick={(event) => event.stopPropagation()}>
-                    <GlassCard variant="neutral" className="relative flex h-[min(94vh,980px)] w-full max-w-[min(96vw,1640px)] flex-col overflow-hidden border-white/10">
-                        <div className="flex items-center justify-between gap-4 border-b border-white/10 p-5">
-                            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[var(--skin-accent-color)]">Legado</p>
-                            <div className="flex shrink-0 gap-3">
-                                <button type="button" onClick={onClose} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs">Fechar</button>
-                                <button type="button" onClick={() => { void onExportRecord?.(); }} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs">Registro completo</button>
-                                {projectionActive && (
-                                    <button type="button" onClick={handleExportLegacyImage} disabled={isExporting} className="rounded-xl luxe-skin-button px-4 py-3 text-xs disabled:opacity-50">
-                                        {isExporting ? 'EXPORTANDO...' : preferNativeShare ? 'Compartilhar imagem' : 'Baixar imagem'}
-                                    </button>
+            <div className="fixed inset-0 z-[10003] bg-black/94 backdrop-blur-xl" onClick={onClose}>
+                <div className="relative h-full w-full overflow-hidden" onClick={(event) => event.stopPropagation()}>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/45 text-[26px] font-black leading-none text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-md transition hover:border-white/25 hover:bg-black/55"
+                        aria-label="Fechar legado"
+                    >
+                        ×
+                    </button>
+
+                    <div className="h-full w-full overflow-hidden">
+                        {projectionActive ? (
+                            <div className="flex h-full min-h-full flex-col">
+                                <LegacyProjectionScene
+                                    eras={eras}
+                                    sovereignName={sovereignName}
+                                    projectionActive
+                                    interactive
+                                    autoAdvance={projectionActive}
+                                    enteringProjection={isProjectionTransitioning}
+                                    fallbackIdentity={fallbackIdentity}
+                                    backdropSkinId={selectedBackdropSkinId}
+                                    onSequenceComplete={() => setProjectionCompleted(true)}
+                                    onActivatePlaque={onOpenPlaque}
+                                    onOpenCycle={onOpenCycle}
+                                    onOpenEra={onOpenEra}
+                                />
+
+                                {projectionCompleted && (
+                                    <div className="pointer-events-auto absolute inset-x-4 bottom-4 z-20 flex flex-wrap items-center justify-center gap-3 text-center sm:inset-x-6">
+                                        <button type="button" onClick={() => { void handleExportLegacyKit(); }} disabled={isExportingKit} className="rounded-full luxe-button-secondary px-5 py-3 text-xs disabled:opacity-50">
+                                            {isExportingKit ? 'EXPORTANDO KIT...' : 'Exportar kit'}
+                                        </button>
+                                        {onExportRecord && (
+                                            <button type="button" onClick={() => { void onExportRecord(); }} className="rounded-full luxe-button-secondary px-5 py-3 text-xs">
+                                                Registro completo
+                                            </button>
+                                        )}
+                                        <button type="button" onClick={handleExportLegacyImage} disabled={isExporting} className="rounded-full luxe-skin-button px-5 py-3 text-xs disabled:opacity-50">
+                                            {isExporting ? 'EXPORTANDO...' : preferNativeShare ? 'Compartilhar imagem' : 'Baixar imagem'}
+                                        </button>
+                                    </div>
                                 )}
                             </div>
-                        </div>
+                        ) : renderPreviewStage()}
+                    </div>
 
-                        <div className="min-h-0 flex-1 overflow-y-auto p-5">
-                            {projectionActive ? (
-                                <>
-                                    <LegacyProjectionScene
-                                        eras={eras}
-                                        sovereignName={sovereignName}
-                                        projectionActive
-                                        interactive
-                                        autoAdvance={projectionActive}
-                                        enteringProjection={isProjectionTransitioning}
-                                        fallbackIdentity={fallbackIdentity}
-                                        onSequenceComplete={() => setProjectionCompleted(true)}
-                                        onActivatePlaque={onOpenPlaque}
-                                        onOpenCycle={onOpenCycle}
-                                        onOpenEra={onOpenEra}
-                                    />
-
-                                    {projectionCompleted && (
-                                        <div className="mt-5 flex flex-col items-center gap-3 border-t border-white/10 pt-5 text-center">
-                                            <p className="legacy-kicker legacy-kicker-accent">Fechamento</p>
-                                            <p className="text-sm leading-relaxed text-gray-300">A projecao terminou. Agora voce pode fechar, baixar a imagem ou enfileirar o render em video para o worker gerar no background.</p>
-                                            <div className="w-full max-w-3xl">{renderStatusPanel}</div>
-                                            <div className="flex flex-wrap justify-center gap-3">
-                                                <button type="button" onClick={onClose} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs">Fechar</button>
-                                                {latestRenderJob?.status === 'completed' && latestRenderJob.videoPath ? (
-                                                    <button type="button" onClick={() => { void onDownloadRenderVideo?.(); }} disabled={isDownloadingRenderVideo} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs disabled:opacity-50">{isDownloadingRenderVideo ? 'GERANDO LINK...' : 'Baixar video'}</button>
-                                                ) : (
-                                                    <button type="button" onClick={() => { void handleCreateRenderJob(); }} disabled={isCreatingRenderJob} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs disabled:opacity-50">{isCreatingRenderJob ? 'ENFILEIRANDO...' : 'Gerar video'}</button>
-                                                )}
-                                                <button type="button" onClick={handleExportLegacyImage} disabled={isExporting} className="rounded-xl luxe-skin-button px-4 py-3 text-xs disabled:opacity-50">{isExporting ? 'EXPORTANDO...' : preferNativeShare ? 'Compartilhar imagem' : 'Baixar imagem'}</button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            ) : renderPreviewStage()}
-                        </div>
-
-                        {isProjectionTransitioning && (
-                            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(212,175,55,0.12),_rgba(0,0,0,0.78)_58%)]">
-                                <div className="rounded-[28px] border border-[var(--skin-accent-color)]/30 bg-black/55 px-8 py-6 text-center shadow-[0_0_48px_rgba(212,175,55,0.2)]">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[var(--skin-accent-color)]">Ritual de forja</p>
-                                    <h3 className="mt-3 text-2xl font-black tracking-tight text-white">A placa grava e projeta a linha viva</h3>
-                                    <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-300">
-                                        Condensando eras, alinhando ciclos e liberando a memoria operacional do soberano.
-                                    </p>
-                                </div>
+                    {isProjectionTransitioning && (
+                        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(212,175,55,0.12),_rgba(0,0,0,0.78)_58%)]">
+                            <div className="rounded-[28px] border border-[var(--skin-accent-color)]/30 bg-black/55 px-8 py-6 text-center shadow-[0_0_48px_rgba(212,175,55,0.2)]">
+                                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[var(--skin-accent-color)]">Ritual de forja</p>
+                                <h3 className="mt-3 text-2xl font-black tracking-tight text-white">A placa grava e projeta a linha viva</h3>
+                                <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-300">
+                                    Condensando eras, alinhando ciclos e liberando a memoria operacional do soberano.
+                                </p>
                             </div>
-                        )}
-                    </GlassCard>
+                        </div>
+                    )}
                 </div>
+
+                {showProjectionConfirm && (
+                    <LegacyProjectionConfirmModal
+                        selectedSkinId={selectedBackdropSkinId}
+                        onSelectSkin={setSelectedBackdropSkinId}
+                        onConfirm={handleConfirmProjection}
+                        onCancel={() => setShowProjectionConfirm(false)}
+                    />
+                )}
 
                 {showGenerationVideo && (
                     <LegacyGenerationModal
@@ -292,6 +269,14 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                         sovereignName={sovereignName}
                         projectionActive
                         fallbackIdentity={fallbackIdentity}
+                        backdropSkinId={selectedBackdropSkinId}
+                    />
+                    <LegacyExportKit
+                        ref={exportKitRef}
+                        eras={eras}
+                        sovereignName={sovereignName}
+                        fallbackIdentity={fallbackIdentity}
+                        backdropSkinId={selectedBackdropSkinId}
                     />
                 </div>
             </div>

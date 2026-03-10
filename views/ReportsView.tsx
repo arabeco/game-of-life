@@ -1,9 +1,9 @@
-﻿
+
 
 
 import React, { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Report, Cycle, ChestType, FeedEvent, LegacyRenderJobStatus } from '../types';
+import { Report, Cycle, ChestType, FeedEvent } from '../types';
 import { GlassCard } from '../components/GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, Trash2Icon } from '../components/Icons';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -21,7 +21,6 @@ import { NOBILITY_RANKS } from '../constants/nobility';
 import { resolveItemDef } from '../constants/items';
 import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
-import { buildLegacyRenderPayload } from '../utils/legacyRenderPayload';
 const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
 const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
 const LegacyExportDocument = React.lazy(() => import('../components/LegacyExportDocument').then(m => ({ default: m.LegacyExportDocument })));
@@ -61,7 +60,7 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 const LEGACY_EXPORT_CAPTURE_ID = 'legacy-complete-capture';
 const ERA_METADATA_STORAGE_PREFIX = 'glyph-era-metadata-v1';
 const LEGACY_PLAQUE_STORAGE_PREFIX = 'glyph-legacy-plaque-v1';
-const LEGACY_RENDER_BUCKET = 'legacy-renders';
+const BOOTSTRAP_ERA_KEY = 'bootstrap-era-1';
 const FREE_ERA_RIBBON_SKIN_ID = ERA_RIBBON_SKINS.find((skin) => !skin.isPremium)?.id || ERA_RIBBON_SKINS[0].id;
 const PREMIUM_ERA_RIBBON_SKIN_IDS = ERA_RIBBON_SKINS.filter((skin) => skin.isPremium).map((skin) => skin.id);
 
@@ -172,8 +171,8 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     }
 
     return (
-        <div className="relative pl-8 group">
-            <div className="absolute left-0 top-4 w-6 h-6 rounded-full border-2 border-[var(--skin-accent-color)] bg-black flex items-center justify-center z-10">
+        <div className="relative pl-5 group">
+            <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-[var(--skin-accent-color)] bg-black flex items-center justify-center z-10">
                 <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] animate-pulse" />
             </div>
             <div className="relative">
@@ -188,8 +187,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                     rank={scoreInfo.grade}
                     score={currentScore}
                     title={cycle.name || 'Ciclo ativo'}
-                    subtitle={`Dia ${daysElapsed} de ${totalDays}`}
-                    dateRange={`${formatDate(cycle.startDate)} - ${formatDate(cycle.endDate)}`}
+                    subtitle={`${formatDate(cycle.startDate)} - ${formatDate(cycle.endDate)}`}
                     summary={scoreInfo.phrase}
                     metrics={[
                         { label: 'Tempo', value: `${timeProgress.toFixed(0)}%` },
@@ -203,7 +201,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                         { label: 'Dias', value: `${uniqueDays}` },
                     ]}
                     compact
-                    className="w-full"
+                    className="w-[14.25rem] max-w-full"
                 />
             </div>
         </div>
@@ -226,7 +224,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant='neutral' className='p-4 space-y-4 w-full max-w-sm' onClick={e => e.stopPropagation()}>
                     <h2 className='text-center font-bold text-lg uppercase'>Definir Ciclo de Soberania</h2>
-                    <p className="text-center text-sm text-gray-400">DÃª um nome Ã  sua campanha e escolha a data de tÃ©rmino para formalizar seu compromisso.</p>
+                    <p className="text-center text-sm text-gray-400">Dê um nome à sua campanha e escolha a data de término para formalizar seu compromisso.</p>
                     <div>
                         <label className='text-sm font-bold'>Nome do Ciclo</label>
                         <input
@@ -238,7 +236,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
                         />
                     </div>
                     <div>
-                        <label className='text-sm font-bold'>Data de TÃ©rmino</label>
+                        <label className='text-sm font-bold'>Data de Término</label>
                         <input
                             type='date'
                             value={endDate}
@@ -276,8 +274,8 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
     ].filter(Boolean) as Array<{ label: string; value?: string }>;
 
     return (
-        <div className="relative pl-8">
-            <div className={`absolute left-0 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ? 'bg-black border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)] scale-110' : 'bg-black border-white/20'}`}>
+        <div className="relative pl-5">
+            <div className={`absolute left-0 top-3 w-5 h-5 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ? 'bg-black border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)] scale-110' : 'bg-black border-white/20'}`}>
                 {isLatest && <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>}
             </div>
             <button
@@ -292,8 +290,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     rank={scoreInfo.grade}
                     score={report.performanceScore}
                     title={report.cycleName || 'Ciclo'}
-                    subtitle={isLatest ? 'Ciclo mais recente' : 'Resumo de ciclo'}
-                    dateRange={`${startDate} - ${endDate}`}
+                    subtitle={`${startDate} - ${endDate}`}
                     summary={scoreInfo.phrase}
                     metrics={[
                         { label: 'XP', value: `+${report.expGained || 0}` },
@@ -301,23 +298,12 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     ]}
                     badges={rewardBadges}
                     compact
-                    className="w-full"
+                    className="w-[14.25rem] max-w-full"
                 />
             </button>
         </div>
     );
 };
-
-const mapLegacyRenderJob = (row: any): LegacyRenderJobStatus => ({
-    id: row.id,
-    status: row.status,
-    videoPath: row.video_path ?? null,
-    posterPath: row.poster_path ?? null,
-    errorMessage: row.error_message ?? null,
-    createdAt: row.created_at,
-    startedAt: row.started_at ?? null,
-    finishedAt: row.finished_at ?? null,
-});
 
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -344,9 +330,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [showChestModal, setShowChestModal] = useState(false);
     const [isExportingLegacy, setIsExportingLegacy] = useState(false);
     const [showLegacyProjectionModal, setShowLegacyProjectionModal] = useState(false);
-    const [latestLegacyRenderJob, setLatestLegacyRenderJob] = useState<LegacyRenderJobStatus | null>(null);
-    const [isLoadingLegacyRenderJob, setIsLoadingLegacyRenderJob] = useState(false);
-    const [isDownloadingLegacyRenderVideo, setIsDownloadingLegacyRenderVideo] = useState(false);
     const [eraMetadata, setEraMetadata] = useState<Record<string, EraMetadataEntry>>({});
     const [hasLoadedEraMetadata, setHasLoadedEraMetadata] = useState(false);
     const [legacyPlaqueForged, setLegacyPlaqueForged] = useState(false);
@@ -554,7 +537,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const performEndOfCycle = (): { ok: boolean; chest: ChestType | null } => {
         try {
             const result = endCycleRef.current(assetsRef.current, actionsRef.current);
-            if (!result?.report) throw new Error('RelatÃ³rio invÃ¡lido');
+            if (!result?.report) throw new Error('Relatório inválido');
             const { report, expGained } = result;
             setSelectedReport(report);
             setExpGained(expGained);
@@ -618,7 +601,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         } catch (error) {
             console.error('Erro ao analisar ciclo:', error);
-            setScanError('NÃ£o foi possÃ­vel analisar o ciclo. Tente novamente.');
+            setScanError('Não foi possível analisar o ciclo. Tente novamente.');
             return { ok: false, chest: null };
         }
     };
@@ -805,7 +788,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setAchievementUnlocked({
                 type: 'REPORT_COMPLETED',
                 data: {
-                    title: `RelatÃ³rio de Ciclo - ${selectedReport?.performanceScore || 0}%`,
+                    title: `Relatório de Ciclo - ${selectedReport?.performanceScore || 0}%`,
                     reward: {
                         exp: expGained,
                         items: allEarnedItems,
@@ -998,6 +981,22 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             oldest: ranges.get(slot.id)?.oldest,
         }));
     }, [draftEraSlots, draftReportEraIds, sortedReports]);
+    function getEraRibbonSkinId(index: number) {
+        if (!userProfile.isPremium || PREMIUM_ERA_RIBBON_SKIN_IDS.length === 0) {
+            return FREE_ERA_RIBBON_SKIN_ID;
+        }
+        return PREMIUM_ERA_RIBBON_SKIN_IDS[index % PREMIUM_ERA_RIBBON_SKIN_IDS.length] || FREE_ERA_RIBBON_SKIN_ID;
+    }
+
+    function resolveEraSkinId(summary: LegacyEraSummary | null | undefined, index: number) {
+        if (!summary?.key) return getEraRibbonSkinId(index);
+        const requestedSkinId = eraMetadata[summary.key]?.skinId;
+        const matchedSkin = ERA_RIBBON_SKINS.find((skin) => skin.id === requestedSkinId);
+        if (!matchedSkin) return getEraRibbonSkinId(index);
+        if (matchedSkin.isPremium && !userProfile.isPremium) return FREE_ERA_RIBBON_SKIN_ID;
+        return matchedSkin.id;
+    }
+
     const displayedEraByReportIndex = useMemo(() => {
         if (isEditingEras) {
             const map = new Map<number, { label: string; skinId: string; isActive: boolean }>();
@@ -1046,6 +1045,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             }).filter(Boolean) as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; slot: DraftEraSlot }>;
         }
 
+        if (eraSummaries.length === 0 && (activeCycle || sortedReports.length > 0)) {
+            return [{
+                key: BOOTSTRAP_ERA_KEY,
+                label: eraMetadata[BOOTSTRAP_ERA_KEY]?.name?.trim() || 'ERA 1',
+                skinId: eraMetadata[BOOTSTRAP_ERA_KEY]?.skinId || getEraRibbonSkinId(0),
+                start: -1,
+                end: -1,
+                eraIndex: 0,
+                isActive: false,
+                summary: null,
+            }] as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; summary: LegacyEraSummary | null }>;
+        }
+
         return eraSegments.map((segment, index) => {
             const summary = eraSummaries[index];
             if (!summary) return null;
@@ -1060,7 +1072,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 summary,
             };
         }).filter(Boolean) as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; summary: LegacyEraSummary }>;
-    }, [activeDraftEraId, draftEraSegments, draftEraSlots, eraSegments, eraSummaries, isEditingEras]);
+    }, [activeCycle, activeDraftEraId, draftEraSegments, draftEraSlots, eraMetadata, eraSegments, eraSummaries, isEditingEras, sortedReports.length]);
 
     const legacyFallbackIdentity = useMemo(() => ({
         avatarUrl: userProfile.avatarUrl,
@@ -1080,6 +1092,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         () => sortedReports.length > 0 ? sortedReports.reduce((sum, report) => sum + report.performanceScore, 0) / sortedReports.length : 0,
         [sortedReports]
     );
+    const effectiveEraCount = useMemo(
+        () => eraSummaries.length > 0 ? eraSummaries.length : ((sortedReports.length > 0 || !!activeCycle) ? 1 : 0),
+        [activeCycle, eraSummaries.length, sortedReports.length]
+    );
     const totalHistoricalHours = useMemo(
         () => sortedReports.reduce((sum, report) => sum + (report.metrics.totalHours || 0), 0),
         [sortedReports]
@@ -1097,22 +1113,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             : 'periodo em consolidacao';
         return `${sortedReports.length} ciclos, ${eraSummaries.length} eras e ${Math.round(totalHistoricalHours)}h acumuladas em ${spanLabel}. Era em destaque: ${bestEra?.label || 'Sem era dominante'}.`;
     }, [bestEra, eraSummaries.length, historyEndDate, historyStartDate, sortedReports.length, totalHistoricalHours]);
-
-    const getEraRibbonSkinId = (index: number) => {
-        if (!userProfile.isPremium || PREMIUM_ERA_RIBBON_SKIN_IDS.length === 0) {
-            return FREE_ERA_RIBBON_SKIN_ID;
-        }
-        return PREMIUM_ERA_RIBBON_SKIN_IDS[index % PREMIUM_ERA_RIBBON_SKIN_IDS.length] || FREE_ERA_RIBBON_SKIN_ID;
-    };
-
-    const resolveEraSkinId = (summary: LegacyEraSummary | null | undefined, index: number) => {
-        if (!summary?.key) return getEraRibbonSkinId(index);
-        const requestedSkinId = eraMetadata[summary.key]?.skinId;
-        const matchedSkin = ERA_RIBBON_SKINS.find((skin) => skin.id === requestedSkinId);
-        if (!matchedSkin) return getEraRibbonSkinId(index);
-        if (matchedSkin.isPremium && !userProfile.isPremium) return FREE_ERA_RIBBON_SKIN_ID;
-        return matchedSkin.id;
-    };
 
     const openInlineEraEditor = (payload: InlineEraEditorState, initialName: string, initialSkinId: string) => {
         setInlineEraEditor(payload);
@@ -1139,7 +1139,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const beginEraEditing = () => {
-        if (sortedReports.length === 0) return;
+        if (sortedReports.length === 0) {
+            if (activeCycle) {
+                openBootstrapEraInlineEditor();
+            }
+            return;
+        }
         const slots = eraSummaries.map((summary, index) => ({
             id: summary.key,
             sourceKey: summary.key,
@@ -1159,39 +1164,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setActiveDraftEraId(slots[0]?.id || null);
         setInlineEraEditor(null);
         setIsEditingEras(true);
-    };
-
-    const loadLatestLegacyRenderJob = async () => {
-        const userId = getUserId();
-        if (!userId) {
-            setLatestLegacyRenderJob(null);
-            return;
-        }
-
-        setIsLoadingLegacyRenderJob(true);
-        try {
-            const { data, error } = await supabase
-                .from('legacy_render_jobs')
-                .select('id,status,video_path,poster_path,error_message,created_at,started_at,finished_at')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (error) {
-                const message = String(error.message || '').toLowerCase();
-                if (message.includes('legacy_render_jobs') && (message.includes('does not exist') || message.includes('relation'))) {
-                    setLatestLegacyRenderJob(null);
-                    return;
-                }
-                console.error('Erro ao carregar status do render do legado:', error);
-                return;
-            }
-
-            setLatestLegacyRenderJob(data ? mapLegacyRenderJob(data) : null);
-        } finally {
-            setIsLoadingLegacyRenderJob(false);
-        }
     };
 
     const persistEraMetadataRemote = async (key: string, entry?: { name?: string; skinId?: string; description?: string; finalSummary?: string }) => {
@@ -1270,8 +1242,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
 
-    const openSavedEraInlineEditor = (summary: LegacyEraSummary, eraIndex: number) => {
-        if (!summary.key) return;
+    const openSavedEraInlineEditor = (summary: LegacyEraSummary | null, eraIndex: number) => {
+        if (!summary?.key) {
+            if (eraIndex === 0 && activeCycle && sortedReports.length === 0) {
+                openBootstrapEraInlineEditor();
+            }
+            return;
+        }
         openInlineEraEditor({
             mode: 'saved',
             key: summary.key,
@@ -1287,6 +1264,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             defaultLabel: slot.defaultLabel,
             eraIndex,
         }, slot.name || '', slot.skinId);
+    };
+
+    const openBootstrapEraInlineEditor = () => {
+        openInlineEraEditor({
+            mode: 'saved',
+            key: BOOTSTRAP_ERA_KEY,
+            defaultLabel: 'ERA 1',
+            eraIndex: 0,
+        }, eraMetadata[BOOTSTRAP_ERA_KEY]?.name || '', eraMetadata[BOOTSTRAP_ERA_KEY]?.skinId || getEraRibbonSkinId(0));
     };
 
     const handleSaveInlineEraEditor = async () => {
@@ -1381,7 +1367,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">
                             <span>{sortedReports.length} ciclos</span>
                             <span className="text-white/15">/</span>
-                            <span>{eraSummaries.length} eras</span>
+                            <span>{effectiveEraCount} eras</span>
                             <span className="text-white/15">/</span>
                             <span>{Math.round(totalHistoricalHours)}h</span>
                             <span className="text-white/15">/</span>
@@ -1407,83 +1393,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </GlassCard>
         );
     }; 
-    const handleCreateLegacyRenderJob = async () => {
-        const userId = getUserId();
-        if (!userId) {
-            showToast('Sessao invalida para gerar o legado.');
-            return;
-        }
-        if (eraSummaries.length === 0) {
-            showToast('Feche pelo menos um ciclo para gerar o video do legado.');
-            return;
-        }
-
-        const payload = buildLegacyRenderPayload({
-            eras: eraSummaries,
-            sovereignName,
-            fallbackIdentity: legacyFallbackIdentity,
-        });
-
-        const { data, error } = await supabase
-            .from('legacy_render_jobs')
-            .insert({
-                user_id: userId,
-                status: 'pending',
-                payload,
-            })
-            .select('id,status,video_path,poster_path,error_message,created_at,started_at,finished_at')
-            .single();
-
-        if (error) {
-            const message = String(error.message || '').toLowerCase();
-            if (message.includes('legacy_render_jobs') && (message.includes('does not exist') || message.includes('relation'))) {
-                showToast('A tabela de render do legado ainda nao existe no banco.');
-                return;
-            }
-            console.error('Erro ao enfileirar render do legado:', error);
-            showToast('Nao foi possivel enfileirar o render do legado.');
-            return;
-        }
-
-        setLatestLegacyRenderJob(data ? mapLegacyRenderJob(data) : null);
-        showToast(`Render do legado enfileirado (${data?.id?.slice(0, 8) || 'job'}).`);
-    };
-
-    const handleDownloadLegacyRenderVideo = async () => {
-        if (!latestLegacyRenderJob?.videoPath) {
-            showToast('O video do legado ainda nao esta pronto.');
-            return;
-        }
-
-        setIsDownloadingLegacyRenderVideo(true);
-        try {
-            const fileName = `glyph-legado-${getLocalDateString()}.mp4`;
-            const { data, error } = await supabase.storage
-                .from(LEGACY_RENDER_BUCKET)
-                .createSignedUrl(latestLegacyRenderJob.videoPath, 60 * 15, { download: fileName });
-
-            if (error || !data?.signedUrl) {
-                console.error('Erro ao gerar signed URL do legado:', error);
-                showToast('Nao foi possivel gerar o link do video do legado.');
-                return;
-            }
-
-            const link = document.createElement('a');
-            link.href = data.signedUrl;
-            link.download = fileName;
-            link.rel = 'noopener';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            showToast('Link temporario do video gerado.');
-        } catch (error) {
-            console.error('Erro ao baixar video do legado:', error);
-            showToast('Nao foi possivel baixar o video do legado.');
-        } finally {
-            setIsDownloadingLegacyRenderVideo(false);
-        }
-    };
-
     const handleExportLegacy = async () => {
         if (eraSummaries.length === 0) {
             showToast('Nao ha Eras concluidas para exportar.');
@@ -1644,7 +1553,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const renderEraControls = () => {
-        if (sortedReports.length < 2) return null;
+        if (sortedReports.length === 0 && !activeCycle) return null;
 
         if (!isEditingEras) {
             return (
@@ -1652,11 +1561,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Eras</p>
-                            <p className="mt-2 text-sm font-black text-white">{hasCustomEras ? 'Cortes manuais ativos' : 'Cortes automaticos por temporada'}</p>
+                            <p className="mt-2 text-sm font-black text-white">
+                                {sortedReports.length === 0 && activeCycle
+                                    ? 'ERA 1 criada automaticamente para o primeiro ciclo'
+                                    : hasCustomEras
+                                        ? 'Cortes manuais ativos'
+                                        : 'Cortes automaticos por temporada'}
+                            </p>
                         </div>
                         <div className="flex shrink-0 gap-2">
-                            <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs">AJUSTAR ERAS</button>
-                            <button onClick={handleResetEras} disabled={!hasCustomEras} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs disabled:opacity-40">VOLTAR AO PADRAO</button>
+                            <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs">{sortedReports.length === 0 ? 'EDITAR ERA 1' : 'AJUSTAR ERAS'}</button>
+                            {sortedReports.length > 0 && (
+                                <button onClick={handleResetEras} disabled={!hasCustomEras} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs disabled:opacity-40">VOLTAR AO PADRAO</button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1692,7 +1609,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getEraRibbonSkin(slot.skinId).edge }} />
                                     <span className="text-[11px] font-black uppercase tracking-[0.18em]">{slot.name?.trim() || slot.defaultLabel}</span>
                                 </div>
-                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` Â· ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
+                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` · ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
                             </button>
                         );
                     })}
@@ -1730,7 +1647,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20">
-                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando RelatÃ³rio...</p>
+                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p>
                             </div>
                         )}
                     </div>
@@ -1741,9 +1658,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     | { type: 'report'; report: Report; reportIndex: number; seasonName?: string }
                 > = [];
                 const reportRowIndexMap = new Map<number, number>();
+                let activeRowIndex: number | null = null;
 
                 if (activeCycle) {
                     items.push({ type: 'active', cycle: activeCycle });
+                    activeRowIndex = items.length - 1;
                 }
 
                 sortedReports.forEach((report, index) => {
@@ -1755,7 +1674,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 return (
                     <div className="pb-12">
                         {reportForComparison && (
-                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatÃ³rio para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
+                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
                         {renderLegacySummary()}
@@ -1775,16 +1694,16 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                         {(sortedReports.length > 0 || activeCycle) && (
                             <div className="relative mt-6">
-                                <div className="grid grid-cols-[72px_1fr_36px] gap-x-2">
+                                <div className="grid grid-cols-[20px_minmax(0,1fr)_24px] gap-x-1">
                                     {items.map((item, rowIndex) => {
                                         if (item.type === 'active') {
                                             return (
                                                 <React.Fragment key={`active-${item.cycle.id}`}>
                                                     <div className="relative py-3"></div>
                                                     <div className="relative py-3">
-                                                        <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
-                                                        <div className="relative pl-8">
-                                                            <div className="absolute left-0 top-4 w-6 h-6 rounded-full border-2 border-[var(--skin-accent-color)] bg-black shadow-[0_0_15px_var(--sephirot-glow-color)] flex items-center justify-center">
+                                                        <div className="absolute left-[8px] top-0 bottom-0 w-px bg-white/10"></div>
+                                                        <div className="relative pl-5">
+                                                            <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-[var(--skin-accent-color)] bg-black shadow-[0_0_15px_var(--sephirot-glow-color)] flex items-center justify-center">
                                                                 <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>
                                                             </div>
                                                             <div className={isEditingEras ? 'scale-[0.98]' : ''}>
@@ -1803,7 +1722,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 <React.Fragment key={item.report.id}>
                                                     <div className="relative py-3"></div>
                                                     <div className="relative py-3">
-                                                        <div className="absolute left-[11px] top-0 bottom-0 w-px bg-white/10"></div>
+                                                        <div className="absolute left-[8px] top-0 bottom-0 w-px bg-white/10"></div>
                                                         <TimelineCard
                                                             report={item.report}
                                                             isLatest={item.reportIndex === 0 && !activeCycle}
@@ -1823,9 +1742,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         return null;
                                     })}
                                     {displayedEraBands.map((band) => {
-                                        const rowStart = reportRowIndexMap.get(band.start);
-                                        const rowEnd = reportRowIndexMap.get(band.end);
-                                        if (rowStart === undefined || rowEnd === undefined) return null;
+                                        const rowStart = band.start < 0 ? activeRowIndex : reportRowIndexMap.get(band.start);
+                                        const rowEnd = band.end < 0 ? activeRowIndex : reportRowIndexMap.get(band.end);
+                                        if (rowStart == null || rowEnd == null) return null;
 
                                         return (
                                             <div
@@ -1868,7 +1787,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         title="Editar nome e skin da Era"
                                                         className="absolute -right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-black/75 text-[10px] text-white/80 shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:border-[var(--skin-accent-color)]/45 hover:text-white"
                                                     >
-                                                        âœ¦
+                                                        ✦
                                                     </button>
                                                     {inlineEraEditor?.key === band.key && (
                                                         <div className="absolute left-full top-2 z-20 ml-3 w-56 rounded-[20px] border border-white/10 bg-black/90 p-3 shadow-[0_18px_44px_rgba(0,0,0,0.45)] backdrop-blur-md">
@@ -1910,7 +1829,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 </div>
                                 {reports.length >= 2 && !activeCycle && !reportForComparison && (
                                     <div className="mt-4">
-                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÃšLTIMOS 2 CICLOS</button>
+                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÚLTIMOS 2 CICLOS</button>
                                     </div>
                                 )}
                             </div>
@@ -1927,7 +1846,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onShare={() => handleShareReport(selectedReport)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onDelete={() => {
-                            if (confirm("Tem certeza que deseja excluir este relatÃ³rio?")) {
+                            if (confirm("Tem certeza que deseja excluir este relatório?")) {
                                 // We need a way to delete historical reports.
                                 // For now, maybe just hide it or we need a proper deleteReport function
                                 // But the user asked to delete "cycles". A past report IS a cycle.
@@ -1942,21 +1861,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         expGained={isPostCycleFlow ? expGained : undefined}
                         insignias={isPostCycleFlow ? grantedInsignias : []}
                     />
-                ) : <p>Erro ao carregar relatÃ³rio.</p>;
+                ) : <p>Erro ao carregar relatório.</p>;
             case 'comparing':
                 return reportsToCompare ? (
                     <CycleComparator
                         currentCycleReport={reportsToCompare[0]}
                         pastCycleReport={reportsToCompare[1]}
                     />
-                ) : <p>Erro ao carregar comparaÃ§Ã£o.</p>;
+                ) : <p>Erro ao carregar comparação.</p>;
         }
     };
 
     const getTitle = () => {
         switch (view) {
             case 'results': return 'Resultados';
-            case 'comparing': return 'AnÃ¡lise Comparativa';
+            case 'comparing': return 'Análise Comparativa';
             case 'reward':
                 return 'Fim do Ciclo';
             default: return 'Historico';
@@ -2041,7 +1960,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             {showConfirmEndCycle && (
                 <ConfirmationModal
                     title="Encerrar Ciclo?"
-                    message="Ao fechar este ciclo, suas aÃ§Ãµes nÃ£o concluÃ­das no grid serÃ£o movidas para o pool de aÃ§Ãµes e suas arenas serÃ£o revisadas."
+                    message="Ao fechar este ciclo, suas ações não concluídas no grid serão movidas para o pool de ações e suas arenas serão revisadas."
                     onConfirm={confirmEndCycle}
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
@@ -2060,6 +1979,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
+
 
 
 

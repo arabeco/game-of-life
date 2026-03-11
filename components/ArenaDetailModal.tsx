@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Arena, Action, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIcon, SendIcon } from './Icons';
@@ -33,6 +33,7 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
 
     const completedCount = isSharedPool ? sharedCompleted : personalCompleted;
     const totalProposed = action.repetitions || 1;
+    const isFreeAction = action.actionType === 'Livre';
 
     const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
 
@@ -46,8 +47,8 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
     }
 
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
-    const displayProgress = isClanQuest ? `${clanProgress}/${target}` : `${completedCount}/${totalProposed}`;
-    const displayIcon = action.icon || '🏆';
+    const displayProgress = isClanQuest ? `${clanProgress}/${target}` : (isFreeAction ? `${completedCount}` : `${completedCount}/${totalProposed}`);
+    const displayIcon = action.icon || 'ðŸ†';
 
     return (
         <div className="relative flex-shrink-0">
@@ -194,8 +195,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const isLeader = clan?.leaderId === userProfile?.id;
     const isSharedPool = isOfficeMode || !!currentLinkType;
 
-    const allActionInstances = allActions?.reduce((acc, action) => acc + (action.repetitions || 1), 0) || 0;
-    const allCompletedInstances = allActions?.reduce((acc, action) => {
+    const scoredActions = allActions?.filter(action => action.actionType !== 'Livre') || [];
+    const allActionInstances = scoredActions.reduce((acc, action) => acc + (action.repetitions || 1), 0) || 0;
+    const allCompletedInstances = scoredActions.reduce((acc, action) => {
         let completed = 0;
         if (isSharedPool && typeof getSharedActionPoolProgress === 'function') {
             completed = getSharedActionPoolProgress(arena.id, action.id) || 0;
@@ -234,7 +236,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     const openNewAction = () => {
         if (isSpecialArena) {
-            alert("Para adicionar novas missões, acesse a aba Missões no Menu de Configurações ou no Clã.");
+            alert("Para adicionar novas missÃµes, acesse a aba MissÃµes no Menu de ConfiguraÃ§Ãµes ou no ClÃ£.");
             return;
         }
         setActionModalState({ action: null, mode: 'edit', key: `new-action-modal-${Date.now()}` });
@@ -255,11 +257,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData.session?.user.id;
         if (!uid || !isUuid(uid)) {
-            setLinkStatus('Faça login para enviar convites.');
+            setLinkStatus('FaÃ§a login para enviar convites.');
             return;
         }
         if (!isUuid(friend.id)) {
-            setLinkStatus('Este aliado não possui ID válido.');
+            setLinkStatus('Este aliado nÃ£o possui ID vÃ¡lido.');
             return;
         }
 
@@ -308,7 +310,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     <button
                                         onClick={() => setShowDeleteConfirmation(true)}
                                         className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
-                                        title="Abandonar Missão"
+                                        title="Abandonar MissÃ£o"
                                     >
                                         <Trash2Icon className="w-5 h-5 text-red-500" />
                                     </button>
@@ -329,7 +331,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                             ? 'border-green-500/50 bg-green-500/20 hover:bg-green-500/30'
                                             : 'border-white/15 bg-black/30 hover:bg-black/40'
                                             }`}
-                                        title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada ✓' : 'Compartilhar arena para o clã'}
+                                        title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada âœ“' : 'Compartilhar arena para o clÃ£'}
                                     >
                                         <UsersIcon className={`w-4 h-4 ${arena.description?.includes('[SHARED]') ? 'text-green-400' : 'text-gray-400'}`} />
                                     </button>
@@ -344,12 +346,12 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 )}
                                 {currentLinkType === 'competicao' && (
                                     <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
-                                        <span>⚔️</span> PVP
+                                        <span>âš”ï¸</span> PVP
                                     </div>
                                 )}
                                 {currentLinkType === 'mentoria' && (
                                     <div className="bg-blue-500/20 border border-blue-500/50 text-blue-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
-                                        <span>🎓</span> MENTORIA
+                                        <span>ðŸŽ“</span> MENTORIA
                                     </div>
                                 )}
                                 {isClanQuestArena && (
@@ -394,8 +396,8 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
                         {showDeleteConfirmation && (
                             <ConfirmationModal
-                                title={isSpecialArena ? "Sair da Missão" : "Excluir Arena"}
-                                message={isSpecialArena ? "Ao sair, sua participação é removida, mas a arena e ações ficam salvas." : "Tem certeza que deseja excluir esta arena? Esta ação não pode ser desfeita."}
+                                title={isSpecialArena ? "Sair da MissÃ£o" : "Excluir Arena"}
+                                message={isSpecialArena ? "Ao sair, sua participaÃ§Ã£o Ã© removida, mas a arena e aÃ§Ãµes ficam salvas." : "Tem certeza que deseja excluir esta arena? Esta aÃ§Ã£o nÃ£o pode ser desfeita."}
                                 onConfirm={handleDeleteArena}
                                 onCancel={() => setShowDeleteConfirmation(false)}
                             />
@@ -426,7 +428,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     />
                                 </>
                             ) : (
-                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
+                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descriÃ§Ã£o.'}</p>
                             )}
                         </div>
 
@@ -472,7 +474,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
                             <div className='relative text-center mb-2 flex-shrink-0'>
                                 <hr className="border-t border-gray-800" />
-                                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Ações de Bronze</h3>
+                                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">AÃ§Ãµes de Bronze</h3>
                             </div>
                             <div className="flex-grow overflow-x-auto overflow-y-hidden py-2">
                                 <div className="flex space-x-2 h-full items-center">
@@ -492,7 +494,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 {isClanQuestArena
                                     ? `${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}`
                                     : isSharedPool
-                                        ? `${allActionInstances - allCompletedInstances} ações restantes`
+                                        ? `${allActionInstances - allCompletedInstances} aÃ§Ãµes restantes`
                                         : `${progress.toFixed(0)}%`}
                             </p>
                         </div>
@@ -514,9 +516,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     <div className="bg-black/70 border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center">
                             <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">VINCULAR ALIADO</div>
-                            <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">×</span></button>
+                            <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">Ã—</span></button>
                         </div>
-                        <div className="text-xs text-gray-400">Escolha o tipo de vínculo e convide um amigo para {editableArena.name || arena.name}.</div>
+                        <div className="text-xs text-gray-400">Escolha o tipo de vÃ­nculo e convide um amigo para {editableArena.name || arena.name}.</div>
 
                         <div className="flex gap-2 mb-2">
                             <button onClick={() => setSelectionType('mentoria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'mentoria' ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/30 text-gray-400 border-white/10'}`}>Mentoria</button>
@@ -525,7 +527,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                         </div>
 
                         {availableFriends.length === 0 ? (
-                            <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID válido.</div>
+                            <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID vÃ¡lido.</div>
                         ) : (
                             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                 {availableFriends.map(friend => (
@@ -555,3 +557,4 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         </Portal>
     );
 };
+

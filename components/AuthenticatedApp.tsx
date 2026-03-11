@@ -7,6 +7,8 @@ import { GameProvider, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING, 
 import { CodexBuilderProvider, useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
+import { updateInstalledAppBadge } from '../utils/appBadge';
+import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -34,11 +36,16 @@ const AppWithTutorial: React.FC = () => {
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme } = useGame();
+    const { userProfile, appMode, activeTheme, notifications } = useGame();
     const { didForceGameMode } = useTutorial();
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ? 'GAME' : 'BASIC';
+    const unreadNotificationsCount = getUnreadBadgeCount(notifications);
+
+    useEffect(() => {
+        void updateInstalledAppBadge(unreadNotificationsCount);
+    }, [unreadNotificationsCount]);
 
     useEffect(() => {
         const handleNavigateToStore = () => {
@@ -303,7 +310,7 @@ const AppWithTutorial: React.FC = () => {
         );
     };
 
-    const NavItem: React.FC<{ view: View; label: string; icon: React.ReactNode; id?: string }> = ({ view, label, icon, id }) => (
+    const NavItem: React.FC<{ view: View; label: string; icon: React.ReactNode; id?: string; badgeCount?: number }> = ({ view, label, icon, id, badgeCount = 0 }) => (
         <button
             id={id}
             ref={(el) => {
@@ -313,6 +320,11 @@ const AppWithTutorial: React.FC = () => {
             className={`relative z-10 flex w-full flex-col items-center justify-center transition-colors duration-200 ${currentView === view ? 'auth-nav-active' : 'text-gray-500 hover:text-gray-300'}`}
         >
             {icon}
+            {badgeCount > 0 && (
+                <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full border border-black bg-red-500 px-1 text-[9px] font-black text-white shadow-[0_0_12px_rgba(239,68,68,0.5)]">
+                    {badgeCount > 9 ? '9+' : badgeCount}
+                </span>
+            )}
             <span className="mt-1 text-[10px] font-bold tracking-wider">{label}</span>
         </button>
     );

@@ -1,4 +1,4 @@
-const normalizeArenaName = (value = '') =>
+﻿const normalizeArenaName = (value = '') =>
     value
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -62,6 +62,10 @@ export const calculateArenaProgress = ({
     let totalPlanned = 0;
 
     actions.forEach(action => {
+        if (action.actionType === 'Livre') {
+            return;
+        }
+
         const planned = Math.max(1, Number(action.repetitions) || 1);
         const completed = isSharedPool && typeof getSharedActionPoolProgress === 'function'
             ? getSharedActionPoolProgress(arena.id, action.id) || 0
@@ -157,3 +161,4 @@ export const calculateCampaignProgress = (options) => {
     const total = visibleStates.reduce((sum, state) => sum + state.progressPercent, 0);
     return Math.round(total / visibleStates.length);
 };
+

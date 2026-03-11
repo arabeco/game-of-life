@@ -85,27 +85,6 @@ export const Inventory: React.FC = () => {
         }).sort((a, b) => (b.def?.tier || 0) - (a.def?.tier || 0)); // Sort by Tier Desc
     }, [sourceItems, activeTab]);
 
-    const equippedSummary = useMemo(() => {
-        const slots = [
-            { label: 'Traje', itemId: userProfile.sovereign.outfit },
-            { label: 'Artefato', itemId: userProfile.sovereign.artifact },
-            { label: 'Glifo', itemId: userProfile.sovereign.glyph },
-            { label: 'Orbe', itemId: userProfile.sovereign.orb || 'none' },
-            { label: 'Placa S', itemId: userProfile.sovereign.sovereignPlate || 'none' },
-            { label: 'Placa A', itemId: userProfile.sovereign.artifactPlate || 'none' },
-            { label: 'Placa G', itemId: userProfile.sovereign.glyphPlate || 'none' },
-            { label: 'Borda', itemId: userProfile.border },
-            { label: 'Tema', itemId: userProfile.skin },
-        ];
-
-        return slots.map(slot => ({
-            label: slot.label,
-            name: slot.itemId && slot.itemId !== 'none' && slot.itemId !== 'default'
-                ? (resolveItemDef(slot.itemId)?.name || slot.itemId)
-                : 'Nenhum',
-        }));
-    }, [userProfile]);
-
     const getRarityStyles = (tier: number) => {
         const visual = getTierVisual(tier);
         return {
@@ -159,18 +138,6 @@ export const Inventory: React.FC = () => {
                     <SovereignIcon className="w-5 h-5 text-black/70 group-hover:scale-110 transition-transform" />
                     <span className="text-xs font-bold uppercase tracking-widest text-black/80">Editor Soberano</span>
                 </button>
-            </div>
-
-            <div className="flex-none">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500">Espelho do soberano</div>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700">
-                    {equippedSummary.map(slot => (
-                        <div key={slot.label} className="min-w-[110px] rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                            <div className="text-[9px] font-black uppercase tracking-[0.22em] text-gray-500">{slot.label}</div>
-                            <div className="mt-1 truncate text-xs font-semibold text-white">{slot.name}</div>
-                        </div>
-                    ))}
-                </div>
             </div>
 
             {/* Filter Tabs */}

@@ -1,4 +1,4 @@
-import { doesTaskConsumePoolCapacity, hasScheduledTime } from './taskDomain.js';
+﻿import { doesTaskConsumePoolCapacity, hasScheduledTime } from './taskDomain.js';
 
 /**
  * @typedef {import('../types').Action} Action
@@ -161,7 +161,9 @@ export const buildTaskPoolEntries = (actions, activeArenaIds, isClanQuestActionI
     const poolableActions = activeActions.filter(action => action.actionType !== 'Marco');
 
     return poolableActions.flatMap(action => {
-        if (isClanQuestActionId(action.id)) return [{ actionId: action.id, unlimited: true }];
+        if (isClanQuestActionId(action.id) || action.actionType === 'Livre') {
+            return [{ actionId: action.id, unlimited: true }];
+        }
 
         const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
         return Array.from({ length: repetitions }, () => ({ actionId: action.id }));
@@ -227,3 +229,4 @@ export const buildCyclePaceMetrics = (cycleTasks, startDate, endDate, plannedEnd
         plannedDurationDays,
     };
 };
+

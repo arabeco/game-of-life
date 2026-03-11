@@ -1,4 +1,4 @@
-export interface CodexLevel {
+﻿export interface CodexLevel {
   level: number;
   title: string;
   description: string;
@@ -70,7 +70,7 @@ export interface Slot {
 }
 
 export type DayOfWeek = 'DOM' | 'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB';
-export type ActionType = 'Marco' | 'Compromisso' | 'Ação Recorrente';
+export type ActionType = 'Marco' | 'Compromisso' | 'Ação Recorrente' | 'Livre';
 
 export interface Action {
   id: string;
@@ -233,7 +233,7 @@ export interface SovereignConfig {
   outfit: string;
   head_under: string; // mascara, oculos, tapa-olho
   helmet: string; // elmos
-  head_over: string; // coroa, boné, chapéu
+  head_over: string; // coroa, bonÃ©, chapÃ©u
   artifact: string;
   glyph: string; // NEW: Glifo slot
   aura: string; // NEW: Aura slot
@@ -423,14 +423,49 @@ export interface ReportIdentitySnapshot {
   capturedAt: string;
 }
 
+export interface FairScoreBreakdown {
+  honorPts: number;
+  metaPts: number;
+  cadencePts: number;
+  realismPts: number;
+  ascensionPts: number;
+}
+
+export interface FairScoreMetrics {
+  planLoadUnits: number;
+  honoredLoadUnits: number;
+  planHonorRate: number;
+  plannedMetas: number;
+  sealedMetas: number;
+  metaSealRate: number;
+  baselineLoadUnits: number;
+  baselineActiveDays: number;
+  activeDays: number;
+  personalCadenceRate: number;
+  planLoadRatio: number;
+  planRealismPts: number;
+  selfGrowthRate: number;
+  ascensionPts: number;
+  frictionRate: number;
+  focusRatio: number;
+  measurementStatus: 'scored' | 'low_signal';
+  historyConfidence: 'stable' | 'seeded' | 'fallback';
+  scoreBreakdown: FairScoreBreakdown;
+  legacyPerformanceScore: number;
+  grade?: string | null;
+}
+
 export interface LegacyRenderCycleDigest {
   id: string;
   name: string;
   startDate: string;
   endDate: string;
   score: number;
+  grade?: string | null;
   focusArena?: string;
   signatureAction?: string;
+  plannedMetas?: number;
+  sealedMetas?: number;
   weeklyAtlas?: ReportAtlasWeek[];
   identitySnapshot?: ReportIdentitySnapshot;
 }
@@ -447,7 +482,9 @@ export interface LegacyRenderEraSummary {
   startDate: string;
   endDate: string;
   avgScore: number;
+  totalExp: number;
   totalHours: number;
+  totalMetas?: number;
   cycleCount: number;
   dominantArena: string;
   topActions: { name: string; count: number }[];
@@ -497,6 +534,8 @@ export interface Report {
     totalPlannedActions: number;
     arenasInvolved: number;
     goalsMet: number;
+    plannedMetas?: number;
+    sealedMetas?: number;
     totalHours: number;
     questsCompleted?: number;
     consistencyDays?: number;
@@ -512,6 +551,8 @@ export interface Report {
     paceDeltaPct?: number;
     top3Actions?: { name: string; count: number }[];
     weeklyAtlas?: ReportAtlasWeek[];
+    scoreModelVersion?: 'fair_v2_1';
+    fairness?: FairScoreMetrics;
     scoreBreakdown?: {
       progressPts: number;
       milestonePts: number;
@@ -594,7 +635,7 @@ export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
   joined_at: string;
 };
 
-// Sistema de Santuário - Posicionamento e Tempo
+// Sistema de SantuÃ¡rio - Posicionamento e Tempo
 export type SanctuaryArea = 'meditation' | 'devotion' | 'rest' | 'garden';
 export type GardenAction = 'working' | 'watering' | 'walking';
 
@@ -639,7 +680,7 @@ export interface Cycle {
   startDate: string;
   endDate: string;
   arenaIds: string[]; // IDs das arenas ativas neste ciclo
-  userId: string; // ID do usuário dono do ciclo
+  userId: string; // ID do usuÃ¡rio dono do ciclo
   seasonId?: string;
   isFinished?: boolean; // FIX: Added isFinished to Cycle interface
   arenaConfig?: Record<string, {
@@ -659,7 +700,6 @@ export interface DailyCommitment {
   score: number | null;
   expDeposited?: number | null;
   sitrepBonus?: number | null;
-  earnedInsigniaId?: string | null;
 }
 
 // --- Sovereign Control Panel Types ---
@@ -864,10 +904,29 @@ export interface OracleContext {
   pendingChests: number;
 }
 
+export type NotificationType =
+  | 'mentor_invite'
+  | 'friend_request'
+  | 'friend_response'
+  | 'friend_accepted'
+  | 'clan_invite'
+  | 'clan_response'
+  | 'clan_join'
+  | 'clan_mission_update'
+  | 'cycle_ending'
+  | 'cycle_finalized'
+  | 'season_ending'
+  | 'reward_ready'
+  | 'mission_redeemable'
+  | 'level_up'
+  | 'title_unlocked'
+  | 'oracle_prompt'
+  | 'system';
+
 export interface Notification {
   id: string;
   userId: string;
-  type: 'friend_request' | 'friend_accepted' | 'clan_invite' | 'clan_join' | 'clan_mission_update' | 'cycle_ending' | 'season_ending' | 'level_up' | 'title_unlocked' | 'mission_redeemable' | 'system';
+  type: NotificationType;
   content: string;
   read: boolean;
   createdAt: string;
@@ -915,6 +974,7 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
+
 
 
 

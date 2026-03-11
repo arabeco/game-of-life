@@ -75,6 +75,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
 
     const asset = action ? getAssetForAction(action.id) : undefined;
     const backgroundStyle = { background: `var(--asset-grad-${asset?.id || 'default'})` };
+    const isFreeAction = action?.actionType === 'Livre';
 
     const handleLongPress = () => {
         if (isTransitioning) return;
@@ -108,7 +109,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
 
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
-            <div style={{...backgroundStyle, height: '40px', width: '100px'}} className={`p-2 flex items-center space-x-2 rounded-r-lg text-left opacity-80 border-l-2 border-[var(--bronze)]`}>
+            <div style={isFreeAction ? { height: '40px', width: '100px' } : {...backgroundStyle, height: '40px', width: '100px'}} className={`p-2 flex items-center space-x-2 text-left opacity-80 ${isFreeAction ? 'free-action-shell free-action-outline rounded-xl' : 'rounded-r-lg border-l-2 border-[var(--bronze)]'}`}>
                 <div className="text-xl z-10">{action?.icon}</div>
             </div>
         );
@@ -140,10 +141,10 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
             {...longPressEvents}
         >
             <div 
-                className={`relative h-full border-l-2 border-[var(--bronze)] p-1 flex items-center justify-center rounded-r-lg text-center overflow-hidden ${task.completed ? 'text-white/80' : 'text-white'}`}
-                style={backgroundStyle}
+                className={`relative h-full p-1 flex items-center justify-center text-center overflow-hidden ${isFreeAction ? `free-action-shell free-action-outline rounded-xl ${task.completed ? 'text-slate-200/75' : 'text-slate-100'}` : `border-l-2 border-[var(--bronze)] rounded-r-lg ${task.completed ? 'text-white/80' : 'text-white'}`}`}
+                style={isFreeAction ? undefined : backgroundStyle}
             >
-                <div className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
+                <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ? 'bg-black/40' : 'bg-black/50'} ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
                 
                 <div className="text-xl z-10">{
                     action?.icon === '$' ? <DollarSignIcon className="w-4 h-4"/> : 
@@ -152,8 +153,8 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
                 }</div>
                 
                  {isHolding && (
-                    <div className="absolute inset-0 bg-black/50 rounded-r-lg animate-pulse">
-                        <div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div>
+                    <div className={`absolute inset-0 animate-pulse ${isFreeAction ? 'bg-black/35 rounded-xl' : 'bg-black/50 rounded-r-lg'}`}>
+                        <div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ? 'bg-slate-200/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div>
                     </div>
                 )}
                 {showSparkles && <Sparkles />}

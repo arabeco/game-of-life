@@ -100,7 +100,12 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
     const { metrics, highlight, assetProgress } = report;
     const weeklyAtlas = metrics.weeklyAtlas || [];
-    const scoreInfo = getScoreGrade(report.performanceScore);
+    const fairness = metrics.fairness;
+    const isFairScoreModel = metrics.scoreModelVersion === 'fair_v2_1' && !!fairness?.scoreBreakdown;
+    const isLowSignal = fairness?.measurementStatus === 'low_signal';
+    const sealedMetas = metrics.sealedMetas ?? metrics.goalsMet ?? 0;
+    const plannedMetas = metrics.plannedMetas ?? Math.max(sealedMetas, 0);
+    const scoreInfo = getScoreGrade(report.performanceScore, fairness);
     const duration = daysBetween(new Date(report.startDate), new Date(report.endDate));
     const totalDays = Math.max(1, duration + 1);
 
@@ -269,7 +274,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
     // Slide 3: Conquistas
     const renderAchievementsSlide = () => {
-        const hasAchievements = metrics.goalsMet > 0 || (metrics.questsCompleted || 0) > 0 || (report.clanPoints || 0) > 0;
+        const hasAchievements = sealedMetas > 0 || (metrics.questsCompleted || 0) > 0 || (report.clanPoints || 0) > 0;
 
         return (
             <div className="flex flex-col h-full space-y-6 p-6">
@@ -283,8 +288,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         <div className="grid grid-cols-2 gap-3">
                             <div className="report-panel p-4 flex flex-col items-center group hover:bg-white/[0.05] transition-all">
                                 <TrophyIcon className="w-5 h-5 text-[var(--skin-accent-color)] mb-2 filter drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
-                                <span className="text-2xl font-black text-[var(--skin-accent-color)] tabular-nums">{metrics.goalsMet}</span>
-                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Marcos</span>
+                                <span className="text-2xl font-black text-[var(--skin-accent-color)] tabular-nums">{plannedMetas > 0 ? `${sealedMetas}/${plannedMetas}` : sealedMetas}</span>
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Metas</span>
                             </div>
                             <div className="report-panel p-4 flex flex-col items-center group hover:bg-white/[0.05] transition-all">
                                 <CrownIcon className="w-5 h-5 text-purple-500 mb-2 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
@@ -324,7 +329,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <XIcon className="w-10 h-10 text-gray-700" />
                         </div>
                         <p className="text-gray-500 text-xs font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px] opacity-60">
-                            "Nenhum marco registrado. <br />A disciplina e a unica saida."
+                            "Nenhuma meta selada. <br />O ciclo ainda pede forma."
                         </p>
                     </div>
                 )}
@@ -340,37 +345,57 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 <div className="report-rule" />
             </div>
 
-            <div className="relative group">
-                <div className="absolute inset-0 bg-[var(--skin-accent-color)] opacity-20 blur-[60px] group-hover:opacity-40 transition-opacity duration-1000" />
-                <div className={`text-[7rem] font-black ${scoreInfo.color} leading-none tracking-tighter filter drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative z-10 select-none`}>
-                    {scoreInfo.grade}
+            {isLowSignal ? (
+                <div className="relative group flex flex-col items-center gap-4">
+                    <div className="absolute inset-0 bg-white/10 opacity-20 blur-[60px] transition-opacity duration-1000" />
+                    <div className="relative z-10 rounded-[32px] border border-white/10 bg-black/60 px-8 py-6 shadow-2xl backdrop-blur-md">
+                        <p className="text-[10px] font-black uppercase tracking-[0.36em] text-gray-500">Medicao</p>
+                        <p className="mt-3 text-3xl font-black tracking-tight text-white">Sinal insuficiente</p>
+                    </div>
                 </div>
-                <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-md px-6 py-2 rounded-2xl border border-white/[0.1] shadow-2xl z-20">
-                    <span className="text-2xl font-black text-white tracking-tight">{report.performanceScore}</span>
+            ) : (
+                <div className="relative group">
+                    <div className="absolute inset-0 bg-[var(--skin-accent-color)] opacity-20 blur-[60px] group-hover:opacity-40 transition-opacity duration-1000" />
+                    <div className={`text-[7rem] font-black ${scoreInfo.color} leading-none tracking-tighter filter drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative z-10 select-none`}>
+                        {scoreInfo.grade}
+                    </div>
+                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-md px-6 py-2 rounded-2xl border border-white/[0.1] shadow-2xl z-20">
+                        <span className="text-2xl font-black text-white tracking-tight">{report.performanceScore}</span>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="pt-12 space-y-2 relative z-10">
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">{formatDate(report.startDate)}  {formatDate(report.endDate)}</p>
                 <p className="text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-[0.1em] opacity-60">{duration} dias de operacao</p>
             </div>
 
-            <p className="text-xl font-black text-white leading-tight tracking-tight max-w-[300px] italic opacity-90 relative z-10">
-                "{scoreInfo.phrase}"
+            <p className="text-xl font-black text-white leading-tight tracking-tight max-w-[320px] italic opacity-90 relative z-10">
+                "{isLowSignal ? 'Ainda nao ha sinal suficiente para julgar este ciclo com justica.' : scoreInfo.phrase}"
             </p>
 
             {/* Score Decomposition  Mono-tone accent bars */}
-            {metrics.scoreBreakdown && (
+            {(isFairScoreModel || metrics.scoreBreakdown) && (
                 <div className="w-full max-w-[280px] mx-auto mt-6 space-y-2 relative z-10">
                     <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.3em] text-center mb-3">Decomposicao</p>
-                    {[
-                        { label: 'Progresso', pts: metrics.scoreBreakdown.progressPts, max: 40, opacity: 1 },
-                        { label: 'Marcos', pts: metrics.scoreBreakdown.milestonePts, max: Math.max(metrics.scoreBreakdown.milestonePts, 30), opacity: 0.8 },
-                        { label: 'Quests', pts: metrics.scoreBreakdown.questPts, max: Math.max(metrics.scoreBreakdown.questPts, 20), opacity: 0.65 },
-                        { label: 'Consistencia', pts: metrics.scoreBreakdown.consistencyPts, max: 20, opacity: 0.5 },
-                        { label: 'Volume', pts: metrics.scoreBreakdown.volumePts, max: 30, opacity: 0.4 },
-                        ...((metrics.scoreBreakdown.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium +10%', pts: metrics.scoreBreakdown.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
-                    ].map(({ label, pts, max, opacity, ...rest }) => (
+                    {(
+                        isFairScoreModel
+                            ? [
+                                { label: 'Honra', pts: fairness!.scoreBreakdown.honorPts, max: 40, opacity: 1 },
+                                { label: 'Metas', pts: fairness!.scoreBreakdown.metaPts, max: 30, opacity: 0.82 },
+                                { label: 'Cadencia', pts: fairness!.scoreBreakdown.cadencePts, max: 15, opacity: 0.68 },
+                                { label: 'Realismo', pts: fairness!.scoreBreakdown.realismPts, max: 10, opacity: 0.54 },
+                                { label: 'Ascensao', pts: fairness!.scoreBreakdown.ascensionPts, max: 5, opacity: 0.42 },
+                            ]
+                            : [
+                                { label: 'Progresso', pts: metrics.scoreBreakdown!.progressPts, max: 40, opacity: 1 },
+                                { label: 'Marcos', pts: metrics.scoreBreakdown!.milestonePts, max: Math.max(metrics.scoreBreakdown!.milestonePts, 30), opacity: 0.8 },
+                                { label: 'Quests', pts: metrics.scoreBreakdown!.questPts, max: Math.max(metrics.scoreBreakdown!.questPts, 20), opacity: 0.65 },
+                                { label: 'Consistencia', pts: metrics.scoreBreakdown!.consistencyPts, max: 20, opacity: 0.5 },
+                                { label: 'Volume', pts: metrics.scoreBreakdown!.volumePts, max: 30, opacity: 0.4 },
+                                ...((metrics.scoreBreakdown?.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium +10%', pts: metrics.scoreBreakdown!.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown!.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
+                            ]
+                    ).map(({ label, pts, max, opacity, ...rest }) => (
                         <div key={label} className="flex items-center gap-3">
                             <span className={`text-[8px] font-black uppercase tracking-widest w-[72px] text-right ${'isPremium' in rest ? 'text-yellow-500' : 'text-gray-600'}`}>{label}</span>
                             <div className="flex-1 h-1 bg-white/[0.05] rounded-full overflow-hidden">
@@ -416,12 +441,11 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         title="Card de encerramento"
                         subtitle="Ciclo consolidado"
                         dateRange={`${formatDate(report.startDate)} - ${formatDate(report.endDate)}`}
-                        summary={scoreInfo.phrase}
                         metrics={[
-                            { label: 'XP selado', value: `+${report.expGained || expGained || 0}` },
-                            { label: 'Arena foco', value: highlight.mostFocusedArena || 'Nenhuma' },
                             { label: 'Acoes', value: `${metrics.actionsCompleted}/${metrics.totalPlannedActions}` },
-                            { label: 'Horas', value: `${metrics.totalHours}` },
+                            { label: 'Carga', value: `${metrics.totalHours}h` },
+                            { label: 'Metas', value: `${sealedMetas}/${plannedMetas}` },
+                            { label: 'Presenca', value: `${fairness?.activeDays ?? metrics.consistencyDays ?? 0} dias` },
                         ]}
                         badges={rewardBadges}
                         className="w-full max-w-[360px]"

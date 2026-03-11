@@ -1,5 +1,4 @@
-﻿import React from 'react';
-import { GlyphIcon } from './Icons';
+import React from 'react';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
 
@@ -11,13 +10,13 @@ interface LegacyGrandPlaqueProps {
 }
 
 const etchedLabel: React.CSSProperties = {
-    color: 'rgba(154, 116, 40, 0.92)',
-    textShadow: '0 1px 0 rgba(255,255,255,0.22), 0 -1px 0 rgba(66,46,12,0.32)',
+    color: 'rgba(181, 136, 58, 0.98)',
+    textShadow: '0 1px 0 rgba(255,250,234,0.18), 0 -1px 0 rgba(92,65,24,0.38)',
 };
 
 const etchedValue: React.CSSProperties = {
-    color: '#fff0c7',
-    textShadow: '0 1px 0 rgba(255,255,255,0.14), 0 0 18px rgba(139,214,255,0.2)',
+    color: 'rgba(58, 67, 78, 0.96)',
+    textShadow: '0 1px 0 rgba(255,255,255,0.12), 0 -1px 0 rgba(8,20,34,0.12)',
 };
 
 export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
@@ -26,87 +25,98 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     className = '',
     compact = false,
 }) => {
-    const { totalCycles, totalHours, weightedAverageScore, crownEra, plaqueInscription } = buildLegacyPlaqueSummary(eras);
-    const shellRadius = compact ? 'rounded-[32px]' : 'rounded-[42px]';
-    const shellPadding = compact ? 'p-4' : 'p-6';
-    const frameInset = compact ? 'inset-[14px]' : 'inset-[18px]';
-    const innerInset = compact ? 'inset-[26px]' : 'inset-[32px]';
-    const heroHeight = compact ? 'h-[200px]' : 'h-[280px]';
-    const titleClass = compact ? 'text-[1.5rem]' : 'text-[2.15rem]';
-    const medallionSize = compact ? 'h-20 w-20' : 'h-28 w-28';
+    const { totalCycles, totalHours, totalSealedMetas, weightedAverageScore, averageGrade } = buildLegacyPlaqueSummary(eras);
+    const isCompact = compact;
 
     return (
         <section
-            className={`relative overflow-hidden border border-[#c59645]/45 bg-[linear-gradient(180deg,_rgba(11,12,15,0.9),_rgba(5,6,8,0.96))] ${shellRadius} ${shellPadding} shadow-[0_34px_90px_rgba(0,0,0,0.56),inset_0_1px_0_rgba(255,255,255,0.08)] ${className}`}
+            className={`relative overflow-visible ${isCompact ? 'rounded-[10px] px-2 py-2' : 'rounded-[18px] px-4 py-4'} ${className}`}
+            style={{
+                background: [
+                    'radial-gradient(circle at 50% 8%, rgba(255,255,255,0.56), rgba(255,255,255,0.14) 26%, transparent 46%)',
+                    'radial-gradient(circle at 18% 16%, rgba(233,246,255,0.48), transparent 32%)',
+                    'linear-gradient(180deg, #f2fbff 0%, #d7efff 18%, #add7f0 40%, #7fb4d5 64%, #5d85a4 82%, #436178 100%)',
+                ].join(', '),
+                border: '1.5px solid rgba(217, 177, 95, 0.96)',
+                boxShadow: [
+                    '0 14px 28px rgba(0,0,0,0.18)',
+                    '0 0 0 1px rgba(130, 93, 36, 0.24)',
+                    'inset 0 0 0 1px rgba(255,248,225,0.28)',
+                    'inset 0 14px 22px rgba(255,255,255,0.14)',
+                    'inset 0 -14px 20px rgba(40,72,98,0.18)',
+                ].join(', '),
+                backdropFilter: 'none',
+                WebkitBackdropFilter: 'none',
+            }}
         >
-            <div className={`pointer-events-none absolute ${frameInset} rounded-[30px] border border-[#d5ab5d]/28`} />
-            <div className={`pointer-events-none absolute ${innerInset} rounded-[24px] border border-[#e8c373]/18`} />
-
             <div
-                className="pointer-events-none absolute inset-[22px] rounded-[26px]"
+                className={`pointer-events-none absolute ${isCompact ? 'inset-[4px] rounded-[8px]' : 'inset-[8px] rounded-[14px]'}`}
                 style={{
-                    background: 'radial-gradient(circle at 50% 12%, rgba(255,255,255,0.22), transparent 18%), linear-gradient(180deg, rgba(146,221,255,0.26) 0%, rgba(78,164,218,0.18) 20%, rgba(41,88,124,0.18) 52%, rgba(10,24,36,0.4) 100%)',
-                    boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06), inset 0 0 90px rgba(104,205,255,0.14), inset 0 -24px 40px rgba(0,0,0,0.24)',
-                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(225, 190, 109, 0.82)',
+                    boxShadow: 'inset 0 0 0 1px rgba(255,243,214,0.18)',
                 }}
             />
+
             <div
-                className="pointer-events-none absolute inset-[22px] rounded-[26px]"
+                className={`pointer-events-none absolute ${isCompact ? 'inset-[8px] rounded-[6px]' : 'inset-[14px] rounded-[10px]'}`}
                 style={{
-                    background: 'linear-gradient(135deg, rgba(255,255,255,0.18), transparent 24%, transparent 62%, rgba(255,255,255,0.12) 74%, transparent 90%), radial-gradient(circle at 50% 48%, rgba(110,208,255,0.18), transparent 26%)',
-                    opacity: 0.92,
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.04) 26%, rgba(201,230,248,0.12) 54%, rgba(255,255,255,0.06) 100%)',
+                    opacity: 0.72,
                 }}
             />
-            <div className="pointer-events-none absolute inset-x-[34px] top-[34px] h-12 rounded-[16px] border border-[#d4a85c]/28 bg-[linear-gradient(180deg,_rgba(255,235,196,0.16),_rgba(123,91,34,0.18))] shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]" />
-            <div className="pointer-events-none absolute inset-x-[34px] bottom-[34px] h-[136px] rounded-[20px] border border-[#d4a85c]/24 bg-[linear-gradient(180deg,_rgba(9,11,14,0.18),_rgba(7,8,10,0.38))] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" />
-            <div className="pointer-events-none absolute left-1/2 top-[84px] h-[1px] w-[62%] -translate-x-1/2 bg-[linear-gradient(90deg,_transparent,_rgba(255,221,154,0.6),_transparent)]" />
 
-            <div className="relative z-10 flex h-full flex-col">
-                <div className="text-center">
-                    <p className="text-[10px] font-black uppercase tracking-[0.34em]" style={etchedLabel}>Legado total</p>
-                    <h3 className={`mt-3 font-black tracking-[0.08em] text-white ${titleClass}`}>{sovereignName}</h3>
-                    <p className="mt-2 text-[10px] font-black uppercase tracking-[0.28em]" style={etchedLabel}>Placa mestra de soberania</p>
+            <div className={`relative z-10 flex flex-col ${isCompact ? 'gap-1.5' : 'gap-3'}`}>
+                <div className={`${isCompact ? 'pt-0.5' : 'pt-1'} text-center`}>
+                    <p
+                        className={`${isCompact ? 'text-[0.7rem] leading-[0.94] px-1' : 'text-[1.02rem] leading-none px-2'} block truncate font-black uppercase tracking-[0.02em]`}
+                        style={{ ...etchedValue, fontFamily: 'var(--font-heading)' }}
+                        title={sovereignName || 'Soberano'}
+                    >
+                        {sovereignName || 'Soberano'}
+                    </p>
                 </div>
 
-                <div className={`relative mt-5 flex items-center justify-center ${heroHeight}`}>
-                    <div className="absolute inset-x-6 top-0 bottom-0 rounded-[28px] border border-[#e1bc72]/16 bg-[linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.01))]" />
-                    <div className={`relative flex ${medallionSize} items-center justify-center rounded-full border border-[#dfb86b]/35 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_rgba(105,205,255,0.12)_34%,_rgba(11,22,30,0.42)_72%)] shadow-[0_0_42px_rgba(106,203,255,0.16),inset_0_0_28px_rgba(255,255,255,0.1)]`}>
-                        <div className="absolute inset-3 rounded-full border border-[#e6c67c]/25" />
-                        <GlyphIcon className={compact ? 'h-8 w-8 text-[#f3d989]' : 'h-10 w-10 text-[#f3d989]'} />
-                    </div>
-                    <div className="absolute inset-x-12 bottom-6 rounded-[18px] border border-[#e5c374]/18 bg-[linear-gradient(180deg,_rgba(0,0,0,0.08),_rgba(0,0,0,0.24))] px-4 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em]" style={etchedLabel}>Inscricao</p>
-                        <p className={`mt-2 ${compact ? 'text-xs' : 'text-sm'} leading-relaxed text-[#eaf3fb]/86`}>{plaqueInscription}</p>
-                    </div>
-                </div>
+                <div className="h-px bg-[linear-gradient(90deg,_transparent,_rgba(211,180,111,0.55),_transparent)]" />
 
-                <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="rounded-[16px] border border-[#d7b46b]/22 bg-black/16 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em]" style={etchedLabel}>Eras</p>
-                        <p className="mt-2 text-3xl font-black" style={etchedValue}>{eras.length}</p>
-                    </div>
-                    <div className="rounded-[16px] border border-[#d7b46b]/22 bg-black/16 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em]" style={etchedLabel}>Ciclos</p>
-                        <p className="mt-2 text-3xl font-black" style={etchedValue}>{totalCycles}</p>
-                    </div>
-                    <div className="rounded-[16px] border border-[#d7b46b]/22 bg-black/16 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em]" style={etchedLabel}>Score</p>
-                        <p className="mt-2 text-3xl font-black" style={etchedValue}>{weightedAverageScore}</p>
-                    </div>
-                    <div className="rounded-[16px] border border-[#d7b46b]/22 bg-black/16 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em]" style={etchedLabel}>Horas</p>
-                        <p className="mt-2 text-3xl font-black" style={etchedValue}>{Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}</p>
-                    </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-[1fr_auto] items-center gap-3 rounded-[18px] border border-[#d7b46b]/22 bg-black/18 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em]" style={etchedLabel}>Era de consagracao</p>
-                        <p className="mt-2 text-lg font-black tracking-[0.05em] text-white">{crownEra?.label || 'Sem era dominante'}</p>
-                    </div>
-                    <div className="rounded-full border border-[#d9bd80]/24 bg-black/18 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em]" style={etchedValue}>
-                        Glyph
-                    </div>
+                <div className={`${isCompact ? 'space-y-1' : 'space-y-1.5'}`}>
+                    {[
+                        [
+                            ['Ciclos', totalCycles],
+                            ['Carga', `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`],
+                        ],
+                        [
+                            ['Metas', totalSealedMetas],
+                            ['Patamar', `${averageGrade} | ${weightedAverageScore}`],
+                        ],
+                    ].map((row, rowIndex) => (
+                        <div
+                            key={rowIndex}
+                                className={`${isCompact ? 'rounded-[7px] px-1.5 py-1' : 'rounded-[10px] px-2.5 py-1.5'} grid grid-cols-2 gap-3`}
+                                style={{
+                                    borderTop: '1px solid rgba(216,180,112,0.24)',
+                                    borderBottom: '1px solid rgba(216,180,112,0.18)',
+                                    background: 'linear-gradient(180deg, rgba(255,255,255,0.09), rgba(75,104,127,0.08))',
+                                }}
+                        >
+                            {row.map(([label, value], itemIndex) => (
+                                <div
+                                    key={String(label)}
+                                    className={`flex min-h-[2.15rem] flex-col items-center justify-center gap-0.5 text-center ${itemIndex === 1 ? 'border-l pl-2' : ''}`}
+                                    style={itemIndex === 1 ? { borderColor: 'rgba(216,180,112,0.18)' } : undefined}
+                                >
+                                    <p className={`${isCompact ? 'text-[4.5px]' : 'text-[6px]'} font-black uppercase tracking-[0.18em]`} style={etchedLabel}>
+                                        {label}
+                                    </p>
+                                    <p
+                                        className={`${isCompact ? 'text-[0.72rem]' : 'text-[0.98rem]'} font-black`}
+                                        style={{ ...etchedValue, fontFamily: 'var(--font-heading)' }}
+                                    >
+                                        {value}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
                 </div>
             </div>
         </section>

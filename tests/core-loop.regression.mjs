@@ -27,6 +27,63 @@ import {
     restoreTaskSnapshot,
 } from '../utils/taskMutationUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
+import { buildFairScoreFromTasks, buildMetaSealStats, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
+
+const makeFairTask = ({ id, arenaId, date = '2026-03-08', duration = 60, completed = false, actionType = 'Compromisso' }) => ({
+    id,
+    taskId: id,
+    actionId: `${arenaId}-${id}`,
+    arenaId,
+    arenaName: arenaId,
+    date,
+    duration,
+    completed,
+    actionType,
+});
+
+const makeReportFromTasks = ({ id, startDate, endDate, tasks, performanceScore = 0 }) => ({
+    id,
+    cycleId: id,
+    startDate,
+    endDate,
+    performanceScore,
+    metrics: {
+        actionsCompleted: tasks.filter((task) => task.completed).length,
+        totalPlannedActions: tasks.length,
+        arenasInvolved: new Set(tasks.map((task) => task.arenaId)).size,
+        goalsMet: 0,
+        totalHours: Math.round(tasks.filter((task) => task.completed).reduce((sum, task) => sum + task.duration, 0) / 60),
+        weeklyAtlas: [
+            {
+                weekIndex: 1,
+                startDate,
+                endDate,
+                plannedCount: tasks.length,
+                completedCount: tasks.filter((task) => task.completed).length,
+                plannedMinutes: tasks.reduce((sum, task) => sum + task.duration, 0),
+                completedMinutes: tasks.filter((task) => task.completed).reduce((sum, task) => sum + task.duration, 0),
+                dominantArenaName: tasks[0]?.arenaName || 'Sem arena',
+                days: [
+                    {
+                        date: startDate,
+                        plannedCount: tasks.length,
+                        completedCount: tasks.filter((task) => task.completed).length,
+                        plannedMinutes: tasks.reduce((sum, task) => sum + task.duration, 0),
+                        completedMinutes: tasks.filter((task) => task.completed).reduce((sum, task) => sum + task.duration, 0),
+                        arenaBuckets: [],
+                        scheduledItems: tasks,
+                        unscheduledItems: [],
+                    },
+                ],
+            },
+        ],
+    },
+    highlight: {
+        mostFocusedArena: tasks[0]?.arenaName || 'Sem arena',
+        mostRepeatedAction: tasks[0]?.actionId || 'Acao',
+    },
+    assetProgress: [],
+});
 const tests = [
     {
         name: 'weekly atlas divide o ciclo em semanas sequenciais do periodo real',
@@ -420,6 +477,161 @@ const tests = [
             });
 
             assert.equal(percent, 75);
+        },
+    },
+    {
+        name: 'metas seladas agregam arenas completas em proporcao 3/4',
+        run() {
+            const stats = buildMetaSealStats([
+                makeFairTask({ id: 'a1', arenaId: 'Arena A', completed: true }),
+                makeFairTask({ id: 'a2', arenaId: 'Arena A', completed: true }),
+                makeFairTask({ id: 'b1', arenaId: 'Arena B', completed: true }),
+                makeFairTask({ id: 'c1', arenaId: 'Arena C', completed: true }),
+                makeFairTask({ id: 'c2', arenaId: 'Arena C', completed: true }),
+                makeFairTask({ id: 'd1', arenaId: 'Arena D', completed: true }),
+                makeFairTask({ id: 'd2', arenaId: 'Arena D', completed: false }),
+            ]);
+
+            assert.equal(stats.plannedMetas, 4);
+            assert.equal(stats.sealedMetas, 3);
+        },
+    },
+    {
+        name: 'monotarefa profunda recebe A com 1 meta selada',
+        run() {
+            const result = buildFairScoreFromTasks({
+                tasks: [
+                    makeFairTask({ id: 'deep-1', arenaId: 'Deep Work', duration: 360, completed: true }),
+                ],
+                previousReports: [
+                    { metrics: { fairness: { honoredLoadUnits: 10, activeDays: 3, measurementStatus: 'scored' } } },
+                    { metrics: { fairness: { honoredLoadUnits: 9, activeDays: 4, measurementStatus: 'scored' } } },
+                ],
+                durationDays: 4,
+            });
+
+            assert.equal(result.fairness.plannedMetas, 1);
+            assert.equal(result.fairness.sealedMetas, 1);
+            assert.equal(result.fairness.measurementStatus, 'scored');
+            assert.equal(result.grade, 'A');
+            assert.equal(result.fairScore, 85);
+        },
+    },
+    {
+        name: 'overplanner perde nota mesmo com muito volume',
+        run() {
+            const result = buildFairScoreFromTasks({
+                tasks: [
+                    makeFairTask({ id: 'a1', arenaId: 'Arena A', date: '2026-03-08', duration: 120, completed: true }),
+                    makeFairTask({ id: 'a2', arenaId: 'Arena A', date: '2026-03-09', duration: 120, completed: true }),
+                    makeFairTask({ id: 'b1', arenaId: 'Arena B', date: '2026-03-10', duration: 120, completed: true }),
+                    makeFairTask({ id: 'b2', arenaId: 'Arena B', date: '2026-03-11', duration: 120, completed: true }),
+                    makeFairTask({ id: 'c1', arenaId: 'Arena C', date: '2026-03-12', duration: 120, completed: false }),
+                    makeFairTask({ id: 'c2', arenaId: 'Arena C', date: '2026-03-13', duration: 120, completed: false }),
+                ],
+                previousReports: [
+                    { metrics: { fairness: { honoredLoadUnits: 15, activeDays: 6, measurementStatus: 'scored' } } },
+                    { metrics: { fairness: { honoredLoadUnits: 16, activeDays: 6, measurementStatus: 'scored' } } },
+                ],
+                durationDays: 10,
+            });
+
+            assert.equal(result.grade, 'C');
+            assert.equal(result.fairScore, 64);
+        },
+    },
+    {
+        name: 'tiozao consistente recebe A com carga pequena e honesta',
+        run() {
+            const result = buildFairScoreFromTasks({
+                tasks: [
+                    makeFairTask({ id: 'a1', arenaId: 'Casa', date: '2026-03-08', duration: 60, completed: true }),
+                    makeFairTask({ id: 'b1', arenaId: 'Saude', date: '2026-03-10', duration: 60, completed: true }),
+                    makeFairTask({ id: 'c1', arenaId: 'Leitura', date: '2026-03-12', duration: 90, completed: true }),
+                ],
+                previousReports: [
+                    { metrics: { fairness: { honoredLoadUnits: 7, activeDays: 6, measurementStatus: 'scored' } } },
+                    { metrics: { fairness: { honoredLoadUnits: 8, activeDays: 6, measurementStatus: 'scored' } } },
+                ],
+                durationDays: 6,
+            });
+
+            assert.equal(result.grade, 'A');
+            assert.equal(result.fairScore, 92);
+        },
+    },
+    {
+        name: 'ciclo de sobrevivencia recebe B em vez de punicao exagerada',
+        run() {
+            const result = buildFairScoreFromTasks({
+                tasks: [
+                    makeFairTask({ id: 'a1', arenaId: 'Casa', date: '2026-03-08', duration: 60, completed: true }),
+                    makeFairTask({ id: 'b1', arenaId: 'Saude', date: '2026-03-09', duration: 60, completed: true }),
+                    makeFairTask({ id: 'c1', arenaId: 'Leitura', date: '2026-03-10', duration: 30, completed: false }),
+                ],
+                previousReports: [
+                    { metrics: { fairness: { honoredLoadUnits: 4, activeDays: 4, measurementStatus: 'scored' } } },
+                    { metrics: { fairness: { honoredLoadUnits: 5, activeDays: 4, measurementStatus: 'scored' } } },
+                ],
+                durationDays: 4,
+            });
+
+            assert.equal(result.grade, 'B');
+            assert.equal(result.fairScore, 73);
+        },
+    },
+    {
+        name: 'ciclo com sinal insuficiente cai para low_signal',
+        run() {
+            const result = buildFairScoreFromTasks({
+                tasks: [makeFairTask({ id: 'tiny', arenaId: 'Casa', duration: 30, completed: true })],
+                durationDays: 2,
+            });
+
+            assert.equal(result.fairness.measurementStatus, 'low_signal');
+            assert.equal(result.fairness.plannedMetas, 1);
+        },
+    },
+    {
+        name: 'recalculo cronologico usa baseline dos relatorios anteriores',
+        run() {
+            const reports = [
+                makeReportFromTasks({
+                    id: 'report-1',
+                    startDate: '2026-01-01',
+                    endDate: '2026-01-07',
+                    tasks: [
+                        makeFairTask({ id: 'r1-a1', arenaId: 'A', duration: 60, completed: true }),
+                        makeFairTask({ id: 'r1-b1', arenaId: 'B', duration: 60, completed: true }),
+                    ],
+                }),
+                makeReportFromTasks({
+                    id: 'report-2',
+                    startDate: '2026-01-08',
+                    endDate: '2026-01-14',
+                    tasks: [
+                        makeFairTask({ id: 'r2-a1', arenaId: 'A', duration: 60, completed: true }),
+                        makeFairTask({ id: 'r2-b1', arenaId: 'B', duration: 60, completed: true }),
+                        makeFairTask({ id: 'r2-c1', arenaId: 'C', duration: 60, completed: true }),
+                    ],
+                }),
+                makeReportFromTasks({
+                    id: 'report-3',
+                    startDate: '2026-01-15',
+                    endDate: '2026-01-21',
+                    tasks: [
+                        makeFairTask({ id: 'r3-a1', arenaId: 'A', duration: 60, completed: true }),
+                        makeFairTask({ id: 'r3-b1', arenaId: 'B', duration: 60, completed: true }),
+                        makeFairTask({ id: 'r3-c1', arenaId: 'C', duration: 60, completed: false }),
+                    ],
+                }),
+            ];
+
+            const recalculated = recalculateReportsWithFairScore(reports).reports;
+            assert.equal(recalculated[0].metrics.fairness.historyConfidence, 'seeded');
+            assert.equal(recalculated[1].metrics.fairness.historyConfidence, 'seeded');
+            assert.equal(recalculated[2].metrics.fairness.historyConfidence, 'stable');
+            assert.equal(recalculated[2].metrics.scoreModelVersion, 'fair_v2_1');
         },
     },
 ];

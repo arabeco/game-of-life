@@ -2,6 +2,7 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
+import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
 import { SparklesIcon, LockIcon } from './Icons';
 import './global-header.css';
 
@@ -19,7 +20,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const [isRestScreenOpen, setRestScreenOpen] = useState(true); // Default to true for auto-open on login/app start
     const isBasicMode = appMode === 'BASIC';
     
-    const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+    const unreadNotificationsCount = getUnreadBadgeCount(notifications);
     const hasUnreadMessages = oracleMessages.some(m => !m.read);
     const hasUnread = hasUnreadMessages || unreadNotificationsCount > 0;
     

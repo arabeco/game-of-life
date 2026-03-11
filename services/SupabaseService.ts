@@ -49,6 +49,37 @@ export class SupabaseService {
     }
   }
 
+  static async createNotification(
+    userId: string,
+    type: Notification['type'],
+    content: string,
+  ): Promise<Notification | null> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type,
+        content,
+        read: false,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Error creating notification:', error);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      userId: data.user_id,
+      type: data.type,
+      content: data.content,
+      read: data.read,
+      createdAt: data.created_at,
+    };
+  }
+
   // Garantir conta admin soberana
   static async ensureAdminAccount(): Promise<UserProfile | null> {
     try {

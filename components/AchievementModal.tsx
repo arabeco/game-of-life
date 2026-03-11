@@ -21,15 +21,15 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
         case 'ARENA_COMPLETED':
             return { title: 'Meta da Arena Atingida!', icon: data.icon, message: `Voce cumpriu todas as acoes da arena "${data.name}".` };
         case 'PLAYER_RANK_UP':
-            return { title: 'PARABENS!', icon: '👑', message: `Voce subiu de patente para ${data.name}!` };
+            return { title: 'PARABENS!', icon: '??', message: `Voce subiu de patente para ${data.name}!` };
         case 'QUEST_COMPLETED':
-            return { title: 'MISSAO CONCLUIDA!', icon: data.icon || '📜', message: `Voce concluiu a missao "${data.title}".` };
+            return { title: 'MISSAO CONCLUIDA!', icon: data.icon || '??', message: `Voce concluiu a missao "${data.title}".` };
         case 'REPORT_COMPLETED':
-            return { title: 'RELATORIO CONCLUIDO!', icon: '📊', message: 'Voce enviou seu relatorio diario com sucesso!' };
+            return { title: 'RELATORIO CONCLUIDO!', icon: '??', message: 'Voce selou seu relatorio de ciclo com sucesso!' };
         case 'CLAN_RANK_UP':
-            return { title: 'Patente do Cla Aumentou!', icon: '🏛️', message: `Seu cla agora e um ${data.name}!` };
+            return { title: 'Patente do Cla Aumentou!', icon: '???', message: `Seu cla agora e um ${data.name}!` };
         default:
-            return { title: 'Conquista!', icon: '🏆', message: 'Voce realizou um feito notavel.' };
+            return { title: 'Conquista!', icon: '??', message: 'Voce realizou um feito notavel.' };
     }
 };
 
@@ -81,7 +81,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                 break;
             case 'QUEST_COMPLETED':
             case 'REPORT_COMPLETED':
-                content = { title: achievement.data.title || 'Relatorio Diario', icon };
+                content = { title: achievement.data.title || 'Relatorio de Ciclo', icon };
                 break;
             default:
                 content = { title: 'Feito notavel' };
@@ -102,9 +102,9 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                     const id = String(itemId);
                     const itemDef = resolveItemDef(id);
                     if (itemDef?.category === 'insignia') {
-                        return `✦ Insignia ${itemDef.name} adicionada`;
+                        return `? Insignia ${itemDef.name} adicionada`;
                     }
-                    return `✦ Item ${itemDef?.name || id} adicionado`;
+                    return `? Item ${itemDef?.name || id} adicionado`;
                 });
 
                 const maxIndividualLines = 3;
@@ -112,21 +112,21 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                     messages.push(...itemLines);
                 } else {
                     messages.push(...itemLines.slice(0, maxIndividualLines));
-                    messages.push(`✦ ...e mais ${itemLines.length - maxIndividualLines} itens`);
+                    messages.push(`? ...e mais ${itemLines.length - maxIndividualLines} itens`);
                 }
             }
 
             if (rewards.chest) {
-                messages.push(`✦ Bau ${rewards.chest} adicionado`);
+                messages.push(`? Bau ${rewards.chest} adicionado`);
             }
 
             if (rewards.ornament) {
                 const itemDef = resolveItemDef(rewards.ornament);
-                messages.push(`✦ Ornamento ${itemDef?.name || rewards.ornament} adicionado`);
+                messages.push(`? Ornamento ${itemDef?.name || rewards.ornament} adicionado`);
             }
 
             if (rewards.exp && rewards.exp > 0) {
-                messages.push(`✦ +${rewards.exp} XP computados`);
+                messages.push(`? +${rewards.exp} XP computados`);
             }
 
             if (messages.length > 0) {
@@ -222,7 +222,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                             <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
                                                 <div className="flex items-center gap-2.5">
                                                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">✨</span>
+                                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">?</span>
                                                     </div>
                                                     <div className="min-w-0 overflow-hidden text-left">
                                                         <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">Experiencia</p>
@@ -242,7 +242,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                                         <div key={`${itemId}-${index}`} className="min-w-0 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
                                                             <div className="flex items-center gap-2.5">
                                                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                                    <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{itemDef?.icon || '🎖️'}</span>
+                                                                    <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{itemDef?.icon || '???'}</span>
                                                                 </div>
                                                                 <div className="min-w-0 overflow-hidden text-left">
                                                                     <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -261,7 +261,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                                     <div className="min-w-0 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
                                                         <div className="flex items-center gap-2.5">
                                                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                                <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">📦</span>
+                                                                <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">??</span>
                                                             </div>
                                                             <div className="min-w-0 overflow-hidden text-left">
                                                                 <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">Bau</p>
@@ -275,7 +275,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                                     <div className="min-w-0 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
                                                         <div className="flex items-center gap-2.5">
                                                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                                <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{resolveItemDef(normalizedRewards.ornament)?.icon || '🎖️'}</span>
+                                                                <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{resolveItemDef(normalizedRewards.ornament)?.icon || '???'}</span>
                                                             </div>
                                                             <div className="min-w-0 overflow-hidden text-left">
                                                                 <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">Ornamento</p>
@@ -317,3 +317,6 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         </Portal>
     );
 };
+
+
+

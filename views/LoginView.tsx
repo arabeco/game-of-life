@@ -304,7 +304,7 @@ export const LoginView: React.FC = () => {
                         access_type: 'offline',
                         prompt: 'consent',
                     },
-                    redirectTo: window.location.origin
+                    redirectTo: window.location.href
                 }
             });
             if (error) throw error;

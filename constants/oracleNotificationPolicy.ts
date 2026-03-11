@@ -1,0 +1,366 @@
+import { AppMode, Notification, NotificationType, OracleMode } from '../types';
+
+export type NotificationLane = 'essential' | 'progress' | 'feed';
+
+interface NotificationPolicy {
+  lane: NotificationLane;
+  badge: boolean;
+  basicVisible: boolean;
+  gameVisible: boolean;
+  coachVisible?: boolean;
+  tacticalVisible?: boolean;
+  icon: string;
+  label: string;
+}
+
+const POLICY: Record<NotificationType, NotificationPolicy> = {
+  mentor_invite: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'M',
+    label: 'Mentor',
+  },
+  friend_request: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'F',
+    label: 'Amizade',
+  },
+  friend_response: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'F',
+    label: 'Resposta',
+  },
+  clan_invite: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'C',
+    label: 'Cla',
+  },
+  clan_response: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'C',
+    label: 'Resposta',
+  },
+  clan_mission_update: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'M',
+    label: 'Missao',
+  },
+  cycle_ending: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'C',
+    label: 'Ciclo',
+  },
+  cycle_finalized: {
+    lane: 'progress',
+    badge: false,
+    basicVisible: false,
+    gameVisible: true,
+    icon: 'R',
+    label: 'Relatorio',
+  },
+  season_ending: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'S',
+    label: 'Temporada',
+  },
+  reward_ready: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'R',
+    label: 'Recompensa',
+  },
+  mission_redeemable: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'R',
+    label: 'Resgate',
+  },
+  system: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: '!',
+    label: 'Sistema',
+  },
+  level_up: {
+    lane: 'progress',
+    badge: false,
+    basicVisible: false,
+    gameVisible: true,
+    icon: 'L',
+    label: 'Patente',
+  },
+  title_unlocked: {
+    lane: 'progress',
+    badge: false,
+    basicVisible: false,
+    gameVisible: true,
+    icon: 'T',
+    label: 'Titulo',
+  },
+  friend_accepted: {
+    lane: 'feed',
+    badge: false,
+    basicVisible: false,
+    gameVisible: true,
+    icon: 'F',
+    label: 'Aliado',
+  },
+  clan_join: {
+    lane: 'feed',
+    badge: false,
+    basicVisible: false,
+    gameVisible: true,
+    icon: 'C',
+    label: 'Cla',
+  },
+  oracle_prompt: {
+    lane: 'feed',
+    badge: false,
+    basicVisible: false,
+    gameVisible: false,
+    coachVisible: true,
+    tacticalVisible: true,
+    icon: 'O',
+    label: 'Oraculo',
+  },
+};
+
+const FALLBACK_POLICY: NotificationPolicy = POLICY.system;
+
+const getPolicy = (type: NotificationType): NotificationPolicy => POLICY[type] || FALLBACK_POLICY;
+
+export const isBadgeNotification = (notificationOrType: Notification | NotificationType): boolean => {
+  const type = typeof notificationOrType === 'string' ? notificationOrType : notificationOrType.type;
+  return getPolicy(type).badge;
+};
+
+export const getNotificationLane = (type: NotificationType): NotificationLane => getPolicy(type).lane;
+
+export const getNotificationIcon = (type: NotificationType): string => getPolicy(type).icon;
+
+export const getNotificationLabel = (type: NotificationType): string => getPolicy(type).label;
+
+export const getNotificationLaneLabel = (type: NotificationType): string => {
+  const lane = getPolicy(type).lane;
+  if (lane === 'essential') return 'Essencial';
+  if (lane === 'progress') return 'Progresso';
+  return 'Feed';
+};
+
+export const getNotificationTitle = (notification: Notification): string => {
+  switch (notification.type) {
+    case 'cycle_ending':
+      return 'Seu ciclo esta proximo do fim.';
+    case 'cycle_finalized':
+      return 'Parabens! Seu ciclo foi finalizado.';
+    case 'reward_ready':
+    case 'mission_redeemable':
+      return 'Voce tem novas recompensas.';
+    case 'mentor_invite':
+      return 'Voce recebeu um convite de mentor.';
+    case 'clan_invite':
+      return 'Voce recebeu um convite de cla.';
+    case 'friend_request':
+      return 'Voce recebeu um convite de amizade.';
+    case 'friend_response':
+      return 'Seu convite de amizade foi respondido.';
+    case 'clan_response':
+      return 'Seu pedido de cla foi respondido.';
+    case 'clan_mission_update':
+      return 'Seu cla precisa de voce.';
+    case 'season_ending':
+      return 'A temporada esta acabando.';
+    case 'level_up':
+      return 'Voce subiu de nivel.';
+    case 'title_unlocked':
+      return 'Voce desbloqueou um titulo.';
+    case 'oracle_prompt':
+      return 'O Oraculo chamou sua atencao.';
+    case 'friend_accepted':
+      return 'Seu convite de amizade foi aceito.';
+    case 'clan_join':
+      return 'Seu pedido de cla foi aceito.';
+    case 'system':
+    default:
+      return 'Aviso do sistema.';
+  }
+};
+
+const extractDaysLeft = (content?: string | null): number | null => {
+  if (!content) return null;
+  const match = content.match(/(\d+)/);
+  if (!match) return null;
+  const days = Number(match[1]);
+  return Number.isFinite(days) ? days : null;
+};
+
+const getDaysLeftLabel = (daysLeft: number | null): string => {
+  if (daysLeft == null) return 'Seu ciclo esta perto do fim.';
+  if (daysLeft <= 0) return 'Seu ciclo termina hoje.';
+  if (daysLeft === 1) return 'Falta 1 dia para o fim do ciclo.';
+  return `Faltam ${daysLeft} dias para o fim do ciclo.`;
+};
+
+export const getNotificationBody = (
+  notification: Notification,
+  oracleMode: OracleMode,
+): string => {
+  if (notification.content?.trim()) {
+    if (
+      notification.type === 'mentor_invite' ||
+      notification.type === 'clan_invite' ||
+      notification.type === 'friend_request' ||
+      notification.type === 'friend_response' ||
+      notification.type === 'clan_response' ||
+      notification.type === 'clan_mission_update' ||
+      notification.type === 'cycle_finalized' ||
+      notification.type === 'system' ||
+      notification.type === 'oracle_prompt'
+    ) {
+      return notification.content;
+    }
+  }
+
+  switch (notification.type) {
+    case 'cycle_ending': {
+      const daysLeft = extractDaysLeft(notification.content);
+      const lead = getDaysLeftLabel(daysLeft);
+      switch (oracleMode) {
+        case 'coach':
+          return `${lead} Fecha o que importa agora e entra na revisao com o jogo na mao.`;
+        case 'tatico':
+          return `${lead} Priorize marcos e o encerramento.`;
+        case 'estrategico':
+          return `${lead} Consolidar o fechamento agora preserva a leitura da fase.`;
+        case 'calmo':
+          return `${lead} Ainda ha tempo para encerrar com clareza.`;
+        case 'reflexivo':
+          return `${lead} Observe o que este ciclo ainda quer fechar.`;
+        default:
+          return lead;
+      }
+    }
+    case 'reward_ready':
+    case 'mission_redeemable':
+      switch (oracleMode) {
+        case 'coach':
+          return 'Resgate agora e siga. Nao deixa recompensa virar pendencia.';
+        case 'tatico':
+          return 'Recompensa disponivel. Recolha para manter o fluxo limpo.';
+        case 'estrategico':
+          return 'Seu progresso ja liberou novas recompensas.';
+        default:
+          return 'Voce tem recompensas prontas para resgate.';
+      }
+    case 'season_ending':
+      return 'A temporada esta perto do fim. Vale revisar o que ainda da para fechar.';
+    case 'level_up':
+      return 'Sua progressao avancou. Vale registrar esse salto na memoria do ciclo.';
+    case 'title_unlocked':
+      return 'Um novo titulo foi desbloqueado no seu percurso.';
+    case 'friend_accepted':
+      return notification.content || 'Seu convite de amizade foi aceito.';
+    case 'clan_join':
+      return notification.content || 'Seu pedido de entrada no cla foi aceito.';
+    case 'mentor_invite':
+      return notification.content || 'Alguem quer entrar em um vinculo de mentoria com voce.';
+    case 'friend_request':
+      return notification.content || 'Existe um novo convite de amizade esperando sua resposta.';
+    case 'clan_invite':
+      return notification.content || 'Existe um novo convite de cla esperando sua resposta.';
+    case 'oracle_prompt':
+      switch (oracleMode) {
+        case 'coach':
+          return notification.content || 'O Oraculo viu um ponto de execucao que merece sua atencao.';
+        case 'tatico':
+          return notification.content || 'O Oraculo detectou um ajuste operacional necessario.';
+        case 'estrategico':
+          return notification.content || 'O Oraculo detectou um sinal importante na sua fase atual.';
+        default:
+          return notification.content || 'O Oraculo tem uma chamada curta para voce.';
+      }
+    default:
+      return notification.content || 'Ha uma atualizacao importante esperando sua leitura.';
+  }
+};
+
+const canModeSeeFeed = (type: NotificationType, oracleMode: OracleMode): boolean => {
+  const policy = getPolicy(type);
+  if (policy.basicVisible || policy.gameVisible) return true;
+  if (oracleMode === 'coach') return Boolean(policy.coachVisible);
+  if (oracleMode === 'tatico' || oracleMode === 'estrategico') return Boolean(policy.tacticalVisible);
+  return false;
+};
+
+export const shouldShowNotificationForProfile = (
+  type: NotificationType,
+  appMode: AppMode,
+  oracleMode: OracleMode,
+): boolean => {
+  const policy = getPolicy(type);
+
+  if (appMode === 'BASIC') {
+    return policy.basicVisible;
+  }
+
+  if (policy.gameVisible) {
+    return true;
+  }
+
+  return canModeSeeFeed(type, oracleMode);
+};
+
+export const getVisibleNotificationsForProfile = (
+  notifications: Notification[],
+  appMode: AppMode,
+  oracleMode: OracleMode,
+): Notification[] => {
+  return notifications
+    .filter((notification) => shouldShowNotificationForProfile(notification.type, appMode, oracleMode))
+    .sort((left, right) => {
+      const leftPolicy = getPolicy(left.type);
+      const rightPolicy = getPolicy(right.type);
+
+      if (left.read !== right.read) {
+        return left.read ? 1 : -1;
+      }
+
+      if (leftPolicy.badge !== rightPolicy.badge) {
+        return leftPolicy.badge ? -1 : 1;
+      }
+
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
+};
+
+export const getUnreadBadgeCount = (notifications: Notification[]): number =>
+  notifications.filter((notification) => !notification.read && isBadgeNotification(notification)).length;

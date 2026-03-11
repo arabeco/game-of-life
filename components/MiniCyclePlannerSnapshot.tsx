@@ -5,6 +5,8 @@ interface MiniCyclePlannerSnapshotProps {
     weeks?: ReportAtlasWeek[];
     accentColor?: string;
     className?: string;
+    compact?: boolean;
+    style?: React.CSSProperties;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -43,6 +45,8 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
     weeks = [],
     accentColor = '#D4AF37',
     className = '',
+    compact = false,
+    style,
 }) => {
     const days = useMemo(() => weeks.flatMap((week) => week.days.map((day, dayIndex) => ({
         ...day,
@@ -56,27 +60,29 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
 
     if (days.length === 0) {
         return (
-            <div className={`rounded-2xl border border-white/10 bg-black/25 p-3 ${className}`}>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-gray-500">Sem planner consolidado</p>
+            <div className={`${compact ? 'px-1 py-1.5' : 'rounded-2xl border border-white/10 bg-black/25 p-3'} ${className}`} style={style}>
+                <p className={`${compact ? 'text-[8px] text-gray-600' : 'text-[10px] text-gray-500'} font-black uppercase tracking-[0.22em]`}>Sem planner consolidado</p>
             </div>
         );
     }
 
     return (
-        <div className={`rounded-[22px] border border-white/10 bg-black/35 p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] ${className}`}>
-            <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Planner mini</p>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">{totalCompleted}/{totalPlanned}</p>
-            </div>
-            <div className="overflow-hidden rounded-[18px] border border-white/5 bg-[#060606] px-2 py-2">
+        <div className={`${compact ? 'px-0 py-0' : 'rounded-[22px] border border-white/10 bg-black/35 p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]'} ${className}`} style={style}>
+            {!compact && (
+                <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Planner mini</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">{totalCompleted}/{totalPlanned}</p>
+                </div>
+            )}
+            <div className={`${compact ? 'overflow-hidden rounded-[6px] border border-white/6 bg-transparent px-[2px] py-[2px]' : 'overflow-hidden rounded-[18px] border border-white/5 bg-[#060606] px-2 py-2'}`}>
                 <div className="flex items-end gap-[2px]" style={{ minWidth: `${(dayWidth + 2) * days.length}px` }}>
                     {days.map((day) => {
                         const completionRatio = day.plannedCount > 0 ? day.completedCount / day.plannedCount : 0;
                         return (
                             <div key={day.date} className="flex flex-col items-center gap-1" style={{ width: `${dayWidth}px` }}>
-                                <div className="text-[7px] font-black leading-none text-gray-600">{day.date.slice(-2)}</div>
+                                <div className={`${compact ? 'text-[6px]' : 'text-[7px]'} font-black leading-none text-gray-600`}>{day.date.slice(-2)}</div>
                                 <div
-                                    className="relative h-[88px] w-full overflow-hidden rounded-[10px] border border-white/5 bg-white/[0.03]"
+                                    className={`relative ${compact ? 'h-[26px] rounded-[4px]' : 'h-[88px] rounded-[10px]'} w-full overflow-hidden border border-white/6 bg-white/[0.01]`}
                                     style={{ boxShadow: day.isWeekStart ? `inset 1px 0 0 ${accentColor}` : undefined }}
                                     title={`${day.date} - ${day.completedCount}/${day.plannedCount}`}
                                 >
@@ -103,7 +109,7 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
                                         </div>
                                     )}
                                 </div>
-                                <div className="text-[7px] font-black leading-none text-gray-500">{day.isWeekStart ? `S${day.weekIndex}` : '-'}</div>
+                                <div className={`${compact ? 'text-[6px]' : 'text-[7px]'} font-black leading-none text-gray-500`}>{day.isWeekStart ? `S${day.weekIndex}` : '-'}</div>
                             </div>
                         );
                     })}

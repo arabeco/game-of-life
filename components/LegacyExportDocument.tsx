@@ -169,7 +169,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                             <p className="legacy-kicker legacy-kicker-soft">Artefato final</p>
                             <h2 className="mt-3 text-3xl font-black tracking-tight">Placa do Legado</h2>
                             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-gray-300">
-                                Condensacao final da jornada. Esta placa grava em pedra o numero de Eras, ciclos, score medio e a inscricao dominante da sua trajetoria no Glyph.
+                                Condensacao final da jornada. Esta placa grava em pedra os quatro sinais centrais do legado: ciclos, carga, metas seladas e patamar medio.
                             </p>
                         </div>
                         <div className="p-8">
@@ -186,7 +186,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                     <div>
                         <p className="legacy-kicker legacy-kicker-muted">Memoria final</p>
                         <p className="text-sm text-gray-300 mt-2 max-w-2xl">
-                            Se o app desaparecer, este registro continua como prova visual da sua trajetoria: eras, ciclos, score medio e acoes dominantes que sustentaram o seu sistema pessoal.
+                            Se o app desaparecer, este registro continua como prova visual da sua trajetoria: eras, ciclos, carga, metas e o patamar medio que sustentou seu sistema pessoal.
                         </p>
                     </div>
                     <div className="text-right shrink-0">

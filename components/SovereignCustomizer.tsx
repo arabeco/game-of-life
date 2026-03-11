@@ -2,17 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { SovereignConfig } from '../types';
 import { SOVEREIGN_ASSETS, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
-import { BODY_DB, HAIR_DB, HAIR_COLORS, Gender } from '../constants/skins';
+import { BODY_DB, HAIR_DB } from '../constants/skins';
 import { ChevronLeftIcon, ChevronRightIcon, CheckIcon, EditIcon, XIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { CanvasAvatar } from './CanvasAvatar';
 import { ImagePreloader } from './ImagePreloader';
-import { AchievementModal } from './AchievementModal';
-import { MissionCompletionModal } from './MissionCompletionModal';
-import { ChestOpeningModal } from './ChestOpeningModal';
-import { ReportResultCarousel } from './ReportResultCarousel';
 import { Portal } from './Portal';
-import { Report } from '../types';
 import { getRarityVisual, withAlpha } from '../constants/rarityVisuals';
 
 interface SovereignCustomizerProps {
@@ -22,7 +17,7 @@ interface SovereignCustomizerProps {
 }
 
 type EditMode = 'sovereign' | 'artifact' | 'glyph';
-type SovereignSubTab = 'Corpo' | 'Cabelo' | 'Skin' | 'Testes';
+type SovereignSubTab = 'Corpo' | 'Cabelo' | 'Skin';
 
 // Reusable Left/Right Selector
 const Selector: React.FC<{
@@ -56,7 +51,7 @@ const Selector: React.FC<{
 );
 
 export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initialConfig, onSave, onClose }) => {
-    const { userProfile, inventory, showToast } = useGame();
+    const { inventory } = useGame();
     const [config, setConfig] = useState<SovereignConfig>({
         ...DEFAULT_SOVEREIGN_CONFIG,
         ...(initialConfig || {}),
@@ -64,41 +59,6 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     const [activeMode, setActiveMode] = useState<EditMode>('sovereign');
     const [sovereignSubTab, setSovereignSubTab] = useState<SovereignSubTab>('Corpo');
     
-    // Testing State
-    const [testLevelUp, setTestLevelUp] = useState(false);
-    const [testMission, setTestMission] = useState(false);
-    const [testChest, setTestChest] = useState(false);
-    const [testReport, setTestReport] = useState(false);
-
-    // Mock Report for Testing
-    const mockReport: Report = {
-        id: 'test-report',
-        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        endDate: new Date().toISOString(),
-        performanceScore: 95,
-        metrics: {
-            totalHours: 42,
-            arenasInvolved: 5,
-            actionsCompleted: 150,
-            totalPlannedActions: 160,
-            goalsMet: 8,
-            questsCompleted: 3,
-            plannedEndDate: new Date().toISOString()
-        },
-        highlight: {
-            mostFocusedArena: 'Coding',
-            mostRepeatedAction: 'Debug',
-            mostRepeatedActionCount: 50
-        },
-        assetProgress: [
-            { asset: 'Corpo', value: 80 },
-            { asset: 'Mente', value: 90 },
-            { asset: 'Alma', value: 70 }
-        ],
-        clanPoints: 120,
-        expGained: 500
-    };
-
     // Parse initial body state for selectors
     useEffect(() => {
         // Validation: Ensure body exists in DB (Handle legacy/invalid IDs)
@@ -400,7 +360,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             {equippedGlyph?.url ? (
                                 <img src={equippedGlyph.url} alt="Glyph" className="relative z-10 w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
                             ) : (
-                                <span className="relative z-10 text-2xl opacity-20">💠</span>
+                                <span className="relative z-10 text-2xl opacity-20">ðŸ’ </span>
                             )}
                             {equippedOrb?.url && (
                                 <img src={equippedOrb.url} alt="Orbe" className="absolute inset-0 w-full h-full object-contain z-20 scale-75 drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]" />
@@ -427,7 +387,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         <div className="space-y-6 animate-fade-in">
                             {/* Sub-Tabs for Sovereign */}
                             <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-lg">
-                                {(['Corpo', 'Cabelo', 'Skin', 'Testes'] as SovereignSubTab[]).map(tab => (
+                                {(['Corpo', 'Cabelo', 'Skin'] as SovereignSubTab[]).map(tab => (
                                     <button
                                         key={tab}
                                         onClick={() => setSovereignSubTab(tab)}
@@ -445,7 +405,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             {sovereignSubTab === 'Corpo' && (
                                 <div className="space-y-4">
                                     <Selector 
-                                        label="Gênero" 
+                                        label="GÃªnero" 
                                         value={getGenderLabel(config.body)} 
                                         onPrev={() => cycleGender(-1)} 
                                         onNext={() => cycleGender(1)} 
@@ -468,7 +428,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                         onNext={() => cycleHairStyle(1)} 
                                     />
                                     <Selector 
-                                        label="Variação" 
+                                        label="VariaÃ§Ã£o" 
                                         value={getHairColorName(config.hairColor)} 
                                         onPrev={() => cycleHairColor(-1)} 
                                         onNext={() => cycleHairColor(1)}
@@ -493,35 +453,6 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                     />
                                 </div>
                             )}
-
-                            {sovereignSubTab === 'Testes' && (
-                    <div className="space-y-4">
-                        <button
-                            onClick={() => setTestLevelUp(true)}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
-                        >
-                            Testar Level Up
-                        </button>
-                        <button
-                            onClick={() => setTestMission(true)}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
-                        >
-                            Testar Missão Completa
-                        </button>
-                        <button
-                            onClick={() => setTestChest(true)}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
-                        >
-                            Testar Baú (Lendário)
-                        </button>
-                        <button
-                            onClick={() => setTestReport(true)}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
-                        >
-                            Testar Relatório
-                        </button>
-                    </div>
-                )}
                         </div>
                     )}
 
@@ -629,63 +560,6 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                 </div>
             </GlassCard>
 
-            {/* Test Modals */}
-            {testLevelUp && (
-                <AchievementModal 
-                    achievement={{
-                        type: 'PLAYER_RANK_UP',
-                        data: {
-                            name: 'Soberano',
-                            icon: '👑',
-                            rewards: {
-                                exp: 1000,
-                                chest: 'Baú Lendário',
-                                ornament: 'Medalha de Honra'
-                            }
-                        }
-                    }}
-                    onClose={() => setTestLevelUp(false)}
-                />
-            )}
-            {testMission && (
-                <MissionCompletionModal 
-                    mission={{
-                        id: 'test-mission',
-                        title: 'Missão de Teste',
-                        description: 'Complete uma missão para testar o modal.',
-                        type: 'daily',
-                        requirements: { type: 'action', target: 'any', count: 1 },
-                        reward_type: 'item',
-                        reward_value: 'Baú Lendário',
-                        status: 'completed',
-                        progress: 1,
-                        total_required: 1,
-                        created_at: new Date().toISOString(),
-                        expires_at: new Date().toISOString(),
-                        icon: '🧪'
-                    }}
-                    onOk={() => setTestMission(false)}
-                    onClose={() => setTestMission(false)}
-                />
-            )}
-            {testChest && (
-                <ChestOpeningModal 
-                    chestType="Lendário"
-                    onClose={() => setTestChest(false)}
-                />
-            )}
-            {testReport && (
-                <ReportResultCarousel 
-                    report={mockReport}
-                    onOk={() => setTestReport(false)}
-                    onShare={() => showToast("Compartilhado com sucesso!")}
-                    onCompare={() => showToast("Comparar não implementado no teste")}
-                    onPostToFeed={() => showToast("Postado no feed com sucesso!")}
-                    chest="Lendário"
-                    expGained={1000}
-                    onStartNewCycle={() => setTestReport(false)}
-                />
-            )}
         </div>
         </Portal>
     );

@@ -93,9 +93,9 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
                 className={`${KIT_WIDTH} ${KIT_HEIGHT} overflow-hidden rounded-[36px] border border-white/10 p-10 shadow-[0_24px_60px_rgba(0,0,0,0.48)]`}
                 style={{ backgroundImage: `${backdropSkin.overlay}, url(${backdropSkin.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
             >
-                <div className="flex h-full flex-col items-center gap-8">
-                    <div className="w-full max-w-[760px]">
-                        <LegacyGrandPlaque eras={eras} sovereignName={sovereignName} />
+                <div className="flex h-full flex-col items-center gap-6">
+                    <div className="w-full max-w-[300px] pt-4">
+                        <LegacyGrandPlaque eras={eras} sovereignName={sovereignName} compact />
                     </div>
                     <div className="legacy-identity-rail w-full max-w-[920px]">
                         <div className="legacy-identity-avatar">
@@ -127,20 +127,20 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
                     </div>
                     <div className="grid w-full grid-cols-2 gap-4">
                         <div className="legacy-panel-soft p-6 text-center">
-                            <p className="legacy-kicker legacy-kicker-muted">Eras</p>
-                            <p className="mt-2 text-5xl font-black text-white">{eras.length}</p>
-                        </div>
-                        <div className="legacy-panel-soft p-6 text-center">
                             <p className="legacy-kicker legacy-kicker-muted">Ciclos</p>
                             <p className="mt-2 text-5xl font-black text-white">{summary.totalCycles}</p>
                         </div>
                         <div className="legacy-panel-soft p-6 text-center">
-                            <p className="legacy-kicker legacy-kicker-muted">Score medio</p>
-                            <p className={`mt-2 text-5xl font-black ${historicalGrade.color}`}>{historicalAverageScore}</p>
+                            <p className="legacy-kicker legacy-kicker-muted">Carga</p>
+                            <p className="mt-2 text-5xl font-black text-white">{formatHours(summary.totalHours)}h</p>
                         </div>
                         <div className="legacy-panel-soft p-6 text-center">
-                            <p className="legacy-kicker legacy-kicker-muted">Horas</p>
-                            <p className="mt-2 text-5xl font-black text-white">{formatHours(summary.totalHours)}</p>
+                            <p className="legacy-kicker legacy-kicker-muted">Metas</p>
+                            <p className="mt-2 text-5xl font-black text-white">{summary.totalSealedMetas}</p>
+                        </div>
+                        <div className="legacy-panel-soft p-6 text-center">
+                            <p className="legacy-kicker legacy-kicker-muted">Patamar</p>
+                            <p className={`mt-2 text-5xl font-black ${historicalGrade.color}`}>{summary.averageGrade} | {historicalAverageScore}</p>
                         </div>
                     </div>
                     <div className="legacy-panel-soft w-full p-6 text-center">
@@ -239,7 +239,7 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
                         </div>
                         <div className="legacy-panel-soft p-5">
                             <p className="legacy-kicker legacy-kicker-muted">Registro</p>
-                            <p className="mt-2 text-2xl font-black text-white">{eras.length} Eras - {summary.totalCycles} Ciclos</p>
+                            <p className="mt-2 text-2xl font-black text-white">{summary.totalCycles} Ciclos - {summary.totalSealedMetas} Metas</p>
                         </div>
                     </div>
                 </div>

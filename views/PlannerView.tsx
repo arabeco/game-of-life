@@ -69,6 +69,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
 
     const backgroundStyle = action ? getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isMilestone = action?.actionType === 'Marco';
+    const isFreeAction = action?.actionType === 'Livre';
     const top = (task.startTime - (4 * 60)) * scaleFactor;
 
     // Handle corrupted tasks (missing action)
@@ -137,7 +138,10 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
 
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
-            <div style={{ ...backgroundStyle, height: '40px', width: '100px' }} className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80`}>
+            <div
+                style={isFreeAction ? { height: '40px', width: '100px' } : { ...backgroundStyle, height: '40px', width: '100px' }}
+                className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80 ${isFreeAction ? 'free-action-shell free-action-outline' : ''}`}
+            >
                 <div className="text-lg z-10">{action?.icon === '$' ? <DollarSignIcon className="w-5 h-5" /> : action?.icon === '🔥' ? <FlameIcon className="w-5 h-5" /> : <span className="text-xl">{action?.icon}</span>}</div>
                 <div className="text-sm font-semibold truncate w-full z-10">{action?.name}</div>
             </div>
@@ -193,14 +197,19 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div
-                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${task.completed ? 'text-white/80 font-bold' : 'text-orange-200'}`}
-                style={backgroundStyle}
+                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${isFreeAction ? 'free-action-shell text-slate-100' : task.completed ? 'text-white/80 font-bold' : 'text-orange-200'}`}
+                style={isFreeAction ? undefined : backgroundStyle}
             >
-                <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
-                <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${task.completed ? 'border-[var(--bronze)]' : 'border-dashed border-gray-600'}`}></div>
+                <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ? 'bg-black/45' : 'bg-black/60'} ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
+                <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${isFreeAction ? `free-action-outline ${task.completed ? 'opacity-95' : 'opacity-80'}` : task.completed ? 'border-[var(--bronze)]' : 'border-dashed border-gray-600'}`}></div>
                 <div className="text-lg z-10">{action?.icon === '$' ? <DollarSignIcon className="w-5 h-5" /> : action?.icon === '🔥' ? <FlameIcon className="w-5 h-5" /> : <span className="text-xl">{action?.icon}</span>}</div>
-                <div className="text-sm font-semibold truncate w-full z-10">{action?.name}</div>
-                {isHolding && (<div className="absolute inset-0 bg-black/50 rounded-2xl animate-pulse"><div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
+                <div className={`text-sm font-semibold truncate w-full z-10 ${isFreeAction && task.completed ? 'text-slate-200/85' : ''}`}>{action?.name}</div>
+                {isFreeAction && (
+                    <div className={`z-10 shrink-0 ${task.completed ? 'opacity-100' : 'opacity-45 saturate-50'}`}>
+                        <div className="free-action-complete-dot scale-[0.82]" />
+                    </div>
+                )}
+                {isHolding && (<div className={`absolute inset-0 animate-pulse ${isFreeAction ? 'bg-black/40 rounded-2xl' : 'bg-black/50 rounded-2xl'}`}><div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ? 'bg-slate-200/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
                 {showSparkles && <Sparkles />}
             </div>
             <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>

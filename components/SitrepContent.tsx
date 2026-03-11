@@ -4,7 +4,6 @@ import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon } from './Icons';
 import { ScheduledTask, Action, DailyCommitment } from '../types';
 import { handleShare } from './Share';
-import { resolveItemDef } from '../constants/items';
 import { PoolAction } from './PoolAction';
 import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
 import { isClanQuestAction } from '../utils/taskDomain.js';
@@ -84,22 +83,23 @@ const BattleTaskItem: React.FC<{
 
     const backgroundStyle = getActionBackgroundStyle(action.id);
     const isMilestone = action.actionType === 'Marco';
+    const isFreeAction = action.actionType === 'Livre';
 
     return (
         <div
-            className={`relative p-2 flex items-center space-x-3 rounded-xl text-left overflow-hidden transition-all text-white select-none ${isMilestone ? 'border-2 border-[var(--accent-bronze)] shadow-[0_0_10px_var(--accent-bronze-soft)]' : ''} ${isHolding ? 'scale-95 brightness-125' : ''}`}
-            style={backgroundStyle}
+            className={`relative p-2 flex items-center space-x-3 rounded-xl text-left overflow-hidden transition-all text-white select-none ${isMilestone ? 'border-2 border-[var(--accent-bronze)] shadow-[0_0_10px_var(--accent-bronze-soft)]' : isFreeAction ? 'free-action-shell free-action-outline' : ''} ${isHolding ? 'scale-95 brightness-125' : ''}`}
+            style={isFreeAction ? undefined : backgroundStyle}
             onMouseDown={handlePressStart}
             onMouseUp={handlePressEnd}
             onMouseLeave={handlePressEnd}
             onTouchStart={handlePressStart}
             onTouchEnd={handlePressEnd}
         >
-            <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${isCompleted ? 'opacity-80' : 'opacity-0'}`}></div>
-            <div className={`absolute inset-0 rounded-xl transition-all ${isCompleted ? 'border-4 border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--skin-accent-color)] opacity-80' : 'border-2 border-dashed border-gray-600/50'}`}></div>
+            <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ? 'bg-black/45' : 'bg-black/60'} ${isCompleted ? 'opacity-80' : 'opacity-0'}`}></div>
+            <div className={`absolute inset-0 rounded-xl transition-all ${isFreeAction ? `free-action-outline ${isCompleted ? 'opacity-95' : 'opacity-80'}` : isCompleted ? 'border-4 border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--skin-accent-color)] opacity-80' : 'border-2 border-dashed border-gray-600/50'}`}></div>
 
             <div className="text-xl z-10">{action.icon}</div>
-            <div className={`text-sm font-semibold truncate w-full z-10 ${isCompleted ? 'text-gray-300' : ''}`}>{action.name}</div>
+            <div className={`text-sm font-semibold truncate w-full z-10 ${isCompleted ? 'text-gray-300' : ''} ${isFreeAction && !isCompleted ? 'text-slate-100' : ''}`}>{action.name}</div>
 
             {isAdjusting && !isCompleted && (
                 <button onClick={(e) => { e.stopPropagation(); onUncommit(task.id); }} className="z-10 p-1">
@@ -108,7 +108,7 @@ const BattleTaskItem: React.FC<{
             )}
             {isCompleted && (
                 <div className="z-10 p-1">
-                    <CheckIcon className="w-5 h-5 accent-text drop-shadow-[0_0_5px_rgba(0,0,0,1)]" />
+                    {isFreeAction ? <div className="free-action-complete-dot" /> : <CheckIcon className="w-5 h-5 accent-text drop-shadow-[0_0_5px_rgba(0,0,0,1)]" />}
                 </div>
             )}
         </div>
@@ -197,15 +197,16 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 <div className="max-h-24 overflow-y-auto pr-1 space-y-1">
                     {groupedAvailableOptions.map((group) => {
                         const isStockOut = group.count <= 0;
+                        const isFreeAction = group.action.actionType === 'Livre';
                         return (
                             <button
                                 key={group.ids[0]}
                                 onClick={() => handleGroupClick(group)}
                                 disabled={isStockOut}
-                                className={`w-full flex items-center justify-between text-left p-2 rounded-lg transition-colors border ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'bg-black/20 hover:bg-white/[0.04] border-white/6'}`}
+                                className={`w-full flex items-center justify-between text-left p-2 rounded-lg transition-colors border ${isFreeAction ? 'free-action-shell free-action-outline' : ''} ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : isFreeAction ? 'hover:border-white/35 hover:bg-white/[0.02]' : 'bg-black/20 hover:bg-white/[0.04] border-white/6'}`}
                             >
-                                <span className={`text-sm ${isStockOut ? 'text-gray-500' : ''}`}><PlusIcon className="w-4 h-4 inline-block mr-2" />{group.action.name}</span>
-                                <span className={`text-xs font-mono px-1.5 rounded ${isStockOut ? 'bg-gray-800 text-gray-600' : 'bg-gray-700 text-white'}`}>x{group.count}</span>
+                                <span className={`text-sm ${isStockOut ? 'text-gray-500' : isFreeAction ? 'text-slate-100' : ''}`}><PlusIcon className="w-4 h-4 inline-block mr-2" />{group.action.name}</span>
+                                <span className={`text-xs font-mono px-1.5 rounded ${isFreeAction ? 'free-action-chip text-[rgba(234,239,246,0.92)]' : isStockOut ? 'bg-gray-800 text-gray-600' : 'bg-gray-700 text-white'}`}>x{group.count}</span>
                             </button>
                         );
                     })}
@@ -218,9 +219,10 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 <div className="max-h-24 overflow-y-auto pr-1 space-y-1">
                     {commitmentStats.committedTasks.map(task => {
                         const action = getActionById(task.actionId);
+                        const isFreeAction = action?.actionType === 'Livre';
                         return (
-                            <div key={task.id} className="w-full flex items-center justify-between text-left p-2 bg-black/20 border border-white/6 rounded-lg">
-                                <span className="text-sm">{action?.icon} {action?.name}</span>
+                            <div key={task.id} className={`w-full flex items-center justify-between text-left p-2 border rounded-lg ${isFreeAction ? 'free-action-shell free-action-outline' : 'bg-black/20 border-white/6'}`}>
+                                <span className={`text-sm ${isFreeAction ? 'text-slate-100' : ''}`}>{action?.icon} {action?.name}</span>
                                 <button onClick={() => handleUncommitTask(task.id)}><XIcon className="w-4 h-4 text-red-400" /></button>
                             </div>
                         );
@@ -352,8 +354,6 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         let verdict = "Guerreiro. Mantenha a disciplina.";
         if (score === 100) verdict = "Soberano. A vitória foi absoluta.";
         else if (score < 50) verdict = "A Batalha foi dura. Recupere e avance.";
-
-        const earnedInsignia = dailyCommitment.earnedInsigniaId ? resolveItemDef(dailyCommitment.earnedInsigniaId) : null;
         const checklistDone = checklistItems.filter(i => i.completed).length;
         const checklistTotal = checklistItems.length;
 
@@ -372,21 +372,6 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         </div>
 
                         <p className="text-sm text-gray-300 italic mt-4">"{verdict}"</p>
-
-                        {earnedInsignia && (
-                            <div className="mt-8 flex flex-col items-center animate-in slide-in-from-bottom-4 fade-in duration-1000 delay-500 fill-mode-both">
-                                <div className="group relative">
-                                    <div className="absolute inset-0 bg-[var(--skin-accent-color)]/20 blur-2xl rounded-full group-hover:bg-[var(--skin-accent-color)]/30 transition-all duration-700 animate-pulse"></div>
-                                    <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[var(--skin-accent-color)]/30 to-black/60 border border-[var(--skin-accent-color)]/50 flex items-center justify-center text-4xl shadow-2xl transition-transform duration-500 hover:scale-110">
-                                        {earnedInsignia.icon}
-                                    </div>
-                                </div>
-                                <div className="mt-3 text-center">
-                                    <p className="text-[10px] text-[var(--skin-accent-color)] uppercase font-black tracking-[0.25em] animate-pulse">Nova Insígnia Conquistada!</p>
-                                    <p className="text-sm text-white font-bold tracking-tight">{earnedInsignia.name}</p>
-                                </div>
-                            </div>
-                        )}
 
                         <div className="pt-3">
                             <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
@@ -504,6 +489,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         default: return null;
     }
 };
+
 
 
 

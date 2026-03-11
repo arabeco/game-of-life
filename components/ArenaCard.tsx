@@ -197,7 +197,7 @@ const ActionIcon: React.FC<{
             onDragOver={onDragOver}
             onDrop={onDrop}
             style={backgroundStyle} 
-            className={`${compact ? 'w-5 h-5 rounded-[6px]' : 'w-6 h-6 rounded-md'} border ${isDragOver ? 'border-white scale-110' : 'border-[var(--accent-bronze)]'} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
+            className={`${compact ? 'w-4 h-4 rounded-[5px]' : 'w-6 h-6 rounded-md'} border ${isDragOver ? 'border-white scale-110' : 'border-[var(--accent-bronze)]'} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
         >
             {renderIcon()}
         </div>
@@ -366,14 +366,16 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const visibleBronzeActions = isCompactThumbnail ? bronzeActions.slice(0, 3) : bronzeActions;
     const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
     const skinColor = 'var(--skin-accent-color)';
-    const baseClasses = `arena-plate p-1 rounded-lg border flex flex-col justify-between relative overflow-hidden transition-all duration-300 select-none pointer-events-none`;
+    const baseClasses = `arena-plate rounded-lg border flex flex-col relative overflow-hidden transition-all duration-300 select-none pointer-events-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.3rem]' : 'justify-between px-1 py-[0.34rem]'}`;
     const styleClasses = isOverview 
-        ? 'h-[8.85rem]' 
-        : variant === 'dossier' ? 'h-full w-full' : 'h-24';
+        ? 'h-[6.7rem]' 
+        : variant === 'dossier' ? 'h-full w-full' : 'h-[5.5rem]';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
+    const compactHeight = isOverview ? '6.85rem' : variant === 'compact' ? '5.7rem' : undefined;
     const cardStyle: React.CSSProperties = {
         borderColor: skinColor,
         backgroundImage: 'linear-gradient(135deg, rgba(22,22,22,0.95) 0%, rgba(10,10,10,1) 55%, rgba(18,18,18,0.9) 100%)',
+        ...(compactHeight ? { height: compactHeight } : {}),
     };
     const tiltStyle: React.CSSProperties = {
         transform: 'none',
@@ -382,25 +384,50 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     return (
         <div 
             onClick={onClick} 
-            className={`${baseClasses} ${styleClasses} ${archivedClasses} ${isCompactThumbnail ? 'justify-start gap-[2px]' : ''}`} 
+            className={`${baseClasses} ${styleClasses} ${archivedClasses} ${isCompactThumbnail ? 'justify-start gap-[1px]' : ''}`} 
             style={{ ...cardStyle, ...tiltStyle }}
         >
             {!isCompactThumbnail && <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: accentColor }} />}
             <div className="arena-plasma pointer-events-none">
                 <PlasmaCanvas color={skinTone} opacity={0.35} className="arena-plasma-canvas" width={320} height={220} />
             </div>
-            <div className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'arena-thumb-layout flex-shrink-0' : ''}`}>
-                <div className="arena-icon-slot">
-                    <span className="arena-icon">
-                        {getIcon()}
-                    </span>
-                </div>
-                <div className="arena-title-wrap">
-                    <div className="flex flex-col items-center justify-start">
-                        <h3 className={`arena-title arena-title-text text-white luxe-title-shadow leading-tight arena-thumb-title ${isCompactThumbnail ? 'text-[9px] line-clamp-2' : 'text-[11px] line-clamp-2'}`}>{arena.name}</h3>
-                        {isOverview && assetName && <span className="arena-subtitle">{assetName}</span>}
+            <div
+                className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'arena-thumb-layout flex-shrink-0' : ''}`}
+            >
+                {isCompactThumbnail ? (
+                    <>
+                    <div className="arena-thumb-header">
+                        <div className="arena-thumb-link-space">
+                            {linkType === 'competicao' && <span title="Desafio PVP" className="arena-thumb-link-badge text-red-400">âš”ï¸</span>}
+                            {linkType === 'mentoria' && <span title="Mentoria" className="arena-thumb-link-badge text-blue-400">ðŸ‘ï¸</span>}
+                            {linkType === 'parceria' && <span title="Parceria" className="arena-thumb-link-badge text-purple-400">ðŸ¤</span>}
+                        </div>
+                        <span className="arena-thumb-header-icon-wrap">
+                            <span className="arena-icon arena-thumb-header-icon" style={{ lineHeight: 0 }}>
+                                {getIcon()}
+                            </span>
+                        </span>
+                        <div className="arena-thumb-header-copy">
+                            <h3 className={`arena-thumb-heading arena-title arena-title-text text-white luxe-title-shadow ${arena.name.length > 18 ? 'arena-thumb-heading--sm' : 'arena-thumb-heading--lg'}`}>{arena.name}</h3>
+                        </div>
                     </div>
-                </div>
+                    {isOverview && assetName && <span className="arena-subtitle arena-thumb-asset">{assetName}</span>}
+                    </>
+                ) : (
+                    <>
+                        <div className="arena-icon-slot">
+                            <span className="arena-icon">
+                                {getIcon()}
+                            </span>
+                        </div>
+                        <div className="arena-title-wrap">
+                            <div className="flex flex-col items-center justify-start">
+                                <h3 className="arena-title arena-title-text text-[11px] text-white luxe-title-shadow leading-tight line-clamp-2 arena-thumb-title">{arena.name}</h3>
+                                {isOverview && assetName && <span className="arena-subtitle">{assetName}</span>}
+                            </div>
+                        </div>
+                    </>
+                )}
                 
                 {!isCompactThumbnail && isClanQuestArena && (
                     <div className="flex justify-center gap-2 mt-1">
@@ -411,7 +438,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     </div>
                 )}
 
-                {linkType && (
+                {linkType && !isCompactThumbnail && (
                     <div className="absolute top-1 left-1 z-20">
                         {linkType === 'competicao' && <span title="Desafio PVP" className="text-[10px] bg-red-500/20 text-red-400 px-1 rounded border border-red-500/30">⚔️</span>}
                         {linkType === 'mentoria' && <span title="Mentoria" className="text-[10px] bg-blue-500/20 text-blue-400 px-1 rounded border border-blue-500/30">👁️</span>}
@@ -432,7 +459,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                             return (
                                 <div 
                                     key={action.id} 
-                                    className={`relative ${isCompactThumbnail ? 'w-5 h-5' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
+                                    className={`relative ${isCompactThumbnail ? 'w-4 h-4' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
                                     title={action.name}
                                     draggable
                                     onDragStart={(e) => handleActionDragStart(e, action.id)}
@@ -473,7 +500,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         />
                     ))}
                 </div>
-                <div className="arena-plate-progress mt-0.5 w-full">
+                <div className={`arena-plate-progress w-full ${isCompactThumbnail ? 'arena-mini-progress' : 'mt-0.5'}`}>
                     <div
                         className="arena-plate-progress-fill"
                         style={{

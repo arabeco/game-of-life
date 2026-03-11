@@ -1,4 +1,4 @@
-
+﻿
 
 
 import React, { Suspense, useState, useEffect, useMemo, useRef } from 'react';
@@ -10,6 +10,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { NewCycleSetupView } from './NewCycleSetupView';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { supabase } from '../supabaseClient';
+import { SupabaseService } from '../services/SupabaseService';
 import type { LegacyEraSummary } from '../components/LegacyExportDocument';
 import { LegacyPlaqueArtifact } from '../components/LegacyPlaqueArtifact';
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
@@ -18,8 +19,8 @@ import { MetalReportCard } from '../components/MetalReportCard';
 import { Portal } from '../components/Portal';
 
 import { NOBILITY_RANKS } from '../constants/nobility';
-import { resolveItemDef } from '../constants/items';
 import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
+import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
 const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
 const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
@@ -94,12 +95,21 @@ type InlineEraEditorState = {
     eraIndex: number;
 };
 
+const OFFICIAL_COMPACT_HISTORY_CARD_CLASS = 'w-[12.35rem] max-w-full';
+
+const getReportMetaCounts = (report: Report) => {
+    const sealedMetas = report.metrics.sealedMetas ?? report.metrics.goalsMet ?? 0;
+    const plannedMetas = report.metrics.plannedMetas ?? Math.max(sealedMetas, 0);
+    return { sealedMetas, plannedMetas };
+};
+
+const getReportPresenceDays = (report: Report) => report.metrics?.fairness?.activeDays ?? report.metrics.consistencyDays ?? 0;
+
 // --- Sub-components for Active Cycle HUD ---
 const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
-    const { tasks, assets, actions, userProfile, session, seasons, deleteCycle } = useGame();
+    const { tasks, assets, actions, reports, deleteCycle } = useGame();
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
-    const today = getLocalDateString();
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -107,68 +117,28 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
             deleteCycle(cycle.id);
         }
     };
-
-    const isQuestActionId = (actionId: string) => {
-        const action = actions.find(a => a.id === actionId);
-        if (!action) return false;
-        const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
-        if (!arena?.name) return false;
-        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        return normalized.includes('quests');
-    };
-
-    const isClanQuestActionId = (actionId: string) => {
-        const action = actions.find(a => a.id === actionId);
-        if (!action) return false;
-        const arena = assets.flatMap(asset => asset.arenas).find(ar => ar.id === action.arenaId);
-        if (!arena?.name) return false;
-        const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        return normalized.includes('quests - cla');
-    };
-
-    const startD = parseDate(startDate);
-    const endD = parseDate(endDate);
-    const todayD = parseDate(today);
-
-    const totalDays = Math.max(1, daysBetween(startD, endD) + 1);
-    const daysElapsed = Math.max(0, daysBetween(startD, todayD) + 1);
-    const timeProgress = Math.min(100, (daysElapsed / totalDays) * 100);
-
+    const totalDays = Math.max(1, daysBetween(parseDate(startDate), parseDate(endDate)) + 1);
     const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, startDate, endDate);
     const completedTasks = cycleTasks.filter(t => t.completed);
-    const questTasks = cycleTasks.filter(t => isQuestActionId(t.actionId) || isClanQuestActionId(t.actionId));
-    const completedQuests = questTasks.filter(t => t.completed);
-
-    const progress = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
-
-    const milestonesCompleted = completedTasks.filter(t => {
-        const action = actions.find(a => a.id === t.actionId);
-        return action?.actionType === 'Marco';
-    }).length;
-    const milestoneBonus = milestonesCompleted * 15;
-    const questsCompletedCount = completedQuests.length;
-    const questBonus = questsCompletedCount * 10;
-
-    const uniqueDays = new Set([...completedTasks, ...completedQuests].map(t => t.date)).size;
-    const consistencyRatio = uniqueDays / totalDays;
-    const consistencyBonus = consistencyRatio >= 0.8 ? 20 : (consistencyRatio >= 0.5 ? 10 : 0);
-
     const totalMinutes = completedTasks.reduce((sum, t) => sum + (t.duration || 0), 0);
     const totalHours = Math.floor(totalMinutes / 60);
-    const volumeBonus = Math.min(30, Math.floor(totalHours / 2));
-
-    const currentScore = Math.round((progress * 0.4) + milestoneBonus + questBonus + consistencyBonus + volumeBonus);
-    const scoreInfo = getScoreGrade(currentScore);
-
-    const avgHoursPerDay = totalDays > 0 ? (totalHours / totalDays).toFixed(1) : '0';
-    const activeDatesHUD = completedTasks.map(t => t.date).filter((v, i, a) => a.indexOf(v) === i).sort();
-    let maxStreakHUD = activeDatesHUD.length > 0 ? 1 : 0;
-    let currentStreakHUD = 1;
-    for (let i = 1; i < activeDatesHUD.length; i++) {
-        const diffMs = new Date(activeDatesHUD[i]).getTime() - new Date(activeDatesHUD[i - 1]).getTime();
-        if (diffMs <= 86400000 * 1.5) { currentStreakHUD++; } else { currentStreakHUD = 1; }
-        maxStreakHUD = Math.max(maxStreakHUD, currentStreakHUD);
-    }
+    const reportsChronological = [...reports].sort((left, right) => new Date(left.endDate).getTime() - new Date(right.endDate).getTime());
+    const fairScoreResult = buildFairScoreFromTasks({
+        tasks: cycleTasks.map((task) => {
+            const action = actions.find(a => a.id === task.actionId);
+            return {
+                ...task,
+                actionType: action?.actionType,
+                arenaId: action?.arenaId,
+            };
+        }),
+        actions,
+        arenas: assets.flatMap(asset => asset.arenas),
+        previousReports: reportsChronological,
+        durationDays: totalDays,
+    });
+    const currentScore = fairScoreResult.fairScore;
+    const scoreInfo = getScoreGrade(currentScore, fairScoreResult.fairness as Report['metrics']['fairness']);
 
     return (
         <div className="relative pl-5 group">
@@ -188,20 +158,14 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                     score={currentScore}
                     title={cycle.name || 'Ciclo ativo'}
                     subtitle={`${formatDate(cycle.startDate)} - ${formatDate(cycle.endDate)}`}
-                    summary={scoreInfo.phrase}
                     metrics={[
-                        { label: 'Tempo', value: `${timeProgress.toFixed(0)}%` },
-                        { label: 'Progresso', value: `${progress.toFixed(0)}%` },
-                        { label: 'Horas/dia', value: `${avgHoursPerDay}` },
-                        { label: 'Streak', value: `${maxStreakHUD}` },
-                    ]}
-                    badges={[
-                        { label: 'Marcos', value: `${milestonesCompleted}` },
-                        { label: 'Quests', value: `${questsCompletedCount}` },
-                        { label: 'Dias', value: `${uniqueDays}` },
+                        { label: 'Acoes', value: `${completedTasks.length}/${cycleTasks.length}` },
+                        { label: 'Carga', value: `${totalHours}h` },
+                        { label: 'Metas', value: `${fairScoreResult.fairness.sealedMetas}/${fairScoreResult.fairness.plannedMetas}` },
+                        { label: 'Presenca', value: `${fairScoreResult.fairness.activeDays} dias` },
                     ]}
                     compact
-                    className="w-[14.25rem] max-w-full"
+                    className={OFFICIAL_COMPACT_HISTORY_CARD_CLASS}
                 />
             </div>
         </div>
@@ -224,7 +188,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant='neutral' className='p-4 space-y-4 w-full max-w-sm' onClick={e => e.stopPropagation()}>
                     <h2 className='text-center font-bold text-lg uppercase'>Definir Ciclo de Soberania</h2>
-                    <p className="text-center text-sm text-gray-400">Dê um nome à sua campanha e escolha a data de término para formalizar seu compromisso.</p>
+                    <p className="text-center text-sm text-gray-400">DÃª um nome Ã  sua campanha e escolha a data de tÃ©rmino para formalizar seu compromisso.</p>
                     <div>
                         <label className='text-sm font-bold'>Nome do Ciclo</label>
                         <input
@@ -236,7 +200,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
                         />
                     </div>
                     <div>
-                        <label className='text-sm font-bold'>Data de Término</label>
+                        <label className='text-sm font-bold'>Data de TÃ©rmino</label>
                         <input
                             type='date'
                             value={endDate}
@@ -255,9 +219,11 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
 // --- Timeline Components ---
 
 const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string, isSelectedForEraEdit?: boolean }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId, isSelectedForEraEdit }) => {
-    const scoreInfo = getScoreGrade(report.performanceScore);
+    const scoreInfo = getScoreGrade(report.performanceScore, report.metrics?.fairness);
     const startDate = formatDate(report.startDate);
     const endDate = formatDate(report.endDate);
+    const { sealedMetas, plannedMetas } = getReportMetaCounts(report);
+    const presenceDays = getReportPresenceDays(report);
     const eraSkin = getEraRibbonSkin(eraSkinId);
     const hasEraAccent = Boolean(eraLabel && eraSkinId);
     const wrapperStyle = hasEraAccent ? {
@@ -266,12 +232,6 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
     const editHighlightStyle = isEditing && isSelectedForEraEdit ? {
         boxShadow: `0 0 0 1px ${eraSkin.edge}65, 0 0 0 4px ${eraSkin.glow}18, 0 14px 30px ${eraSkin.baseBottom}88`,
     } : undefined;
-    const rewardBadges = [
-        eraLabel ? { label: 'Era', value: eraLabel } : null,
-        seasonName ? { label: 'Season', value: seasonName } : null,
-        report.highlight?.mostFocusedArena ? { label: 'Foco', value: report.highlight.mostFocusedArena } : null,
-        report.highlight?.mostRepeatedAction ? { label: 'Habito', value: report.highlight.mostRepeatedAction } : null,
-    ].filter(Boolean) as Array<{ label: string; value?: string }>;
 
     return (
         <div className="relative pl-5">
@@ -291,14 +251,14 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     score={report.performanceScore}
                     title={report.cycleName || 'Ciclo'}
                     subtitle={`${startDate} - ${endDate}`}
-                    summary={scoreInfo.phrase}
                     metrics={[
-                        { label: 'XP', value: `+${report.expGained || 0}` },
-                        { label: 'Horas', value: `${report.metrics.totalHours || 0}` },
+                        { label: 'Acoes', value: `${report.metrics.actionsCompleted || 0}/${report.metrics.totalPlannedActions || 0}` },
+                        { label: 'Carga', value: `${report.metrics.totalHours || 0}h` },
+                        { label: 'Metas', value: `${sealedMetas}/${plannedMetas}` },
+                        { label: 'Presenca', value: `${presenceDays} dias` },
                     ]}
-                    badges={rewardBadges}
                     compact
-                    className="w-[14.25rem] max-w-full"
+                    className={OFFICIAL_COMPACT_HISTORY_CARD_CLASS}
                 />
             </button>
         </div>
@@ -311,7 +271,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         reports, activeCycle, startCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
         oraclePreferences, showToast, grantInventoryItem, grantUserUnlock,
-        setAchievementUnlocked, deleteCycle // Added deleteCycle here
+        setAchievementUnlocked, deleteCycle, fetchNotifications // Added deleteCycle here
     } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
@@ -537,7 +497,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const performEndOfCycle = (): { ok: boolean; chest: ChestType | null } => {
         try {
             const result = endCycleRef.current(assetsRef.current, actionsRef.current);
-            if (!result?.report) throw new Error('Relatório inválido');
+            if (!result?.report) throw new Error('RelatÃ³rio invÃ¡lido');
             const { report, expGained } = result;
             setSelectedReport(report);
             setExpGained(expGained);
@@ -571,29 +531,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
             setEarnedChest(chestType);
 
-            const insigniasToGrant: string[] = [];
-
-            if (score === 100) {
-                insigniasToGrant.push('insignia_sitrep_s');
-            } else if (score >= 90) {
-                insigniasToGrant.push('insignia_sitrep_a');
-            } else if (score >= 80) {
-                insigniasToGrant.push('insignia_sitrep_b');
-            } else if (score >= 70) {
-                insigniasToGrant.push('insignia_sitrep_c');
-            } else {
-                insigniasToGrant.push('insignia_report_comum');
-            }
-
-            const currentExp = userProfile.nobility?.exp || 0;
-            const nextExp = currentExp + expGained;
-
-            const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
-
-            if (nextRank) {
-                const rankIndex = NOBILITY_RANKS.indexOf(nextRank);
-                insigniasToGrant.push(`insignia_rank_${rankIndex + 1}_${nextRank.id}`);
-            }
+            const insigniasToGrant: string[] = ['insignia_report_comum'];
 
             setGrantedInsignias(insigniasToGrant);
             setIsPostCycleFlow(true);
@@ -601,7 +539,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         } catch (error) {
             console.error('Erro ao analisar ciclo:', error);
-            setScanError('Não foi possível analisar o ciclo. Tente novamente.');
+            setScanError('NÃ£o foi possÃ­vel analisar o ciclo. Tente novamente.');
             return { ok: false, chest: null };
         }
     };
@@ -731,23 +669,42 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
 
-    const handlePostCycleResultsOk = () => {
-        const currentExp = userProfile.nobility.exp;
-        const nextExp = currentExp + expGained;
+    const buildCycleFinalizedNotificationContent = (report: Report) => {
+        const cycleName = report.cycleName || 'seu ciclo';
+        const mode = oraclePreferences?.activeMode || 'neutro';
+        const focus = report.highlight?.mostFocusedArena || 'sua arena principal';
+        const score = Math.round(report.performanceScore || 0);
+        const hours = Math.round(report.metrics?.totalHours || 0);
 
+        switch (mode) {
+            case 'coach':
+                return `${cycleName} fechou em ${score}. Agora revisa o que te deu mais resultado em ${focus} e sobe o proximo ciclo.`;
+            case 'tatico':
+                return `${cycleName} encerrou com score ${score}. Consolide o que funcionou em ${focus} e descarte o resto.`;
+            case 'estrategico':
+                return `${cycleName} encerrou com ${hours}h registradas. A revisao fecha a leitura da fase e mostra onde insistir.`;
+            case 'reflexivo':
+                return `${cycleName} foi encerrado. Vale rever o que ${focus} te ensinou nesta fase.`;
+            case 'calmo':
+                return `${cycleName} foi concluido. Seu relatorio ja pode ser revisado com calma.`;
+            case 'personalizado':
+            case 'neutro':
+            default:
+                return `O relatorio de ${cycleName} esta pronto para revisao.`;
+        }
+    };
+
+    const handlePostCycleResultsOk = () => {
         applyExp(expGained);
 
         const earnedItems: string[] = [];
-        const itemNames: string[] = [];
 
-        // Grant Insignias if earned (Cycle Report Insignias - Bronze)
+        // Grant Insignias if earned (Cycle Report Insignia - Bronze)
         if (grantedInsignias.length > 0) {
             grantedInsignias.forEach(insigniaId => {
                 grantUserUnlock('insignias', insigniaId);
                 grantInventoryItem(insigniaId, true);
                 earnedItems.push(insigniaId);
-                const def = resolveItemDef(insigniaId);
-                if (def) itemNames.push(def.name);
             });
         }
 
@@ -755,47 +712,30 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             addChest(earnedChest);
         }
 
-        // Check for Rank Up (Gold Insignia)
-        const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
-        if (nextRank) {
-            const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
-            grantUserUnlock('insignias', rankInsigniaId);
-            grantInventoryItem(rankInsigniaId, true);
-            earnedItems.push(rankInsigniaId);
-            const rankDef = resolveItemDef(rankInsigniaId);
-            if (rankDef) itemNames.push(rankDef.name);
-        }
-
-        // Determine all items to show in modal (using names to resolve defs if needed, or IDs directly)
         const allEarnedItems: string[] = [...earnedItems];
 
-        // Show Achievement Modal
-        // If Ranked Up, prioritize PLAYER_RANK_UP modal
-        if (nextRank) {
-            setAchievementUnlocked({
-                type: 'PLAYER_RANK_UP',
-                data: {
-                    name: nextRank.name,
-                    rank: nextRank,
-                    rewards: {
-                        exp: expGained,
-                        items: allEarnedItems,
-                        chest: earnedChest
-                    }
+        setAchievementUnlocked({
+            type: 'REPORT_COMPLETED',
+            data: {
+                title: `Relatorio de Ciclo - ${selectedReport?.performanceScore || 0}%`,
+                reward: {
+                    exp: expGained,
+                    items: allEarnedItems,
+                    chest: earnedChest
                 }
-            });
-        } else {
-            setAchievementUnlocked({
-                type: 'REPORT_COMPLETED',
-                data: {
-                    title: `Relatório de Ciclo - ${selectedReport?.performanceScore || 0}%`,
-                    reward: {
-                        exp: expGained,
-                        items: allEarnedItems,
-                        chest: earnedChest
-                    }
-                }
-            });
+            }
+        });
+
+        if (
+            userProfile?.id &&
+            selectedReport &&
+            oraclePreferences?.notificationsEnabled !== false
+        ) {
+            void SupabaseService.createNotification(
+                userProfile.id,
+                'cycle_finalized',
+                buildCycleFinalizedNotificationContent(selectedReport),
+            ).then(() => fetchNotifications());
         }
 
         setIsPostCycleFlow(false);
@@ -835,6 +775,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             const oldestReport = segmentReports[segmentReports.length - 1];
             const avgScore = Math.round(segmentReports.reduce((sum, report) => sum + report.performanceScore, 0) / Math.max(segmentReports.length, 1));
             const totalHours = segmentReports.reduce((sum, report) => sum + (report.metrics.totalHours || 0), 0);
+            const totalMetas = segmentReports.reduce((sum, report) => sum + (report.metrics.sealedMetas ?? report.metrics.goalsMet ?? 0), 0);
             const bestStreak = segmentReports.reduce((best, report) => Math.max(best, report.metrics.maxStreak || 0), 0);
             const grade = getScoreGrade(avgScore).grade;
             const color = getEraTone(grade);
@@ -866,6 +807,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))
                 .slice(0, 3)
                 .map(([name, count]) => ({ name, count }));
+            const totalExp = segmentReports.reduce((sum, report) => sum + (report.expGained || report.metrics.expGained || 0), 0);
 
             const key = getEraSegmentKey(oldestReport, newestReport, index);
             const defaultLabel = getEraLabel(index);
@@ -896,8 +838,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     startDate: report.startDate,
                     endDate: report.endDate,
                     score: report.performanceScore,
+                    grade: getScoreGrade(report.performanceScore, report.metrics?.fairness).grade,
                     focusArena: report.highlight?.mostFocusedArena?.trim() || dominantArena,
                     signatureAction: report.metrics.top3Actions?.[0]?.name || report.highlight?.mostRepeatedAction || 'Nenhuma',
+                    plannedMetas: report.metrics.plannedMetas,
+                    sealedMetas: report.metrics.sealedMetas ?? report.metrics.goalsMet,
                     weeklyAtlas: report.metrics.weeklyAtlas || [],
                     identitySnapshot: report.identitySnapshot,
                 }));
@@ -914,7 +859,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 startDate: oldestReport?.startDate || newestReport?.startDate || '',
                 endDate: newestReport?.endDate || oldestReport?.endDate || '',
                 avgScore,
+                totalExp,
                 totalHours,
+                totalMetas,
                 cycleCount: segmentReports.length,
                 dominantArena,
                 topActions,
@@ -1609,7 +1556,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getEraRibbonSkin(slot.skinId).edge }} />
                                     <span className="text-[11px] font-black uppercase tracking-[0.18em]">{slot.name?.trim() || slot.defaultLabel}</span>
                                 </div>
-                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` · ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
+                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` Â· ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
                             </button>
                         );
                     })}
@@ -1647,7 +1594,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20">
-                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p>
+                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando RelatÃ³rio...</p>
                             </div>
                         )}
                     </div>
@@ -1674,7 +1621,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 return (
                     <div className="pb-12">
                         {reportForComparison && (
-                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
+                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatÃ³rio para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
                         {renderLegacySummary()}
@@ -1787,7 +1734,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         title="Editar nome e skin da Era"
                                                         className="absolute -right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-black/75 text-[10px] text-white/80 shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:border-[var(--skin-accent-color)]/45 hover:text-white"
                                                     >
-                                                        ✦
+                                                        âœ¦
                                                     </button>
                                                     {inlineEraEditor?.key === band.key && (
                                                         <div className="absolute left-full top-2 z-20 ml-3 w-56 rounded-[20px] border border-white/10 bg-black/90 p-3 shadow-[0_18px_44px_rgba(0,0,0,0.45)] backdrop-blur-md">
@@ -1829,7 +1776,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 </div>
                                 {reports.length >= 2 && !activeCycle && !reportForComparison && (
                                     <div className="mt-4">
-                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÚLTIMOS 2 CICLOS</button>
+                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÃšLTIMOS 2 CICLOS</button>
                                     </div>
                                 )}
                             </div>
@@ -1846,7 +1793,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onShare={() => handleShareReport(selectedReport)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onDelete={() => {
-                            if (confirm("Tem certeza que deseja excluir este relatório?")) {
+                            if (confirm("Tem certeza que deseja excluir este relatÃ³rio?")) {
                                 // We need a way to delete historical reports.
                                 // For now, maybe just hide it or we need a proper deleteReport function
                                 // But the user asked to delete "cycles". A past report IS a cycle.
@@ -1861,21 +1808,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         expGained={isPostCycleFlow ? expGained : undefined}
                         insignias={isPostCycleFlow ? grantedInsignias : []}
                     />
-                ) : <p>Erro ao carregar relatório.</p>;
+                ) : <p>Erro ao carregar relatÃ³rio.</p>;
             case 'comparing':
                 return reportsToCompare ? (
                     <CycleComparator
                         currentCycleReport={reportsToCompare[0]}
                         pastCycleReport={reportsToCompare[1]}
                     />
-                ) : <p>Erro ao carregar comparação.</p>;
+                ) : <p>Erro ao carregar comparaÃ§Ã£o.</p>;
         }
     };
 
     const getTitle = () => {
         switch (view) {
             case 'results': return 'Resultados';
-            case 'comparing': return 'Análise Comparativa';
+            case 'comparing': return 'AnÃ¡lise Comparativa';
             case 'reward':
                 return 'Fim do Ciclo';
             default: return 'Historico';
@@ -1960,7 +1907,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             {showConfirmEndCycle && (
                 <ConfirmationModal
                     title="Encerrar Ciclo?"
-                    message="Ao fechar este ciclo, suas ações não concluídas no grid serão movidas para o pool de ações e suas arenas serão revisadas."
+                    message="Ao fechar este ciclo, suas aÃ§Ãµes nÃ£o concluÃ­das no grid serÃ£o movidas para o pool de aÃ§Ãµes e suas arenas serÃ£o revisadas."
                     onConfirm={confirmEndCycle}
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
@@ -1979,6 +1926,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
+
+
 
 
 

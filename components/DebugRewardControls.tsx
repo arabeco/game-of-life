@@ -102,6 +102,8 @@ export const DebugRewardControls: React.FC = () => {
             actionsCompleted: 150,
             totalPlannedActions: 180,
             goalsMet: 3,
+            plannedMetas: 4,
+            sealedMetas: 3,
             questsCompleted: 2,
             expGained: 1100,
             consistencyDays: 6,
@@ -114,6 +116,36 @@ export const DebugRewardControls: React.FC = () => {
                 { name: 'Treinar', count: 30 },
                 { name: 'Ler', count: 20 }
             ],
+            scoreModelVersion: 'fair_v2_1',
+            fairness: {
+                planLoadUnits: 30,
+                honoredLoadUnits: 24,
+                planHonorRate: 0.8,
+                plannedMetas: 4,
+                sealedMetas: 3,
+                metaSealRate: 0.75,
+                baselineLoadUnits: 22,
+                baselineActiveDays: 6,
+                activeDays: 6,
+                personalCadenceRate: 1,
+                planLoadRatio: 1.36,
+                planRealismPts: 3,
+                selfGrowthRate: 1.09,
+                ascensionPts: 4,
+                frictionRate: 0.2,
+                focusRatio: 0.42,
+                measurementStatus: 'scored',
+                historyConfidence: 'stable',
+                scoreBreakdown: {
+                    honorPts: 32,
+                    metaPts: 23,
+                    cadencePts: 15,
+                    realismPts: 3,
+                    ascensionPts: 4,
+                },
+                legacyPerformanceScore: 95,
+                grade: 'A',
+            },
             scoreBreakdown: {
                 progressPts: 33,
                 milestonePts: 15,
@@ -162,6 +194,7 @@ export const DebugRewardControls: React.FC = () => {
             endDate: '2026-02-02',
             avgScore: 78,
             totalHours: 31,
+            totalMetas: 5,
             cycleCount: 2,
             dominantArena: 'Alicerce',
             topActions: [{ name: 'Planejar', count: 8 }, { name: 'Codar', count: 6 }, { name: 'Treinar', count: 4 }],
@@ -178,8 +211,10 @@ export const DebugRewardControls: React.FC = () => {
                     startDate: '2026-01-06',
                     endDate: '2026-01-19',
                     score: 74,
+                    grade: 'B',
                     focusArena: 'Alicerce',
                     signatureAction: 'Planejar',
+                    sealedMetas: 2,
                     weeklyAtlas: buildMockAtlasWeeks(1, 'Alicerce'),
                     identitySnapshot: { ...mockFallbackIdentity, level: 7, nobilityRankName: 'Vagante', clanName: 'Sem cla', clanIcon: null, capturedAt: '2026-01-19T23:59:59.000Z' },
                 },
@@ -189,8 +224,10 @@ export const DebugRewardControls: React.FC = () => {
                     startDate: '2026-01-20',
                     endDate: '2026-02-02',
                     score: 82,
+                    grade: 'B',
                     focusArena: 'Protocolo',
                     signatureAction: 'Codar',
+                    sealedMetas: 3,
                     weeklyAtlas: buildMockAtlasWeeks(2, 'Protocolo'),
                     identitySnapshot: { ...mockFallbackIdentity, level: 9, nobilityRankName: 'Escudeiro', clanName: 'Cla Atlas', clanIcon: '???', capturedAt: '2026-02-02T23:59:59.000Z' },
                 },
@@ -205,6 +242,7 @@ export const DebugRewardControls: React.FC = () => {
             endDate: '2026-03-02',
             avgScore: 88,
             totalHours: 46,
+            totalMetas: 7,
             cycleCount: 2,
             dominantArena: 'Dominio',
             topActions: [{ name: 'Publicar', count: 9 }, { name: 'Mentorar', count: 5 }, { name: 'Fechar loop', count: 5 }],
@@ -221,8 +259,10 @@ export const DebugRewardControls: React.FC = () => {
                     startDate: '2026-02-03',
                     endDate: '2026-02-16',
                     score: 86,
+                    grade: 'A',
                     focusArena: 'Dominio',
                     signatureAction: 'Publicar',
+                    sealedMetas: 3,
                     weeklyAtlas: buildMockAtlasWeeks(3, 'Dominio'),
                     identitySnapshot: { ...mockFallbackIdentity, level: 12, nobilityRankName: 'Cavaleiro', clanName: 'Cla Atlas', clanIcon: '???', capturedAt: '2026-02-16T23:59:59.000Z' },
                 },
@@ -232,8 +272,10 @@ export const DebugRewardControls: React.FC = () => {
                     startDate: '2026-02-17',
                     endDate: '2026-03-02',
                     score: 91,
+                    grade: 'A',
                     focusArena: 'Tesouro',
                     signatureAction: 'Fechar loop',
+                    sealedMetas: 4,
                     weeklyAtlas: buildMockAtlasWeeks(4, 'Tesouro'),
                     identitySnapshot: { ...mockFallbackIdentity, level: 14, nobilityRankName: 'Barao', clanName: 'Cla Atlas', clanIcon: '???', capturedAt: '2026-03-02T23:59:59.000Z' },
                 },
@@ -284,10 +326,15 @@ export const DebugRewardControls: React.FC = () => {
         },
     ]), [mockFallbackIdentity]);
 
-    const rankPreviewScores = [100, 90, 76, 60, 38].map((score, index) => ({
-        score,
-        grade: getScoreGrade(score),
-        title: ['Ascensao Total', 'Ciclo Ouro', 'Ciclo Prata', 'Ciclo Bronze', 'Ferro Velho'][index],
+    const rankPreviewScores = [
+        { score: 100, title: 'Ascensao Total', actions: '24/24', hours: '48h', metas: '4/4', presence: '12 dias' },
+        { score: 90, title: 'Ciclo Ouro', actions: '21/24', hours: '39h', metas: '4/4', presence: '10 dias' },
+        { score: 76, title: 'Ciclo Prata', actions: '15/20', hours: '27h', metas: '3/4', presence: '8 dias' },
+        { score: 60, title: 'Ciclo Bronze', actions: '10/18', hours: '16h', metas: '2/4', presence: '6 dias' },
+        { score: 38, title: 'Ferro Velho', actions: '4/16', hours: '6h', metas: '0/3', presence: '2 dias' },
+    ].map((preview) => ({
+        ...preview,
+        grade: getScoreGrade(preview.score),
     }));
 
     const addChests = async () => {
@@ -327,7 +374,7 @@ export const DebugRewardControls: React.FC = () => {
     const addInsignias = async () => {
         setLoading(true);
         try {
-            const insignias = ['insignia_rank_5_barao', 'insignia_quest_incomum', 'insignia_sitrep_s'];
+            const insignias = ['insignia_rank_5_barao', 'insignia_quest_incomum', 'insignia_report_comum'];
             const newItems = insignias.map(id => ({ user_id: userProfile.id, item_id: id, acquired_at: new Date().toISOString() }));
             const { error: insertError } = await supabase.from('user_inventory').insert(newItems);
             if (insertError) throw insertError;
@@ -396,7 +443,7 @@ export const DebugRewardControls: React.FC = () => {
                 </button>
 
                 <button onClick={addInsignias} disabled={loading} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-amber-500/20 bg-amber-600/20 p-3 text-xs font-bold text-amber-200 transition-all hover:border-amber-500/50 hover:bg-amber-600/40">
-                    <span>??? +1 insignia de Cada</span>
+                    <span>+1 insignia de cada família</span>
                     <span className="text-[10px] opacity-70">(Adiciona ao inventario)</span>
                 </button>
 
@@ -437,22 +484,18 @@ export const DebugRewardControls: React.FC = () => {
                     <p className="mt-1 text-xs text-gray-500">Teste rapido dos ranks S, A, B, C e ferro gasto antes de ligar no fluxo real.</p>
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-1">
-                    {rankPreviewScores.map(({ score, grade, title }) => (
-                        <div key={title} className="w-[280px] shrink-0">
+                    {rankPreviewScores.map(({ score, grade, title, actions, hours, metas, presence }) => (
+                        <div key={title} className="w-[12.35rem] shrink-0">
                             <MetalReportCard
                                 rank={grade.grade}
                                 score={score}
                                 title={title}
-                                subtitle="Preview GM"
-                                dateRange="01/03 - 14/03"
-                                summary={grade.phrase}
+                                subtitle="01/03 - 14/03"
                                 metrics={[
-                                    { label: 'XP', value: `+${score * 10}` },
-                                    { label: 'Foco', value: 'Dominio' },
-                                ]}
-                                badges={[
-                                    { label: 'Assinatura', value: 'Codar' },
-                                    { label: 'Era', value: 'Fundacao' },
+                                    { label: 'Acoes', value: actions },
+                                    { label: 'Carga', value: hours },
+                                    { label: 'Metas', value: metas },
+                                    { label: 'Presenca', value: presence },
                                 ]}
                                 compact
                             />
@@ -495,7 +538,7 @@ export const DebugRewardControls: React.FC = () => {
                     }}
                     expGained={1000}
                     chest={showReportResult.id === 'debug-report-chest' ? 'Lend\u00e1rio' : null}
-                    insignias={['insignia_sitrep_s']}
+                    insignias={['insignia_report_comum']}
                 />
             )}
 
@@ -520,11 +563,15 @@ export const DebugRewardControls: React.FC = () => {
                     onOpenEra={(era) => showToast(`Abrir Era mockada: ${era.label}`)}
                     onOpenPlaque={() => showToast('Placa do legado ativada.')}
                     onExportRecord={() => showToast('Export do legado mockado acionado.')}
+                    showLayoutLab
                 />
             )}
         </GlassCard>
     );
 };
+
+
+
 
 
 

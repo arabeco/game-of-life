@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'glyph-app-v4';
+const CACHE_VERSION = 'glyph-app-v5';
 const SUPABASE_CACHE = 'glyph-supabase-assets-v1';
 const ASSETS = [
   '/',
@@ -92,4 +92,38 @@ self.addEventListener('fetch', event => {
       })
     );
   }
+});
+
+self.addEventListener('notificationclick', event => {
+  const targetUrl = event.notification?.data?.url || '/';
+  event.notification.close();
+
+  event.waitUntil((async () => {
+    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+
+    for (const client of clientList) {
+      const clientUrl = new URL(client.url);
+      if (clientUrl.origin !== self.location.origin) continue;
+
+      try {
+        await client.focus();
+      } catch (error) {
+        console.warn('Could not focus client:', error);
+      }
+
+      if ('navigate' in client) {
+        try {
+          await client.navigate(targetUrl);
+        } catch (error) {
+          console.warn('Could not navigate client:', error);
+        }
+      }
+
+      return;
+    }
+
+    if (self.clients.openWindow) {
+      await self.clients.openWindow(targetUrl);
+    }
+  })());
 });

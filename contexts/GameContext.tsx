@@ -105,8 +105,8 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     mood: 50,
     role: 'user',
     isPremium: false,
-    skin: 'GOLD',
-    unlockedSkins: { GOLD: true },
+    skin: 'BASIC',
+    unlockedSkins: { BASIC: true },
     inventory: [],
     wallet: { gold: 0, fragments: 0 },
     unlockedItems: {
@@ -1132,8 +1132,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
+        const isStaffUser = ['admin', 'gm', 'admin_gm'].includes((userProfile.role || '').toLowerCase());
+        let inventoryRows = data || [];
+
+        if (isStaffUser) {
+            const ownedIds = new Set(
+                inventoryRows.map((row: any) => resolveItemDef(row.item_id)?.id || row.item_id)
+            );
+            const missingCatalogItems = ITEMS_DB.filter(item => isItemCatalogVisible(item) && !ownedIds.has(item.id));
+
+            if (missingCatalogItems.length > 0) {
+                const { data: insertedRows, error: insertStaffError } = await supabase
+                    .from('user_inventory')
+                    .insert(missingCatalogItems.map(item => ({ user_id: userId, item_id: item.id })))
+                    .select('*');
+
+                if (insertStaffError) {
+                    console.error('Error granting staff catalog inventory:', insertStaffError);
+                } else if (insertedRows) {
+                    inventoryRows = [...inventoryRows, ...insertedRows];
+                }
+            }
+        }
+
         // Auto-grant Starter Pack (T1 Items) if inventory is empty
-        if ((!data || data.length === 0)) {
+        if (!isStaffUser && inventoryRows.length === 0) {
             console.log("Inventory empty. Granting Starter Pack (v1.006)...");
 
             // IDs definidos no LOJA.MD e items.ts
@@ -1189,7 +1212,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        const items = data ? data.map((row: any) => {
+        const items = inventoryRows.map((row: any) => {
             const resolvedDef = resolveItemDef(row.item_id);
             const resolvedId = resolvedDef?.id || row.item_id;
             return {
@@ -1198,9 +1221,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 acquiredAt: row.acquired_at,
                 isEquipped: row.is_equipped
             };
-        }) : [];
+        });
         setInventory(items);
-    }, []);
+    }, [userProfile.role]);
 
     // Sync inventory state to userProfile to ensure consistency
     useEffect(() => {
@@ -1438,7 +1461,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (itemDef.category === 'border') {
                 updateUserProfile({ border: 'default' });
             } else if (itemDef.category === 'ui_skin') {
-                updateUserProfile({ skin: 'GOLD' }); // Default skin
+                updateUserProfile({ skin: 'BASIC' }); // Default skin
                 showToast('ConfiguraÃ§Ã£o estÃ©tica alterada. Novo ativo equipado.', 'success');
             } else if (itemDef.category === 'banner') {
                 updateUserProfile({ bannerUrl: '' });
@@ -2581,8 +2604,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const camelProfile = mapToCamelCase(profileData) as UserProfile;
                 const normalizedRole = typeof camelProfile.role === 'string' ? camelProfile.role.toLowerCase() : undefined;
                 const role = normalizedRole === 'admin' || normalizedRole === 'gm' ? normalizedRole : (normalizedRole || 'user');
+                const normalizedSkin = !camelProfile.skin || camelProfile.skin === 'default' ? 'BASIC' : camelProfile.skin;
+                const normalizedUnlockedSkins = {
+                    ...(camelProfile.unlockedSkins || {}),
+                    BASIC: true,
+                };
                 setUserProfile(prev => {
-                    let next = { ...prev, ...camelProfile, role } as UserProfile;
+                    let next = {
+                        ...prev,
+                        ...camelProfile,
+                        role,
+                        skin: normalizedSkin,
+                        unlockedSkins: normalizedUnlockedSkins,
+                    } as UserProfile;
                     const pendingPatch = pendingProfilePatchRef.current;
                     if (pendingPatch) {
                         next = { ...next, ...pendingPatch };

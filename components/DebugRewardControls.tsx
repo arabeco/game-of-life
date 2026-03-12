@@ -14,6 +14,10 @@ import { CampaignArenaStack } from './CampaignArenaStack';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { getScoreGrade } from '../utils/dateUtils';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
+import { SupabaseService } from '../services/SupabaseService';
+import { requestLocalNotificationPermission, showLocalNotification } from '../utils/localNotification';
+
+let gmNotificationTestTimeoutId: number | null = null;
 
 const buildMockAtlasWeeks = (seed: number, accentAction: string): ReportAtlasWeek[] => {
     const baseDate = new Date(Date.UTC(2026, 0, 6 + seed * 7));
@@ -84,7 +88,7 @@ const buildMockAtlasWeeks = (seed: number, accentAction: string): ReportAtlasWee
 };
 
 export const DebugRewardControls: React.FC = () => {
-    const { userProfile, updateUserProfile, showToast, setAchievementUnlocked, getArenas } = useGame();
+    const { userProfile, updateUserProfile, showToast, setAchievementUnlocked, getArenas, fetchNotifications } = useGame();
     const { trigger } = useSensoryFeedback();
     const [loading, setLoading] = useState(false);
     const [showChestModal, setShowChestModal] = useState<ChestType | null>(null);
@@ -460,6 +464,53 @@ export const DebugRewardControls: React.FC = () => {
         });
     };
 
+    const scheduleNotificationTest = async () => {
+        if (!userProfile.id || userProfile.id === 'placeholder_user') {
+            showToast('Entre com um perfil real para testar a notificação.', 'warning');
+            return;
+        }
+
+        if (gmNotificationTestTimeoutId !== null) {
+            showToast('Já existe um teste de notificação agendado.', 'warning');
+            return;
+        }
+
+        const permission = await requestLocalNotificationPermission();
+        if (permission === 'unsupported') {
+            showToast('Este navegador não suporta notificações locais. O aviso ainda vai cair no feed.', 'warning');
+        } else if (permission === 'denied') {
+            showToast('Permissão de notificação negada. O aviso ainda vai entrar no feed e no badge.', 'warning');
+        }
+
+        showToast('Teste de notificação agendado para 30 segundos.', 'success');
+
+        gmNotificationTestTimeoutId = window.setTimeout(() => {
+            gmNotificationTestTimeoutId = null;
+
+            void (async () => {
+                const firedAt = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                await SupabaseService.createNotification(
+                    userProfile.id,
+                    'system',
+                    `Teste GM disparado às ${firedAt}. Verifique o Oráculo e o badge do app.`,
+                );
+                await fetchNotifications();
+
+                await showLocalNotification({
+                    title: 'Aviso do Soberano',
+                    body: 'Teste GM: a notificação agendada acabou de chegar.',
+                    tag: 'gm-notification-test',
+                    url: '/',
+                    requireInteraction: true,
+                });
+
+                if (document.visibilityState === 'visible') {
+                    showToast('Notificação de teste disparada.', 'info');
+                }
+            })();
+        }, 30000);
+    };
+
     return (
         <GlassCard className="mt-4 space-y-4 border-yellow-500/30 p-4">
             <h3 className="flex items-center gap-2 font-bold text-yellow-400">
@@ -501,6 +552,11 @@ export const DebugRewardControls: React.FC = () => {
                 <button onClick={handleTestLevelUp} className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-lg border border-orange-500/20 bg-orange-600/20 p-3 text-xs font-bold text-orange-200 transition-all hover:border-orange-500/50 hover:bg-orange-600/40">
                     <span>?? Testar Subir Nivel</span>
                     <span className="text-[10px] opacity-70">(Simula Conquista)</span>
+                </button>
+
+                <button onClick={scheduleNotificationTest} className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-lg border border-rose-500/20 bg-rose-600/20 p-3 text-xs font-bold text-rose-100 transition-all hover:border-rose-400/50 hover:bg-rose-600/35">
+                    <span>Teste Notificação 30s</span>
+                    <span className="text-[10px] opacity-70">(Feed + badge + popup local)</span>
                 </button>
 
                 <button onClick={() => setShowLegacyPreview(true)} className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-600/20 p-3 text-xs font-bold text-cyan-200 transition-all hover:border-cyan-500/50 hover:bg-cyan-600/40">

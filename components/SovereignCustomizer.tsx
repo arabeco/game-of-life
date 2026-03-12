@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { SovereignConfig } from '../types';
+import { SovereignConfig, UnlockCategory, UserUnlocks } from '../types';
 import { SOVEREIGN_ASSETS, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { BODY_DB, HAIR_DB } from '../constants/skins';
 import { ChevronLeftIcon, ChevronRightIcon, CheckIcon, EditIcon, XIcon } from './Icons';
@@ -51,7 +51,7 @@ const Selector: React.FC<{
 );
 
 export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initialConfig, onSave, onClose }) => {
-    const { inventory } = useGame();
+    const { inventory, userProfile } = useGame();
     const [config, setConfig] = useState<SovereignConfig>({
         ...DEFAULT_SOVEREIGN_CONFIG,
         ...(initialConfig || {}),
@@ -88,21 +88,48 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         }
     }, []);
 
+    const isStaff = userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm';
+    const unlockedItems: UserUnlocks = userProfile.unlockedItems || {
+        bodyStyles: {},
+        hairStyles: {},
+        outfits: {},
+        head_under_items: {},
+        helmets: {},
+        head_over_items: {},
+        artifacts: {},
+        codexes: {},
+        skins: {},
+        borders: {},
+        banners: {},
+        glyphs: {},
+        auras: {},
+        orbs: {},
+        plates: {},
+        ornament: {},
+        insignias: {},
+        ui_skins: {},
+    };
+
+    const hasUnlockInAnyBucket = (itemId: string) => Object.values(unlockedItems).some(bucket => !!bucket?.[itemId]);
+
     // Helpers
-    const getOwnedList = (allItems: any[]) => {
+    const getOwnedList = (allItems: any[], unlockCategory?: UnlockCategory) => {
         if (!allItems) return [];
         return allItems.filter(item => {
             if (item.id === 'none') return true;
+            if (isStaff) return true;
             // Allow if in inventory
             if (inventory?.some(inv => inv.id === item.id)) return true;
-            // Allow if unlocked via legacy (if needed, but relying on inventory for now)
+            // Allow legacy unlock maps as fallback while the migration is incomplete
+            if (unlockCategory && unlockedItems[unlockCategory]?.[item.id]) return true;
+            if (hasUnlockInAnyBucket(item.id)) return true;
             return false;
         });
     };
 
-    const cycle = (currentId: string | undefined, options: any[], direction: number): string => {
+    const cycle = (currentId: string | undefined, options: any[], direction: number, unlockCategory?: UnlockCategory): string => {
         // Filter options by ownership
-        const ownedOptions = getOwnedList(options);
+        const ownedOptions = getOwnedList(options, unlockCategory);
         
         if (!ownedOptions || ownedOptions.length === 0) return currentId || 'none';
         const validOptions = ownedOptions.map(o => o.id);
@@ -179,7 +206,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
     const cycleHairStyle = (direction: number) => {
         const assets = SOVEREIGN_ASSETS as any;
-        const newHairId = cycle(config.hairStyle, assets.hairStyles || [], direction);
+        const newHairId = cycle(config.hairStyle, assets.hairStyles || [], direction, 'hairStyles');
         
         // Clamp color if needed
         const newHairDef = HAIR_DB.find(h => h.id === newHairId);
@@ -206,36 +233,36 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     };
 
     const cycleOutfit = (direction: number) => {
-        const newOutfit = cycle(config.outfit, SOVEREIGN_ASSETS.outfits, direction);
+        const newOutfit = cycle(config.outfit, SOVEREIGN_ASSETS.outfits, direction, 'outfits');
         setConfig(p => ({ ...p, outfit: newOutfit }));
     };
 
     const cycleGlyph = (direction: number) => {
-        const newGlyph = cycle(config.glyph, SOVEREIGN_ASSETS.glyphs, direction);
+        const newGlyph = cycle(config.glyph, SOVEREIGN_ASSETS.glyphs, direction, 'glyphs');
         setConfig(p => ({ ...p, glyph: newGlyph }));
     };
 
     const cycleAura = (direction: number) => {
-        const newAura = cycle(config.aura, SOVEREIGN_ASSETS.auras, direction);
+        const newAura = cycle(config.aura, SOVEREIGN_ASSETS.auras, direction, 'auras');
         setConfig(p => ({ ...p, aura: newAura }));
     };
 
     const cycleOrb = (direction: number) => {
         const orbs = (SOVEREIGN_ASSETS as any).orbs || [];
-        const newOrb = cycle(config.orb, orbs, direction);
+        const newOrb = cycle(config.orb, orbs, direction, 'orbs');
         setConfig(p => ({ ...p, orb: newOrb }));
     };
 
     const cyclePlate = (direction: number, type: 'sovereign' | 'artifact' | 'glyph') => {
         const plates = SOVEREIGN_ASSETS.plates || [];
         if (type === 'sovereign') {
-            const newPlate = cycle(config.sovereignPlate, plates, direction);
+            const newPlate = cycle(config.sovereignPlate, plates, direction, 'plates');
             setConfig(p => ({ ...p, sovereignPlate: newPlate }));
         } else if (type === 'artifact') {
-            const newPlate = cycle(config.artifactPlate, plates, direction);
+            const newPlate = cycle(config.artifactPlate, plates, direction, 'plates');
             setConfig(p => ({ ...p, artifactPlate: newPlate }));
         } else if (type === 'glyph') {
-            const newPlate = cycle(config.glyphPlate, plates, direction);
+            const newPlate = cycle(config.glyphPlate, plates, direction, 'plates');
             setConfig(p => ({ ...p, glyphPlate: newPlate }));
         }
     };
@@ -471,7 +498,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             <div className="flex-1 flex flex-col min-h-0">
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block text-center mb-2">Selecione um Artefato</span>
                                 <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1 pb-2 custom-scrollbar">
-                                    {getOwnedList(SOVEREIGN_ASSETS.artifacts).map(item => {
+                                    {getOwnedList(SOVEREIGN_ASSETS.artifacts, 'artifacts').map(item => {
                                         const isSelected = config.artifact === item.id;
                                         const assetWithRarity = item as any;
                                         const rarityVisual = getRarityVisual(assetWithRarity.rarity);

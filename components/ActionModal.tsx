@@ -214,7 +214,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                 onClose();
             } catch (err) {
                 console.error("Error executing save:", err);
-                showToast('Nao foi possivel salvar a ação.', 'error');
+                showToast('Não foi possível salvar a ação.', 'error');
             }
         };
 
@@ -296,7 +296,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     // Merge task duration if editing a specific task
     const effectiveDuration = taskId && currentTask ? currentTask.duration : (displayAction?.duration || 60);
 
-    const difficultyLabels = ['MUITO FÃCIL', 'FÃCIL', 'NORMAL', 'DIFÃCIL', 'EXTREMO'];
+    const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÍCIL', 'EXTREMO'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco', 'Livre'];
@@ -309,11 +309,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const accentColor = customThemeColor || arenaAccentColor || '#F0C843';
     const modalStyle = { '--skin-accent-color': customThemeColor || 'var(--skin-accent-color)', '--accent-bronze': accentColor } as React.CSSProperties;
     const headerTitle = mode === 'view'
-        ? (displayAction?.name || (isPreview ? 'Preview de Acao' : 'Detalhe da Acao'))
-        : (editableAction.name?.trim() || (isNew ? 'Nova Acao' : 'Editar Acao'));
+        ? (displayAction?.name || (isPreview ? 'Preview de Ação' : 'Detalhe da Ação'))
+        : (editableAction.name?.trim() || (isNew ? 'Nova Ação' : 'Editar Ação'));
     const headerEyebrow = mode === 'edit'
-        ? (isNew ? 'Criacao' : 'Edicao')
-        : (isPreview ? 'Preview' : 'Acao');
+        ? (isNew ? 'Criação' : 'Edição')
+        : (isPreview ? 'Preview' : 'Ação');
     const handleHeaderOk = () => {
         if (isPreview) {
             onClose();
@@ -379,7 +379,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     {/* Assignment field for Office Mode */}
                     {isOfficeMode && mode === 'edit' && (
                         <div className="px-4 py-2 bg-black/[0.18] border-b border-white/[0.06]">
-                            <label className="core-label mb-1 block">Quem vai fazer? (AtribuiÃ§Ã£o)</label>
+                            <label className="core-label mb-1 block">Quem vai fazer? (Atribuição)</label>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                                 <button
                                     onClick={() => setEditableAction(prev => ({ ...prev, originCodexId: undefined }))}
@@ -410,7 +410,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                BÃ¡sico
+                                Básico
                             </button>
                             <button
                                 onClick={() => setActiveTab('advanced')}
@@ -419,7 +419,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                AvanÃ§ado
+                                Avançado
                             </button>
                         </div>
                     </div>
@@ -446,7 +446,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             <div className="relative">
                                                 <input type="checkbox" id="desc-expand" className="peer hidden" />
                                                 <p className="text-[10px] text-gray-400 leading-snug font-medium max-w-[280px] mx-auto line-clamp-3 peer-checked:line-clamp-none transition-all">
-                                                    {displayAction.description || "Sem descriÃ§Ã£o definida."}
+                                                    {displayAction.description || "Sem descrição definida."}
                                                 </p>
                                                 {displayAction.description && displayAction.description.length > 80 && (
                                                     <label
@@ -466,12 +466,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 <div className="text-xs font-bold accent-text truncate text-center w-full">{displayAction.actionType}</div>
                                             </div>
                                             <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">DuraÃ§Ã£o</div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Duração</div>
                                                 <div className="text-xs font-bold text-white text-center w-full">{effectiveDuration} min</div>
                                             </div>
                                             {displayAction.actionType === 'Ação Recorrente' && (
                                                 <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                    <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">RepetiÃ§Ãµes</div>
+                                                    <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Repetições</div>
                                                     <div className="text-xs font-bold text-white text-center w-full">{displayAction.repetitions}x pool</div>
                                                 </div>
                                             )}
@@ -505,7 +505,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                         <input
                                             ref={nameInputRef}
                                             type="text"
-                                            placeholder="Nome da AÃ§Ã£o"
+                                            placeholder="Nome da Ação"
                                             value={editableAction.name || ''}
                                             onBlur={handleTutorialNextFormStep}
                                             onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
@@ -514,7 +514,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                         {/* Description */}
                                         <textarea
-                                            placeholder="DescriÃ§Ã£o (opcional)"
+                                            placeholder="Descrição (opcional)"
                                             value={editableAction.description || ''}
                                             onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
                                             rows={3}
@@ -534,7 +534,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                             {/* Type */}
                                             <div>
-                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de AÃ§Ã£o</label>
+                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de Ação</label>
                                                 <button onClick={() => setIsActionTypePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
                                                     <span className="text-sm">{editableAction.actionType || 'Ação Recorrente'}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
@@ -544,7 +544,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             {/* Sliders */}
                                             {taskId ? (
                                                 <StyledRangeInput
-                                                    label="DuraÃ§Ã£o desta InstÃ¢ncia"
+                                                    label="Duração desta Instância"
                                                     value={editableTaskDuration}
                                                     min={15} max={480} step={15} unit="min"
                                                     onChange={val => setEditableTaskDuration(val)}
@@ -552,7 +552,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             ) : (
                                                 <StyledRangeInput
                                                     inputRef={durationInputRef}
-                                                    label="DuraÃ§Ã£o (Base)"
+                                                    label="Duração (Base)"
                                                     value={editableAction.duration || 60}
                                                     min={15} max={240} step={15} unit="min"
                                                     onChange={val => { setEditableAction(p => ({ ...p, duration: val })); handleTutorialNextFormStep(); }}
@@ -560,7 +560,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             )}
 
                                             {editableAction.actionType === 'Ação Recorrente' && (
-                                                <StyledRangeInput inputRef={repsInputRef} label="RepetiÃ§Ãµes" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({ ...p, repetitions: val })); handleTutorialNextFormStep(); }} />
+                                                <StyledRangeInput inputRef={repsInputRef} label="Repetições" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({ ...p, repetitions: val })); handleTutorialNextFormStep(); }} />
                                             )}
 
                                             <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3) - 1]} onChange={val => setEditableAction(p => ({ ...p, difficulty: val }))} />
@@ -592,7 +592,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 )}
 
                                                 <div>
-                                                    <label className="text-xs font-semibold text-gray-400 uppercase ml-1">HorÃ¡rio</label>
+                                                    <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
                                                     <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
                                                         <span className="text-sm">{startTime || 'Sem Horário'}</span>
                                                         <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
@@ -609,7 +609,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                         {/* Delete Button */}
                                         {!isNew && (
                                             <button onClick={handleDelete} className="w-full py-3 rounded-xl bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/30 text-xs font-bold uppercase tracking-wider transition-all mt-4">
-                                                Excluir AÃ§Ã£o
+                                                Excluir Ação
                                             </button>
                                         )}
                                     </div>
@@ -622,8 +622,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                             <div className="flex flex-col h-full animate-fade-in pb-20">
                                 {/* Sub-Tabs */}
                                 <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5 mx-4 mt-4 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
-                                    {(['MÃDIA', 'ANOTAÃ‡ÃƒO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
-                                        const tabKey = tab === 'MÃDIA' ? 'media' : tab === 'ANOTAÃ‡ÃƒO' ? 'note' : tab === 'CHECKLIST' ? 'checklist' : 'context';
+                                    {(['MÍDIA', 'ANOTAÇÃO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
+                                        const tabKey = tab === 'MÍDIA' ? 'media' : tab === 'ANOTAÇÃO' ? 'note' : tab === 'CHECKLIST' ? 'checklist' : 'context';
                                         const isActive = advancedSubTab === tabKey;
                                         return (
                                             <button
@@ -649,7 +649,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                     <img
                                                         src={mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl) ? (newAssetUrl || mediaSlot.imageUrl) : displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url}
                                                         className="w-full h-full object-cover"
-                                                        alt="MÃ­dia"
+                                                        alt="Mídia"
                                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                                     />
                                                     {mode === 'edit' && (
@@ -663,8 +663,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 </div>
                                             ) : (
                                                 <div className="w-full aspect-video bg-white/5 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 mb-4">
-                                                    <span className="text-4xl opacity-20">ðŸ“·</span>
-                                                    <span className="text-xs text-gray-500 font-medium">Sem mÃ­dia vinculada</span>
+                                                    <span className="text-4xl opacity-20">📷</span>
+                                                    <span className="text-xs text-gray-500 font-medium">Sem mídia vinculada</span>
                                                 </div>
                                             )}
 
@@ -676,7 +676,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                         onChange={(value) => {
                                                             setMediaSlot(value);
                                                             if (value.imageUrl) {
-                                                                const title = value.caption?.trim() || 'MÃ­dia Principal';
+                                                                const title = value.caption?.trim() || 'Mídia Principal';
                                                                 setNewAssetUrl(value.imageUrl);
                                                                 setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url: value.imageUrl, title }] }));
                                                             } else {
@@ -686,7 +686,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                         }}
                                                     />
                                                     <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/VÃ­deo</label>
+                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/Vídeo</label>
                                                         <input
                                                             type="text"
                                                             value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
@@ -695,7 +695,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                 setNewAssetUrl(url);
                                                                 if (url) {
                                                                     setMediaSlot(prev => ({ ...prev, imageUrl: url }));
-                                                                    const title = mediaSlot.caption?.trim() || 'MÃ­dia Principal';
+                                                                    const title = mediaSlot.caption?.trim() || 'Mídia Principal';
                                                                     setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title }] }));
                                                                 } else {
                                                                     setEditableAction(prev => ({ ...prev, assets: [] }));
@@ -717,12 +717,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                     value={editableAction.briefing || ''}
                                                     onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
                                                     className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
-                                                    placeholder="Digite suas anotaÃ§Ãµes aqui..."
+                                                    placeholder="Digite suas anotações aqui..."
                                                 />
                                             ) : (
                                                 <div className="bg-[#1a1512] rounded-xl p-6 border border-white/5 shadow-inner min-h-[300px]">
                                                     <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
-                                                        {displayAction?.briefing || "Nenhuma anotaÃ§Ã£o disponÃ­vel."}
+                                                        {displayAction?.briefing || "Nenhuma anotação disponível."}
                                                     </p>
                                                 </div>
                                             )}
@@ -731,7 +731,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                     {advancedSubTab === 'checklist' && (
                                         <div className="p-4 space-y-3">
-                                            <div className="text-xs font-bold text-gray-400 uppercase">Preparar AÃ§Ãµes</div>
+                                            <div className="text-xs font-bold text-gray-400 uppercase">Preparar Ações</div>
                                             {/* Checklist Items */}
                                             {(displayAction?.preFlight || []).length > 0 ? (
                                                 displayAction?.preFlight?.map((item, i) => (
@@ -750,7 +750,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 ))
                                             ) : (
                                                 <div className="flex flex-col items-center justify-center py-10 opacity-30 space-y-2 border border-dashed border-white/5 rounded-xl">
-                                                    <span className="text-4xl">ðŸ“</span>
+                                                    <span className="text-4xl">📝</span>
                                                     <span className="text-[10px] uppercase font-black tracking-widest">Lista Vazia</span>
                                                 </div>
                                             )}
@@ -791,7 +791,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                         <div className="p-4 space-y-6">
                                             {/* Energy Level */}
                                             <div className="space-y-3">
-                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">NÃ­vel de Energia</label>
+                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Nível de Energia</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {(['low', 'medium', 'high'] as const).map(level => {
                                                         const isSelected = displayAction?.context?.energyLevel === level;
@@ -806,7 +806,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                     : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                     }`}
                                                             >
-                                                                {level === 'low' ? 'Baixo' : level === 'medium' ? 'MÃ©dio' : 'Alto'}
+                                                                {level === 'low' ? 'Baixo' : level === 'medium' ? 'Médio' : 'Alto'}
                                                             </button>
                                                         );
                                                     })}
@@ -815,7 +815,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                             {/* Time of Day */}
                                             <div className="space-y-3">
-                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">PerÃ­odo Ideal</label>
+                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Período Ideal</label>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {(['morning', 'afternoon', 'evening', 'night'] as const).map(time => {
                                                         const isSelected = displayAction?.context?.timeOfDay === time;
@@ -830,7 +830,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                     : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                     }`}
                                                             >
-                                                                {time === 'morning' ? 'ManhÃ£' : time === 'afternoon' ? 'Tarde' : time === 'evening' ? 'Noite' : 'Madrugada'}
+                                                                {time === 'morning' ? 'Manhã' : time === 'afternoon' ? 'Tarde' : time === 'evening' ? 'Noite' : 'Madrugada'}
                                                             </button>
                                                         );
                                                     })}
@@ -855,7 +855,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                 className={`flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden ${mode === 'view' ? 'luxe-skin-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
                             >
                                 <span className="relative z-10 group-hover:text-black transition-colors">
-                                    {isPreview ? 'Fechar' : (mode === 'view' ? 'Iniciar missÃ£o' : 'Salvar alteraÃ§Ãµes')}
+                                    {isPreview ? 'Fechar' : (mode === 'view' ? 'Iniciar missão' : 'Salvar alterações')}
                                 </span>
                                 <div className={`absolute inset-0 transition-colors ${mode === 'view' ? 'bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10' : ''}`} />
                             </button>
@@ -870,7 +870,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             {isIconPickerOpen && <IconPickerModal onSelect={handleIconSelect} onClose={() => setIsIconPickerOpen(false)} />}
             {isActionTypePickerOpen && (
                 <SelectionModal<ActionType>
-                    title="Tipo de AÃ§Ã£o"
+                    title="Tipo de Ação"
                     options={actionTypeOptions}
                     currentValue={editableAction.actionType || 'Ação Recorrente'}
                     onSelect={handleActionTypeChange}
@@ -894,7 +894,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     minDate={new Date()}
                 />
             )}
-            {isConfirmDeleteOpen && (<ConfirmationModal title="Confirmar ExclusÃ£o" message={`Tem certeza que deseja excluir a aÃ§Ã£o "${action?.name}"?`} onConfirm={confirmDelete} onCancel={() => setConfirmDeleteOpen(false)} />)}
+            {isConfirmDeleteOpen && (<ConfirmationModal title="Confirmar Exclusão" message={`Tem certeza que deseja excluir a ação "${action?.name}"?`} onConfirm={confirmDelete} onCancel={() => setConfirmDeleteOpen(false)} />)}
         </Portal>
     );
 };

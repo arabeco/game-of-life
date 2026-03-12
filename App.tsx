@@ -50,7 +50,7 @@ const App: React.FC = () => {
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [isSplashComplete, setIsSplashComplete] = useState(() => sessionStorage.getItem('hasSeenSplash') === 'true');
     const [bootVisuals, setBootVisuals] = useState<{ skin: string; mode: 'GAME' | 'BASIC'; theme: 'LIGHT' | 'DARK' | null }>({
-        skin: 'GOLD',
+        skin: 'BASIC',
         mode: 'GAME',
         theme: 'DARK',
     });
@@ -83,7 +83,7 @@ const App: React.FC = () => {
                             if (cached) {
                                 const parsed = JSON.parse(cached);
                                 setBootVisuals({
-                                    skin: parsed?.skin || 'GOLD',
+                                    skin: parsed?.skin || 'BASIC',
                                     mode: parsed?.appMode === 'BASIC' ? 'BASIC' : 'GAME',
                                     theme: parsed?.themePreference === 'LIGHT' ? 'LIGHT' : 'DARK',
                                 });

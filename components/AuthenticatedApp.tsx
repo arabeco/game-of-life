@@ -447,11 +447,13 @@ const MainApp: React.FC = () => {
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
     const [forceShowTerms, setForceShowTerms] = useState(false);
+    const lastToastSignatureRef = useRef('');
 
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
             const target = event.target as HTMLElement | null;
             if (!target) return;
+            if (target.closest('[data-sensory-test="true"]')) return;
             const interactive = target.closest('button, [role="button"], a, input[type="button"], input[type="submit"], .luxe-skin-button') as HTMLElement | null;
             if (!interactive) return;
 
@@ -527,6 +529,17 @@ const MainApp: React.FC = () => {
         };
     }, []);
 
+    useEffect(() => {
+        if (!toast.visible) return;
+        const signature = `${toast.type || 'info'}:${toast.message}`;
+        if (lastToastSignatureRef.current === signature) return;
+        lastToastSignatureRef.current = signature;
+
+        if (toast.type === 'success') trigger('success');
+        if (toast.type === 'warning') trigger('warning');
+        if (toast.type === 'error') trigger('error');
+    }, [toast.message, toast.type, toast.visible, trigger]);
+
     return (
         <>
             {!requiresTermsAcceptance && <AppWithTutorial />}
@@ -549,6 +562,7 @@ const MainApp: React.FC = () => {
                 {toast.visible && (
                     <GoldenToast
                         message={toast.message}
+                        type={toast.type}
                         onClose={hideToast}
                     />
                 )}

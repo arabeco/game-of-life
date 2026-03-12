@@ -3,6 +3,18 @@ import { Asset } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { ArenaCard } from './ArenaCard';
 import { ArenaDetailModal } from './ArenaDetailModal';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+
+const hexToRgb = (hex: string): [number, number, number] | null => {
+    const normalized = hex.replace('#', '').trim();
+    if (normalized.length !== 6) return null;
+    const value = Number.parseInt(normalized, 16);
+    if (Number.isNaN(value)) return null;
+    return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+};
+
+const rgbaString = (rgb: [number, number, number] | null, alpha: number): string =>
+    rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : `rgba(255, 215, 0, ${alpha})`;
 
 interface AssetArenaBoardProps {
     asset: Asset;
@@ -18,8 +30,19 @@ const sectionTitleClass = 'text-center text-[10px] font-black uppercase tracking
 const emptyClass = 'rounded-2xl border border-dashed border-white/10 bg-black/15 px-4 py-4 text-center text-xs text-white/45';
 
 export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
-    const { getActionsForArena } = useGame();
+    const { getActionsForArena, userProfile, appMode } = useGame();
     const [viewingArenaId, setViewingArenaId] = useState<string | null>(null);
+    const assetAccent = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || '#F0C843';
+    const assetAccentRgb = hexToRgb(assetAccent);
+    const isRestrainedMetal = appMode === 'BASIC' || userProfile.skin === 'BASIC' || userProfile.skin === 'default';
+    const sectionStyle: React.CSSProperties = {
+        backgroundImage: isRestrainedMetal
+            ? `radial-gradient(circle at 18% 0%, rgba(255,255,255,0.12), transparent 26%),
+               linear-gradient(145deg, rgba(226,192,98,0.12) 0%, rgba(255,255,255,0.03) 28%, rgba(0,0,0,0.22) 68%, ${rgbaString(assetAccentRgb, 0.14)} 100%)`
+            : `radial-gradient(circle at 18% 0%, rgba(255,255,255,0.16), transparent 24%),
+               linear-gradient(145deg, rgba(226,192,98,0.16) 0%, rgba(255,255,255,0.04) 28%, rgba(0,0,0,0.22) 68%, ${rgbaString(assetAccentRgb, 0.18)} 100%)`,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 0 18px rgba(226,192,98,0.06)',
+    };
 
     const sortedArenas = useMemo(() => {
         return [...(asset.arenas || [])].sort((a, b) => {
@@ -44,7 +67,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
     return (
         <>
             <div className="flex flex-col gap-2.5">
-                <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3">
+                <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3" style={sectionStyle}>
                     <p className={sectionTitleClass}>Concluidas</p>
 
                     {completedOrArchivedArenas.length > 0 ? (
@@ -77,7 +100,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
                     )}
                 </section>
 
-                <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3">
+                <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3" style={sectionStyle}>
                     <p className={sectionTitleClass}>Ativas</p>
 
                     {activeArenas.length > 0 ? (

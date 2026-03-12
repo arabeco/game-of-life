@@ -30,6 +30,11 @@ interface TutorialContextType {
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
+const getFirstStepIndexForCategory = (category: TutorialStep['category']) => {
+    const index = TUTORIAL_STEPS.findIndex((step) => step.category === category);
+    return index >= 0 ? index : 0;
+};
+
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { userProfile, completeTutorialMission, appMode, setAppMode, addProfileFlag, updateUserProfile } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
@@ -127,8 +132,8 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             setDidForceGameMode(false);
         }
 
-        // Automatic trigger for Mastery Quiz at Step 11
-        if (currentStep === 11) {
+        // Open the mastery sliders whenever the focused tutorial step points there.
+        if (TUTORIAL_STEPS[currentStep]?.targetId === 'mastery-sliders-button') {
             console.log('Tutorial Engine: Triggering Mastery Quiz Event');
             window.dispatchEvent(new CustomEvent('tutorialOpenMasteryQuiz'));
         }
@@ -156,12 +161,12 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     // NEW: Robust mapping from Station Level (1-4) to Step Index
     const startTutorialLevel = useCallback((level: number) => {
-        let targetIndex = 1; // Default to Alicerçe
+        let targetIndex = getFirstStepIndexForCategory('ALICERCE');
         switch (level) {
-            case 1: targetIndex = 1; break;  // O Alicerce
-            case 2: targetIndex = 9; break;  // A Identidade
-            case 3: targetIndex = 16; break; // O Mundo
-            case 4: targetIndex = 20; break; // O Arquiteto
+            case 1: targetIndex = getFirstStepIndexForCategory('ALICERCE'); break;
+            case 2: targetIndex = getFirstStepIndexForCategory('IDENTIDADE'); break;
+            case 3: targetIndex = getFirstStepIndexForCategory('MUNDO'); break;
+            case 4: targetIndex = getFirstStepIndexForCategory('ARQUITETO'); break;
             default: targetIndex = level; // Fallback to raw index if passed
         }
         console.log(`Tutorial Engine: Starting Station Level ${level} -> Index ${targetIndex}`);

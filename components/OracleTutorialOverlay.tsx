@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTutorial } from '../contexts/TutorialContext';
-import { TUTORIAL_STEPS } from '../constants/tutorialSteps';
 import { Portal } from './Portal';
 
 const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -16,6 +15,16 @@ const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
+const getCategoryLabel = (category?: string) => {
+    switch (category) {
+        case 'ALICERCE': return 'CARD 1';
+        case 'IDENTIDADE': return 'CARD 2';
+        case 'MUNDO': return 'CARD 3';
+        case 'ARQUITETO': return 'CARD 4';
+        default: return 'INTRO';
+    }
+};
+
 export const OracleTutorialOverlay: React.FC = () => {
     const { isTutorialActive, currentStep, nextStep, endTutorial, tutorialSteps } = useTutorial();
     const [displayedText, setDisplayedText] = useState('');
@@ -24,13 +33,9 @@ export const OracleTutorialOverlay: React.FC = () => {
 
     const step = tutorialSteps[currentStep];
 
-    // View Switching
     useEffect(() => {
         if (!isTutorialActive || !step) return;
 
-        console.log(`Tutorial navigating to view: ${step.view}, tab: ${step.tab}, showProfile: ${step.showProfile}`);
-
-        // Dispatch event to switch view in App.tsx
         const event = new CustomEvent('tutorialNavigate', {
             detail: {
                 view: step.view,
@@ -38,27 +43,27 @@ export const OracleTutorialOverlay: React.FC = () => {
                 showReports: step.showReports,
                 showProfile: step.showProfile,
                 showOracleSettings: step.showOracleSettings,
-                showRestScreen: step.showRestScreen
+                showRestScreen: step.showRestScreen,
             }
         });
         window.dispatchEvent(event);
     }, [currentStep, isTutorialActive, step]);
 
-    // Calculate if bubble should be at top or bottom
     const bubblePosition = useMemo(() => {
         if (!spotlightRect) return 'top';
 
         const screenHeight = window.innerHeight;
         const spotlightCenterY = spotlightRect.top + spotlightRect.height / 2;
-
-        // Use a 40% threshold to avoid being too jumpy in the middle
-        if (spotlightCenterY < screenHeight * 0.45) {
-            return 'bottom';
-        }
-        return 'top';
+        return spotlightCenterY < screenHeight * 0.45 ? 'bottom' : 'top';
     }, [spotlightRect]);
 
-    // Typing Effect
+    const categoryLabel = useMemo(() => getCategoryLabel(step?.category), [step?.category]);
+    const progressLabel = useMemo(() => {
+        if (!step) return '';
+        if (step.category === 'INTRO') return 'Entrada';
+        return `${currentStep} / ${tutorialSteps.length - 1}`;
+    }, [currentStep, step, tutorialSteps.length]);
+
     useEffect(() => {
         if (!isTutorialActive || !step) return;
 
@@ -71,17 +76,16 @@ export const OracleTutorialOverlay: React.FC = () => {
         const typingInterval = setInterval(() => {
             if (charIndex <= fullText.length) {
                 setDisplayedText(fullText.slice(0, charIndex));
-                charIndex++;
+                charIndex += 1;
             } else {
                 setIsTyping(false);
                 clearInterval(typingInterval);
             }
-        }, 15); // Even faster typing for better UX
+        }, 15);
 
         return () => clearInterval(typingInterval);
     }, [currentStep, isTutorialActive, step]);
 
-    // Spotlight Calculation with multiple retries and mutation observer
     useEffect(() => {
         if (!isTutorialActive || !step?.targetId) {
             setSpotlightRect(null);
@@ -89,13 +93,12 @@ export const OracleTutorialOverlay: React.FC = () => {
         }
 
         let retryCount = 0;
-        const maxRetries = 10; // Increased retries
+        const maxRetries = 10;
 
         const updateRect = () => {
             const el = document.getElementById(step.targetId!);
             if (el) {
                 const rect = el.getBoundingClientRect();
-                // Check if rect is valid and has visible size
                 if (rect.width > 0 && rect.height > 0) {
                     setSpotlightRect(rect);
                     return true;
@@ -106,31 +109,26 @@ export const OracleTutorialOverlay: React.FC = () => {
 
         const attemptUpdate = () => {
             if (updateRect()) return;
-
             if (retryCount < maxRetries) {
-                retryCount++;
+                retryCount += 1;
                 setTimeout(attemptUpdate, 150 * retryCount);
             }
         };
 
-        // Initial delay for transitions and modal openings
         const timer = setTimeout(attemptUpdate, 400);
 
         window.addEventListener('resize', updateRect);
         window.addEventListener('scroll', updateRect, true);
 
-        // Listen for ANY change in the DOM (very helpful for modals/portals)
         const observer = new MutationObserver(() => {
-            if (updateRect()) {
-                // If we found it via mutation, we can stop the retry timer but keep the observer
-            }
+            updateRect();
         });
 
         observer.observe(document.body, {
             childList: true,
             subtree: true,
             attributes: true,
-            attributeFilter: ['style', 'class']
+            attributeFilter: ['style', 'class'],
         });
 
         return () => {
@@ -141,7 +139,22 @@ export const OracleTutorialOverlay: React.FC = () => {
         };
     }, [currentStep, isTutorialActive, step]);
 
-    // Keyboard Navigation (Space/Enter to advance, but ONLY if typing is finished or to skip it)
+    const handleNext = () => {
+        if (!step) return;
+
+        if (isTyping) {
+            setDisplayedText(step.text);
+            setIsTyping(false);
+            return;
+        }
+
+        if (currentStep >= tutorialSteps.length - 1) {
+            endTutorial(true);
+        } else {
+            nextStep();
+        }
+    };
+
     useEffect(() => {
         if (!isTutorialActive) return;
 
@@ -149,7 +162,6 @@ export const OracleTutorialOverlay: React.FC = () => {
             if (e.key === 'Escape') {
                 endTutorial(true);
             } else if (e.key === ' ' || e.key === 'Enter') {
-                // Advance tutorial manually on key press
                 e.preventDefault();
                 handleNext();
             }
@@ -157,51 +169,34 @@ export const OracleTutorialOverlay: React.FC = () => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isTutorialActive, isTyping, currentStep, tutorialSteps]);
+    }, [isTutorialActive, isTyping, currentStep, tutorialSteps.length]);
 
     if (!isTutorialActive || !step) return null;
 
-    const handleNext = () => {
-        if (isTyping) {
-            // Complete typing instantly instead of going to next step
-            setDisplayedText(step.text);
-            setIsTyping(false);
-        } else {
-            // Only go to next step if typing is finished
-            if (currentStep >= tutorialSteps.length - 1) {
-                endTutorial(true);
-            } else {
-                nextStep();
-            }
-        }
-    };
-
     return (
         <Portal>
-            <div className="fixed inset-0 z-[20000] pointer-events-auto" onClick={(e) => {
-                // Capture clicks everywhere to advance, but allow interactions with the dialog itself
-                if (e.target === e.currentTarget) {
-                    handleNext();
-                }
-            }}>
-                {/* Ultra-transparent backdrop to keep UI visible as requested */}
+            <div
+                className="fixed inset-0 z-[20000] pointer-events-auto"
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) handleNext();
+                }}
+            >
                 <div
                     className="absolute inset-0 bg-black/5 transition-all duration-500"
-                    onClick={handleNext} // Clicking the backdrop advances
+                    onClick={handleNext}
                     style={{
                         maskImage: spotlightRect
                             ? `radial-gradient(circle ${Math.max(spotlightRect.width, spotlightRect.height) / 1.5 + 20}px at ${spotlightRect.left + spotlightRect.width / 2}px ${spotlightRect.top + spotlightRect.height / 2}px, transparent 100%, black 100%)`
                             : 'none',
                         WebkitMaskImage: spotlightRect
                             ? `radial-gradient(circle ${Math.max(spotlightRect.width, spotlightRect.height) / 1.5 + 20}px at ${spotlightRect.left + spotlightRect.width / 2}px ${spotlightRect.top + spotlightRect.height / 2}px, transparent 100%, black 100%)`
-                            : 'none'
+                            : 'none',
                     } as any}
                 />
 
-                {/* Yellow Spotlight Frame */}
                 {spotlightRect && (
                     <div
-                        className="absolute border-2 border-yellow-400/80 rounded-lg transition-all duration-500 shadow-[0_0_20px_rgba(250,204,21,0.4)] pointer-events-none"
+                        className="absolute rounded-xl border border-[#f3d48a]/80 transition-all duration-500 shadow-[0_0_24px_rgba(250,204,21,0.28)] pointer-events-none"
                         style={{
                             left: spotlightRect.left - 10,
                             top: spotlightRect.top - 10,
@@ -209,57 +204,75 @@ export const OracleTutorialOverlay: React.FC = () => {
                             height: spotlightRect.height + 20,
                         }}
                     >
-                        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-yellow-200" />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-yellow-200" />
-                        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-yellow-200" />
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-yellow-200" />
+                        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-[#ffe9b0]" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-[#ffe9b0]" />
+                        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-[#ffe9b0]" />
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-[#ffe9b0]" />
                     </div>
                 )}
 
-                {/* Dialog Box - Dynamic Positioning */}
-                <div className={`absolute left-0 right-0 flex justify-center px-4 transition-all duration-500 pointer-events-none ${bubblePosition === 'top' ? 'top-6 md:top-16' : 'bottom-16 md:bottom-24'}`}>
-                    <div className="bg-black/95 border border-white/20 backdrop-blur-xl rounded-xl p-2 md:p-4 w-full max-w-[min(480px,94vw)] md:max-w-2xl shadow-2xl flex gap-3 md:gap-4 pointer-events-auto animate-fade-in-down border-b-4 border-b-[var(--gold)]">
-                        {/* Avatar */}
-                        <div className="flex-shrink-0">
-                            <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-gray-800 to-black border-2 border-[var(--gold)] flex items-center justify-center shadow-lg">
-                                <OracleIcon className="w-6 h-6 md:w-10 md:h-10 animate-pulse-slow" />
-                            </div>
-                        </div>
+                <div className={`absolute left-0 right-0 flex justify-center px-4 transition-all duration-500 pointer-events-none ${bubblePosition === 'top' ? 'top-5 md:top-12' : 'bottom-12 md:bottom-20'}`}>
+                    <div className="w-full max-w-[min(520px,94vw)] md:max-w-[720px] pointer-events-auto animate-fade-in-down">
+                        <div className="relative overflow-hidden rounded-[22px] border border-[#f3d48a]/35 bg-[linear-gradient(180deg,rgba(19,16,13,0.96),rgba(8,8,9,0.97))] shadow-[0_20px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                            <div className="absolute inset-x-0 top-0 h-20 bg-[radial-gradient(circle_at_top,rgba(255,215,0,0.18),transparent_70%)] pointer-events-none" />
+                            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#f3d48a]/60 to-transparent pointer-events-none" />
 
-                        {/* Content */}
-                        <div className="flex-grow flex flex-col justify-between min-h-[60px] md:min-h-[100px]">
-                            <div>
-                                <div className="flex justify-between items-start mb-0.5">
-                                    <div className="flex flex-col">
-                                        <h3 className="text-[var(--gold)] font-bold uppercase tracking-widest text-[9px] md:text-sm">{step.title}</h3>
-                                        <span className="text-[8px] md:text-[10px] text-gray-500 font-mono">
-                                            {currentStep === 0 ? 'INTRO' : `${currentStep} / ${tutorialSteps.length - 1}`}
-                                        </span>
+                            <div className="flex gap-3 md:gap-4 p-3 md:p-5">
+                                <div className="flex-shrink-0">
+                                    <div className="w-11 h-11 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-[#2d261c] to-black border border-[#f3d48a]/50 flex items-center justify-center shadow-[0_0_24px_rgba(255,215,0,0.16)]">
+                                        <OracleIcon className="w-6 h-6 md:w-10 md:h-10 animate-pulse-slow" />
                                     </div>
-                                    <button onClick={() => endTutorial(true)} className="text-[8px] md:text-[10px] text-gray-500 hover:text-white uppercase tracking-wider transition-colors px-1">
-                                        Pular [ESC]
-                                    </button>
                                 </div>
-                                <p className="text-gray-200 text-[11px] md:text-sm leading-tight md:leading-relaxed whitespace-pre-wrap font-mono">
-                                    {displayedText}
-                                    <span className="animate-pulse inline-block w-1 h-3 md:w-2 md:h-4 bg-[var(--gold)] ml-1 align-middle opacity-70"></span>
-                                </p>
-                            </div>
 
-                            {/* Footer / Indicator */}
-                            <div className="flex justify-end mt-1">
-                                <button
-                                    onClick={handleNext}
-                                    className={`text-[var(--gold)] text-[10px] md:text-xs font-bold flex items-center gap-1 hover:text-white transition-colors ${!isTyping ? 'animate-bounce' : 'opacity-80'}`}
-                                >
-                                    {currentStep === tutorialSteps.length - 1 ? 'FINALIZAR' : 'PRÓXIMO'} ▼
-                                </button>
+                                <div className="flex-grow flex flex-col justify-between min-h-[78px] md:min-h-[112px]">
+                                    <div>
+                                        <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="inline-flex items-center rounded-full border border-[#f3d48a]/25 bg-[#f3d48a]/10 px-2 py-1 text-[8px] md:text-[10px] font-black tracking-[0.22em] text-[#f3d48a]">
+                                                        {categoryLabel}
+                                                    </span>
+                                                    <span className="text-[9px] md:text-[10px] text-gray-500 tracking-[0.16em] uppercase">
+                                                        {progressLabel}
+                                                    </span>
+                                                </div>
+                                                <h3 className="text-[#f6dfab] font-bold uppercase tracking-[0.16em] text-[10px] md:text-sm leading-tight">
+                                                    {step.title}
+                                                </h3>
+                                            </div>
+
+                                            <button
+                                                onClick={() => endTutorial(true)}
+                                                className="shrink-0 text-[8px] md:text-[10px] text-gray-500 hover:text-white uppercase tracking-[0.18em] transition-colors px-1"
+                                            >
+                                                Pular
+                                            </button>
+                                        </div>
+
+                                        <p className="text-gray-100/92 text-[12px] md:text-[15px] leading-[1.45] md:leading-[1.6] whitespace-pre-wrap">
+                                            {displayedText}
+                                            <span className="animate-pulse inline-block w-1 h-3 md:w-1.5 md:h-4 bg-[#f3d48a] ml-1 align-middle opacity-80"></span>
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-3 flex items-center justify-between gap-3">
+                                        <div className="text-[9px] md:text-[11px] text-gray-500 tracking-[0.08em]">
+                                            {isTyping ? 'Toque para revelar tudo' : 'Toque em qualquer lugar para seguir'}
+                                        </div>
+
+                                        <button
+                                            onClick={handleNext}
+                                            className={`text-[#f3d48a] text-[10px] md:text-xs font-bold flex items-center gap-1 hover:text-white transition-colors ${!isTyping ? 'animate-bounce' : 'opacity-80'}`}
+                                        >
+                                            {currentStep === tutorialSteps.length - 1 ? 'FINALIZAR' : 'PRÓXIMO'} ▼
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Capture clicks everywhere to advance */}
                 <div className="absolute inset-0 z-[-1]" onClick={handleNext} />
             </div>
         </Portal>

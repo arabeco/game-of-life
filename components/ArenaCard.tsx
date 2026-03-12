@@ -41,6 +41,11 @@ const hexToRgb = (hex: string) => {
     return { r: 240, g: 200, b: 67 };
 };
 
+const rgbaString = (hex: string, alpha: number) => {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 const PlasmaCanvas: React.FC<{ color?: string; opacity: number; className?: string; width: number; height: number; }> = ({ color, opacity, className, width, height }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [isVisible, setIsVisible] = useState(false);
@@ -72,11 +77,10 @@ const PlasmaCanvas: React.FC<{ color?: string; opacity: number; className?: stri
         
         let frame = 0;
         let lastColor = '';
-        let r = 240, g = 200, b = 67; // Default gold
+        let r = 240, g = 200, b = 67;
         let animationId: number;
 
         const draw = () => {
-            // Update color from CSS variables in real-time or use prop
             let currentColor = color;
             if (!currentColor) {
                 currentColor = getComputedStyle(canvas).getPropertyValue('--skin-accent-color').trim();
@@ -222,7 +226,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 }) => {
     const { appMode, tasks: contextTasks, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, reorderAction } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
-    const [skinTone, setSkinTone] = useState('#F0C843');
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
     const [linkType, setLinkType] = useState<string | null>(null);
 
@@ -298,52 +301,6 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         });
     }, [isClanQuestArena, clanQuests, fetchClanQuestParticipants]);
 
-    useEffect(() => {
-        const updateSkinColor = () => {
-            // Check computed style of body as it's the most reliable source for active CSS variables
-            const style = getComputedStyle(document.body);
-            let value = style.getPropertyValue('--skin-accent-color').trim();
-            
-            // If empty on body, check html element
-            if (!value) {
-                value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
-            }
-            
-            // Log for debugging if needed (invisible to user)
-            if (value && value !== skinTone) {
-                setSkinTone(value);
-            }
-        };
-
-        // Initial update
-        updateSkinColor();
-
-        // Create an observer to watch for data-skin changes on body and html
-        const observer = new MutationObserver((mutations) => {
-            updateSkinColor();
-        });
-        
-        // Observe both to be safe, as skins can be applied to either
-        // Also observe 'class' just in case themes are applied via classes
-        observer.observe(document.documentElement, { 
-            attributes: true, 
-            attributeFilter: ['data-skin', 'style', 'class'] 
-        });
-        observer.observe(document.body, { 
-            attributes: true, 
-            attributeFilter: ['data-skin', 'style', 'class'] 
-        });
-
-        // Some skins might change via JS without triggering MutationObserver on attributes
-        // A small interval as fallback for skin transitions
-        const interval = setInterval(updateSkinColor, 2000);
-
-        return () => {
-            observer.disconnect();
-            clearInterval(interval);
-        };
-    }, [skinTone]);
-
     const participants = clanQuests.reduce((acc, quest) => acc + (clanQuestParticipants[quest.id] || 0), 0);
 
     const progress = calculateArenaProgress({
@@ -366,7 +323,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const visibleBronzeActions = isCompactThumbnail ? bronzeActions.slice(0, 3) : bronzeActions;
     const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
     const skinColor = 'var(--skin-accent-color)';
-    const baseClasses = `arena-plate rounded-lg border flex flex-col relative overflow-hidden transition-all duration-300 select-none pointer-events-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.3rem]' : 'justify-between px-1 py-[0.34rem]'}`;
+    const baseClasses = `arena-plate rounded-lg border flex flex-col relative overflow-hidden transition-all duration-300 select-none pointer-events-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.03rem]' : 'justify-between px-1 py-[0.34rem]'}`;
     const styleClasses = isOverview 
         ? 'h-[6.7rem]' 
         : variant === 'dossier' ? 'h-full w-full' : 'h-[5.5rem]';
@@ -374,7 +331,11 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const compactHeight = isOverview ? '6.85rem' : variant === 'compact' ? '5.7rem' : undefined;
     const cardStyle: React.CSSProperties = {
         borderColor: skinColor,
-        backgroundImage: 'linear-gradient(135deg, rgba(22,22,22,0.95) 0%, rgba(10,10,10,1) 55%, rgba(18,18,18,0.9) 100%)',
+        backgroundImage: [
+            `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.26), rgba(255,255,255,0.08) 26%, transparent 52%)`,
+            `radial-gradient(circle at 100% 100%, ${rgbaString(accentColor, 0.24)}, transparent 38%)`,
+            `linear-gradient(160deg, rgba(156,164,177,0.98) 0%, rgba(112,120,133,0.94) 26%, rgba(46,49,58,0.95) 58%, ${rgbaString(accentColor, 0.18)} 84%, rgba(12,14,18,0.99) 100%)`,
+        ].join(', '),
         ...(compactHeight ? { height: compactHeight } : {}),
     };
     const tiltStyle: React.CSSProperties = {
@@ -387,9 +348,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             className={`${baseClasses} ${styleClasses} ${archivedClasses} ${isCompactThumbnail ? 'justify-start gap-[1px]' : ''}`} 
             style={{ ...cardStyle, ...tiltStyle }}
         >
-            {!isCompactThumbnail && <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: accentColor }} />}
+            {!isCompactThumbnail && <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: skinColor }} />}
             <div className="arena-plasma pointer-events-none">
-                <PlasmaCanvas color={skinTone} opacity={0.35} className="arena-plasma-canvas" width={320} height={220} />
+                <PlasmaCanvas color={accentColor} opacity={0.35} className="arena-plasma-canvas" width={320} height={220} />
             </div>
             <div
                 className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'arena-thumb-layout flex-shrink-0' : ''}`}
@@ -448,44 +409,42 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             </div>
             
             <div className={`flex flex-col items-center flex-shrink-0 relative z-10 pointer-events-auto ${isCompactThumbnail ? 'arena-mini-stack w-full' : 'space-y-2'}`}>
-                {visibleMilestones.length > 0 && (
-                    <div className={`w-full flex items-center justify-center ${isCompactThumbnail ? 'arena-mini-milestones gap-1' : 'h-8 gap-2'}`}>
-                        {visibleMilestones.map(action => {
-                            const backgroundStyle = getActionBackgroundStyle(action.id);
-                            const task = tasks.find(t => t.actionId === action.id);
-                            const isCompleted = !!task?.completed;
-                            const isDragOver = dragOverActionId === action.id;
+                <div className={`w-full flex items-center justify-center ${isCompactThumbnail ? 'arena-mini-milestones gap-1' : 'h-8 gap-2'}`}>
+                    {visibleMilestones.map(action => {
+                        const backgroundStyle = getActionBackgroundStyle(action.id);
+                        const task = tasks.find(t => t.actionId === action.id);
+                        const isCompleted = !!task?.completed;
+                        const isDragOver = dragOverActionId === action.id;
 
-                            return (
-                                <div 
-                                    key={action.id} 
-                                    className={`relative ${isCompactThumbnail ? 'w-4 h-4' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
-                                    title={action.name}
-                                    draggable
-                                    onDragStart={(e) => handleActionDragStart(e, action.id)}
-                                    onDragOver={(e) => handleActionDragOver(e, action.id)}
-                                    onDrop={(e) => handleActionDrop(e, action.id)}
-                                >
-                                    <div className={`w-full h-full transform rotate-45 ${isDragOver ? 'brightness-125' : ''}`}>
-                                        <div 
-                                            style={backgroundStyle}
-                                            className={`w-full h-full border ${isDragOver ? 'border-white' : 'border-[var(--accent-bronze)]'} rounded-sm relative`}
-                                        >
-                                            <div className="transform flex items-center justify-center h-full w-full">
-                                                <EmojiGlyph symbol={action.icon || '🏆'} size="milestone" className="transform -rotate-45 text-white" />
-                                            </div>
-                                            {isCompleted && (
-                                                <div className="absolute inset-0 bg-black/60 rounded-sm flex items-center justify-center">
-                                                    <CheckIcon className={`${isCompactThumbnail ? 'w-3 h-3' : 'w-4 h-4'} text-white transform -rotate-45`}/>
-                                                </div>
-                                            )}
+                        return (
+                            <div 
+                                key={action.id} 
+                                className={`relative ${isCompactThumbnail ? 'w-4 h-4' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
+                                title={action.name}
+                                draggable
+                                onDragStart={(e) => handleActionDragStart(e, action.id)}
+                                onDragOver={(e) => handleActionDragOver(e, action.id)}
+                                onDrop={(e) => handleActionDrop(e, action.id)}
+                            >
+                                <div className={`w-full h-full transform rotate-45 ${isDragOver ? 'brightness-125' : ''}`}>
+                                    <div 
+                                        style={backgroundStyle}
+                                        className={`w-full h-full border ${isDragOver ? 'border-white' : 'border-[var(--accent-bronze)]'} rounded-sm relative`}
+                                    >
+                                        <div className="transform flex items-center justify-center h-full w-full">
+                                            <EmojiGlyph symbol={action.icon || '🏆'} size="milestone" className="transform -rotate-45 text-white" />
                                         </div>
+                                        {isCompleted && (
+                                            <div className="absolute inset-0 bg-black/60 rounded-sm flex items-center justify-center">
+                                                <CheckIcon className={`${isCompactThumbnail ? 'w-3 h-3' : 'w-4 h-4'} text-white transform -rotate-45`}/>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
+                            </div>
+                        );
+                    })}
+                </div>
                 
                 <div className={`w-full flex items-center justify-center overflow-x-auto hide-scrollbar ${isCompactThumbnail ? 'arena-mini-actions gap-1' : 'h-6 gap-1.5'}`}>
                     {visibleBronzeActions.map(action => (

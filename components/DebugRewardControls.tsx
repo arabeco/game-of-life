@@ -1,7 +1,7 @@
 ﻿import React, { useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
-import { ChestType, Report, ReportAtlasWeek, ReportIdentitySnapshot, SeasonMission } from '../types';
+import { Arena, Campaign, ChestType, Report, ReportAtlasWeek, ReportIdentitySnapshot, SeasonMission } from '../types';
 import { GlassCard } from './GlassCard';
 import { ChestOpeningModal } from './ChestOpeningModal';
 import { ReportGenerationModal } from './ReportGenerationModal';
@@ -9,8 +9,11 @@ import { MissionCompletionModal } from './MissionCompletionModal';
 import { ReportResultCarousel } from './ReportResultCarousel';
 import { MetalReportCard } from './MetalReportCard';
 import { LegacyProjectionModal } from './LegacyProjectionModal';
+import { CampaignsCodex } from './CampaignsCodex';
+import { CampaignArenaStack } from './CampaignArenaStack';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { getScoreGrade } from '../utils/dateUtils';
+import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 
 const buildMockAtlasWeeks = (seed: number, accentAction: string): ReportAtlasWeek[] => {
     const baseDate = new Date(Date.UTC(2026, 0, 6 + seed * 7));
@@ -81,13 +84,41 @@ const buildMockAtlasWeeks = (seed: number, accentAction: string): ReportAtlasWee
 };
 
 export const DebugRewardControls: React.FC = () => {
-    const { userProfile, updateUserProfile, showToast, setAchievementUnlocked } = useGame();
+    const { userProfile, updateUserProfile, showToast, setAchievementUnlocked, getArenas } = useGame();
+    const { trigger } = useSensoryFeedback();
     const [loading, setLoading] = useState(false);
     const [showChestModal, setShowChestModal] = useState<ChestType | null>(null);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showReportResult, setShowReportResult] = useState<Report | null>(null);
     const [testMission, setTestMission] = useState<SeasonMission | null>(null);
     const [showLegacyPreview, setShowLegacyPreview] = useState(false);
+    const [showCampaignPreview, setShowCampaignPreview] = useState(false);
+    const mockCampaignArenas: Arena[] = useMemo(() => getArenas().slice(0, 2), [getArenas]);
+    const mockCampaign: Campaign | null = useMemo(() => {
+        if (mockCampaignArenas.length < 2) return null;
+
+        return {
+            id: '__gm_reward_panel_campaign__',
+            userId: 'gm-board',
+            title: 'Campanha Mock de UI',
+            description: 'Preview visual com 2 arenas para validar miniatura e tela interna na aba Ver Arenas.',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            arenaIds: mockCampaignArenas.map(arena => arena.id),
+            arenaConfig: {
+                [mockCampaignArenas[0].id]: { isLocked: false, isHidden: false },
+                [mockCampaignArenas[1].id]: {
+                    isLocked: false,
+                    isHidden: false,
+                    prerequisiteArenaIds: [mockCampaignArenas[0].id],
+                },
+            },
+            priority: 'media',
+            type: 'parallel',
+            order: -1,
+            priorityOrder: -1,
+        };
+    }, [mockCampaignArenas]);
 
     const mockReport: Report = {
         id: 'debug-report',
@@ -476,6 +507,50 @@ export const DebugRewardControls: React.FC = () => {
                     <span>Testar Legacy Scene</span>
                     <span className="text-[10px] opacity-70">(3 Eras mockadas com timeline, placa e planner mini)</span>
                 </button>
+
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-sky-500/20 bg-sky-950/10 p-3">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-300">Teste sensorial</p>
+                    <p className="mt-1 text-xs text-sky-100/70">O clique padrão e o combo especial já foram definidos. Aqui fica só o warning.</p>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                    <button data-sensory-test="true" onClick={() => trigger('warning')} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-amber-500/20 bg-amber-600/20 p-3 text-xs font-bold text-amber-100 transition-all hover:border-amber-400/50 hover:bg-amber-600/35">
+                        <span>Metal Travado</span>
+                        <span className="text-[10px] opacity-70">bloqueio</span>
+                    </button>
+                </div>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-fuchsia-500/20 bg-fuchsia-950/10 p-3">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-fuchsia-300">Mock de campanha</p>
+                    <p className="mt-1 text-xs text-fuchsia-100/70">Aqui fica a campanha fake ja com 2 arenas dentro, para ver como ela apareceria na aba Ver Arenas.</p>
+                </div>
+                {mockCampaign ? (
+                    <button
+                        onClick={() => setShowCampaignPreview(true)}
+                        className="w-full rounded-2xl border border-fuchsia-400/30 bg-[linear-gradient(180deg,rgba(120,36,161,0.28),rgba(17,17,17,0.88))] p-3 text-left transition-all hover:border-fuchsia-300/60 hover:shadow-[0_0_24px_rgba(192,38,211,0.18)]"
+                    >
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-bold text-white">{mockCampaign.title}</p>
+                                <p className="mt-1 text-[11px] text-fuchsia-100/70">{mockCampaign.description}</p>
+                            </div>
+                            <div className="rounded-full border border-fuchsia-300/20 bg-black/30 px-2 py-1 text-[10px] font-bold text-fuchsia-200">
+                                {mockCampaign.arenaIds.length} arenas
+                            </div>
+                        </div>
+                        <div className="mt-3 flex justify-center rounded-xl border border-white/8 bg-black/20 px-2 py-3">
+                            <CampaignArenaStack arenas={mockCampaignArenas} size="md" />
+                        </div>
+                    </button>
+                ) : (
+                    <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-xs text-gray-400">
+                        Crie pelo menos 2 arenas para o mock de campanha aparecer aqui.
+                    </div>
+                )}
             </div>
 
             <div className="space-y-3 rounded-2xl border border-white/10 bg-black/20 p-3">
@@ -519,6 +594,14 @@ export const DebugRewardControls: React.FC = () => {
                         setShowReportResult(mockReport);
                         setShowReportModal(false);
                     }}
+                />
+            )}
+
+            {showCampaignPreview && mockCampaign && (
+                <CampaignsCodex
+                    initialCampaignId={mockCampaign.id}
+                    previewCampaign={mockCampaign}
+                    onClose={() => setShowCampaignPreview(false)}
                 />
             )}
 

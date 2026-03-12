@@ -18,8 +18,10 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      return;
-    });
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => registration.update().catch(() => undefined))
+      .catch(() => {
+        return;
+      });
   });
 }

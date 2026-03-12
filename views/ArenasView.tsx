@@ -13,6 +13,7 @@ import { FolderDetailModal } from '../components/FolderDetailModal';
 import { CampaignDetailModal } from '../components/CampaignDetailModal';
 import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
+import { CampaignArenaStack } from '../components/CampaignArenaStack';
 import { calculateCampaignProgress } from '../utils/progressUtils';
 
 type PendingAction = {
@@ -407,8 +408,9 @@ export const ArenasView: React.FC = () => {
                     arenaIds: [targetId, finalDraggedId],
                     arenaConfig: {
                         [targetId]: { isLocked: false, isHidden: false },
-                        [finalDraggedId]: { isLocked: true, isHidden: false }
+                        [finalDraggedId]: { isLocked: false, isHidden: false }
                     },
+                    type: 'parallel',
                     status: 'active',
                     order: 0,
                     priority: 'media',
@@ -570,26 +572,11 @@ export const ArenasView: React.FC = () => {
                         </div>
                 </div>
 
-                {/* Content / Thumbnails - Adjusted for taller/wider layout */}
-                <div className="flex-1 p-2 grid grid-cols-2 gap-1.5 content-start overflow-hidden">
-                    {campaignArenas.slice(0, 4).map(arena => (
-                        <div key={arena.id} className="aspect-[3/4] rounded border border-white/10 relative bg-black/40 overflow-hidden transform scale-90 origin-top-left w-[110%] h-[110%]">
-                            <div className="absolute inset-0 pointer-events-none z-10" /> 
-                            <div className="w-full h-full">
-                                <ArenaCard 
-                                    arena={arena}
-                                    actions={getActionsForArena(arena.id)}
-                                    onClick={() => {}}
-                                    variant="overview"
-                                />
-                            </div>
-                        </div>
-                    ))}
-                    {campaignArenas.length > 4 && (
-                        <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 rounded border border-white/20 z-20 shadow-lg">
-                             <span className="text-[9px] font-bold text-gray-400">+{campaignArenas.length - 4}</span>
-                        </div>
-                    )}
+                {/* Content / Thumbnails */}
+                <div className="flex-1 px-2.5 pt-1 pb-2 overflow-hidden">
+                    <div className="flex h-full min-h-[5.15rem] items-start justify-center rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
+                        <CampaignArenaStack arenas={campaignArenas} size="md" />
+                    </div>
                 </div>
             </div>
         );

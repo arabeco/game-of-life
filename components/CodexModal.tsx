@@ -3,10 +3,13 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, EyeIcon, PlusIcon, ChevronRightIcon, CheckIcon, Trash2Icon } from './Icons';
-import { Action, ActionType, Arena } from '../types';
+import { Action, ActionType, Arena, Campaign } from '../types';
 import { ArenaCard } from './ArenaCard';
 import { IconPickerModal } from './IconPickerModal';
 import { SelectionModal } from './SelectionModal';
+import { CampaignsCodex } from './CampaignsCodex';
+import { buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils/codexPreview';
+import { supabase } from '../supabaseClient';
 
 type CodexDraft = {
   id: string;
@@ -16,6 +19,8 @@ type CodexDraft = {
   actions: Action[];
   updatedAt: string;
 };
+
+const CODEX_DRAFT_SCHEMA_VERSION = 'draft-v1';
 
 const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÍCIL', 'EXTREMO'];
 const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco'];
@@ -47,11 +52,27 @@ const encodeUtf8Base64Url = (text: string) => {
 };
 
 const loadDrafts = (): CodexDraft[] => {
-  return [];
+  try {
+    const saved = localStorage.getItem('codexDrafts');
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('Failed to load drafts', error);
+    return [];
+  }
 };
 
-export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { assets, addArena, addAction, scheduleMultipleTasks } = useGame();
+const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
+export const CodexModal: React.FC<{
+  onClose: () => void;
+  recipientId?: string;
+  recipientName?: string;
+  relationshipLinkId?: string | null;
+  onDelivered?: () => void;
+}> = ({ onClose, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
+  const { assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient } = useGame();
   const [codexes, setCodexes] = useState<CodexDraft[]>([]);
   const [activeCodexId, setActiveCodexId] = useState<string | null>(null);
   const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
@@ -65,27 +86,121 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [isArenaPickerOpen, setIsArenaPickerOpen] = useState(false);
   const [editingActionId, setEditingActionId] = useState<string | null>(null);
   const [actionDraft, setActionDraft] = useState<Partial<Action>>({});
+  const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
+  const [hasHydratedDrafts, setHasHydratedDrafts] = useState(false);
   const [arenaDraft, setArenaDraft] = useState({ name: '', description: '', icon: '🏆', assetId: '' });
 
   const [actionTab, setActionTab] = useState<'basic' | 'advanced'>('basic');
   const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'notes' | 'checklist' | 'context'>('media');
 
-  // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('codexDrafts');
-    if (saved) {
+    let isMounted = true;
+
+    const hydrateDrafts = async () => {
+      const localDrafts = loadDrafts();
+
       try {
-        setCodexes(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to load drafts', e);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user.id;
+
+        if (!userId || !isUuid(userId)) {
+          if (isMounted) {
+            setCodexes(localDrafts);
+            setHasHydratedDrafts(true);
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('codex')
+          .select('id, name, description, template, updated_at')
+          .eq('owner_id', userId)
+          .eq('schema_version', CODEX_DRAFT_SCHEMA_VERSION)
+          .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+
+        const remoteDrafts: CodexDraft[] = (data || []).flatMap((row: any) => {
+          const template = typeof row.template === 'string' ? JSON.parse(row.template) : row.template;
+          if (!template || template.draftVersion !== 1) return [];
+
+          return [{
+            id: row.id,
+            name: row.name || 'Novo Codex',
+            description: row.description || '',
+            arenas: Array.isArray(template.arenas) ? template.arenas : [],
+            actions: Array.isArray(template.actions) ? template.actions : [],
+            updatedAt: row.updated_at || new Date().toISOString(),
+          }];
+        });
+
+        const mergedDrafts = [...remoteDrafts];
+        localDrafts.forEach((localDraft) => {
+          if (!mergedDrafts.some((remoteDraft) => remoteDraft.id === localDraft.id)) {
+            mergedDrafts.push(localDraft);
+          }
+        });
+
+        if (isMounted) {
+          setCodexes(mergedDrafts);
+          setHasHydratedDrafts(true);
+        }
+      } catch (error) {
+        console.error('Failed to hydrate drafts', error);
+        if (isMounted) {
+          setCodexes(localDrafts);
+          setHasHydratedDrafts(true);
+        }
       }
-    }
+    };
+
+    hydrateDrafts();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Save to localStorage on change
   useEffect(() => {
+    if (!hasHydratedDrafts) return;
     localStorage.setItem('codexDrafts', JSON.stringify(codexes));
-  }, [codexes]);
+  }, [codexes, hasHydratedDrafts]);
+
+  useEffect(() => {
+    if (!hasHydratedDrafts) return;
+
+    const syncDrafts = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+
+      if (!userId || !isUuid(userId) || codexes.length === 0) return;
+
+      const payload = codexes.map((draft) => ({
+        id: draft.id,
+        owner_id: userId,
+        name: draft.name || 'Novo Codex',
+        description: draft.description || '',
+        author: null,
+        price: null,
+        template: {
+          draftVersion: 1,
+          arenas: draft.arenas,
+          actions: draft.actions,
+        },
+        schema_version: CODEX_DRAFT_SCHEMA_VERSION,
+        is_public: false,
+        updated_at: draft.updatedAt,
+      }));
+
+      const { error } = await supabase.from('codex').upsert(payload, { onConflict: 'id' });
+      if (error) {
+        console.error('Failed to sync codex drafts', error);
+      }
+    };
+
+    const timeoutId = window.setTimeout(syncDrafts, 500);
+    return () => window.clearTimeout(timeoutId);
+  }, [codexes, hasHydratedDrafts]);
 
   const activeCodex = codexes.find(c => c.id === activeCodexId) || null;
   const visibleArenas = useMemo(() => {
@@ -94,9 +209,42 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   }, [activeCodex, showArchived]);
 
   const actionsForArena = (arenaId: string) => activeCodex?.actions.filter(a => a.arenaId === arenaId) || [];
+  const buildDraftPreview = (draft: CodexDraft): CodexCampaignPreview => {
+    const orderedArenas = draft.arenas.filter(arena => showArchived || !arena.isArchived);
+    const arenaIds = orderedArenas.map(arena => arena.id);
+    const arenaConfig: NonNullable<Campaign['arenaConfig']> = {};
+
+    orderedArenas.forEach((arena, index) => {
+      const previousArenaId = orderedArenas[index - 1]?.id;
+      arenaConfig[arena.id] = {
+        isLocked: index > 0,
+        isHidden: false,
+        prerequisiteArenaIds: previousArenaId ? [previousArenaId] : [],
+      };
+    });
+
+    return {
+      campaign: {
+        id: `__codex_draft_preview_${draft.id}__`,
+        userId: 'codex-draft',
+        title: draft.name || 'Novo Codex',
+        description: draft.description || '',
+        status: 'active',
+        createdAt: draft.updatedAt || new Date().toISOString(),
+        arenaIds,
+        arenaConfig,
+        type: 'sequential',
+        priority: 'media',
+        order: -1,
+        priorityOrder: -1,
+      },
+      arenas: orderedArenas,
+      actions: draft.actions.filter(action => arenaIds.includes(action.arenaId)),
+    };
+  };
 
   const updateCodex = (id: string, updater: (draft: CodexDraft) => CodexDraft) => {
-    setCodexes(prev => prev.map(c => (c.id === id ? updater(c) : c)));
+    setCodexes(prev => prev.map(c => (c.id === id ? { ...updater(c), updatedAt: new Date().toISOString() } : c)));
   };
 
   const createCodex = () => {
@@ -257,6 +405,14 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     e.stopPropagation();
     if (confirm('Tem certeza que deseja excluir este Codex?')) {
         setCodexes(prev => prev.filter(c => c.id !== id));
+        supabase
+          .from('codex')
+          .delete()
+          .eq('id', id)
+          .eq('schema_version', CODEX_DRAFT_SCHEMA_VERSION)
+          .then(({ error }) => {
+            if (error) console.error('Failed to delete codex draft', error);
+          });
     }
   };
 
@@ -316,6 +472,31 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         console.error("Error applying codex:", error);
         setStatus('Erro ao aplicar Codex.');
     }
+  };
+
+  const handleDeliverCodex = async () => {
+    if (!activeCodex || !recipientId) return;
+
+    const template = buildCodexTemplateFromDraft(activeCodex);
+    if (template.levels.length === 0) {
+      setStatus('Crie ao menos uma arena antes de enviar.');
+      return;
+    }
+
+    await createMentorCodexForRecipient(
+      recipientId,
+      {
+        name: activeCodex.name,
+        description: activeCodex.description,
+        template,
+      },
+      relationshipLinkId
+    );
+
+    setStatus(`Codex enviado para ${recipientName || 'o pupilo'}.`);
+    window.setTimeout(() => setStatus(null), 1800);
+    onDelivered?.();
+    onClose();
   };
 
   const selectedArena = activeCodex?.arenas.find(a => a.id === selectedArenaId) || null;
@@ -405,7 +586,14 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </div>
 
               <div className="grid grid-cols-2 gap-2 mt-4">
-                <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">IMPORTAR PARA O JOGO</button>
+                <button onClick={() => activeCodex && setCampaignPreview(buildDraftPreview(activeCodex))} className="w-full py-2 rounded-xl luxe-button-secondary col-span-2 font-bold tracking-wider">VER CAMPANHA</button>
+                {recipientId ? (
+                  <button onClick={handleDeliverCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">
+                    ENTREGAR PARA {recipientName?.toUpperCase() || 'PUPILO'}
+                  </button>
+                ) : (
+                  <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">IMPORTAR PARA O JOGO</button>
+                )}
                 <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR CÓDIGO</button>
                 <button onClick={handleCopyLink} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR LINK</button>
               </div>
@@ -701,6 +889,15 @@ export const CodexModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
           </GlassCard>
         </div>
+      )}
+      {campaignPreview && (
+        <CampaignsCodex
+          onClose={() => setCampaignPreview(null)}
+          initialCampaignId={campaignPreview.campaign.id}
+          previewCampaign={campaignPreview.campaign}
+          previewArenas={campaignPreview.arenas}
+          previewActions={campaignPreview.actions}
+        />
       )}
     </Portal>
   );

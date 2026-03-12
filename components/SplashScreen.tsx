@@ -9,14 +9,18 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoading }) => {
     const videoSrc = '/videos/intro.mp4';
+    const splashFadeStart = 3200;
+    const splashMaxDuration = 3600;
     const [progress, setProgress] = useState(0);
     const [videoEnded, setVideoEnded] = useState(false);
+    const [maxTimeReached, setMaxTimeReached] = useState(false);
     const [isFadingOut, setIsFadingOut] = useState(false);
+    const shouldHideProgress = isFadingOut || (!isLoading && !videoEnded && !maxTimeReached);
 
     useEffect(() => {
         const interval = window.setInterval(() => {
             setProgress((prev) => {
-                if (videoEnded && !isLoading) {
+                if (videoEnded || maxTimeReached) {
                     return 100;
                 }
 
@@ -30,17 +34,32 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoadin
         }, 45);
 
         return () => window.clearInterval(interval);
-    }, [isLoading, videoEnded]);
+    }, [isLoading, videoEnded, maxTimeReached]);
 
     useEffect(() => {
-        if (!videoEnded || isLoading || isFadingOut) return;
+        const fadeTimer = window.setTimeout(() => {
+            setProgress(100);
+            setIsFadingOut(true);
+        }, splashFadeStart);
+        const timer = window.setTimeout(() => {
+            setMaxTimeReached(true);
+        }, splashMaxDuration);
+
+        return () => {
+            window.clearTimeout(fadeTimer);
+            window.clearTimeout(timer);
+        };
+    }, []);
+
+    useEffect(() => {
+        if ((!videoEnded && !maxTimeReached) || isFadingOut) return;
 
         setProgress(100);
         setIsFadingOut(true);
         const completeTimeout = window.setTimeout(onComplete, 520);
 
         return () => window.clearTimeout(completeTimeout);
-    }, [videoEnded, isLoading, onComplete, isFadingOut]);
+    }, [videoEnded, maxTimeReached, onComplete, isFadingOut]);
 
     const handleVideoEnd = () => {
         setVideoEnded(true);
@@ -58,13 +77,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoadin
                         className="w-full h-full object-cover"
                         placeholderLabel="GOL 1.0"
                         duration={1500}
-                        maxDuration={10000}
+                        maxDuration={splashMaxDuration}
                         playbackRate={1.0}
                         preload="metadata"
                     />
                 </div>
 
-                <div className={`absolute bottom-10 left-10 right-10 z-[10001] max-w-md mx-auto transition-opacity duration-300 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
+                <div className={`absolute bottom-10 left-10 right-10 z-[10001] max-w-md mx-auto transition-opacity duration-500 ${shouldHideProgress ? 'opacity-0' : 'opacity-100'}`}>
                     <div className="flex justify-between text-[10px] font-mono text-white/50 mb-1 uppercase tracking-widest">
                         <span>Sincronizando...</span>
                         <span>{Math.round(progress)}%</span>

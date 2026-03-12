@@ -121,33 +121,57 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
     const { startTutorialLevel, isFlagCompleted } = useTutorial();
 
     const levels = [
-        { id: 1, name: 'Alicerce (Básico)', flag: 'tutorial_level_1_completed' },
-        { id: 2, name: 'Identidade (Interno)', flag: 'tutorial_level_2_completed' },
-        { id: 3, name: 'O Mundo (Externo)', flag: 'tutorial_level_3_completed' },
-        { id: 4, name: 'O Arquiteto (Mestre)', flag: 'tutorial_level_4_completed' },
+        { id: 1, name: 'Alicerce', subtitle: 'Arena, Planner, Ciclo e SITREP', flag: 'tutorial_level_1_completed', badge: 'BRONZE', accent: 'from-[#c98a62] via-[#c98a62]/24 via-70% to-transparent', glow: 'rgba(197,138,99,0.12)' },
+        { id: 2, name: 'Identidade', subtitle: 'Patentes, Maestria e Perfil', flag: 'tutorial_level_2_completed', badge: 'PRATA', accent: 'from-[#f4f7fd] via-[#edf1f8]/22 via-70% to-transparent', glow: 'rgba(214,217,223,0.12)' },
+        { id: 3, name: 'O Mundo', subtitle: 'Vinculos, aliados e Oraculo', flag: 'tutorial_level_3_completed', badge: 'OURO', accent: 'from-[#e4bc57] via-[#e4bc57]/24 via-70% to-transparent', glow: 'rgba(240,215,135,0.12)' },
+        { id: 4, name: 'O Arquiteto', subtitle: 'Codex, campanhas e premium', flag: 'tutorial_level_4_completed', badge: 'PREMIUM', accent: 'from-[#9b7af2] via-[#9b7af2]/24 via-70% to-transparent', glow: 'rgba(179,140,255,0.12)' },
     ];
 
     return (
-        <div className="settings-panel-card settings-panel-card--stacked">
+        <div className="space-y-2.5">
             {levels.map((lvl) => {
                 const isCompleted = isFlagCompleted(lvl.flag);
                 return (
-                    <div key={lvl.id} className="flex justify-between items-center">
-                        <div>
-                            <h4 className="text-sm font-semibold">Nível {lvl.id}: {lvl.name}</h4>
-                            <p className={`text-xs ${isCompleted ? 'text-green-400' : 'accent-text'}`}>
-                                {isCompleted ? 'Concluído' : 'Pendente'}
-                            </p>
+                    <div
+                        key={lvl.id}
+                        className="relative overflow-hidden rounded-[18px] border border-[rgba(231,236,244,0.40)] bg-[linear-gradient(180deg,rgba(203,209,220,0.97)_0%,rgba(138,147,161,0.93)_24%,rgba(51,58,71,0.95)_58%,rgba(10,13,19,0.98)_100%)] px-3.5 py-2.5 shadow-[0_16px_34px_rgba(0,0,0,0.22)]"
+                        style={{ boxShadow: `0 16px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -10px 22px rgba(255,255,255,0.03), 0 0 16px ${lvl.glow}` }}
+                    >
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-18%,rgba(255,255,255,0.82),rgba(255,255,255,0.36)_24%,rgba(255,255,255,0.08)_46%,transparent_68%),linear-gradient(90deg,rgba(255,255,255,0.10),transparent_30%,transparent_72%,rgba(255,255,255,0.04))] pointer-events-none" />
+                        <div className={`absolute left-0 top-0 h-full w-[35%] bg-gradient-to-r ${lvl.accent} opacity-52 pointer-events-none`} />
+                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent pointer-events-none" />
+                        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent pointer-events-none" />
+
+                        <div className="relative flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <span className="inline-flex items-center rounded-full border border-white/14 bg-black/16 px-2 py-0.5 text-[8px] font-black tracking-[0.22em] text-white/84">
+                                        CARD {lvl.id}
+                                    </span>
+                                    <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-2 py-0.5 text-[8px] font-black tracking-[0.18em] text-white/76">
+                                        {lvl.badge}
+                                    </span>
+                                </div>
+                                <h4 className="text-[14px] font-black tracking-[0.03em] text-white leading-none">
+                                    {lvl.name}
+                                </h4>
+                                <p className="text-[10px] text-white/72 mt-1 truncate">
+                                    {lvl.subtitle}
+                                </p>
+                                <p className={`text-[9px] font-bold uppercase tracking-[0.18em] mt-2 ${isCompleted ? 'text-green-300' : 'text-white/55'}`}>
+                                    {isCompleted ? 'Concluido' : 'Disponivel'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    onStart?.();
+                                    startTutorialLevel(lvl.id);
+                                }}
+                                className="shrink-0 rounded-full border border-white/12 bg-black/18 px-2.25 py-0.75 text-[7px] font-bold uppercase tracking-[0.18em] text-white/48 hover:text-white hover:bg-white/10 transition-all"
+                            >
+                                Reabrir
+                            </button>
                         </div>
-                        <button
-                            onClick={() => {
-                                onStart?.();
-                                startTutorialLevel(lvl.id);
-                            }}
-                            className="text-sm font-bold bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20 transition-colors"
-                        >
-                            REPLAY
-                        </button>
                     </div>
                 );
             })}
@@ -158,10 +182,18 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
 const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
     <Portal>
         <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                <h2 className="text-lg font-bold uppercase tracking-wider text-center">Tutoriais</h2>
+            <GlassCard variant="neutral" className="w-full max-w-[19.75rem] m-4 space-y-2.5 rounded-3xl overflow-hidden relative pt-4" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 inline-flex w-auto px-3.5 py-1.5 text-sm font-bold rounded-xl luxe-skin-button">OK</button>
+                <div className="px-4 pt-2">
+                    <div className="mx-auto max-w-[15.75rem] text-center space-y-1">
+                        <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Estacoes</div>
+                        <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Tutoriais</h2>
+                        <p className="text-[11px] text-white/55 leading-snug">
+                            Quatro cards para revisitar o sistema no seu ritmo, do core loop ate a camada premium.
+                        </p>
+                    </div>
+                </div>
                 <TutorialSettings onStart={onClose} />
-                <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">OK</button>
             </GlassCard>
         </div>
     </Portal>
@@ -210,7 +242,7 @@ const mapToCamelCase = (obj: any): any => {
 };
 
 const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userProfile, friends } = useGame();
+    const { userProfile, friends, userCodexes, duplicateUserCodexToRecipient } = useGame();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [invites, setInvites] = useState<RelationshipLinkInvite[]>([]);
@@ -221,6 +253,8 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [sessionUid, setSessionUid] = useState<string | null>(null);
     const [sliderValues, setSliderValues] = useState<Record<string, number>>({});
     const [spectatorData, setSpectatorData] = useState<{ arena: Arena, actions: Action[], tasks: ScheduledTask[], pupilName: string, link: RelationshipLink } | null>(null);
+    const [selectedPupilLink, setSelectedPupilLink] = useState<RelationshipLink | null>(null);
+    const [isMentorCreatorOpen, setMentorCreatorOpen] = useState(false);
 
     const sessionReady = useMemo(() => !!sessionUid && isUuid(sessionUid), [sessionUid]);
 
@@ -429,6 +463,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const myMentors = links.filter(l => l.linkType === 'mentoria' && !!sessionUid && l.pupilId === sessionUid);
     const myPartners = links.filter(l => l.linkType === 'parceria');
     const myCompetitions = links.filter(l => l.linkType === 'competicao');
+    const authoredCodexes = userCodexes.filter((codex: any) => !codex.catalog_id && Array.isArray(codex.template?.levels) && codex.template.levels.length > 0);
 
     const getProfile = (id: string) => profilesById[id];
 
@@ -533,6 +568,17 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                         className={`h-full transition-all duration-500 ${localValue <= 33 ? 'bg-red-500' : localValue <= 66 ? 'bg-yellow-500' : 'bg-green-500'}`}
                                                                         style={{ width: `${localValue}%` }}
                                                                     />
+                                                                </div>
+                                                                <div className="flex justify-end">
+                                                                    <button
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            setSelectedPupilLink(link);
+                                                                        }}
+                                                                        className="px-3 py-2 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[10px] font-bold tracking-wider text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/20 transition-all"
+                                                                    >
+                                                                        ADICIONAR CODEX
+                                                                    </button>
                                                                 </div>
                                                                 <div className="text-[10px] text-center text-gray-500 uppercase tracking-wider font-bold pt-1">
                                                                     Clique para Avaliar
@@ -710,6 +756,38 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 type: 'competition',
                                 friendId: selectedFriendForChallenge.id,
                                 friendName: selectedFriendForChallenge.nickname
+                            }}
+                        />
+                    </Suspense>
+                )}
+
+                {selectedPupilLink && (
+                    <MentorCodexModal
+                        link={selectedPupilLink}
+                        pupil={getProfile(selectedPupilLink.pupilId)}
+                        codexes={authoredCodexes}
+                        onClose={() => {
+                            setSelectedPupilLink(null);
+                            setMentorCreatorOpen(false);
+                        }}
+                        onCreateNew={() => setMentorCreatorOpen(true)}
+                        onGiveCodex={async (codexId) => {
+                            await duplicateUserCodexToRecipient(codexId, selectedPupilLink.pupilId, selectedPupilLink.id);
+                            setSelectedPupilLink(null);
+                        }}
+                    />
+                )}
+
+                {selectedPupilLink && isMentorCreatorOpen && (
+                    <Suspense fallback={<div className="fixed inset-0 z-[220] bg-black/40 backdrop-blur-sm" />}>
+                        <CodexModal
+                            onClose={() => setMentorCreatorOpen(false)}
+                            recipientId={selectedPupilLink.pupilId}
+                            recipientName={getProfile(selectedPupilLink.pupilId)?.nickname || 'Pupilo'}
+                            relationshipLinkId={selectedPupilLink.id}
+                            onDelivered={() => {
+                                setMentorCreatorOpen(false);
+                                setSelectedPupilLink(null);
                             }}
                         />
                     </Suspense>
@@ -1483,6 +1561,94 @@ interface CodexActionModalProps {
     onDonate: (friendId: string) => void;
 }
 
+const MentorCodexModal: React.FC<{
+    link: RelationshipLink;
+    pupil?: UserProfile;
+    codexes: any[];
+    onClose: () => void;
+    onGiveCodex: (codexId: string) => Promise<void>;
+    onCreateNew: () => void;
+}> = ({ pupil, codexes, onClose, onGiveCodex, onCreateNew }) => {
+    const [selectedCodexId, setSelectedCodexId] = useState<string | null>(null);
+    const [isSending, setIsSending] = useState(false);
+
+    const handleSend = async () => {
+        if (!selectedCodexId) return;
+        setIsSending(true);
+        try {
+            await onGiveCodex(selectedCodexId);
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    return (
+        <Portal>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[215] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm m-4 p-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <div className="text-[10px] font-black tracking-widest text-gray-400">MENTORIA</div>
+                            <div className="text-base font-bold text-white">Codex para {pupil?.nickname || 'Pupilo'}</div>
+                        </div>
+                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50">
+                            <XIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={onCreateNew}
+                        className="w-full py-3 rounded-2xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold tracking-wider hover:bg-[var(--skin-accent-color)]/20 transition-all"
+                    >
+                        CRIAR NOVO CODEX PARA ESTE PUPILO
+                    </button>
+
+                    <div className="space-y-2">
+                        <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS CODEXES AUTORAIS</div>
+                        {codexes.length === 0 ? (
+                            <div className="text-center text-xs text-gray-500 py-6 bg-black/20 rounded-2xl border border-white/10">
+                                Nenhum Codex autoral pronto para enviar.
+                            </div>
+                        ) : (
+                            <div className="max-h-[280px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                                {codexes.map((codex) => (
+                                    <button
+                                        key={codex.id}
+                                        onClick={() => setSelectedCodexId(codex.id)}
+                                        className={`w-full p-3 rounded-2xl border text-left transition-all ${selectedCodexId === codex.id ? 'bg-white/10 border-[var(--skin-accent-color)]' : 'bg-black/20 border-white/10 hover:bg-white/5'}`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center text-2xl">
+                                                {codex.template?.coverImage || codex.template?.icon || '📜'}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-bold text-white truncate">{codex.name}</div>
+                                                <div className="text-[11px] text-gray-400 line-clamp-2">{codex.description || 'Sem descrição.'}</div>
+                                                <div className="text-[10px] text-gray-500 mt-1">{codex.template?.levels?.length || 0} fases</div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button onClick={onClose} className="flex-1 py-2 rounded-xl luxe-button-secondary text-xs font-bold">FECHAR</button>
+                        <button
+                            onClick={handleSend}
+                            disabled={!selectedCodexId || isSending}
+                            className="flex-1 py-2 rounded-xl luxe-skin-button text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSending ? 'ENVIANDO...' : 'ENVIAR CODEX'}
+                        </button>
+                    </div>
+                </GlassCard>
+            </div>
+        </Portal>
+    );
+};
+
 const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onApply, onDelete, onDonate }) => {
     const { friends } = useGame();
     const [view, setView] = useState<'main' | 'donate'>('main');
@@ -1585,7 +1751,7 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
 };
 
 const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userCodexes, deleteUserCodex, transferUserCodex, friends, installCodex, userProfile } = useGame();
+    const { userCodexes, deleteUserCodex, duplicateUserCodexToRecipient, friends, installCodex, userProfile } = useGame();
     const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
     const [selectedCodex, setSelectedCodex] = useState<any | null>(null);
     const [isCreatorOpen, setCreatorOpen] = useState(false);
@@ -1634,10 +1800,15 @@ const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (!selectedCodex) return;
         const friend = friends.find(f => f.id === friendId);
 
-        if (confirm(`Confirmar envio de "${selectedCodex.name}" para ${friend?.nickname || 'Aliado'}? O item será removido do seu inventário.`)) {
+        if (selectedCodex.catalog_id) {
+            alert('Codex comprado não pode ser copiado.');
+            return;
+        }
+
+        if (confirm(`Confirmar envio de "${selectedCodex.name}" para ${friend?.nickname || 'Aliado'}? Você manterá o original e o aliado receberá uma cópia.`)) {
             try {
-                if (transferUserCodex) {
-                    await transferUserCodex(selectedCodex.id, friendId);
+                if (duplicateUserCodexToRecipient) {
+                    await duplicateUserCodexToRecipient(selectedCodex.id, friendId);
                     alert(`Codex enviado com sucesso para ${friend?.nickname}!`);
                     setSelectedCodex(null);
                 }

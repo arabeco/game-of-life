@@ -13,7 +13,7 @@ const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then(
 type MasteryMode = 'LEGADO' | 'SOBERANO';
 
 export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
-    const { assets, userProfile, updateAllAssetLevels } = useGame();
+    const { assets, userProfile, updateAllAssetLevels, showToast } = useGame();
     const [mode, setMode] = useState<MasteryMode>('LEGADO');
     const [tempLevels, setTempLevels] = useState<Record<string, number>>({});
     const [tempPhrases, setTempPhrases] = useState<Record<string, string[]>>({});
@@ -43,6 +43,10 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
     };
 
     const handleSave = () => {
+        if (Object.keys(tempLevels).length === 0) {
+            showToast('Ajuste pelo menos um nível antes de salvar.', 'warning');
+            return;
+        }
         const levelsToSave = { ...tempLevels };
         Object.keys(levelsToSave).forEach(assetId => {
             if (levelsToSave[assetId] === 0) {

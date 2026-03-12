@@ -10,9 +10,32 @@ import { SelectionModal } from './SelectionModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 
 import { Portal } from './Portal';
 import './core-ui.css';
+
+const hexToRgb = (hex: string) => {
+    const trimmed = hex.trim();
+    if (trimmed.startsWith('rgb')) {
+        const matches = trimmed.match(/\d+/g);
+        if (matches && matches.length >= 3) {
+            return { r: parseInt(matches[0]), g: parseInt(matches[1]), b: parseInt(matches[2]) };
+        }
+    }
+    const normalized = trimmed.replace('#', '');
+    if (normalized.length === 3 || normalized.length === 6) {
+        const value = normalized.length === 3 ? normalized.split('').map(ch => ch + ch).join('') : normalized;
+        const intValue = parseInt(value, 16);
+        return { r: (intValue >> 16) & 255, g: (intValue >> 8) & 255, b: intValue & 255 };
+    }
+    return { r: 240, g: 200, b: 67 };
+};
+
+const rgbaString = (hex: string, alpha: number) => {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 interface ActionModalProps {
     arenaId: string;
@@ -50,7 +73,7 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
 );
 
 export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskId, initialMode, onClose, isPreview, customThemeColor }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask, clan, enrichedClanMembers } = useGame();
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask, clan, enrichedClanMembers, showToast } = useGame();
 
     const isNew = !action;
 
@@ -108,7 +131,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const enrichedMembers = enrichedClanMembers;
 
     const handleSave = () => {
-        if (!editableAction.name?.trim()) return;
+        if (!editableAction.name?.trim()) {
+            showToast('Dê um título para a ação antes de salvar.', 'warning');
+            window.setTimeout(() => nameInputRef.current?.focus(), 40);
+            return;
+        }
 
         let scheduledStartTime: number | undefined;
         if (startTime && startTime !== 'Sem Horário') {
@@ -178,13 +205,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     if (newAction?.id) {
                         await scheduleTasks(newAction.id);
                     }
+                    showToast('Ação criada.', 'success');
                 } else if (action?.id && typeof updateAction === 'function') {
                     updateAction(action.id, actionData);
                     await scheduleTasks(action.id);
+                    showToast('Ação atualizada.', 'success');
                 }
                 onClose();
             } catch (err) {
                 console.error("Error executing save:", err);
+                showToast('Nao foi possivel salvar a ação.', 'error');
             }
         };
 
@@ -273,30 +303,76 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     if (!displayAction && mode === 'view') return null;
 
-    const modalStyle = customThemeColor ? { '--skin-accent-color': customThemeColor, '--accent-bronze': customThemeColor } as React.CSSProperties : undefined;
+    const arenaAccentColor = currentArena?.assetId
+        ? ASSET_ACCENT_COLORS[currentArena.assetId as keyof typeof ASSET_ACCENT_COLORS]
+        : undefined;
+    const accentColor = customThemeColor || arenaAccentColor || '#F0C843';
+    const modalStyle = { '--skin-accent-color': customThemeColor || 'var(--skin-accent-color)', '--accent-bronze': accentColor } as React.CSSProperties;
+    const headerTitle = mode === 'view'
+        ? (displayAction?.name || (isPreview ? 'Preview de Acao' : 'Detalhe da Acao'))
+        : (editableAction.name?.trim() || (isNew ? 'Nova Acao' : 'Editar Acao'));
+    const headerEyebrow = mode === 'edit'
+        ? (isNew ? 'Criacao' : 'Edicao')
+        : (isPreview ? 'Preview' : 'Acao');
+    const handleHeaderOk = () => {
+        if (isPreview) {
+            onClose();
+            return;
+        }
+        if (mode === 'edit') {
+            handleSave();
+            return;
+        }
+        onClose();
+    };
 
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick} style={modalStyle}>
-                <GlassCard variant="bronze" className="w-full max-w-sm m-4 rounded-[26px] flex flex-col max-h-[85vh] h-auto p-0 relative overflow-hidden border-[var(--skin-accent-color)]/20 shadow-[0_24px_70px_rgba(0,0,0,0.45)]">
+                <GlassCard
+                    variant="neutral"
+                    className="w-full max-w-[20.5rem] m-3 rounded-[26px] flex flex-col max-h-[84vh] h-auto p-0 relative overflow-hidden border-white/12 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
+                    style={{
+                        backgroundImage: [
+                            `radial-gradient(circle at 48% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 16%, transparent 40%)`,
+                            `radial-gradient(circle at 20% 12%, rgba(255,246,232,0.04), transparent 18%)`,
+                            `radial-gradient(circle at 100% 100%, ${rgbaString(accentColor, 0.22)}, transparent 34%)`,
+                            `linear-gradient(165deg, rgba(124,92,62,0.44) 0%, rgba(86,64,50,0.5) 18%, rgba(30,24,22,0.7) 42%, rgba(12,11,12,0.9) 74%, ${rgbaString(accentColor, 0.18)} 92%, rgba(6,6,8,0.99) 100%)`,
+                        ].join(', '),
+                    }}
+                >
+                    <div
+                        className="modal-aura-overlay"
+                        style={{ '--modal-aura-color': 'rgba(176, 113, 68, 0.16)' } as React.CSSProperties}
+                    />
+                    <div
+                        className="modal-sheen-overlay"
+                        style={{ '--modal-sheen-color': 'rgba(201, 139, 90, 0.50)' } as React.CSSProperties}
+                    />
 
                     {/* Header Fixed */}
-                    <div className="flex-none p-4 bg-black/30 backdrop-blur-md flex justify-between items-center z-30 relative border-b border-white/6">
-                        <div className="flex items-center gap-3">
+                    <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md flex justify-between items-start z-30 relative border-b border-white/10">
+                        <div className="flex items-center gap-3 pt-1">
                             {!isPreview && (
                                 <button
                                     onClick={mode === 'view' ? () => setMode('edit') : handleCancel}
-                                    className={`p-2 rounded-lg transition-all ${mode === 'edit' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'hover:bg-white/6 text-[var(--skin-accent-color)]/60 hover:text-[var(--skin-accent-color)]'}`}
+                                    className={`p-2 rounded-full border transition-all ${mode === 'edit' ? 'bg-red-500/18 text-red-300 border-red-500/30 hover:bg-red-500/26' : 'bg-black/16 border-white/14 text-white/65 hover:text-white hover:bg-white/12'}`}
                                 >
                                     {mode === 'view' ? <EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
                                 </button>
                             )}
-                            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--skin-accent-color)]/85 truncate max-w-[220px]">
-                                {mode === 'edit' ? (isNew ? 'Nova Quest' : 'Editando') : (displayAction?.name || (isPreview ? 'Preview â€¢ Codex' : 'Quests â€¢ ClÃ£'))}
-                            </span>
                         </div>
-                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/6 transition-all group">
-                            <XIcon className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                        <div className="flex-1 px-2 text-center">
+                            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/46">{headerEyebrow}</div>
+                            <h2 className="luxe-title-ornate mt-1 text-lg font-black uppercase tracking-[0.08em] text-[#fff5e8] drop-shadow-[0_1px_8px_rgba(255,240,220,0.16)]">
+                                {headerTitle}
+                            </h2>
+                            <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
+                                {currentArena?.name || 'Arena'}
+                            </p>
+                        </div>
+                        <button onClick={handleHeaderOk} className="px-4 py-2 text-sm font-bold rounded-xl luxe-skin-button shrink-0">
+                            OK
                         </button>
                     </div>
 
@@ -769,17 +845,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     </div>
 
                     {/* 3. FOOTER (Fixed) */}
+                    {mode !== 'edit' && (
                     <div className="flex-none p-4 bg-[#120f0d]/88 backdrop-blur-xl border-t border-white/8 space-y-3 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.35)]">
                         {/* Main Button */}
                         <div className="flex gap-2">
-                            {mode === 'edit' && !isNew && (
-                                <button
-                                    onClick={() => setConfirmDeleteOpen(true)}
-                                    className="p-3.5 rounded-xl bg-red-900/20 border border-red-500/30 text-red-400 hover:bg-red-900/40 hover:text-red-300 transition-all"
-                                >
-                                    <Trash2Icon className="w-5 h-5" />
-                                </button>
-                            )}
                             <button
                                 ref={saveButtonRef}
                                 onClick={isPreview ? onClose : (mode === 'view' ? handleStartMission : handleSave)}
@@ -792,6 +861,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                             </button>
                         </div>
                     </div>
+                    )}
 
                 </GlassCard>
             </div>

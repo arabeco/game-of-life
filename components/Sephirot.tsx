@@ -6,14 +6,18 @@ interface SephirotProps {
   asset: Asset;
   onClick: () => void;
   style?: React.CSSProperties;
+  levelColor?: string;
 }
 
-export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style }) => {
-  const isConsciencia = asset.id === 'consciencia';
-  const sphereSize = `var(--sephirot-size-${isConsciencia ? 'keter' : 'standard'}, ${isConsciencia ? '60px' : '54px'})`;
+export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style, levelColor }) => {
+  const sphereSize = 'var(--sephirot-size-standard, 54px)';
+  const titleMargin = '-mb-4';
 
   return (
     <div style={style} className="flex flex-col items-center justify-center z-10 animate-fade-in">
+        <div className={`luxe-title-ornate pointer-events-none text-[color:var(--skin-accent-color)] text-[9px] font-black uppercase tracking-[0.08em] ${titleMargin} px-2 py-[0.2rem] bg-black/44 border border-white/8 rounded z-10 shadow-[0_3px_10px_rgba(0,0,0,0.32)] backdrop-blur-[3px]`}>
+            {asset.name}
+        </div>
         <button 
             onClick={onClick}
             aria-label={asset.name}
@@ -35,10 +39,11 @@ export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style }) => 
                 }}
             >
                 <span 
-                    className="text-xl font-semibold" 
+                    className="text-[1.25rem] font-semibold leading-none" 
                     style={{ 
-                        color: 'var(--sephirot-text-color)',
-                        textShadow: '0 1px 3px rgba(0,0,0,0.7)'
+                        color: levelColor ?? 'var(--sephirot-text-color)',
+                        textShadow: '0 1px 3px rgba(0,0,0,0.88)',
+                        WebkitTextStroke: '0.65px rgba(24, 12, 4, 0.72)'
                     }}
                 >
                     {asset.level}

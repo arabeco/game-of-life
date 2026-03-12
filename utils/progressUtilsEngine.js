@@ -130,20 +130,13 @@ export const getCampaignArenaStates = ({
         if (!baseState) return acc;
 
         const prerequisiteArenaIds = campaign.arenaConfig?.[arenaId]?.prerequisiteArenaIds || [];
-        const sequentialLock =
-            campaign.type === 'sequential' &&
-            index > 0 &&
-            !progressByArena[campaign.arenaIds[index - 1]]?.isCleared;
         const prerequisiteLock = prerequisiteArenaIds.some(prereqId => !progressByArena[prereqId]?.isCleared);
-        const explicitLock =
-            campaign.type !== 'sequential' &&
-            prerequisiteArenaIds.length === 0 &&
-            Boolean(campaign.arenaConfig?.[arenaId]?.isLocked);
+        const explicitLock = Boolean(campaign.arenaConfig?.[arenaId]?.isLocked);
 
         acc[arenaId] = {
             ...baseState,
             prerequisiteArenaIds,
-            isLocked: explicitLock || sequentialLock || prerequisiteLock,
+            isLocked: explicitLock || prerequisiteLock,
         };
 
         return acc;

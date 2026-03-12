@@ -9,7 +9,37 @@ import { Portal } from './Portal';
 import { PlasmaCanvas } from './PlasmaCanvas';
 import { supabase } from '../supabaseClient';
 import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import './arena-ui.css';
+
+const hexToRgb = (hex: string) => {
+    const trimmed = hex.trim();
+    if (trimmed.startsWith('rgb')) {
+        const matches = trimmed.match(/\d+/g);
+        if (matches && matches.length >= 3) {
+            return { r: parseInt(matches[0]), g: parseInt(matches[1]), b: parseInt(matches[2]) };
+        }
+    }
+    const normalized = trimmed.replace('#', '');
+    if (normalized.length === 3 || normalized.length === 6) {
+        const value = normalized.length === 3 ? normalized.split('').map(ch => ch + ch).join('') : normalized;
+        const intValue = parseInt(value, 16);
+        return { r: (intValue >> 16) & 255, g: (intValue >> 8) & 255, b: intValue & 255 };
+    }
+    return { r: 240, g: 200, b: 67 };
+};
+
+const rgbaString = (hex: string, alpha: number) => {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const normalizeAssetKey = (value?: string | null) =>
+    (value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, '-');
 
 const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: string; currentLinkType?: string | null }> = ({ action, onClick, skinColor, currentLinkType }) => {
     const { getActionBackgroundStyle, tasks, getArenas, getClanQuestProgress, getClanQuestForActionName, getSharedActionPoolProgress, clan } = useGame();
@@ -58,7 +88,9 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
                     backgroundColor: withAlpha(QUEST_VISUAL.rgb, 0.22),
                     borderColor: QUEST_VISUAL.hex,
                     boxShadow: `0 0 15px ${withAlpha(QUEST_VISUAL.rgb, 0.3)}`
-                } : backgroundStyle}
+                } : {
+                    ...backgroundStyle,
+                }}
                 className={`relative w-24 h-24 border rounded-xl hover:opacity-80 transition-all overflow-hidden ${isClanQuest ? '' : 'border-[var(--skin-accent-color)]'}`}
             >
                 <div className="arena-plasma">
@@ -84,7 +116,7 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ name: arena.name, description: arena.description, icon: arena.icon });
@@ -93,7 +125,6 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [linkStatus, setLinkStatus] = useState<string | null>(null);
     const newActionRef = useRef<HTMLButtonElement>(null);
-    const [skinColor, setSkinColor] = useState('#F0C843');
     const [currentLinkType, setCurrentLinkType] = useState<string | null>(null);
     const [selectionType, setSelectionType] = useState<'mentoria' | 'competicao' | 'parceria'>('mentoria');
 
@@ -136,27 +167,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     const isSeasonQuestArena = useMemo(() => normalizedArena.includes('quests - season'), [normalizedArena]);
     const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
-
-    useEffect(() => {
-        const updateSkinColor = () => {
-            const style = getComputedStyle(document.body);
-            let value = style.getPropertyValue('--skin-accent-color').trim();
-            if (!value) {
-                value = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim();
-            }
-            if (value && value !== skinColor) {
-                setSkinColor(value);
-            }
-        };
-
-        updateSkinColor();
-
-        const observer = new MutationObserver(updateSkinColor);
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class', 'data-skin'] });
-        observer.observe(document.body, { attributes: true, attributeFilter: ['style', 'class', 'data-skin'] });
-
-        return () => observer.disconnect();
-    }, [skinColor]);
+    const resolvedAssetAccent =
+        ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]
+        || ASSET_ACCENT_COLORS[normalizeAssetKey(parentAsset?.name) as keyof typeof ASSET_ACCENT_COLORS]
+        || '#F0C843';
+    const accentColor = isClanQuestArena ? QUEST_VISUAL.hex : resolvedAssetAccent;
 
     useEffect(() => {
         if (!isClanQuestArena || !clanQuests || clanQuests.length === 0) return;
@@ -216,6 +231,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         if (isSpecialArena) return; // Disable editing for special arenas
         if (isEditing) {
             updateArena(arena.id, { name: editableArena.name, description: editableArena.description, icon: editableArena.icon });
+            showToast('Arena atualizada.', 'success');
         }
         setIsEditing(!isEditing);
     };
@@ -236,7 +252,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     const openNewAction = () => {
         if (isSpecialArena) {
-            alert("Para adicionar novas missÃµes, acesse a aba MissÃµes no Menu de ConfiguraÃ§Ãµes ou no ClÃ£.");
+            showToast('Essa arena especial recebe missões pelo menu de Missões.', 'warning');
             return;
         }
         setActionModalState({ action: null, mode: 'edit', key: `new-action-modal-${Date.now()}` });
@@ -290,12 +306,25 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
                 <div
-                    className="dossier-bg arena-plate border w-full max-w-sm m-4 rounded-2xl p-4 flex flex-col h-auto max-h-[90vh] relative overflow-hidden"
-                    style={{ borderColor: 'var(--skin-accent-color)', backgroundImage: 'linear-gradient(135deg, rgba(20,20,20,0.96) 0%, rgba(10,10,10,1) 58%, rgba(18,18,18,0.9) 100%)' }}
+                    className="dossier-bg arena-plate border w-full max-w-[21rem] m-4 rounded-2xl px-4 py-5 flex flex-col h-auto max-h-[92vh] relative overflow-hidden"
+                    style={{
+                        borderColor: 'var(--skin-accent-color)',
+                        backgroundImage: [
+                            `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 18%, transparent 44%)`,
+                            `radial-gradient(circle at 18% 14%, rgba(255,255,255,0.05), transparent 22%)`,
+                            `radial-gradient(circle at 100% 100%, ${rgbaString(accentColor, 0.22)}, transparent 40%)`,
+                            `linear-gradient(160deg, rgba(192,197,207,0.6) 0%, rgba(118,125,138,0.68) 20%, rgba(66,72,84,0.82) 38%, rgba(18,20,26,0.94) 72%, ${rgbaString(accentColor, 0.14)} 92%, rgba(7,8,11,0.995) 100%)`,
+                        ].join(', '),
+                    }}
                 >
-                    <div className="arena-plasma" style={{ opacity: 0.45 }}>
-                        <PlasmaCanvas color={skinColor} opacity={0.189} className="arena-plasma-canvas" />
-                    </div>
+                    <div
+                        className="modal-aura-overlay"
+                        style={{ '--modal-aura-color': 'rgba(214, 224, 238, 0.16)' } as React.CSSProperties}
+                    />
+                    <div
+                        className="modal-sheen-overlay"
+                        style={{ '--modal-sheen-color': 'rgba(219, 229, 244, 0.52)' } as React.CSSProperties}
+                    />
                     <div className="relative z-10 flex flex-col space-y-3">
                         <div className="arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1">
@@ -453,7 +482,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                                         className="relative w-20 h-20 flex-shrink-0 border border-[var(--skin-accent-color)] rounded-xl hover:scale-105 transition-transform overflow-hidden p-1 transform rotate-45"
                                                     >
                                                         <div className="arena-plasma">
-                                                            <PlasmaCanvas color={skinColor} opacity={0.189} className="arena-plasma-canvas" />
+                                                            <PlasmaCanvas color={'var(--skin-accent-color)'} opacity={0.189} className="arena-plasma-canvas" />
                                                         </div>
                                                         <div className="relative z-10 transform -rotate-45 flex flex-col items-center justify-center space-y-1">
                                                             <span className="text-3xl">{action.icon}</span>
@@ -472,13 +501,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 </div>
                             )}
 
-                            <div className='relative text-center mb-2 flex-shrink-0'>
-                                <hr className="border-t border-gray-800" />
-                                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">AÃ§Ãµes de Bronze</h3>
-                            </div>
                             <div className="flex-grow overflow-x-auto overflow-y-hidden py-2">
                                 <div className="flex space-x-2 h-full items-center">
-                                    {bronzeActions.map(action => <ActionSquare key={action.id} action={action} skinColor={skinColor} onClick={() => openActionDetails(action)} currentLinkType={currentLinkType} />)}
+                                    {bronzeActions.map(action => <ActionSquare key={action.id} action={action} skinColor={'var(--skin-accent-color)'} onClick={() => openActionDetails(action)} currentLinkType={currentLinkType} />)}
                                     <button id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
                                         <PlusIcon className="w-8 h-8" />
                                     </button>

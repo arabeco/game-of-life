@@ -210,10 +210,13 @@ export interface UserCodex {
     owner_id: string;
     name: string;
     description: string;
-    author: string;
-    price: number;
+    author: string | null;
+    price: number | null;
     template: any;
     created_at: string;
+    catalog_id?: string | null;
+    schema_version?: string | null;
+    is_public?: boolean | null;
 }
 
 export interface GameContextType {
@@ -375,8 +378,8 @@ export interface GameContextType {
     setAldeiaSlots: React.Dispatch<React.SetStateAction<AldeiaSlot[]>>;
     setAldeiaPresence: React.Dispatch<React.SetStateAction<AldeiaPresence[]>>;
 
-    showToast: (message: string) => void;
-    toast: { message: string; visible: boolean; style?: React.CSSProperties };
+    showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
+    toast: { message: string; visible: boolean; type?: 'success' | 'error' | 'warning' | 'info'; style?: React.CSSProperties };
     hideToast: () => void;
     // Forge & Store
     inventory: InventoryItem[];
@@ -393,6 +396,8 @@ export interface GameContextType {
     codexCatalog: CodexCatalogItem[];
     buyCodex: (catalogId: string) => Promise<void>;
     installCodex: (userCodexId: string) => Promise<void>;
+    duplicateUserCodexToRecipient: (codexId: string, recipientId: string, relationshipLinkId?: string | null) => Promise<void>;
+    createMentorCodexForRecipient: (recipientId: string, codex: { name: string; description?: string; template: any }, relationshipLinkId?: string | null) => Promise<void>;
 
     // PWA
     installPrompt: any;
@@ -519,7 +524,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
     const [dmConversations, setDMConversations] = useState<DMConversation[]>([]);
-    const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+    const [toast, setToast] = useState<{ message: string; visible: boolean; type?: 'success' | 'error' | 'warning' | 'info' }>({ message: '', visible: false, type: 'info' });
 
     // PWA Installation State
     const [installPrompt, setInstallPrompt] = useState<any>(null);
@@ -3075,7 +3080,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                 t = BIOLOGICAL_MACHINE_CODEX;
                             }
                         }
-                        return { ...uc, template: t };
+                        return {
+                            ...uc,
+                            template: t,
+                            catalog_id: uc.catalog_id ?? null,
+                            schema_version: uc.schema_version ?? null,
+                            is_public: uc.is_public ?? null,
+                        };
                     });
                     setUserCodexes(parsedUserCodexes as UserCodex[]);
                 }
@@ -3139,6 +3150,76 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             console.error("Error transferring codex:", error);
             showToast("Erro ao transferir Codex.");
         }
+    };
+
+    const duplicateUserCodexToRecipient = async (codexId: string, recipientId: string, relationshipLinkId: string | null = null) => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        const sourceCodex = userCodexes.find(c => c.id === codexId && c.owner_id === userId);
+        if (!sourceCodex) {
+            showToast('Codex não encontrado.');
+            return;
+        }
+
+        if (sourceCodex.catalog_id) {
+            showToast('Codex comprado não pode ser copiado para pupilos.');
+            return;
+        }
+
+        const payload = {
+            owner_id: recipientId,
+            name: sourceCodex.name,
+            description: sourceCodex.description || '',
+            author: sourceCodex.author || userProfile.nickname || 'Mentor',
+            price: null,
+            template: sourceCodex.template,
+            schema_version: sourceCodex.schema_version || 'v2',
+            is_public: false,
+        };
+
+        const { error } = await supabase.from('codex').insert(payload);
+        if (error) {
+            console.error('Error duplicating mentor codex:', error);
+            showToast('Erro ao entregar Codex ao pupilo.');
+            return;
+        }
+
+        showToast('Codex entregue ao pupilo.');
+    };
+
+    const createMentorCodexForRecipient = async (
+        recipientId: string,
+        codex: { name: string; description?: string; template: any },
+        relationshipLinkId: string | null = null
+    ) => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        if (!codex?.template || !Array.isArray(codex.template.levels) || codex.template.levels.length === 0) {
+            showToast('Esse Codex ainda não tem fases para enviar.');
+            return;
+        }
+
+        const payload = {
+            owner_id: recipientId,
+            name: codex.name?.trim() || 'Novo Codex',
+            description: codex.description?.trim() || '',
+            author: userProfile.nickname || 'Mentor',
+            price: null,
+            template: codex.template,
+            schema_version: 'v2',
+            is_public: false,
+        };
+
+        const { error } = await supabase.from('codex').insert(payload);
+        if (error) {
+            console.error('Error creating mentor codex for recipient:', error);
+            showToast('Erro ao criar Codex para o pupilo.');
+            return;
+        }
+
+        showToast('Novo Codex enviado ao pupilo.');
     };
 
     const installCodex = async (userCodexId: string) => {
@@ -4378,6 +4459,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
+        showToast('Maestria atualizada.', 'success');
         return true;
     };
 
@@ -7033,7 +7115,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, buyCodex, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

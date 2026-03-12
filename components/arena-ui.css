@@ -44,8 +44,10 @@
 
 .arena-mini-stack {
   width: 100%;
-  margin-top: 0.22rem;
+  margin-top: auto;
   gap: 0.14rem;
+  justify-content: flex-end;
+  min-height: 0;
 }
 
 .arena-mini-actions {
@@ -187,7 +189,7 @@
 }
 
 .arena-mini-progress {
-  margin-top: 0.34rem;
+  margin-top: 0.18rem;
 }
 
 .arena-thumb-layout .arena-title-wrap {

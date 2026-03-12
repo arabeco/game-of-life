@@ -162,6 +162,7 @@ export interface Campaign {
     isCleared?: boolean;
     completedActionIds?: string[];
     prerequisiteArenaIds?: string[]; // IDs of arenas that must be cleared to unlock this one
+    phase?: number;
   }>;
   priority?: 'alta' | 'media' | 'baixa';
   type?: 'sequential' | 'parallel';

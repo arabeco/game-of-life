@@ -6,6 +6,7 @@ import { AssetArenaBoard } from '../components/AssetArenaBoard';
 import { Sephirot } from '../components/Sephirot';
 import { SKINS_DATA } from '../constants';
 import { SephirotFog } from '../components/SephirotFog';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 
 const SEPHIROT_COORDS = [
     { id: 'consciencia', x: 50, y: 7 },
@@ -21,6 +22,17 @@ const SEPHIROT_COORDS = [
 ];
 
 type AssetSubview = 'arenas' | 'widgets';
+
+const hexToRgb = (hex: string): [number, number, number] | null => {
+    const normalized = hex.replace('#', '').trim();
+    if (normalized.length !== 6) return null;
+    const value = Number.parseInt(normalized, 16);
+    if (Number.isNaN(value)) return null;
+    return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+};
+
+const rgbaString = (rgb: [number, number, number] | null, alpha: number): string =>
+    rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : `rgba(212, 175, 55, ${alpha})`;
 
 const SegmentedButton: React.FC<{
     active: boolean;
@@ -53,7 +65,12 @@ export const AssetsView: React.FC = () => {
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
     const isBasicMode = appMode === 'BASIC';
+    const basicSephirotLevelColor = '#3b2412';
     const selectedAsset = assets.find(a => a.id === selectedAssetId) || null;
+    const selectedAssetAccent = selectedAsset
+        ? ASSET_ACCENT_COLORS[selectedAsset.id as keyof typeof ASSET_ACCENT_COLORS] || '#4b5563'
+        : '#4b5563';
+    const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
 
     const skinColor = SKINS_DATA.find(s => s.id === userProfile.skin)?.color || '#d4af37';
     const baseAspect = 9 / 16;
@@ -117,11 +134,37 @@ export const AssetsView: React.FC = () => {
         }
     };
 
+    const showAssetAura = isBasicMode || assetSubview === 'arenas';
+    const selectedAssetShellStyle: React.CSSProperties = {
+        backgroundImage: `radial-gradient(circle at 16% 0%, rgba(255,246,204,0.42), transparent 29%),
+            radial-gradient(circle at 24% 22%, rgba(226,192,98,0.24), transparent 25%),
+            radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.2)}, transparent 24%),
+            linear-gradient(135deg, rgba(224,186,84,0.42) 0%, rgba(255,250,230,0.08) 18%, rgba(8,8,8,0.94) 46%, rgba(2,2,2,0.98) 66%, ${rgbaString(selectedAssetAccentRgb, 0.12)} 100%)`,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px rgba(0,0,0,0.42)',
+    };
+
     if (selectedAsset) {
         return (
             <div className="h-full overflow-y-auto px-4 pb-4">
                 <div className="mx-auto max-w-[520px]">
-                    <div className="dossier-bg flex flex-col overflow-hidden rounded-[28px] border border-[color:var(--skin-accent-color)] px-4 pb-4 pt-4 shadow-2xl shadow-black/50">
+                    <div
+                        className="dossier-bg relative flex flex-col overflow-hidden rounded-[28px] border border-[color:var(--skin-accent-color)] px-4 pb-4 pt-4 shadow-2xl shadow-black/50"
+                        style={selectedAssetShellStyle}
+                    >
+                        {showAssetAura && (
+                            <div
+                                className="modal-aura-overlay"
+                                style={{ '--modal-aura-color': 'rgba(229, 191, 88, 0.16)' } as React.CSSProperties}
+                            />
+                        )}
+                        <div
+                            className="modal-sheen-overlay"
+                            style={{
+                                '--modal-sheen-color': 'rgba(255, 222, 120, 0.82)',
+                                zIndex: 24,
+                            } as React.CSSProperties}
+                        />
+                        <div className="relative z-10">
                         <div className="grid grid-cols-[auto_1fr_auto] items-start gap-3">
                             {!isBasicMode && assetSubview === 'widgets' ? (
                                 <button
@@ -174,12 +217,12 @@ export const AssetsView: React.FC = () => {
                         </div>
 
                         <div className="overflow-y-auto pr-1 -mr-1 custom-scrollbar">
-                            {isBasicMode || assetSubview === 'arenas' ? (
-                                <div className="space-y-2">
-                                    <div className="pt-0 text-center">
-                                        <p className="text-xs font-medium tracking-[0.08em] text-white/62">Nivel {selectedAsset.level}</p>
-                                    </div>
-                                    <AssetArenaBoard asset={selectedAsset} />
+                        {isBasicMode || assetSubview === 'arenas' ? (
+                            <div className="space-y-2">
+                                <div className="pt-0 text-center">
+                                    <p className="text-xs font-medium tracking-[0.08em] text-white/62">Nivel {selectedAsset.level}</p>
+                                </div>
+                                <AssetArenaBoard asset={selectedAsset} />
                                 </div>
                             ) : (
                                 <AssetDossier
@@ -194,6 +237,7 @@ export const AssetsView: React.FC = () => {
                                     onToggleEditing={() => setIsWidgetEditing((value) => !value)}
                                 />
                             )}
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -237,7 +281,11 @@ export const AssetsView: React.FC = () => {
                                     transform: 'translate(-50%, -50%)',
                                 }}
                             >
-                                <Sephirot asset={asset} onClick={() => handleOpenAsset(asset)} />
+                                <Sephirot
+                                    asset={asset}
+                                    onClick={() => handleOpenAsset(asset)}
+                                    levelColor={isBasicMode ? basicSephirotLevelColor : undefined}
+                                />
                             </div>
                         );
                     })}

@@ -234,11 +234,12 @@ const fragmentShaderSource = `
     // COLOR GRADING
     vec3 color = uColor;
     
-    // Mix with white/cyan for energy look
-    vec3 energyColor = mix(vec3(0.5, 0.9, 1.0), color, 0.7); 
+    // Push toward pearl-white so the fog feels cleaner and less toxic.
+    vec3 pearlWhite = vec3(0.96, 0.97, 0.94);
+    vec3 energyColor = mix(pearlWhite, color, 0.22);
     
     // Map density to color with startup fade
-    vec3 finalColor = energyColor * totalDensity * startupFade;
+    vec3 finalColor = energyColor * totalDensity * startupFade * 0.9;
     
     // Alpha
     // Max opacity reduced for "efeito discreto"

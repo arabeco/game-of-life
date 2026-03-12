@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'glyph-app-v3';
+const CACHE_VERSION = 'glyph-app-v4';
 const SUPABASE_CACHE = 'glyph-supabase-assets-v1';
 const ASSETS = [
   '/',
@@ -36,6 +36,17 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   const url = event.request.url;
+  const reqUrl = new URL(url);
+
+  if (reqUrl.origin === self.location.origin && reqUrl.pathname === '/favicon.ico') {
+    event.respondWith(
+      caches.match('/logo-diamond.png').then(cached => {
+        if (cached) return cached;
+        return fetch('/logo-diamond.png').catch(() => new Response('', { status: 204 }));
+      })
+    );
+    return;
+  }
 
   // ─── SUPABASE STORAGE: Cache-First ───
   // Images and videos from Supabase are cached locally forever.
@@ -68,10 +79,17 @@ self.addEventListener('fetch', event => {
   }
 
   // ─── SAME-ORIGIN STATIC: Cache-First ───
-  const reqUrl = new URL(url);
   if (reqUrl.origin === self.location.origin) {
     event.respondWith(
-      caches.match(event.request).then(cached => cached || fetch(event.request))
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).catch(() => {
+          if (event.request.destination === 'image') {
+            return caches.match('/logo-diamond.png').then(image => image || new Response('', { status: 204 }));
+          }
+          return new Response('', { status: 204 });
+        });
+      })
     );
   }
 });

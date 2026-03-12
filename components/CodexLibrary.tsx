@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
-import { StoreTopBar } from './Store/StoreTopBar';
 import { CheckIcon } from './Icons';
-import { Action } from '../types';
 import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
+import { CampaignsCodex } from './CampaignsCodex';
+import { buildCodexCampaignPreview, CodexCampaignPreview } from '../utils/codexPreview';
 
 export { BIOLOGICAL_MACHINE_CODEX }; // Re-export for compatibility
 
@@ -13,6 +13,7 @@ export const CodexLibrary: React.FC = () => {
   
   const [installing, setInstalling] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
 
   const handleInstallCodex = async (codexId: string) => {
       if (confirmId !== codexId) {
@@ -69,6 +70,12 @@ export const CodexLibrary: React.FC = () => {
                         <div className="flex-1" />
 
                         <div className="pt-4 border-t border-white/5 flex gap-3">
+                            <button
+                                onClick={() => setCampaignPreview(buildCodexCampaignPreview(codex.id, codex.template))}
+                                className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-sm hover:bg-white/10 transition-all"
+                            >
+                                VER CAMPANHA
+                            </button>
                             <button 
                                 onClick={() => handleInstallCodex(codex.id)}
                                 disabled={installing}
@@ -90,6 +97,16 @@ export const CodexLibrary: React.FC = () => {
                 <h2 className="text-xl font-bold text-gray-500">Sua biblioteca está vazia</h2>
                 <p className="text-gray-600 max-w-xs">Adquira Codexes na Loja para vê-los aqui.</p>
             </div>
+        )}
+
+        {campaignPreview && (
+            <CampaignsCodex
+                onClose={() => setCampaignPreview(null)}
+                initialCampaignId={campaignPreview.campaign.id}
+                previewCampaign={campaignPreview.campaign}
+                previewArenas={campaignPreview.arenas}
+                previewActions={campaignPreview.actions}
+            />
         )}
     </div>
   );

@@ -308,6 +308,12 @@ export interface UserProfile {
   email?: string;
   emailConfirmedAt?: string;
   createdAt?: string;
+  termsVersion?: string;
+  termsAcceptedAt?: string;
+  termsAcceptSource?: string;
+  privacyVersion?: string;
+  privacyAcceptedAt?: string;
+  privacyAcceptSource?: string;
   appMode?: AppMode;
 
   themePreference?: ThemePreference;
@@ -855,6 +861,8 @@ export interface OraclePreferences {
   userId: string;
   iaEnabled: boolean;
   notificationsEnabled: boolean;
+  // Local-only preference for browser/device notifications.
+  pushEnabled?: boolean;
   animationsEnabled: boolean;
   soundsEnabled: boolean;
   hapticsEnabled: boolean;

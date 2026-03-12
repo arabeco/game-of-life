@@ -216,7 +216,7 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     );
 };
 
-const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActive: boolean; onClose: () => void; onTake: () => void; onActivate?: () => void; onClaim?: () => void; canClaim?: boolean; currentValue: number }> = ({ quest, progress, isActive, onClose, onTake, onActivate, onClaim, canClaim, currentValue }) => {
+const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; isActivatedForClan: boolean; isJoinedByUser: boolean; onClose: () => void; onTake: () => void; onActivate?: () => void; onClaim?: () => void; canClaim?: boolean; currentValue: number }> = ({ quest, progress, isActivatedForClan, isJoinedByUser, onClose, onTake, onActivate, onClaim, canClaim, currentValue }) => {
     const { fetchClanQuestParticipants, clanQuestParticipants } = useGame();
 
     useEffect(() => {
@@ -226,7 +226,9 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
     }, [quest.id, quest.actionTemplate?.name, fetchClanQuestParticipants]);
 
     const participants = clanQuestParticipants[quest.id] || 0;
-    const actionsRemaining = Math.max(0, quest.goal_value - currentValue);
+    const targetValue = quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1;
+    const actionsRemaining = Math.max(0, targetValue - currentValue);
+    const isActive = isJoinedByUser;
 
     return (
         <Portal>
@@ -264,15 +266,15 @@ const ClanMissionDetailModal: React.FC<{ quest: SeasonQuest; progress: number; i
                     </div>
                     <div className="space-y-2">
                         {canClaim ? (
-                            <button onClick={onClaim} className="w-full py-2 rounded-xl text-xs font-bold bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)] animate-pulse">
+                            <button id={`clan-quest-claim-${quest.id}`} onClick={onClaim} className="w-full py-2 rounded-xl text-xs font-bold bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)] animate-pulse">
                                 RESGATAR RECOMPENSA
                             </button>
                         ) : onActivate ? (
-                            <button onClick={onActivate} className="w-full py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)] animate-pulse">
+                            <button id={`clan-quest-activate-${quest.id}`} onClick={onActivate} className="w-full py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)] animate-pulse">
                                 ATIVAR MISSÃO PARA O CLÃ
                             </button>
                         ) : (
-                            <button onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-skin-button'}`}>
+                            <button id={`clan-quest-join-${quest.id}`} onClick={onTake} disabled={isActive} className={`w-full py-2 rounded-xl text-xs font-bold ${isActive ? 'bg-white/10 text-gray-400' : 'luxe-skin-button'}`}>
                                 {isActive ? 'JUNTAR-SE À MISSÃO' : 'PARTICIPAR'}
                             </button>
                         )}
@@ -317,7 +319,7 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, activateClanQuest, clanQuestProgress, getOrCreateOfficeArena, isBasicMode, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, appMode } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, activateClanQuest, clanQuestProgress, userMissionParticipations, getOrCreateOfficeArena, isBasicMode, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, appMode } = useGame();
     const [now, setNow] = useState(new Date());
     useEffect(() => {
         const interval = setInterval(() => setNow(new Date()), 30000); // Update 'now' every 30 seconds
@@ -819,19 +821,32 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         }
     };
 
-    const activeSeasonClanQuests = activeSeason ? seasonQuests.filter(q => q.season_id === activeSeason.id && q.scope === 'clan') : [];
+    const activeSeasonClanQuests = activeSeason
+        ? seasonQuests.filter(q => q.type === 'clan' && (!q.season_id || q.season_id === activeSeason.id))
+        : [];
 
     // Determine active quests for the clan based on progress record
     const clanActiveQuestIds = (clan && clanQuestProgress[clan.id]) ? Object.keys(clanQuestProgress[clan.id]) : [];
 
     const activeClanQuests = activeSeasonClanQuests.filter(q => clanActiveQuestIds.includes(q.id));
+    const allClanActions = getArenas().flatMap(arena => getActionsForArena(arena.id));
     const availableClanQuests = activeSeasonClanQuests.filter(q => !clanActiveQuestIds.includes(q.id));
-    const questArenaName = activeSeason ? `Quests - Clã ${activeSeason.id}` : 'Quests - Clã';
+    const getQuestGoal = (quest: SeasonQuest) => (
+        quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1
+    );
+
+    const isQuestActivatedForClan = (quest: SeasonQuest) => {
+        return clanActiveQuestIds.includes(quest.id) || getClanQuestProgress(quest.id) > 0;
+    };
+
+    const isQuestJoinedByUser = (quest: SeasonQuest) => {
+        return myParticipations.includes(quest.id)
+            || !!userMissionParticipations?.[quest.id]
+            || allClanActions.some(action => action.name === quest.title || action.name === quest.actionTemplate?.name);
+    };
 
     const isQuestActive = (quest: SeasonQuest) => {
-        const arena = getArenas().find(arena => arena.name === questArenaName);
-        if (!arena) return false;
-        return getActionsForArena(arena.id).some(action => action.name === quest.title || action.name === quest.actionTemplate?.name);
+        return isQuestJoinedByUser(quest);
     };
 
     const getQuestRawProgress = (quest: SeasonQuest) => {
@@ -840,12 +855,12 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
     const getQuestProgress = (quest: SeasonQuest) => {
         const completed = getClanQuestProgress(quest.id);
-        if (quest.goal_value > 0) return Math.floor(Math.min(100, Math.max(0, (completed / quest.goal_value) * 100)));
-        return Math.min(100, completed);
+        const targetValue = getQuestGoal(quest);
+        return Math.floor(Math.min(100, Math.max(0, (completed / Math.max(targetValue, 1)) * 100)));
     };
 
-    const handleTakeQuest = (quest: SeasonQuest) => {
-        acceptSeasonQuest(quest.id);
+    const handleTakeQuest = async (quest: SeasonQuest) => {
+        await acceptSeasonQuest(quest.id);
         setSelectedQuest(null);
     };
 
@@ -1211,6 +1226,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                             return (
                                                 <GlassCard
                                                     key={quest.id}
+                                                    id={`clan-season-quest-card-${quest.id}`}
                                                     variant="accent"
                                                     className={`p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border-2 shadow-lg mt-3 ${isActive
                                                         ? 'bg-gradient-to-br from-[#4a3b52] to-[#2d1b36] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.4)]'
@@ -1220,14 +1236,14 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                 >
                                                     <div className="flex justify-between items-start relative z-10">
                                                         <div className="flex items-center gap-3">
-                                                            <span className="text-2xl">{quest.icon || '🌟'}</span>
+                                                            <span className="text-2xl">{quest.actionTemplate?.icon || '🌟'}</span>
                                                             <div>
                                                                 <h4 className="font-bold text-sm leading-tight luxe-title-shadow uppercase tracking-wide">{quest.title}</h4>
                                                                 <p className="text-[10px] text-gray-400 line-clamp-2">{quest.description}</p>
                                                             </div>
                                                         </div>
                                                         <div className="flex flex-col items-end gap-1">
-                                                            <span className="text-[10px] text-yellow-500 font-mono">+{quest.reward_value} XP</span>
+                                                            <span className="text-[10px] text-yellow-500 font-mono">+{quest.rewards?.xp || quest.reward_value || 0} XP</span>
                                                             <div className="flex items-center gap-1">
                                                                 <UsersIcon className="w-3 h-3 text-gray-400" />
                                                                 <span className="text-[10px] text-gray-400 font-bold">{clanQuestParticipants[quest.id] || 0}</span>
@@ -1264,20 +1280,21 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                 {availableClanQuests.map((quest) => (
                                                     <GlassCard
                                                         key={quest.id}
+                                                        id={`clan-season-quest-card-${quest.id}`}
                                                         variant="neutral"
                                                         className="p-4 space-y-3 relative overflow-hidden group transition-all duration-300 rounded-lg border border-white/10 hover:border-[var(--skin-accent-color)] mt-3 opacity-80 hover:opacity-100"
                                                         onClick={() => setSelectedQuest(quest)}
                                                     >
                                                         <div className="flex justify-between items-start relative z-10">
                                                             <div className="flex items-center gap-3">
-                                                                <span className="text-2xl grayscale opacity-70">{quest.icon || '🌟'}</span>
+                                                                <span className="text-2xl grayscale opacity-70">{quest.actionTemplate?.icon || '🌟'}</span>
                                                                 <div>
                                                                     <h4 className="font-bold text-sm leading-tight uppercase tracking-wide text-gray-300">{quest.title}</h4>
                                                                     <p className="text-[10px] text-gray-500 line-clamp-2">{quest.description}</p>
                                                                 </div>
                                                             </div>
                                                             <div className="flex flex-col items-end gap-1">
-                                                                <span className="text-[10px] text-gray-500 font-mono">+{quest.reward_value} XP</span>
+                                                                <span className="text-[10px] text-gray-500 font-mono">+{quest.rewards?.xp || quest.reward_value || 0} XP</span>
                                                             </div>
                                                         </div>
                                                         <div className="w-full py-1.5 rounded-lg bg-white/5 border border-white/10 text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 group-hover:bg-[var(--skin-accent-color)]/20 group-hover:text-[var(--skin-accent-color)] transition-colors">
@@ -1417,11 +1434,11 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                         <div className="flex-none p-4 z-30 bg-gradient-to-t from-black/80 to-transparent">
                             <GlassCard variant="neutral" className="p-1">
                                 <div className="flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
-                                    <button onClick={() => setActiveTab('santuario')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'santuario' ? 'bg-white/10' : 'text-gray-400'}`}>
+                                    <button id="clan-tab-sanctuary" onClick={() => setActiveTab('santuario')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'santuario' ? 'bg-white/10' : 'text-gray-400'}`}>
                                         {isOfficeClan ? 'Escritório' : 'Santuário'}
                                     </button>
-                                    <button onClick={() => setActiveTab('membros')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'membros' ? 'bg-white/10' : 'text-gray-400'}`}>{isOfficeClan ? 'Equipe' : 'Membros'}</button>
-                                    <button onClick={() => setActiveTab('missoes')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'missoes' ? 'bg-white/10' : 'text-gray-400'}`}>{isOfficeClan ? 'Ações' : 'Quests'}</button>
+                                    <button id="clan-tab-members" onClick={() => setActiveTab('membros')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'membros' ? 'bg-white/10' : 'text-gray-400'}`}>{isOfficeClan ? 'Equipe' : 'Membros'}</button>
+                                    <button id="clan-tab-quests" onClick={() => setActiveTab('missoes')} className={`w-full py-2 text-sm font-bold rounded-lg ${activeTab === 'missoes' ? 'bg-white/10' : 'text-gray-400'}`}>{isOfficeClan ? 'Ações' : 'Quests'}</button>
                                 </div>
                             </GlassCard>
                         </div>
@@ -1435,9 +1452,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     quest={selectedQuest}
                     progress={getQuestProgress(selectedQuest)}
                     currentValue={getQuestRawProgress(selectedQuest)}
-                    isActive={isQuestActive(selectedQuest)}
+                    isActivatedForClan={isQuestActivatedForClan(selectedQuest)}
+                    isJoinedByUser={isQuestJoinedByUser(selectedQuest)}
                     onClose={() => setSelectedQuest(null)}
-                    onTake={() => handleTakeQuest(selectedQuest)}
+                    onTake={() => { void handleTakeQuest(selectedQuest); }}
                     onActivate={
                         (userClanRole === 'leader' && !activeClanQuests.some(q => q.id === selectedQuest.id))
                             ? () => {

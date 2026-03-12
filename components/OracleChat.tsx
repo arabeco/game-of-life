@@ -64,6 +64,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const isInitialLoadRef = useRef(true);
+  const firstConversationNotice = 'Aviso: o Oráculo usa IA externa. Evite compartilhar dados sensíveis nas conversas.';
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -364,10 +365,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-50">
+            <div className="flex min-h-full flex-col items-center justify-center p-6 text-center">
+              <div className="mb-5 max-w-[300px] rounded-2xl rounded-tl-sm border border-amber-400/20 bg-amber-500/5 px-4 py-3 text-left text-[11px] italic leading-relaxed text-amber-100/75 shadow-inner">
+                {firstConversationNotice}
+              </div>
+              <div className="opacity-50">
               <HeaderIcon className={`w-16 h-16 mb-4 ${MODE_VISUALS[currentMode].color} drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]`} />
               <p className="text-sm text-gray-400 font-bold">O Oráculo aguarda sua consulta, Soberano.</p>
               <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[currentMode].description}</p>
+              </div>
             </div>
           )}
           

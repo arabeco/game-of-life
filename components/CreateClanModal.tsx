@@ -55,6 +55,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                         </button>
                         <div className="w-full space-y-3">
                             <input
+                                id="create-clan-name-input"
                                 type="text"
                                 placeholder="Nome do Clã"
                                 value={name}
@@ -62,6 +63,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                 className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-center font-bold"
                             />
                              <textarea
+                                id="create-clan-description-input"
                                 placeholder="Lore / Descrição do Clã..."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -148,7 +150,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                     </div>
                     <div className="flex space-x-2">
                             <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
-                            <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">FUNDAR</button>
+                            <button id="create-clan-submit-button" onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">FUNDAR</button>
                         </div>
                     </GlassCard>
                 </div>

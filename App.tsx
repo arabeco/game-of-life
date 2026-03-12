@@ -2,6 +2,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
+import { startInstallPromptCapture } from './utils/installPrompt';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then((m) => ({ default: m.LoginView })));
 const LegacyRenderView = React.lazy(() => import('./views/LegacyRenderView').then((m) => ({ default: m.LegacyRenderView })));
@@ -62,6 +63,7 @@ const App: React.FC = () => {
     };
 
     useEffect(() => {
+        startInstallPromptCapture();
         void import('./views/LoginView');
         void import('./components/AuthenticatedApp');
 

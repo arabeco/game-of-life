@@ -23,13 +23,18 @@ const OracleChat = lazy(() =>
 
 interface OracleFeedProps {
     onClose: () => void;
+    initialTab?: Tab;
 }
 
 type Tab = 'chat' | 'notifications' | 'clan' | 'dms';
 
-export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose }) => {
+export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'chat' }) => {
     const { notifications, markNotificationRead, deleteNotification, oracleMessages, clan, dmConversations, appMode, oraclePreferences } = useGame();
-    const [activeTab, setActiveTab] = useState<Tab>('chat');
+    const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+    useEffect(() => {
+        setActiveTab(initialTab);
+    }, [initialTab]);
 
     const activeOracleMode = oraclePreferences?.activeMode || 'neutro';
     const visibleNotifications = getVisibleNotificationsForProfile(notifications, appMode, activeOracleMode);

@@ -15,7 +15,7 @@ import type { LegacyEraSummary } from './LegacyExportDocument';
 import { getScoreGrade } from '../utils/dateUtils';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { SupabaseService } from '../services/SupabaseService';
-import { requestLocalNotificationPermission, showLocalNotification } from '../utils/localNotification';
+import { showLocalNotification } from '../utils/localNotification';
 
 let gmNotificationTestTimeoutId: number | null = null;
 
@@ -88,7 +88,7 @@ const buildMockAtlasWeeks = (seed: number, accentAction: string): ReportAtlasWee
 };
 
 export const DebugRewardControls: React.FC = () => {
-    const { userProfile, updateUserProfile, showToast, setAchievementUnlocked, getArenas, fetchNotifications } = useGame();
+    const { userProfile, updateUserProfile, showToast, setAchievementUnlocked, getArenas, fetchNotifications, oraclePreferences } = useGame();
     const { trigger } = useSensoryFeedback();
     const [loading, setLoading] = useState(false);
     const [showChestModal, setShowChestModal] = useState<ChestType | null>(null);
@@ -464,6 +464,40 @@ export const DebugRewardControls: React.FC = () => {
         });
     };
 
+    const deliverNotificationTest = async (openOracleFeed: boolean) => {
+        const firedAt = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const created = await SupabaseService.createNotification(
+            userProfile.id,
+            'system',
+            `Teste GM disparado às ${firedAt}. Verifique o Oráculo e o badge do app.`,
+        );
+
+        if (!created) {
+            showToast('Não foi possível criar a notificação de teste.', 'error');
+            return;
+        }
+
+        await fetchNotifications();
+
+        if (oraclePreferences?.pushEnabled) {
+            await showLocalNotification({
+                title: 'Aviso do Soberano',
+                body: 'Teste GM: a notificação acabou de chegar.',
+                tag: 'gm-notification-test',
+                url: '/?oracle=notifications',
+                requireInteraction: true,
+            });
+        }
+
+        if (openOracleFeed && document.visibilityState === 'visible') {
+            window.dispatchEvent(new CustomEvent('openOracleNotifications'));
+        }
+
+        if (document.visibilityState === 'visible') {
+            showToast('Notificação de teste disparada.', 'info');
+        }
+    };
+
     const scheduleNotificationTest = async () => {
         if (!userProfile.id || userProfile.id === 'placeholder_user') {
             showToast('Entre com um perfil real para testar a notificação.', 'warning');
@@ -475,40 +509,24 @@ export const DebugRewardControls: React.FC = () => {
             return;
         }
 
-        const permission = await requestLocalNotificationPermission();
-        if (permission === 'unsupported') {
-            showToast('Este navegador não suporta notificações locais. O aviso ainda vai cair no feed.', 'warning');
-        } else if (permission === 'denied') {
-            showToast('Permissão de notificação negada. O aviso ainda vai entrar no feed e no badge.', 'warning');
+        if (!oraclePreferences?.pushEnabled) {
+            showToast('Push no aparelho está desligado. O teste ainda vai cair em AVISOS e no badge.', 'info');
         }
 
         showToast('Teste de notificação agendado para 30 segundos.', 'success');
 
         gmNotificationTestTimeoutId = window.setTimeout(() => {
             gmNotificationTestTimeoutId = null;
-
-            void (async () => {
-                const firedAt = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                await SupabaseService.createNotification(
-                    userProfile.id,
-                    'system',
-                    `Teste GM disparado às ${firedAt}. Verifique o Oráculo e o badge do app.`,
-                );
-                await fetchNotifications();
-
-                await showLocalNotification({
-                    title: 'Aviso do Soberano',
-                    body: 'Teste GM: a notificação agendada acabou de chegar.',
-                    tag: 'gm-notification-test',
-                    url: '/',
-                    requireInteraction: true,
-                });
-
-                if (document.visibilityState === 'visible') {
-                    showToast('Notificação de teste disparada.', 'info');
-                }
-            })();
+            void deliverNotificationTest(true);
         }, 30000);
+    };
+
+    const fireNotificationNow = async () => {
+        if (!userProfile.id || userProfile.id === 'placeholder_user') {
+            showToast('Entre com um perfil real para testar a notificação.', 'warning');
+            return;
+        }
+        await deliverNotificationTest(true);
     };
 
     return (
@@ -554,7 +572,12 @@ export const DebugRewardControls: React.FC = () => {
                     <span className="text-[10px] opacity-70">(Simula Conquista)</span>
                 </button>
 
-                <button onClick={scheduleNotificationTest} className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-lg border border-rose-500/20 bg-rose-600/20 p-3 text-xs font-bold text-rose-100 transition-all hover:border-rose-400/50 hover:bg-rose-600/35">
+                <button onClick={fireNotificationNow} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-rose-500/20 bg-rose-600/20 p-3 text-xs font-bold text-rose-100 transition-all hover:border-rose-400/50 hover:bg-rose-600/35">
+                    <span>Notificação Agora</span>
+                    <span className="text-[10px] opacity-70">(abre em AVISOS)</span>
+                </button>
+
+                <button onClick={scheduleNotificationTest} className="flex flex-col items-center justify-center gap-1 rounded-lg border border-rose-500/20 bg-rose-600/20 p-3 text-xs font-bold text-rose-100 transition-all hover:border-rose-400/50 hover:bg-rose-600/35">
                     <span>Teste Notificação 30s</span>
                     <span className="text-[10px] opacity-70">(Feed + badge + popup local)</span>
                 </button>

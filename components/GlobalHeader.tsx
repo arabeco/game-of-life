@@ -15,6 +15,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const { userProfile, oracleMessages, notifications, appMode, clan } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
+    const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'notifications' | 'clan' | 'dms'>('chat');
     const [isClanOpen, setClanOpen] = useState(false);
     const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
     const [isRestScreenOpen, setRestScreenOpen] = useState(true); // Default to true for auto-open on login/app start
@@ -40,6 +41,28 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
         };
         window.addEventListener('tutorialRestScreen', handleTutorialRestScreen);
         return () => window.removeEventListener('tutorialRestScreen', handleTutorialRestScreen);
+    }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('oracle') === 'notifications') {
+            setOracleInitialTab('notifications');
+            setOracleOpen(true);
+            params.delete('oracle');
+            const nextSearch = params.toString();
+            const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+            window.history.replaceState(window.history.state, '', nextUrl);
+        }
+    }, []);
+
+    useEffect(() => {
+        const handleOpenOracleNotifications = () => {
+            setOracleInitialTab('notifications');
+            setOracleOpen(true);
+        };
+
+        window.addEventListener('openOracleNotifications', handleOpenOracleNotifications);
+        return () => window.removeEventListener('openOracleNotifications', handleOpenOracleNotifications);
     }, []);
 
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '');
@@ -79,6 +102,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     };
 
     const handleOracleClick = () => {
+        setOracleInitialTab('chat');
         setOracleOpen(true);
     };
 
@@ -186,7 +210,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
             </header>
             <Suspense fallback={null}>
                 {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
-                {isOracleOpen && <OracleFeed onClose={() => setOracleOpen(false)} />}
+                {isOracleOpen && <OracleFeed initialTab={oracleInitialTab} onClose={() => setOracleOpen(false)} />}
                 {isClanOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanOpen(false)} />}
                 {isRestScreenOpen && (
                     <RestScreen 

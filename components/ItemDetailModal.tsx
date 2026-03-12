@@ -5,6 +5,7 @@ import { Portal } from './Portal';
 import { XIcon, Trash2Icon, ShareIcon } from './Icons';
 import { ITEMS_DB, ItemDef, ItemCategory, isItemCatalogVisible } from '../constants/items';
 import { UnlockCategory } from '../types';
+import { ItemArt } from './ItemArt';
 
 interface ItemDetailModalProps {
     item: ItemDef;
@@ -169,11 +170,14 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                 <div className="relative z-10 group">
                     <div className={`absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500`} />
                     <div className="w-40 h-40 rounded-2xl flex items-center justify-center relative z-10 transition-transform duration-500 group-hover:scale-110">
-                        {currentItem.imageUrl ? (
-                            <img src={currentItem.imageUrl} alt={currentItem.name} className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
-                        ) : (
-                            <span className="text-8xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">{currentItem.icon}</span>
-                        )}
+                        <ItemArt
+                            src={currentItem.imageUrl}
+                            alt={currentItem.name}
+                            icon={currentItem.icon}
+                            className="w-full h-full flex items-center justify-center"
+                            imgClassName="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                            iconClassName="text-8xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                        />
                     </div>
                 </div>
 
@@ -221,11 +225,14 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                                     >
                                         <div className={`absolute inset-0 opacity-10 ${relRarityColor}`} />
                                         <div className="relative w-full h-full flex items-center justify-center p-1">
-                                            {relItem.imageUrl ? (
-                                                <img src={relItem.imageUrl} alt={relItem.name} className="w-full h-full object-contain" />
-                                            ) : (
-                                                <span className="text-xl">{relItem.icon}</span>
-                                            )}
+                                            <ItemArt
+                                                src={relItem.imageUrl}
+                                                alt={relItem.name}
+                                                icon={relItem.icon}
+                                                className="w-full h-full flex items-center justify-center"
+                                                imgClassName="w-full h-full object-contain"
+                                                iconClassName="text-xl"
+                                            />
                                         </div>
                                     </button>
                                 );

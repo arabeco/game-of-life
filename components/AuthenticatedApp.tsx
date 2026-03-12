@@ -9,6 +9,12 @@ import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { updateInstalledAppBadge } from '../utils/appBadge';
 import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
+import {
+    LEGAL_ACCEPT_SOURCE_INITIAL,
+    LEGAL_ACCEPT_SOURCE_REVIEW,
+    LEGAL_PRIVACY_VERSION,
+    LEGAL_TERMS_VERSION,
+} from '../constants/legal';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -503,13 +509,24 @@ const MainApp: React.FC = () => {
     ]);
 
     const handleAcceptTerms = () => {
-        if (forceShowTerms) {
-            setForceShowTerms(false);
-            return;
-        }
+        const acceptedAt = new Date().toISOString();
         const nextCompleted = (userProfile.completedSeasonMissions || []).filter((flag) => flag !== PROFILE_FLAG_TERMS_PENDING);
         if (!nextCompleted.includes(PROFILE_FLAG_TERMS_ACCEPTED)) nextCompleted.push(PROFILE_FLAG_TERMS_ACCEPTED);
-        updateUserProfile({ completedSeasonMissions: nextCompleted });
+        const acceptSource = forceShowTerms ? LEGAL_ACCEPT_SOURCE_REVIEW : LEGAL_ACCEPT_SOURCE_INITIAL;
+
+        updateUserProfile({
+            completedSeasonMissions: nextCompleted,
+            termsVersion: userProfile.termsVersion || LEGAL_TERMS_VERSION,
+            termsAcceptedAt: userProfile.termsAcceptedAt || acceptedAt,
+            termsAcceptSource: userProfile.termsAcceptSource || acceptSource,
+            privacyVersion: userProfile.privacyVersion || LEGAL_PRIVACY_VERSION,
+            privacyAcceptedAt: userProfile.privacyAcceptedAt || acceptedAt,
+            privacyAcceptSource: userProfile.privacyAcceptSource || acceptSource,
+        });
+
+        if (forceShowTerms) {
+            setForceShowTerms(false);
+        }
     };
 
     useEffect(() => {

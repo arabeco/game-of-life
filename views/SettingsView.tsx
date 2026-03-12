@@ -495,9 +495,9 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
 
                     <div className="flex space-x-2">
-                        <button onClick={() => setActiveTab('mentoria')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'mentoria' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>MENTORIA</button>
-                        <button onClick={() => setActiveTab('parcerias')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'parcerias' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>PARCERIAS</button>
-                        <button onClick={() => setActiveTab('desafios')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'desafios' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>DESAFIOS</button>
+                        <button id="links-tab-mentoria" onClick={() => setActiveTab('mentoria')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'mentoria' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>MENTORIA</button>
+                        <button id="links-tab-parcerias" onClick={() => setActiveTab('parcerias')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'parcerias' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>PARCERIAS</button>
+                        <button id="links-tab-desafios" onClick={() => setActiveTab('desafios')} className={`w-full py-2 rounded-xl font-bold text-xs tracking-widest border border-white/10 ${activeTab === 'desafios' ? 'bg-black/30 accent-text' : 'bg-black/10 text-gray-300 hover:bg-black/20'}`}>DESAFIOS</button>
                     </div>
 
                     {!sessionReady && (
@@ -709,6 +709,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             )}
                                             <div className="pt-2 border-t border-white/10">
                                                 <button
+                                                    id="links-new-challenge-button"
                                                     onClick={handleOpenChallengeModal}
                                                     className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
                                                 >
@@ -813,6 +814,7 @@ const ChallengeSelectionModal: React.FC<{ onClose: () => void; onSelectFriend: (
                     </div>
 
                     <input
+                        id="challenge-search-input"
                         type="text"
                         placeholder="Buscar amigo..."
                         className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm text-white mb-4 focus:border-[var(--skin-accent-color)] outline-none"
@@ -825,7 +827,7 @@ const ChallengeSelectionModal: React.FC<{ onClose: () => void; onSelectFriend: (
                             <div className="text-center text-gray-500 text-xs py-8">Nenhum amigo encontrado.</div>
                         ) : (
                             filteredFriends.map(friend => (
-                                <div key={friend.id} onClick={() => onSelectFriend(friend)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl cursor-pointer border border-transparent hover:border-[var(--skin-accent-color)]/30 transition-all">
+                                <div id={`challenge-friend-${friend.id}`} key={friend.id} onClick={() => onSelectFriend(friend)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl cursor-pointer border border-transparent hover:border-[var(--skin-accent-color)]/30 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-black/30 overflow-hidden">
                                         {friend.avatarUrl ? <img src={friend.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold">?</div>}
                                     </div>
@@ -1946,6 +1948,7 @@ export const SettingsView: React.FC = () => {
                     {tabs.map(tab => (
                         <button
                             key={tab}
+                            id={`settings-tab-${tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]+/g, '-')}`}
                             onClick={() => setActiveTab(tab)}
                             className={`w-full px-2 py-2 text-xs font-semibold rounded-xl transition-colors ${activeTab === tab ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'
                                 }`}

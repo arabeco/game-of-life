@@ -8,6 +8,7 @@ import { ItemDetailModal } from '../ItemDetailModal';
 import { ChestType } from '../../types';
 import { ChestOpeningModal } from '../ChestOpeningModal';
 import { getChestVisual, getTierVisual, normalizeVisualRarity, withAlpha } from '../../constants/rarityVisuals';
+import { ItemArt } from '../ItemArt';
 
 type InventoryTab = 'all' | 'sovereign' | 'glyph' | 'interface' | 'insignias' | 'chests';
 type InventoryEntry = {
@@ -209,11 +210,14 @@ export const Inventory: React.FC = () => {
                                     )}
 
                                     <div className="group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg flex items-center justify-center w-full h-full mb-3">
-                                        {item.def?.imageUrl ? (
-                                            <img src={item.def.imageUrl} alt={item.def.name} className="w-3/4 h-3/4 object-contain" />
-                                        ) : (
-                                            <span className="text-2xl">{item.def?.icon}</span>
-                                        )}
+                                        <ItemArt
+                                            src={item.def?.imageUrl}
+                                            alt={item.def?.name || item.id}
+                                            icon={item.def?.icon}
+                                            className="w-3/4 h-3/4 flex items-center justify-center"
+                                            imgClassName="w-full h-full object-contain"
+                                            iconClassName="text-2xl"
+                                        />
                                     </div>
                                     
                                     {/* Item Name */}

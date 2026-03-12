@@ -24,12 +24,12 @@ export const HAIR_COLORS = [
 ];
 
 export const BODY_STYLES = [
-  { id: 'body_masc_1', name: 'Masculino 1', url: `${AVATAR_BASE_URL}/body_masc_1.png.png` },
-  { id: 'body_masc_2', name: 'Masculino 2', url: `${AVATAR_BASE_URL}/body_masc_2.png.png` },
-  { id: 'body_masc_3', name: 'Masculino 3', url: `${AVATAR_BASE_URL}/body_masc_3.png.png` },
-  { id: 'body_fem_1', name: 'Feminino 1', url: `${AVATAR_BASE_URL}/body_fem_1.png.png` },
-  { id: 'body_fem_2', name: 'Feminino 2', url: `${AVATAR_BASE_URL}/body_fem_2.png.png` },
-  { id: 'body_fem_3', name: 'Feminino 3', url: `${AVATAR_BASE_URL}/body_fem_3.png.png` },
+  { id: 'body_masc_1', name: 'Masculino 1', url: `${AVATAR_BASE_URL}/body_masc_1.png` },
+  { id: 'body_masc_2', name: 'Masculino 2', url: `${AVATAR_BASE_URL}/body_masc_2.png` },
+  { id: 'body_masc_3', name: 'Masculino 3', url: `${AVATAR_BASE_URL}/body_masc_3.png` },
+  { id: 'body_fem_1', name: 'Feminino 1', url: `${AVATAR_BASE_URL}/body_fem_1.png` },
+  { id: 'body_fem_2', name: 'Feminino 2', url: `${AVATAR_BASE_URL}/body_fem_2.png` },
+  { id: 'body_fem_3', name: 'Feminino 3', url: `${AVATAR_BASE_URL}/body_fem_3.png` },
 ];
 
 export const FACE_FEATURES_URL = ``;

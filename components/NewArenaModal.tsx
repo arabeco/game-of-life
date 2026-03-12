@@ -4,6 +4,7 @@ import { Arena } from '../types';
 import { CrownIcon, ChevronRightIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
+import { supabase } from '../supabaseClient';
 
 interface NewArenaModalProps {
     assetId?: string;
@@ -46,7 +47,7 @@ const AssetSelectionModal: React.FC<{ currentAssetId: string; onSelect: (assetId
 };
 
 export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAssetId, isOpen, onClose, onArenaCreated, initialRelationship }) => {
-    const { addArena, assets, inviteLink, showToast } = useGame();
+    const { addArena, assets, showToast } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [assetId, setAssetId] = useState(initialAssetId || 'geral');
@@ -54,6 +55,18 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     const modalCardRef = useRef<HTMLDivElement>(null);
 
     if (!isOpen) return null;
+
+    const mapRelationshipType = (type: NonNullable<NewArenaModalProps['initialRelationship']>['type']) => {
+        switch (type) {
+            case 'competition':
+                return 'competicao';
+            case 'partnership':
+                return 'parceria';
+            case 'mentorship':
+            default:
+                return 'mentoria';
+        }
+    };
 
     const assetEmojiMap: Record<string, string> = {
         saude: '🧘',
@@ -101,8 +114,27 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         });
 
         if (initialRelationship) {
-            inviteLink(newArena.id, initialRelationship.friendId, initialRelationship.type as any);
-            showToast(`Convite enviado para ${initialRelationship.friendName}.`, 'success');
+            const { data: sessionData } = await supabase.auth.getSession();
+            const senderId = sessionData.session?.user.id;
+
+            if (!senderId) {
+                showToast('Faca login para enviar o convite do vinculo.', 'warning');
+            } else {
+                const { error } = await supabase.from('relationship_link_invites').insert({
+                    sender_id: senderId,
+                    recipient_id: initialRelationship.friendId,
+                    link_type: mapRelationshipType(initialRelationship.type),
+                    arena_id: newArena.id,
+                    arena_snapshot: { name, icon: defaultIcon },
+                    status: 'pending',
+                });
+
+                if (error) {
+                    showToast(`Arena criada, mas o convite falhou: ${error.message}`, 'error');
+                } else {
+                    showToast(`Convite enviado para ${initialRelationship.friendName}.`, 'success');
+                }
+            }
         } else {
             showToast('Arena criada.', 'success');
         }
@@ -144,15 +176,15 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                                 <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione o Ativo Pai'}</span>
                                 <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                             </button>
-                            <input type="text" placeholder="Nome da Arena" value={name} onChange={e => setName(e.target.value)} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
-                            <textarea placeholder="Descricao da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
+                            <input id="new-arena-name-input" type="text" placeholder="Nome da Arena" value={name} onChange={e => setName(e.target.value)} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
+                            <textarea id="new-arena-description-input" placeholder="Descricao da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                         </div>
 
                         <div className="flex space-x-2 pt-2">
                             <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
                                 CANCELAR
                             </button>
-                            <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
+                            <button id="new-arena-submit-button" onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
                                 {initialRelationship ? 'CRIAR E CONVIDAR' : 'CRIAR ARENA'}
                             </button>
                         </div>

@@ -546,6 +546,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         onClick={() => isEditing && setBorderModalOpen(true)}
                                         disabled={!isEditing}
                                         className="absolute -inset-1 z-10"
+                                        aria-label="Editar borda"
+                                        title="Editar borda"
                                     />
 
                                     {/* Avatar Button (Top Layer) */}
@@ -583,6 +585,25 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         <span className="text-lg font-black text-white">{displayProfile.level}</span>
                                     </div>
                                 </div>
+
+                                {isEditing && isOwnProfile && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <button
+                                            onClick={() => setIsAvatarModalOpen(true)}
+                                            className="px-3 py-1.5 rounded-xl border border-white/15 bg-black/45 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest text-white/85 hover:bg-white/10 transition-colors"
+                                            title="Editar foto"
+                                        >
+                                            Foto
+                                        </button>
+                                        <button
+                                            onClick={() => setBorderModalOpen(true)}
+                                            className="px-3 py-1.5 rounded-xl border border-white/15 bg-black/45 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest text-white/85 hover:bg-white/10 transition-colors"
+                                            title="Editar borda"
+                                        >
+                                            Borda
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div className="relative mt-1 flex flex-col items-center">
                                     <div

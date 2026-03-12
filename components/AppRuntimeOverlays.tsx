@@ -20,23 +20,23 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
     const clauses = [
         {
             title: 'O DESPERTAR DO SOBERANO',
-            text: 'Para acessar a interface, você deve aceitar os termos do pacto que regem este domínio.',
+            text: 'Ao seguir, voce confirma que leu este resumo de aceite. O uso do GLYPH tambem e regido pelos Termos de Uso e pela Politica de Privacidade completos, disponiveis para consulta permanente.',
         },
         {
-            title: 'I. PROPRIEDADE ABSOLUTA',
-            text: 'Seus dados são sua soberania. O Life OS é local-first: anotações, diários e registros residem no seu dispositivo. A nuvem é apenas o seu espelho de segurança. Nós não mineramos sua vida.',
+            title: 'I. CONTA E DADOS ESSENCIAIS',
+            text: 'Para criar e manter sua conta, tratamos dados como e-mail, autenticacao, nickname, perfil basico e registros necessarios para operar, sincronizar e proteger o app.',
         },
         {
-            title: 'II. O VÍNCULO DE MENTORIA',
-            text: 'Ao aceitar um mentor, você autoriza a visualização parcial do seu progresso. Seus diários privados permanecem ocultos. O Life OS não se responsabiliza por orientações de terceiros; você é o único executor de suas ações.',
+            title: 'II. RECURSOS SOCIAIS E PARCEIROS',
+            text: 'Mentoria, clas, amizades, mensagens, uploads e Oraculo podem envolver compartilhamento de perfil, progresso, imagens e conteudo conforme sua acao no app. Uploads e anexos podem ficar acessiveis por link. Para viabilizar o servico, usamos parceiros de autenticacao, infraestrutura, IA e pagamento.',
         },
         {
-            title: 'III. ISENÇÃO DE RESPONSABILIDADE',
-            text: 'Este sistema é uma ferramenta de autogestão. Não somos médicos, terapeutas ou consultores financeiros. O risco da execução física, mental ou financeira de qualquer Codex é inteiramente do soberano.',
+            title: 'III. COMPRAS E LIMITES DO SERVICO',
+            text: 'Compras de recursos digitais sao processadas por parceiro de pagamento e so geram credito apos confirmacao. O GLYPH e uma ferramenta de organizacao e jogo, nao substitui orientacao medica, psicologica, juridica ou financeira.',
         },
         {
-            title: 'IV. DIREITO AO EXÍLIO',
-            text: 'A qualquer momento, você pode incinerar seus dados. O comando "Deletar Conta" é definitivo e apaga sua existência em nossos servidores, sem rastro ou recuperação.',
+            title: 'IV. SEUS DIREITOS E SUA SAIDA',
+            text: 'Voce pode solicitar acesso, correcao e exclusao dos seus dados na forma da lei. A exclusao da conta pode preservar registros minimos exigidos por obrigacao legal, seguranca e prevencao a fraude. Ao selar, voce aceita estas condicoes.',
         },
     ];
     const [step, setStep] = useState(0);

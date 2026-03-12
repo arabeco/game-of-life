@@ -1,9 +1,11 @@
-
-
-import React, { useState, useRef } from 'react';
+import React, { Suspense, lazy, useRef, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { UploadIcon } from './Icons';
 import { Portal } from './Portal';
+
+const ImageCropper = lazy(() =>
+  import('./ImageCropper').then((module) => ({ default: module.ImageCropper }))
+);
 
 interface AvatarUploadModalProps {
   currentAvatar: string;
@@ -12,61 +14,75 @@ interface AvatarUploadModalProps {
 }
 
 export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAvatar, onClose, onSave }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [preparedImageDataUrl, setPreparedImageDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('File size must be less than 5MB');
-        return;
-      }
+    if (!file) return;
 
-      if (!file.type.startsWith('image/')) {
-        setError('File must be an image');
-        return;
-      }
-
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setError(null);
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size must be less than 5MB');
+      return;
     }
+
+    if (!file.type.startsWith('image/')) {
+      setError('File must be an image');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      setImageToCrop(dataUrl);
+      setError(null);
+    };
+    reader.onerror = () => setError('Failed to read image');
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = (croppedImageDataUrl: string) => {
+    setPreparedImageDataUrl(croppedImageDataUrl);
+    setPreviewUrl(croppedImageDataUrl);
+    setImageToCrop(null);
+    setError(null);
   };
 
   const handleSave = async () => {
-    if (!selectedFile) return;
+    if (!preparedImageDataUrl) return;
 
     setIsUploading(true);
     try {
-      // First, read the raw file as Data URL
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const rawDataUrl = reader.result as string;
-          // Compress to WebP (max 400x400 for avatars, good quality)
-          const { compressDataUrlToWebP } = await import('../utils/imageUtils');
-          const webpDataUrl = await compressDataUrlToWebP(rawDataUrl, { maxWidth: 400, maxHeight: 400, quality: 0.8 });
-          onSave(webpDataUrl);
-          onClose();
-        } catch (compressErr) {
-          setError('Failed to compress image');
-          setIsUploading(false);
-        }
-      };
-      reader.onerror = () => {
-        setError('Failed to read image');
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(selectedFile);
-    } catch (err) {
+      const { compressDataUrlToWebP } = await import('../utils/imageUtils');
+      const webpDataUrl = await compressDataUrlToWebP(preparedImageDataUrl, {
+        maxWidth: 400,
+        maxHeight: 400,
+        quality: 0.8,
+      });
+      onSave(webpDataUrl);
+      onClose();
+    } catch {
       setError('Failed to process image');
       setIsUploading(false);
     }
   };
+
+  if (imageToCrop) {
+    return (
+      <Suspense fallback={<div className="fixed inset-0 z-[10001] bg-black/70 backdrop-blur-sm" />}>
+        <ImageCropper
+          imageSrc={imageToCrop}
+          cropShape="round"
+          onCropComplete={handleCropComplete}
+          onClose={() => setImageToCrop(null)}
+        />
+      </Suspense>
+    );
+  }
 
   return (
     <Portal>
@@ -86,7 +102,11 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
             </div>
           )}
 
-          <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="w-full flex items-center justify-center space-x-2 py-3 rounded-xl luxe-button-secondary disabled:opacity-50 disabled:cursor-not-allowed">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="w-full flex items-center justify-center space-x-2 py-3 rounded-xl luxe-button-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <UploadIcon className="w-5 h-5" />
             <span>{isUploading ? 'Enviando...' : 'Escolher Imagem'}</span>
           </button>
@@ -102,7 +122,11 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
             <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
               CANCELAR
             </button>
-            <button onClick={handleSave} disabled={!selectedFile || isUploading} className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed">
+            <button
+              onClick={handleSave}
+              disabled={!preparedImageDataUrl || isUploading}
+              className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {isUploading ? 'ENVIANDO...' : 'SALVAR'}
             </button>
           </div>

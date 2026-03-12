@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { ChevronRightIcon, UsersIcon, CheckIcon, XIcon } from '../components/Icons';
@@ -132,16 +132,18 @@ export const SeasonView: React.FC = () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeSeason = seasons.find(s => s.is_active) || (SEASONS[ACTIVE_SEASON_ID] as any);
-    const quests = seasonQuests;
+    const quests = useMemo(
+        () => seasonQuests.filter(quest => !activeSeason || !quest.season_id || quest.season_id === activeSeason.id),
+        [seasonQuests, activeSeason?.id]
+    );
     
-    const seasonArenaName = activeSeason ? `Quests - ${activeSeason.name}` : '';
-    const seasonArena = getArenas().find(a => a.name === seasonArenaName);
-    const seasonActions = seasonArena ? getActionsForArena(seasonArena.id) : [];
+    const allArenas = getArenas();
+    const allActions = useMemo(
+        () => allArenas.flatMap(arena => getActionsForArena(arena.id)),
+        [allArenas, getActionsForArena]
+    );
     
     // Check for Clan Arena
-    const clanArena = getArenas().find(a => a.name === 'Quests - Clã');
-    const clanActions = clanArena ? getActionsForArena(clanArena.id) : [];
-
     useEffect(() => {
         quests.forEach(q => {
             if (q.type === 'clan') {
@@ -150,21 +152,40 @@ export const SeasonView: React.FC = () => {
         });
     }, [quests, fetchClanQuestParticipants]);
 
+    const hasQuestAction = (quest: ConfigSeasonQuest): boolean => {
+        return allActions.some(action => action.name === quest.actionTemplate.name || action.name === quest.title);
+    };
+
+    const countCompletedTasksForQuest = (quest: ConfigSeasonQuest): number => {
+        const matchingActionIds = new Set(
+            allActions
+                .filter(action => action.name === quest.actionTemplate.name || action.name === quest.title)
+                .map(action => action.id)
+        );
+
+        if (matchingActionIds.size === 0) return 0;
+        return tasks.filter(task => matchingActionIds.has(task.actionId) && task.completed).length;
+    };
+
+    const isQuestAccepted = (quest: ConfigSeasonQuest): boolean => {
+        if (quest.type === 'clan') {
+            return !!userMissionParticipations?.[quest.id] || hasQuestAction(quest);
+        }
+        return hasQuestAction(quest);
+    };
+
     const calculateQuestProgress = (quest: ConfigSeasonQuest): number => {
+        const required = quest.type === 'clan'
+            ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate.repetitions || 1)
+            : (quest.requirements?.totalReps || quest.goal_value || quest.actionTemplate.repetitions || 1);
+
         if (quest.type === 'clan') {
             const clanProgress = getClanQuestProgress(quest.id);
-            return Math.min(100, Math.round((clanProgress / (quest.requirements?.clanGoal || 50)) * 100)); 
+            return Math.min(100, Math.round((clanProgress / Math.max(required, 1)) * 100));
         }
 
-        const targetActions = seasonActions;
-        const action = targetActions.find(a => a.name === quest.actionTemplate.name);
-        if (!action) return 0;
-
-        const matchingTasks = tasks.filter(t => t.actionId === action.id && t.completed);
-        const count = matchingTasks.length;
-        
-        const required = quest.requirements?.totalReps || quest.actionTemplate.repetitions || 1;
-        return Math.min(100, Math.round((count / required) * 100));
+        const count = countCompletedTasksForQuest(quest);
+        return Math.min(100, Math.round((count / Math.max(required, 1)) * 100));
     };
 
     // Logic for "Complete 3 Season Quests"
@@ -264,8 +285,6 @@ export const SeasonView: React.FC = () => {
         }
     ];
 
-    const isAdmin = userProfile.role === 'admin' || userProfile.role === 'gm';
-
     const isGenesis = activeSeason.name.toLowerCase().includes('genesis');
 
     const handleClaimSpecial = (questId: string) => {
@@ -353,7 +372,7 @@ export const SeasonView: React.FC = () => {
                         </div>
                         <div className="space-y-2">
                             {individualQuests.map(quest => {
-                                const isAccepted = seasonActions.some(a => a.name === quest.actionTemplate.name);
+                                const isAccepted = isQuestAccepted(quest);
                                 const progress = isAccepted ? calculateQuestProgress(quest) : 0; 
                                 const isClaimed = userProfile.completedSeasonMissions?.includes(quest.id) || false;
                                 return (
@@ -376,9 +395,8 @@ export const SeasonView: React.FC = () => {
                             <h3 className="text-sm font-bold accent-text uppercase tracking-widest px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">Missões do Clã</h3>
                             <div className="space-y-2">
                                 {clanQuests.map(quest => {
-                                    const isAcceptedLegacy = clanActions.some(a => a.name === quest.actionTemplate.name);
-                                    const isParticipating = (userMissionParticipations?.[quest.id]) || isAcceptedLegacy;
-                                    
+                                    const isParticipating = isQuestAccepted(quest);
+
                                     const progress = isParticipating ? calculateQuestProgress(quest) : 0; 
                                     const isClaimed = userProfile.completedSeasonMissions?.includes(quest.id) || false;
                                     const participantsCount = clanQuestParticipants[quest.id] || 0;
@@ -464,9 +482,7 @@ export const SeasonView: React.FC = () => {
                     }
                     isActive={
                         selectedQuest.id.startsWith('intro-') || selectedQuest.id === 'meta-quest-3' || selectedQuest.id === 'tutorial-quest' ? true :
-                        selectedQuest.type === 'clan' 
-                        ? ((userMissionParticipations?.[selectedQuest.id]) || clanActions.some(a => a.name === selectedQuest.actionTemplate.name))
-                        : seasonActions.some(a => a.name === selectedQuest.actionTemplate.name)
+                        isQuestAccepted(selectedQuest)
                     }
                     participants={selectedQuest.type === 'clan' ? (clanQuestParticipants[selectedQuest.id] || 0) : undefined}
                     onClose={() => setSelectedQuest(null)}

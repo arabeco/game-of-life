@@ -3,7 +3,9 @@ import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
 import { GM_CONFIG } from '../constants';
+import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
+import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import './login-ui.css';
 
 const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
@@ -14,9 +16,11 @@ export const LoginView: React.FC = () => {
     const [password, setPassword] = useState('');
     const [nickname, setNickname] = useState('');
     const [inviteCode, setInviteCode] = useState('');
+    const [acceptedLegal, setAcceptedLegal] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [installPromptAvailable, setInstallPromptAvailable] = useState(() => Boolean(getInstallPrompt()));
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
     const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
 
@@ -33,6 +37,11 @@ export const LoginView: React.FC = () => {
         seedInvites();
     }, []);
 
+    React.useEffect(() => {
+        startInstallPromptCapture();
+        return subscribeInstallPrompt((prompt) => setInstallPromptAvailable(Boolean(prompt)));
+    }, []);
+
     const getPasswordStrength = (pass: string) => {
         if (pass.length === 0) return { score: 0, label: '', color: 'bg-gray-800' };
         if (pass.length < 8) return { score: 1, label: 'RUIM', color: 'bg-red-500' };
@@ -45,6 +54,11 @@ export const LoginView: React.FC = () => {
     };
 
     const handleSignUp = async () => {
+        if (!acceptedLegal) {
+            setError('Voce precisa aceitar os Termos de Uso e a Politica de Privacidade para criar a conta.');
+            return;
+        }
+
         const normalizedInvite = inviteCode.trim();
         let inviteRecord: GoldenInvite | null = null;
 
@@ -294,6 +308,11 @@ export const LoginView: React.FC = () => {
     };
 
     const handleGoogleLogin = async () => {
+        if (isSigningUp && !acceptedLegal) {
+            setError('Voce precisa aceitar os Termos de Uso e a Politica de Privacidade para criar a conta.');
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
@@ -312,6 +331,14 @@ export const LoginView: React.FC = () => {
             setError(error.message || 'Erro no login com Google');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleInstallApp = async () => {
+        try {
+            await promptForInstall();
+        } catch (installError: any) {
+            setError(installError?.message || 'Nao foi possivel abrir a instalacao do app agora.');
         }
     };
 
@@ -504,6 +531,7 @@ export const LoginView: React.FC = () => {
         setPassword('');
         setNickname('');
         setInviteCode('');
+        setAcceptedLegal(false);
         setError(null);
         setMessage(null);
     };
@@ -537,6 +565,22 @@ export const LoginView: React.FC = () => {
     return (
         <div className="login-shell animate-fade-in">
             <div className="login-card space-y-6">
+                {installPromptAvailable && (
+                    <button
+                        id="login-install-button"
+                        onClick={handleInstallApp}
+                        disabled={loading}
+                        className="login-install-fab"
+                        aria-label="Instalar app"
+                        title="Instalar app"
+                    >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M12 4V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M8 10L12 14L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M5 18H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                    </button>
+                )}
                 <div className="login-logo-stage">
                     <div className="login-logo-halo" />
                     <div className="login-logo-plasma" />
@@ -559,6 +603,7 @@ export const LoginView: React.FC = () => {
 
                 <div className="space-y-4">
                     <input
+                        id="login-email-input"
                         type="text"
                         placeholder="Email ou Nickname"
                         value={email}
@@ -567,6 +612,7 @@ export const LoginView: React.FC = () => {
                     />
                     <div className="space-y-1">
                         <input
+                            id="login-password-input"
                             type="password"
                             placeholder="Senha"
                             value={password}
@@ -601,6 +647,7 @@ export const LoginView: React.FC = () => {
                     </div>
                     {isSigningUp && (
                         <input
+                            id="login-nickname-input"
                             type="text"
                             placeholder="Nickname"
                             value={nickname}
@@ -610,12 +657,45 @@ export const LoginView: React.FC = () => {
                     )}
                     {isSigningUp && isGoldenInviteGateEnabled && (
                         <input
+                            id="login-invite-input"
                             type="text"
                             placeholder="Cole aqui seu Convite Dourado..."
                             value={inviteCode}
                             onChange={(e) => setInviteCode(e.target.value)}
                             className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                         />
+                    )}
+                    {isSigningUp && (
+                        <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-left">
+                            <input
+                                id="login-legal-checkbox"
+                                type="checkbox"
+                                checked={acceptedLegal}
+                                onChange={(e) => setAcceptedLegal(e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border border-white/20 bg-black/30 accent-[var(--skin-accent-color)]"
+                            />
+                            <span className="text-[11px] leading-relaxed text-white/70">
+                                Eu li e concordo com os{' '}
+                                <a
+                                    href={LEGAL_TERMS_URL_PLACEHOLDER}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-bold text-[var(--skin-accent-color)] underline underline-offset-2"
+                                >
+                                    Termos de Uso
+                                </a>
+                                {' '}e com a{' '}
+                                <a
+                                    href={LEGAL_PRIVACY_URL_PLACEHOLDER}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-bold text-[var(--skin-accent-color)] underline underline-offset-2"
+                                >
+                                    Politica de Privacidade
+                                </a>
+                                .
+                            </span>
+                        </label>
                     )}
                 </div>
 
@@ -624,6 +704,7 @@ export const LoginView: React.FC = () => {
 
                 <div className="space-y-4">
                     <button
+                        id="login-submit-button"
                         onClick={isSigningUp ? handleSignUp : handleLogin}
                         disabled={loading}
                         className="login-primary-button luxe-skin-button flex items-center justify-center gap-2 text-sm font-black transition-all"
@@ -637,6 +718,7 @@ export const LoginView: React.FC = () => {
 
                     <div className="flex flex-col gap-3">
                         <button
+                            id="login-google-button"
                             onClick={handleGoogleLogin}
                             disabled={loading}
                             className="login-google-button"
@@ -653,6 +735,7 @@ export const LoginView: React.FC = () => {
                         </button>
 
                         <button
+                            id="login-toggle-mode-button"
                             onClick={() => setIsSigningUp(!isSigningUp)}
                             className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
                         >

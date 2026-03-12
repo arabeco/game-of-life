@@ -9,6 +9,7 @@
 }
 
 .login-card {
+  position: relative;
   width: 100%;
   max-width: 24rem;
   margin-inline: auto;
@@ -105,4 +106,36 @@
 
 .login-google-button:active {
   transform: scale(0.98);
+}
+
+.login-install-fab {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.88);
+  border: 1px solid color-mix(in srgb, var(--skin-accent-color) 35%, transparent);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.24);
+  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  z-index: 2;
+}
+
+.login-install-fab:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: color-mix(in srgb, var(--skin-accent-color) 55%, transparent);
+}
+
+.login-install-fab:active {
+  transform: scale(0.98);
+}
+
+.login-install-fab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

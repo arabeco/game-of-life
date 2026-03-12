@@ -21,12 +21,12 @@ export interface BodyDefinition {
 export const AVATAR_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
 
 export const BODY_DB: BodyDefinition[] = [
-    { id: 'body_masc_1', gender: 'male', toneId: '1', filename: 'body_masc_1.png.png' },
-    { id: 'body_masc_2', gender: 'male', toneId: '2', filename: 'body_masc_2.png.png' },
-    { id: 'body_masc_3', gender: 'male', toneId: '3', filename: 'body_masc_3.png.png' },
-    { id: 'body_fem_1', gender: 'female', toneId: '1', filename: 'body_fem_1.png.png' },
-    { id: 'body_fem_2', gender: 'female', toneId: '2', filename: 'body_fem_2.png.png' },
-    { id: 'body_fem_3', gender: 'female', toneId: '3', filename: 'body_fem_3.png.png' },
+    { id: 'body_masc_1', gender: 'male', toneId: '1', filename: 'body_masc_1.png' },
+    { id: 'body_masc_2', gender: 'male', toneId: '2', filename: 'body_masc_2.png' },
+    { id: 'body_masc_3', gender: 'male', toneId: '3', filename: 'body_masc_3.png' },
+    { id: 'body_fem_1', gender: 'female', toneId: '1', filename: 'body_fem_1.png' },
+    { id: 'body_fem_2', gender: 'female', toneId: '2', filename: 'body_fem_2.png' },
+    { id: 'body_fem_3', gender: 'female', toneId: '3', filename: 'body_fem_3.png' },
 ];
 
 export const HAIR_DB: SkinItem[] = [
@@ -65,7 +65,7 @@ export const HAIR_COLORS: { id: string, label: string, hex: string }[] = [
 export const getBodyUrl = (gender: Gender, toneId: string): string => {
     // Fallback or find
     const body = BODY_DB.find(b => b.gender === gender && b.toneId === toneId);
-    if (!body) return `${AVATAR_BASE_URL}/body_masc_1.png.png`; // Default
+    if (!body) return `${AVATAR_BASE_URL}/body_masc_1.png`; // Default
     return `${AVATAR_BASE_URL}/${body.filename}`;
 };
 
@@ -83,9 +83,9 @@ export const getHairUrl = (styleId: string, colorId: string): string => {
         // Safety check
         const safeIndex = (index >= 0 && index < hair.availableColors.length) ? index : 0;
         const suffix = hair.availableColors[safeIndex];
-        return `${AVATAR_BASE_URL}/hair/CABELO_${hair.tier}_${fileId}_${suffix}.png.png`;
+        return `${AVATAR_BASE_URL}/hair/CABELO_${hair.tier}_${fileId}_${suffix}.png`;
     }
 
     // Fallback should not happen with current DB, but kept for safety
-    return `${AVATAR_BASE_URL}/hair/CABELO_${hair.tier}_${fileId}_cast.png.png`;
+    return `${AVATAR_BASE_URL}/hair/CABELO_${hair.tier}_${fileId}_cast.png`;
 };

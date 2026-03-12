@@ -18,6 +18,7 @@ import { buildCyclePaceMetrics, buildTaskPoolEntries, filterCycleTasksByScope, g
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
+import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -264,7 +265,7 @@ export interface GameContextType {
     addCompletedMission: (mission: SeasonMission) => void;
     acceptSeasonQuest: (questId: string) => void;
     abortSeasonQuest: (questId: string) => Promise<void>;
-    claimSeasonQuest: (questId: string) => void;
+    claimSeasonQuest: (questId: string) => Promise<void>;
     claimSeasonMission: (missionId: string) => Promise<void>;
     addProfileFlag: (flag: string) => void;
     feed: FeedEvent[];
@@ -527,28 +528,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [toast, setToast] = useState<{ message: string; visible: boolean; type?: 'success' | 'error' | 'warning' | 'info' }>({ message: '', visible: false, type: 'info' });
 
     // PWA Installation State
-    const [installPrompt, setInstallPrompt] = useState<any>(null);
+    const [installPrompt, setInstallPrompt] = useState<any>(() => getInstallPrompt());
 
     useEffect(() => {
-        const handleBeforeInstallPrompt = (e: any) => {
-            e.preventDefault();
-            setInstallPrompt(e);
-        };
-
-        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-        return () => {
-            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        };
+        startInstallPromptCapture();
+        return subscribeInstallPrompt(setInstallPrompt);
     }, []);
 
     const promptInstall = async () => {
-        if (!installPrompt) return;
-        installPrompt.prompt();
-        const { outcome } = await installPrompt.userChoice;
-        if (outcome === 'accepted') {
-            setInstallPrompt(null);
-        }
+        await promptForInstall();
     };
 
     // Campaigns State
@@ -708,12 +696,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setToast(prev => ({ ...prev, visible: false }));
     }, []);
     const getSentinelStorageKey = (userId: string) => `glyph_sentinel_mode_${userId}`;
+    const getPushStorageKey = (userId: string) => `glyph_oracle_push_${userId}`;
     const getSentinelMode = (userId: string): OraclePreferences['sentinelMode'] => {
         const saved = localStorage.getItem(getSentinelStorageKey(userId));
         if (saved === 'apenas_necessarias' || saved === 'nao_ia' || saved === 'soberano_ativo') {
             return saved;
         }
         return 'soberano_ativo';
+    };
+    const getPushEnabled = (userId: string): boolean => {
+        const saved = localStorage.getItem(getPushStorageKey(userId));
+        if (saved === 'true') return true;
+        if (saved === 'false') return false;
+        return false;
     };
 
     const isOracleCriticalTrigger = (userId: string) => {
@@ -797,13 +792,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (data) {
             const mapped = mapToCamelCase(data) as OraclePreferences;
-            setOraclePreferences({ ...mapped, sentinelMode: getSentinelMode(userId) });
+            setOraclePreferences({
+                ...mapped,
+                sentinelMode: getSentinelMode(userId),
+                pushEnabled: getPushEnabled(userId),
+            });
         } else {
             // Default preferences
             const defaultPrefs: OraclePreferences = {
                 userId,
                 iaEnabled: true,
                 notificationsEnabled: true,
+                pushEnabled: getPushEnabled(userId),
                 animationsEnabled: true,
                 soundsEnabled: true,
                 hapticsEnabled: true,
@@ -816,7 +816,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
 
             // Use upsert to prevent 409 Conflict if multiple calls happen simultaneously
-            const { sentinelMode, ...persistableDefaultPrefs } = defaultPrefs;
+            const { sentinelMode, pushEnabled, ...persistableDefaultPrefs } = defaultPrefs;
             const { error: insertError } = await supabase.from('oracle_preferences').upsert(mapToSnakeCase({ ...persistableDefaultPrefs, user_id: userId }));
             if (!insertError) {
                 setOraclePreferences(defaultPrefs);
@@ -829,13 +829,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
 
         const nextSentinelMode = (prefs.sentinelMode ?? oraclePreferences?.sentinelMode ?? 'soberano_ativo') as OraclePreferences['sentinelMode'];
+        const nextPushEnabled = Boolean(prefs.pushEnabled ?? oraclePreferences?.pushEnabled ?? false);
         localStorage.setItem(getSentinelStorageKey(userId), nextSentinelMode || 'soberano_ativo');
+        localStorage.setItem(getPushStorageKey(userId), nextPushEnabled ? 'true' : 'false');
 
-        const newPrefs = { ...oraclePreferences, ...prefs, sentinelMode: nextSentinelMode, updatedAt: new Date().toISOString() };
+        const newPrefs = { ...oraclePreferences, ...prefs, sentinelMode: nextSentinelMode, pushEnabled: nextPushEnabled, updatedAt: new Date().toISOString() };
         // Optimistic update
         setOraclePreferences(newPrefs as OraclePreferences);
 
-        const { sentinelMode, ...persistablePrefs } = (newPrefs as OraclePreferences);
+        const { sentinelMode, pushEnabled, ...persistablePrefs } = (newPrefs as OraclePreferences);
 
         const { error } = await supabase
             .from('oracle_preferences')
@@ -1751,8 +1753,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // Garantir que o progresso da missÃ£o existe (caso tenha sido deletado manualmente)
-        const quest = SEASONS[ACTIVE_SEASON_ID]?.quests.find(q => q.id === questId);
-        const targetValue = quest?.requirements?.clanGoal || 50;
+        const quest = findSeasonQuestById(questId);
+        const targetValue = quest?.requirements?.clanGoal || quest?.goal_value || quest?.actionTemplate?.repetitions || 1;
 
         await supabase.from('clan_mission_progress').upsert({
             clan_id: clan.id,
@@ -1889,7 +1891,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             },
             requirements: m.requirements || {
                 totalReps: m.goal_value || 1,
-                clanGoal: m.type === 'clan' ? (m.goal_value || 50) : undefined,
+                clanGoal: m.type === 'clan' ? (m.goal_value || 1) : undefined,
                 milestone: m.requirements?.milestone || false
             },
             rewards: {
@@ -1901,6 +1903,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         return [...quests, ...mappedMissions];
     }, [seasons, seasonMissions]);
+
+    const findSeasonQuestById = useCallback((questId: string) => {
+        const dbQuest = seasonQuests.find(q => q.id === questId);
+        if (dbQuest) return dbQuest;
+        return Object.values(SEASONS)
+            .flatMap(season => season.quests)
+            .find(q => q.id === questId) || null;
+    }, [seasonQuests]);
+
+    const findSeasonMissionById = useCallback((missionId: string) => {
+        return seasonMissions.find(m => m.id === missionId)
+            || GM_CONFIG.seasonMissions.find(m => m.id === missionId)
+            || null;
+    }, [seasonMissions]);
+
+    const findClanQuestByActionName = useCallback((actionName?: string) => {
+        if (!actionName) return null;
+        const normalized = normalizeDomainLabel(actionName);
+
+        const directMatch = seasonQuests.find(q =>
+            q.type === 'clan'
+            && normalizeDomainLabel(q.actionTemplate?.name) === normalized
+        );
+        if (directMatch) return directMatch;
+
+        const byTitle = seasonQuests.find(q =>
+            q.type === 'clan'
+            && normalizeDomainLabel(q.title) === normalized
+        );
+        if (byTitle) return byTitle;
+
+        if (normalized.includes('socializar')) {
+            return seasonQuests.find(q => q.type === 'clan') || null;
+        }
+
+        return null;
+    }, [seasonQuests]);
 
     // Load Global Game Content (Seasons, Missions)
     useEffect(() => {
@@ -4687,15 +4726,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
 
         // Calculate Clan Points (XP from completed clan quests)
-        const activeSeason = SEASONS[ACTIVE_SEASON_ID];
         const clanPoints = completedQuests.reduce((sum, task) => {
             const action = currentActions.find(a => a.id === task.actionId);
             if (!action) return sum;
-            const quest = activeSeason?.quests.find(q =>
-                q.type === 'clan' &&
-                (q.title === action.name || q.actionTemplate.name === action.name)
-            );
-            return sum + (quest?.rewards.xp || 0);
+            const quest = findClanQuestByActionName(action.name);
+            return sum + (quest?.rewards?.xp || 0);
         }, 0);
 
         // === Phase 10: Advanced Report Metrics ===
@@ -5756,19 +5791,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let clanQuestFound = false;
 
         for (const action of arenaActions) {
-            const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-            let quest = activeSeason?.quests.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
-
-            // FALLBACK: If action name doesn't match, check for "Ler" vs "Socializar" mismatch
-            if (!quest && activeSeason) {
-                // Check if the action name is "Leitura Focada" (old bug) and we have a "Unidade do ClÃ£" quest
-                if (action.name.includes('Leitura') || action.name.includes('Ler')) {
-                    // quest = activeSeason.quests.find(q => q.id === 'quest-scholar'); // Should be scholar? Assuming existing logic was trying to fix something specific.
-                }
-                if (action.name.includes('Socializar') || action.name.includes('socializar')) {
-                    quest = activeSeason.quests.find(q => q.id === 'quest-clan-unity');
-                }
-            }
+            const quest = findClanQuestByActionName(action.name);
 
             if (quest && clan) {
                 clanQuestFound = true;
@@ -5808,8 +5831,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // and the user has a participation, maybe we should just remove them from the active clan quest?
         if (!clanQuestFound && clan) {
             if (looksLikeClanQuestArena(arena)) {
-                const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-                const defaultClanQuest = activeSeason?.quests.find(q => q.type === 'clan');
+                const defaultClanQuest = seasonQuests.find(q => q.type === 'clan')
+                    || Object.values(SEASONS).flatMap(season => season.quests).find(q => q.type === 'clan');
                 if (defaultClanQuest) {
                     // Try to leave this one as a last resort
                     console.log("Attempting to leave default clan quest due to suspicious arena deletion (fallback)");
@@ -5839,18 +5862,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (isQuestArenaType) {
             // If it's a season/clan quest arena, deleting it implies leaving/abandoning all quests within it
             if (userId && arenaActions.length > 0) {
-                const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-
                 for (const action of arenaActions) {
                     // Check for clan mission participation
                     if (clan && arenaFlags.isClanQuest) {
-                        // Try to match action to quest
-                        let quest = activeSeason?.quests?.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
-
-                        // Fallback for hardcoded quests
-                        if (!quest && activeSeason && (action.name.includes('Socializar') || action.name.includes('socializar'))) {
-                            quest = activeSeason.quests.find(q => q.id === 'quest-clan-unity');
-                        }
+                        const quest = findClanQuestByActionName(action.name);
 
                         if (quest) {
                             console.log("Leaving clan mission via Arena Delete:", quest.title);
@@ -6133,15 +6148,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Remove clan mission participation if applicable
         if (action && clan) {
-            const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-            let quest = activeSeason?.quests?.find(q => q.actionTemplate.name === action.name && q.type === 'clan');
-
-            if (!quest && activeSeason) {
-                // Fallback logic matches deleteArena
-                if (action.name.includes('Socializar') || action.name.includes('socializar')) {
-                    quest = activeSeason.quests.find(q => q.id === 'quest-clan-unity');
-                }
-            }
+            const quest = findClanQuestByActionName(action.name);
 
             if (quest) {
                 console.log("Leaving clan mission via deleteAction:", quest.title);
@@ -6223,16 +6230,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const activateClanQuest = async (questId: string) => {
         if (!clan) return;
-        const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-        if (!activeSeason) return;
-        const quest = activeSeason.quests.find(q => q.id === questId);
-        if (!quest) return;
+        const quest = findSeasonQuestById(questId);
+        if (!quest || quest.type !== 'clan') return;
 
         // Upsert into clan_mission_progress to mark it as active for the clan
         const { error } = await supabase.from('clan_mission_progress').upsert({
             clan_id: clan.id,
             mission_id: quest.id,
-            target_value: 50, // Default target? Or from quest
+            target_value: quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1,
             current_value: 0
         }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true });
 
@@ -6247,10 +6252,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const acceptSeasonQuest = async (questId: string) => {
-        const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-        if (!activeSeason) return;
-
-        const quest = activeSeason.quests.find(q => q.id === questId);
+        const quest = findSeasonQuestById(questId);
         if (!quest) return;
 
         // Se for quest de cla, garante participacao
@@ -6266,7 +6268,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
             }
 
-            joinClanMission(quest.id);
+            await joinClanMission(quest.id);
         }
 
         // 1. Verificar se a aÃ§Ã£o jÃ¡ existe
@@ -6282,7 +6284,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     return;
                 }
             }
-            alert("VocÃª jÃ¡ aceitou esta missÃ£o!");
+            showToast(`Missao "${quest.title}" ja esta ativa.`, 'info');
             return;
         }
 
@@ -6331,7 +6333,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             description: quest.actionTemplate.description,
             icon: isClanQuest ? '??' : quest.actionTemplate.icon,
             duration: quest.actionTemplate.duration,
-            repetitions: isClanQuest ? 50 : (quest.actionTemplate.repetitions || 1),
+            repetitions: isClanQuest ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate.repetitions || 1) : (quest.actionTemplate.repetitions || quest.goal_value || 1),
             actionType: quest.actionTemplate.isMilestone ? 'Marco' : 'Ação Recorrente',
             difficulty: 3
         });
@@ -6344,11 +6346,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await joinClanMission(quest.id);
         }
 
-        alert(`MissÃ£o "${quest.title}" aceita! Verifique a arena "${seasonArenaName}" no seu Planner.`);
+        showToast(`Missao "${quest.title}" aceita. Confira a arena "${seasonArenaName}".`, 'success');
     };
 
     const abortSeasonQuest = async (questId: string) => {
-        const quest = seasonQuests.find(q => q.id === questId);
+        const quest = findSeasonQuestById(questId);
         if (!quest) return;
 
         // 1. If it's a clan quest, remove participation
@@ -6377,9 +6379,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const claimSeasonQuest = async (questId: string) => {
-        const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-        if (!activeSeason) return;
-        const quest = activeSeason.quests.find(q => q.id === questId);
+        const quest = findSeasonQuestById(questId);
         if (!quest) return;
 
         if (userProfile.completedSeasonMissions?.includes(questId)) {
@@ -6476,7 +6476,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const claimSeasonMission = async (missionId: string) => {
-        const mission = GM_CONFIG.seasonMissions.find(m => m.id === missionId);
+        const mission = findSeasonMissionById(missionId);
         if (!mission) return;
 
         if (userProfile.completedSeasonMissions?.includes(missionId)) {
@@ -6486,7 +6486,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Add XP
         const currentExp = userProfile.nobility.exp;
-        const addedExp = mission.reward_value;
+        const addedExp = typeof mission.reward_value === 'number' ? mission.reward_value : 0;
         const nextExp = currentExp + addedExp;
 
         // Check for chest rewards in description

@@ -9,6 +9,7 @@ import { CanvasAvatar } from './CanvasAvatar';
 import { ImagePreloader } from './ImagePreloader';
 import { Portal } from './Portal';
 import { getRarityVisual, withAlpha } from '../constants/rarityVisuals';
+import { ItemArt } from './ItemArt';
 
 interface SovereignCustomizerProps {
     initialConfig?: SovereignConfig;
@@ -353,13 +354,23 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             }}
                         >
                             {equippedArtifactPlate?.url && (
-                                <img src={equippedArtifactPlate.url} alt="Placa" className="absolute inset-0 w-full h-full object-contain opacity-90" />
+                                <img
+                                    src={equippedArtifactPlate.url}
+                                    alt="Placa"
+                                    className="absolute inset-0 w-full h-full object-contain opacity-90"
+                                    onError={(event) => {
+                                        event.currentTarget.style.display = 'none';
+                                    }}
+                                />
                             )}
-                            {equippedArtifact?.url ? (
-                                <img src={equippedArtifact.url} alt="Artifact" className="relative z-10 w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
-                            ) : (
-                                <span className="relative z-10 text-[9px] text-gray-600 font-bold uppercase">Vazio</span>
-                            )}
+                            <ItemArt
+                                src={equippedArtifact?.url}
+                                alt={equippedArtifact?.name || 'Artefato'}
+                                className="relative z-10 w-12 h-12 flex items-center justify-center"
+                                imgClassName="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+                                textClassName="text-[9px] text-gray-600 font-bold uppercase"
+                                fallbackText="Vazio"
+                            />
                             
                             <div 
                                 className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-black/50 flex items-center justify-center transition-colors shadow-md`}
@@ -382,15 +393,32 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             }}
                         >
                             {equippedGlyphPlate?.url && (
-                                <img src={equippedGlyphPlate.url} alt="Placa" className="absolute inset-0 w-full h-full object-contain opacity-90" />
+                                <img
+                                    src={equippedGlyphPlate.url}
+                                    alt="Placa"
+                                    className="absolute inset-0 w-full h-full object-contain opacity-90"
+                                    onError={(event) => {
+                                        event.currentTarget.style.display = 'none';
+                                    }}
+                                />
                             )}
-                            {equippedGlyph?.url ? (
-                                <img src={equippedGlyph.url} alt="Glyph" className="relative z-10 w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
-                            ) : (
-                                <span className="relative z-10 text-2xl opacity-20">ðŸ’ </span>
-                            )}
+                            <ItemArt
+                                src={equippedGlyph?.url}
+                                alt={equippedGlyph?.name || 'Glifo'}
+                                className="relative z-10 w-12 h-12 flex items-center justify-center"
+                                imgClassName="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                                textClassName="text-[9px] text-gray-600 font-bold uppercase"
+                                fallbackText="Vazio"
+                            />
                             {equippedOrb?.url && (
-                                <img src={equippedOrb.url} alt="Orbe" className="absolute inset-0 w-full h-full object-contain z-20 scale-75 drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]" />
+                                <img
+                                    src={equippedOrb.url}
+                                    alt="Orbe"
+                                    className="absolute inset-0 w-full h-full object-contain z-20 scale-75 drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]"
+                                    onError={(event) => {
+                                        event.currentTarget.style.display = 'none';
+                                    }}
+                                />
                             )}
                             
                             <div 
@@ -510,7 +538,14 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                                 className={`relative aspect-square rounded-md border flex flex-col items-center justify-center bg-black/40 transition-all ${isSelected ? 'border-white bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
                                             >
                                                 <div className="flex items-center justify-center w-full h-full p-1">
-                                                    {item.url ? <img src={item.url} alt={item.name} className="w-full h-full object-contain"/> : <span className="text-[8px] text-gray-500">N/A</span>}
+                                                    <ItemArt
+                                                        src={item.url}
+                                                        alt={item.name}
+                                                        className="w-full h-full flex items-center justify-center"
+                                                        imgClassName="w-full h-full object-contain"
+                                                        textClassName="text-[8px] text-gray-500"
+                                                        fallbackText="N/A"
+                                                    />
                                                 </div>
                                                 
                                                 {isSelected && (

@@ -30,6 +30,9 @@ export interface CodexCatalogItem {
   template?: CodexTemplate; // JSONB
 }
 
+export type CodexSourceType = 'created' | 'catalog' | 'gift_link' | 'gift_in_app';
+export type CodexShareDeliveryMethod = 'external_link' | 'in_app';
+export type CodexShareStatus = 'pending' | 'claimed' | 'revoked' | 'expired';
 export interface UserCodex {
   id: string;
   owner_id: string;
@@ -43,6 +46,25 @@ export interface UserCodex {
   published_at?: string;
   created_at: string;
   updated_at: string;
+  catalog_id?: string | null;
+  source_type?: CodexSourceType;
+  origin_codex_id?: string | null;
+  created_by_user_id?: string | null;
+  raw_template?: any;
+}
+export interface CodexSharePreview {
+  shareId: string;
+  status: CodexShareStatus;
+  deliveryMethod: CodexShareDeliveryMethod;
+  codexId: string;
+  codexName: string;
+  codexDescription: string;
+  codexAuthor: string;
+  codexTemplate: CodexTemplate;
+  senderNickname?: string | null;
+  recipientNickname?: string | null;
+  claimedAt?: string | null;
+  canClaim: boolean;
 }
 
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
@@ -308,12 +330,18 @@ export interface UserProfile {
   email?: string;
   emailConfirmedAt?: string;
   createdAt?: string;
+  tutorialCompletedAt?: number;
   termsVersion?: string;
   termsAcceptedAt?: string;
   termsAcceptSource?: string;
   privacyVersion?: string;
   privacyAcceptedAt?: string;
   privacyAcceptSource?: string;
+  onboardingVersion?: string;
+  onboardingStartedAt?: string;
+  onboardingCompletedAt?: string;
+  onboardingDismissedAt?: string;
+  codexCreationSlotsPurchased?: number;
   appMode?: AppMode;
 
   themePreference?: ThemePreference;
@@ -930,8 +958,16 @@ export type NotificationType =
   | 'level_up'
   | 'title_unlocked'
   | 'oracle_prompt'
+  | 'codex_gift'
   | 'system';
-
+export interface NotificationMetadata {
+  shareId?: string;
+  codexId?: string;
+  codexName?: string;
+  senderNickname?: string;
+  recipientNickname?: string;
+  [key: string]: any;
+}
 export interface Notification {
   id: string;
   userId: string;
@@ -939,6 +975,7 @@ export interface Notification {
   content: string;
   read: boolean;
   createdAt: string;
+  metadata?: NotificationMetadata | null;
 }
 
 // --- Direct Messages ---
@@ -983,6 +1020,10 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
+
+
+
+
 
 
 

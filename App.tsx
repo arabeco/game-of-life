@@ -2,6 +2,9 @@
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
+import { SupabaseService } from './services/SupabaseService';
+import { saveClosedBetaGoogleRedirect } from './utils/closedBetaAuth';
+import { parseBooleanEnvFlag } from './utils/envFlags';
 import { startInstallPromptCapture } from './utils/installPrompt';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then((m) => ({ default: m.LoginView })));
@@ -48,6 +51,7 @@ const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; t
 const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const [authGuardLoading, setAuthGuardLoading] = useState(false);
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [isSplashComplete, setIsSplashComplete] = useState(() => sessionStorage.getItem('hasSeenSplash') === 'true');
     const [bootVisuals, setBootVisuals] = useState<{ skin: string; mode: 'GAME' | 'BASIC'; theme: 'LIGHT' | 'DARK' | null }>({
@@ -56,6 +60,8 @@ const App: React.FC = () => {
         theme: 'DARK',
     });
     const renderMode = useMemo(() => new URLSearchParams(window.location.search).get('render'), []);
+    const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
+    const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
 
     const handleSplashComplete = () => {
         sessionStorage.setItem('hasSeenSplash', 'true');
@@ -67,6 +73,83 @@ const App: React.FC = () => {
         void import('./views/LoginView');
         void import('./components/AuthenticatedApp');
 
+        const preloadBootVisuals = (currentUserId?: string | null) => {
+            if (!currentUserId) return;
+
+            try {
+                const cached = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${currentUserId}`);
+                if (!cached) return;
+
+                const parsed = JSON.parse(cached);
+                setBootVisuals({
+                    skin: parsed?.skin || 'BASIC',
+                    mode: parsed?.appMode === 'BASIC' ? 'BASIC' : 'GAME',
+                    theme: parsed?.themePreference === 'LIGHT' ? 'LIGHT' : 'DARK',
+                });
+            } catch (storageError) {
+                console.warn('Failed to preload cached profile visuals:', storageError);
+            }
+        };
+
+        const resolveClosedBetaSession = async (candidate: Session | null): Promise<Session | null> => {
+            if (!candidate) return null;
+
+            preloadBootVisuals(candidate.user?.id);
+
+            if (!isGoldenInviteGateEnabled) {
+                return candidate;
+            }
+
+            const provider = candidate.user?.app_metadata?.provider;
+            if (provider !== 'google') {
+                return candidate;
+            }
+
+            const accessStatus = await SupabaseService.getClosedBetaAccessStatus();
+            if (accessStatus?.authorized) {
+                return candidate;
+            }
+
+            if (!accessStatus) {
+                saveClosedBetaGoogleRedirect({
+                    mode: 'login',
+                    email: candidate.user.email || '',
+                    message: 'Nao foi possivel validar seu acesso com Google agora. Tente novamente em instantes.',
+                });
+                await supabase.auth.signOut({ scope: 'local' });
+                return null;
+            }
+
+            saveClosedBetaGoogleRedirect({
+                mode: 'signup',
+                email: candidate.user.email || '',
+                message: 'Esse Google ainda nao tem conta no beta. Preencha o Convite Dourado para criar sua conta.',
+            });
+
+            const deletionResult = await SupabaseService.deleteMyAccount();
+            if (!deletionResult.success) {
+                console.error('Failed to remove provisional Google account during closed beta:', deletionResult.error);
+                saveClosedBetaGoogleRedirect({
+                    mode: 'login',
+                    email: candidate.user.email || '',
+                    message: 'Nao consegui limpar o acesso temporario do Google sozinho. Me chama que apagamos esse usuario no Supabase.',
+                });
+            }
+
+            await supabase.auth.signOut({ scope: 'local' });
+            return null;
+        };
+
+        const applyResolvedSession = async (candidate: Session | null) => {
+            setAuthGuardLoading(true);
+            try {
+                const resolvedSession = await resolveClosedBetaSession(candidate);
+                setSession(resolvedSession);
+            } finally {
+                setAuthGuardLoading(false);
+            }
+        };
+
         const checkSession = async () => {
             try {
                 const {
@@ -77,23 +160,7 @@ const App: React.FC = () => {
                     console.warn('Session restore error (silent):', error.message);
                     setSession(null);
                 } else {
-                    setSession(restoredSession);
-                    const currentUserId = restoredSession?.user?.id;
-                    if (currentUserId) {
-                        try {
-                            const cached = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${currentUserId}`);
-                            if (cached) {
-                                const parsed = JSON.parse(cached);
-                                setBootVisuals({
-                                    skin: parsed?.skin || 'BASIC',
-                                    mode: parsed?.appMode === 'BASIC' ? 'BASIC' : 'GAME',
-                                    theme: parsed?.themePreference === 'LIGHT' ? 'LIGHT' : 'DARK',
-                                });
-                            }
-                        } catch (storageError) {
-                            console.warn('Failed to preload cached profile visuals:', storageError);
-                        }
-                    }
+                    await applyResolvedSession(restoredSession);
                 }
             } catch (e) {
                 console.error('Critical auth check error:', e);
@@ -103,26 +170,28 @@ const App: React.FC = () => {
             }
         };
 
-        checkSession();
+        void checkSession();
 
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((event, nextSession) => {
-            if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_ERROR') {
-                setSession(null);
-                if ((event as string) === 'TOKEN_REFRESH_ERROR') {
-                    supabase.auth.signOut();
+            void (async () => {
+                if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_ERROR') {
+                    setSession(null);
+                    if ((event as string) === 'TOKEN_REFRESH_ERROR') {
+                        await supabase.auth.signOut();
+                    }
+                } else if (event === 'PASSWORD_RECOVERY') {
+                    setShowResetPassword(true);
+                    await applyResolvedSession(nextSession);
+                } else {
+                    await applyResolvedSession(nextSession);
                 }
-            } else if (event === 'PASSWORD_RECOVERY') {
-                setShowResetPassword(true);
-                setSession(nextSession);
-            } else {
-                setSession(nextSession);
-            }
+            })();
         });
 
         return () => subscription.unsubscribe();
-    }, []);
+    }, [isGoldenInviteGateEnabled]);
 
     useEffect(() => {
         const skin = bootVisuals.mode === 'BASIC' ? 'default' : bootVisuals.skin;
@@ -179,7 +248,7 @@ const App: React.FC = () => {
                 </Suspense>
             ) : (
                 <div className="relative flex min-h-screen flex-col overflow-hidden bg-black font-sans text-white">
-                    {loading ? (
+                    {loading || authGuardLoading ? (
                         <AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />
                     ) : (
                         <Suspense fallback={<AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />}>
@@ -194,7 +263,7 @@ const App: React.FC = () => {
                 </div>
             )}
             {!isSplashComplete && renderMode !== 'legacy' && (
-                <SplashScreen onComplete={handleSplashComplete} isLoading={loading} />
+                <SplashScreen onComplete={handleSplashComplete} isLoading={loading || authGuardLoading} />
             )}
         </>
     );

@@ -1,4 +1,4 @@
-Ôªøimport React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, DayOfWeek, ActionType } from '../types';
 import { GlassCard } from './GlassCard';
@@ -11,6 +11,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 
 import { Portal } from './Portal';
 import './core-ui.css';
@@ -47,9 +48,9 @@ interface ActionModalProps {
     customThemeColor?: string;
 }
 
-const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement> }> =
-    ({ label, value, min, max, step, unit, onChange, inputRef }) => (
-        <div ref={inputRef} className="p-2.5 core-surface rounded-xl space-y-1.5">
+const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>, containerId?: string }> =
+    ({ label, value, min, max, step, unit, onChange, inputRef, containerId }) => (
+        <div id={containerId} ref={inputRef} className="p-2.5 core-surface rounded-xl space-y-1.5">
             <div className="flex justify-between items-center">
                 <label className="core-label">{label}</label>
                 <span className="text-sm font-semibold text-white">{value} {unit}</span>
@@ -79,7 +80,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     const [mode, setMode] = useState(isNew && !isPreview ? 'edit' : initialMode);
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
-        action || { arenaId: arenaId, name: '', description: '', icon: 'üèÜ', duration: 60, repetitions: 1, actionType: 'A√ß√£o Recorrente', difficulty: 3 }
+        action || { arenaId: arenaId, name: '', description: '', icon: '??', duration: 60, repetitions: 1, actionType: 'AÁ„o Recorrente', difficulty: 3 }
     );
 
     // NEW: Task duration override state
@@ -132,18 +133,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     const handleSave = () => {
         if (!editableAction.name?.trim()) {
-            showToast('D√™ um t√≠tulo para a a√ß√£o antes de salvar.', 'warning');
+            showToast('DÍ um tÌtulo para a aÁ„o antes de salvar.', 'warning');
             window.setTimeout(() => nameInputRef.current?.focus(), 40);
             return;
         }
 
         let scheduledStartTime: number | undefined;
-        if (startTime && startTime !== 'Sem Hor√°rio') {
+        if (startTime && startTime !== 'Sem Hor·rio') {
             const [h, m] = startTime.split(':').map(Number);
             scheduledStartTime = h * 60 + m;
         }
 
-        const nextRepetitions = editableAction.actionType === 'A√ß√£o Recorrente'
+        const nextRepetitions = editableAction.actionType === 'AÁ„o Recorrente'
             ? Math.min(50, Math.max(1, Math.floor(editableAction.repetitions || 1)))
             : 1;
 
@@ -152,15 +153,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         const validDuration = (rawDuration && rawDuration >= 5 && rawDuration <= 480) ? rawDuration : 60;
 
         const actionData: Omit<Action, 'id'> = {
-            arenaId: editableAction.arenaId || '', // Ser√° tratado no context
+            arenaId: editableAction.arenaId || '', // Ser· tratado no context
             name: editableAction.name,
             description: editableAction.description?.trim() || undefined,
-            icon: editableAction.icon || 'üèÜ',
+            icon: editableAction.icon || '??',
             duration: validDuration,
             repetitions: nextRepetitions,
-            actionType: editableAction.actionType || 'A√ß√£o Recorrente',
+            actionType: editableAction.actionType || 'AÁ„o Recorrente',
             difficulty: editableAction.difficulty || 3,
-            scheduledDays: editableAction.actionType === 'A√ß√£o Recorrente' ? selectedDays : undefined,
+            scheduledDays: editableAction.actionType === 'AÁ„o Recorrente' ? selectedDays : undefined,
             scheduledStartTime: editableAction.actionType === 'Livre' ? undefined : scheduledStartTime,
             briefing: editableAction.briefing?.trim() || undefined,
             assets: editableAction.assets || [],
@@ -169,15 +170,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         };
 
         const scheduleTasks = async (actionIdToSchedule: string) => {
-            // Para A√ß√£o Recorrente: usa dias da semana
-            if (editableAction.actionType === 'A√ß√£o Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Hor√°rio') {
+            // Para AÁ„o Recorrente: usa dias da semana
+            if (editableAction.actionType === 'AÁ„o Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Hor·rio') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
                 await scheduleMultipleTasks(actionIdToSchedule, selectedDays, startTimeInMinutes);
             }
 
-            // Para Compromisso: usa data espec√≠fica
-            if (editableAction.actionType === 'Compromisso' && selectedDate && startTime !== null && startTime !== 'Sem Hor√°rio') {
+            // Para Compromisso: usa data especÌfica
+            if (editableAction.actionType === 'Compromisso' && selectedDate && startTime !== null && startTime !== 'Sem Hor·rio') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
                 const dateString = getLocalDateString(selectedDate);
@@ -190,7 +191,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                 if (taskId && typeof updateTask === 'function') {
                     // If we are editing a specific task from the planner
                     let scheduledStartTime: number | undefined;
-                    if (startTime && startTime !== 'Sem Hor√°rio') {
+                    if (startTime && startTime !== 'Sem Hor·rio') {
                         const [h, m] = startTime.split(':').map(Number);
                         scheduledStartTime = h * 60 + m;
                     }
@@ -204,17 +205,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     const newAction = await addAction(actionData);
                     if (newAction?.id) {
                         await scheduleTasks(newAction.id);
+                        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.actionCreated, { detail: { actionId: newAction.id } }));
                     }
-                    showToast('A√ß√£o criada.', 'success');
+                    showToast('AÁ„o criada.', 'success');
                 } else if (action?.id && typeof updateAction === 'function') {
                     updateAction(action.id, actionData);
                     await scheduleTasks(action.id);
-                    showToast('A√ß√£o atualizada.', 'success');
+                    showToast('AÁ„o atualizada.', 'success');
                 }
                 onClose();
             } catch (err) {
                 console.error("Error executing save:", err);
-                showToast('N√£o foi poss√≠vel salvar a a√ß√£o.', 'error');
+                showToast('N„o foi possÌvel salvar a aÁ„o.', 'error');
             }
         };
 
@@ -248,11 +250,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         setEditableAction(p => ({
             ...p,
             actionType: type,
-            repetitions: type === 'A√ß√£o Recorrente' ? (p.repetitions || 1) : 1,
-            scheduledDays: type === 'A√ß√£o Recorrente' ? p.scheduledDays : undefined,
-            scheduledStartTime: type === 'Compromisso' || type === 'A√ß√£o Recorrente' ? p.scheduledStartTime : undefined,
+            repetitions: type === 'AÁ„o Recorrente' ? (p.repetitions || 1) : 1,
+            scheduledDays: type === 'AÁ„o Recorrente' ? p.scheduledDays : undefined,
+            scheduledStartTime: type === 'Compromisso' || type === 'AÁ„o Recorrente' ? p.scheduledStartTime : undefined,
         }));
-        if (type !== 'A√ß√£o Recorrente') setSelectedDays([]);
+        if (type !== 'AÁ„o Recorrente') setSelectedDays([]);
         if (type === 'Livre' || type === 'Marco') {
             setStartTime(null);
             setSelectedDate(null);
@@ -272,7 +274,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     };
 
     const resetFromAction = (nextAction: Action | null) => {
-        const baseAction = nextAction || { arenaId: arenaId, name: '', description: '', icon: 'üèÜ', duration: 60, repetitions: 1, actionType: 'A√ß√£o Recorrente', difficulty: 3 };
+        const baseAction = nextAction || { arenaId: arenaId, name: '', description: '', icon: '??', duration: 60, repetitions: 1, actionType: 'AÁ„o Recorrente', difficulty: 3 };
         setEditableAction(baseAction);
         setSelectedDays(nextAction?.scheduledDays || []);
         setStartTime(getStartTimeLabel(nextAction?.scheduledStartTime) || null);
@@ -296,10 +298,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     // Merge task duration if editing a specific task
     const effectiveDuration = taskId && currentTask ? currentTask.duration : (displayAction?.duration || 60);
 
-    const difficultyLabels = ['MUITO F√ÅCIL', 'F√ÅCIL', 'NORMAL', 'DIF√çCIL', 'EXTREMO'];
+    const difficultyLabels = ['MUITO F¡CIL', 'F¡CIL', 'NORMAL', 'DIFÕCIL', 'EXTREMO'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
-    const timeOptions = ['Sem Hor√°rio', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
-    const actionTypeOptions: ActionType[] = ['A√ß√£o Recorrente', 'Compromisso', 'Marco', 'Livre'];
+    const timeOptions = ['Sem Hor·rio', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
+    const actionTypeOptions: ActionType[] = ['AÁ„o Recorrente', 'Compromisso', 'Marco', 'Livre'];
 
     if (!displayAction && mode === 'view') return null;
 
@@ -309,11 +311,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const accentColor = customThemeColor || arenaAccentColor || '#F0C843';
     const modalStyle = { '--skin-accent-color': customThemeColor || 'var(--skin-accent-color)', '--accent-bronze': accentColor } as React.CSSProperties;
     const headerTitle = mode === 'view'
-        ? (displayAction?.name || (isPreview ? 'Preview de A√ß√£o' : 'Detalhe da A√ß√£o'))
-        : (editableAction.name?.trim() || (isNew ? 'Nova A√ß√£o' : 'Editar A√ß√£o'));
+        ? (displayAction?.name || (isPreview ? 'Preview de AÁ„o' : 'Detalhe da AÁ„o'))
+        : (editableAction.name?.trim() || (isNew ? 'Nova AÁ„o' : 'Editar AÁ„o'));
     const headerEyebrow = mode === 'edit'
-        ? (isNew ? 'Cria√ß√£o' : 'Edi√ß√£o')
-        : (isPreview ? 'Preview' : 'A√ß√£o');
+        ? (isNew ? 'CriaÁ„o' : 'EdiÁ„o')
+        : (isPreview ? 'Preview' : 'AÁ„o');
     const handleHeaderOk = () => {
         if (isPreview) {
             onClose();
@@ -371,7 +373,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                 {currentArena?.name || 'Arena'}
                             </p>
                         </div>
-                        <button onClick={handleHeaderOk} className="px-4 py-2 text-sm font-bold rounded-xl luxe-skin-button shrink-0">
+                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="px-4 py-2 text-sm font-bold rounded-xl luxe-skin-button shrink-0">
                             OK
                         </button>
                     </div>
@@ -379,7 +381,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     {/* Assignment field for Office Mode */}
                     {isOfficeMode && mode === 'edit' && (
                         <div className="px-4 py-2 bg-black/[0.18] border-b border-white/[0.06]">
-                            <label className="core-label mb-1 block">Quem vai fazer? (Atribui√ß√£o)</label>
+                            <label className="core-label mb-1 block">Quem vai fazer? (AtribuiÁ„o)</label>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                                 <button
                                     onClick={() => setEditableAction(prev => ({ ...prev, originCodexId: undefined }))}
@@ -410,7 +412,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                B√°sico
+                                B·sico
                             </button>
                             <button
                                 onClick={() => setActiveTab('advanced')}
@@ -419,7 +421,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                Avan√ßado
+                                AvanÁado
                             </button>
                         </div>
                     </div>
@@ -446,7 +448,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             <div className="relative">
                                                 <input type="checkbox" id="desc-expand" className="peer hidden" />
                                                 <p className="text-[10px] text-gray-400 leading-snug font-medium max-w-[280px] mx-auto line-clamp-3 peer-checked:line-clamp-none transition-all">
-                                                    {displayAction.description || "Sem descri√ß√£o definida."}
+                                                    {displayAction.description || "Sem descriÁ„o definida."}
                                                 </p>
                                                 {displayAction.description && displayAction.description.length > 80 && (
                                                     <label
@@ -466,12 +468,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 <div className="text-xs font-bold accent-text truncate text-center w-full">{displayAction.actionType}</div>
                                             </div>
                                             <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Dura√ß√£o</div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">DuraÁ„o</div>
                                                 <div className="text-xs font-bold text-white text-center w-full">{effectiveDuration} min</div>
                                             </div>
-                                            {displayAction.actionType === 'A√ß√£o Recorrente' && (
+                                            {displayAction.actionType === 'AÁ„o Recorrente' && (
                                                 <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                    <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Repeti√ß√µes</div>
+                                                    <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">RepetiÁıes</div>
                                                     <div className="text-xs font-bold text-white text-center w-full">{displayAction.repetitions}x pool</div>
                                                 </div>
                                             )}
@@ -503,9 +505,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                         {/* Name */}
                                         <input
+                                            id="onboarding-action-name-input"
                                             ref={nameInputRef}
                                             type="text"
-                                            placeholder="Nome da A√ß√£o"
+                                            placeholder="Nome da AÁ„o"
                                             value={editableAction.name || ''}
                                             onBlur={handleTutorialNextFormStep}
                                             onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
@@ -514,7 +517,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                         {/* Description */}
                                         <textarea
-                                            placeholder="Descri√ß√£o (opcional)"
+                                            placeholder="DescriÁ„o (opcional)"
                                             value={editableAction.description || ''}
                                             onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
                                             rows={3}
@@ -534,9 +537,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                             {/* Type */}
                                             <div>
-                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de A√ß√£o</label>
-                                                <button onClick={() => setIsActionTypePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
-                                                    <span className="text-sm">{editableAction.actionType || 'A√ß√£o Recorrente'}</span>
+                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de AÁ„o</label>
+                                                <button id="onboarding-action-type-button" onClick={() => setIsActionTypePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                    <span className="text-sm">{editableAction.actionType || 'AÁ„o Recorrente'}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                 </button>
                                             </div>
@@ -544,32 +547,33 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             {/* Sliders */}
                                             {taskId ? (
                                                 <StyledRangeInput
-                                                    label="Dura√ß√£o desta Inst√¢ncia"
+                                                    label="DuraÁ„o desta Inst‚ncia"
                                                     value={editableTaskDuration}
                                                     min={15} max={480} step={15} unit="min"
                                                     onChange={val => setEditableTaskDuration(val)}
                                                 />
                                             ) : (
                                                 <StyledRangeInput
+                                                    containerId="onboarding-action-duration"
                                                     inputRef={durationInputRef}
-                                                    label="Dura√ß√£o (Base)"
+                                                    label="DuraÁ„o (Base)"
                                                     value={editableAction.duration || 60}
                                                     min={15} max={240} step={15} unit="min"
                                                     onChange={val => { setEditableAction(p => ({ ...p, duration: val })); handleTutorialNextFormStep(); }}
                                                 />
                                             )}
 
-                                            {editableAction.actionType === 'A√ß√£o Recorrente' && (
-                                                <StyledRangeInput inputRef={repsInputRef} label="Repeti√ß√µes" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({ ...p, repetitions: val })); handleTutorialNextFormStep(); }} />
+                                            {editableAction.actionType === 'AÁ„o Recorrente' && (
+                                                <StyledRangeInput containerId="onboarding-action-repetitions" inputRef={repsInputRef} label="RepetiÁıes" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({ ...p, repetitions: val })); handleTutorialNextFormStep(); }} />
                                             )}
 
                                             <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3) - 1]} onChange={val => setEditableAction(p => ({ ...p, difficulty: val }))} />
                                         </div>
 
                                         {/* Scheduling */}
-                                        {(editableAction.actionType === 'A√ß√£o Recorrente' || editableAction.actionType === 'Compromisso') && (
+                                        {(editableAction.actionType === 'AÁ„o Recorrente' || editableAction.actionType === 'Compromisso') && (
                                             <div className="p-3 bg-black/20 rounded-xl space-y-3 border border-white/5">
-                                                {editableAction.actionType === 'A√ß√£o Recorrente' && (
+                                                {editableAction.actionType === 'AÁ„o Recorrente' && (
                                                     <div>
                                                         <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da Semana</label>
                                                         <div className="grid grid-cols-7 gap-1 mt-1">
@@ -592,14 +596,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 )}
 
                                                 <div>
-                                                    <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Hor√°rio</label>
+                                                    <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Hor·rio</label>
                                                     <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
-                                                        <span className="text-sm">{startTime || 'Sem Hor√°rio'}</span>
+                                                        <span className="text-sm">{startTime || 'Sem Hor·rio'}</span>
                                                         <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
                                                     </button>
                                                     {isTimePickerOpen && (
                                                         <div className="mt-2 h-32 relative">
-                                                            <WheelPicker options={timeOptions} value={startTime || 'Sem Hor√°rio'} onSelect={handleTimeSelect} />
+                                                            <WheelPicker options={timeOptions} value={startTime || 'Sem Hor·rio'} onSelect={handleTimeSelect} />
                                                         </div>
                                                     )}
                                                 </div>
@@ -609,7 +613,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                         {/* Delete Button */}
                                         {!isNew && (
                                             <button onClick={handleDelete} className="w-full py-3 rounded-xl bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/30 text-xs font-bold uppercase tracking-wider transition-all mt-4">
-                                                Excluir A√ß√£o
+                                                Excluir AÁ„o
                                             </button>
                                         )}
                                     </div>
@@ -622,8 +626,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                             <div className="flex flex-col h-full animate-fade-in pb-20">
                                 {/* Sub-Tabs */}
                                 <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5 mx-4 mt-4 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
-                                    {(['M√çDIA', 'ANOTA√á√ÉO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
-                                        const tabKey = tab === 'M√çDIA' ? 'media' : tab === 'ANOTA√á√ÉO' ? 'note' : tab === 'CHECKLIST' ? 'checklist' : 'context';
+                                    {(['MÕDIA', 'ANOTA«√O', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
+                                        const tabKey = tab === 'MÕDIA' ? 'media' : tab === 'ANOTA«√O' ? 'note' : tab === 'CHECKLIST' ? 'checklist' : 'context';
                                         const isActive = advancedSubTab === tabKey;
                                         return (
                                             <button
@@ -649,7 +653,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                     <img
                                                         src={mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl) ? (newAssetUrl || mediaSlot.imageUrl) : displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url}
                                                         className="w-full h-full object-cover"
-                                                        alt="M√≠dia"
+                                                        alt="MÌdia"
                                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                                     />
                                                     {mode === 'edit' && (
@@ -663,8 +667,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 </div>
                                             ) : (
                                                 <div className="w-full aspect-video bg-white/5 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 mb-4">
-                                                    <span className="text-4xl opacity-20">üì∑</span>
-                                                    <span className="text-xs text-gray-500 font-medium">Sem m√≠dia vinculada</span>
+                                                    <span className="text-4xl opacity-20">??</span>
+                                                    <span className="text-xs text-gray-500 font-medium">Sem mÌdia vinculada</span>
                                                 </div>
                                             )}
 
@@ -676,7 +680,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                         onChange={(value) => {
                                                             setMediaSlot(value);
                                                             if (value.imageUrl) {
-                                                                const title = value.caption?.trim() || 'M√≠dia Principal';
+                                                                const title = value.caption?.trim() || 'MÌdia Principal';
                                                                 setNewAssetUrl(value.imageUrl);
                                                                 setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url: value.imageUrl, title }] }));
                                                             } else {
@@ -686,7 +690,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                         }}
                                                     />
                                                     <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/V√≠deo</label>
+                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/VÌdeo</label>
                                                         <input
                                                             type="text"
                                                             value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
@@ -695,7 +699,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                 setNewAssetUrl(url);
                                                                 if (url) {
                                                                     setMediaSlot(prev => ({ ...prev, imageUrl: url }));
-                                                                    const title = mediaSlot.caption?.trim() || 'M√≠dia Principal';
+                                                                    const title = mediaSlot.caption?.trim() || 'MÌdia Principal';
                                                                     setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title }] }));
                                                                 } else {
                                                                     setEditableAction(prev => ({ ...prev, assets: [] }));
@@ -717,12 +721,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                     value={editableAction.briefing || ''}
                                                     onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
                                                     className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
-                                                    placeholder="Digite suas anota√ß√µes aqui..."
+                                                    placeholder="Digite suas anotaÁıes aqui..."
                                                 />
                                             ) : (
                                                 <div className="bg-[#1a1512] rounded-xl p-6 border border-white/5 shadow-inner min-h-[300px]">
                                                     <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
-                                                        {displayAction?.briefing || "Nenhuma anota√ß√£o dispon√≠vel."}
+                                                        {displayAction?.briefing || "Nenhuma anotaÁ„o disponÌvel."}
                                                     </p>
                                                 </div>
                                             )}
@@ -731,7 +735,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                     {advancedSubTab === 'checklist' && (
                                         <div className="p-4 space-y-3">
-                                            <div className="text-xs font-bold text-gray-400 uppercase">Preparar A√ß√µes</div>
+                                            <div className="text-xs font-bold text-gray-400 uppercase">Preparar AÁıes</div>
                                             {/* Checklist Items */}
                                             {(displayAction?.preFlight || []).length > 0 ? (
                                                 displayAction?.preFlight?.map((item, i) => (
@@ -750,7 +754,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 ))
                                             ) : (
                                                 <div className="flex flex-col items-center justify-center py-10 opacity-30 space-y-2 border border-dashed border-white/5 rounded-xl">
-                                                    <span className="text-4xl">üìù</span>
+                                                    <span className="text-4xl">??</span>
                                                     <span className="text-[10px] uppercase font-black tracking-widest">Lista Vazia</span>
                                                 </div>
                                             )}
@@ -791,7 +795,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                         <div className="p-4 space-y-6">
                                             {/* Energy Level */}
                                             <div className="space-y-3">
-                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">N√≠vel de Energia</label>
+                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">NÌvel de Energia</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {(['low', 'medium', 'high'] as const).map(level => {
                                                         const isSelected = displayAction?.context?.energyLevel === level;
@@ -806,7 +810,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                     : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                     }`}
                                                             >
-                                                                {level === 'low' ? 'Baixo' : level === 'medium' ? 'M√©dio' : 'Alto'}
+                                                                {level === 'low' ? 'Baixo' : level === 'medium' ? 'MÈdio' : 'Alto'}
                                                             </button>
                                                         );
                                                     })}
@@ -815,7 +819,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                             {/* Time of Day */}
                                             <div className="space-y-3">
-                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Per√≠odo Ideal</label>
+                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">PerÌodo Ideal</label>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {(['morning', 'afternoon', 'evening', 'night'] as const).map(time => {
                                                         const isSelected = displayAction?.context?.timeOfDay === time;
@@ -830,7 +834,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                     : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                     }`}
                                                             >
-                                                                {time === 'morning' ? 'Manh√£' : time === 'afternoon' ? 'Tarde' : time === 'evening' ? 'Noite' : 'Madrugada'}
+                                                                {time === 'morning' ? 'Manh„' : time === 'afternoon' ? 'Tarde' : time === 'evening' ? 'Noite' : 'Madrugada'}
                                                             </button>
                                                         );
                                                     })}
@@ -855,7 +859,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                 className={`flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden ${mode === 'view' ? 'luxe-skin-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
                             >
                                 <span className="relative z-10 group-hover:text-black transition-colors">
-                                    {isPreview ? 'Fechar' : (mode === 'view' ? 'Iniciar miss√£o' : 'Salvar altera√ß√µes')}
+                                    {isPreview ? 'Fechar' : (mode === 'view' ? 'Iniciar miss„o' : 'Salvar alteraÁıes')}
                                 </span>
                                 <div className={`absolute inset-0 transition-colors ${mode === 'view' ? 'bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10' : ''}`} />
                             </button>
@@ -870,9 +874,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             {isIconPickerOpen && <IconPickerModal onSelect={handleIconSelect} onClose={() => setIsIconPickerOpen(false)} />}
             {isActionTypePickerOpen && (
                 <SelectionModal<ActionType>
-                    title="Tipo de A√ß√£o"
+                    title="Tipo de AÁ„o"
                     options={actionTypeOptions}
-                    currentValue={editableAction.actionType || 'A√ß√£o Recorrente'}
+                    currentValue={editableAction.actionType || 'AÁ„o Recorrente'}
                     onSelect={handleActionTypeChange}
                     onClose={() => setIsActionTypePickerOpen(false)}
                 />
@@ -894,8 +898,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     minDate={new Date()}
                 />
             )}
-            {isConfirmDeleteOpen && (<ConfirmationModal title="Confirmar Exclus√£o" message={`Tem certeza que deseja excluir a a√ß√£o "${action?.name}"?`} onConfirm={confirmDelete} onCancel={() => setConfirmDeleteOpen(false)} />)}
+            {isConfirmDeleteOpen && (<ConfirmationModal title="Confirmar Exclus„o" message={`Tem certeza que deseja excluir a aÁ„o "${action?.name}"?`} onConfirm={confirmDelete} onCancel={() => setConfirmDeleteOpen(false)} />)}
         </Portal>
     );
 };
+
+
+
+
+
 

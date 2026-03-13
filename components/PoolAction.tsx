@@ -114,6 +114,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
     return (
         <div
             ref={poolActionRef}
+            data-action-id={action.id}
             {...longPressEvents}
             style={isFreeAction ? undefined : backgroundStyle}
             className={`
@@ -157,3 +158,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
         </div>
     );
 };
+
+
+
+

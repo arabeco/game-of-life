@@ -1,8 +1,20 @@
-import { supabase } from '../supabaseClient';
+﻿import { supabase } from '../supabaseClient';
 import { UserProfile, GoldenInvite, SovereignConfig, Notification } from '../types';
 
-// Serviço simples para conectar com tabelas existentes
+// ServiÃ§o simples para conectar com tabelas existentes
 export class SupabaseService {
+  private static mapGoldenInvite(row: any): GoldenInvite | null {
+    if (!row?.id || !row?.code) return null;
+    return {
+      id: row.id,
+      code: row.code,
+      is_used: !!row.is_used,
+      claimed_by_user_id: row.claimed_by_user_id ?? null,
+      claimed_at: row.claimed_at ?? null,
+      created_at: row.created_at,
+    };
+  }
+
   // --- Notifications System ---
 
   static async getNotifications(userId: string): Promise<Notification[]> {
@@ -23,7 +35,8 @@ export class SupabaseService {
       type: n.type,
       content: n.content,
       read: n.read,
-      createdAt: n.created_at
+      createdAt: n.created_at,
+      metadata: n.metadata ?? null,
     }));
   }
 
@@ -53,6 +66,7 @@ export class SupabaseService {
     userId: string,
     type: Notification['type'],
     content: string,
+    metadata: Notification['metadata'] = null,
   ): Promise<Notification | null> {
     const { data, error } = await supabase
       .from('notifications')
@@ -61,6 +75,7 @@ export class SupabaseService {
         type,
         content,
         read: false,
+        metadata,
       })
       .select('*')
       .single();
@@ -77,6 +92,7 @@ export class SupabaseService {
       content: data.content,
       read: data.read,
       createdAt: data.created_at,
+      metadata: data.metadata ?? null,
     };
   }
 
@@ -138,8 +154,8 @@ export class SupabaseService {
         chests: [
           { type: 'Comum', count: 99 },
           { type: 'Raro', count: 50 },
-          { type: 'Épico', count: 25 },
-          { type: 'Lendário', count: 10 }
+          { type: 'Ã‰pico', count: 25 },
+          { type: 'LendÃ¡rio', count: 10 }
         ],
         wallet: { gold: 99999, fragments: 99999 },
         inventory: [],
@@ -176,6 +192,10 @@ export class SupabaseService {
           privacy_version: profile.privacyVersion || null,
           privacy_accepted_at: profile.privacyAcceptedAt || null,
           privacy_accept_source: profile.privacyAcceptSource || null,
+          onboarding_version: profile.onboardingVersion || null,
+          onboarding_started_at: profile.onboardingStartedAt || null,
+          onboarding_completed_at: profile.onboardingCompletedAt || null,
+          onboarding_dismissed_at: profile.onboardingDismissedAt || null,
           sovereign: profile.sovereign,
           avatar_url: profile.avatarUrl,
           border: profile.border,
@@ -205,7 +225,7 @@ export class SupabaseService {
     }
   }
 
-  // Buscar usuários
+  // Buscar usuÃ¡rios
   static async searchUsers(query: string = ''): Promise<UserProfile[]> {
     try {
       let queryBuilder = supabase
@@ -221,99 +241,117 @@ export class SupabaseService {
       const { data } = await queryBuilder;
       return (data || []).filter((profile: any) => profile.role !== 'admin' && profile.role !== 'gm') as UserProfile[];
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
+      console.error('Erro ao buscar usuÃ¡rios:', error);
       return [];
     }
   }
 
-  // Gerar convite
-  static async generateGoldenInvite(): Promise<GoldenInvite | null> {
+  static async checkGoldenInvite(code: string): Promise<GoldenInvite | null> {
+    const normalizedCode = code.trim();
+    if (!normalizedCode) return null;
+
     try {
-      const code = `ouro${new Date().getFullYear()}${(Math.random() + 1).toString(36).substring(2, 10)}`;
+      const { data, error } = await supabase.rpc('check_golden_invite', {
+        p_code: normalizedCode,
+      });
 
-      const { data } = await supabase
-        .from('golden_invites')
-        .insert([{ code, is_used: false }])
-        .select()
-        .single();
-
-      return data as GoldenInvite;
-    } catch (error) {
-      console.error('Erro ao gerar convite:', error);
-      return null;
-    }
-  }
-
-  // Listar convites
-  static async getGoldenInvites(): Promise<GoldenInvite[]> {
-    try {
-      const { data } = await supabase
-        .from('golden_invites')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      return (data || []) as GoldenInvite[];
-    } catch (error) {
-      console.error('Erro ao listar convites:', error);
-      return [];
-    }
-  }
-
-  static async getGoldenInviteByCode(code: string): Promise<GoldenInvite | null> {
-    try {
-      const { data, error } = await supabase
-        .from('golden_invites')
-        .select('*')
-        .eq('code', code)
-        .maybeSingle();
-
-      if (error || !data) return null;
-      return data as GoldenInvite;
-    } catch (error) {
-      console.error('Erro ao buscar convite:', error);
-      return null;
-    }
-  }
-
-  static async consumeGoldenInvite(inviteId: string, userId: string): Promise<GoldenInvite | null> {
-    try {
-      const { data } = await supabase
-        .from('golden_invites')
-        .update({ is_used: true, claimed_by_user_id: userId, claimed_at: new Date().toISOString() })
-        .eq('id', inviteId)
-        .eq('is_used', false)
-        .select()
-        .single();
-
-      return (data || null) as GoldenInvite | null;
-    } catch (error) {
-      console.error('Erro ao consumir convite:', error);
-      return null;
-    }
-  }
-
-  static async seedGoldenInvites(codes: string[]): Promise<GoldenInvite[]> {
-    try {
-      const { data: existing } = await supabase
-        .from('golden_invites')
-        .select('code');
-
-      const existingCodes = new Set((existing || []).map((row: any) => row.code));
-      const missing = codes.filter(code => !existingCodes.has(code));
-
-      if (missing.length > 0) {
-        await supabase
-          .from('golden_invites')
-          .insert(missing.map(code => ({ code, is_used: false })));
+      if (error) {
+        console.error('Erro ao validar convite via RPC:', error);
+        return null;
       }
 
-      return await this.getGoldenInvites();
+      const invite = (data as any)?.invite;
+      return this.mapGoldenInvite(invite);
     } catch (error) {
-      console.error('Erro ao aplicar convites iniciais:', error);
-      return [];
+      console.error('Erro inesperado ao validar convite:', error);
+      return null;
     }
   }
 
+  static async consumeGoldenInviteCode(code: string, userId: string): Promise<GoldenInvite | null> {
+    const normalizedCode = code.trim();
+    if (!normalizedCode || !userId) return null;
+
+    try {
+      const { data, error } = await supabase.rpc('consume_golden_invite', {
+        p_code: normalizedCode,
+        p_user_id: userId,
+      });
+
+      if (error) {
+        console.error('Erro ao consumir convite via RPC:', error);
+        return null;
+      }
+
+      const invite = (data as any)?.invite;
+      return this.mapGoldenInvite(invite);
+    } catch (error) {
+      console.error('Erro inesperado ao consumir convite:', error);
+      return null;
+    }
+  }
+
+  static async getClosedBetaAccessStatus(): Promise<{ authorized: boolean; hasInvite: boolean; hasProfile: boolean } | null> {
+    try {
+      const { data, error } = await supabase.rpc('get_closed_beta_access_status');
+
+      if (error) {
+        console.error('Erro ao validar sessao do beta fechado via RPC:', error);
+        return null;
+      }
+
+      return {
+        authorized: !!(data as any)?.authorized,
+        hasInvite: !!(data as any)?.has_invite,
+        hasProfile: !!(data as any)?.has_profile,
+      };
+    } catch (error) {
+      console.error('Erro inesperado ao validar sessao do beta fechado:', error);
+      return null;
+    }
+  }
+
+  static async deleteMyAccount(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('account-delete', {
+        body: {},
+      });
+
+      if (!error) {
+        if ((data as any)?.success === false) {
+          return { success: false, error: (data as any)?.error || 'Nao foi possivel excluir a conta.' };
+        }
+
+        return { success: true };
+      }
+
+      console.error('Erro ao excluir conta via Edge Function:', error);
+      const functionErrorMessage = String((error as any)?.message || '');
+      const canFallbackToRpc =
+        functionErrorMessage.includes('Failed to send a request to the Edge Function') ||
+        functionErrorMessage.includes('404') ||
+        functionErrorMessage.includes('FunctionsFetchError');
+
+      if (!canFallbackToRpc) {
+        return { success: false, error: functionErrorMessage || 'Nao foi possivel excluir a conta.' };
+      }
+
+      const { data: rpcData, error: rpcError } = await supabase.rpc('delete_my_account');
+      if (rpcError) {
+        console.error('Erro ao excluir conta via RPC:', rpcError);
+        return { success: false, error: rpcError.message || 'Nao foi possivel excluir a conta.' };
+      }
+
+      if ((rpcData as any)?.success === false) {
+        return { success: false, error: (rpcData as any)?.error || 'Nao foi possivel excluir a conta.' };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Erro inesperado ao excluir conta:', error);
+      return { success: false, error: (error as any)?.message || 'Nao foi possivel excluir a conta.' };
+    }
+  }
   static async getFeedbackReports(): Promise<any[]> {
     try {
       const { data, error } = await supabase
@@ -327,8 +365,14 @@ export class SupabaseService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Erro ao buscar relatórios de feedback:', error);
+      console.error('Erro ao buscar relatÃ³rios de feedback:', error);
       return [];
     }
   }
 }
+
+
+
+
+
+

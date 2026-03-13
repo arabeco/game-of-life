@@ -1,4 +1,4 @@
-﻿import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { GlobalHeader } from './GlobalHeader';
 import { AssetIcon, ArenaIcon, ConfigIcon, PlannerIcon, SocialIcon } from './Icons';
@@ -15,6 +15,12 @@ import {
     LEGAL_PRIVACY_VERSION,
     LEGAL_TERMS_VERSION,
 } from '../constants/legal';
+import {
+    buildOnboardingCompletePatch,
+    buildOnboardingDismissPatch,
+    buildOnboardingStartPatch,
+    shouldAutoStartOnboarding,
+} from '../utils/firstUseOnboarding';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -30,6 +36,8 @@ const AchievementModal = React.lazy(() => import('./AchievementModal').then((m) 
 const GoldenToast = React.lazy(() => import('./GoldenToast').then((m) => ({ default: m.GoldenToast })));
 const TermsOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.TermsOverlay })));
 const OfflineOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.OfflineOverlay })));
+const FirstUseOnboardingOverlay = React.lazy(() => import('./FirstUseOnboardingOverlay').then((m) => ({ default: m.FirstUseOnboardingOverlay })));
+const CodexClaimModal = React.lazy(() => import('./CodexClaimModal').then((m) => ({ default: m.CodexClaimModal })));
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -37,7 +45,7 @@ type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
 const TutorialBridge: React.FC = () => null;
 
-const AppWithTutorial: React.FC = () => {
+const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaultRestScreenOpen = true }) => {
     const [currentView, setCurrentView] = useState<View>('assets');
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
@@ -271,9 +279,12 @@ const AppWithTutorial: React.FC = () => {
                     price: typeof parsed.metadata?.price === 'number' ? parsed.metadata.price : null,
                     description: parsed.metadata?.description ?? null,
                     template: parsed,
+                    source_type: 'created',
+                    created_by_user_id: userId,
+                    origin_codex_id: null,
                 });
             } else {
-                console.warn('UsuÃ¡rio nÃ£o autenticado ou ID invÃ¡lido. Salvando apenas localmente.');
+                console.warn('Usuário não autenticado ou ID inválido. Salvando apenas localmente.');
             }
         } catch (e) {
             console.error('Falha ao salvar Codex no Supabase:', e);
@@ -391,7 +402,7 @@ const AppWithTutorial: React.FC = () => {
                 </div>
             )}
 
-            <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ? 44 : 0} />
+            <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ? 44 : 0} defaultRestScreenOpen={defaultRestScreenOpen} />
             <TutorialBridge />
 
             <main className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
@@ -427,7 +438,7 @@ const AppWithTutorial: React.FC = () => {
                     />
                     <div className="flex h-16 items-center justify-around">
                         {activeUIMode === 'GAME' && <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />}
-                        <NavItem view="arenas" label={activeUIMode === 'BASIC' ? 'ÁREAS' : 'ARENAS'} icon={<ArenaIcon />} id="nav-arenas" />
+                        <NavItem view="arenas" label={activeUIMode === 'BASIC' ? '�REAS' : 'ARENAS'} icon={<ArenaIcon />} id="nav-arenas" />
                         <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} id="nav-planner" />
                         <NavItem view="social" label={activeUIMode === 'BASIC' ? 'EQUIPE' : 'MUNDO'} icon={<SocialIcon />} id="nav-mundo" />
                         <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} id="nav-settings" />
@@ -449,7 +460,7 @@ const MainApp: React.FC = () => {
         hideToast,
         isProfileLoaded,
     } = useGame();
-    const { isTutorialCompleted, isTutorialActive, startTutorial } = useTutorial();
+    const { isTutorialCompleted } = useTutorial();
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
     const [forceShowTerms, setForceShowTerms] = useState(false);
@@ -483,30 +494,57 @@ const MainApp: React.FC = () => {
     const requiresTermsAcceptance = !acceptedTerms && isProfileLoaded && userProfile.id !== 'placeholder_user';
     const showTerms = forceShowTerms || requiresTermsAcceptance;
     const needsModeSelection = acceptedTerms && !userProfile.appMode;
-    const [tutorialShownInSession, setTutorialShownInSession] = useState(false);
+    const [isFirstUseOnboardingActive, setFirstUseOnboardingActive] = useState(false);
+    const [onboardingShownInSession, setOnboardingShownInSession] = useState(false);
+    const [claimToken, setClaimToken] = useState<string | null>(null);
 
     useEffect(() => {
         if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms || needsModeSelection) return;
+        if (!shouldAutoStartOnboarding(userProfile) || isFirstUseOnboardingActive || onboardingShownInSession) return;
 
-        const tutorialFlags = userProfile.completedSeasonMissions || [];
-        const tutorialAlreadyDone = isTutorialCompleted || tutorialFlags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
-
-        if (!tutorialAlreadyDone && !isTutorialActive && !tutorialShownInSession) {
-            startTutorial();
-            setTutorialShownInSession(true);
-        }
+        updateUserProfile(buildOnboardingStartPatch(userProfile));
+        setFirstUseOnboardingActive(true);
+        setOnboardingShownInSession(true);
     }, [
-        userProfile.id,
-        userProfile.appMode,
+        userProfile,
         isProfileLoaded,
         showTerms,
         needsModeSelection,
-        isTutorialCompleted,
-        isTutorialActive,
-        startTutorial,
-        tutorialShownInSession,
-        userProfile.completedSeasonMissions,
+        isFirstUseOnboardingActive,
+        onboardingShownInSession,
+        updateUserProfile,
     ]);
+    const clearClaimToken = useCallback(() => {
+        setClaimToken(null);
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has('claim_codex')) return;
+        params.delete('claim_codex');
+        const nextSearch = params.toString();
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+        window.history.replaceState(window.history.state, '', nextUrl);
+    }, []);
+
+    useEffect(() => {
+        const syncClaimToken = () => {
+            const params = new URLSearchParams(window.location.search);
+            const nextToken = params.get('claim_codex');
+            setClaimToken(nextToken && nextToken.trim() ? nextToken.trim() : null);
+        };
+
+        syncClaimToken();
+        window.addEventListener('popstate', syncClaimToken);
+        return () => window.removeEventListener('popstate', syncClaimToken);
+    }, []);
+
+    const handleDismissOnboarding = useCallback(() => {
+        updateUserProfile(buildOnboardingDismissPatch(userProfile));
+        setFirstUseOnboardingActive(false);
+    }, [updateUserProfile, userProfile]);
+
+    const handleCompleteOnboarding = useCallback(() => {
+        updateUserProfile(buildOnboardingCompletePatch(userProfile));
+        setFirstUseOnboardingActive(false);
+    }, [updateUserProfile, userProfile]);
 
     const handleAcceptTerms = () => {
         const acceptedAt = new Date().toISOString();
@@ -559,7 +597,7 @@ const MainApp: React.FC = () => {
 
     return (
         <>
-            {!requiresTermsAcceptance && <AppWithTutorial />}
+            {!requiresTermsAcceptance && <AppWithTutorial defaultRestScreenOpen={!showTerms && !needsModeSelection && !isFirstUseOnboardingActive && !claimToken} />}
             {!showTerms && (
                 <Suspense fallback={null}>
                     <ModeSelectionOverlay />
@@ -568,6 +606,18 @@ const MainApp: React.FC = () => {
             <Suspense fallback={null}>
                 <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
                 <OfflineOverlay open={!isOnline} />
+                <FirstUseOnboardingOverlay
+                    active={isFirstUseOnboardingActive}
+                    onDismiss={handleDismissOnboarding}
+                    onComplete={handleCompleteOnboarding}
+                />
+                {claimToken && (
+                    <CodexClaimModal
+                        token={claimToken}
+                        onClose={clearClaimToken}
+                        onClaimed={clearClaimToken}
+                    />
+                )}
             </Suspense>
             <Suspense fallback={null}>
                 {achievementUnlocked && (
@@ -599,4 +649,21 @@ const AuthenticatedApp: React.FC<{ session: Session }> = ({ session }) => (
 );
 
 export default AuthenticatedApp;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

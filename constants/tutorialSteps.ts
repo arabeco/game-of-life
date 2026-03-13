@@ -4,7 +4,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     {
         category: 'INTRO',
         title: 'BEM-VINDO AO GLYPH',
-        text: 'Eu sou o Oráculo. Vou te guiar por 4 cards do sistema.\n\nO primeiro e o mais importante: ele ja basta para voce entrar no core loop e comecar hoje.',
+        text: 'Eu sou o Oraculo. Estes 4 cards explicam o sistema no seu ritmo.\n\nO primeiro funciona como uma visao geral do core loop para revisitar depois do onboarding.',
         view: 'arenas',
         targetId: 'nav-arenas',
     },
@@ -12,7 +12,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     {
         category: 'ALICERCE',
         title: '01. ARENAS',
-        text: 'Aqui voce organiza as frentes da sua vida. Nao precisa montar tudo agora: uma ou duas Arenas bem escolhidas ja bastam para comecar.',
+        text: 'Aqui voce organiza as frentes da sua vida. Este card mostra a estrutura geral das Arenas, sem exigir que voce monte tudo de uma vez.',
         view: 'arenas',
         targetId: 'arenas-container',
     },
@@ -133,3 +133,4 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         targetId: 'sitrep-button',
     },
 ];
+

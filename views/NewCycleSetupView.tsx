@@ -8,6 +8,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { DatePickerModal } from '../components/DatePickerModal';
 import { Portal } from '../components/Portal';
 import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
+import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 
 type ArenaStatus = 'renew' | 'archive' | 'delete';
 
@@ -76,6 +77,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
         const changes: ArenaSetupChange[] = Array.from(arenaChanges.entries()).map(([id, status]) => ({ id, status }));
         const cycleDetails = { name: cycleName, endDate: cycleEndDate };
         startNewCycle(changes, cycleDetails);
+        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.cycleCreated));
         onComplete();
     };
 
@@ -87,7 +89,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={onCancel}>
-                <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
+                <div id="new-cycle-setup-view" className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
                             <button onClick={onCancel} className="p-2 -ml-2"><ChevronLeftIcon /></button>
@@ -115,6 +117,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                             <h3 className='text-center text-xs font-bold uppercase tracking-wider text-gray-400 mb-2'>Detalhes da Campanha</h3>
                             <div className="space-y-2">
                                 <input
+                                    id="new-cycle-name-input"
                                     type='text'
                                     placeholder='Nome do Novo Ciclo'
                                     value={cycleName}
@@ -122,6 +125,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                     className='w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 focus:border-[var(--skin-accent-color)] outline-none transition-colors'
                                 />
                                 <button
+                                    id="new-cycle-date-button"
                                     onClick={() => setDatePickerOpen(true)}
                                     className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 flex items-center justify-between hover:bg-black/60 transition-colors"
                                 >
@@ -145,7 +149,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                         ))}
                     </div>
                     <div className="flex-shrink-0 pt-4">
-                        <button onClick={() => setShowConfirm(true)} disabled={!cycleName || !cycleEndDate} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR NOVO CICLO</button>
+                        <button id="new-cycle-submit-button" onClick={() => setShowConfirm(true)} disabled={!cycleName || !cycleEndDate} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR NOVO CICLO</button>
                     </div>
                 </div>
             </div>
@@ -155,3 +159,6 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
         </Portal>
     );
 };
+
+
+

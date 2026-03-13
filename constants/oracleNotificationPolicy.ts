@@ -38,6 +38,14 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'F',
     label: 'Resposta',
   },
+  friend_accepted: {
+    lane: 'feed',
+    badge: false,
+    basicVisible: false,
+    gameVisible: true,
+    icon: 'F',
+    label: 'Aliado',
+  },
   clan_invite: {
     lane: 'essential',
     badge: true,
@@ -53,6 +61,14 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     gameVisible: true,
     icon: 'C',
     label: 'Resposta',
+  },
+  clan_join: {
+    lane: 'feed',
+    badge: false,
+    basicVisible: false,
+    gameVisible: true,
+    icon: 'C',
+    label: 'Cla',
   },
   clan_mission_update: {
     lane: 'essential',
@@ -102,14 +118,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'R',
     label: 'Resgate',
   },
-  system: {
-    lane: 'essential',
-    badge: true,
-    basicVisible: true,
-    gameVisible: true,
-    icon: '!',
-    label: 'Sistema',
-  },
   level_up: {
     lane: 'progress',
     badge: false,
@@ -126,22 +134,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'T',
     label: 'Titulo',
   },
-  friend_accepted: {
-    lane: 'feed',
-    badge: false,
-    basicVisible: false,
-    gameVisible: true,
-    icon: 'F',
-    label: 'Aliado',
-  },
-  clan_join: {
-    lane: 'feed',
-    badge: false,
-    basicVisible: false,
-    gameVisible: true,
-    icon: 'C',
-    label: 'Cla',
-  },
   oracle_prompt: {
     lane: 'feed',
     badge: false,
@@ -151,6 +143,22 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     tacticalVisible: true,
     icon: 'O',
     label: 'Oraculo',
+  },
+  codex_gift: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'C',
+    label: 'Codex',
+  },
+  system: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: '!',
+    label: 'Sistema',
   },
 };
 
@@ -193,8 +201,12 @@ export const getNotificationTitle = (notification: Notification): string => {
       return 'Voce recebeu um convite de amizade.';
     case 'friend_response':
       return 'Seu convite de amizade foi respondido.';
+    case 'friend_accepted':
+      return 'Seu convite de amizade foi aceito.';
     case 'clan_response':
       return 'Seu pedido de cla foi respondido.';
+    case 'clan_join':
+      return 'Seu pedido de cla foi aceito.';
     case 'clan_mission_update':
       return 'Seu cla precisa de voce.';
     case 'season_ending':
@@ -205,10 +217,8 @@ export const getNotificationTitle = (notification: Notification): string => {
       return 'Voce desbloqueou um titulo.';
     case 'oracle_prompt':
       return 'O Oraculo chamou sua atencao.';
-    case 'friend_accepted':
-      return 'Seu convite de amizade foi aceito.';
-    case 'clan_join':
-      return 'Seu pedido de cla foi aceito.';
+    case 'codex_gift':
+      return 'Um Codex chegou para voce.';
     case 'system':
     default:
       return 'Aviso do sistema.';
@@ -240,11 +250,14 @@ export const getNotificationBody = (
       notification.type === 'clan_invite' ||
       notification.type === 'friend_request' ||
       notification.type === 'friend_response' ||
+      notification.type === 'friend_accepted' ||
       notification.type === 'clan_response' ||
+      notification.type === 'clan_join' ||
       notification.type === 'clan_mission_update' ||
       notification.type === 'cycle_finalized' ||
       notification.type === 'system' ||
-      notification.type === 'oracle_prompt'
+      notification.type === 'oracle_prompt' ||
+      notification.type === 'codex_gift'
     ) {
       return notification.content;
     }
@@ -308,6 +321,8 @@ export const getNotificationBody = (
         default:
           return notification.content || 'O Oraculo tem uma chamada curta para voce.';
       }
+    case 'codex_gift':
+      return notification.content || 'Um manuscrito valioso foi enviado para a sua biblioteca.';
     default:
       return notification.content || 'Ha uma atualizacao importante esperando sua leitura.';
   }

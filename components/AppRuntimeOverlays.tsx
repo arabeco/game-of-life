@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 import { useLongPress } from '../hooks/useLongPress';
+import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 
 const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -190,6 +191,25 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                                     {isHolding && isLast && <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full bg-[var(--gold)]/10" />}
                                 </div>
                             </div>
+                            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] text-gray-500 md:text-[11px]">
+                                <a
+                                    href={LEGAL_TERMS_URL_PLACEHOLDER}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="transition-colors hover:text-[var(--gold)]"
+                                >
+                                    Termos completos
+                                </a>
+                                <span className="text-gray-400">•</span>
+                                <a
+                                    href={LEGAL_PRIVACY_URL_PLACEHOLDER}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="transition-colors hover:text-[var(--gold)]"
+                                >
+                                    Privacidade completa
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -292,3 +312,5 @@ export const ResetPasswordOverlay: React.FC<{ onClose: () => void }> = ({ onClos
         </Portal>
     );
 };
+
+

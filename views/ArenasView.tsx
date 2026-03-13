@@ -537,6 +537,7 @@ export const ArenasView: React.FC = () => {
 
     const handleArenaCreated = (newArena: Arena) => {
         setIsCreatingArena(false);
+        setSelectedArenaId(newArena.id);
     };
 
     // Helper to render Campaign Card
@@ -1028,6 +1029,7 @@ export const ArenasView: React.FC = () => {
                 <button
                     ref={fabRef}
                     id="new-action-button"
+                    data-onboarding-id="new-arena-button"
                     onClick={handleOpenCreateArena}
                     className={`fixed bottom-20 right-4 w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isSelectionMode ? 'opacity-0 pointer-events-none' : ''}`}
                 >
@@ -1066,3 +1068,6 @@ export const ArenasView: React.FC = () => {
         </>
     );
 };
+
+
+

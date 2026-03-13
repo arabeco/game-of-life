@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
-import { GM_CONFIG } from '../constants';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
+import { clearClosedBetaGoogleRedirect, consumeClosedBetaGoogleRedirect } from '../utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import './login-ui.css';
@@ -24,22 +24,22 @@ export const LoginView: React.FC = () => {
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
     const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
 
-    // Auto-seed golden invites when login page is opened
-    React.useEffect(() => {
-        const seedInvites = async () => {
-            const seedCodes = (GM_CONFIG.goldenInvites as any)?.seedCodes;
-            if (seedCodes && Array.isArray(seedCodes) && seedCodes.length > 0) {
-                console.log('Liberando convites dourados iniciais...');
-                await SupabaseService.seedGoldenInvites(seedCodes);
-                console.log('Convites liberados com sucesso.');
-            }
-        };
-        seedInvites();
-    }, []);
-
     React.useEffect(() => {
         startInstallPromptCapture();
         return subscribeInstallPrompt((prompt) => setInstallPromptAvailable(Boolean(prompt)));
+    }, []);
+
+    React.useEffect(() => {
+        const redirectState = consumeClosedBetaGoogleRedirect();
+        if (!redirectState) return;
+
+        setIsSigningUp(redirectState.mode === 'signup');
+        setEmail(redirectState.email || '');
+        setPassword('');
+        setInviteCode('');
+        setAcceptedLegal(false);
+        setMessage(null);
+        setError(redirectState.message);
     }, []);
 
     const getPasswordStrength = (pass: string) => {
@@ -74,22 +74,17 @@ export const LoginView: React.FC = () => {
             return;
         }
 
-        const multiUseCodes = (GM_CONFIG.goldenInvites as any)?.multiUseCodes as string[] | undefined;
-        const isMultiUseInvite = isGoldenInviteGateEnabled && (multiUseCodes || []).includes(normalizedInvite);
-
         if (isGoldenInviteGateEnabled) {
             console.log('Validando convite:', normalizedInvite);
-            if (!isMultiUseInvite) {
-                inviteRecord = await SupabaseService.getGoldenInviteByCode(normalizedInvite);
-                console.log('Resultado da busca no DB:', inviteRecord);
-                if (!inviteRecord) {
-                    setError(`Convite Dourado "${normalizedInvite}" não encontrado no banco de dados.`);
-                    return;
-                }
-                if (inviteRecord.is_used) {
-                    setError('Convite Dourado já utilizado.');
-                    return;
-                }
+            inviteRecord = await SupabaseService.checkGoldenInvite(normalizedInvite);
+            console.log('Resultado da busca segura:', inviteRecord);
+            if (!inviteRecord) {
+                setError(`Convite Dourado "${normalizedInvite}" nao encontrado no banco de dados.`);
+                return;
+            }
+            if (inviteRecord.is_used) {
+                setError('Convite Dourado ja utilizado.');
+                return;
             }
         }
         setLoading(true);
@@ -110,8 +105,8 @@ export const LoginView: React.FC = () => {
             if (error) throw error;
 
             if (data.user) {
-                if (isGoldenInviteGateEnabled && !isMultiUseInvite && inviteRecord) {
-                    const consumed = await SupabaseService.consumeGoldenInvite(inviteRecord.id, data.user.id);
+                if (isGoldenInviteGateEnabled && inviteRecord) {
+                    const consumed = await SupabaseService.consumeGoldenInviteCode(normalizedInvite, data.user.id);
                     if (!consumed) {
                         setError('Convite Dourado já utilizado.');
                         await supabase.auth.signOut();
@@ -308,13 +303,20 @@ export const LoginView: React.FC = () => {
     };
 
     const handleGoogleLogin = async () => {
+        if (isGoldenInviteGateEnabled && isSigningUp) {
+            setError('Durante o beta fechado, crie sua conta com email e Convite Dourado. Depois o Google funciona para entrar.');
+            return;
+        }
+
         if (isSigningUp && !acceptedLegal) {
             setError('Voce precisa aceitar os Termos de Uso e a Politica de Privacidade para criar a conta.');
             return;
         }
 
+        clearClosedBetaGoogleRedirect();
         setLoading(true);
         setError(null);
+        setMessage(null);
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
@@ -339,190 +341,6 @@ export const LoginView: React.FC = () => {
             await promptForInstall();
         } catch (installError: any) {
             setError(installError?.message || 'Nao foi possivel abrir a instalacao do app agora.');
-        }
-    };
-
-    const loginAsAdmin = async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const adminEmail = 'admin@gol.local';
-            const adminPassword = 'admin123';
-
-            // Tentar login primeiro
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-                email: adminEmail,
-                password: adminPassword,
-            });
-
-            if (signInError && (signInError.message.includes('Invalid login credentials') || signInError.message.includes('User not found'))) {
-                // Criar conta admin se não existir
-                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                    email: adminEmail,
-                    password: adminPassword,
-                    options: {
-                        data: {
-                            nickname: 'Admin',
-                        }
-                    }
-                });
-
-                if (signUpError) throw signUpError;
-
-                if (signUpData.user) {
-                    const adminProfileForState: UserProfile = {
-                        id: signUpData.user.id,
-                        email: adminEmail,
-                        nickname: 'Admin',
-                        sovereign: {
-                            body: 'body_masc_1',
-                            skinTone: '#FDBCB4',
-                            hairStyle: 'short',
-                            hairColor: '#2C1810',
-                            outfit: 'royal_robes',
-                            head_under: 'none',
-                            helmet: 'none',
-                            head_over: 'crown',
-                            artifact: 'none',
-                            glyph: 'none',
-                            aura: 'none'
-                        },
-                        avatarUrl: 'https://picsum.photos/seed/admin/100/100',
-                        border: 'GOLD',
-                        level: 99,
-                        backgroundUrl: 'https://picsum.photos/seed/admin-bg/400/150',
-                        isOnline: true,
-                        visibleWidgets: ['consciencia.lema', 'espiritualidade.sistema'],
-                        skin: 'GOLD',
-                        unlockedSkins: {},
-                        unlockedItems: {
-                            bodyStyles: {},
-                            hairStyles: {},
-                            outfits: {},
-                            head_under_items: {},
-                            helmets: {},
-                            head_over_items: {},
-                            artifacts: {},
-                            codexes: {},
-                            skins: {},
-                            borders: {},
-                            banners: {},
-                            glyphs: {},
-                            auras: {},
-                            orbs: {},
-                            plates: {},
-                            ornament: {},
-                            insignias: {},
-                            ui_skins: { 'GAME': true, 'BASIC': true },
-                        },
-                        username: 'admin',
-                        completedSeasonMissions: [],
-                        nobility: { exp: 999999, rankId: 'soberano' },
-                        mood: 100,
-                        chests: [
-                            { type: 'Comum', count: 99 },
-                            { type: 'Raro', count: 50 },
-                            { type: 'Épico', count: 25 },
-                            { type: 'Lendário', count: 10 }
-                        ],
-                        wallet: { gold: 0, fragments: 0 },
-                        inventory: [],
-                        role: 'admin',
-                        isPremium: true
-                    };
-
-                    const adminProfileForDB = {
-                        id: adminProfileForState.id,
-                        email: adminProfileForState.email,
-                        nickname: adminProfileForState.nickname,
-                        sovereign: adminProfileForState.sovereign,
-                        avatar_url: adminProfileForState.avatarUrl,
-                        border: adminProfileForState.border,
-                        level: adminProfileForState.level,
-                        background_url: adminProfileForState.backgroundUrl,
-                        is_online: adminProfileForState.isOnline,
-                        visible_widgets: adminProfileForState.visibleWidgets,
-                        skin: adminProfileForState.skin,
-                        unlocked_skins: adminProfileForState.unlockedSkins,
-                        unlocked_items: adminProfileForState.unlockedItems,
-                        completed_season_missions: adminProfileForState.completedSeasonMissions,
-                        nobility: adminProfileForState.nobility,
-                        mood: adminProfileForState.mood,
-                        chests: adminProfileForState.chests,
-                        role: adminProfileForState.role,
-                        is_premium: adminProfileForState.isPremium ?? true
-                    };
-
-                    const { error: profileError } = await supabase
-                        .from('user_profiles')
-                        .insert([adminProfileForDB]);
-
-                    if (profileError) throw profileError;
-
-                }
-            } else if (signInData.user) {
-                // Buscar perfil admin existente
-                const { data: profile } = await supabase
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', signInData.user.id)
-                    .single();
-
-                if (profile) {
-                    const userProfileForState: UserProfile = {
-                        id: profile.id,
-                        email: profile.email,
-                        sovereign: profile.sovereign,
-                        avatarUrl: profile.avatar_url,
-                        border: profile.border,
-                        nickname: profile.nickname,
-                        level: profile.level,
-                        backgroundUrl: profile.background_url,
-                        bannerUrl: profile.banner_url,
-                        isOnline: profile.is_online,
-                        visibleWidgets: profile.visible_widgets,
-                        skin: profile.skin,
-                        unlockedSkins: profile.unlocked_skins ?? {},
-                        unlockedItems: profile.unlocked_items ?? {
-                            bodyStyles: {},
-                            hairStyles: {},
-                            outfits: {},
-                            head_under_items: {},
-                            helmets: {},
-                            head_over_items: {},
-                            artifacts: {},
-                            codexes: {},
-                            skins: {},
-                            borders: {},
-                            banners: {},
-                            glyphs: {},
-                            auras: {},
-                            orbs: {},
-                            plates: {},
-                            ornament: {},
-                            insignias: {},
-                            ui_skins: {},
-                        },
-                        username: profile.username || 'admin',
-                        completedSeasonMissions: profile.completed_season_missions ?? [],
-                        lastLevelUpdate: profile.last_level_update,
-                        nobility: profile.nobility,
-                        mood: profile.mood,
-                        chests: profile.chests,
-                        wallet: profile.wallet ?? { gold: 0, fragments: 0 },
-                        inventory: [],
-                        role: profile.role,
-                        isPremium: profile.is_premium ?? false,
-                    };
-                }
-            } else if (signInError) {
-                throw signInError;
-            }
-        } catch (error: any) {
-            setError(error.message || 'Erro ao fazer login como admin');
-        } finally {
-            setLoading(false);
         }
     };
 

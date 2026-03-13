@@ -6,6 +6,7 @@ import { ClanChat } from './ClanChat';
 import { DirectMessages } from './DirectMessages';
 import { Notification, OracleMode } from '../types';
 import { Portal } from './Portal';
+import { CodexClaimModal } from './CodexClaimModal';
 import {
     getNotificationBody,
     getNotificationIcon,
@@ -157,6 +158,17 @@ interface NotificationsListProps {
 
 const NotificationsList: React.FC<NotificationsListProps> = ({ notifications, onRead, onDelete, oracleMode }) => {
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+    const [claimShareId, setClaimShareId] = useState<string | null>(null);
+
+    const handleOpenNotification = (notification: Notification) => {
+        const shareId = notification.type === 'codex_gift' ? notification.metadata?.shareId : null;
+        if (shareId) {
+            setClaimShareId(String(shareId));
+            return;
+        }
+
+        setSelectedNotification(notification);
+    };
 
     if (notifications.length === 0) {
         return (
@@ -175,7 +187,7 @@ const NotificationsList: React.FC<NotificationsListProps> = ({ notifications, on
                     notification={notification} 
                     onRead={onRead} 
                     onDelete={onDelete} 
-                    onOpen={setSelectedNotification}
+                    onOpen={handleOpenNotification}
                 />
             ))}
             {selectedNotification && (
@@ -185,6 +197,13 @@ const NotificationsList: React.FC<NotificationsListProps> = ({ notifications, on
                     onClose={() => setSelectedNotification(null)}
                     onRead={onRead}
                     onDelete={onDelete}
+                />
+            )}
+            {claimShareId && (
+                <CodexClaimModal
+                    shareId={claimShareId}
+                    onClose={() => setClaimShareId(null)}
+                    onClaimed={() => setClaimShareId(null)}
                 />
             )}
         </div>
@@ -474,4 +493,6 @@ const NotificationDetailModal: React.FC<{
         </div>
     );
 };
+
+
 

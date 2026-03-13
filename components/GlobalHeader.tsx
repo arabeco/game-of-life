@@ -11,14 +11,14 @@ const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default:
 const ClanDetailModal = React.lazy(() => import('./ClanDetailModal').then(m => ({ default: m.ClanDetailModal })));
 const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default: m.RestScreen })));
 
-export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number }> = ({ onProfileClick, topOffsetPx = 0 }) => {
+export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number; defaultRestScreenOpen?: boolean }> = ({ onProfileClick, topOffsetPx = 0, defaultRestScreenOpen = true }) => {
     const { userProfile, oracleMessages, notifications, appMode, clan } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
     const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'notifications' | 'clan' | 'dms'>('chat');
     const [isClanOpen, setClanOpen] = useState(false);
     const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
-    const [isRestScreenOpen, setRestScreenOpen] = useState(true); // Default to true for auto-open on login/app start
+    const [isRestScreenOpen, setRestScreenOpen] = useState(defaultRestScreenOpen);
     const isBasicMode = appMode === 'BASIC';
     
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
@@ -42,6 +42,12 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
         window.addEventListener('tutorialRestScreen', handleTutorialRestScreen);
         return () => window.removeEventListener('tutorialRestScreen', handleTutorialRestScreen);
     }, []);
+
+    useEffect(() => {
+        if (!defaultRestScreenOpen) {
+            setRestScreenOpen(false);
+        }
+    }, [defaultRestScreenOpen]);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -225,3 +231,5 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
         </>
     );
 };
+
+

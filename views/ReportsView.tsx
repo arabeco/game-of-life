@@ -1,4 +1,4 @@
-﻿
+
 
 
 import React, { Suspense, useState, useEffect, useMemo, useRef } from 'react';
@@ -188,7 +188,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant='neutral' className='p-4 space-y-4 w-full max-w-sm' onClick={e => e.stopPropagation()}>
                     <h2 className='text-center font-bold text-lg uppercase'>Definir Ciclo de Soberania</h2>
-                    <p className="text-center text-sm text-gray-400">DÃª um nome Ã  sua campanha e escolha a data de tÃ©rmino para formalizar seu compromisso.</p>
+                    <p className="text-center text-sm text-gray-400">Dê um nome à sua campanha e escolha a data de término para formalizar seu compromisso.</p>
                     <div>
                         <label className='text-sm font-bold'>Nome do Ciclo</label>
                         <input
@@ -200,7 +200,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
                         />
                     </div>
                     <div>
-                        <label className='text-sm font-bold'>Data de TÃ©rmino</label>
+                        <label className='text-sm font-bold'>Data de Término</label>
                         <input
                             type='date'
                             value={endDate}
@@ -497,7 +497,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const performEndOfCycle = (): { ok: boolean; chest: ChestType | null } => {
         try {
             const result = endCycleRef.current(assetsRef.current, actionsRef.current);
-            if (!result?.report) throw new Error('RelatÃ³rio invÃ¡lido');
+            if (!result?.report) throw new Error('Relatório inválido');
             const { report, expGained } = result;
             setSelectedReport(report);
             setExpGained(expGained);
@@ -539,7 +539,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         } catch (error) {
             console.error('Erro ao analisar ciclo:', error);
-            setScanError('NÃ£o foi possÃ­vel analisar o ciclo. Tente novamente.');
+            setScanError('Não foi possível analisar o ciclo. Tente novamente.');
             return { ok: false, chest: null };
         }
     };
@@ -1556,7 +1556,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getEraRibbonSkin(slot.skinId).edge }} />
                                     <span className="text-[11px] font-black uppercase tracking-[0.18em]">{slot.name?.trim() || slot.defaultLabel}</span>
                                 </div>
-                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` Â· ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
+                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ? ` · ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
                             </button>
                         );
                     })}
@@ -1594,7 +1594,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20">
-                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando RelatÃ³rio...</p>
+                                <p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p>
                             </div>
                         )}
                     </div>
@@ -1621,7 +1621,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 return (
                     <div className="pb-12">
                         {reportForComparison && (
-                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatÃ³rio para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
+                            <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
                         {renderLegacySummary()}
@@ -1632,7 +1632,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </div>
                         ) : (
                             <div className="relative z-20 space-y-2">
-                                <button id="start-new-cycle-button" onClick={() => setIsStartingCycle(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
+                                <button id="start-new-cycle-button" onClick={() => setShowNewCycleSetup(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
                                 {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem legado fechado ainda. Inicie sua jornada.</div>}
                             </div>
                         )}
@@ -1734,7 +1734,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         title="Editar nome e skin da Era"
                                                         className="absolute -right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-black/75 text-[10px] text-white/80 shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:border-[var(--skin-accent-color)]/45 hover:text-white"
                                                     >
-                                                        âœ¦
+                                                        ✦
                                                     </button>
                                                     {inlineEraEditor?.key === band.key && (
                                                         <div className="absolute left-full top-2 z-20 ml-3 w-56 rounded-[20px] border border-white/10 bg-black/90 p-3 shadow-[0_18px_44px_rgba(0,0,0,0.45)] backdrop-blur-md">
@@ -1776,7 +1776,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 </div>
                                 {reports.length >= 2 && !activeCycle && !reportForComparison && (
                                     <div className="mt-4">
-                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÃšLTIMOS 2 CICLOS</button>
+                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÚLTIMOS 2 CICLOS</button>
                                     </div>
                                 )}
                             </div>
@@ -1793,7 +1793,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onShare={() => handleShareReport(selectedReport)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onDelete={() => {
-                            if (confirm("Tem certeza que deseja excluir este relatÃ³rio?")) {
+                            if (confirm("Tem certeza que deseja excluir este relatório?")) {
                                 // We need a way to delete historical reports.
                                 // For now, maybe just hide it or we need a proper deleteReport function
                                 // But the user asked to delete "cycles". A past report IS a cycle.
@@ -1808,21 +1808,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         expGained={isPostCycleFlow ? expGained : undefined}
                         insignias={isPostCycleFlow ? grantedInsignias : []}
                     />
-                ) : <p>Erro ao carregar relatÃ³rio.</p>;
+                ) : <p>Erro ao carregar relatório.</p>;
             case 'comparing':
                 return reportsToCompare ? (
                     <CycleComparator
                         currentCycleReport={reportsToCompare[0]}
                         pastCycleReport={reportsToCompare[1]}
                     />
-                ) : <p>Erro ao carregar comparaÃ§Ã£o.</p>;
+                ) : <p>Erro ao carregar comparação.</p>;
         }
     };
 
     const getTitle = () => {
         switch (view) {
             case 'results': return 'Resultados';
-            case 'comparing': return 'AnÃ¡lise Comparativa';
+            case 'comparing': return 'Análise Comparativa';
             case 'reward':
                 return 'Fim do Ciclo';
             default: return 'Historico';
@@ -1907,7 +1907,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             {showConfirmEndCycle && (
                 <ConfirmationModal
                     title="Encerrar Ciclo?"
-                    message="Ao fechar este ciclo, suas aÃ§Ãµes nÃ£o concluÃ­das no grid serÃ£o movidas para o pool de aÃ§Ãµes e suas arenas serÃ£o revisadas."
+                    message="Ao fechar este ciclo, suas ações não concluídas no grid serão movidas para o pool de ações e suas arenas serão revisadas."
                     onConfirm={confirmEndCycle}
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
@@ -1926,6 +1926,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
+
 
 
 

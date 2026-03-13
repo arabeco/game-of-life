@@ -5,12 +5,15 @@ import { GM_CONFIG, SKINS_DATA } from '../constants';
 import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, Arena, Action, ScheduledTask } from '../types';
 import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon, SendIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
+import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
 import { supabase } from '../supabaseClient';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { CODEXES } from '../constants/items';
 import { Portal } from '../components/Portal';
+import { SupabaseService } from '../services/SupabaseService';
+import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
 import './settings-ui.css';
 
 const OracleChat = lazy(() =>
@@ -121,7 +124,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
     const { startTutorialLevel, isFlagCompleted } = useTutorial();
 
     const levels = [
-        { id: 1, name: 'Alicerce', subtitle: 'Arena, Planner, Ciclo e SITREP', flag: 'tutorial_level_1_completed', badge: 'BRONZE', accent: 'from-[#c98a62] via-[#c98a62]/24 via-70% to-transparent', glow: 'rgba(197,138,99,0.12)' },
+        { id: 1, name: 'Alicerce', subtitle: 'Visao geral do core loop', flag: 'tutorial_level_1_completed', badge: 'BRONZE', accent: 'from-[#c98a62] via-[#c98a62]/24 via-70% to-transparent', glow: 'rgba(197,138,99,0.12)' },
         { id: 2, name: 'Identidade', subtitle: 'Patentes, Maestria e Perfil', flag: 'tutorial_level_2_completed', badge: 'PRATA', accent: 'from-[#f4f7fd] via-[#edf1f8]/22 via-70% to-transparent', glow: 'rgba(214,217,223,0.12)' },
         { id: 3, name: 'O Mundo', subtitle: 'Vinculos, aliados e Oraculo', flag: 'tutorial_level_3_completed', badge: 'OURO', accent: 'from-[#e4bc57] via-[#e4bc57]/24 via-70% to-transparent', glow: 'rgba(240,215,135,0.12)' },
         { id: 4, name: 'O Arquiteto', subtitle: 'Codex, campanhas e premium', flag: 'tutorial_level_4_completed', badge: 'PREMIUM', accent: 'from-[#9b7af2] via-[#9b7af2]/24 via-70% to-transparent', glow: 'rgba(179,140,255,0.12)' },
@@ -1087,11 +1090,12 @@ const NobrezaHierarchyView: React.FC = () => {
 };
 
 const GeralTab: React.FC = () => {
-    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall, appMode, setAppMode, activeTheme, toggleTheme } = useGame();
+    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall, appMode, setAppMode, activeTheme, toggleTheme, showToast } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     const [showStartCycle, setShowStartCycle] = useState(false);
     const [showMastery, setShowMastery] = useState(false);
     const [cycleName, setCycleName] = useState('');
@@ -1113,6 +1117,40 @@ const GeralTab: React.FC = () => {
 
         // Force reload to clear in-memory state and reset context
         window.location.reload();
+    };
+
+    const handleDeleteAccount = async () => {
+        const confirmation = window.prompt('Digite DELETAR para excluir sua conta permanentemente.');
+        if (confirmation === null) return;
+
+        if (confirmation.trim().toUpperCase() !== 'DELETAR') {
+            showToast('Exclusao cancelada. Digite DELETAR para confirmar.', 'info');
+            return;
+        }
+
+        setShowDeleteConfirm(false);
+        setIsDeletingAccount(true);
+
+        const result = await SupabaseService.deleteMyAccount();
+        if (!result.success) {
+            setIsDeletingAccount(false);
+            showToast(result.error || 'Nao foi possivel excluir a conta.', 'error');
+            return;
+        }
+
+        if (userProfile.id) {
+            localStorage.removeItem(`${STORAGE_KEY_PROFILE}_${userProfile.id}`);
+            localStorage.removeItem(`${STORAGE_KEY_ASSET_LEVELS}_${userProfile.id}`);
+        }
+
+        try {
+            await supabase.auth.signOut({ scope: 'local' });
+        } catch (error) {
+            console.error('Error clearing local session after account deletion:', error);
+        }
+
+        showToast('Conta excluida. Encerrando sessao...', 'success');
+        window.setTimeout(() => window.location.reload(), 900);
     };
 
     const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);
@@ -1309,7 +1347,7 @@ const GeralTab: React.FC = () => {
             </div>
 
             <div className="text-center pt-4">
-                <button onClick={() => setShowDeleteConfirm(true)} className="text-red-500 hover:text-red-400 text-sm font-semibold">Deletar Conta</button>
+                <button onClick={() => setShowDeleteConfirm(true)} disabled={isDeletingAccount} className={`text-red-500 hover:text-red-400 text-sm font-semibold ${isDeletingAccount ? 'opacity-50 cursor-wait' : ''}`}>{isDeletingAccount ? 'Excluindo conta...' : 'Deletar Conta'}</button>
             </div>
 
             {showDeleteConfirm && (
@@ -1374,8 +1412,7 @@ const GeralTab: React.FC = () => {
 
 const PreferenciasTab: React.FC = () => {
     const { userProfile, oraclePreferences } = useGame();
-    const [privacyMode, setPrivacyMode] = useState<PrivacyMode>('Amigos');
-    const [modal, setModal] = useState<'oracle' | 'privacy' | 'tutorial' | null>(null);
+    const [modal, setModal] = useState<'oracle' | 'tutorial' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
 
     useEffect(() => {
@@ -1408,7 +1445,7 @@ const PreferenciasTab: React.FC = () => {
                 <div className="space-y-2">
                     <SettingSelector label="Termos e Condições" value={termsStatus} onClick={() => window.dispatchEvent(new CustomEvent('openTermsOverlay'))} />
                     <SettingSelector label="Tutoriais" value={tutorialStatus} onClick={() => setModal('tutorial')} />
-                    <SettingSelector label="Privacidade" value={privacyMode} onClick={() => setModal('privacy')} />
+                    <SettingSelector label="Privacidade" value="Abrir" onClick={() => window.open(LEGAL_PRIVACY_URL_PLACEHOLDER, '_blank', 'noopener,noreferrer')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Notificações" value={activeModeName} onClick={() => setModal('oracle')} />
                     </div>
@@ -1427,7 +1464,6 @@ const PreferenciasTab: React.FC = () => {
             </section>
 
             {modal === 'oracle' && <OracleSettingsModal onClose={() => setModal(null)} variant="preferences" />}
-            {modal === 'privacy' && <ConfirmationModal title="Modo de Privacidade" message="Função ainda não implementada." onConfirm={() => setModal(null)} onCancel={() => setModal(null)} />}
 
             {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}
             {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
@@ -1753,151 +1789,8 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
 };
 
 const CodexListModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userCodexes, deleteUserCodex, duplicateUserCodexToRecipient, friends, installCodex, userProfile } = useGame();
-    const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
-    const [selectedCodex, setSelectedCodex] = useState<any | null>(null);
-    const [isCreatorOpen, setCreatorOpen] = useState(false);
-    const [isInstalling, setIsInstalling] = useState(false);
-
-    // Use userCodexes directly from GameContext (synced with DB)
-    const myCodexes = userCodexes || [];
-
-    const handleApply = async () => {
-        if (!selectedCodex) return;
-
-        if (confirm(`Deseja instalar a campanha "${selectedCodex.name}"? Isso criará as arenas e ações correspondentes.`)) {
-            setIsInstalling(true);
-            try {
-                if (installCodex) {
-                    await installCodex(selectedCodex.id);
-                    // installCodex already handles success toast and reload
-                    onClose();
-                } else {
-                    alert("Função de instalação indisponível.");
-                }
-            } catch (error) {
-                console.error("Erro ao instalar codex:", error);
-                alert("Erro ao instalar Codex.");
-            } finally {
-                setIsInstalling(false);
-            }
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!selectedCodex) return;
-        if (confirm(`Tem certeza que deseja deletar ${selectedCodex.name}? Esta ação não pode ser desfeita.`)) {
-            if (deleteUserCodex) {
-                await deleteUserCodex(selectedCodex.id);
-                setSelectedCodex(null);
-            }
-        }
-    };
-
-    const handleCreateCodex = () => {
-        setCreatorOpen(true);
-    };
-
-    const handleDonate = async (friendId: string) => {
-        if (!selectedCodex) return;
-        const friend = friends.find(f => f.id === friendId);
-
-        if (selectedCodex.catalog_id) {
-            alert('Codex comprado não pode ser copiado.');
-            return;
-        }
-
-        if (confirm(`Confirmar envio de "${selectedCodex.name}" para ${friend?.nickname || 'Aliado'}? Você manterá o original e o aliado receberá uma cópia.`)) {
-            try {
-                if (duplicateUserCodexToRecipient) {
-                    await duplicateUserCodexToRecipient(selectedCodex.id, friendId);
-                    alert(`Codex enviado com sucesso para ${friend?.nickname}!`);
-                    setSelectedCodex(null);
-                }
-            } catch (error: any) {
-                console.error("Erro ao doar Codex:", error);
-                alert("Erro ao enviar Codex. Tente novamente.");
-            }
-        }
-    };
-
-    return (
-        <Portal>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <GlassCard variant="neutral" className="w-full max-w-lg m-4 rounded-3xl h-[80vh] flex flex-col relative" onClick={e => e.stopPropagation()}>
-                    <div className="p-4 flex items-center justify-between border-b border-white/10 flex-shrink-0">
-                        <h2 className="text-lg font-bold uppercase tracking-wider">Meus Codex</h2>
-                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50">
-                            <XIcon className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-6">
-                        <section className="space-y-4">
-                            <div className="flex items-center justify-end px-1 pb-2">
-                                {isPremiumUser && (
-                                    <button onClick={handleCreateCodex} className="text-[10px] font-bold text-[var(--skin-accent-color)] uppercase hover:underline">Criar Novo</button>
-                                )}
-                            </div>
-
-                            {myCodexes.length === 0 ? (
-                                <GlassCard variant="neutral" className="p-8 text-center opacity-70">
-                                    <div className="text-4xl mb-3">📜</div>
-                                    <h3 className="text-lg font-bold text-white">Nenhum Codex Encontrado</h3>
-                                    <p className="text-sm text-gray-400 mt-2">Adquira novos conhecimentos na Loja ou crie os seus próprios.</p>
-                                </GlassCard>
-                            ) : (
-                                <div className="grid grid-cols-3 gap-3">
-                                    {myCodexes.map(codex => (
-                                        <button
-                                            key={codex.id}
-                                            onClick={() => setSelectedCodex(codex)}
-                                            className="aspect-square rounded-xl bg-black/40 border border-white/10 hover:bg-white/5 transition-all flex flex-col items-center justify-center p-2 group relative overflow-hidden"
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            <div className="text-3xl mb-2 group-hover:scale-110 transition-transform relative z-10 drop-shadow-lg">
-                                                {codex.template?.coverImage || codex.template?.icon || '📜'}
-                                            </div>
-                                            <span className="text-[10px] font-bold text-gray-400 text-center truncate w-full relative z-10 group-hover:text-white transition-colors">
-                                                {codex.name.replace('Codex: ', '')}
-                                            </span>
-
-                                            {/* Rarity Dot (Visual flair, defaulting to Common/Brown if missing) */}
-                                            <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#A0522D]`} />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </section>
-                    </div>
-
-                    {selectedCodex && (
-                        <CodexActionModal
-                            codex={{
-                                id: selectedCodex.id,
-                                name: selectedCodex.name,
-                                icon: selectedCodex.template?.coverImage || selectedCodex.template?.icon || '📜',
-                                // Add other necessary props for the modal if it expects strictly ItemDef
-                                // Assuming CodexActionModal is flexible or we map it
-                                ...selectedCodex
-                            }}
-                            onClose={() => setSelectedCodex(null)}
-                            onApply={handleApply}
-                            onDelete={handleDelete}
-                            onDonate={handleDonate}
-                        />
-                    )}
-                </GlassCard>
-                {isCreatorOpen && (
-                    <Suspense fallback={<div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm" />}>
-                        <CodexModal onClose={() => setCreatorOpen(false)} />
-                    </Suspense>
-                )}
-            </div>
-        </Portal>
-    );
+    return <CodexLibrary mode="modal" onClose={onClose} />;
 };
-
 
 export const SettingsView: React.FC = () => {
     const { updateUserProfile, userProfile } = useGame();

@@ -67,11 +67,12 @@ const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[
 
 export const CodexModal: React.FC<{
   onClose: () => void;
+  maxCodexCount?: number;
   recipientId?: string;
   recipientName?: string;
   relationshipLinkId?: string | null;
   onDelivered?: () => void;
-}> = ({ onClose, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
+}> = ({ onClose, maxCodexCount, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
   const { assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient } = useGame();
   const [codexes, setCodexes] = useState<CodexDraft[]>([]);
   const [activeCodexId, setActiveCodexId] = useState<string | null>(null);
@@ -189,6 +190,9 @@ export const CodexModal: React.FC<{
         },
         schema_version: CODEX_DRAFT_SCHEMA_VERSION,
         is_public: false,
+        source_type: 'created',
+        created_by_user_id: userId,
+        origin_codex_id: null,
         updated_at: draft.updatedAt,
       }));
 
@@ -248,6 +252,11 @@ export const CodexModal: React.FC<{
   };
 
   const createCodex = () => {
+    if (typeof maxCodexCount === 'number' && codexes.length >= maxCodexCount) {
+      setStatus('Limite de slots de criacao atingido.');
+      return;
+    }
+
     const newCodex: CodexDraft = {
       id: crypto.randomUUID(),
       name: 'Novo Codex',

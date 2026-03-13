@@ -5,6 +5,7 @@ import { CrownIcon, ChevronRightIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
+import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 
 interface NewArenaModalProps {
     assetId?: string;
@@ -139,6 +140,8 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             showToast('Arena criada.', 'success');
         }
 
+        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, { detail: { arenaId: newArena.id } }));
+
         if (onArenaCreated) {
             onArenaCreated(newArena);
         } else {
@@ -170,6 +173,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
 
                         <div className="space-y-2">
                             <button
+                                id="new-arena-asset-button"
                                 onClick={() => setIsAssetPickerOpen(true)}
                                 className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl flex justify-between items-center text-left"
                             >
@@ -195,3 +199,5 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         </>
     );
 };
+
+

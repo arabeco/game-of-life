@@ -1127,6 +1127,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
                     <div className={`flex items-center space-x-2 my-0 w-full overflow-visible pb-1 px-2 transition-all duration-300`}>
                         <div
+                            id="planner-pool"
                             data-testid="bay-area"
                             className={`flex-grow min-w-0 core-surface rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
                         >
@@ -1238,3 +1239,5 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         </div>
     );
 };
+
+

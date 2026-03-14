@@ -1,4 +1,4 @@
-﻿const normalizeArenaName = (value = '') =>
+const normalizeArenaName = (value = '') =>
     value
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -132,11 +132,12 @@ export const getCampaignArenaStates = ({
         const prerequisiteArenaIds = campaign.arenaConfig?.[arenaId]?.prerequisiteArenaIds || [];
         const prerequisiteLock = prerequisiteArenaIds.some(prereqId => !progressByArena[prereqId]?.isCleared);
         const explicitLock = Boolean(campaign.arenaConfig?.[arenaId]?.isLocked);
+        const unlockedByPrerequisite = prerequisiteArenaIds.length > 0 && !prerequisiteLock;
 
         acc[arenaId] = {
             ...baseState,
             prerequisiteArenaIds,
-            isLocked: explicitLock || prerequisiteLock,
+            isLocked: unlockedByPrerequisite ? false : (explicitLock || prerequisiteLock),
         };
 
         return acc;

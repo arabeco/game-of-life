@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Arena, Action } from '../types';
 import { CheckIcon, UsersIcon } from './Icons';
-import { useGame } from '../contexts/GameContext';
+import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -220,8 +220,19 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     variant, 
     tasks: propTasks
 }) => {
-    const { appMode, tasks: contextTasks, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, reorderAction } = useGame();
+    const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, reorderAction } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
+    const tasksForCounts = useMemo(() => {
+        if (propTasks || !activeCycle) return tasks;
+
+        const today = getLocalDateString();
+        const cycleEnd = today < activeCycle.endDate ? today : activeCycle.endDate;
+        return tasks.filter(task =>
+            typeof task?.date === 'string' &&
+            task.date >= activeCycle.startDate &&
+            task.date <= cycleEnd
+        );
+    }, [activeCycle, propTasks, tasks]);
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
     const [linkType, setLinkType] = useState<string | null>(null);
 
@@ -302,7 +313,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const progress = calculateArenaProgress({
         arena,
         actions,
-        tasks,
+        tasks: tasksForCounts,
         clanQuests,
         getClanQuestProgress,
         getSharedActionPoolProgress,
@@ -409,7 +420,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 <div className={`w-full flex items-center justify-center ${isCompactThumbnail ? 'arena-mini-milestones gap-1' : 'h-8 gap-2'}`}>
                     {visibleMilestones.map(action => {
                         const backgroundStyle = getActionBackgroundStyle(action.id);
-                        const task = tasks.find(t => t.actionId === action.id);
+                        const task = tasksForCounts.find(t => t.actionId === action.id);
                         const isCompleted = !!task?.completed;
                         const isDragOver = dragOverActionId === action.id;
 

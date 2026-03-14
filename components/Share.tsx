@@ -37,6 +37,14 @@ const getTargetElement = (elementId: string) => {
     return element;
 };
 
+const shouldSkipFontEmbedding = (): boolean => {
+    try {
+        return Array.from(document.styleSheets).some((sheet) => typeof sheet.href === 'string' && sheet.href.includes('fonts.googleapis.com'));
+    } catch {
+        return true;
+    }
+};
+
 const captureElementBlob = async (
     element: HTMLElement,
     backgroundColor: string,
@@ -47,19 +55,39 @@ const captureElementBlob = async (
 ) => {
     await waitForCapture();
     const toPng = await loadToPng();
+    const skipFonts = shouldSkipFontEmbedding();
 
-    const dataUrl = await toPng(element, {
+    const captureOptions = {
         cacheBust: true,
         pixelRatio,
         backgroundColor,
-        filter: (node) => {
+        skipFonts,
+        filter: (node: Node) => {
             if (node instanceof HTMLElement && node.hasAttribute('data-html2canvas-ignore')) {
                 return false;
             }
             return true;
         },
         style: fontFamily ? { fontFamily } : undefined,
-    });
+    };
+
+    let dataUrl: string;
+    try {
+        dataUrl = await toPng(element, captureOptions);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const shouldRetryWithoutFonts = !skipFonts
+            && (message.includes('cssRules') || message.includes('Cannot access rules') || message.includes('Failed to read'));
+
+        if (!shouldRetryWithoutFonts) {
+            throw error;
+        }
+
+        dataUrl = await toPng(element, {
+            ...captureOptions,
+            skipFonts: true,
+        });
+    }
 
     const response = await fetch(dataUrl);
     const blob = await response.blob();

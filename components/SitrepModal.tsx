@@ -7,7 +7,8 @@ import { ScheduledTask, DailyCommitment } from '../types';
 import { Portal } from './Portal';
 import { SitrepContent } from './SitrepContent';
 
-const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment) => {
+const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, actions: { id: string; actionType?: string }[]) => {
+    const actionTypeById = new Map(actions.map(action => [action.id, action.actionType]));
     const committedTasks = tasks.filter(t => t.date === dailyCommitment.date && dailyCommitment.taskIds.includes(t.id));
 
     const tasksWithStatus = committedTasks.map(task => {
@@ -17,15 +18,16 @@ const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyComm
         };
     });
 
-    const completedCount = tasksWithStatus.filter(t => t.isCompleted).length;
+    const scoredTasksWithStatus = tasksWithStatus.filter(({ task }) => actionTypeById.get(task.actionId) !== 'Livre');
+    const completedCount = scoredTasksWithStatus.filter(t => t.isCompleted).length;
 
-    return { committedTasks, tasksWithStatus, completedCount, totalCount: committedTasks.length };
+    return { committedTasks, tasksWithStatus, completedCount, totalCount: scoredTasksWithStatus.length };
 };
 
 export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, tasks } = useGame();
+    const { activeCycle, dailyCommitment, tasks, actions } = useGame();
 
-    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment), [tasks, dailyCommitment]);
+    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment, actions), [tasks, dailyCommitment, actions]);
 
     const getLightbulbColor = () => {
         if (dailyCommitment.stage !== 'battle') return 'accent-text';

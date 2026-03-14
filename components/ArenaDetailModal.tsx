@@ -1,6 +1,6 @@
-﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Arena, Action, UserProfile } from '../types';
-import { useGame } from '../contexts/GameContext';
+import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIcon, SendIcon } from './Icons';
 import { ActionModal } from './ActionModal';
 import { IconPickerModal } from './IconPickerModal';
@@ -43,14 +43,26 @@ const normalizeAssetKey = (value?: string | null) =>
         .replace(/\s+/g, '-');
 
 const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: string; currentLinkType?: string | null }> = ({ action, onClick, skinColor, currentLinkType }) => {
-    const { getActionBackgroundStyle, tasks, getArenas, getClanQuestProgress, getClanQuestForActionName, getSharedActionPoolProgress, clan } = useGame();
+    const { getActionBackgroundStyle, tasks, activeCycle, getArenas, getClanQuestProgress, getClanQuestForActionName, getSharedActionPoolProgress, clan } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
 
     const arena = getArenas?.()?.find(ar => ar.id === action.arenaId);
     const isOfficeMode = clan?.clanType === 'Office';
     const isSharedPool = isOfficeMode || !!currentLinkType;
 
-    const personalCompleted = tasks.filter(t => t.actionId === action.id && t.completed).length;
+    const tasksForCounts = useMemo(() => {
+        if (!activeCycle) return tasks;
+
+        const today = getLocalDateString();
+        const cycleEnd = today < activeCycle.endDate ? today : activeCycle.endDate;
+        return tasks.filter(task =>
+            typeof task?.date === 'string' &&
+            task.date >= activeCycle.startDate &&
+            task.date <= cycleEnd
+        );
+    }, [activeCycle, tasks]);
+
+    const personalCompleted = tasksForCounts.filter(t => t.actionId === action.id && t.completed).length;
 
     // SAFE ACCESS: Only call shared progress if it's a shared pool AND the function exists
     let sharedCompleted = 0;

@@ -17,7 +17,8 @@ const parseDate = (value: string) => {
 
 const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment) => {
+const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, actions: Action[]) => {
+    const actionTypeById = new Map(actions.map(action => [action.id, action.actionType]));
     const committedTasks = tasks.filter(t => t.date === dailyCommitment.date && dailyCommitment.taskIds.includes(t.id));
 
     const tasksWithStatus = committedTasks.map(task => {
@@ -27,9 +28,19 @@ const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyComm
         };
     });
 
-    const completedCount = tasksWithStatus.filter(t => t.isCompleted).length;
+    const scoredTasksWithStatus = tasksWithStatus.filter(({ task }) => actionTypeById.get(task.actionId) !== 'Livre');
+    const completedAllCount = tasksWithStatus.filter(t => t.isCompleted).length;
+    const completedCount = scoredTasksWithStatus.filter(t => t.isCompleted).length;
 
-    return { committedTasks, tasksWithStatus, completedCount, totalCount: committedTasks.length };
+    return {
+        committedTasks,
+        tasksWithStatus,
+        scoredTasksWithStatus,
+        completedAllCount,
+        totalAllCount: committedTasks.length,
+        completedCount,
+        totalCount: scoredTasksWithStatus.length,
+    };
 };
 
 const CycleHeader: React.FC = () => {
@@ -126,9 +137,9 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
     const getActionById = (id: string) => actions.find(a => a.id === id);
 
-    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment), [tasks, dailyCommitment]);
+    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment, actions), [tasks, dailyCommitment, actions]);
 
-    const dailyArenaFocus = useMemo(() => buildDailyArenaFocus(commitmentStats.tasksWithStatus, actions, arenas), [commitmentStats.tasksWithStatus, actions, arenas]);
+    const dailyArenaFocus = useMemo(() => buildDailyArenaFocus(commitmentStats.scoredTasksWithStatus, actions, arenas), [commitmentStats.scoredTasksWithStatus, actions, arenas]);
 
     // --- Lógica de Opções do SITREP baseada no taskPool (Alinhada com Planner/Bay Area) ---
     const groupedAvailableOptions = useMemo(() => buildSitrepStockOptions(actions, taskPool, tasks, dailyCommitment), [actions, dailyCommitment, taskPool, tasks]);
@@ -237,7 +248,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     );
 
     const renderBattle = () => {
-        const progress = commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 0;
+        const progress = commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 100;
 
         const [y, m, d] = dailyCommitment.date.split('-').map(Number);
         const monthNames = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
@@ -273,7 +284,12 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 <CycleHeader />
                 <div className='text-center'>
                     <div className="w-full bg-black/30 rounded-full h-1.5 mt-1"><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
-                    <p className="text-xs text-gray-400 mt-1">Progresso: {progress.toFixed(0)}% · {commitmentStats.completedCount}/{commitmentStats.totalCount} ações</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        Progresso: {progress.toFixed(0)}% | {commitmentStats.completedCount}/{commitmentStats.totalCount} acoes pontuaveis
+                        {commitmentStats.totalAllCount !== commitmentStats.totalCount && (
+                            <span className="text-gray-500"> | total travado {commitmentStats.completedAllCount}/{commitmentStats.totalAllCount}</span>
+                        )}
+                    </p>
                 </div>
 
                 {coreTotal > 0 && (

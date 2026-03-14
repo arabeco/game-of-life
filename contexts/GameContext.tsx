@@ -5028,7 +5028,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }));
 
         const weeklyAtlas = buildCycleWeeklyAtlas(
-            cycleTasks,
+            scoredCycleTasks,
             currentActions,
             cycleArenas,
             startDate,
@@ -5050,7 +5050,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 goalsMet: fairScoreResult.fairness.sealedMetas,
                 plannedMetas: fairScoreResult.fairness.plannedMetas,
                 sealedMetas: fairScoreResult.fairness.sealedMetas,
-                totalHours: Math.round(completedTasks.reduce((sum, t) => sum + (t.duration / 60), 0)),
+                totalHours: Math.round(completedScoredTasks.reduce((sum, t) => sum + (t.duration / 60), 0)),
                 questsCompleted: questsCompletedCount,
                 consistencyDays: uniqueDays,
                 expGained,

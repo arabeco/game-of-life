@@ -1,4 +1,4 @@
-﻿import { ItemRarity } from '../types';
+import { ItemRarity } from '../types';
 
 export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias';
 
@@ -386,7 +386,7 @@ const GENESIS_BORDER: ItemDef = interfaceCatalogItem('border', {
     tier: 4, rarity: 'epic', icon: '✦',
     description: 'Recompensa de Season e Quest de alto valor.',
     isSeasonExclusive: true,
-    asset: 'borders/genesis.png',
+    asset: 'borda_t5_genesis.png',
 });
 const GENESIS_BANNER: ItemDef = interfaceCatalogItem('banner', {
     id: 'item_banner_origin_01', name: 'Banner Origem',

@@ -1,5 +1,5 @@
-﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult } from '../types';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
 
@@ -102,6 +102,8 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     backgroundUrl: '',
     isOnline: false,
     visibleWidgets: [],
+    assetsVisibility: 'all',
+    masteryVisibility: 'all',
     sovereign: DEFAULT_SOVEREIGN_CONFIG,
     nobility: { exp: 0, rankId: 'vagante' },
     mood: 50,
@@ -193,6 +195,11 @@ const createDefaultActions = (newUser: boolean): Action[] => {
     return defaultActions;
 };
 
+const normalizeProfileVisibilityScope = (value: unknown): ProfileVisibilityScope => {
+    if (value === 'friends' || value === 'nobody') return value;
+    return 'all';
+};
+
 interface EndCycleResult {
     report: Report;
     expGained: number;
@@ -266,7 +273,7 @@ export interface GameContextType {
     updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
     leaveClanMission: (questId: string) => Promise<void>;
     activateClanQuest: (questId: string) => Promise<void>;
-    getUserPublicData: (userId: string) => Promise<{ profile: UserProfile | null, clan: Clan | null, clanRank: ClanRank | undefined, slots: Slot[] }>;
+    getUserPublicData: (userId: string) => Promise<{ profile: UserProfile | null, clan: Clan | null, clanRank: ClanRank | undefined, slots: Slot[], levels: Record<string, number> }>;
     levelUnlocks: LevelUnlocks;
     setAchievementUnlocked: (achievement: { type: FeedEventType; data: any; } | null) => void;
     updateLevelUnlocks: (next: LevelUnlocks) => void;
@@ -2671,6 +2678,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         skin: normalizedSkin,
                         unlockedSkins: normalizedUnlockedSkins,
                     } as UserProfile;
+                    next.assetsVisibility = normalizeProfileVisibilityScope(next.assetsVisibility);
+                    next.masteryVisibility = normalizeProfileVisibilityScope(next.masteryVisibility);
                     const pendingPatch = pendingProfilePatchRef.current;
                     if (pendingPatch) {
                         next = { ...next, ...pendingPatch };
@@ -4476,6 +4485,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'bannerUrl',
                 'isOnline',
                 'visibleWidgets',
+                'assetsVisibility',
+                'masteryVisibility',
                 'skin',
                 'lastLevelUpdate',
                 'nobility',
@@ -5299,7 +5310,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let publicProfile: UserProfile | null = null;
         if (profileRes.data) {
             publicProfile = mapToCamelCase(profileRes.data) as UserProfile;
+            publicProfile.assetsVisibility = normalizeProfileVisibilityScope(publicProfile.assetsVisibility);
+            publicProfile.masteryVisibility = normalizeProfileVisibilityScope(publicProfile.masteryVisibility);
         }
+
+        const isOwner = userProfile.id === userId;
+        const isFriend = friends.some((friend) => friend.id === userId);
+        const masteryVisibility = normalizeProfileVisibilityScope(publicProfile?.masteryVisibility);
+        const canViewMastery = isOwner || masteryVisibility === 'all' || (masteryVisibility === 'friends' && isFriend);
 
         // Merge slots with defaults to ensure all widgets are available even if not in DB
         const defaultAssets = createDefaultAssets(true);
@@ -5321,8 +5339,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
 
-        return { profile: publicProfile, clan: clanData, clanRank, slots: userSlots, levels: userLevels };
-    }, []);
+        return {
+            profile: publicProfile,
+            clan: clanData,
+            clanRank,
+            slots: userSlots,
+            levels: canViewMastery ?userLevels : {},
+        };
+    }, [friends, userProfile.id]);
 
     const sendFriendRequest = async (recipientId: string): Promise<void> => {
         const senderId = getSupabaseUserId();
@@ -7402,18 +7426,3 @@ export const useGame = () => {
     if (!builder.isBuilderMode) return context;
     return { ...context, ...builder.gameOverrides };
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

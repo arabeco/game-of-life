@@ -12,7 +12,46 @@ interface Message {
   timestamp: Date;
   mode?: OracleMode;
 }
+const readResponseBody = async (response: Response): Promise<unknown> => {
+  try {
+    return await response.clone().json();
+  } catch {
+    try {
+      return await response.clone().text();
+    } catch {
+      return null;
+    }
+  }
+};
 
+const parseOracleFunctionError = async (error: unknown): Promise<{ status: number | null; message: string; details: unknown }> => {
+  const rawError = error as { message?: string; context?: Response };
+  const response = rawError?.context;
+
+  if (!response || typeof response.status !== 'number') {
+    return {
+      status: null,
+      message: rawError?.message || 'Oracle function failed.',
+      details: null,
+    };
+  }
+
+  const details = await readResponseBody(response);
+  let message = rawError?.message || `Oracle HTTP ${response.status}`;
+
+  if (details && typeof details === 'object' && 'error' in details) {
+    const errorMessage = (details as { error?: unknown }).error;
+    if (typeof errorMessage === 'string' && errorMessage.trim()) {
+      message = errorMessage;
+    }
+  }
+
+  return {
+    status: response.status,
+    message,
+    details,
+  };
+};
 const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>, color: string, bg: string, border: string }> = {
     neutro: { 
         icon: GameLogoIcon, 
@@ -292,8 +331,16 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         mode: currentMode,
       }]);
     } catch (error) {
-      console.error('Oracle Error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'O Oraculo esta em silencio momentaneo. Tente novamente.', timestamp: new Date() }]);
+      const parsedError = await parseOracleFunctionError(error);
+      console.error('Oracle Error:', parsedError, error);
+
+      let fallbackMessage = 'O Oraculo esta em silencio momentaneo. Tente novamente.';
+      if (parsedError.status === 401) fallbackMessage = 'Sessao expirada no Oraculo. Entre novamente na conta e tente de novo.';
+      if (parsedError.status === 403) fallbackMessage = 'Oraculo bloqueado para esta origem. Verifique o dominio liberado no Supabase.';
+      if (parsedError.status === 500) fallbackMessage = 'Oraculo indisponivel: configuracao ausente no servidor.';
+      if (parsedError.status === 502) fallbackMessage = 'Oraculo indisponivel no provedor de IA. Tente novamente em instantes.';
+
+      setMessages(prev => [...prev, { role: 'assistant', content: fallbackMessage, timestamp: new Date() }]);
     } finally {
       setIsLoading(false);
     }

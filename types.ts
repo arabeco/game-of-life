@@ -1,4 +1,4 @@
-﻿export interface CodexLevel {
+export interface CodexLevel {
   level: number;
   title: string;
   description: string;
@@ -331,6 +331,7 @@ export interface TutorialStep {
 }
 
 export type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings';
+export type ProfileVisibilityScope = 'all' | 'friends' | 'nobody';
 
 export interface UserProfile {
   id: string;
@@ -369,6 +370,8 @@ export interface UserProfile {
   bannerUrl?: string; // Flamula-style banner
   isOnline: boolean;
   visibleWidgets: string[];
+  assetsVisibility?: ProfileVisibilityScope;
+  masteryVisibility?: ProfileVisibilityScope;
   skin: string; // ID of the current skin
   lastLevelUpdate?: number; // Timestamp of the last level update
   nobility: Nobility;
@@ -1033,23 +1036,3 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

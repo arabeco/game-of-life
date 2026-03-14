@@ -1,5 +1,5 @@
 ﻿# 🛰️ GLYPH STATUS: 1.003b (ESTADO DE SOBERANIA)
-**Data:** 12/03/2026 | **Fase:** FUNDAÇÃO (T1) | **Soberano:** Zee
+**Data:** 14/03/2026 | **Fase:** FUNDAÇÃO (T1) | **Soberano:** Zee
 
 ## 1. ESTRUTURA (O CONSELHO)
 | Pilar | Peso | Agente | Estado |
@@ -16,7 +16,7 @@
 - **FLUXO USUÁRIO: 9.0** (AssetsView otimizada. Pendente: Tutorial e polimento de miniaturas).
 
 ## 3. CORE LOOP (O MOTOR)
-1. Criar Arena → 2. Criar Ação → 3. Jogar no Planner → 4. Usar SITREP → 5. Fechar o Dia → 6. Fechar Ciclo → 7. Revisar Histórico → 8. Abrir Legado.
+1. Criar Arena → 2. Criar Ação → 3. Jogar no Planner → 4. Usar Painel Diario (SITREP) → 5. Fechar o Dia → 6. Fechar Ciclo → 7. Revisar Histórico → 8. Abrir Legado.
 
 ## 4. INVENTÁRIO FUNCIONAL (EQUITY TOTAL: 25 MÓDULOS)
 
@@ -24,7 +24,7 @@
 - **01. Arenas:** Meta, Registro, Acompanhamento (Ativas/Concluídas/Arquivadas).
 - **02. Ações:** Rápida, Recorrente, Parsing, Compromisso, Marco, Compartilhada.
 - **03. Planner:** Dia, Semana, Estoque, Quick Add, Horário.
-- **04. SITREP:** Abertura, Trava de Compromisso, Acompanhamento, Fechamento.
+- **04. Painel Diario (SITREP):** Abertura, Trava de Compromisso, Acompanhamento, Fechamento.
 - **05. Ciclos:** Abrir, Encerrar, Score, Metas do Período.
 - **19. Deep Focus:** Foco Profundo, Ambiente, Sessão.
 - **18. Descanso:** Energia, Retomada Rápida.
@@ -58,6 +58,8 @@
 ## 5. DIREÇÃO DE PRODUTO
 **Diferencial:** O Glyph não é "só" um app. É uma arquitetura de interpretação da vida:
 - **Planner** organiza o presente.
-- **SITREP** interpreta o dia.
+- **Painel Diario (SITREP)** interpreta o dia.
 - **Ciclo** interpreta a fase.
 - **Legado** interpreta a identidade.
+
+

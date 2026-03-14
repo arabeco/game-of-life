@@ -12,6 +12,25 @@ const ALLOWED_ORIGINS = (
   .map((o) => o.trim())
   .filter(Boolean);
 
+const isLocalDevOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+};
+
+const isVercelPreviewOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+};
+
+const isAllowedRequestOrigin = (origin: string | null): boolean => {
+  return (
+    !origin ||
+    ALLOWED_ORIGINS.includes(origin) ||
+    isLocalDevOrigin(origin) ||
+    isVercelPreviewOrigin(origin)
+  );
+};
+
 const buildCorsHeaders = (origin: string | null) => ({
   "Access-Control-Allow-Origin": origin || ALLOWED_ORIGINS[0] || "",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -21,7 +40,7 @@ const buildCorsHeaders = (origin: string | null) => ({
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
-  const isAllowedOrigin = !origin || ALLOWED_ORIGINS.includes(origin);
+  const isAllowedOrigin = isAllowedRequestOrigin(origin);
   const corsHeaders = buildCorsHeaders(origin && isAllowedOrigin ? origin : null);
 
   if (req.method === "OPTIONS") {

@@ -20,7 +20,7 @@ const SEPHIROT_COORDS = [
     { id: 'fisico', x: 50, y: 93 },
 ];
 
-type AssetSubview = 'arenas' | 'widgets';
+type AssetSubview = 'widgets' | 'arenas';
 
 type FogConfig = {
     color: string;
@@ -77,7 +77,7 @@ const SegmentedButton: React.FC<{
 export const AssetsView: React.FC = () => {
     const { assets, userProfile, appMode } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-    const [assetSubview, setAssetSubview] = useState<AssetSubview>('arenas');
+    const [assetSubview, setAssetSubview] = useState<AssetSubview>('widgets');
     const [isWidgetEditing, setIsWidgetEditing] = useState(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -161,13 +161,13 @@ export const AssetsView: React.FC = () => {
 
     const handleOpenAsset = (asset: Asset) => {
         setSelectedAssetId(asset.id);
-        setAssetSubview('arenas');
+        setAssetSubview('widgets');
         setIsWidgetEditing(false);
     };
 
     const handleBack = () => {
         setSelectedAssetId(null);
-        setAssetSubview('arenas');
+        setAssetSubview('widgets');
         setIsWidgetEditing(false);
     };
 
@@ -229,16 +229,16 @@ export const AssetsView: React.FC = () => {
                             {!isBasicMode ? (
                                 <div className="mt-0.5 flex items-center justify-self-center gap-1 rounded-full border border-white/10 bg-black/20 p-1">
                                     <SegmentedButton
-                                        active={assetSubview === 'arenas'}
-                                        icon={'\u25A6'}
-                                        title="Arenas"
-                                        onClick={() => handleSubviewChange('arenas')}
-                                    />
-                                    <SegmentedButton
                                         active={assetSubview === 'widgets'}
                                         icon={'\u25EB'}
                                         title="Widgets"
                                         onClick={() => handleSubviewChange('widgets')}
+                                    />
+                                    <SegmentedButton
+                                        active={assetSubview === 'arenas'}
+                                        icon={'\u25A6'}
+                                        title="Arenas"
+                                        onClick={() => handleSubviewChange('arenas')}
                                     />
                                 </div>
                             ) : (

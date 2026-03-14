@@ -132,6 +132,8 @@ export class SupabaseService {
         background_url: 'https://picsum.photos/seed/soberano-bg/400/150',
         is_online: true,
         visible_widgets: ['consciencia.lema', 'espiritualidade.sistema'],
+        assets_visibility: 'all',
+        mastery_visibility: 'all',
         skin: 'GOLD',
         unlocked_skins: {},
         unlocked_items: {
@@ -210,6 +212,8 @@ export class SupabaseService {
           banner_url: profile.bannerUrl,
           is_online: profile.isOnline,
           visible_widgets: profile.visibleWidgets,
+          assets_visibility: profile.assetsVisibility || 'all',
+          mastery_visibility: profile.masteryVisibility || 'all',
           skin: profile.skin,
           unlocked_skins: profile.unlockedSkins,
           unlocked_items: profile.unlockedItems,
@@ -376,11 +380,3 @@ export class SupabaseService {
     }
   }
 }
-
-
-
-
-
-
-
-

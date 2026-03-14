@@ -1,33 +1,28 @@
-# RELATORIO OPERACIONAL: GLYPH 1.003b
-Data: 14/03/2026
-Atualizado por: GPT-5.4
+﻿============================================================
+           GLYPH: MASTER SYSTEM STATE (14/03/26)
+============================================================
+STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
+FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
+------------------------------------------------------------
 
----
 ## 1. FASE ATUAL: FUNDACAO (T1)
 - Status: ALPHA
 - Missao: Provar onboarding, loop diario, retorno D2 e conclusao de ciclos reais.
+- Enquadramento: T1 (Fundacao) e um submarco operacional do Marco 1 (mar/2026 -> dez/2026).
 
----
-## [v] 2. STATUS DE ENTREGA (CONCLUIDO)
+## 2. SCORECARD DE AUDITORIA
+- **EXECUCAO REAL: 9.3** (Build/Type-check/Test ok. Core loop blindado. Baus/Catalogo coerentes).
+- **ID VISUAL: 9.1** (Historico/Legado separados. Legado full-screen estruturado).
+- **FLUXO USUARIO: 9.0** (AssetsView otimizada. Pendente: Tutorial e polimento de miniaturas).
+- **RETENCAO: --** (Aguardando Beta)
+- **AQUISICAO: --** (Aguardando Videos)
 
-[v] Criar funcao "Comecar Agora" e estabilizar o comportamento da tela bloqueada no fluxo.
-[v] Fechar o furo do custo de envio de Codex.
-[v] Fechar Loja: validar compra de Slots e claim por link; revisar items e Codex no catalogo.
-[v] Criar Codex base de teste (Ativ. Fisica, Nutricao, Mentais, Logistica).
-[v] Revisao da Loja: validar fluxo de compra de Slots, Codex e items; alinhar Biblioteca e Loja ao padrao GlassCard.
-[v] Publicar e validar em ambiente real (Vercel) o que foi fechado localmente.
-[v] Varredura final de encoding em Settings e CodexModal.
-[v] Padronizar a UI mobile de modais centrais em Perfil, Loja, Arena e Assets.
-[v] Reestruturar o card/modal de Season com foco em imagem, descricao e cards compactos.
-[v] Ajustar a customizacao de Soberano, Artefato, Glifo, Aura e Placa no perfil.
-[v] Renovar temporariamente os fundos Ouro e Prata do perfil com versoes escuras texturizadas.
+## 3. STATUS DE ENTREGA (CONCLUIDO NESTE CICLO)
+[x] Preparar os novos backgrounds `goldback`, `silverback`, `emeraldback`, `rubiback` e premium extras em `use assets`. - Responsavel: PROTOCOLO
 
----
-## [ ] 3. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
-
+## 4. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
 ### COMANDO (METAS IMEDIATAS & DONO)
 [ ] Fechar QA mobile do pacote Perfil -> Loja -> Customizacao para congelar o padrao visual. - Responsavel: SENTINELA
-[ ] Preparar os novos backgrounds `goldback`, `silverback`, `emeraldback`, `rubiback` e premium extras em `use assets`. - Responsavel: PROTOCOLO
 [ ] Validar conta nova completa: onboarding -> Vanguarda -> Perfil -> Loja -> primeiro retorno. - Responsavel: TRONO
 [ ] Revisar leitura de valor dos cosmeticos basicos vs premium antes de expor isso com mais forca. - Responsavel: TESOURO
 
@@ -59,8 +54,51 @@ Atualizado por: GPT-5.4
 [ ] Revisar o peso real do pacote Vanguarda e do fluxo de recompensa inicial.
 [ ] Confirmar se a Loja esta clara o bastante para compra sem explicacao externa.
 
----
-## 4. LEITURA SECA DO MOMENTO
+## 5. MARCO 1: PROVA (DEZ/2026)
+- Tese: se o T1 falhar, o restante do Marco 1 perde base.
+- Objetivo do Marco 1: sair do estado de projeto e provar produto com retencao real.
+- Meta de gloria do Marco 1: `1.000 usuarios ativos` com retencao consistente.
+- Papel do T1 (mar -> maio): checkpoint `5 -> 20 -> 50 usuarios` com loop completo rodando sem ruido.
+- Metricas de passagem do T1:
+  - `60%+` criam `1 arena + 1 acao + 1 tarefa`.
+  - `30%+` retornam no `D2`.
+  - `20%+` fecham `1 ciclo`.
 
-O app entrou numa fase em que a base ja sustenta uso real, mas ainda existe risco alto de perder usuario por detalhes pequenos de mobile, onboarding e clareza de UI.
-O foco agora nao e abrir frente nova: e fechar consistencia, medir ativacao com limpeza e garantir que os primeiros ciclos completos acontecam sem ruido.
+## 6. STATS PRA FICAR DE OLHO (SEMANAL - PRINCIPAIS T1)
+[ ] Ativacao onboarding: 0/60%
+[ ] Retorno D2: 0/30%
+[ ] Fechamento 1 ciclo: 0/20%
+
+Monitor complementar:
+[ ] Usuarios ativos T1: 0/50
+[ ] Cobertura `marco1_beta_tracking`: 0/100%
+[ ] Friccao mobile critica (P0/P1): 0/0
+
+## 7. RESUMO ATUALIZADO
+- Data: 14/03/2026
+- Atualizado por: GPT-5.4
+- Resumo: O GLYPH segue em ALPHA na Fundacao (T1), com base funcional pronta para uso real e foco total em ativacao, retorno D2, fechamento de ciclos e reducao de friccao mobile.
+- Texto do relatorio: atualizado a cada fechamento.
+
+## 8. MODO DE USO DO RELATORIO
+1. Ler e avaliar as mudancas feitas no app desde o ultimo fechamento.
+2. Atualizar o item 4 com `[x]` nas tarefas que foram feitas.
+3. Mover as tarefas `[x]` do item 4 para o item 3.
+4. Atualizar o item 6 com foco nas 3 metricas principais do T1 (`60/30/20`).
+5. Atualizar o item 7 (data, autor e resumo) no fechamento.
+6. No item 3, mover as tarefas antigas com `[v]` para `progresso.md`.
+7. No fechamento do ciclo, trocar as `[x]` por `[v]` para o proximo uso.
+
+## 9. BLOQUEIOS ATUAIS (ABERTOS)
+[ ] Canivete: escopo total ainda pesado para operacao solo.
+[ ] Onboarding: simplificacao D0/D2 ainda precisa validacao com conta nova.
+[ ] Linguagem: padronizar docs entre `SITREP` e `Painel Diario (SITREP)`.
+[ ] Operacao solo: gargalo de execucao/QA/revisao concentrado em 1 pessoa.
+[ ] Tese Codex/Marketplace: oferta e demanda ainda sem validacao forte em beta real.
+[ ] Narrativa financeira precoce: manter fora dos docs operacionais de T1/ALPHA.
+
+Legenda rapida:
+- `[ ]` = pendente
+- `[x]` = concluido neste ciclo (ainda em vitrine de entrega)
+- `[v]` = concluido e validado para historico
+

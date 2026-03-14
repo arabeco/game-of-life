@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useRef, useEffect } from 'react';
+import React, { Suspense, useMemo, useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon, CrownIcon, ImageIcon } from '../components/Icons';
@@ -17,6 +17,11 @@ import { Portal } from '../components/Portal';
 import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
 const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
+
+const normalizeProfileVisibility = (value?: UserProfile['assetsVisibility']): 'all' | 'friends' | 'nobody' => {
+    if (value === 'friends' || value === 'nobody') return value;
+    return 'all';
+};
 
 const UnifiedSovereignDisplay: React.FC<{
     sovereignConfig: UserProfile['sovereign'];
@@ -317,7 +322,7 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, updateUserProfile, clan, clanRanks, getUserPublicData, appMode, cycleProgress } = useGame();
+    const { userProfile, assets, friends, updateUserProfile, clan, clanRanks, getUserPublicData, appMode, cycleProgress } = useGame();
 
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
@@ -456,6 +461,27 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const displayProfile = isOwnProfile
         ? (isEditing ? editableProfile : baseProfile)
         : (fetchedProfile || baseProfile);
+    const fallbackViewedLevels = useMemo(() => (
+        assets
+            .filter(asset => asset.id !== 'geral')
+            .reduce((acc, asset) => ({ ...acc, [asset.id]: 1 }), {} as Record<string, number>)
+    ), [assets]);
+
+    const isFriendProfile = !isOwnProfile && friends.some(friend => friend.id === displayProfile.id);
+    const assetsVisibility = normalizeProfileVisibility(displayProfile.assetsVisibility);
+    const masteryVisibility = normalizeProfileVisibility(displayProfile.masteryVisibility);
+    const canResolvePublicVisibility = isOwnProfile || !!fetchedProfile;
+    const canViewAssetsBadge = isOwnProfile || (canResolvePublicVisibility && (assetsVisibility === 'all' || (assetsVisibility === 'friends' && isFriendProfile)));
+    const canViewMastery = isOwnProfile || (canResolvePublicVisibility && (masteryVisibility === 'all' || (masteryVisibility === 'friends' && isFriendProfile)));
+    const profileDecagonLevels = !isOwnProfile
+        ? (Object.keys(viewedLevels).length > 0 ? viewedLevels : fallbackViewedLevels)
+        : undefined;
+
+    useEffect(() => {
+        if (activeWidgetTab === 'maestria' && !canViewMastery) {
+            setActiveWidgetTab('mural');
+        }
+    }, [activeWidgetTab, canViewMastery]);
 
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === displayProfile.border);
 
@@ -634,7 +660,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         >
                                             {isBasicMode ? 'Métricas' : 'Mural'}
                                         </button>
-                                        {!isBasicMode && (
+                                        {!isBasicMode && canViewMastery && (
                                             <button
                                                 onClick={() => setActiveWidgetTab('maestria')}
                                                 className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'maestria' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
@@ -712,7 +738,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             <Suspense fallback={<div className="w-[220px] h-[220px]" />}>
                                                 <AssetDecagon
                                                     assets={assets}
-                                                    tempLevels={!isOwnProfile ? viewedLevels : undefined}
+                                                    tempLevels={profileDecagonLevels}
                                                     size={220}
                                                 />
                                             </Suspense>
@@ -721,6 +747,35 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 </div>
                             </div>
                         </div>
+
+                        {!isBasicMode && canViewAssetsBadge && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (canViewMastery) setActiveWidgetTab('maestria');
+                                }}
+                                className={`absolute bottom-4 left-4 z-30 rounded-full p-1.5 border bg-black/60 backdrop-blur-sm transition-colors ${canViewMastery ? 'hover:bg-black/75' : ''}`}
+                                style={{ borderColor: 'var(--skin-accent-color)' }}
+                                title={canViewMastery ? 'Ver maestria' : 'Ativos visiveis'}
+                            >
+                                <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/10 bg-black/50">
+                                    <Suspense fallback={<div className="h-full w-full bg-black/40" />}>
+                                        <AssetDecagon
+                                            assets={assets}
+                                            tempLevels={profileDecagonLevels}
+                                            size={56}
+                                            showCentralLevel={false}
+                                        />
+                                    </Suspense>
+                                </div>
+                                <div
+                                    className="absolute -bottom-1 -right-1 h-6 min-w-6 rounded-full bg-gray-900/95 px-1.5 text-center border"
+                                    style={{ borderColor: 'var(--skin-accent-color)' }}
+                                >
+                                    <span className="text-[10px] font-black leading-6 text-white">{displayProfile.level}</span>
+                                </div>
+                            </button>
+                        )}
 
                         {/* Unified Sovereign Display - Hidden in Basic Mode */}
                         {!isBasicMode && displayProfile.sovereign && (

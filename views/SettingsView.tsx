@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
-import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, Arena, Action, ScheduledTask } from '../types';
+import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, ProfileVisibilityScope, Arena, Action, ScheduledTask } from '../types';
 import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon, SendIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
@@ -43,7 +43,7 @@ const CampaignsCodex = lazy(() =>
 
 type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
-type PrivacyMode = 'Todos' | 'Amigos' | 'Personalizado' | 'Ninguém';
+type ProfileVisibilityOption = ProfileVisibilityScope;
 
 const notificationModes: { id: NotificationMode, name: string, icon: string, description: string }[] = [
     { id: 'Silencioso', name: 'O Monge', icon: '🧘', description: "Nenhuma notificação será enviada. O sistema aguarda sua busca ativa." },
@@ -116,6 +116,39 @@ const SettingSelector: React.FC<{ label: string; value: string; onClick: () => v
         <div className="flex justify-between items-center">
             <label className="text-sm font-semibold">{label}</label>
             <button onClick={onClick} className="flex items-center space-x-2 text-sm text-gray-400"><span>{value}</span><ChevronRightIcon className="w-4 h-4" /></button>
+        </div>
+    </div>
+);
+
+const VISIBILITY_OPTIONS: { value: ProfileVisibilityOption; label: string }[] = [
+    { value: 'all', label: 'Todos' },
+    { value: 'friends', label: 'Amigos' },
+    { value: 'nobody', label: 'Ninguem' },
+];
+
+const VisibilityScopeControl: React.FC<{
+    label: string;
+    value: ProfileVisibilityOption;
+    onChange: (value: ProfileVisibilityOption) => void;
+}> = ({ label, value, onChange }) => (
+    <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">{label}</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{VISIBILITY_OPTIONS.find(opt => opt.value === value)?.label || 'Todos'}</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+            {VISIBILITY_OPTIONS.map(option => (
+                <button
+                    key={option.value}
+                    onClick={() => onChange(option.value)}
+                    className={`py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${value === option.value
+                        ? 'bg-[var(--skin-accent-color)]/18 border-[var(--skin-accent-color)] text-white'
+                        : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5 hover:text-white'
+                        }`}
+                >
+                    {option.label}
+                </button>
+            ))}
         </div>
     </div>
 );
@@ -219,6 +252,8 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
         bannerUrl: row.banner_url ?? row.bannerUrl ?? undefined,
         isOnline: !!(row.is_online ?? row.isOnline),
         visibleWidgets: Array.isArray(row.visible_widgets) ? row.visible_widgets : (Array.isArray(row.visibleWidgets) ? row.visibleWidgets : []),
+        assetsVisibility: row.assets_visibility ?? row.assetsVisibility ?? 'all',
+        masteryVisibility: row.mastery_visibility ?? row.masteryVisibility ?? 'all',
         skin: row.skin ?? 'default',
         sovereign: row.sovereign ?? undefined,
         nobility: row.nobility ?? { exp: 0, rankId: 'vagante' },
@@ -1411,9 +1446,20 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences } = useGame();
+    const { userProfile, oraclePreferences, updateUserProfile } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
+    const normalizeVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
+        if (value === 'friends' || value === 'nobody') return value;
+        return 'all';
+    };
+
+    const [assetsVisibility, setAssetsVisibility] = useState<ProfileVisibilityOption>(
+        normalizeVisibilityOption(userProfile.assetsVisibility)
+    );
+    const [masteryVisibility, setMasteryVisibility] = useState<ProfileVisibilityOption>(
+        normalizeVisibilityOption(userProfile.masteryVisibility)
+    );
 
     useEffect(() => {
         const handleTutorialOracle = (e: any) => {
@@ -1437,6 +1483,21 @@ const PreferenciasTab: React.FC = () => {
     const termsStatus = completedFlags.includes(PROFILE_FLAG_TERMS_ACCEPTED) ? 'Aceito' : 'Pendente';
     const tutorialStatus = completedFlags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED) ? 'Assistido' : 'Pendente';
 
+    useEffect(() => {
+        setAssetsVisibility(normalizeVisibilityOption(userProfile.assetsVisibility));
+        setMasteryVisibility(normalizeVisibilityOption(userProfile.masteryVisibility));
+    }, [userProfile.assetsVisibility, userProfile.masteryVisibility]);
+
+    const handleAssetsVisibilityChange = (value: ProfileVisibilityOption) => {
+        setAssetsVisibility(value);
+        updateUserProfile({ assetsVisibility: value });
+    };
+
+    const handleMasteryVisibilityChange = (value: ProfileVisibilityOption) => {
+        setMasteryVisibility(value);
+        updateUserProfile({ masteryVisibility: value });
+    };
+
     return (
         <div className="space-y-8 animate-fade-in pb-10">
             {/* Grupo Geral */}
@@ -1448,6 +1509,20 @@ const PreferenciasTab: React.FC = () => {
                     <SettingSelector label="Privacidade" value="Abrir" onClick={() => window.open(LEGAL_PRIVACY_URL_PLACEHOLDER, '_blank', 'noopener,noreferrer')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Notificações" value={activeModeName} onClick={() => setModal('oracle')} />
+                    </div>
+
+                    <div className="settings-panel-card space-y-3">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Visibilidade do Perfil</div>
+                        <VisibilityScopeControl
+                            label="Ativos"
+                            value={assetsVisibility}
+                            onChange={handleAssetsVisibilityChange}
+                        />
+                        <VisibilityScopeControl
+                            label="Arvore de Maestria"
+                            value={masteryVisibility}
+                            onChange={handleMasteryVisibilityChange}
+                        />
                     </div>
                 </div>
             </section>

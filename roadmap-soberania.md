@@ -7,8 +7,8 @@ A progressao certa e esta:
 1. `Fundacao`: segurar `5 -> 20 -> 50`
 2. `Cerco`: chegar a `300 usuarios externos`
 3. `Ascensao`: bater `1.000 usuarios ativos`
-4. `Marco 2`: chegar a `5.000 -> 10.000 usuarios`
-5. `Marco 3`: chegar a `50.000+ usuarios ativos`
+4. `Marco 2 - Coroa`: chegar a `5.000 -> 10.000 usuarios`
+5. `Marco 3 - Ascencao`: chegar a `50.000+ usuarios ativos`
 
 Os trimestres sao mini checkpoints.
 Os marcos sao as vitorias maiores.
@@ -45,29 +45,29 @@ Foco:
 Objetivo:
 - sair do beta assistido
 - trazer gente de fora do circulo inicial
-- validar os primeiros sinais de monetizacao
+- validar valor percebido no uso real
 
 Checkpoint principal:
 - `300 usuarios externos`
 
 Metricas de passagem:
 - `300 usuarios externos`
-- primeiras compras reais no checkout
+- `D7` estavel nas cohorts novas
 - `1 Codex Mentor` testado em uso real
 
 Se passar:
-- o produto prova que consegue atrair e converter interesse fora da base inicial
+- o produto prova que consegue atrair e reter interesse fora da base inicial
 
 ## Trimestre 3 - A Ascensao (Setembro - Dezembro)
 
 Foco:
 - escala
-- `LTV/CAC`
-- consolidacao de produto + negocio
+- retencao
+- consolidacao de produto + operacao
 
 Objetivo:
 - sair da fase de projeto
-- provar que o app pode se sustentar
+- provar que o app sustenta rotina recorrente
 - fechar 2026 com o `Marco 1` batido
 
 Checkpoint principal:
@@ -75,28 +75,28 @@ Checkpoint principal:
 
 Metricas de passagem:
 - `1.000 usuarios ativos`
-- `LTV > CAC`
-- lucro real ou operacao claramente autossustentavel
+- `D7` e fechamento de ciclo estaveis
+- operacao com qualidade sem depender de improviso
 
 Se passar:
-- o GLYPH vira negocio validado, nao so produto promissor
+- o GLYPH vira produto validado com base para expandir
 
-## Marco 1 - A Prova de Fogo (Marco - Dezembro 2026)
+## Marco 1 - Prova (Marco - Dezembro 2026)
 
 Foco:
 - onboarding
 - retencao
-- saida do estado de projeto para negocio
+- saida do estado de projeto para produto validado
 
 Metricas de gloria:
 - `1.000 usuarios ativos`
-- `LTV 3x maior que CAC`
+- `retencao e conclusao de ciclo em faixa estavel`
 
 Papeis chave:
 - `SENTINELA` na retencao
 - `DOMINIO` no organico
 
-## Marco 2 - A Consolidacao e Aporte (Janeiro - Junho 2027)
+## Marco 2 - Coroa (Janeiro - Junho 2027)
 
 Foco:
 - escala
@@ -106,7 +106,7 @@ Foco:
 Objetivo:
 - transformar o que funcionou em maquina repetivel
 - trazer mentores externos
-- preparar a rodada Seed
+- consolidar governanca de produto
 
 Checkpoint principal:
 - `5.000 -> 10.000 usuarios`
@@ -116,11 +116,7 @@ Metricas de passagem:
 - `5.000 -> 10.000 usuarios`
 - `5 mentores externos` ativos na Loja de Codex
 
-Recompensa:
-- Seed de `R$ 800.000`
-- ajuda de custo para o Conselho
-
-## Marco 3 - A Soberania de Mercado (Julho - Dezembro 2027)
+## Marco 3 - Ascencao (Julho - Dezembro 2027)
 
 Foco:
 - expansao de ecossistema
@@ -135,21 +131,14 @@ Checkpoint principal:
 
 Metricas de passagem:
 - `50.000+ usuarios ativos`
-- preparacao real para Series A
-- valuation alvo acima de `R$ 20M`
-
-Recompensa:
-- salario C-Level cheio para o Conselho
-- ecossistema consolidado
-
-## Resumo financeiro
-
-- `Dez/2026`: autossustentavel
-- `Jun/2027`: Seed e folego operacional
-- `Dez/2027`: salarios de mercado + equity valorizado
+- operacao pronta para nova fase de escala
+- produto com posicionamento consolidado
 
 ## Regra de leitura
 
 - se a Fundacao falhar, o resto e fantasia
 - se o Cerco falhar, a Ascensao vira promessa
 - se a Ascensao funcionar, Marco 2 e Marco 3 viram progressao natural
+
+
+

@@ -5,8 +5,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const VERCEL_URL = "https://glyph-app-arabecos-projects.vercel.app?_vercel_share=60aVDYM4ZOqZSA65zTG1QyOiBfnTIl6s";
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173").split(",").map(o => o.trim()).filter(Boolean);
+const SITE_URL = Deno.env.get("SITE_URL") || "https://glyph-app-arabecos-projects.vercel.app";
+const VERCEL_URL = `${SITE_URL}?_vercel_share=60aVDYM4ZOqZSA65zTG1QyOiBfnTIl6s`;
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || `${SITE_URL},http://localhost:3000,http://localhost:5173`).split(",").map(o => o.trim()).filter(Boolean);
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

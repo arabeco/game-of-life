@@ -901,8 +901,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         return;
                     }
 
-                    // Calcular dropY relativo ao topo do grid rolável
-                    let dropY = pos.y - gridRect.top + scrollContainerRef.current.scrollTop;
+                    // Calcular dropY relativo ao topo do grid rolável (compensando o offset do grab)
+                    let dropY = (pos.y - gridRect.top) - (dragState.pointerOffset?.y || 0) + scrollContainerRef.current.scrollTop;
                     dropY = Math.max(0, dropY); // Impedir valores negativos
 
                     const minutesFromViewStart = dropY / scaleFactor;
@@ -920,7 +920,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         let dayIndex = Math.floor((pos.x - containerRect.left) / dayColumnWidth);
                         dayIndex = Math.max(0, Math.min(6, dayIndex));
                         const headerHeight = 32;
-                        let dropY = pos.y - containerRect.top - headerHeight + scrollContainerRef.current.scrollTop;
+                        let dropY = (pos.y - containerRect.top - headerHeight) - (dragState.pointerOffset?.y || 0) + scrollContainerRef.current.scrollTop;
                         if (dropY < 0) dropY = 0;
                         const minutesFromViewStart = dropY / scaleFactor;
                         const snappedMinutes = Math.round(minutesFromViewStart / 15) * 15;

@@ -56,6 +56,13 @@
       --sephirot-border-color: #4a3a11;
       --sephirot-glow-color: rgba(212, 175, 55, 0.3);
       --sephirot-text-color: var(--gold);
+      --sephirot-base-fill: radial-gradient(circle, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.9) 72%, rgba(0,0,0,0.98) 100%);
+      --fog-color: #ffffff;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.13;
+      --fog-color: #ffffff;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.13;
 
       /* Asset Color Gradients (Chakras) */
       --asset-grad-consciencia: linear-gradient(135deg, #2e1a4d 0%, #4a2c7a 100%);
@@ -131,11 +138,14 @@
       --skin-line-color: rgba(197, 160, 89, 0.3);
       --metal-gold: linear-gradient(135deg, #5c4a1f 0%, #d4af37 50%, #5c4a1f 100%);
       --sephirot-bg-gradient: radial-gradient(circle, #2c2314 0%, #141008 100%);
-      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gold.jpg');
+      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gold.png');
       --sephirot-border-color: #C5A059;
       --sephirot-glow-color: rgba(197, 160, 89, 0.45);
       --sephirot-text-color: #F6EBD1;
-      --sephirot-image-size: 135%;
+      --sephirot-image-size: 92%;
+      --fog-color: #d5b57a;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.16;
     }
 
     [data-skin="BASIC"] {
@@ -146,8 +156,11 @@
       --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/basic.png');
       --sephirot-border-color: #ffffff;
       --sephirot-glow-color: rgba(255, 255, 255, 0.45);
-      --sephirot-text-color: #111111;
-      --sephirot-image-size: 122%;
+      --sephirot-text-color: #E7D7B1;
+      --sephirot-image-size: 82%;
+      --fog-color: #ffffff;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.13;
       --sephirot-size-keter: 54px;
       --sephirot-size-standard: 48px;
     }
@@ -160,21 +173,27 @@
       --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/basic.png');
       --sephirot-border-color: #ffffff;
       --sephirot-glow-color: rgba(255, 255, 255, 0.45);
-      --sephirot-text-color: #111111;
-      --sephirot-image-size: 122%;
+      --sephirot-text-color: #E7D7B1;
+      --sephirot-image-size: 82%;
+      --fog-color: #ffffff;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.13;
       --sephirot-size-keter: 54px;
       --sephirot-size-standard: 48px;
     }
 
     [data-skin="CYBER"] {
-      --skin-accent-color: #00d9ff;
-      --skin-line-color: rgba(0, 217, 255, 0.3);
-      --metal-gold: linear-gradient(135deg, #005f73 0%, #00d9ff 50%, #005f73 100%);
-      --sephirot-bg-gradient: radial-gradient(circle, #0a2e3a 0%, #05161a 100%);
-      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/neon.jpg');
-      --sephirot-border-color: #00d9ff;
-      --sephirot-glow-color: rgba(0, 217, 255, 0.4);
-      --sephirot-text-color: #00d9ff;
+      --skin-accent-color: #7cd9ff;
+      --skin-line-color: rgba(124, 217, 255, 0.24);
+      --metal-gold: linear-gradient(135deg, #143345 0%, #7cd9ff 50%, #143345 100%);
+      --sephirot-bg-gradient: radial-gradient(circle, #102533 0%, #07131b 100%);
+      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/cyber.jpg');
+      --sephirot-border-color: #8ae4ff;
+      --sephirot-glow-color: rgba(124, 217, 255, 0.28);
+      --sephirot-text-color: #eefaff;
+      --fog-color: #c95cff;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.18;
     }
 
     [data-skin="FROST"] {
@@ -182,10 +201,13 @@
       --skin-line-color: rgba(146, 212, 243, 0.3);
       --metal-gold: linear-gradient(135deg, #4a90e2 0%, #92d4f3 50%, #4a90e2 100%);
       --sephirot-bg-gradient: radial-gradient(circle, #d4e8f3 0%, #a3c2d1 100%);
-      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/frost.jpg');
+      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/frost.png');
       --sephirot-border-color: #f0f8ff;
       --sephirot-glow-color: rgba(146, 212, 243, 0.5);
       --sephirot-text-color: #ffffff;
+      --fog-color: #9cdfff;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.16;
     }
 
     [data-skin="EMBER"] {
@@ -193,10 +215,13 @@
       --skin-line-color: rgba(255, 106, 0, 0.3);
       --metal-gold: linear-gradient(135deg, #8a2be2 0%, #ff6a00 50%, #8a2be2 100%);
       --sephirot-bg-gradient: radial-gradient(circle, #4d2000 0%, #2e1300 100%);
-      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/ember.jpg');
+      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/ember.png');
       --sephirot-border-color: #ff6a00;
       --sephirot-glow-color: rgba(255, 106, 0, 0.4);
       --sephirot-text-color: #ffc9a6;
+      --fog-color: #ff8748;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.18;
     }
 
     [data-skin="AURORA"] {
@@ -204,10 +229,13 @@
       --skin-line-color: rgba(165, 243, 252, 0.3);
       --metal-gold: linear-gradient(135deg, #0ea5e9 0%, #a5f3fc 50%, #0ea5e9 100%);
       --sephirot-bg-gradient: radial-gradient(circle, #1a4d3a 0%, #0c2e21 100%);
-      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/aurora.jpg');
+      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/aurora.png');
       --sephirot-border-color: #a5f3fc;
       --sephirot-glow-color: rgba(165, 243, 252, 0.4);
       --sephirot-text-color: #c9ffde;
+      --fog-color: #31d79b;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.2;
 
       /* Logo Gradient Stops - Aurora */
       --logo-stop-1: #e0f2fe;
@@ -220,14 +248,37 @@
     }
 
     [data-skin="VOID"] {
-      --skin-accent-color: #a95eff;
-      --skin-line-color: rgba(169, 94, 255, 0.3);
-      --metal-gold: linear-gradient(135deg, #4b0082 0%, #a95eff 50%, #4b0082 100%);
-      --sephirot-bg-gradient: radial-gradient(circle, #3a1a4d 0%, #210c2e 100%);
-      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/void.jpg');
-      --sephirot-border-color: #a95eff;
-      --sephirot-glow-color: rgba(169, 94, 255, 0.4);
-      --sephirot-text-color: #e3c9ff;
+      --skin-accent-color: #f1edff;
+      --skin-line-color: rgba(28, 12, 39, 0.72);
+      --arena-card-border-color: #180a21;
+      --metal-gold: linear-gradient(135deg, #120815 0%, #2a1336 50%, #120815 100%);
+      --luxe-button-text-color: #f3eeff;
+      --luxe-button-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+      --sephirot-bg-gradient: radial-gradient(circle, #18091f 0%, #07030b 100%);
+      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/void.png');
+      --sephirot-border-color: #16081d;
+      --sephirot-glow-color: rgba(57, 26, 74, 0.28);
+      --sephirot-text-color: #f3eeff;
+      --fog-color: #ffffff;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.13;
+    }
+
+    [data-skin="GENESIS"] {
+      --skin-accent-color: #ffffff;
+      --skin-line-color: rgba(82, 38, 126, 0.62);
+      --arena-card-border-color: #4a236b;
+      --metal-gold: linear-gradient(135deg, #241033 0%, #5b2b84 50%, #241033 100%);
+      --luxe-button-text-color: #ffffff;
+      --luxe-button-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+      --sephirot-bg-gradient: radial-gradient(circle, #2f1543 0%, #100619 100%);
+      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/genesis.png');
+      --sephirot-border-color: #4f2672;
+      --sephirot-glow-color: rgba(103, 63, 148, 0.24);
+      --sephirot-text-color: #ffffff;
+      --fog-color: #7c43c2;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.18;
     }
 
 
@@ -287,12 +338,19 @@
 
     .luxe-skin-button {
       background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 38%), var(--metal-gold);
-      color: #1b1408;
+      color: var(--luxe-button-text-color, #1b1408);
       font-weight: 800;
       border: 1px solid var(--skin-accent-color);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 24px var(--sephirot-glow-color), 0 2px 6px rgba(0, 0, 0, 0.4);
-      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+      text-shadow: var(--luxe-button-text-shadow, 0 1px 0 rgba(255, 255, 255, 0.35));
       transition: transform 0.2s ease, box-shadow 0.2s ease, background-image 0.2s ease;
+    }
+
+    [data-skin="VOID"] .luxe-skin-button[class*="text-black"],
+    [data-skin="GENESIS"] .luxe-skin-button[class*="text-black"],
+    [data-skin="VOID"] .luxe-skin-button [class*="text-black"],
+    [data-skin="GENESIS"] .luxe-skin-button [class*="text-black"] {
+      color: var(--luxe-button-text-color) !important;
     }
 
     .luxe-skin-button:hover {

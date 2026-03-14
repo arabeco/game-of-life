@@ -22,6 +22,7 @@ export interface CodexCatalogItem {
   title: string;
   description: string;
   price_brl: number;
+  price_gold: number;
   is_premium: boolean;
   cover_image?: string;
   author_name: string;
@@ -69,7 +70,7 @@ export interface CodexSharePreview {
 
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
 export type SlotLayoutType = 1 | 2 | 3 | 4; // 1: wide, 2: square, 3: rect, 4: centered-wide
-export type ChestType = 'Comum' | 'Incomum' | 'Raro' | 'Épico' | 'Lendário' | 'Ciclo' | 'Skin Comum';
+export type ChestType = 'Comum' | 'Incomum' | 'Raro' | '\u00C9pico' | 'Lend\u00E1rio' | 'Season' | 'Ciclo' | 'Skin Comum';
 
 export interface SlotValueImage {
   imageUrl: string;
@@ -248,6 +249,13 @@ export interface UserWallet {
   fragments: number;
 }
 
+export interface VanguardWelcomePayload {
+  inviteCode?: string | null;
+  gold?: number;
+  chestType?: ChestType | null;
+  itemIds?: string[];
+}
+
 export interface SovereignConfig {
   body: string;
   skinTone: string;
@@ -256,7 +264,7 @@ export interface SovereignConfig {
   outfit: string;
   head_under: string; // mascara, oculos, tapa-olho
   helmet: string; // elmos
-  head_over: string; // coroa, bonÃ©, chapÃ©u
+  head_over: string; // coroa, bone, chapeu
   artifact: string;
   glyph: string; // NEW: Glifo slot
   aura: string; // NEW: Aura slot
@@ -279,6 +287,7 @@ export interface ChestOpenResult {
   tier?: number;
   rarity?: ItemRarity;
   fragmentsGained: number;
+  goldGained?: number;
   isDuplicate?: boolean;
 }
 
@@ -341,6 +350,10 @@ export interface UserProfile {
   onboardingStartedAt?: string;
   onboardingCompletedAt?: string;
   onboardingDismissedAt?: string;
+  starterRewardsPending?: boolean;
+  vanguardWelcomePending?: boolean;
+  vanguardWelcomeShownAt?: string;
+  vanguardWelcomePayload?: VanguardWelcomePayload | null;
   codexCreationSlotsPurchased?: number;
   appMode?: AppMode;
 
@@ -670,7 +683,7 @@ export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
   joined_at: string;
 };
 
-// Sistema de SantuÃ¡rio - Posicionamento e Tempo
+// Sistema de Santuario - Posicionamento e Tempo
 export type SanctuaryArea = 'meditation' | 'devotion' | 'rest' | 'garden';
 export type GardenAction = 'working' | 'watering' | 'walking';
 
@@ -715,7 +728,7 @@ export interface Cycle {
   startDate: string;
   endDate: string;
   arenaIds: string[]; // IDs das arenas ativas neste ciclo
-  userId: string; // ID do usuÃ¡rio dono do ciclo
+  userId: string; // ID do usuario dono do ciclo
   seasonId?: string;
   isFinished?: boolean; // FIX: Added isFinished to Cycle interface
   arenaConfig?: Record<string, {
@@ -918,7 +931,7 @@ export interface OracleMessage {
 
 export interface OracleContext {
   currentTime: string;
-  timeOfDay: "madrugada" | "manhã" | "tarde" | "noite";
+  timeOfDay: "madrugada" | "manhï¿½" | "tarde" | "noite";
   hasCycle: boolean;
   cycleDayNumber: number | null;
   cycleTotalDays: number | null;
@@ -1020,6 +1033,11 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
+
+
+
+
+
 
 
 

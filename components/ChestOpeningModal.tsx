@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, CheckIcon } from './Icons';
@@ -22,21 +22,24 @@ interface Reward {
     rarity: string;
     itemDef?: ItemDef;
     fragmentsGained: number;
+    goldGained: number;
     isDuplicate?: boolean;
     description: string;
 }
 
 const CHEST_VIDEOS: Record<string, string> = {
-    commum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
+    comum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
     incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
     raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
     epico: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
     lendario: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    season: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
     Comum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
     Incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
     Raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
-    ['\u00c9pico']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
-    ['Lend\u00e1rio']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    ['\u00C9pico']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
+    ['Lend\u00E1rio']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    Season: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
 };
 
 const buildRewardFromResult = (result: ChestOpenResult | null, chestType: ChestType): Reward => {
@@ -46,6 +49,7 @@ const buildRewardFromResult = (result: ChestOpenResult | null, chestType: ChestT
             value: 'Falha na abertura',
             rarity: chestType,
             fragmentsGained: 0,
+            goldGained: 0,
             description: 'Nao foi possivel abrir este bau agora. Tente novamente.',
         };
     }
@@ -59,16 +63,19 @@ const buildRewardFromResult = (result: ChestOpenResult | null, chestType: ChestT
                 ? 'Item'
                 : 'Nada';
 
+    const goldSuffix = (result.goldGained || 0) > 0 ? ` e ${result.goldGained} Ouro bonus` : '';
+
     return {
         type: rewardType,
         value: result.itemName || itemDef?.name || 'Recompensa',
         rarity: chestType,
         itemDef,
         fragmentsGained: result.fragmentsGained,
+        goldGained: result.goldGained || 0,
         isDuplicate: result.isDuplicate,
         description: result.isDuplicate
-            ? `Recompensa repetida. ${result.fragmentsGained} Fragmentos creditados.`
-            : `Arsenal sincronizado com ${result.fragmentsGained} Fragmentos adicionais.`,
+            ? `Recompensa repetida. ${result.fragmentsGained} Fragmentos creditados${goldSuffix}.`
+            : `Arsenal sincronizado com ${result.fragmentsGained} Fragmentos${goldSuffix}.`,
     };
 };
 
@@ -151,7 +158,7 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                                     <img src={reward.itemDef.imageUrl} alt={reward.value} className="h-20 w-20 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.35)]" />
                                 ) : (
                                     <span className="text-4xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-                                        {reward.itemDef?.icon || (reward.type === 'Skin' ? 'ðŸ‘•' : reward.type === 'Insignia' ? 'ðŸŽ–ï¸' : reward.type === 'Item' ? 'âš”ï¸' : 'ðŸŽ')}
+                                        {reward.itemDef?.icon || (reward.type === 'Skin' ? 'S' : reward.type === 'Insignia' ? 'I' : reward.type === 'Item' ? 'T' : 'B')}
                                     </span>
                                 )}
                             </div>
@@ -170,9 +177,7 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                                 </span>
                             </div>
                             <div className="mx-auto my-3 h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                            <p className="px-2 text-xs text-white/60">
-                                {reward.description}
-                            </p>
+                            <p className="px-2 text-xs text-white/60">{reward.description}</p>
                         </div>
 
                         <div className="z-10 mt-2 grid w-full grid-cols-1 gap-2">
@@ -215,4 +220,3 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
         </Portal>
     );
 };
-

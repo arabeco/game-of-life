@@ -1,7 +1,7 @@
-﻿import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { UserProfile, GoldenInvite, SovereignConfig, Notification } from '../types';
 
-// ServiÃ§o simples para conectar com tabelas existentes
+// Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
   private static mapGoldenInvite(row: any): GoldenInvite | null {
     if (!row?.id || !row?.code) return null;
@@ -154,8 +154,8 @@ export class SupabaseService {
         chests: [
           { type: 'Comum', count: 99 },
           { type: 'Raro', count: 50 },
-          { type: 'Ã‰pico', count: 25 },
-          { type: 'LendÃ¡rio', count: 10 }
+          { type: 'Épico', count: 25 },
+          { type: 'Lendário', count: 10 }
         ],
         wallet: { gold: 99999, fragments: 99999 },
         inventory: [],
@@ -196,6 +196,12 @@ export class SupabaseService {
           onboarding_started_at: profile.onboardingStartedAt || null,
           onboarding_completed_at: profile.onboardingCompletedAt || null,
           onboarding_dismissed_at: profile.onboardingDismissedAt || null,
+          starter_rewards_pending: profile.starterRewardsPending ?? false,
+          vanguard_welcome_pending: profile.vanguardWelcomePending ?? false,
+          vanguard_welcome_shown_at: profile.vanguardWelcomeShownAt || null,
+          vanguard_welcome_payload: profile.vanguardWelcomePayload ?? {},
+          gold: profile.wallet?.gold ?? 0,
+          fragments: profile.wallet?.fragments ?? 0,
           sovereign: profile.sovereign,
           avatar_url: profile.avatarUrl,
           border: profile.border,
@@ -225,7 +231,7 @@ export class SupabaseService {
     }
   }
 
-  // Buscar usuÃ¡rios
+  // Buscar usuários
   static async searchUsers(query: string = ''): Promise<UserProfile[]> {
     try {
       let queryBuilder = supabase
@@ -241,7 +247,7 @@ export class SupabaseService {
       const { data } = await queryBuilder;
       return (data || []).filter((profile: any) => profile.role !== 'admin' && profile.role !== 'gm') as UserProfile[];
     } catch (error) {
-      console.error('Erro ao buscar usuÃ¡rios:', error);
+      console.error('Erro ao buscar usuários:', error);
       return [];
     }
   }
@@ -365,11 +371,13 @@ export class SupabaseService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Erro ao buscar relatÃ³rios de feedback:', error);
+      console.error('Erro ao buscar relatórios de feedback:', error);
       return [];
     }
   }
 }
+
+
 
 
 

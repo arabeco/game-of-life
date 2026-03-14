@@ -3,6 +3,7 @@ import { SovereignConfig } from '../types';
 import { SOVEREIGN_ASSETS, FACE_FEATURES_URL, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { ITEMS_DB } from '../constants/items';
 import { getBodyUrl, getHairUrl, BODY_DB, HAIR_DB } from '../constants/skins';
+import { drawAuraCanvasEffect } from '../utils/auraVisuals';
 
 interface CanvasAvatarProps {
     sovereignConfig?: SovereignConfig;
@@ -164,13 +165,8 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                 // 0. Aura (Background)
                 // @ts-ignore
                 const auraUrl = getAssetUrl('auras', aura);
-                const auraLoaded = await loadAndDrawImage(auraUrl, { filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))' });
-                if (!auraLoaded) {
-                    const auraIcon = getItemIcon(aura);
-                    if (auraIcon) {
-                        drawEmoji(auraIcon, width / 2, height / 2, 200, '#FFD700'); // Big aura behind
-                    }
-                }
+                const auraLoaded = auraUrl ? await loadAndDrawImage(auraUrl, { filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))' }) : false;
+                if (!auraLoaded) drawAuraCanvasEffect(offscreenCtx, width, height, aura);
 
                 if (!isMounted) return;
 

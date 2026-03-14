@@ -375,7 +375,7 @@ export const DebugRewardControls: React.FC = () => {
     const addChests = async () => {
         setLoading(true);
         try {
-            const types: ChestType[] = ['Comum', 'Incomum', 'Raro', '\u00c9pico', 'Lend\u00e1rio', 'Ciclo'];
+            const types: ChestType[] = ['Comum', 'Incomum', 'Raro', '\u00C9pico', 'Lend\u00E1rio', 'Season', 'Ciclo'];
             const newChests = [];
             for (const type of types) {
                 for (let i = 0; i < 5; i++) {

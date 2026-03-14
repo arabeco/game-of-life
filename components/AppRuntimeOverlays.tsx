@@ -200,7 +200,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                                 >
                                     Termos completos
                                 </a>
-                                <span className="text-gray-400">•</span>
+                                <span className="text-gray-400">?</span>
                                 <a
                                     href={LEGAL_PRIVACY_URL_PLACEHOLDER}
                                     target="_blank"

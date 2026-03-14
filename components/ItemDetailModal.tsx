@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
@@ -159,7 +159,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         <Portal>
             <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[70] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
                 <div 
-                    className={`w-full max-w-sm relative overflow-hidden rounded-2xl flex flex-col items-center p-8 gap-6 plasma-card plasma-bg ${rarityClass}`} 
+                    className={`custom-scrollbar relative flex max-h-[86svh] w-full max-w-[22rem] flex-col items-center gap-4 overflow-y-auto rounded-[30px] p-5 plasma-card plasma-bg ${rarityClass}`} 
                     onClick={e => e.stopPropagation()}
                 >
                 <button onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors z-20">
@@ -169,11 +169,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                 {/* Item Image with Glow */}
                 <div className="relative z-10 group">
                     <div className={`absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500`} />
-                    <div className="w-40 h-40 rounded-2xl flex items-center justify-center relative z-10 transition-transform duration-500 group-hover:scale-110">
+                    <div className="relative z-10 flex h-32 w-32 items-center justify-center rounded-2xl transition-transform duration-500 group-hover:scale-110">
                         <ItemArt
                             src={currentItem.imageUrl}
                             alt={currentItem.name}
                             icon={currentItem.icon}
+                            category={currentItem.category}
                             className="w-full h-full flex items-center justify-center"
                             imgClassName="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
                             iconClassName="text-8xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"
@@ -183,7 +184,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
 
                 {/* Item Info */}
                 <div className="text-center space-y-2 z-10 w-full">
-                    <h2 className="text-2xl font-black text-white uppercase tracking-widest drop-shadow-lg">{currentItem.name}</h2>
+                    <h2 className="text-xl font-black text-white uppercase tracking-[0.14em] drop-shadow-lg">{currentItem.name}</h2>
                     <div className="flex justify-center">
                         <span className={`text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/10 bg-black/40 backdrop-blur-sm ${rarityColor} shadow-lg`}>
                             {rarityLabel}
@@ -195,7 +196,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         </div>
                     )}
                     <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto my-4" />
-                    <div className="mt-4 text-xs text-white/60 px-4">
+                    <div className="mt-2 px-2 text-xs text-white/60">
                         {currentItem.description || "Um item raro e misterioso."}
                     </div>
                 </div>
@@ -229,6 +230,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                                                 src={relItem.imageUrl}
                                                 alt={relItem.name}
                                                 icon={relItem.icon}
+                                                category={relItem.category}
                                                 className="w-full h-full flex items-center justify-center"
                                                 imgClassName="w-full h-full object-contain"
                                                 iconClassName="text-xl"
@@ -242,7 +244,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                 )}
 
                 {/* Actions */}
-                <div className="w-full grid grid-cols-2 gap-3 z-10 mt-2">
+                <div className="z-10 mt-1 grid w-full grid-cols-2 gap-2.5">
                     {currentItem.category === 'chest' ? (
                         <button 
                             onClick={handleOpen}

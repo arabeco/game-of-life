@@ -23,7 +23,7 @@ export const ModeSelectionOverlay: React.FC = () => {
         setIsConfirming(true);
         try {
             await setAppMode(selectedMode);
-            if (selectedMode === 'GAME') {
+            if (selectedMode === 'GAME' && !userProfile.vanguardWelcomePending) {
                 showToast('Pacote inicial do Vagante adicionado ao seu inventário.', 'success');
             }
         } catch (error) {

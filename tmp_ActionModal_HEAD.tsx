@@ -2,7 +2,7 @@
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, DayOfWeek, ActionType } from '../types';
 import { GlassCard } from './GlassCard';
-import { ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon } from './Icons';
+import { ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
 import { WheelPicker } from './inputs/WheelPicker';
 import { ImageUploadSlot } from './inputs/ImageUploadSlot';
@@ -12,10 +12,8 @@ import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
-import { REST_SCREEN_ACTION_SESSION_EVENT, createRestScreenActionSession } from '../utils/restScreenActionSession';
 
 import { Portal } from './Portal';
-import { EmojiGlyph } from './EmojiGlyph';
 import './core-ui.css';
 
 const hexToRgb = (hex: string) => {
@@ -28,7 +26,7 @@ const hexToRgb = (hex: string) => {
     }
     const normalized = trimmed.replace('#', '');
     if (normalized.length === 3 || normalized.length === 6) {
-        const value = normalized.length === 3 ?normalized.split('').map(ch => ch + ch).join('') : normalized;
+        const value = normalized.length === 3 ? normalized.split('').map(ch => ch + ch).join('') : normalized;
         const intValue = parseInt(value, 16);
         return { r: (intValue >> 16) & 255, g: (intValue >> 8) & 255, b: intValue & 255 };
     }
@@ -70,7 +68,7 @@ const StyledRangeInput: React.FC<{ label: string, value: number, min: number, ma
     );
 
 const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => void }> = ({ day, selected, onClick }) => (
-    <button type="button" onClick={onClick} className={`w-10 h-10 rounded-xl text-sm font-semibold transition-colors border ${selected ?'bg-[var(--skin-accent-color)] text-white border-[var(--skin-accent-color)]' : 'core-surface text-gray-300 hover:bg-white/[0.06]'}`}>
+    <button type="button" onClick={onClick} className={`w-10 h-10 rounded-xl text-sm font-semibold transition-colors border ${selected ? 'bg-[var(--skin-accent-color)] text-white border-[var(--skin-accent-color)]' : 'core-surface text-gray-300 hover:bg-white/[0.06]'}`}>
         {day.slice(0, 3)}
     </button>
 );
@@ -79,17 +77,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask, clan, enrichedClanMembers, showToast } = useGame();
 
     const isNew = !action;
-    const isInstalledCodexAction = Boolean(action?.originCodexId && !action.originCodexId.startsWith('assign:'));
 
-    const [mode, setMode] = useState(isNew && !isPreview ?'edit' : initialMode);
-    const [hasConfirmedInstalledCodexEdit, setHasConfirmedInstalledCodexEdit] = useState(false);
-    const [showInstalledCodexEditConfirmation, setShowInstalledCodexEditConfirmation] = useState(false);
+    const [mode, setMode] = useState(isNew && !isPreview ? 'edit' : initialMode);
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
-        action || { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 }
+        action || { arenaId: arenaId, name: '', description: '', icon: '??', duration: 60, repetitions: 1, actionType: 'A��o Recorrente', difficulty: 3 }
     );
 
     // NEW: Task duration override state
-    const currentTask = taskId ?tasks.find(t => t.id === taskId) : null;
+    const currentTask = taskId ? tasks.find(t => t.id === taskId) : null;
     const [editableTaskDuration, setEditableTaskDuration] = useState<number>(currentTask?.duration || action?.duration || 60);
 
     // New View Mode State
@@ -100,9 +95,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const durationInputRef = useRef<HTMLDivElement>(null);
     const repsInputRef = useRef<HTMLDivElement>(null);
     const saveButtonRef = useRef<HTMLButtonElement>(null);
-    const startNowHoldIntervalRef = useRef<number | null>(null);
-    const [startNowHoldProgress, setStartNowHoldProgress] = useState(0);
-    const [startNowTriggered, setStartNowTriggered] = useState(false);
 
     // State for checklist inputs in edit mode
     const [newChecklistItem, setNewChecklistItem] = useState('');
@@ -112,14 +104,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const handleTutorialNextFormStep = () => {
         // No-op
     }
-
-    useEffect(() => {
-        return () => {
-            if (startNowHoldIntervalRef.current) {
-                window.clearInterval(startNowHoldIntervalRef.current);
-            }
-        };
-    }, []);
 
 
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
@@ -140,7 +124,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isConfirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
-    const arenas = typeof getArenas === 'function' ?getArenas() : [];
+    const arenas = typeof getArenas === 'function' ? getArenas() : [];
     const currentArena = arenas.find(a => a.id === editableAction.arenaId);
 
     // Office Mode specific
@@ -149,36 +133,36 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     const handleSave = () => {
         if (!editableAction.name?.trim()) {
-            showToast('Dê um título para a ação antes de salvar.', 'warning');
+            showToast('D� um t�tulo para a a��o antes de salvar.', 'warning');
             window.setTimeout(() => nameInputRef.current?.focus(), 40);
             return;
         }
 
         let scheduledStartTime: number | undefined;
-        if (startTime && startTime !== 'Sem Horário') {
+        if (startTime && startTime !== 'Sem Hor�rio') {
             const [h, m] = startTime.split(':').map(Number);
             scheduledStartTime = h * 60 + m;
         }
 
-        const nextRepetitions = editableAction.actionType === 'Ação Recorrente'
-            ?Math.min(50, Math.max(1, Math.floor(editableAction.repetitions || 1)))
+        const nextRepetitions = editableAction.actionType === 'A��o Recorrente'
+            ? Math.min(50, Math.max(1, Math.floor(editableAction.repetitions || 1)))
             : 1;
 
         // SAFEGUARD: Ensure duration is within bounds (5-240) and defaults to 60 if invalid
         const rawDuration = editableAction.duration;
-        const validDuration = (rawDuration && rawDuration >= 5 && rawDuration <= 480) ?rawDuration : 60;
+        const validDuration = (rawDuration && rawDuration >= 5 && rawDuration <= 480) ? rawDuration : 60;
 
         const actionData: Omit<Action, 'id'> = {
-            arenaId: editableAction.arenaId || '', // Será tratado no context
+            arenaId: editableAction.arenaId || '', // Ser� tratado no context
             name: editableAction.name,
             description: editableAction.description?.trim() || undefined,
-            icon: editableAction.icon || '📝',
+            icon: editableAction.icon || '??',
             duration: validDuration,
             repetitions: nextRepetitions,
-            actionType: editableAction.actionType || 'Ação Recorrente',
+            actionType: editableAction.actionType || 'A��o Recorrente',
             difficulty: editableAction.difficulty || 3,
-            scheduledDays: editableAction.actionType === 'Ação Recorrente' ?selectedDays : undefined,
-            scheduledStartTime: editableAction.actionType === 'Livre' ?undefined : scheduledStartTime,
+            scheduledDays: editableAction.actionType === 'A��o Recorrente' ? selectedDays : undefined,
+            scheduledStartTime: editableAction.actionType === 'Livre' ? undefined : scheduledStartTime,
             briefing: editableAction.briefing?.trim() || undefined,
             assets: editableAction.assets || [],
             preFlight: editableAction.preFlight || [],
@@ -186,15 +170,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         };
 
         const scheduleTasks = async (actionIdToSchedule: string) => {
-            // Para Ação Recorrente: usa dias da semana
-            if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Horário') {
+            // Para A��o Recorrente: usa dias da semana
+            if (editableAction.actionType === 'A��o Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Hor�rio') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
                 await scheduleMultipleTasks(actionIdToSchedule, selectedDays, startTimeInMinutes);
             }
 
-            // Para Compromisso: usa data específica
-            if (editableAction.actionType === 'Compromisso' && selectedDate && startTime !== null && startTime !== 'Sem Horário') {
+            // Para Compromisso: usa data espec�fica
+            if (editableAction.actionType === 'Compromisso' && selectedDate && startTime !== null && startTime !== 'Sem Hor�rio') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
                 const dateString = getLocalDateString(selectedDate);
@@ -207,7 +191,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                 if (taskId && typeof updateTask === 'function') {
                     // If we are editing a specific task from the planner
                     let scheduledStartTime: number | undefined;
-                    if (startTime && startTime !== 'Sem Horário') {
+                    if (startTime && startTime !== 'Sem Hor�rio') {
                         const [h, m] = startTime.split(':').map(Number);
                         scheduledStartTime = h * 60 + m;
                     }
@@ -223,63 +207,28 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                         await scheduleTasks(newAction.id);
                         window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.actionCreated, { detail: { actionId: newAction.id } }));
                     }
-                    showToast('Ação criada.', 'success');
+                    showToast('A��o criada.', 'success');
                 } else if (action?.id && typeof updateAction === 'function') {
                     updateAction(action.id, actionData);
                     await scheduleTasks(action.id);
-                    showToast('Ação atualizada.', 'success');
+                    showToast('A��o atualizada.', 'success');
                 }
                 onClose();
             } catch (err) {
                 console.error("Error executing save:", err);
-                showToast('Não foi possível salvar a ação.', 'error');
+                showToast('N�o foi poss�vel salvar a a��o.', 'error');
             }
         };
 
         executeSave().catch(err => console.error("Error saving action:", err));
     };
 
-    const clearStartNowHold = () => {
-        if (startNowHoldIntervalRef.current) {
-            window.clearInterval(startNowHoldIntervalRef.current);
-            startNowHoldIntervalRef.current = null;
-        }
-
-        if (!startNowTriggered) {
-            setStartNowHoldProgress(0);
-        }
-    };
-
     const handleStartMission = () => {
-        if (!action || startNowHoldIntervalRef.current) return;
-
-        setStartNowTriggered(false);
-        const startedAt = Date.now();
-        const holdDuration = 1000;
-
-        startNowHoldIntervalRef.current = window.setInterval(() => {
-            const elapsed = Date.now() - startedAt;
-            const progress = Math.min((elapsed / holdDuration) * 100, 100);
-            setStartNowHoldProgress(progress);
-
-            if (progress < 100) return;
-
-            clearStartNowHold();
-            setStartNowTriggered(true);
-
-            window.dispatchEvent(new CustomEvent(REST_SCREEN_ACTION_SESSION_EVENT, {
-                detail: createRestScreenActionSession({
-                    actionId: action.id,
-                    taskId,
-                    actionName: action.name,
-                    actionIcon: action.icon,
-                    durationMinutes: currentTask?.duration || action.duration || 60,
-                    actionType: action.actionType,
-                }),
-            }));
-
-            onClose();
-        }, 16);
+        if (!action) return;
+        const today = getLocalDateString();
+        // Schedule for "now" (0 minutes from start of day usually implies no specific time or "today")
+        scheduleTask(action.id, today, 0);
+        onClose();
     };
 
     const handleDelete = () => { if (action) setConfirmDeleteOpen(true); };
@@ -296,16 +245,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     };
 
     const handleIconSelect = (icon: string) => { setEditableAction(p => ({ ...p, icon })); setIsIconPickerOpen(false); };
-    const handleDayToggle = (day: DayOfWeek) => setSelectedDays(p => p.includes(day) ?p.filter(d => d !== day) : [...p, day]);
+    const handleDayToggle = (day: DayOfWeek) => setSelectedDays(p => p.includes(day) ? p.filter(d => d !== day) : [...p, day]);
     const handleActionTypeChange = (type: ActionType) => {
         setEditableAction(p => ({
             ...p,
             actionType: type,
-            repetitions: type === 'Ação Recorrente' ?(p.repetitions || 1) : 1,
-            scheduledDays: type === 'Ação Recorrente' ?p.scheduledDays : undefined,
-            scheduledStartTime: type === 'Compromisso' || type === 'Ação Recorrente' ?p.scheduledStartTime : undefined,
+            repetitions: type === 'A��o Recorrente' ? (p.repetitions || 1) : 1,
+            scheduledDays: type === 'A��o Recorrente' ? p.scheduledDays : undefined,
+            scheduledStartTime: type === 'Compromisso' || type === 'A��o Recorrente' ? p.scheduledStartTime : undefined,
         }));
-        if (type !== 'Ação Recorrente') setSelectedDays([]);
+        if (type !== 'A��o Recorrente') setSelectedDays([]);
         if (type === 'Livre' || type === 'Marco') {
             setStartTime(null);
             setSelectedDate(null);
@@ -325,7 +274,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     };
 
     const resetFromAction = (nextAction: Action | null) => {
-        const baseAction = nextAction || { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 };
+        const baseAction = nextAction || { arenaId: arenaId, name: '', description: '', icon: '??', duration: 60, repetitions: 1, actionType: 'A��o Recorrente', difficulty: 3 };
         setEditableAction(baseAction);
         setSelectedDays(nextAction?.scheduledDays || []);
         setStartTime(getStartTimeLabel(nextAction?.scheduledStartTime) || null);
@@ -340,36 +289,33 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     };
 
     useEffect(() => {
-        const shouldBlockInitialEdit = !isNew && initialMode === 'edit' && isInstalledCodexAction;
-        setMode(isNew ?'edit' : (shouldBlockInitialEdit ?'view' : initialMode));
-        setHasConfirmedInstalledCodexEdit(false);
-        setShowInstalledCodexEditConfirmation(shouldBlockInitialEdit);
+        setMode(isNew ? 'edit' : initialMode);
         resetFromAction(action);
-    }, [action?.id, arenaId, initialMode, isInstalledCodexAction]);
+    }, [action?.id, arenaId, initialMode]);
 
-    const displayAction = mode === 'view' ?action : editableAction;
+    const displayAction = mode === 'view' ? action : editableAction;
 
     // Merge task duration if editing a specific task
-    const effectiveDuration = taskId && currentTask ?currentTask.duration : (displayAction?.duration || 60);
+    const effectiveDuration = taskId && currentTask ? currentTask.duration : (displayAction?.duration || 60);
 
-    const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÁCIL', 'EXTREMO'];
+    const difficultyLabels = ['MUITO F�CIL', 'F�CIL', 'NORMAL', 'DIF�CIL', 'EXTREMO'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
-    const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
-    const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco', 'Livre'];
+    const timeOptions = ['Sem Hor�rio', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
+    const actionTypeOptions: ActionType[] = ['A��o Recorrente', 'Compromisso', 'Marco', 'Livre'];
 
     if (!displayAction && mode === 'view') return null;
 
     const arenaAccentColor = currentArena?.assetId
-        ?ASSET_ACCENT_COLORS[currentArena.assetId as keyof typeof ASSET_ACCENT_COLORS]
+        ? ASSET_ACCENT_COLORS[currentArena.assetId as keyof typeof ASSET_ACCENT_COLORS]
         : undefined;
     const accentColor = customThemeColor || arenaAccentColor || '#F0C843';
     const modalStyle = { '--skin-accent-color': customThemeColor || 'var(--skin-accent-color)', '--accent-bronze': accentColor } as React.CSSProperties;
     const headerTitle = mode === 'view'
-        ?(displayAction?.name || (isPreview ?'Preview de Ação' : 'Detalhe da Ação'))
-        : (editableAction.name?.trim() || (isNew ?'Nova Ação' : 'Editar Ação'));
+        ? (displayAction?.name || (isPreview ? 'Preview de A��o' : 'Detalhe da A��o'))
+        : (editableAction.name?.trim() || (isNew ? 'Nova A��o' : 'Editar A��o'));
     const headerEyebrow = mode === 'edit'
-        ?(isNew ?'Criação' : 'Edição')
-        : (isPreview ?'Preview' : 'Ação');
+        ? (isNew ? 'Cria��o' : 'Edi��o')
+        : (isPreview ? 'Preview' : 'A��o');
     const handleHeaderOk = () => {
         if (isPreview) {
             onClose();
@@ -380,14 +326,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             return;
         }
         onClose();
-    };
-
-    const requestEditMode = () => {
-        if (isInstalledCodexAction && !hasConfirmedInstalledCodexEdit) {
-            setShowInstalledCodexEditConfirmation(true);
-            return;
-        }
-        setMode('edit');
     };
 
     return (
@@ -419,10 +357,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                         <div className="flex items-center gap-3 pt-1">
                             {!isPreview && (
                                 <button
-                                    onClick={mode === 'view' ?requestEditMode : handleCancel}
-                                    className={`p-2 rounded-full border transition-all ${mode === 'edit' ?'bg-red-500/18 text-red-300 border-red-500/30 hover:bg-red-500/26' : 'bg-black/16 border-white/14 text-white/65 hover:text-white hover:bg-white/12'}`}
+                                    onClick={mode === 'view' ? () => setMode('edit') : handleCancel}
+                                    className={`p-2 rounded-full border transition-all ${mode === 'edit' ? 'bg-red-500/18 text-red-300 border-red-500/30 hover:bg-red-500/26' : 'bg-black/16 border-white/14 text-white/65 hover:text-white hover:bg-white/12'}`}
                                 >
-                                    {mode === 'view' ?<EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
+                                    {mode === 'view' ? <EditIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
                                 </button>
                             )}
                         </div>
@@ -443,11 +381,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     {/* Assignment field for Office Mode */}
                     {isOfficeMode && mode === 'edit' && (
                         <div className="px-4 py-2 bg-black/[0.18] border-b border-white/[0.06]">
-                            <label className="core-label mb-1 block">Quem vai fazer?(Atribuição)</label>
+                            <label className="core-label mb-1 block">Quem vai fazer? (Atribui��o)</label>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                                 <button
                                     onClick={() => setEditableAction(prev => ({ ...prev, originCodexId: undefined }))}
-                                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${!editableAction.originCodexId?.startsWith('assign:') ?'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'core-surface text-gray-300 border-white/8'}`}
+                                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${!editableAction.originCodexId?.startsWith('assign:') ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'core-surface text-gray-300 border-white/8'}`}
                                 >
                                     MESA (QUALQUER UM)
                                 </button>
@@ -455,7 +393,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     <button
                                         key={member.id}
                                         onClick={() => setEditableAction(prev => ({ ...prev, originCodexId: `assign:${member.id}` }))}
-                                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${editableAction.originCodexId === `assign:${member.id}` ?'bg-blue-500 text-white border-blue-500' : 'core-surface text-gray-300 border-white/8'}`}
+                                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${editableAction.originCodexId === `assign:${member.id}` ? 'bg-blue-500 text-white border-blue-500' : 'core-surface text-gray-300 border-white/8'}`}
                                     >
                                         {member.nickname.toUpperCase()}
                                     </button>
@@ -470,20 +408,20 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                             <button
                                 onClick={() => setActiveTab('basic')}
                                 className={`flex-1 py-2 text-[11px] font-semibold tracking-[0.08em] rounded-lg transition-all duration-300 ${activeTab === 'basic'
-                                    ?'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
+                                    ? 'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
                                     : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                Básico
+                                B�sico
                             </button>
                             <button
                                 onClick={() => setActiveTab('advanced')}
                                 className={`flex-1 py-2 text-[11px] font-semibold tracking-[0.08em] rounded-lg transition-all duration-300 ${activeTab === 'advanced'
-                                    ?'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
+                                    ? 'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
                                     : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                Avançado
+                                Avan�ado
                             </button>
                         </div>
                     </div>
@@ -494,14 +432,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                         {/* BASIC TAB */}
                         {activeTab === 'basic' && (
                             <div className="p-6 space-y-4 flex flex-col items-center animate-fade-in pb-20">
-                                {mode === 'view' && displayAction ?(
+                                {mode === 'view' && displayAction ? (
                                     // VIEW MODE CONTENT
                                     <>
                                         {/* Icon - Centralized */}
                                         <div className="relative group mt-0 mb-1 flex justify-center">
                                             <div className="absolute inset-0 bg-[var(--skin-accent-color)]/20 blur-xl rounded-full group-hover:bg-[var(--skin-accent-color)]/30 transition-all duration-500" />
                                             <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-[#2a211c] to-black border border-[var(--skin-accent-color)]/30 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-all duration-500">
-                                                <EmojiGlyph symbol={displayAction.icon || '📝'} size="picker" className="scale-[1.55] text-white drop-shadow-[0_0_15px_var(--sephirot-glow-color)]" />
+                                                <span className="text-4xl drop-shadow-[0_0_15px_var(--sephirot-glow-color)]">{displayAction.icon}</span>
                                             </div>
                                         </div>
 
@@ -510,7 +448,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             <div className="relative">
                                                 <input type="checkbox" id="desc-expand" className="peer hidden" />
                                                 <p className="text-[10px] text-gray-400 leading-snug font-medium max-w-[280px] mx-auto line-clamp-3 peer-checked:line-clamp-none transition-all">
-                                                    {displayAction.description || "Sem descrição definida."}
+                                                    {displayAction.description || "Sem descri��o definida."}
                                                 </p>
                                                 {displayAction.description && displayAction.description.length > 80 && (
                                                     <label
@@ -530,19 +468,19 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 <div className="text-xs font-bold accent-text truncate text-center w-full">{displayAction.actionType}</div>
                                             </div>
                                             <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Duração</div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Dura��o</div>
                                                 <div className="text-xs font-bold text-white text-center w-full">{effectiveDuration} min</div>
                                             </div>
-                                            {displayAction.actionType === 'Ação Recorrente' && (
+                                            {displayAction.actionType === 'A��o Recorrente' && (
                                                 <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
-                                                    <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Repetições</div>
+                                                    <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Repeti��es</div>
                                                     <div className="text-xs font-bold text-white text-center w-full">{displayAction.repetitions}x pool</div>
                                                 </div>
                                             )}
                                             <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Dificuldade</div>
-                                                <div className={`text-xs font-bold text-center w-full ${(displayAction.difficulty || 3) >= 4 ?'text-red-400' :
-                                                    (displayAction.difficulty || 3) <= 2 ?'text-green-400' : 'text-[var(--skin-accent-color)]'
+                                                <div className={`text-xs font-bold text-center w-full ${(displayAction.difficulty || 3) >= 4 ? 'text-red-400' :
+                                                    (displayAction.difficulty || 3) <= 2 ? 'text-green-400' : 'text-[var(--skin-accent-color)]'
                                                     }`}>
                                                     {difficultyLabels[(displayAction.difficulty || 3) - 1]}
                                                 </div>
@@ -558,7 +496,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 onClick={() => setIsIconPickerOpen(true)}
                                                 className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--skin-accent-color)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center relative group"
                                             >
-                                                <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.65] text-white" />
+                                                <span className="text-5xl">{editableAction.icon}</span>
                                                 <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <EditIcon className="w-6 h-6 text-white" />
                                                 </div>
@@ -570,7 +508,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             id="onboarding-action-name-input"
                                             ref={nameInputRef}
                                             type="text"
-                                            placeholder="Nome da Ação"
+                                            placeholder="Nome da A��o"
                                             value={editableAction.name || ''}
                                             onBlur={handleTutorialNextFormStep}
                                             onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
@@ -579,13 +517,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                         {/* Description */}
                                         <textarea
-                                            placeholder="Descrição (opcional)"
+                                            placeholder="Descri��o (opcional)"
                                             value={editableAction.description || ''}
                                             onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
                                             rows={3}
                                             className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50 placeholder:text-gray-600 resize-none"
                                         />
 
+                                        {/* Pickers */}
                                         <div className="space-y-3 pt-2">
                                             {/* Arena */}
                                             <div>
@@ -598,17 +537,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                             {/* Type */}
                                             <div>
-                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de Ação</label>
+                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de A��o</label>
                                                 <button id="onboarding-action-type-button" onClick={() => setIsActionTypePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
-                                                    <span className="text-sm">{editableAction.actionType || 'Ação Recorrente'}</span>
+                                                    <span className="text-sm">{editableAction.actionType || 'A��o Recorrente'}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                 </button>
                                             </div>
 
                                             {/* Sliders */}
-                                            {taskId ?(
+                                            {taskId ? (
                                                 <StyledRangeInput
-                                                    label="Duração desta Instância"
+                                                    label="Dura��o desta Inst�ncia"
                                                     value={editableTaskDuration}
                                                     min={15} max={480} step={15} unit="min"
                                                     onChange={val => setEditableTaskDuration(val)}
@@ -617,24 +556,24 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 <StyledRangeInput
                                                     containerId="onboarding-action-duration"
                                                     inputRef={durationInputRef}
-                                                    label="Duração (Base)"
+                                                    label="Dura��o (Base)"
                                                     value={editableAction.duration || 60}
                                                     min={15} max={240} step={15} unit="min"
                                                     onChange={val => { setEditableAction(p => ({ ...p, duration: val })); handleTutorialNextFormStep(); }}
                                                 />
                                             )}
 
-                                            {editableAction.actionType === 'Ação Recorrente' && (
-                                                <StyledRangeInput containerId="onboarding-action-repetitions" inputRef={repsInputRef} label="Repetições" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({ ...p, repetitions: val })); handleTutorialNextFormStep(); }} />
+                                            {editableAction.actionType === 'A��o Recorrente' && (
+                                                <StyledRangeInput containerId="onboarding-action-repetitions" inputRef={repsInputRef} label="Repeti��es" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({ ...p, repetitions: val })); handleTutorialNextFormStep(); }} />
                                             )}
 
                                             <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3) - 1]} onChange={val => setEditableAction(p => ({ ...p, difficulty: val }))} />
                                         </div>
 
                                         {/* Scheduling */}
-                                        {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
+                                        {(editableAction.actionType === 'A��o Recorrente' || editableAction.actionType === 'Compromisso') && (
                                             <div className="p-3 bg-black/20 rounded-xl space-y-3 border border-white/5">
-                                                {editableAction.actionType === 'Ação Recorrente' && (
+                                                {editableAction.actionType === 'A��o Recorrente' && (
                                                     <div>
                                                         <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da Semana</label>
                                                         <div className="grid grid-cols-7 gap-1 mt-1">
@@ -649,7 +588,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                         <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
                                                             <div className="flex items-center gap-2">
                                                                 <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                                                <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar Data'}</span>
+                                                                <span className="text-sm">{selectedDate ? selectedDate.toLocaleDateString('pt-BR') : 'Selecionar Data'}</span>
                                                             </div>
                                                             <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                         </button>
@@ -657,14 +596,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 )}
 
                                                 <div>
-                                                    <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
+                                                    <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Hor�rio</label>
                                                     <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
-                                                        <span className="text-sm">{startTime || 'Sem Horário'}</span>
-                                                        <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
+                                                        <span className="text-sm">{startTime || 'Sem Hor�rio'}</span>
+                                                        <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
                                                     </button>
                                                     {isTimePickerOpen && (
                                                         <div className="mt-2 h-32 relative">
-                                                            <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
+                                                            <WheelPicker options={timeOptions} value={startTime || 'Sem Hor�rio'} onSelect={handleTimeSelect} />
                                                         </div>
                                                     )}
                                                 </div>
@@ -674,7 +613,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                         {/* Delete Button */}
                                         {!isNew && (
                                             <button onClick={handleDelete} className="w-full py-3 rounded-xl bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/30 text-xs font-bold uppercase tracking-wider transition-all mt-4">
-                                                Excluir Ação
+                                                Excluir A��o
                                             </button>
                                         )}
                                     </div>
@@ -687,15 +626,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                             <div className="flex flex-col h-full animate-fade-in pb-20">
                                 {/* Sub-Tabs */}
                                 <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5 mx-4 mt-4 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
-                                    {(['MÍDIA', 'ANOTAÇÃO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
-                                        const tabKey = tab === 'MÍDIA' ?'media' : tab === 'ANOTAÇÃO' ?'note' : tab === 'CHECKLIST' ?'checklist' : 'context';
+                                    {(['M�DIA', 'ANOTA��O', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
+                                        const tabKey = tab === 'M�DIA' ? 'media' : tab === 'ANOTA��O' ? 'note' : tab === 'CHECKLIST' ? 'checklist' : 'context';
                                         const isActive = advancedSubTab === tabKey;
                                         return (
                                             <button
                                                 key={tab}
                                                 onClick={() => setAdvancedSubTab(tabKey)}
                                                 className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all duration-300 ${isActive
-                                                    ?'bg-white/10 text-white shadow-lg border border-white/5'
+                                                    ? 'bg-white/10 text-white shadow-lg border border-white/5'
                                                     : 'text-gray-600 hover:text-gray-400'
                                                     }`}
                                             >
@@ -709,12 +648,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                 <div className="flex-1 p-0">
                                     {advancedSubTab === 'media' && (
                                         <div className="h-full flex flex-col p-4">
-                                            {(displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video') || (mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl))) ?(
+                                            {(displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video') || (mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl))) ? (
                                                 <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden border border-white/10 relative group mb-4">
                                                     <img
-                                                        src={mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl) ?(newAssetUrl || mediaSlot.imageUrl) : displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url}
+                                                        src={mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl) ? (newAssetUrl || mediaSlot.imageUrl) : displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url}
                                                         className="w-full h-full object-cover"
-                                                        alt="Mídia"
+                                                        alt="M�dia"
                                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                                     />
                                                     {mode === 'edit' && (
@@ -728,8 +667,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 </div>
                                             ) : (
                                                 <div className="w-full aspect-video bg-white/5 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 mb-4">
-                                                    <span className="text-4xl opacity-20">📋</span>
-                                                    <span className="text-xs text-gray-500 font-medium">Sem mídia vinculada</span>
+                                                    <span className="text-4xl opacity-20">??</span>
+                                                    <span className="text-xs text-gray-500 font-medium">Sem m�dia vinculada</span>
                                                 </div>
                                             )}
 
@@ -741,7 +680,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                         onChange={(value) => {
                                                             setMediaSlot(value);
                                                             if (value.imageUrl) {
-                                                                const title = value.caption?.trim() || 'Mídia Principal';
+                                                                const title = value.caption?.trim() || 'M�dia Principal';
                                                                 setNewAssetUrl(value.imageUrl);
                                                                 setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url: value.imageUrl, title }] }));
                                                             } else {
@@ -751,7 +690,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                         }}
                                                     />
                                                     <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/Vídeo</label>
+                                                        <label className="text-xs font-bold text-gray-400 uppercase">URL da Imagem/V�deo</label>
                                                         <input
                                                             type="text"
                                                             value={newAssetUrl || displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || ''}
@@ -760,7 +699,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                 setNewAssetUrl(url);
                                                                 if (url) {
                                                                     setMediaSlot(prev => ({ ...prev, imageUrl: url }));
-                                                                    const title = mediaSlot.caption?.trim() || 'Mídia Principal';
+                                                                    const title = mediaSlot.caption?.trim() || 'M�dia Principal';
                                                                     setEditableAction(prev => ({ ...prev, assets: [{ type: 'image', url, title }] }));
                                                                 } else {
                                                                     setEditableAction(prev => ({ ...prev, assets: [] }));
@@ -777,17 +716,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                     {advancedSubTab === 'note' && (
                                         <div className="p-4 h-full flex flex-col">
-                                            {mode === 'edit' ?(
+                                            {mode === 'edit' ? (
                                                 <textarea
                                                     value={editableAction.briefing || ''}
                                                     onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
                                                     className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
-                                                    placeholder="Digite suas anotações aqui..."
+                                                    placeholder="Digite suas anota��es aqui..."
                                                 />
                                             ) : (
                                                 <div className="bg-[#1a1512] rounded-xl p-6 border border-white/5 shadow-inner min-h-[300px]">
                                                     <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
-                                                        {displayAction?.briefing || "Nenhuma anotação disponível."}
+                                                        {displayAction?.briefing || "Nenhuma anota��o dispon�vel."}
                                                     </p>
                                                 </div>
                                             )}
@@ -796,9 +735,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                     {advancedSubTab === 'checklist' && (
                                         <div className="p-4 space-y-3">
-                                            <div className="text-xs font-bold text-gray-400 uppercase">Preparar Ações</div>
+                                            <div className="text-xs font-bold text-gray-400 uppercase">Preparar A��es</div>
                                             {/* Checklist Items */}
-                                            {(displayAction?.preFlight || []).length > 0 ?(
+                                            {(displayAction?.preFlight || []).length > 0 ? (
                                                 displayAction?.preFlight?.map((item, i) => (
                                                     <div key={i} className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors group">
                                                         <div className="mt-1 w-2 h-2 rounded-full bg-[var(--skin-accent-color)]/50 group-hover:bg-[var(--skin-accent-color)] group-hover:shadow-[0_0_8px_var(--sephirot-glow-color)] transition-all" />
@@ -815,7 +754,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                 ))
                                             ) : (
                                                 <div className="flex flex-col items-center justify-center py-10 opacity-30 space-y-2 border border-dashed border-white/5 rounded-xl">
-                                                    <span className="text-4xl">?</span>
+                                                    <span className="text-4xl">??</span>
                                                     <span className="text-[10px] uppercase font-black tracking-widest">Lista Vazia</span>
                                                 </div>
                                             )}
@@ -856,7 +795,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                         <div className="p-4 space-y-6">
                                             {/* Energy Level */}
                                             <div className="space-y-3">
-                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Nível de Energia</label>
+                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">N�vel de Energia</label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {(['low', 'medium', 'high'] as const).map(level => {
                                                         const isSelected = displayAction?.context?.energyLevel === level;
@@ -867,11 +806,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                 disabled={!isEditable}
                                                                 onClick={() => isEditable && setEditableAction(prev => ({ ...prev, context: { ...prev.context, energyLevel: level } }))}
                                                                 className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all ${isSelected
-                                                                    ?'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_var(--sephirot-glow-color)]'
-                                                                    : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ?'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
+                                                                    ? 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_var(--sephirot-glow-color)]'
+                                                                    : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                     }`}
                                                             >
-                                                                {level === 'low' ?'Baixo' : level === 'medium' ?'Médio' : 'Alto'}
+                                                                {level === 'low' ? 'Baixo' : level === 'medium' ? 'M�dio' : 'Alto'}
                                                             </button>
                                                         );
                                                     })}
@@ -880,7 +819,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
                                             {/* Time of Day */}
                                             <div className="space-y-3">
-                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Período Ideal</label>
+                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Per�odo Ideal</label>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {(['morning', 'afternoon', 'evening', 'night'] as const).map(time => {
                                                         const isSelected = displayAction?.context?.timeOfDay === time;
@@ -891,11 +830,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                                 disabled={!isEditable}
                                                                 onClick={() => isEditable && setEditableAction(prev => ({ ...prev, context: { ...prev.context, timeOfDay: time } }))}
                                                                 className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all ${isSelected
-                                                                    ?'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_var(--sephirot-glow-color)]'
-                                                                    : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ?'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
+                                                                    ? 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_var(--sephirot-glow-color)]'
+                                                                    : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ? 'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                     }`}
                                                             >
-                                                                {time === 'morning' ?'Manhã' : time === 'afternoon' ?'Tarde' : time === 'evening' ?'Noite' : 'Madrugada'}
+                                                                {time === 'morning' ? 'Manh�' : time === 'afternoon' ? 'Tarde' : time === 'evening' ? 'Noite' : 'Madrugada'}
                                                             </button>
                                                         );
                                                     })}
@@ -912,59 +851,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     {/* 3. FOOTER (Fixed) */}
                     {mode !== 'edit' && (
                     <div className="flex-none p-4 bg-[#120f0d]/88 backdrop-blur-xl border-t border-white/8 space-y-3 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.35)]">
+                        {/* Main Button */}
                         <div className="flex gap-2">
-                            {isPreview ?(
-                                <button
-                                    ref={saveButtonRef}
-                                    onClick={onClose}
-                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
-                                >
-                                    <span className="relative z-10 group-hover:text-black transition-colors">Fechar</span>
-                                    <div className="absolute inset-0 transition-colors bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10" />
-                                </button>
-                            ) : mode === 'view' ?(
-                                <button
-                                    ref={saveButtonRef}
-                                    onMouseDown={handleStartMission}
-                                    onMouseUp={clearStartNowHold}
-                                    onMouseLeave={clearStartNowHold}
-                                    onTouchStart={handleStartMission}
-                                    onTouchEnd={clearStartNowHold}
-                                    className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06] active:scale-[0.99] relative overflow-hidden"
-                                    style={{ touchAction: 'none' }}
-                                >
-                                    <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/5">
-                                        <div
-                                            className="h-full bg-[var(--skin-accent-color)] transition-all duration-75"
-                                            style={{ width: `${startNowHoldProgress}%` }}
-                                        />
-                                    </div>
-                                    <div className="relative z-10 flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 shrink-0">
-                                                <div className="inline-flex items-center gap-0.5 text-[var(--skin-accent-color)]">
-                                                    <ClockIcon className="w-3.5 h-3.5" />
-                                                    <PlayIcon className="w-3 h-3" />
-                                                </div>
-                                            </div>
-                                            <div className="min-w-0 text-left">
-                                                <div className="text-xs font-semibold leading-none">Começar agora</div>
-                                                <div className="mt-1 text-[9px] uppercase tracking-[0.18em] text-gray-500 font-black">
-                                                    {startNowTriggered ?'Abrindo descanso' : 'Segure 1s'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                            ) : (
-                                <button
-                                    ref={saveButtonRef}
-                                    onClick={handleSave}
-                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
-                                >
-                                    <span className="relative z-10">Salvar alterações</span>
-                                </button>
-                            )}
+                            <button
+                                ref={saveButtonRef}
+                                onClick={isPreview ? onClose : (mode === 'view' ? handleStartMission : handleSave)}
+                                className={`flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden ${mode === 'view' ? 'luxe-skin-button' : 'bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30'}`}
+                            >
+                                <span className="relative z-10 group-hover:text-black transition-colors">
+                                    {isPreview ? 'Fechar' : (mode === 'view' ? 'Iniciar miss�o' : 'Salvar altera��es')}
+                                </span>
+                                <div className={`absolute inset-0 transition-colors ${mode === 'view' ? 'bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10' : ''}`} />
+                            </button>
                         </div>
                     </div>
                     )}
@@ -976,9 +874,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             {isIconPickerOpen && <IconPickerModal onSelect={handleIconSelect} onClose={() => setIsIconPickerOpen(false)} />}
             {isActionTypePickerOpen && (
                 <SelectionModal<ActionType>
-                    title="Tipo de Ação"
+                    title="Tipo de A��o"
                     options={actionTypeOptions}
-                    currentValue={editableAction.actionType || 'Ação Recorrente'}
+                    currentValue={editableAction.actionType || 'A��o Recorrente'}
                     onSelect={handleActionTypeChange}
                     onClose={() => setIsActionTypePickerOpen(false)}
                 />
@@ -1000,35 +898,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     minDate={new Date()}
                 />
             )}
-            {showInstalledCodexEditConfirmation && (
-                <ConfirmationModal
-                    title="Editar acao instalada"
-                    message="Esse Codex instalado continua intacto. Voce quer mesmo editar esta acao na sua execucao?"
-                    onConfirm={() => {
-                        setHasConfirmedInstalledCodexEdit(true);
-                        setShowInstalledCodexEditConfirmation(false);
-                        setMode('edit');
-                    }}
-                    onCancel={() => setShowInstalledCodexEditConfirmation(false)}
-                />
-            )}
-            {isConfirmDeleteOpen && (
-                <ConfirmationModal
-                    title="Confirmar exclusao"
-                    message={`Tem certeza que deseja excluir a acao "${action?.name}"?`}
-                    onConfirm={confirmDelete}
-                    onCancel={() => setConfirmDeleteOpen(false)}
-                />
-            )}
+            {isConfirmDeleteOpen && (<ConfirmationModal title="Confirmar Exclus�o" message={`Tem certeza que deseja excluir a a��o "${action?.name}"?`} onConfirm={confirmDelete} onCancel={() => setConfirmDeleteOpen(false)} />)}
         </Portal>
     );
 };
-
-
-
-
-
-
 
 
 

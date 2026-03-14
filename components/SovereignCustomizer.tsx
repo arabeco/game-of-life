@@ -168,6 +168,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
     const getAuraName = (id: string) => SOVEREIGN_ASSETS.auras.find(a => a.id === id)?.name || id;
     const getOrbName = (id: string) => (SOVEREIGN_ASSETS as any).orbs?.find((o: any) => o.id === id)?.name || id;
     const getPlateName = (id: string) => SOVEREIGN_ASSETS.plates?.find(p => p.id === id)?.name || id;
+    const getSharedPlateId = () => config.sovereignPlate || config.artifactPlate || config.glyphPlate || 'none';
 
     // Specific Cyclers
     const cycleGender = (direction: number) => {
@@ -254,9 +255,17 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         setConfig(p => ({ ...p, orb: newOrb }));
     };
 
-    const cyclePlate = (direction: number, type: 'sovereign' | 'artifact' | 'glyph') => {
+    const cyclePlate = (direction: number, type: 'sovereign' | 'artifact' | 'glyph' | 'shared') => {
         const plates = SOVEREIGN_ASSETS.plates || [];
-        if (type === 'sovereign') {
+        if (type === 'shared') {
+            const newPlate = cycle(getSharedPlateId(), plates, direction, 'plates');
+            setConfig(p => ({
+                ...p,
+                sovereignPlate: newPlate,
+                artifactPlate: newPlate,
+                glyphPlate: newPlate,
+            }));
+        } else if (type === 'sovereign') {
             const newPlate = cycle(config.sovereignPlate, plates, direction, 'plates');
             setConfig(p => ({ ...p, sovereignPlate: newPlate }));
         } else if (type === 'artifact') {
@@ -270,9 +279,10 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
     // Derived assets for preview
     const equippedArtifact = SOVEREIGN_ASSETS.artifacts?.find(a => a.id === config.artifact);
+    const equippedAura = SOVEREIGN_ASSETS.auras?.find(a => a.id === config.aura);
     const equippedGlyph = SOVEREIGN_ASSETS.glyphs?.find(g => g.id === config.glyph);
-    const equippedArtifactPlate = SOVEREIGN_ASSETS.plates?.find(p => p.id === config.artifactPlate);
-    const equippedGlyphPlate = SOVEREIGN_ASSETS.plates?.find(p => p.id === config.glyphPlate);
+    const sharedPlateId = getSharedPlateId();
+    const equippedSharedPlate = SOVEREIGN_ASSETS.plates?.find(p => p.id === sharedPlateId);
     const equippedOrb = SOVEREIGN_ASSETS.orbs?.find(o => o.id === config.orb);
     
     // Primary Display Handler
@@ -308,11 +318,14 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                     
                     {/* 1. Sovereign Card (Left) */}
                     <div 
-                        onClick={() => setPrimary('sovereign')}
+                        onClick={() => {
+                            setActiveMode('sovereign');
+                            setPrimary('sovereign');
+                        }}
                         className={`relative w-32 h-48 bg-black/40 border-2 rounded-xl overflow-hidden cursor-pointer transition-all group hover:border-white/30 flex-shrink-0`}
                         style={{
-                            borderColor: primary === 'sovereign' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
-                            boxShadow: primary === 'sovereign' ? '0 0 15px var(--skin-accent-color)' : undefined
+                            borderColor: activeMode === 'sovereign' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
+                            boxShadow: activeMode === 'sovereign' ? '0 0 15px var(--skin-accent-color)' : undefined
                         }}
                     >
                         <CanvasAvatar 
@@ -320,11 +333,11 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                 ...config,
                                 artifact: 'none',
                                 glyph: 'none',
-                                aura: 'none',
                                 orb: 'none',
                                 artifactPlate: 'none',
                                 glyphPlate: 'none',
-                            }} 
+                                sovereignPlate: sharedPlateId,
+                            }}
                             width={200} 
                             height={300} 
                             className="w-full h-full object-contain"
@@ -343,24 +356,35 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
                     {/* Right Column */}
                     <div className="flex flex-col justify-between w-24 h-48 gap-2">
-                        
                         {/* 2. Artifact Card (Top Right) */}
                         <div 
-                            onClick={() => setPrimary('item')}
+                            onClick={() => {
+                                setActiveMode('artifact');
+                                setPrimary('item');
+                            }}
                             className={`relative flex-1 bg-black/40 border-2 rounded-xl flex items-center justify-center cursor-pointer transition-all group hover:border-white/30`}
                             style={{
-                                borderColor: primary === 'item' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
-                                boxShadow: primary === 'item' ? '0 0 15px var(--skin-accent-color)' : undefined
+                                borderColor: activeMode === 'artifact' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
+                                boxShadow: activeMode === 'artifact' ? '0 0 15px var(--skin-accent-color)' : undefined
                             }}
                         >
-                            {equippedArtifactPlate?.url && (
+                            {equippedSharedPlate?.url && (
                                 <img
-                                    src={equippedArtifactPlate.url}
+                                    src={equippedSharedPlate.url}
                                     alt="Placa"
-                                    className="absolute inset-0 w-full h-full object-contain opacity-90"
+                                    className="absolute inset-0 w-full h-full object-contain opacity-90 z-0"
                                     onError={(event) => {
                                         event.currentTarget.style.display = 'none';
                                     }}
+                                />
+                            )}
+                            {config.aura !== 'none' && (
+                                <ItemArt
+                                    src={equippedAura?.url}
+                                    alt={equippedAura?.name || config.aura}
+                                    category="aura"
+                                    className="absolute inset-0 z-[1] rounded-xl"
+                                    fallback={<span />}
                                 />
                             )}
                             <ItemArt
@@ -385,21 +409,33 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
                         {/* 3. Glyph Card (Bottom Right) */}
                         <div 
-                            onClick={() => setPrimary('glyph')}
+                            onClick={() => {
+                                setActiveMode('glyph');
+                                setPrimary('glyph');
+                            }}
                             className={`relative flex-1 bg-black/40 border-2 rounded-xl flex items-center justify-center cursor-pointer transition-all group hover:border-white/30`}
                             style={{
-                                borderColor: primary === 'glyph' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
-                                boxShadow: primary === 'glyph' ? '0 0 15px var(--skin-accent-color)' : undefined
+                                borderColor: activeMode === 'glyph' ? 'var(--skin-accent-color)' : 'rgba(255,255,255,0.1)',
+                                boxShadow: activeMode === 'glyph' ? '0 0 15px var(--skin-accent-color)' : undefined
                             }}
                         >
-                            {equippedGlyphPlate?.url && (
+                            {equippedSharedPlate?.url && (
                                 <img
-                                    src={equippedGlyphPlate.url}
+                                    src={equippedSharedPlate.url}
                                     alt="Placa"
-                                    className="absolute inset-0 w-full h-full object-contain opacity-90"
+                                    className="absolute inset-0 w-full h-full object-contain opacity-90 z-0"
                                     onError={(event) => {
                                         event.currentTarget.style.display = 'none';
                                     }}
+                                />
+                            )}
+                            {config.aura !== 'none' && (
+                                <ItemArt
+                                    src={equippedAura?.url}
+                                    alt={equippedAura?.name || config.aura}
+                                    category="aura"
+                                    className="absolute inset-0 z-[1] rounded-xl"
+                                    fallback={<span />}
                                 />
                             )}
                             <ItemArt
@@ -436,12 +472,27 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
                 {/* Controls Section */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 relative">
+                    <div className="mb-3 space-y-2 rounded-xl border border-white/5 bg-black/20 p-2.5">
+                        <Selector
+                            label="Aura Compartilhada"
+                            value={getAuraName(config.aura)}
+                            onPrev={() => cycleAura(-1)}
+                            onNext={() => cycleAura(1)}
+                        />
+                        <div className="h-px bg-white/5 w-full" />
+                        <Selector
+                            label="Placa Compartilhada"
+                            value={getPlateName(sharedPlateId)}
+                            onPrev={() => cyclePlate(-1, 'shared')}
+                            onNext={() => cyclePlate(1, 'shared')}
+                        />
+                    </div>
                     
                     {/* SOVEREIGN CONTROLS */}
                     {activeMode === 'sovereign' && (
-                        <div className="space-y-6 animate-fade-in">
+                        <div className="space-y-4 animate-fade-in">
                             {/* Sub-Tabs for Sovereign */}
-                            <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-lg">
+                            <div className="flex gap-2 mb-3 bg-black/40 p-1 rounded-lg">
                                 {(['Corpo', 'Cabelo', 'Skin'] as SovereignSubTab[]).map(tab => (
                                     <button
                                         key={tab}
@@ -458,9 +509,9 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             </div>
 
                             {sovereignSubTab === 'Corpo' && (
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     <Selector 
-                                        label="GÃªnero" 
+                                        label="G?nero" 
                                         value={getGenderLabel(config.body)} 
                                         onPrev={() => cycleGender(-1)} 
                                         onNext={() => cycleGender(1)} 
@@ -475,7 +526,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             )}
 
                             {sovereignSubTab === 'Cabelo' && (
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     <Selector 
                                         label="Estilo" 
                                         value={getHairName(config.hairStyle)} 
@@ -483,7 +534,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                                         onNext={() => cycleHairStyle(1)} 
                                     />
                                     <Selector 
-                                        label="VariaÃ§Ã£o" 
+                                        label="Variação" 
                                         value={getHairColorName(config.hairColor)} 
                                         onPrev={() => cycleHairColor(-1)} 
                                         onNext={() => cycleHairColor(1)}
@@ -493,13 +544,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                             )}
 
                             {sovereignSubTab === 'Skin' && (
-                                <div className="space-y-4">
-                                    <Selector 
-                                        label="Placa (Fundo)" 
-                                        value={getPlateName(config.sovereignPlate || 'none')} 
-                                        onPrev={() => cyclePlate(-1, 'sovereign')} 
-                                        onNext={() => cyclePlate(1, 'sovereign')} 
-                                    />
+                                <div className="space-y-3">
                                     <Selector 
                                         label="Traje" 
                                         value={getOutfitName(config.outfit)} 
@@ -513,16 +558,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
                     {/* ARTIFACT CONTROLS */}
                     {activeMode === 'artifact' && (
-                        <div className="space-y-4 animate-fade-in h-full flex flex-col">
-                            <div className="bg-black/20 p-2 rounded-xl border border-white/5">
-                                <Selector 
-                                    label="Placa (Fundo)" 
-                                    value={getPlateName(config.artifactPlate || 'none')} 
-                                    onPrev={() => cyclePlate(-1, 'artifact')} 
-                                    onNext={() => cyclePlate(1, 'artifact')} 
-                                />
-                            </div>
-
+                        <div className="space-y-3 animate-fade-in h-full flex flex-col">
                             <div className="flex-1 flex flex-col min-h-0">
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block text-center mb-2">Selecione um Artefato</span>
                                 <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1 pb-2 custom-scrollbar">
@@ -571,27 +607,13 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
 
                     {/* GLYPH CONTROLS */}
                     {activeMode === 'glyph' && (
-                        <div className="space-y-6 animate-fade-in">
-                            <div className="bg-black/20 p-3 rounded-xl border border-white/5 space-y-4">
-                                <Selector 
-                                    label="Placa (Fundo)" 
-                                    value={getPlateName(config.glyphPlate || 'none')} 
-                                    onPrev={() => cyclePlate(-1, 'glyph')} 
-                                    onNext={() => cyclePlate(1, 'glyph')} 
-                                />
-                                <div className="h-px bg-white/5 w-full" />
+                        <div className="space-y-4 animate-fade-in">
+                            <div className="bg-black/20 p-3 rounded-xl border border-white/5 space-y-3">
                                 <Selector 
                                     label="Moldura (Glifo)" 
                                     value={getGlyphName(config.glyph)} 
                                     onPrev={() => cycleGlyph(-1)} 
                                     onNext={() => cycleGlyph(1)} 
-                                />
-                                <div className="h-px bg-white/5 w-full" />
-                                <Selector 
-                                    label="Aura" 
-                                    value={getAuraName(config.aura)} 
-                                    onPrev={() => cycleAura(-1)} 
-                                    onNext={() => cycleAura(1)} 
                                 />
                                 <div className="h-px bg-white/5 w-full" />
                                 <Selector 

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, Check, Flag, RotateCcw, Users, Zap, Minus, type LucideIcon } from 'lucide-react';
+import { AlertCircle, Check, Flag, Minus, RotateCcw, Users, Zap, type LucideIcon } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
+import { VanguardWelcomeModal } from '../components/VanguardWelcomeModal';
 import { supabase } from '../supabaseClient';
+import type { AppMode, VanguardWelcomePayload } from '../types';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
 
@@ -37,6 +39,23 @@ const KPI_GOALS = {
   activationPct: 60,
   d2Pct: 30,
   cyclePct: 20,
+};
+
+const VANGUARD_PREVIEW_PAYLOAD: VanguardWelcomePayload = {
+  inviteCode: 'ouro-preview',
+  gold: 50,
+  chestType: 'Incomum',
+  itemIds: [
+    'item_border_vanguarda_01',
+    'item_banner_vanguarda_01',
+    'dreads',
+    'mullet_topete',
+    'item_artifact_2_001',
+    'item_artifact_3_002',
+    'item_artifact_3_004',
+    'item_orb_2_002',
+    'item_plate_2_001',
+  ],
 };
 
 const stageStyles: Record<string, string> = {
@@ -135,7 +154,7 @@ const KpiCard: React.FC<{
 );
 
 const KpiSkeletonCard: React.FC = () => (
-  <GlassCard variant="neutral" className="p-3 md:p-3.5 animate-pulse">
+  <GlassCard variant="neutral" className="animate-pulse p-3 md:p-3.5">
     <div className="flex items-start justify-between gap-2.5">
       <div className="space-y-2.5">
         <div className="h-2.5 w-28 rounded-full bg-white/8" />
@@ -149,7 +168,7 @@ const KpiSkeletonCard: React.FC = () => (
 );
 
 const TableSkeleton: React.FC = () => (
-  <div className="divide-y divide-white/6 animate-pulse">
+  <div className="animate-pulse divide-y divide-white/6">
     {Array.from({ length: 6 }).map((_, index) => (
       <div key={index} className="grid min-w-[820px] grid-cols-[2.4fr_1.2fr_0.9fr_0.9fr_1.1fr_0.8fr] items-center gap-4 px-4 py-4 md:px-6">
         <div className="flex items-center gap-3">
@@ -173,6 +192,7 @@ export const SovereignPanelView: React.FC = () => {
   const [rows, setRows] = useState<Marco1BetaScoreboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [vanguardPreviewMode, setVanguardPreviewMode] = useState<AppMode | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -216,13 +236,16 @@ export const SovereignPanelView: React.FC = () => {
   const d2Pct = totalPopulation > 0 ? (d2Count / totalPopulation) * 100 : 0;
   const cycleClosedPct = totalPopulation > 0 ? (cycleClosedCount / totalPopulation) * 100 : 0;
 
+  const openVanguardPreview = (mode: AppMode) => setVanguardPreviewMode(mode);
+  const closeVanguardPreview = () => setVanguardPreviewMode(null);
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <div className="space-y-2 text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-950/30 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">
-          Trimestre 1 · Fundacao
+          Trimestre 1 Â· Fundacao
         </div>
-        <h1 className="text-2xl font-black uppercase tracking-[0.18em] text-white luxe-title-shadow md:text-3xl">
+        <h1 className="luxe-title-shadow text-2xl font-black uppercase tracking-[0.18em] text-white md:text-3xl">
           Painel do GM
         </h1>
         <p className="mx-auto max-w-2xl text-sm text-zinc-400">
@@ -273,6 +296,35 @@ export const SovereignPanelView: React.FC = () => {
       </section>
 
       <section>
+        <GlassCard variant="neutral" className="p-4 md:p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Teste interno</p>
+              <h2 className="text-lg font-black text-white">Preview do modal da Vanguarda</h2>
+              <p className="text-xs text-zinc-400">
+                Abre o modal de boas-vindas com payload fixo para validar o fluxo visual em GAME e BASIC.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => openVanguardPreview('GAME')}
+                className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-yellow-200 transition-colors hover:bg-yellow-500/16"
+              >
+                Testar modal GAME
+              </button>
+              <button
+                onClick={() => openVanguardPreview('BASIC')}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-zinc-200 transition-colors hover:bg-white/10"
+              >
+                Testar modal BASIC
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      </section>
+
+      <section>
         <GlassCard variant="neutral" className="overflow-hidden p-0">
           <div className="flex flex-col gap-2 border-b border-white/6 px-4 py-4 md:flex-row md:items-end md:justify-between md:px-6">
             <div className="space-y-1">
@@ -280,7 +332,7 @@ export const SovereignPanelView: React.FC = () => {
               <h2 className="text-lg font-black text-white">Prata e Bronze somente</h2>
             </div>
             <p className="text-xs text-zinc-500">
-              Read-only. Sem modais, sem edicao, sem vies do grupo ouro.
+              Read-only no dado. O unico modal aqui e o preview tecnico da Vanguarda.
             </p>
           </div>
 
@@ -364,8 +416,13 @@ export const SovereignPanelView: React.FC = () => {
           )}
         </GlassCard>
       </section>
+
+      <VanguardWelcomeModal
+        open={Boolean(vanguardPreviewMode)}
+        mode={vanguardPreviewMode || 'GAME'}
+        payload={VANGUARD_PREVIEW_PAYLOAD}
+        onClose={closeVanguardPreview}
+      />
     </div>
   );
 };
-
-

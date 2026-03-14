@@ -5,6 +5,7 @@ import { CheckIcon, CloseIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
 import { Portal } from './Portal';
 import './arena-ui.css';
+import { EmojiGlyph } from './EmojiGlyph';
 
 // Helper to render plasma background (reused from ArenaDetailModal)
 const hexToRgb = (hex: string) => {
@@ -15,7 +16,7 @@ const hexToRgb = (hex: string) => {
     }
     const normalized = trimmed.replace('#', '');
     const value = normalized.length === 3
-        ? normalized.split('').map(ch => ch + ch).join('')
+        ?normalized.split('').map(ch => ch + ch).join('')
         : normalized;
     const intValue = Number.parseInt(value, 16);
     return {
@@ -181,10 +182,10 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
     }, { totalProgress: 0, totalGoal: 0 });
 
     const progress = isClanQuestArena && clanQuests.length > 0
-        ? (clanQuestTotals.totalGoal > 0
-            ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
+        ?(clanQuestTotals.totalGoal > 0
+            ?(clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
             : Math.min(100, clanQuestTotals.totalProgress))
-        : (totalPlanned > 0 ? (totalCompleted / totalPlanned) * 100 : 0);
+        : (totalPlanned > 0 ?(totalCompleted / totalPlanned) * 100 : 0);
 
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) {
@@ -218,7 +219,7 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
 
                     <div className="flex-shrink-0 flex flex-col items-center text-center space-y-1">
                         <div className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center">
-                           <span className="text-5xl arena-icon">{arena.icon}</span>
+                           <EmojiGlyph symbol={arena.icon || "🏛️"} size="arena" className="arena-icon text-white" />
                         </div>
                         <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
                     </div>
@@ -246,7 +247,7 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
                                                         <PlasmaCanvas color={skinColor} opacity={0.189} className="arena-plasma-canvas" />
                                                     </div>
                                                     <div className="relative z-10 transform -rotate-45 flex flex-col items-center justify-center space-y-1 h-full">
-                                                        <span className="text-3xl">{action.icon}</span>
+                                                        <EmojiGlyph symbol={action.icon || '📝'} size="picker" className="text-white" />
                                                         <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
                                                     </div>
                                                 </div>
@@ -285,7 +286,7 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
                                                     <PlasmaCanvas color={skinColor} opacity={0.189} className="arena-plasma-canvas" />
                                                 </div>
                                                 <div className="relative z-10 flex flex-col items-center justify-center text-center p-1 space-y-1 h-full">
-                                                    <span className="text-3xl">{action.icon}</span>
+                                                    <EmojiGlyph symbol={action.icon || '📝'} size="picker" className="text-white" />
                                                     <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
                                                 </div>
                                             </div>
@@ -313,7 +314,7 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
                             <div className="space-y-1">
                                 <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider">
                                     <span className="text-gray-400">Nível de Satisfação</span>
-                                    <span className={localSatisfaction <= 33 ? 'text-red-400' : localSatisfaction <= 66 ? 'text-yellow-400' : 'text-green-400'}>{Math.round(localSatisfaction)}%</span>
+                                    <span className={localSatisfaction <= 33 ?'text-red-400' : localSatisfaction <= 66 ?'text-yellow-400' : 'text-green-400'}>{Math.round(localSatisfaction)}%</span>
                                 </div>
                                 <div className="relative h-6 w-full flex items-center">
                                     <input
@@ -329,7 +330,7 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
                                         onTouchEnd={() => onSatisfactionChange?.(localSatisfaction)}
                                         className="w-full h-2 rounded-full appearance-none bg-black/50 outline-none z-20 relative cursor-pointer"
                                         style={{
-                                            backgroundImage: `linear-gradient(to right, ${localSatisfaction <= 33 ? '#ef4444' : localSatisfaction <= 66 ? '#eab308' : '#22c55e'} ${localSatisfaction}%, rgba(255,255,255,0.1) ${localSatisfaction}%)`
+                                            backgroundImage: `linear-gradient(to right, ${localSatisfaction <= 33 ?'#ef4444' : localSatisfaction <= 66 ?'#eab308' : '#22c55e'} ${localSatisfaction}%, rgba(255,255,255,0.1) ${localSatisfaction}%)`
                                         }}
                                     />
                                     {/* Tick marks or decoration could go here */}
@@ -368,11 +369,11 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
                             <div className="bg-black/20 rounded-xl p-3 border border-white/5">
                                 <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider mb-2">
                                     <span className="text-gray-400">Avaliação do Mentor</span>
-                                    <span className={satisfactionLevel <= 33 ? 'text-red-400' : satisfactionLevel <= 66 ? 'text-yellow-400' : 'text-green-400'}>{Math.round(satisfactionLevel)}%</span>
+                                    <span className={satisfactionLevel <= 33 ?'text-red-400' : satisfactionLevel <= 66 ?'text-yellow-400' : 'text-green-400'}>{Math.round(satisfactionLevel)}%</span>
                                 </div>
                                 <div className="w-full h-2 rounded-full bg-black/50 overflow-hidden">
                                     <div 
-                                        className={`h-full transition-all duration-500 ${satisfactionLevel <= 33 ? 'bg-red-500' : satisfactionLevel <= 66 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                        className={`h-full transition-all duration-500 ${satisfactionLevel <= 33 ?'bg-red-500' : satisfactionLevel <= 66 ?'bg-yellow-500' : 'bg-green-500'}`}
                                         style={{ width: `${satisfactionLevel}%` }}
                                     />
                                 </div>

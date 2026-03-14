@@ -15,6 +15,7 @@ import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { handleShare } from '../components/Share';
 import { Portal } from '../components/Portal';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
+import { isCssProfileBackground, resolveProfileBackgroundValue } from '../utils/profileBackgrounds';
 const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
 
 const UnifiedSovereignDisplay: React.FC<{
@@ -203,20 +204,21 @@ export const ShareableProfileCard: React.FC<{
     isBasicMode?: boolean;
 }> = ({ id, userProfile, clanName, clanRank, getSlotById, isBasicMode = false }) => {
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
-    const isGradientBackground = userProfile.backgroundUrl.includes('-gradient(') || userProfile.backgroundUrl.startsWith('var(');
+    const resolvedBackgroundUrl = resolveProfileBackgroundValue(userProfile.backgroundUrl);
+    const isGradientBackground = isCssProfileBackground(resolvedBackgroundUrl);
 
     const renderBackground = () => {
         if (isGradientBackground) {
-            return <div className="w-full h-full" style={{ background: userProfile.backgroundUrl }} />;
+            return <div className="w-full h-full" style={{ background: resolvedBackgroundUrl }} />;
         }
         return (
             <img
-                src={userProfile.backgroundUrl}
+                src={resolvedBackgroundUrl}
                 className="w-full h-full object-cover"
                 alt=""
                 crossOrigin="anonymous"
                 loading="eager"
-                onError={(e) => console.error(`Failed to load background: ${userProfile.backgroundUrl}`)}
+                onError={(e) => console.error(`Failed to load background: ${resolvedBackgroundUrl}`)}
             />
         );
     };
@@ -475,13 +477,14 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const currentClanRank = isOwnProfile ? (clan ? clanRanks.find(r => r.id === clan.rankId) : undefined) : viewedClanRank;
     const clanName = isOwnProfile ? (clan ? clan.name : 'Sem Clã') : (viewedClan ? viewedClan.name : 'Sem Clã');
 
-    const isGradientBackground = displayProfile.backgroundUrl.includes('-gradient(') || displayProfile.backgroundUrl.startsWith('var(');
+    const resolvedBackgroundUrl = resolveProfileBackgroundValue(displayProfile.backgroundUrl);
+    const isGradientBackground = isCssProfileBackground(resolvedBackgroundUrl);
 
     const renderBackground = () => {
         if (isGradientBackground) {
-            return <div className="w-full h-full" style={{ background: displayProfile.backgroundUrl }} />;
+            return <div className="w-full h-full" style={{ background: resolvedBackgroundUrl }} />;
         }
-        return <img src={displayProfile.backgroundUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous" />
+        return <img src={resolvedBackgroundUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous" />
     };
 
     // Layout Adjustment: Ensure the card container is centered and scrollable if needed, matching "comprido" (long) description.
@@ -535,9 +538,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         </button>
                                     )}
                                 </div>
-                                <button onClick={isEditing ? handleSave : onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
-                                    {isEditing ? 'SALVAR' : 'OK'}
-                                </button>
+                                    <button onClick={isEditing ? handleSave : onClose} className="px-4 py-1.5 text-xs font-bold rounded-lg luxe-skin-button">
+                                        {isEditing ? 'SALVAR' : 'OK'}
+                                    </button>
                             </div>
 
                             <div className="pt-4 flex flex-col items-center text-center">

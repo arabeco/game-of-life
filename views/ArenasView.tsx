@@ -14,6 +14,7 @@ import { CampaignDetailModal } from '../components/CampaignDetailModal';
 import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { CampaignArenaStack } from '../components/CampaignArenaStack';
+import { EmojiGlyph } from '../components/EmojiGlyph';
 import { calculateCampaignProgress } from '../utils/progressUtils';
 
 type PendingAction = {
@@ -707,7 +708,7 @@ export const ArenasView: React.FC = () => {
                             <div className="grid grid-cols-2 gap-2">
                                 {pendingActions.map(action => (
                                     <div key={action.id} className="bg-black/20 border border-white/10 rounded-xl p-2 flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center text-xl">{action.icon}</div>
+                                        <div className="w-8 h-8 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center"><EmojiGlyph symbol={action.icon || '??'} size="picker" className="text-white" /></div>
                                         <div className="flex-1 min-w-0">
                                             <div className="text-xs font-bold text-white truncate">{action.name}</div>
                                             <div className="text-[10px] text-gray-400 truncate">

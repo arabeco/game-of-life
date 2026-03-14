@@ -1,47 +1,70 @@
-# GM Help
+﻿# GM Help
 
-Guia curto para mexer no conteudo do Glyph sem reabrir a duplicacao antiga do `GMboard`.
+Manual operacional do catalogo de itens do Glyph.
 
-## Onde editar
+## O que este arquivo governa
 
-- Itens: [C:\Users\Afonso\Downloads\GOL1.006\constants\items.ts](C:\Users\Afonso\Downloads\GOL1.006\constants\items.ts)
-- Seasons, quests e missoes: [C:\Users\Afonso\Downloads\GOL1.006\constants\seasonContent.ts](C:\Users\Afonso\Downloads\GOL1.006\constants\seasonContent.ts)
-- Montagem do sistema: [C:\Users\Afonso\Downloads\GOL1.006\constants\GMboard.ts](C:\Users\Afonso\Downloads\GOL1.006\constants\GMboard.ts)
+Use este arquivo para responder rapido estas perguntas:
 
-Regra:
-- `items.ts` = catalogo editavel
-- `seasonContent.ts` = conteudo editavel de season
-- `GMboard.ts` = so consome e monta
+- Onde o catalogo real de itens vive?
+- Onde eu mexo sem baguncar o sistema?
+- O que precisa ser atualizado quando um item muda?
+- Como verificar no banco se um item foi entregue?
 
-Nao edite o conteudo bruto de season dentro do `GMboard`.
+## Fonte de verdade
 
-## Como adicionar item
+- Catalogo vivo: `constants/items.ts`
+- Montagem e consumo: `constants/GMboard.ts`
+- Catalogo amplo e economia: `LOJA.MD`
+- Manual operacional rapido: `GM_HELP.md`
 
-### Builders disponiveis em `items.ts`
+Regra canonica:
+- `items.ts` = fonte de verdade do item
+- `GMboard.ts` = so consome e organiza
+- `LOJA.MD` = documenta o catalogo visivel e a economia
+- `GM_HELP.md` = procedimento operacional e manutencao
 
+Nao edite item bruto dentro do `GMboard.ts`.
+
+## Protocolo de manutencao do catalogo
+
+Toda vez que um item for criado, removido, renomeado ou mudar de regra:
+
+1. atualizar `constants/items.ts`
+2. atualizar `GM_HELP.md` com a mudanca operacional
+3. atualizar `LOJA.MD` se a mudanca afetar catalogo visivel, economia, bau, craft ou drop
+4. se a mudanca depender de banco, salvar o SQL em `sql/` e anotar aqui
+5. rodar `npm run build`
+
+Regra pratica:
+- mudou so arte, nome, tier, rarity, asset, categoria ou id -> atualizar `items.ts` e `GM_HELP.md`
+- mudou loja, drop, bau, craft, recompensa, economia ou visibilidade -> atualizar tambem `LOJA.MD`
+- mudou entrega via banco, reward pack, GM inventory ou migracao -> criar SQL em `sql/` e referenciar aqui
+
+## Onde editar cada coisa
+
+### Item comum do catalogo
+
+Edite `constants/items.ts`.
+
+Builders mais usados:
 - `avatarItem(...)`
 - `glyphCatalogItem(...)`
 - `interfaceCatalogItem(...)`
 - `themeCatalogItem(...)`
 - `catalogItem(...)`
 
-### Helpers de URL
+### Season, quests e missoes
 
-- `avatarAsset('ARQUIVO.png')`
-- `glyphAsset('ARQUIVO.png')`
-- `interfaceAsset('pasta/arquivo.png')`
-- `rootImageAsset('arquivo.jpg')`
+Edite `constants/seasonContent.ts`.
 
-### Regra simples
+### Montagem do sistema
 
-- Se o item usa PNG/JPG:
-  - passe `asset: 'NOME_DO_ARQUIVO.png'`
-- Se a categoria exige imagem e voce nao passar `asset`:
-  - o item entra automaticamente como pendencia de arte
-- `ui_skin` pode ficar so com emoji
-- `hair` usa pipeline proprio, nao esse catalogo
+Use `constants/GMboard.ts` apenas quando precisar mudar montagem, agrupamento ou consumo do catalogo.
 
-### Categorias que exigem PNG
+## Regras do catalogo
+
+### Categorias que normalmente exigem asset
 
 - `skin`
 - `artifact`
@@ -52,149 +75,145 @@ Nao edite o conteudo bruto de season dentro do `GMboard`.
 - `orb`
 - `plate`
 
-### Categorias que nao entram como pendencia automatica
+### Categorias com pipeline especial
 
-- `ui_skin`
-- `hair`
-- `insignia`
-- `insignias`
-- `chest`
+- `hair` nao entra por `items.ts`; usa `constants/skins.ts` e `components/CanvasAvatar.tsx`
+- `ui_skin` pode existir sem asset final
+- `chest` nao usa a mesma logica de pendencia de arte
 
-### Exemplo 1: skin com PNG
+### Helpers de asset
 
-```ts
-avatarItem('skin', {
-  id: 'item_skin_x_001',
-  name: 'Meu Visual',
-  tier: 3,
-  rarity: 'rare',
-  icon: '🧥',
-  asset: 'SKIN_X_MEU_VISUAL.png',
-});
+- `avatarPngAsset('arquivo')`
+- `avatarAsset('ARQUIVO.png')`
+- `glyphAsset('ARQUIVO.png')`
+- `interfaceAsset('pasta/arquivo.png')`
+- `rootImageAsset('arquivo.jpg')`
+
+## Checklist antes de fechar mudanca em item
+
+- id unico e coerente
+- categoria correta
+- tier correto
+- rarity correta
+- asset correto, se aplicavel
+- impacto em unlock/inventory/reward entendido
+- `GM_HELP.md` atualizado
+- `LOJA.MD` atualizado, se necessario
+- `npm run build` ok
+
+## SQLs uteis de verificacao
+
+### Ver se um item esta no inventario do GM
+
+```sql
+select
+  up.id,
+  up.nickname,
+  up.role,
+  ui.item_id
+from public.user_profiles up
+left join public.user_inventory ui
+  on ui.user_id = up.id
+ and ui.item_id = 'ITEM_ID_AQUI'
+where lower(coalesce(up.role, 'user')) in ('gm', 'admin', 'admin_gm')
+order by up.role, up.nickname;
 ```
 
-### Exemplo 2: borda sem PNG ainda
+### Ver se o item foi desbloqueado no profile
 
-```ts
-catalogItem('border', {
-  id: 'item_border_x_001',
-  name: 'Minha Borda',
-  tier: 2,
-  rarity: 'uncommon',
-  icon: '🛡️',
-});
+```sql
+select
+  up.nickname,
+  up.role,
+  coalesce((up.unlocked_items -> 'artifacts' ->> 'ITEM_ID_AQUI')::boolean, false) as unlocked
+from public.user_profiles up
+where lower(coalesce(up.role, 'user')) in ('gm', 'admin', 'admin_gm')
+order by up.role, up.nickname;
 ```
 
-Resultado:
-- aparece no codigo
-- fica fora do catalogo vivo
-- entra automatico na lista de pendencia de PNG
+A chave `artifacts` muda conforme a categoria. Exemplos:
+- `artifacts`
+- `orbs`
+- `plates`
+- `borders`
+- `banners`
+- `glyphs`
+- `hairStyles`
+- `ui_skins`
 
-### Exemplo 3: tema
+## Mudancas recentes que precisam continuar documentadas
 
-```ts
-catalogItem('ui_skin', {
-  id: 'SOLAR',
-  name: 'Tema: Solar',
-  tier: 4,
-  rarity: 'epic',
-  icon: '☀️',
-});
-```
+### 2026-03-13 - Item novo
 
-Se tiver fundo real:
+- `item_artifact_4_004` = `Manta`
+- arquivo: `artefato_t4_manta.png`
+- catalogo: `constants/items.ts`
+- GM pode receber via SQL manual, se necessario
 
-```ts
-themeCatalogItem({
-  id: 'SOLAR',
-  name: 'Tema: Solar',
-  tier: 4,
-  rarity: 'epic',
-  icon: '☀️',
-  asset: 'solar.jpg',
-});
-```
+### 2026-03-13 - Itens vanguarda
 
-## Como adicionar season
+- `item_border_vanguarda_01`
+- `item_banner_vanguarda_01`
+- assets esperados:
+  - `borders/borda_vanguarda.png`
+  - `banners/banner_vanguarda.png`
 
-Edite [C:\Users\Afonso\Downloads\GOL1.006\constants\seasonContent.ts](C:\Users\Afonso\Downloads\GOL1.006\constants\seasonContent.ts)
+### 2026-03-13 - Season / Genesis alinhados
 
-### Blocos principais
+- item_skin_season_001 continua como item de Season
+- item_border_genesis_01 agora e item de Season/Quest
+- item_banner_origin_01 agora e item de Season/Quest
+- item_border_t5_genesis e item_banner_t5_genesis continuam na trilha lendaria comum, fora da pool Season
 
-- `ACTIVE_SEASON_ID`
-- `SEASONS`
-- `GM_SEASONS`
-- `GM_SEASON_MISSIONS`
-- `GM_SEASON_QUESTS`
-
-### O que cada um faz
-
-- `SEASONS`
-  - season usada no loop principal
-  - quests do sistema
-- `GM_SEASONS`
-  - seasons do painel GM/admin
-- `GM_SEASON_MISSIONS`
-  - missoes da season do GM
-- `GM_SEASON_QUESTS`
-  - quests da season no painel GM
-
-### Regra pratica
-
-Se for trocar a season viva do jogo:
-1. crie a nova entrada em `SEASONS`
-2. mude `ACTIVE_SEASON_ID`
-3. alinhe `GM_SEASONS`, `GM_SEASON_MISSIONS` e `GM_SEASON_QUESTS` se quiser refletir isso no painel GM
-
-## Pipeline especial de cabelo
-
-Nao entra por `items.ts`.
+### 2026-03-13 - Bootstrap de rewards de player novo
 
 Arquivos:
-- [C:\Users\Afonso\Downloads\GOL1.006\constants\skins.ts](C:\Users\Afonso\Downloads\GOL1.006\constants\skins.ts)
-- [C:\Users\Afonso\Downloads\GOL1.006\components\CanvasAvatar.tsx](C:\Users\Afonso\Downloads\GOL1.006\components\CanvasAvatar.tsx)
+- `sql/new_player_bootstrap_rewards.sql`
+- `supabase/migrations/20260313_add_new_player_bootstrap_rewards.sql`
 
-Regra:
-- cabelo usa arquivo tipo `.png.png`
-- fica na pasta `avatars/hair`
+Regra viva:
+- usuario normal -> starter base + 1 bau `Comum`
+- usuario `ouro-*` -> starter base + 1 bau `Incomum` + 50 gold + pack vanguarda
 
-## Como saber o que ainda falta
+Pack vanguarda:
+- `item_border_vanguarda_01`
+- `item_banner_vanguarda_01`
+- 3 artefatos aleatorios
+- 1 orbe aleatorio
+- 1 plate aleatoria
+- `dreads`
+- `mullet_topete`
 
-Em `items.ts`:
-- `ITEM_IDS_PENDING_ART`
-- `getPendingArtItems()`
+Nada auto-equipa.
 
-Esses pontos agora seguem a regra real:
-- so entra como pendencia quem precisa de PNG e ainda nao tem `imageUrl`
-- `theme` e `hair` nao entram nisso
+## Regra final
 
-## Checklist rapido antes de fechar
+Se eu mudar item e nao atualizar `GM_HELP.md`, o manual ficou desatualizado.
+Entao a manutencao canonica do catalogo sempre fecha em 3 lugares:
 
-Se mexeu em item ou season:
+1. `constants/items.ts`
+2. `GM_HELP.md`
+3. `LOJA.MD` quando a mudanca afetar catalogo visivel ou economia
 
-```powershell
-npm run type-check
-npm run test
-npm run build
-```
 
-## Erros comuns
 
-### 1. Colocar item no lugar errado
+## 2026-03-13 - Loja low-ticket ativa
 
-- item = `items.ts`
-- season = `seasonContent.ts`
+Itens liberados para venda por ouro baixo na loja:
+- item_skin_1_003 -> 5 ouro
+- item_skin_2_003 -> 9 ouro
+- item_orb_2_003 -> 12 ouro
+- item_skin_3_001 -> 15 ouro
+- item_banner_imparavel -> 18 ouro
+- item_skin_3_002 -> 22 ouro
+- item_skin_3_003 -> 26 ouro
+- item_orb_3_001 -> 29 ouro
+- item_banner_t3_mistico -> 32 ouro
+- item_banner_lendaviva -> 40 ouro
+- item_banner_t4_oraculo -> 48 ouro
+- item_skin_4_001 -> 50 ouro
 
-### 2. Criar item com PNG e esquecer `asset`
-
-Se esquecer, ele vai ficar escondido como pendencia de arte.
-
-### 3. Editar `GMboard.ts` para mudar conteudo
-
-Evite isso.
-Ele deve continuar sendo so camada de montagem.
-
-### 4. Tema sem PNG achando que esta quebrado
-
-`ui_skin` pode continuar so com emoji.
-Isso e valido.
+Regras:
+- Fonte da verdade continua em constants/items.ts via costGold.
+- A vitrine da loja le apenas itens explicitamente curados na GoldStore.
+- Nao ha SQL novo para esses itens; a compra envia item_id + costGold para a RPC buy_store_item.

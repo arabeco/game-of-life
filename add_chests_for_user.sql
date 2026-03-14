@@ -6,7 +6,7 @@ SELECT
   FALSE, 
   NOW()
 FROM 
-  unnest(ARRAY['incomum', 'ciclo', 'radiante', 'epico', 'season']) AS t(type)
+  unnest(ARRAY['Incomum', 'Ciclo', 'Raro', '?pico', 'Lend?rio']) AS t(type)
 CROSS JOIN 
   generate_series(1, 5);
 

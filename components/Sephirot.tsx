@@ -7,11 +7,30 @@ interface SephirotProps {
   onClick: () => void;
   style?: React.CSSProperties;
   levelColor?: string;
+  useSkinArtworkOnly?: boolean;
 }
 
-export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style, levelColor }) => {
+export const Sephirot: React.FC<SephirotProps> = ({
+  asset,
+  onClick,
+  style,
+  levelColor,
+  useSkinArtworkOnly = false,
+}) => {
   const sphereSize = 'var(--sephirot-size-standard, 54px)';
   const titleMargin = '-mb-4';
+  const sphereShadow = useSkinArtworkOnly ? 'none' : `0 0 7px 0.75px var(--sephirot-glow-color)`;
+  const sphereBackgroundImage = useSkinArtworkOnly
+    ? 'var(--sephirot-bg-image)'
+    : 'var(--sephirot-bg-image), var(--sephirot-base-fill), var(--sephirot-bg-gradient)';
+  const sphereBackgroundSize = useSkinArtworkOnly
+    ? '100% 100%'
+    : 'var(--sephirot-image-size, 92%), 100% 100%, cover';
+  const sphereBackgroundPosition = useSkinArtworkOnly ? 'center' : 'center, center, center';
+  const sphereBackgroundRepeat = useSkinArtworkOnly ? 'no-repeat' : 'no-repeat, no-repeat, no-repeat';
+  const sphereInsetRing = useSkinArtworkOnly
+    ? undefined
+    : `inset 0 0 0 var(--sephirot-ring-width, 0.8px) var(--sephirot-border-color)`;
 
   return (
     <div style={style} className="flex flex-col items-center justify-center z-10 animate-fade-in">
@@ -25,25 +44,25 @@ export const Sephirot: React.FC<SephirotProps> = ({ asset, onClick, style, level
             style={{
                 width: sphereSize,
                 height: sphereSize,
-                boxShadow: `0 0 8px 1px var(--sephirot-glow-color)`,
+                boxShadow: sphereShadow,
             }}
         >
             <div 
                 className="relative w-full h-full rounded-full flex items-center justify-center text-center transition-all"
                 style={{ 
-                    backgroundImage: `var(--sephirot-bg-image), var(--sephirot-bg-gradient)`,
-                    backgroundSize: 'var(--sephirot-image-size, 135%), cover',
-                    backgroundPosition: 'center, center',
-                    backgroundRepeat: 'no-repeat, no-repeat',
-                    boxShadow: `inset 0 0 0 1px var(--sephirot-border-color)`
+                    backgroundImage: sphereBackgroundImage,
+                    backgroundSize: sphereBackgroundSize,
+                    backgroundPosition: sphereBackgroundPosition,
+                    backgroundRepeat: sphereBackgroundRepeat,
+                    boxShadow: sphereInsetRing,
                 }}
             >
                 <span 
-                    className="text-[1.25rem] font-semibold leading-none" 
+                    className="pointer-events-none relative z-[1] text-[1.28rem] font-black leading-none tracking-[-0.02em]" 
                     style={{ 
                         color: levelColor ?? 'var(--sephirot-text-color)',
-                        textShadow: '0 1px 3px rgba(0,0,0,0.88)',
-                        WebkitTextStroke: '0.65px rgba(24, 12, 4, 0.72)'
+                        textShadow: '0 1px 0 rgba(255,255,255,0.14), 0 0 4px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.85)',
+                        WebkitTextStroke: '1.35px rgba(8, 8, 10, 0.98)'
                     }}
                 >
                     {asset.level}

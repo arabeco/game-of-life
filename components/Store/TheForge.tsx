@@ -1,12 +1,30 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { resolveItemDef, getCatalogItems } from '../../constants/items';
+import { resolveItemDef, getCatalogItems, ItemCategory } from '../../constants/items';
 import { ECONOMY } from '../../constants/economy';
-import { CheckIcon, SparklesIcon, RefreshCwIcon, Trash2Icon } from '../Icons';
+import { RefreshCwIcon, Trash2Icon } from '../Icons';
 import { getTierVisual, withAlpha } from '../../constants/rarityVisuals';
+import { ItemArt } from '../ItemArt';
+import { ItemDetailModal } from '../ItemDetailModal';
 
 type ForgeTab = 'craft' | 'recycle';
+
+const CATEGORY_LABELS: Record<ItemCategory, string> = {
+    skin: 'Skin',
+    hair: 'Cabelo',
+    border: 'Borda',
+    banner: 'Banner',
+    glyph: 'Glifo',
+    aura: 'Aura',
+    ui_skin: 'Tema',
+    artifact: 'Artefato',
+    orb: 'Orbe',
+    plate: 'Placa',
+    chest: 'Bau',
+    insignia: 'Insignia',
+    insignias: 'Insignia',
+};
 
 export const TheForge: React.FC = () => {
     const { userProfile, craftItem, recycleItem, inventory } = useGame();
@@ -14,35 +32,25 @@ export const TheForge: React.FC = () => {
     const [selectedTier, setSelectedTier] = useState<number>(1);
     const [processing, setProcessing] = useState<string | null>(null);
     const [confirmRecycleId, setConfirmRecycleId] = useState<string | null>(null);
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-    // --- CRAFTING LOGIC ---
     const craftableItems = useMemo(() => {
         return getCatalogItems(item => item.tier === selectedTier && !item.isGoldExclusive && !item.isSeasonExclusive && !item.isRankExclusive);
     }, [selectedTier]);
 
-    // Group by category for T4/T5
     const categories = useMemo(() => {
         if (selectedTier < 4) return [];
-        const cats = new Set(craftableItems.map(i => i.category));
-        return Array.from(cats);
+        return Array.from(new Set(craftableItems.map(item => item.category)));
     }, [craftableItems, selectedTier]);
 
-    const handleCraft = async (itemOrCategory: string, isCategory: boolean) => {
-        if (processing) return;
-        setProcessing(`craft-${itemOrCategory}`);
+    const selectedItem = selectedItemId ? resolveItemDef(selectedItemId) : null;
 
-        try {
-            if (isCategory) {
-                await craftItem(selectedTier, itemOrCategory);
-            } else {
-                await craftItem(selectedTier, undefined, itemOrCategory);
-            }
-        } catch (error) {
-            console.error("Craft failed", error);
-        } finally {
-            setProcessing(null);
-        }
-    };
+    const recyclables = useMemo(() => {
+        return inventory
+            .filter(inst => !inst.isEquipped)
+            .map(inst => ({ ...inst, def: resolveItemDef(inst.id) }))
+            .filter(item => item.def);
+    }, [inventory]);
 
     const getCraftCost = (tier: number) => {
         switch (tier) {
@@ -52,32 +60,6 @@ export const TheForge: React.FC = () => {
             case 4: return ECONOMY.craft_costs.tier_4;
             case 5: return ECONOMY.craft_costs.tier_5;
             default: return 0;
-        }
-    };
-
-    // --- RECYCLING LOGIC ---
-    const recyclables = useMemo(() => {
-        return inventory.filter(inst => !inst.isEquipped).map(inst => {
-            const def = resolveItemDef(inst.id);
-            return { ...inst, def };
-        }).filter(i => i.def); // Ensure definition exists
-    }, [inventory]);
-
-    const handleRecycle = async (instanceId: string) => {
-        if (confirmRecycleId !== instanceId) {
-            setConfirmRecycleId(instanceId);
-            return;
-        }
-
-        if (processing) return;
-        setProcessing(`recycle-${instanceId}`);
-        try {
-            await recycleItem(instanceId);
-        } catch (error) {
-            console.error("Recycle failed", error);
-        } finally {
-            setProcessing(null);
-            setConfirmRecycleId(null);
         }
     };
 
@@ -92,139 +74,154 @@ export const TheForge: React.FC = () => {
         }
     };
 
-    const getRarityColor = (tier: number) => {
+    const getTierStyles = (tier: number) => {
         const visual = getTierVisual(tier);
         return {
-            textColor: visual.hex,
-            borderColor: withAlpha(visual.rgb, 0.3),
+            borderColor: withAlpha(visual.rgb, 0.28),
+            badgeColor: visual.hex,
         };
+    };
+
+    const handleCraft = async (itemOrCategory: string, isCategory: boolean) => {
+        if (processing) return;
+        setProcessing(`craft-${itemOrCategory}`);
+        try {
+            if (isCategory) await craftItem(selectedTier, itemOrCategory);
+            else await craftItem(selectedTier, undefined, itemOrCategory);
+        } catch (error) {
+            console.error('Craft failed', error);
+        } finally {
+            setProcessing(null);
+        }
+    };
+
+    const handleRecycle = async (instanceId: string) => {
+        if (confirmRecycleId !== instanceId) {
+            setConfirmRecycleId(instanceId);
+            return;
+        }
+
+        if (processing) return;
+        setProcessing(`recycle-${instanceId}`);
+        try {
+            await recycleItem(instanceId);
+        } catch (error) {
+            console.error('Recycle failed', error);
+        } finally {
+            setProcessing(null);
+            setConfirmRecycleId(null);
+        }
     };
 
     return (
         <div className="space-y-6 animate-fade-in">
-            {/* Forge Header / Tabs */}
-            <div className="flex justify-center space-x-4 mb-6">
-                <button
-                    onClick={() => setActiveTab('craft')}
-                    className={`px-6 py-2 rounded-full font-black uppercase tracking-widest transition-all ${activeTab === 'craft' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                    <span className="mr-2">🔨</span> Forjar
+            <div className="flex justify-center space-x-3">
+                <button onClick={() => setActiveTab('craft')} className={`min-w-[7.5rem] rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${activeTab === 'craft' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
+                    Forjar
                 </button>
-                <button
-                    onClick={() => setActiveTab('recycle')}
-                    className={`px-6 py-2 rounded-full font-black uppercase tracking-widest transition-all ${activeTab === 'recycle' ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(248,113,113,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                    <span className="mr-2">♻️</span> Reciclar
+                <button onClick={() => setActiveTab('recycle')} className={`min-w-[7.5rem] rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${activeTab === 'recycle' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
+                    Reciclar
                 </button>
             </div>
 
             {activeTab === 'craft' && (
-                <div className="space-y-6">
-                    {/* Tier Selector */}
+                <div className="space-y-5">
                     <div className="flex justify-between items-center bg-black/40 p-2 rounded-xl border border-white/10 overflow-x-auto">
-                        {[1, 2, 3, 4, 5].map(tier => (
-                            <button
-                                key={tier}
-                                onClick={() => setSelectedTier(tier)}
-                                className={`flex-1 min-w-[60px] py-2 rounded-lg font-bold text-sm transition-all ${selectedTier === tier ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
+                        {[1, 2, 3, 4, 5].map((tier) => (
+                            <button key={tier} onClick={() => setSelectedTier(tier)} className={`flex-1 min-w-[64px] rounded-xl py-2 text-sm font-bold transition-all ${selectedTier === tier ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
                                 T{tier}
                             </button>
                         ))}
                     </div>
 
-                    <div className="text-center mb-4">
-                        <span className="text-sm text-gray-400 uppercase tracking-wider">Custo de Forja:</span>
-                        <div className="text-2xl font-black text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
-                            {getCraftCost(selectedTier)} <span className="text-sm">💎</span>
+                    <div className="flex items-center justify-between px-1">
+                        <div>
+                            <div className="text-xs font-bold uppercase tracking-[0.22em] text-gray-500">Custo de Forja</div>
+                            <div className="mt-1 text-2xl font-black text-cyan-300">{getCraftCost(selectedTier)} <span className="text-sm">💎</span></div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-xs font-bold uppercase tracking-[0.22em] text-gray-500">Saldo</div>
+                            <div className="mt-1 text-lg font-black text-white">{userProfile.wallet?.fragments || 0}</div>
                         </div>
                     </div>
 
-                    {/* Items Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {selectedTier <= 3 ? (
-                            // T1-T3: Specific Items
-                            craftableItems.map(item => (
-                                <GlassCard key={item.id} className="p-4 flex flex-col items-center space-y-3 group hover:bg-white/5 transition-all border" style={{ borderColor: getRarityColor(item.tier).borderColor }}>
-                                    <div className="text-4xl group-hover:scale-110 transition-transform">{item.icon}</div>
-                                    <div className="text-center">
-                                        <div className="font-bold text-sm" style={{ color: getRarityColor(item.tier).textColor }}>{item.name}</div>
-                                        <div className="text-[10px] text-gray-500 uppercase">{item.category}</div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleCraft(item.id, false)}
-                                        disabled={!!processing || (userProfile.wallet?.fragments || 0) < getCraftCost(item.tier)}
-                                        className="w-full py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-400 text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {processing === `craft-${item.id}` ? 'Forjando...' : 'Forjar'}
-                                    </button>
-                                </GlassCard>
-                            ))
-                        ) : (
-                            // T4-T5: Category Lottery
-                            categories.map(cat => (
-                                <GlassCard key={cat} className="p-6 flex flex-col items-center space-y-4 group hover:bg-white/5 transition-all border" style={{ borderColor: getRarityColor(selectedTier).borderColor }}>
-                                    <div className="text-5xl group-hover:animate-pulse">❓</div>
-                                    <div className="text-center">
-                                        <div className="font-bold text-lg" style={{ color: getRarityColor(selectedTier).textColor }}>{cat.toUpperCase()}</div>
-                                        <div className="text-xs text-gray-500">Item Aleatório</div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleCraft(cat, true)}
-                                        disabled={!!processing || (userProfile.wallet?.fragments || 0) < getCraftCost(selectedTier)}
-                                        className="w-full py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-cyan-400 font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {processing === `craft-${cat}` ? 'Forjar...' : 'Tentar Sorte'}
-                                    </button>
-                                </GlassCard>
-                            ))
-                        )}
+                            craftableItems.map((item) => {
+                                const styles = getTierStyles(item.tier);
+                                return (
+                                    <div key={item.id} className="space-y-2">
+                                        <GlassCard onClick={() => setSelectedItemId(item.id)} className="relative aspect-square p-2 flex flex-col items-center justify-center border cursor-pointer hover:border-white/40 transition-colors" style={{ borderColor: styles.borderColor }}>
+                                            <div className="flex items-center justify-center w-full h-full mb-3">
+                                                <ItemArt src={item.imageUrl} alt={item.name} icon={item.icon} category={item.category} className="w-3/4 h-3/4 flex items-center justify-center" imgClassName="w-full h-full object-contain" iconClassName="text-2xl" />
+                                            </div>
+                                            <div className="absolute top-1.5 right-1.5 rounded-full bg-black/50 border border-white/10 px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em]" style={{ color: styles.badgeColor }}>T{item.tier}</div>
+                                            <div className="absolute bottom-2 left-1 right-1 text-center">
+                                                <span className="block truncate text-[9px] font-bold uppercase tracking-wider text-white">{item.name}</span>
+                                                <span className="block text-[8px] uppercase tracking-[0.18em] text-gray-500 mt-0.5">{CATEGORY_LABELS[item.category]}</span>
+                                            </div>
+                                        </GlassCard>
 
-                        {selectedTier <= 3 && craftableItems.length === 0 && (
-                            <div className="col-span-full text-center py-10 text-gray-500">
-                                Nenhum item disponível para forjar neste tier.
-                            </div>
+                                        <button onClick={(event) => { event.stopPropagation(); handleCraft(item.id, false); }} disabled={!!processing || (userProfile.wallet?.fragments || 0) < getCraftCost(item.tier)} className="luxe-skin-button h-8 w-full rounded-xl text-[10px] font-black uppercase tracking-[0.18em] inline-flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <span>{processing === `craft-${item.id}` ? '...' : 'Forjar'}</span>
+                                        </button>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            categories.map((category) => {
+                                const styles = getTierStyles(selectedTier);
+                                return (
+                                    <div key={category} className="space-y-2">
+                                        <GlassCard className="relative aspect-square p-4 flex flex-col items-center justify-center border text-center" style={{ borderColor: styles.borderColor }}>
+                                            <div className="text-5xl mb-3">✦</div>
+                                            <div className="text-sm font-black uppercase tracking-[0.18em]" style={{ color: styles.badgeColor }}>{CATEGORY_LABELS[category]}</div>
+                                            <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-gray-500">Item aleatorio</div>
+                                            <div className="absolute top-1.5 right-1.5 rounded-full bg-black/50 border border-white/10 px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em]" style={{ color: styles.badgeColor }}>T{selectedTier}</div>
+                                        </GlassCard>
+
+                                        <button onClick={() => handleCraft(category, true)} disabled={!!processing || (userProfile.wallet?.fragments || 0) < getCraftCost(selectedTier)} className="luxe-skin-button h-8 w-full rounded-xl text-[10px] font-black uppercase tracking-[0.18em] inline-flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <span>{processing === `craft-${category}` ? '...' : 'Tentar sorte'}</span>
+                                        </button>
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
+
+                    {selectedTier <= 3 && craftableItems.length === 0 && <div className="text-center py-12 text-gray-500">Nenhum item disponivel para este tier.</div>}
                 </div>
             )}
 
             {activeTab === 'recycle' && (
                 <div className="space-y-4">
-                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center mb-6">
-                        <p className="text-red-300 text-sm">Reciclar itens destrói o item permanentemente e devolve Fragmentos.</p>
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+                        <p className="text-red-300 text-sm">Reciclar destrói o item e devolve fragmentos.</p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
                         {recyclables.length === 0 ? (
-                            <div className="text-center py-10 text-gray-500">
-                                Nenhum item reciclável no inventário.
-                            </div>
+                            <div className="text-center py-12 text-gray-500">Nenhum item reciclavel no inventario.</div>
                         ) : (
-                            recyclables.map(item => (
-                                <div key={item.instanceId} className="flex items-center justify-between p-3 bg-black/40 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="text-2xl">{item.def?.icon}</div>
-                                        <div>
-                                            <div className="font-bold text-sm" style={{ color: getRarityColor(item.def?.tier || 1).textColor }}>{item.def?.name}</div>
-                                            <div className="text-[10px] text-gray-500 uppercase">T{item.def?.tier} • {item.def?.category}</div>
+                            recyclables.map((item) => (
+                                <div key={item.instanceId} onClick={() => setSelectedItemId(item.id)} className="flex items-center justify-between p-3 bg-black/40 border border-white/5 rounded-xl hover:border-white/10 transition-colors gap-3 cursor-pointer">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center shrink-0">
+                                            <ItemArt src={item.def?.imageUrl} alt={item.def?.name || item.id} icon={item.def?.icon} category={item.def?.category} className="w-10 h-10 flex items-center justify-center" imgClassName="w-full h-full object-contain" iconClassName="text-xl" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="font-bold text-sm truncate text-white">{item.def?.name}</div>
+                                            <div className="text-[10px] text-gray-500 uppercase tracking-[0.18em]">T{item.def?.tier} · {CATEGORY_LABELS[item.def?.category || 'artifact']}</div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center space-x-4">
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-cyan-400 font-bold">+{getRecycleValue(item.def?.tier || 1)}</span>
-                                            <span className="text-[9px] text-gray-500 uppercase">Fragmentos</span>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        <div className="text-right">
+                                            <div className="text-cyan-300 font-black">+{getRecycleValue(item.def?.tier || 1)}</div>
+                                            <div className="text-[9px] uppercase tracking-[0.18em] text-gray-500">Fragmentos</div>
                                         </div>
-                                        <button
-                                            onClick={() => handleRecycle(item.instanceId)}
-                                            disabled={!!processing}
-                                            className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${confirmRecycleId === item.instanceId
-                                                    ? 'bg-red-500 text-white animate-pulse'
-                                                    : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                                                }`}
-                                        >
-                                            {processing === `recycle-${item.instanceId}` ? <RefreshCwIcon className="w-4 h-4 animate-spin" /> : confirmRecycleId === item.instanceId ? <span className="text-[10px] font-bold">CONFIRMAR?</span> : <Trash2Icon className="w-4 h-4" />}
+                                        <button onClick={(event) => { event.stopPropagation(); handleRecycle(item.instanceId); }} disabled={!!processing} className={`h-10 min-w-[44px] px-3 rounded-xl transition-colors flex items-center justify-center gap-2 ${confirmRecycleId === item.instanceId ? 'bg-red-500 text-white animate-pulse' : 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'}`}>
+                                            {processing === `recycle-${item.instanceId}` ? <RefreshCwIcon className="w-4 h-4 animate-spin" /> : confirmRecycleId === item.instanceId ? <span className="text-[10px] font-black uppercase tracking-[0.12em]">Confirmar</span> : <Trash2Icon className="w-4 h-4" />}
                                         </button>
                                     </div>
                                 </div>
@@ -232,6 +229,14 @@ export const TheForge: React.FC = () => {
                         )}
                     </div>
                 </div>
+            )}
+
+            {selectedItem && (
+                <ItemDetailModal
+                    item={selectedItem}
+                    type="catalog"
+                    onClose={() => setSelectedItemId(null)}
+                />
             )}
         </div>
     );

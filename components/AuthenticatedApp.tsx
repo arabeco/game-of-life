@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+﻿import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { GlobalHeader } from './GlobalHeader';
 import { AssetIcon, ArenaIcon, ConfigIcon, PlannerIcon, SocialIcon } from './Icons';
@@ -8,6 +8,7 @@ import { CodexBuilderProvider, useCodexBuilder } from '../contexts/CodexBuilderC
 import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { updateInstalledAppBadge } from '../utils/appBadge';
+import { buildVanguardRewardsToast } from '../utils/vanguardRewards';
 import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
 import {
     LEGAL_ACCEPT_SOURCE_INITIAL,
@@ -38,6 +39,7 @@ const TermsOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) =>
 const OfflineOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.OfflineOverlay })));
 const FirstUseOnboardingOverlay = React.lazy(() => import('./FirstUseOnboardingOverlay').then((m) => ({ default: m.FirstUseOnboardingOverlay })));
 const CodexClaimModal = React.lazy(() => import('./CodexClaimModal').then((m) => ({ default: m.CodexClaimModal })));
+const VanguardWelcomeModal = React.lazy(() => import('./VanguardWelcomeModal').then((m) => ({ default: m.VanguardWelcomeModal })));
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -54,7 +56,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
     const { didForceGameMode } = useTutorial();
     const historyReady = useRef(false);
 
-    const activeUIMode = appMode === 'GAME' ? 'GAME' : 'BASIC';
+    const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
 
     useEffect(() => {
@@ -130,7 +132,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
 
         if (Math.abs(diff) > threshold) {
             const views: View[] = activeUIMode === 'BASIC'
-                ? ['arenas', 'planner', 'social', 'settings']
+                ?['arenas', 'planner', 'social', 'settings']
                 : ['assets', 'arenas', 'planner', 'social', 'settings'];
             const currentIndex = views.indexOf(currentView);
 
@@ -273,11 +275,11 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
             if (userId && isUuid(userId)) {
                 await supabase.from('codex').insert({
                     owner_id: userId,
-                    schema_version: typeof parsed.schemaVersion === 'number' ? parsed.schemaVersion : 1,
+                    schema_version: typeof parsed.schemaVersion === 'number' ?parsed.schemaVersion : 1,
                     name: (parsed.metadata?.name || draftName || 'Codex').toString(),
-                    author: parsed.metadata?.author ?? null,
-                    price: typeof parsed.metadata?.price === 'number' ? parsed.metadata.price : null,
-                    description: parsed.metadata?.description ?? null,
+                    author: parsed.metadata?.author || null,
+                    price: typeof parsed.metadata?.price === 'number' ?parsed.metadata.price : null,
+                    description: parsed.metadata?.description || null,
                     template: parsed,
                     source_type: 'created',
                     created_by_user_id: userId,
@@ -334,25 +336,25 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                 if (el) navItemRefs.current.set(view, el);
             }}
             onClick={() => handleSetView(view)}
-            className={`relative z-10 flex w-full flex-col items-center justify-center transition-colors duration-200 ${currentView === view ? 'auth-nav-active' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative z-10 flex w-full flex-col items-center justify-center transition-colors duration-200 ${currentView === view ?'auth-nav-active' : 'text-gray-500 hover:text-gray-300'}`}
         >
             {icon}
             {badgeCount > 0 && (
                 <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full border border-black bg-red-500 px-1 text-[9px] font-black text-white shadow-[0_0_12px_rgba(239,68,68,0.5)]">
-                    {badgeCount > 9 ? '9+' : badgeCount}
+                    {badgeCount > 9 ?'9+' : badgeCount}
                 </span>
             )}
             <span className="mt-1 text-[10px] font-bold tracking-wider">{label}</span>
         </button>
     );
 
-    const baseTopPadding = isBuilderMode ? 128 : 80;
+    const baseTopPadding = isBuilderMode ?128 : 80;
     const baseBottomPadding = 64;
     const mainPaddingTop = `calc(${baseTopPadding}px + var(--safe-area-top))`;
     const mainPaddingBottom = currentView === 'assets'
-        ? 'var(--safe-area-bottom)'
+        ?'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
-    const themeClass = activeUIMode === 'BASIC' ? `mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
+    const themeClass = activeUIMode === 'BASIC' ?`mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
 
     useEffect(() => {
         if (appMode === 'BASIC' && currentView === 'assets' && !didForceGameMode) {
@@ -361,7 +363,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
     }, [appMode, currentView, didForceGameMode]);
 
     useEffect(() => {
-        const skin = activeUIMode === 'BASIC' ? 'default' : userProfile.skin;
+        const skin = activeUIMode === 'BASIC' ?'default' : userProfile.skin;
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);
     }, [activeUIMode, userProfile.skin]);
@@ -369,8 +371,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
     return (
         <div
             id="app-root"
-            className={`auth-app-root flex flex-col overflow-hidden font-sans text-gray-200 ${isBuilderMode ? 'auth-app-root--builder' : ''} ${themeClass}`}
-            data-skin={activeUIMode === 'BASIC' ? 'default' : userProfile.skin}
+            className={`auth-app-root flex flex-col overflow-hidden font-sans text-gray-200 ${isBuilderMode ?'auth-app-root--builder' : ''} ${themeClass}`}
+            data-skin={activeUIMode === 'BASIC' ?'default' : userProfile.skin}
         >
             <Suspense fallback={null}>
                 <OracleTutorialOverlay />
@@ -402,7 +404,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                 </div>
             )}
 
-            <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ? 44 : 0} defaultRestScreenOpen={defaultRestScreenOpen} />
+            <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ?44 : 0} defaultRestScreenOpen={defaultRestScreenOpen} />
             <TutorialBridge />
 
             <main className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
@@ -417,7 +419,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
             </Suspense>
 
             <footer
-                className={`auth-footer safe-area-bottom ${activeUIMode === 'BASIC' ? 'auth-footer--basic' : 'auth-footer--game'}`}
+                className={`auth-footer safe-area-bottom ${activeUIMode === 'BASIC' ?'auth-footer--basic' : 'auth-footer--game'}`}
                 style={{ paddingBottom: 'var(--safe-area-bottom)' }}
             >
                 <div
@@ -438,9 +440,9 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                     />
                     <div className="flex h-16 items-center justify-around">
                         {activeUIMode === 'GAME' && <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />}
-                        <NavItem view="arenas" label={activeUIMode === 'BASIC' ? '�REAS' : 'ARENAS'} icon={<ArenaIcon />} id="nav-arenas" />
+                        <NavItem view="arenas" label={activeUIMode === 'BASIC' ? 'ÁREAS' : 'ARENAS'} icon={<ArenaIcon />} id="nav-arenas" />
                         <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} id="nav-planner" />
-                        <NavItem view="social" label={activeUIMode === 'BASIC' ? 'EQUIPE' : 'MUNDO'} icon={<SocialIcon />} id="nav-mundo" />
+                        <NavItem view="social" label={activeUIMode === 'BASIC' ?'EQUIPE' : 'MUNDO'} icon={<SocialIcon />} id="nav-mundo" />
                         <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} id="nav-settings" />
                     </div>
                 </div>
@@ -459,9 +461,10 @@ const MainApp: React.FC = () => {
         toast,
         hideToast,
         isProfileLoaded,
+        showToast,
     } = useGame();
     const { isTutorialCompleted } = useTutorial();
-    const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+    const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ?true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
     const [forceShowTerms, setForceShowTerms] = useState(false);
     const lastToastSignatureRef = useRef('');
@@ -497,6 +500,11 @@ const MainApp: React.FC = () => {
     const [isFirstUseOnboardingActive, setFirstUseOnboardingActive] = useState(false);
     const [onboardingShownInSession, setOnboardingShownInSession] = useState(false);
     const [claimToken, setClaimToken] = useState<string | null>(null);
+    const shouldHoldVanguardWelcome =
+        shouldAutoStartOnboarding(userProfile) &&
+        !userProfile.onboardingCompletedAt &&
+        !userProfile.onboardingDismissedAt &&
+        !onboardingShownInSession;
 
     useEffect(() => {
         if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms || needsModeSelection) return;
@@ -520,7 +528,7 @@ const MainApp: React.FC = () => {
         if (!params.has('claim_codex')) return;
         params.delete('claim_codex');
         const nextSearch = params.toString();
-        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+        const nextUrl = `${window.location.pathname}${nextSearch ?`?${nextSearch}` : ''}${window.location.hash}`;
         window.history.replaceState(window.history.state, '', nextUrl);
     }, []);
 
@@ -528,7 +536,7 @@ const MainApp: React.FC = () => {
         const syncClaimToken = () => {
             const params = new URLSearchParams(window.location.search);
             const nextToken = params.get('claim_codex');
-            setClaimToken(nextToken && nextToken.trim() ? nextToken.trim() : null);
+            setClaimToken(nextToken && nextToken.trim() ?nextToken.trim() : null);
         };
 
         syncClaimToken();
@@ -546,11 +554,31 @@ const MainApp: React.FC = () => {
         setFirstUseOnboardingActive(false);
     }, [updateUserProfile, userProfile]);
 
+    const handleCloseVanguardWelcome = useCallback(() => {
+        showToast(buildVanguardRewardsToast(userProfile.vanguardWelcomePayload), 'success');
+        updateUserProfile({
+            vanguardWelcomePending: false,
+            vanguardWelcomeShownAt: new Date().toISOString(),
+        });
+    }, [showToast, updateUserProfile, userProfile.vanguardWelcomePayload]);
+
+    const hasVanguardPayload =
+        !!userProfile.vanguardWelcomePayload &&
+        Object.keys(userProfile.vanguardWelcomePayload).length > 0;
+
+    const shouldShowVanguardWelcome =
+        !showTerms &&
+        !needsModeSelection &&
+        !isFirstUseOnboardingActive &&
+        !shouldHoldVanguardWelcome &&
+        !!userProfile.vanguardWelcomePending &&
+        hasVanguardPayload;
+
     const handleAcceptTerms = () => {
         const acceptedAt = new Date().toISOString();
         const nextCompleted = (userProfile.completedSeasonMissions || []).filter((flag) => flag !== PROFILE_FLAG_TERMS_PENDING);
         if (!nextCompleted.includes(PROFILE_FLAG_TERMS_ACCEPTED)) nextCompleted.push(PROFILE_FLAG_TERMS_ACCEPTED);
-        const acceptSource = forceShowTerms ? LEGAL_ACCEPT_SOURCE_REVIEW : LEGAL_ACCEPT_SOURCE_INITIAL;
+        const acceptSource = forceShowTerms ?LEGAL_ACCEPT_SOURCE_REVIEW : LEGAL_ACCEPT_SOURCE_INITIAL;
 
         updateUserProfile({
             completedSeasonMissions: nextCompleted,
@@ -616,6 +644,14 @@ const MainApp: React.FC = () => {
                         token={claimToken}
                         onClose={clearClaimToken}
                         onClaimed={clearClaimToken}
+                    />
+                )}
+                {shouldShowVanguardWelcome && (
+                    <VanguardWelcomeModal
+                        open={shouldShowVanguardWelcome}
+                        mode={userProfile.appMode}
+                        payload={userProfile.vanguardWelcomePayload}
+                        onClose={handleCloseVanguardWelcome}
                     />
                 )}
             </Suspense>

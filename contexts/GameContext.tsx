@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
+Ôªøimport React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
@@ -72,7 +72,7 @@ const TUTORIAL_ACTION: Action = {
     id: TUTORIAL_ACTION_ID,
     arenaId: 'arena_outros',
     name: 'Miss√£o: Concluir Tutorial de Inicia√ß√£o',
-    icon: '??',
+    icon: 'üìù',
     duration: 15,
     repetitions: 1,
     actionType: 'Marco',
@@ -112,6 +112,9 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     inventory: [],
     wallet: { gold: 0, fragments: 0 },
     codexCreationSlotsPurchased: 0,
+    starterRewardsPending: false,
+    vanguardWelcomePending: false,
+    vanguardWelcomePayload: null,
     unlockedItems: {
         bodyStyles: {},
         hairStyles: {},
@@ -608,7 +611,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
-        setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+        setCampaigns(prev => prev.map(c => c.id === id ?{ ...c, ...updates } : c));
 
         const { error } = await supabase.from('campaigns').update(mapToSnakeCase(updates)).eq('id', id);
         if (error) console.error("Error updating campaign:", error);
@@ -685,7 +688,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [userProfile]);
 
     const toggleTheme = useCallback(async () => {
-        const newTheme = activeTheme === 'DARK' ? 'LIGHT' : 'DARK';
+        const newTheme = activeTheme === 'DARK' ?'LIGHT' : 'DARK';
         setActiveTheme(newTheme);
 
         if (userProfile) {
@@ -843,7 +846,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const nextSentinelMode = (prefs.sentinelMode ?? oraclePreferences?.sentinelMode ?? 'soberano_ativo') as OraclePreferences['sentinelMode'];
         const nextPushEnabled = Boolean(prefs.pushEnabled ?? oraclePreferences?.pushEnabled ?? false);
         localStorage.setItem(getSentinelStorageKey(userId), nextSentinelMode || 'soberano_ativo');
-        localStorage.setItem(getPushStorageKey(userId), nextPushEnabled ? 'true' : 'false');
+        localStorage.setItem(getPushStorageKey(userId), nextPushEnabled ?'true' : 'false');
 
         const newPrefs = { ...oraclePreferences, ...prefs, sentinelMode: nextSentinelMode, pushEnabled: nextPushEnabled, updatedAt: new Date().toISOString() };
         // Optimistic update
@@ -857,7 +860,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error updating oracle preferences:", error);
-            // Revert? For now, we assume it works or user refreshes.
+            // Revert?For now, we assume it works or user refreshes.
         }
     };
 
@@ -880,7 +883,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, []);
 
     const markOracleMessageAsRead = async (messageId: string) => {
-        setOracleMessages(prev => prev.map(m => m.id === messageId ? { ...m, read: true } : m));
+        setOracleMessages(prev => prev.map(m => m.id === messageId ?{ ...m, read: true } : m));
 
         const { error } = await supabase
             .from('oracle_messages')
@@ -906,7 +909,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         if (sentinelMode === 'nao_ia') {
             const content = isOracleCriticalTrigger(userId)
-                ? 'Alerta do Sistema: prioridade critica detectada. Revise pendencias de ciclo ou missao Office.'
+                ?'Alerta do Sistema: prioridade critica detectada. Revise pendencias de ciclo ou missao Office.'
                 : 'Mensagem do Sistema: status estavel. Sem intervencao do Oraculo.';
             await pushSystemOracleMessage(userId, content);
             return;
@@ -939,7 +942,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const today = getLocalDateString();
         const todayMessages = oracleMessages.filter(m => m.createdAt.startsWith(today) && m.deliveryType === 'feed');
         const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
-        const limit = isPremium ? 6 : 3;
+        const limit = isPremium ?6 : 3;
 
         if (todayMessages.length >= limit && triggerType !== 'manual') {
             console.log("Oracle daily limit reached.");
@@ -989,18 +992,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 5. Build Context
-        let timeOfDay: "madrugada" | "manh„" | "tarde" | "noite" = "manh„";
-        if (hour >= 0 && hour < 6) timeOfDay = "madrugada";
-        else if (hour >= 6 && hour < 12) timeOfDay = "manh„";
-        else if (hour >= 12 && hour < 18) timeOfDay = "tarde";
-        else timeOfDay = "noite";
+        let timeOfDay: "night" | "morning" | "afternoon" | "evening" = "morning";
+        if (hour >= 0 && hour < 6) timeOfDay = "night";
+        else if (hour >= 6 && hour < 12) timeOfDay = "morning";
+        else if (hour >= 12 && hour < 18) timeOfDay = "afternoon";
+        else timeOfDay = "evening";
 
         const contextData: OracleContext = {
             currentTime: now.toISOString(),
             timeOfDay,
             hasCycle: !!activeCycle,
-            cycleDayNumber: activeCycle ? Math.floor((now.getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
-            cycleTotalDays: activeCycle ? Math.floor((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
+            cycleDayNumber: activeCycle ?Math.floor((now.getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
+            cycleTotalDays: activeCycle ?Math.floor((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
             cycleCompletionPercent: null,
             hasArenas: assets.some(a => a.arenas.length > 0),
             totalArenas: assets.reduce((acc, a) => acc + a.arenas.length, 0),
@@ -1114,7 +1117,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [session?.user.id]);
 
     const markNotificationRead = async (id: string) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        setNotifications(prev => prev.map(n => n.id === id ?{ ...n, read: true } : n));
         await SupabaseService.markNotificationRead(id);
     };
 
@@ -1773,7 +1776,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             mission_id: questId,
             target_value: targetValue,
             current_value: 0 // Come√ßa com 0 se n√£o existir
-        }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se j√° existir, N√íO sobrescreve (mant√©m o progresso atual)
+        }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se j√° existir, N√íO sobrescreve (manh?t√©m o progresso atual)
     };
 
     const leaveClanMission = async (questId: string) => {
@@ -1897,18 +1900,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 name: m.action_name || m.title,
                 description: m.description,
                 duration: 15,
-                icon: m.icon || '??',
+                icon: m.icon || '?',
                 repetitions: m.goal_value || 1,
                 isMilestone: m.requirements?.milestone || false
             },
             requirements: m.requirements || {
                 totalReps: m.goal_value || 1,
-                clanGoal: m.type === 'clan' ? (m.goal_value || 1) : undefined,
+                clanGoal: m.type === 'clan' ?(m.goal_value || 1) : undefined,
                 milestone: m.requirements?.milestone || false
             },
             rewards: {
-                xp: m.reward_type === 'exp' ? Number(m.reward_value) : 0,
-                items: m.reward_type === 'item_id' ? [String(m.reward_value)] : []
+                xp: m.reward_type === 'exp' ?Number(m.reward_value) : 0,
+                items: m.reward_type === 'item_id' ?[String(m.reward_value)] : []
             },
             season_id: m.season_id
         }));
@@ -2278,7 +2281,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Fetch all presence for the clan to calculate stays
         const { data: presenceData } = await supabase.from('clan_aldeia_presence').select('*').eq('clan_id', clanId);
-        const presences = presenceData ? (mapToCamelCase(presenceData) as AldeiaPresence[]) : [];
+        const presences = presenceData ?(mapToCamelCase(presenceData) as AldeiaPresence[]) : [];
 
         // Calculate total clan energy for Resonance (25% of all stay minutes)
         let totalClanMinutes = 0;
@@ -2351,7 +2354,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 streakGood: newStreakGood,
                 streakBad: newStreakBad,
                 lastDecayCalculation: today,
-                lastVisitedAt: slotPresences.length > 0 ? new Date().toISOString() : slot.lastVisitedAt
+                lastVisitedAt: slotPresences.length > 0 ?new Date().toISOString() : slot.lastVisitedAt
             });
         }
     };
@@ -2436,7 +2439,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setEnrichedClanMembers(enrichedMembers);
 
         const currentUserId = session?.user.id;
-        const currentMember = currentUserId ? membersData.find((m: any) => m.user_id === currentUserId) : null;
+        const currentMember = currentUserId ?membersData.find((m: any) => m.user_id === currentUserId) : null;
         if (currentMember?.role === 'leader') {
             await loadClanJoinRequestsIncoming(clanId);
         } else {
@@ -2521,7 +2524,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const slotsPayload = assets.flatMap(asset => asset.slots.map(slot => ({
             slot_id: slot.id,
             user_id: userId,
-            value: typeof slot.value === 'object' ? JSON.stringify(slot.value) : String(slot.value)
+            value: typeof slot.value === 'object' ?JSON.stringify(slot.value) : String(slot.value)
         })));
         if (slotsPayload.length > 0) {
             const { error } = await supabase.from('asset_slots').upsert(slotsPayload, { onConflict: 'user_id,slot_id' });
@@ -2653,9 +2656,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (!profileError && profileData) {
                 const camelProfile = mapToCamelCase(profileData) as UserProfile;
-                const normalizedRole = typeof camelProfile.role === 'string' ? camelProfile.role.toLowerCase() : undefined;
-                const role = normalizedRole === 'admin' || normalizedRole === 'gm' ? normalizedRole : (normalizedRole || 'user');
-                const normalizedSkin = !camelProfile.skin || camelProfile.skin === 'default' ? 'BASIC' : camelProfile.skin;
+                const normalizedRole = typeof camelProfile.role === 'string' ?camelProfile.role.toLowerCase() : undefined;
+                const role = normalizedRole === 'admin' || normalizedRole === 'gm' ?normalizedRole : (normalizedRole || 'user');
+                const normalizedSkin = !camelProfile.skin || camelProfile.skin === 'default' ?'BASIC' : camelProfile.skin;
                 const normalizedUnlockedSkins = {
                     ...(camelProfile.unlockedSkins || {}),
                     BASIC: true,
@@ -2735,8 +2738,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (!arenasError && arenasData) {
                 camelArenas = (mapToCamelCase(arenasData) as Arena[]).map(arena => ({
                     ...arena,
-                    actionIds: Array.isArray(arena.actionIds) ? arena.actionIds : [],
-                    isArchived: typeof arena.isArchived === 'boolean' ? arena.isArchived : false,
+                    actionIds: Array.isArray(arena.actionIds) ?arena.actionIds : [],
+                    isArchived: typeof arena.isArchived === 'boolean' ?arena.isArchived : false,
                 }));
                 if (camelArenas) loadedArenas = camelArenas;
             }
@@ -2745,7 +2748,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (!actionsError && actionsData) {
                 const rawActions = mapToCamelCase(actionsData) as Action[];
                 const normalizedActions = rawActions.map(action => {
-                    const schedule = (action.context && typeof action.context === 'object') ? (action.context as Action['context'])?.schedule : undefined;
+                    const schedule = (action.context && typeof action.context === 'object') ?(action.context as Action['context'])?.schedule : undefined;
                     return {
                         ...action,
                         scheduledDays: action.scheduledDays ?? schedule?.days,
@@ -2851,7 +2854,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         void persistFairScoreReports(recalculatedReports.filter((report) => changedReportIds.includes(report.id)));
                     }
                 } else {
-                    setReports(prev => (prev.length > 0 ? prev : []));
+                    setReports(prev => (prev.length > 0 ?prev : []));
                 }
             }
 
@@ -2946,7 +2949,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         const totalTasks = sitreps.reduce((acc, r) => acc + (r.total_tasks_count || 0), 0);
 
                         // Progresso √© a m√©dia ponderada de execu√ß√£o (a√ß√µes completas / a√ß√µes totais)
-                        const progress = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+                        const progress = totalTasks > 0 ?Math.round((totalCompleted / totalTasks) * 100) : 0;
                         setCycleProgress(progress); // Set the calculated progress in state
 
                         // --- AUTO FINISH CYCLE CHECK ---
@@ -2963,7 +2966,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         // Vamos apenas calcular o b√¥nus de EXP acumulado.
                         const totalExpBonus = sitreps.reduce((sum, r) => {
                             // L√≥gica antiga de b√¥nus por score di√°rio
-                            const bonus = r.score >= 95 ? 120 : r.score >= 85 ? 60 : 0;
+                            const bonus = r.score >= 95 ?120 : r.score >= 85 ?60 : 0;
                             return sum + bonus;
                         }, 0);
                         setCycleExpBonus(totalExpBonus);
@@ -3099,8 +3102,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 template = buildCodexTemplateFromDraft({
                     name: row?.name,
                     description: row?.description,
-                    arenas: Array.isArray(rawTemplate?.arenas) ? rawTemplate.arenas : [],
-                    actions: Array.isArray(rawTemplate?.actions) ? rawTemplate.actions : [],
+                    arenas: Array.isArray(rawTemplate?.arenas) ?rawTemplate.arenas : [],
+                    actions: Array.isArray(rawTemplate?.actions) ?rawTemplate.actions : [],
                 });
             } catch (error) {
                 console.error('Failed to normalize codex draft into template', error);
@@ -3252,7 +3255,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - 50));
-        const nextSlots = Number((data as any)?.slots_purchased ?? (userProfile.codexCreationSlotsPurchased || 0) + 1);
+        const nextSlots = Number((data as any)?.slots_purchased ?? ((userProfile.codexCreationSlotsPurchased || 0) + 1));
         updateUserProfile({
             wallet: { ...userProfile.wallet, gold: nextGold },
             codexCreationSlotsPurchased: nextSlots,
@@ -3263,7 +3266,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const createCodexShareLink = async (codexId: string): Promise<{ url: string; token: string; shareId: string } | null> => {
         const sourceCodex = userCodexes.find(c => c.id === codexId);
         if (!sourceCodex) {
-            showToast('Codex nao encontrado.', 'error');
+            showToast('Codex n\u00E3o encontrado.', 'error');
             return null;
         }
 
@@ -3305,7 +3308,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const sendCodexToNickname = async (codexId: string, nickname: string) => {
         const sourceCodex = userCodexes.find(c => c.id === codexId);
         if (!sourceCodex) {
-            showToast('Codex nao encontrado.', 'error');
+            showToast('Codex n\u00E3o encontrado.', 'error');
             return;
         }
 
@@ -3434,12 +3437,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const sourceCodex = userCodexes.find(c => c.id === codexId && c.owner_id === userId);
         if (!sourceCodex) {
-            showToast('Codex n„o encontrado.');
+            showToast('Codex n\u00E3o encontrado.');
             return;
         }
 
         if (sourceCodex.catalog_id) {
-            showToast('Codex comprado n„o pode ser copiado para pupilos.');
+            showToast('Codex comprado n\u00E3o pode ser copiado para pupilos.');
             return;
         }
 
@@ -3476,7 +3479,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
 
         if (!codex?.template || !Array.isArray(codex.template.levels) || codex.template.levels.length === 0) {
-            showToast('Esse Codex ainda n„o tem fases para enviar.');
+            showToast('Esse Codex ainda n\u00E3o tem fases para enviar.');
             return;
         }
 
@@ -3521,7 +3524,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const baseArenaOrder = getArenas().length;
         const baseCampaignOrder = campaigns.length;
         const baseCampaignPriorityOrder = campaigns.filter(c => (c.priority ?? 'media') === 'media').length;
-        const previousCycleArenaIds = activeCycle ? [...activeCycle.arenaIds] : null;
+        const previousCycleArenaIds = activeCycle ?[...activeCycle.arenaIds] : null;
 
         const rollbackInstalledCodex = async () => {
             const arenaIdSet = new Set(createdArenaIds);
@@ -3542,16 +3545,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     arenas: asset.arenas
                         .filter(arena => !arenaIdSet.has(arena.id))
                         .map(arena => {
-                            const actionIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+                            const actionIds = Array.isArray(arena.actionIds) ?arena.actionIds : [];
                             return actionIds.some(id => actionIdSet.has(id))
-                                ? { ...arena, actionIds: actionIds.filter(id => !actionIdSet.has(id)) }
+                                ?{ ...arena, actionIds: actionIds.filter(id => !actionIdSet.has(id)) }
                                 : arena;
                         })
                 })));
             }
 
             if (activeCycle && previousCycleArenaIds) {
-                setActiveCycle(prev => prev?.id === activeCycle.id ? { ...prev, arenaIds: previousCycleArenaIds } : prev);
+                setActiveCycle(prev => prev?.id === activeCycle.id ?{ ...prev, arenaIds: previousCycleArenaIds } : prev);
             }
 
             const rollbackOps: PromiseLike<any>[] = [];
@@ -3579,7 +3582,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const createdArena = await addArena(assetId, {
                     name: level.title,
                     description: level.description || '',
-                    icon: level.actions?.[0]?.icon || '??',
+                    icon: level.actions?.[0]?.icon || '?',
                     originCodexId: codex.id,
                     codexLevel: level.level,
                     priority: 'media',
@@ -3597,21 +3600,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 };
 
                 for (const levelAction of level.actions || []) {
-                    const actionType = levelAction.actionType === 'Marco' || levelAction.actionType === 'Compromisso' || levelAction.actionType === 'AÁ„o Recorrente'
+                    const actionType = levelAction.actionType === 'Marco' || levelAction.actionType === 'Compromisso' || levelAction.actionType === 'A\u00E7\u00E3o Recorrente'
                         ? levelAction.actionType
-                        : 'AÁ„o Recorrente';
+                        : 'A\u00E7\u00E3o Recorrente';
 
                     const createdAction = await addAction({
                         arenaId: createdArena.id,
                         name: levelAction.name,
                         description: levelAction.description || '',
-                        icon: levelAction.icon || '??',
-                        duration: Number.isFinite(levelAction.duration) ? levelAction.duration : 15,
-                        repetitions: Number.isFinite(levelAction.repetitions) ? Math.max(1, Math.floor(levelAction.repetitions)) : 1,
+                        icon: levelAction.icon || '\u{1F4DD}',
+                        duration: Number.isFinite(levelAction.duration) ?levelAction.duration : 15,
+                        repetitions: Number.isFinite(levelAction.repetitions) ?Math.max(1, Math.floor(levelAction.repetitions)) : 1,
                         actionType,
-                        difficulty: typeof levelAction.difficulty === 'number' ? levelAction.difficulty : 1,
-                        scheduledDays: Array.isArray(levelAction.scheduledDays) ? levelAction.scheduledDays : undefined,
-                        scheduledStartTime: typeof levelAction.scheduledStartTime === 'number' ? levelAction.scheduledStartTime : undefined,
+                        difficulty: typeof levelAction.difficulty === 'number' ?levelAction.difficulty : 1,
+                        scheduledDays: Array.isArray(levelAction.scheduledDays) ?levelAction.scheduledDays : undefined,
+                        scheduledStartTime: typeof levelAction.scheduledStartTime === 'number' ?levelAction.scheduledStartTime : undefined,
                         briefing: levelAction.briefing,
                         assets: levelAction.assets,
                         preFlight: levelAction.preFlight,
@@ -3622,7 +3625,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     createdActionIds.push(createdAction.id);
 
                     if (
-                        createdAction.actionType === 'AÁ„o Recorrente' &&
+                        createdAction.actionType === 'A\u00E7\u00E3o Recorrente' &&
                         createdAction.scheduledDays &&
                         createdAction.scheduledDays.length > 0 &&
                         typeof createdAction.scheduledStartTime === 'number'
@@ -3683,7 +3686,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const possibleSkins = allSkins.filter(s => s.rarity === targetRarity);
             // Fallback if no skins of that rarity found (shouldn't happen with current DB)
             const selectedSkin = possibleSkins.length > 0
-                ? possibleSkins[Math.floor(Math.random() * possibleSkins.length)]
+                ?possibleSkins[Math.floor(Math.random() * possibleSkins.length)]
                 : allSkins[0];
 
             // Call RPC to grant the specific item (mimics open_chest logic)
@@ -3750,7 +3753,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return result;
 
         // Show reward (item + fragments)
-        const rewardMsg = `? ${data.item_name} (Tier ${data.tier}) ? +${data.fragments_gained} Fragmentos!`;
+        const rewardMsg = `\u{1F381} ${data.item_name} (Tier ${data.tier}) \u2022 +${data.fragments_gained} Fragmentos!`;
         showToast(rewardMsg);
 
         // Update local state
@@ -3769,7 +3772,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (chestIndex === -1 || existingChests[chestIndex].count === 0) return prev;
 
             const newChests = existingChests.map((chest, index) =>
-                index === chestIndex ? { ...chest, count: chest.count - 1 } : chest
+                index === chestIndex ?{ ...chest, count: chest.count - 1 } : chest
             ).filter(chest => chest.count > 0);
 
             return { ...prev, chests: newChests };
@@ -3854,12 +3857,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (data) {
                 const mapped = mapToCamelCase(data) as Record<string, unknown>;
                 setDailyCommitmentState({
-                    date: typeof mapped.date === 'string' ? mapped.date : today,
-                    taskIds: Array.isArray(mapped.taskIds) ? mapped.taskIds as string[] : [],
+                    date: typeof mapped.date === 'string' ?mapped.date : today,
+                    taskIds: Array.isArray(mapped.taskIds) ?mapped.taskIds as string[] : [],
                     stage: (mapped.stage as DailyCommitmentStage) || 'planning',
-                    score: typeof mapped.score === 'number' ? mapped.score : null,
-                    expDeposited: typeof mapped.expDeposited === 'number' ? mapped.expDeposited : null,
-                    sitrepBonus: typeof mapped.sitrepBonus === 'number' ? mapped.sitrepBonus : null,
+                    score: typeof mapped.score === 'number' ?mapped.score : null,
+                    expDeposited: typeof mapped.expDeposited === 'number' ?mapped.expDeposited : null,
+                    sitrepBonus: typeof mapped.sitrepBonus === 'number' ?mapped.sitrepBonus : null,
                 });
             } else {
                 setDailyCommitmentState({
@@ -3920,8 +3923,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         if (completedTasks.length > 0) {
                             // Calculate EXP similar to endDailyBattle
                             const baseExp = completedTasks.reduce((acc, t) => acc + (t.duration || 0), 0);
-                            const score = scoredTasks.length > 0 ? Math.round((completedScoredTasks.length / scoredTasks.length) * 100) : 100;
-                            const bonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
+                            const score = scoredTasks.length > 0 ?Math.round((completedScoredTasks.length / scoredTasks.length) * 100) : 100;
+                            const bonus = score >= 95 ?SITREP_BONUS_S : score >= 85 ?SITREP_BONUS_A : 0;
                             const totalRetroExp = baseExp + bonus;
 
                             if (totalRetroExp > 0) {
@@ -3961,19 +3964,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const scoredCommittedTasks = committedTasks.filter(t => !freeActionIds.has(t.actionId));
         const completedCount = scoredCommittedTasks.filter(t => t.completed).length;
         const totalCount = scoredCommittedTasks.length;
-        const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
+        const score = totalCount > 0 ?Math.round((completedCount / totalCount) * 100) : 100;
 
         const expDepositBase = committedTasks.reduce((sum, task) => {
             if (!task.completed) return sum;
             const action = actions.find(a => a.id === task.actionId);
-            const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
+            const duration = task.duration > 0 ?task.duration : (Number.isFinite(action?.duration) ?(action?.duration || 0) : 0);
             return sum + duration;
         }, 0);
-        const sitrepBonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
+        const sitrepBonus = score >= 95 ?SITREP_BONUS_S : score >= 85 ?SITREP_BONUS_A : 0;
 
         // [NEW] Village Order Bonus (Nerfed to 10% max)
         const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
-        const villageOrder = mainSlots.length > 0 ? (mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length) : 0;
+        const villageOrder = mainSlots.length > 0 ?(mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length) : 0;
         const villageBonusFactor = (villageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
         const villageBonusExp = Math.round((expDepositBase + sitrepBonus) * villageBonusFactor);
 
@@ -4000,8 +4003,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setCycleExpBonus(prev => prev + expDeposited);
             showToast(`${expDeposited} EXP foi adicionada ao seu ciclo.`);
         } else if (expDeposited > 0) {
-            // Fallback if no cycle, apply to user directly? Or just warn?
-            // User asked for "cycle", so assuming cycle is mandatory for this flow.
+            // Fallback if no cycle, apply to user directly?Or just warn?
+            // User asked for "cycle", so assuming cycle is manh?datory for this flow.
             // But let's apply to user if no cycle, just in case.
             updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + expDeposited } });
             showToast(`+${expDeposited} EXP`, 'success');
@@ -4205,9 +4208,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             for (const area of areas) {
                 const currentStats = statsMap.get(area);
 
-                const lastUpdated = currentStats?.last_updated ? new Date(currentStats.last_updated) : currentTime;
+                const lastUpdated = currentStats?.last_updated ?new Date(currentStats.last_updated) : currentTime;
                 // Se n√£o existir, assume 50%
-                let totalSeconds = currentStats ? Number(currentStats.total_seconds) : 14400;
+                let totalSeconds = currentStats ?Number(currentStats.total_seconds) : 14400;
 
                 // Calcular tempo passado em segundos
                 const secondsPassed = (currentTime.getTime() - lastUpdated.getTime()) / 1000;
@@ -4277,7 +4280,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 Object.values(positions).forEach(p => {
                     occupancy[p.area] = (occupancy[p.area] || 0) + 1;
                 });
-                // Also need total members... clan object has it? No, need enrichedClanMembers.length
+                // Also need total members... clan object has it?No, need enrichedClanMembers.length
                 // But enrichedClanMembers might not be loaded fully?
                 // Let's use a safe default or try to use what we have.
                 const totalMembers = enrichedClanMembers.length || 1;
@@ -4371,7 +4374,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const oldRankId = userProfile.nobility.rankId;
         const currentExp = userProfile.nobility.exp || 0;
         const newRank = nobilityRanks.slice().reverse().find(r => currentExp >= r.expTotalRequired);
-        const newRankId = newRank ? newRank.id : oldRankId;
+        const newRankId = newRank ?newRank.id : oldRankId;
 
         if (oldRankId !== newRankId) {
             const oldRankIndex = nobilityRanks.findIndex(r => r.id === oldRankId);
@@ -4485,7 +4488,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'isPremium',
                 'appMode',
                 'themePreference',
-                'arenasViewMode'
+                'arenasViewMode',
+                'starterRewardsPending',
+                'vanguardWelcomePending',
+                'vanguardWelcomeShownAt',
+                'vanguardWelcomePayload'
             ];
             const entries = Object.entries(profileData).filter(([key, value]) => {
                 if (!allowedKeys.includes(key as keyof UserProfile)) return false;
@@ -4591,8 +4598,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (isInsignia) {
                     toastMsg = `Ins√≠gnia ${itemDef?.name || itemId} foi adicionada ao seu invent√°rio.`;
                 } else {
-                    const prefix = itemDef?.category === 'skin' ? 'Skin' : 'Item';
-                    const suffix = itemDef?.category === 'skin' ? 'foi adicionada ao seu invent√°rio.' : 'foi adicionado ao seu invent√°rio.';
+                    const prefix = itemDef?.category === 'skin' ?'Skin' : 'Item';
+                    const suffix = itemDef?.category === 'skin' ?'foi adicionada ao seu invent√°rio.' : 'foi adicionado ao seu invent√°rio.';
                     toastMsg = `${prefix} ${itemDef?.name || itemId} ${suffix}`;
                 }
 
@@ -4617,7 +4624,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await addChest('Raro');
 
         localStorage.setItem(storageKey, 'true');
-        showToast('? Pack G?nesis desbloqueado: seu legado Premium come?a agora!', 'success');
+        showToast('Pack G\u00EAnesis desbloqueado: seu legado Premium come\u00E7a agora!', 'success');
     };
 
     const addCompletedMission = (mission: SeasonMission) => {
@@ -4631,13 +4638,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 setCycleExpBonus(prev => prev + xpAmount);
                 addFeedEvent({
                     type: 'LEVEL_UP',
-                    content: { title: `Miss√£o Conclu√≠da: ${mission.title} (+${xpAmount} XP)`, icon: '?' }
+                    content: { title: `Miss\u00E3o Conclu\u00EDda: ${mission.title} (+${xpAmount} XP)`, icon: '\u{1F4DD}' }
                 });
             }
         }
 
-        const rewardValue = typeof mission.reward_value === 'string' ? mission.reward_value : '';
-        const rewardParts = rewardValue.includes(':') ? rewardValue.split(':') : [];
+        const rewardValue = typeof mission.reward_value === 'string' ?mission.reward_value : '';
+        const rewardParts = rewardValue.includes(':') ?rewardValue.split(':') : [];
         const rewardCategory = rewardParts[0] as UnlockCategory | undefined;
         const rewardItemId = rewardParts[1];
 
@@ -4653,7 +4660,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             grantInventoryItem(rewardItemId);
         } else {
             // Generic insignia for completing ANY season mission/quest
-            const genericInsigniaId = (mission as any).type === 'season' ? 'insignia_quest_master' : 'insignia_quest_incomum';
+            const genericInsigniaId = (mission as any).type === 'season' ?'insignia_quest_master' : 'insignia_quest_incomum';
             grantUserUnlock('insignias', genericInsigniaId);
             grantInventoryItem(genericInsigniaId, true); // Silent because the modal will show it
         }
@@ -4676,7 +4683,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             plates: {},
         };
         const shouldUnlock = mission.reward_type === 'item_id' && rewardCategory && rewardItemId;
-        const nextUnlockedItems = shouldUnlock ? {
+        const nextUnlockedItems = shouldUnlock ?{
             ...unlockedItems,
             [rewardCategory]: {
                 ...unlockedItems[rewardCategory],
@@ -4807,7 +4814,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // 2. Calculate Progress (Base Score)
         // progresso = (acoes realizadas / acoes planejadas) * 100
-        const progress = scoredCycleTasks.length > 0 ? (completedScoredTasks.length / scoredCycleTasks.length) * 100 : 100;
+        const progress = scoredCycleTasks.length > 0 ?(completedScoredTasks.length / scoredCycleTasks.length) * 100 : 100;
 
         // 3. Calculate Bonuses
         // +10 per milestone (Marco)
@@ -4837,10 +4844,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Consistency Bonus: 20 points if consistent (>80% of days active), scaled down
         const consistencyRatio = uniqueDays / durationDays;
-        const consistencyBonus = consistencyRatio >= 0.8 ? 20 : (consistencyRatio >= 0.5 ? 10 : 0);
+        const consistencyBonus = consistencyRatio >= 0.8 ?20 : (consistencyRatio >= 0.5 ?10 : 0);
 
         // Volume Bonus (Hours of deep work)
-        // User insight: 15h = 1000 XP. Good cycle needs "many hours".
+        // User insight: 15h = 1000 XP. Good cycle needs "manh?y hours".
         const totalMinutes = completedTasks.reduce((sum, t) => sum + (t.duration || 0), 0);
         const totalHours = Math.floor(totalMinutes / 60);
         const volumeBonus = Math.min(30, Math.floor(totalHours / 2)); // Max 30 points for 60 hours
@@ -4917,7 +4924,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Calculate Exp Gained
         const expFromActions = completedTasks.reduce((sum, task) => {
-            const duration = Number.isFinite(task.duration) ? task.duration : 0;
+            const duration = Number.isFinite(task.duration) ?task.duration : 0;
             if (duration > 0) return sum + duration;
             const action = currentActions.find(a => a.id === task.actionId);
             return sum + (action?.duration || 0);
@@ -4925,12 +4932,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const missionBonusExp = completedTasks.reduce((sum, task) => {
             const action = currentActions.find(a => a.id === task.actionId);
             if (action?.actionType !== 'Marco') return sum;
-            const duration = Number.isFinite(task.duration) ? task.duration : (action?.duration || 0);
+            const duration = Number.isFinite(task.duration) ?task.duration : (action?.duration || 0);
             return sum + duration;
         }, 0);
         const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
         const rawExp = expFromActions + missionBonusExp + cycleExpBonus;
-        const premiumBonusExp = isPremiumUser ? Math.round(rawExp * 0.1) : 0;
+        const premiumBonusExp = isPremiumUser ?Math.round(rawExp * 0.1) : 0;
         const expGained = rawExp + premiumBonusExp;
 
         const identitySnapshot = {
@@ -4942,7 +4949,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             nobilityRankName: NOBILITY_RANKS.find(rank => rank.id === userProfile.nobility?.rankId)?.name || undefined,
             clanName: clan?.name || userProfile.clanName || null,
             clanIcon: clan?.icon || userProfile.clanIcon || null,
-            clanRankName: clan ? (CLAN_RANKS.find(rank => rank.id === clan.rankId)?.name || null) : null,
+            clanRankName: clan ?(CLAN_RANKS.find(rank => rank.id === clan.rankId)?.name || null) : null,
             capturedAt: new Date().toISOString(),
         };
 
@@ -4956,7 +4963,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // === Phase 10: Advanced Report Metrics ===
         // avgHoursPerDay
-        const avgHoursPerDay = durationDays > 0 ? Math.round((totalHours / durationDays) * 10) / 10 : 0;
+        const avgHoursPerDay = durationDays > 0 ?Math.round((totalHours / durationDays) * 10) / 10 : 0;
 
         // scoreBreakdown (reuse already computed bonus values)
         const scoreBreakdown = {
@@ -5068,7 +5075,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const assetActionIds = currentActions.filter(a => assetArenaIds.includes(a.arenaId)).map(a => a.id);
                 const assetCompletedCount = completedScoredTasks.filter(t => assetActionIds.includes(t.actionId)).length;
                 const totalCompleted = completedScoredTasks.length;
-                const value = totalCompleted > 0 ? (assetCompletedCount / totalCompleted) * 100 : 0;
+                const value = totalCompleted > 0 ?(assetCompletedCount / totalCompleted) * 100 : 0;
 
                 return {
                     asset: asset.name,
@@ -5148,7 +5155,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             let newChests;
             if (chestIndex >= 0) {
                 newChests = existingChests.map((chest, index) =>
-                    index === chestIndex ? { ...chest, count: chest.count + 1 } : chest
+                    index === chestIndex ?{ ...chest, count: chest.count + 1 } : chest
                 );
             } else {
                 newChests = [...existingChests, { type: chestType, count: 1 }];
@@ -5218,7 +5225,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .filter(c => c.status === 'renew' || (c.status !== 'archive' && c.status !== 'delete'))
             .map(c => c.id);
 
-        startCycle(cycleDetails.name, cycleDetails.endDate, newArenaIds.length > 0 ? newArenaIds : undefined);
+        startCycle(cycleDetails.name, cycleDetails.endDate, newArenaIds.length > 0 ?newArenaIds : undefined);
     };
 
     const setCurrentSkin = (skinId: string) => updateUserProfile({ skin: skinId });
@@ -5286,8 +5293,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 .maybeSingle()
         ]);
 
-        const clanData = clanRes.data?.clans ? mapToCamelCase(clanRes.data.clans) as Clan : null;
-        const clanRank = clanData ? CLAN_RANKS.find(r => r.id === (clanData as any).rankId) : undefined;
+        const clanData = clanRes.data?.clans ?mapToCamelCase(clanRes.data.clans) as Clan : null;
+        const clanRank = clanData ?CLAN_RANKS.find(r => r.id === (clanData as any).rankId) : undefined;
 
         let publicProfile: UserProfile | null = null;
         if (profileRes.data) {
@@ -5446,7 +5453,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (fetchError) {
                 console.error("Error fetching clan quest progress for update:", fetchError.message);
-                // Fallback to blind update if fetch fails? Better to stop to avoid corruption.
+                // Fallback to blind update if fetch fails?Better to stop to avoid corruption.
                 return;
             }
 
@@ -5475,7 +5482,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const toggleChecklistItem = (id: string) => {
-        setChecklistItems(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
+        setChecklistItems(prev => prev.map(item => item.id === id ?{ ...item, completed: !item.completed } : item));
     };
     const addChecklistItem = (text: string) => {
         if (!text.trim()) return;
@@ -5483,21 +5490,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setChecklistItems(prev => [...prev, newItem]);
     };
     const updateChecklistItem = (id: string, text: string) => {
-        setChecklistItems(prev => prev.map(item => item.id === id ? { ...item, text } : item));
+        setChecklistItems(prev => prev.map(item => item.id === id ?{ ...item, text } : item));
     };
     const deleteChecklistItem = (id: string) => {
         setChecklistItems(prev => prev.filter(item => item.id !== id));
     };
 
     const updateAssetSlotValue = (assetId: string, slotId: string, value: SlotValue) => {
-        setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, slots: asset.slots.map(slot => slot.id === slotId ? { ...slot, value } : slot) } : asset));
+        setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ?{ ...asset, slots: asset.slots.map(slot => slot.id === slotId ?{ ...slot, value } : slot) } : asset));
         const userId = getSupabaseUserId();
         if (userId) {
             // Correct upsert for asset_slots: use user_id and slot_id as composite key or unique identifiers
             supabase.from('asset_slots').upsert({
                 slot_id: slotId,
                 user_id: userId,
-                value: typeof value === 'object' ? JSON.stringify(value) : String(value)
+                value: typeof value === 'object' ?JSON.stringify(value) : String(value)
             }, { onConflict: 'user_id,slot_id' }).then(({ error }) => {
                 if (error) console.error("Supabase slot update error:", error.message);
             });
@@ -5508,7 +5515,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
         const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
 
-        setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: [...asset.arenas, newArena] } : asset));
+        setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ?{ ...asset, arenas: [...asset.arenas, newArena] } : asset));
 
         const userId = getSupabaseUserId();
         if (!userId || skipDb) {
@@ -5529,7 +5536,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return newArena;
         } catch (error: any) {
             console.error("Supabase add arena error:", error?.message || error);
-            setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ? { ...asset, arenas: asset.arenas.filter(arena => arena.id !== newArena.id) } : asset));
+            setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ?{ ...asset, arenas: asset.arenas.filter(arena => arena.id !== newArena.id) } : asset));
             showToast("Erro ao salvar arena no servidor: " + (error?.message || 'falha desconhecida'), 'error');
             throw error;
         }
@@ -5538,7 +5545,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => {
         setAssets(prevAssets => prevAssets.map(asset => ({
             ...asset,
-            arenas: asset.arenas.map(arena => arena.id === arenaId ? { ...arena, ...arenaData } : arena)
+            arenas: asset.arenas.map(arena => arena.id === arenaId ?{ ...arena, ...arenaData } : arena)
         })));
         const userId = getSupabaseUserId();
         if (userId) {
@@ -5575,7 +5582,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const updateArenaFolder = async (folderId: string, data: Partial<ArenaFolder>) => {
-        setArenaFolders(prev => prev.map(f => f.id === folderId ? { ...f, ...data } : f));
+        setArenaFolders(prev => prev.map(f => f.id === folderId ?{ ...f, ...data } : f));
 
         const userId = getSupabaseUserId();
         if (userId) {
@@ -5586,11 +5593,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const deleteArenaFolder = async (folderId: string) => {
-        // Move arenas out of folder first (or delete them? Usually move to root)
+        // Move arenas out of folder first (or delete them?Usually move to root)
         // Here we will move them to root (folderId = null)
         setAssets(prevAssets => prevAssets.map(asset => ({
             ...asset,
-            arenas: asset.arenas.map(a => a.folderId === folderId ? { ...a, folderId: undefined } : a)
+            arenas: asset.arenas.map(a => a.folderId === folderId ?{ ...a, folderId: undefined } : a)
         })));
 
         setArenaFolders(prev => prev.filter(f => f.id !== folderId));
@@ -5646,7 +5653,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ...asset,
                 arenas: asset.arenas.map(arena => {
                     const updated = reorderedGroup.find(u => u.id === arena.id);
-                    return updated ? { ...arena, order: updated.order } : arena;
+                    return updated ?{ ...arena, order: updated.order } : arena;
                 })
             }));
         });
@@ -5677,7 +5684,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             // 1. Create a modified list where the dragged arena already has the NEW priority
             const modifiedArenas = allArenasAcrossAssets.map(a =>
-                a.id === arenaId ? { ...a, priority } : a
+                a.id === arenaId ?{ ...a, priority } : a
             );
 
             // 2. Filter to the target priority group
@@ -5813,7 +5820,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ...a,
                     arenas: a.arenas.map(ar => {
                         const up = relevantUpdates.find(u => u.id === ar.id);
-                        return up ? { ...ar, order: up.order } : ar;
+                        return up ?{ ...ar, order: up.order } : ar;
                     })
                 };
             }));
@@ -5847,7 +5854,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (campaignUpdates.length > 0) {
             setCampaigns(prev => prev.map(c => {
                 const up = campaignUpdates.find(u => u.id === c.id);
-                return up ? { ...c, order: up.order } : c;
+                return up ?{ ...c, order: up.order } : c;
             }));
 
             console.log('Upserting campaigns:', campaignUpdates.map(u => ({ id: u.id, user_id: userId, order: u.order })));
@@ -5922,8 +5929,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ...a,
                     arenas: a.arenas.map(ar => {
                         const up = arenaUpdates.find(u => u.id === ar.id);
-                        if (ar.id === draggedId) return { ...ar, priority: priority, priorityOrder: up ? up.priorityOrder : 0 };
-                        return up ? { ...ar, priorityOrder: up.priorityOrder } : ar;
+                        if (ar.id === draggedId) return { ...ar, priority: priority, priorityOrder: up ?up.priorityOrder : 0 };
+                        return up ?{ ...ar, priorityOrder: up.priorityOrder } : ar;
                     })
                 };
             }));
@@ -5949,8 +5956,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setCampaigns(prev => prev.map(c => {
                 const up = campaignUpdates.find(u => u.id === c.id);
                 // Update priority too if it's the dragged item
-                if (c.id === draggedId) return { ...c, priority: priority, priorityOrder: up ? up.priorityOrder : 0 };
-                return up ? { ...c, priorityOrder: up.priorityOrder } : c;
+                if (c.id === draggedId) return { ...c, priority: priority, priorityOrder: up ?up.priorityOrder : 0 };
+                return up ?{ ...c, priorityOrder: up.priorityOrder } : c;
             }));
 
             const updatesWithColumns = campaignUpdates.map(u => {
@@ -6237,8 +6244,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!hasSchedule) return baseContext;
         const schedule = {
             ...(baseContext?.schedule || {}),
-            ...(scheduledDays !== undefined ? { days: scheduledDays } : {}),
-            ...(scheduledStartTime !== undefined ? { startTime: scheduledStartTime } : {})
+            ...(scheduledDays !== undefined ?{ days: scheduledDays } : {}),
+            ...(scheduledStartTime !== undefined ?{ startTime: scheduledStartTime } : {})
         };
         return { ...(baseContext || {}), schedule };
     };
@@ -6246,7 +6253,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const addAction = async (actionData: Omit<Action, 'id'>): Promise<Action> => {
         const newAction: Action = { ...actionData, id: crypto.randomUUID() };
         const userId = getSupabaseUserId();
-        const previousCycleArenaIds = activeCycle ? [...activeCycle.arenaIds] : null;
+        const previousCycleArenaIds = activeCycle ?[...activeCycle.arenaIds] : null;
         const shouldAttachArenaToCycle = Boolean(activeCycle && !activeCycle.arenaIds.includes(newAction.arenaId));
 
         setActions(prev => [...prev, newAction]);
@@ -6257,7 +6264,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ...asset,
                     arenas: asset.arenas.map(ar => {
                         if (ar.id !== newAction.arenaId) return ar;
-                        const actionIds = Array.isArray(ar.actionIds) ? ar.actionIds : [];
+                        const actionIds = Array.isArray(ar.actionIds) ?ar.actionIds : [];
                         return { ...ar, actionIds: [...actionIds, newAction.id] };
                     })
                 };
@@ -6289,7 +6296,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         try {
             const contextPayload = mergeScheduleIntoContext(newAction.context, newAction.scheduledDays, newAction.scheduledStartTime);
-            const originCodexId = newAction.originCodexId && isUuid(newAction.originCodexId) ? newAction.originCodexId : null;
+            const originCodexId = newAction.originCodexId && isUuid(newAction.originCodexId) ?newAction.originCodexId : null;
             const actionPayload = {
                 id: newAction.id,
                 user_id: userId,
@@ -6320,13 +6327,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ...asset,
                 arenas: asset.arenas.map(arena => {
                     if (arena.id !== newAction.arenaId) return arena;
-                    const actionIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+                    const actionIds = Array.isArray(arena.actionIds) ?arena.actionIds : [];
                     return { ...arena, actionIds: actionIds.filter(id => id !== newAction.id) };
                 })
             })));
 
             if (shouldAttachArenaToCycle && activeCycle && previousCycleArenaIds) {
-                setActiveCycle(prev => prev?.id === activeCycle.id ? { ...prev, arenaIds: previousCycleArenaIds } : prev);
+                setActiveCycle(prev => prev?.id === activeCycle.id ?{ ...prev, arenaIds: previousCycleArenaIds } : prev);
                 await supabase.from('cycles').update({ arena_ids: previousCycleArenaIds }).eq('id', activeCycle.id);
             }
 
@@ -6336,7 +6343,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const updateAction = (actionId: string, actionData: Partial<Action>) => {
-        setActions(prev => prev.map(a => a.id === actionId ? { ...a, ...actionData } : a));
+        setActions(prev => prev.map(a => a.id === actionId ?{ ...a, ...actionData } : a));
         const userId = getSupabaseUserId();
         if (userId) {
             // Explicit payload construction for updates
@@ -6410,7 +6417,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ...asset,
                     arenas: asset.arenas.map(arena => {
                         if (arena.id !== arenaId) return arena;
-                        const actionIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+                        const actionIds = Array.isArray(arena.actionIds) ?arena.actionIds : [];
                         return {
                             ...arena,
                             actionIds: actionIds.filter(id => id !== actionId)
@@ -6526,8 +6533,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const assetId = assets[0]?.id || 'geral';
             arena = await addArena(assetId, {
                 name: seasonArenaName,
-                description: quest.description || (isClanQuest ? 'Miss√£o de Cl√£' : 'Miss√£o de Temporada'),
-                icon: quest.actionTemplate.icon || (isClanQuest ? '??' : '??'),
+                description: quest.description || (isClanQuest ? 'Miss\u00E3o de Cl\u00E3' : 'Miss\u00E3o de Temporada'),
+                icon: quest.actionTemplate.icon || (isClanQuest ? '\u2694\uFE0F' : '\u{1F4DD}'),
                 priority: 'alta' // Destaque para miss√µes ativas
             }, true);
 
@@ -6552,10 +6559,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             arenaId: arena.id,
             name: quest.actionTemplate.name,
             description: quest.actionTemplate.description,
-            icon: isClanQuest ? '??' : quest.actionTemplate.icon,
+            icon: isClanQuest ? '\u2694\uFE0F' : (quest.actionTemplate.icon || '\u{1F4DD}'),
             duration: quest.actionTemplate.duration,
-            repetitions: isClanQuest ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate.repetitions || 1) : (quest.actionTemplate.repetitions || quest.goal_value || 1),
-            actionType: quest.actionTemplate.isMilestone ? 'Marco' : 'AÁ„o Recorrente',
+            repetitions: isClanQuest ?(quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate.repetitions || 1) : (quest.actionTemplate.repetitions || quest.goal_value || 1),
+            actionType: quest.actionTemplate.isMilestone ? 'Marco' : 'A\u00E7\u00E3o Recorrente',
             difficulty: 3
         });
 
@@ -6619,8 +6626,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         else if (quest.description.includes("Ba√∫ Incomum")) earnedChest = 'Incomum';
         else if (quest.description.includes("Ba√∫ Ciclo")) earnedChest = 'Ciclo';
         else if (quest.description.includes("Ba√∫ Raro")) earnedChest = 'Raro';
-        else if (quest.description.includes("Ba˙ …pico")) earnedChest = '…pico';
-        else if (quest.description.includes("Ba˙ Lend·rio")) earnedChest = 'Lend·rio';
+        else if (quest.description.includes("Ba\u00FA \u00C9pico")) earnedChest = '\u00C9pico';
+        else if (quest.description.includes("Ba\u00FA Lend\u00E1rio")) earnedChest = 'Lend\u00E1rio';
 
         if (earnedChest) await addChest(earnedChest);
 
@@ -6660,7 +6667,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         addFeedEvent({
             type: 'QUEST_COMPLETED', // Changed from MILESTONE_COMPLETED
-            content: { title: `Quest Completada: ${quest.title}`, icon: '??', score: addedExp }
+            content: { title: `Quest Completada: ${quest.title}`, icon: 'üìù', score: addedExp }
         });
 
         // Determine all insignias to show in modal
@@ -6707,7 +6714,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Add XP
         const currentExp = userProfile.nobility.exp;
-        const addedExp = typeof mission.reward_value === 'number' ? mission.reward_value : 0;
+        const addedExp = typeof mission.reward_value === 'number' ?mission.reward_value : 0;
         const nextExp = currentExp + addedExp;
 
         // Check for chest rewards in description
@@ -6715,8 +6722,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (mission.description.includes("Ba√∫ Incomum")) await addChest('Incomum');
         if (mission.description.includes("Ba√∫ Ciclo")) await addChest('Ciclo');
         if (mission.description.includes("Ba√∫ Raro")) await addChest('Raro');
-        if (mission.description.includes("Ba˙ …pico")) await addChest('…pico');
-        if (mission.description.includes("Ba˙ Lend·rio")) await addChest('Lend·rio');
+        if (mission.description.includes("Ba\u00FA \u00C9pico")) await addChest('\u00C9pico');
+        if (mission.description.includes("Ba\u00FA Lend\u00E1rio")) await addChest('Lend\u00E1rio');
 
         // Grant items if it's an item reward
         const earnedItemIds: string[] = [];
@@ -6754,7 +6761,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         addFeedEvent({
             type: 'QUEST_COMPLETED',
-            content: { title: `Miss√£o de Temporada: ${mission.title}`, icon: '??', score: Number(addedExp) }
+            content: { title: `Miss\u00E3o de Temporada: ${mission.title}`, icon: '\u{1F4DD}', score: Number(addedExp) }
         });
 
         // Determine all insignias to show in modal
@@ -6883,7 +6890,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         delete snakeCaseData.background_url;
         const { error } = await supabase.from('clans').update(snakeCaseData).eq('id', clanId);
         if (error) { console.error("Error updating clan:", error.message); return; }
-        setClan(prev => (prev && prev.id === clanId) ? { ...prev, ...data } : prev);
+        setClan(prev => (prev && prev.id === clanId) ?{ ...prev, ...data } : prev);
     };
 
     const leaveClan = async () => {
@@ -7055,7 +7062,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await SupabaseService.createNotification(
             request.userId,
             'clan_response',
-            `${clan.name} aprovou sua entrada no cla.`,
+            `${clan.name} aprovou sua entrada no cl\u00E3.`,
         );
 
         // Invalidate cache before reloading to ensure new member is fetched
@@ -7076,7 +7083,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await SupabaseService.createNotification(
             request.userId,
             'clan_response',
-            `${clan.name} recusou sua entrada no cla.`,
+            `${clan.name} recusou sua entrada no cl\u00E3.`,
         );
 
         setClanJoinRequestsIncoming(prev => prev.filter(r => r.id !== request.id));
@@ -7106,10 +7113,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Group into conversations
         const convsMap = new Map<string, DMConversation>();
         mapped.forEach(msg => {
-            const otherId = msg.senderId === userId ? msg.recipientId : msg.senderId;
+            const otherId = msg.senderId === userId ?msg.recipientId : msg.senderId;
             if (!convsMap.has(otherId)) {
                 // Find profile for this conversation
-                let profile = msg.senderId === otherId ? msg.senderProfile : undefined;
+                let profile = msg.senderId === otherId ?msg.senderProfile : undefined;
                 // If profile not in message (sent by us), we might need to fetch it or find it in friends
                 if (!profile) {
                     const friend = friends.find(f => f.id === otherId);
@@ -7121,7 +7128,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         participantId: otherId,
                         profile,
                         lastMessage: msg,
-                        unreadCount: msg.recipientId === userId && !msg.read ? 1 : 0
+                        unreadCount: msg.recipientId === userId && !msg.read ?1 : 0
                     });
                 }
             } else if (msg.recipientId === userId && !msg.read) {
@@ -7205,11 +7212,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         setDirectMessages(prev => prev.map(msg =>
-            msg.senderId === senderId && msg.recipientId === userId ? { ...msg, read: true } : msg
+            msg.senderId === senderId && msg.recipientId === userId ?{ ...msg, read: true } : msg
         ));
 
         setDMConversations(prev => prev.map(c =>
-            c.participantId === senderId ? { ...c, unreadCount: 0 } : c
+            c.participantId === senderId ?{ ...c, unreadCount: 0 } : c
         ));
     };
 
@@ -7258,7 +7265,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setSeasons(prev => {
                 let newSeasons = [...prev];
                 if (updatedSeason.is_active) {
-                    newSeasons = newSeasons.map(s => s.id === updatedSeason.id ? s : { ...s, is_active: false });
+                    newSeasons = newSeasons.map(s => s.id === updatedSeason.id ?s : { ...s, is_active: false });
                 }
                 const index = newSeasons.findIndex(s => s.id === seasonId);
                 if (index > -1) newSeasons[index] = updatedSeason;
@@ -7299,7 +7306,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     const newArena = await addArena('fisico', {
                         name: arenaName,
                         description: "Desafio PVP de corrida. Quem completar 15km primeiro vence.",
-                        icon: "?????",
+                        icon: "?",
                         priority: 'alta'
                     });
      
@@ -7308,10 +7315,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             name: "Correr 1km",
                             description: `Km ${i + 1} de 15`,
                             arenaId: newArena.id,
-                            icon: "?????",
+                            icon: "?",
                             duration: 10,
                             repetitions: 1,
-                            actionType: 'AÁ„o Recorrente' as any,
+                            actionType: 'A\u00E7\u00E3o Recorrente' as any,
                             difficulty: 3
                         }));
      
@@ -7354,9 +7361,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         });
 
-        const cycleArenaIds = activeCycle?.arenaIds?.length ? new Set(activeCycle.arenaIds) : null;
-        const cycleScopedArenas = cycleArenaIds ? activeArenas.filter(arena => cycleArenaIds.has(arena.id)) : activeArenas;
-        const availableArenas = cycleScopedArenas.length > 0 ? cycleScopedArenas : activeArenas;
+        const cycleArenaIds = activeCycle?.arenaIds?.length ?new Set(activeCycle.arenaIds) : null;
+        const cycleScopedArenas = cycleArenaIds ?activeArenas.filter(arena => cycleArenaIds.has(arena.id)) : activeArenas;
+        const availableArenas = cycleScopedArenas.length > 0 ?cycleScopedArenas : activeArenas;
         const activeArenaIds: Set<string> = new Set(availableArenas.map(arena => arena.id).filter(id => !lockedArenaIds.has(id)));
 
         return buildTaskPoolEntries(actions, activeArenaIds, isClanQuestActionId);
@@ -7395,7 +7402,6 @@ export const useGame = () => {
     if (!builder.isBuilderMode) return context;
     return { ...context, ...builder.gameOverrides };
 };
-
 
 
 

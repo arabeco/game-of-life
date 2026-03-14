@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { Action, ScheduledTask } from '../types';
-import { DollarSignIcon, FlameIcon } from './Icons';
+import { EmojiGlyph } from './EmojiGlyph';
 import { useGame } from '../contexts/GameContext';
 import { DropIndicator } from './DropIndicator';
 import { useLongPress } from '../hooks/useLongPress';
@@ -110,7 +110,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
             <div style={isFreeAction ? { height: '40px', width: '100px' } : {...backgroundStyle, height: '40px', width: '100px'}} className={`p-2 flex items-center space-x-2 text-left opacity-80 ${isFreeAction ? 'free-action-shell free-action-outline rounded-xl' : 'rounded-r-lg border-l-2 border-[var(--bronze)]'}`}>
-                <div className="text-xl z-10">{action?.icon}</div>
+                <div className="text-xl z-10"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="picker" className="text-white" /></div>
             </div>
         );
         const duration = action?.actionType === 'Marco' ? Math.max(15, task.duration) : task.duration;
@@ -145,14 +145,12 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
                 style={isFreeAction ? undefined : backgroundStyle}
             >
                 <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ? 'bg-black/40' : 'bg-black/50'} ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
-                
-                <div className="text-xl z-10">{
-                    action?.icon === '$' ? <DollarSignIcon className="w-4 h-4"/> : 
-                    action?.icon === '🔥' ? <FlameIcon className="w-4 h-4" /> : 
-                    action?.icon
-                }</div>
-                
-                 {isHolding && (
+
+                <div className="text-xl z-10">
+                    <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
+                </div>
+
+                {isHolding && (
                     <div className={`absolute inset-0 animate-pulse ${isFreeAction ? 'bg-black/35 rounded-xl' : 'bg-black/50 rounded-r-lg'}`}>
                         <div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ? 'bg-slate-200/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div>
                     </div>

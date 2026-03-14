@@ -11,6 +11,7 @@ import { supabase } from '../supabaseClient';
 import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import './arena-ui.css';
+import { EmojiGlyph } from './EmojiGlyph';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -22,7 +23,7 @@ const hexToRgb = (hex: string) => {
     }
     const normalized = trimmed.replace('#', '');
     if (normalized.length === 3 || normalized.length === 6) {
-        const value = normalized.length === 3 ? normalized.split('').map(ch => ch + ch).join('') : normalized;
+        const value = normalized.length === 3 ?normalized.split('').map(ch => ch + ch).join('') : normalized;
         const intValue = parseInt(value, 16);
         return { r: (intValue >> 16) & 255, g: (intValue >> 8) & 255, b: intValue & 255 };
     }
@@ -61,14 +62,14 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
         }
     }
 
-    const completedCount = isSharedPool ? sharedCompleted : personalCompleted;
+    const completedCount = isSharedPool ?sharedCompleted : personalCompleted;
     const totalProposed = action.repetitions || 1;
     const isFreeAction = action.actionType === 'Livre';
 
-    const normalizedArena = arena?.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+    const normalizedArena = arena?.name ?arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
 
     // SAFE ACCESS: Clan Quest logic
-    const clanQuest = typeof getClanQuestForActionName === 'function' ? getClanQuestForActionName(action.name) : null;
+    const clanQuest = typeof getClanQuestForActionName === 'function' ?getClanQuestForActionName(action.name) : null;
     const isClanQuest = !!clanQuest;
 
     let clanProgress = 0;
@@ -77,33 +78,33 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
     }
 
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
-    const displayProgress = isClanQuest ? `${clanProgress}/${target}` : (isFreeAction ? `${completedCount}` : `${completedCount}/${totalProposed}`);
-    const displayIcon = action.icon || 'ðŸ†';
+    const displayProgress = isClanQuest ?`${clanProgress}/${target}` : (isFreeAction ?`${completedCount}` : `${completedCount}/${totalProposed}`);
+    const displayIcon = action.icon || '\u{1F4DD}';
 
     return (
         <div className="relative flex-shrink-0">
             <button
                 onClick={onClick}
-                style={isClanQuest ? {
+                style={isClanQuest ?{
                     backgroundColor: withAlpha(QUEST_VISUAL.rgb, 0.22),
                     borderColor: QUEST_VISUAL.hex,
                     boxShadow: `0 0 15px ${withAlpha(QUEST_VISUAL.rgb, 0.3)}`
                 } : {
                     ...backgroundStyle,
                 }}
-                className={`relative w-24 h-24 border rounded-xl hover:opacity-80 transition-all overflow-hidden ${isClanQuest ? '' : 'border-[var(--skin-accent-color)]'}`}
+                className={`relative w-24 h-24 border rounded-xl hover:opacity-80 transition-all overflow-hidden ${isClanQuest ?'' : 'border-[var(--skin-accent-color)]'}`}
             >
                 <div className="arena-plasma">
-                    <PlasmaCanvas color={isClanQuest ? QUEST_VISUAL.hex : skinColor} opacity={isClanQuest ? 0.3 : 0.189} className="arena-plasma-canvas" />
+                    <PlasmaCanvas color={isClanQuest ?QUEST_VISUAL.hex : skinColor} opacity={isClanQuest ?0.3 : 0.189} className="arena-plasma-canvas" />
                 </div>
-                <div className="relative z-10 flex flex-col items-center justify-center text-center p-1 space-y-1">
-                    <span className="text-3xl">{displayIcon}</span>
-                    <p className="text-xs font-bold leading-tight line-clamp-2 text-white">{action.name}</p>
+                <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-2 py-1.5 space-y-1.5">
+                    <EmojiGlyph symbol={displayIcon} size="detail" className="text-white" />
+                    <p className="text-[13px] font-bold leading-[1.05] line-clamp-2 text-white">{action.name}</p>
                 </div>
             </button>
             <div
-                className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border ${isClanQuest ? '' : 'bg-black/50 text-white border-white/10'}`}
-                style={isClanQuest ? {
+                className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border ${isClanQuest ?'' : 'bg-black/50 text-white border-white/10'}`}
+                style={isClanQuest ?{
                     backgroundColor: withAlpha(QUEST_VISUAL.rgb, 0.24),
                     color: QUEST_VISUAL.hex,
                     borderColor: withAlpha(QUEST_VISUAL.rgb, 0.35),
@@ -149,7 +150,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     }, [arena.id]);
 
     const parentAsset = assets.find(a => a.id === arena.assetId);
-    const normalizedArena = arena.name ? arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+    const normalizedArena = arena.name ?arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
 
     const allActions = useMemo(() => {
         if (typeof getActionsForArena !== 'function') return [];
@@ -171,7 +172,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]
         || ASSET_ACCENT_COLORS[normalizeAssetKey(parentAsset?.name) as keyof typeof ASSET_ACCENT_COLORS]
         || '#F0C843';
-    const accentColor = isClanQuestArena ? QUEST_VISUAL.hex : resolvedAssetAccent;
+    const accentColor = isClanQuestArena ?QUEST_VISUAL.hex : resolvedAssetAccent;
 
     useEffect(() => {
         if (!isClanQuestArena || !clanQuests || clanQuests.length === 0) return;
@@ -223,10 +224,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     }, 0) || 0;
 
     const progress = isClanQuestArena
-        ? (clanQuestTotals.totalGoal > 0
-            ? (clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
+        ?(clanQuestTotals.totalGoal > 0
+            ?(clanQuestTotals.totalProgress / clanQuestTotals.totalGoal) * 100
             : Math.min(100, clanQuestTotals.totalProgress))
-        : (allActionInstances > 0 ? (allCompletedInstances / allActionInstances) * 100 : 0);
+        : (allActionInstances > 0 ?(allCompletedInstances / allActionInstances) * 100 : 0);
     const handleEditToggle = () => {
         if (isSpecialArena) return; // Disable editing for special arenas
         if (isEditing) {
@@ -273,11 +274,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData.session?.user.id;
         if (!uid || !isUuid(uid)) {
-            setLinkStatus('FaÃ§a login para enviar convites.');
+            setLinkStatus('Faça login para enviar convites.');
             return;
         }
         if (!isUuid(friend.id)) {
-            setLinkStatus('Este aliado nÃ£o possui ID vÃ¡lido.');
+            setLinkStatus('Este aliado não possui ID válido.');
             return;
         }
 
@@ -293,7 +294,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             setLinkStatus(error.message);
             return;
         }
-        setLinkStatus(`Convite de ${type === 'competicao' ? 'Desafio' : type === 'parceria' ? 'Parceria' : 'Mentoria'} enviado para ${friend.nickname}.`);
+        setLinkStatus(`Convite de ${type === 'competicao' ?'Desafio' : type === 'parceria' ?'Parceria' : 'Mentoria'} enviado para ${friend.nickname}.`);
         window.setTimeout(() => {
             setIsLinkingObserver(false);
             setLinkStatus(null);
@@ -330,8 +331,8 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             <div className="flex flex-col items-center gap-1">
                                 {/* Allow editing for all arenas, EXCEPT special ones (unless Office/Shared) */}
                                 {(!isSpecialArena || isSharedPool) && (
-                                    <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}>
-                                        <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
+                                    <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
+                                        <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>
                                 )}
 
@@ -339,7 +340,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     <button
                                         onClick={() => setShowDeleteConfirmation(true)}
                                         className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
-                                        title="Abandonar MissÃ£o"
+                                        title="Abandonar Missão"
                                     >
                                         <Trash2Icon className="w-5 h-5 text-red-500" />
                                     </button>
@@ -357,30 +358,30 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     <button
                                         onClick={() => typeof setArenaAsShared === 'function' && setArenaAsShared(arena.id, !arena.description?.includes('[SHARED]'))}
                                         className={`p-2 rounded-full transition-colors border ${arena.description?.includes('[SHARED]')
-                                            ? 'border-green-500/50 bg-green-500/20 hover:bg-green-500/30'
+                                            ?'border-green-500/50 bg-green-500/20 hover:bg-green-500/30'
                                             : 'border-white/15 bg-black/30 hover:bg-black/40'
                                             }`}
-                                        title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada âœ“' : 'Compartilhar arena para o clÃ£'}
+                                        title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada' : 'Compartilhar arena para o clã'}
                                     >
-                                        <UsersIcon className={`w-4 h-4 ${arena.description?.includes('[SHARED]') ? 'text-green-400' : 'text-gray-400'}`} />
+                                        <UsersIcon className={`w-4 h-4 ${arena.description?.includes('[SHARED]') ?'text-green-400' : 'text-gray-400'}`} />
                                     </button>
                                 )}
                             </div>
                             <div className="flex-1 flex flex-col items-center text-center">
                                 <h2 className="luxe-title-ornate text-lg font-black uppercase tracking-wider text-[color:var(--skin-accent-color)]">
-                                    {isEditing ? "EDITAR ARENA" : arena.name}
+                                    {isEditing ?"EDITAR ARENA" : arena.name}
                                 </h2>
                                 {parentAsset?.name && (
                                     <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-300">{parentAsset.name}</p>
                                 )}
                                 {currentLinkType === 'competicao' && (
                                     <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
-                                        <span>âš”ï¸</span> PVP
+                                        <span>⚔️</span> PVP
                                     </div>
                                 )}
                                 {currentLinkType === 'mentoria' && (
                                     <div className="bg-blue-500/20 border border-blue-500/50 text-blue-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
-                                        <span>ðŸŽ“</span> MENTORIA
+                                        <span>👁️</span> MENTORIA
                                     </div>
                                 )}
                                 {isClanQuestArena && (
@@ -394,7 +395,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                                         q.actionTemplate?.name === arena.name ||
                                                         allActions?.some(a => a.name === q.actionTemplate?.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
                                                     ));
-                                                    return quest ? (clanQuestParticipants?.[quest.id] || 0) : 0;
+                                                    return quest ?(clanQuestParticipants?.[quest.id] || 0) : 0;
                                                 })()}
                                             </span>
                                         </div>
@@ -425,8 +426,8 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
                         {showDeleteConfirmation && (
                             <ConfirmationModal
-                                title={isSpecialArena ? "Sair da MissÃ£o" : "Excluir Arena"}
-                                message={isSpecialArena ? "Ao sair, sua participaÃ§Ã£o Ã© removida, mas a arena e aÃ§Ãµes ficam salvas." : "Tem certeza que deseja excluir esta arena? Esta aÃ§Ã£o nÃ£o pode ser desfeita."}
+                                title={isSpecialArena ? "Sair da Missão" : "Excluir Arena"}
+                                message={isSpecialArena ? "Ao sair, sua participação é removida, mas a arena e ações ficam salvas." : "Tem certeza que deseja excluir esta arena? Esta ação não pode ser desfeita."}
                                 onConfirm={handleDeleteArena}
                                 onCancel={() => setShowDeleteConfirmation(false)}
                             />
@@ -438,10 +439,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 disabled={!isEditing}
                                 className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center cursor-pointer disabled:cursor-default"
                             >
-                                <span className="text-5xl arena-icon">{editableArena.icon}</span>
+                                <EmojiGlyph symbol={editableArena.icon} size="arena" className="arena-icon text-white" />
                             </button>
 
-                            {isEditing ? (
+                            {isEditing ?(
                                 <>
                                     <input
                                         type="text"
@@ -457,7 +458,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     />
                                 </>
                             ) : (
-                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descriÃ§Ã£o.'}</p>
+                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>
                             )}
                         </div>
 
@@ -484,9 +485,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                                         <div className="arena-plasma">
                                                             <PlasmaCanvas color={'var(--skin-accent-color)'} opacity={0.189} className="arena-plasma-canvas" />
                                                         </div>
-                                                        <div className="relative z-10 transform -rotate-45 flex flex-col items-center justify-center space-y-1">
-                                                            <span className="text-3xl">{action.icon}</span>
-                                                            <p className="text-xs font-bold leading-tight line-clamp-2">{action.name}</p>
+                                                        <div className="relative z-10 transform -rotate-45 flex flex-col items-center justify-center px-1 space-y-1.5">
+                                                            <EmojiGlyph symbol={action.icon || "🏆"} size="milestone" className="text-white" />
+                                                            <p className="text-[13px] font-bold leading-[1.05] line-clamp-2 text-white">{action.name}</p>
                                                         </div>
                                                     </button>
                                                     {isCompleted && (
@@ -517,9 +518,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             </div>
                             <p className="text-sm font-bold text-gray-300 text-center">
                                 {isClanQuestArena
-                                    ? `${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}`
+                                    ?`${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}`
                                     : isSharedPool
-                                        ? `${allActionInstances - allCompletedInstances} aÃ§Ãµes restantes`
+                                        ? `${allActionInstances - allCompletedInstances} ações restantes`
                                         : `${progress.toFixed(0)}%`}
                             </p>
                         </div>
@@ -541,18 +542,18 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     <div className="bg-black/70 border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center">
                             <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">VINCULAR ALIADO</div>
-                            <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">Ã—</span></button>
+                            <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">?</span></button>
                         </div>
-                        <div className="text-xs text-gray-400">Escolha o tipo de vÃ­nculo e convide um amigo para {editableArena.name || arena.name}.</div>
+                        <div className="text-xs text-gray-400">Escolha o tipo de v?nculo e convide um amigo para {editableArena.name || arena.name}.</div>
 
                         <div className="flex gap-2 mb-2">
-                            <button onClick={() => setSelectionType('mentoria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'mentoria' ? 'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/30 text-gray-400 border-white/10'}`}>Mentoria</button>
-                            <button onClick={() => setSelectionType('competicao')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'competicao' ? 'bg-red-500 text-white border-red-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Desafio</button>
-                            <button onClick={() => setSelectionType('parceria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'parceria' ? 'bg-blue-500 text-white border-blue-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Parceria</button>
+                            <button onClick={() => setSelectionType('mentoria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'mentoria' ?'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/30 text-gray-400 border-white/10'}`}>Mentoria</button>
+                            <button onClick={() => setSelectionType('competicao')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'competicao' ?'bg-red-500 text-white border-red-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Desafio</button>
+                            <button onClick={() => setSelectionType('parceria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'parceria' ?'bg-blue-500 text-white border-blue-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Parceria</button>
                         </div>
 
-                        {availableFriends.length === 0 ? (
-                            <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID vÃ¡lido.</div>
+                        {availableFriends.length === 0 ?(
+                            <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID válido.</div>
                         ) : (
                             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                 {availableFriends.map(friend => (
@@ -562,11 +563,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                         className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-black/30 border border-white/10 flex items-center gap-3"
                                     >
                                         <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
-                                            {friend.avatarUrl ? <img src={friend.avatarUrl} alt={friend.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">?</span>}
+                                            {friend.avatarUrl ?<img src={friend.avatarUrl} alt={friend.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">👤</span>}
                                         </div>
                                         <div className="flex-1">
                                             <div className="text-sm font-bold text-white">{friend.nickname}</div>
-                                            <div className="text-[10px] text-gray-500">{friend.isOnline ? 'ONLINE' : 'OFFLINE'}</div>
+                                            <div className="text-[10px] text-gray-500">{friend.isOnline ?'ONLINE' : 'OFFLINE'}</div>
                                         </div>
                                         <div className="p-2 bg-white/5 rounded-full">
                                             <SendIcon className="w-4 h-4 text-gray-400" />

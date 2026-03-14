@@ -5,6 +5,7 @@ import { ChevronRightIcon, UsersIcon, CheckIcon, XIcon } from '../components/Ico
 import { ConfigSeasonQuest, ChestType, SeasonMission } from '../types';
 import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 import { QuestDetailModal, SeasonDetailModal } from '../components/SeasonDetailModal';
+import { isGenesisSeason, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
 
 const SeasonQuestCard: React.FC<{ 
     quest: ConfigSeasonQuest; 
@@ -285,7 +286,9 @@ export const SeasonView: React.FC = () => {
         }
     ];
 
-    const isGenesis = activeSeason.name.toLowerCase().includes('genesis');
+    const isGenesis = isGenesisSeason(activeSeason);
+    const activeSeasonBackground = resolveSeasonBackgroundUrl(activeSeason);
+    const activeSeasonLore = resolveSeasonLoreText(activeSeason);
 
     const handleClaimSpecial = (questId: string) => {
         if (questId === 'meta-quest-3') {
@@ -331,10 +334,10 @@ export const SeasonView: React.FC = () => {
                         onClick={() => setSeasonDetailOpen(true)}
                     >
                         {/* Background Image */}
-                        {(activeSeason as any).background_png_url && (
+                        {activeSeasonBackground && (
                             <div 
                                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                                style={{ backgroundImage: `url('${(activeSeason as any).background_png_url}')` }}
+                                style={{ backgroundImage: `url('${activeSeasonBackground}')` }}
                             />
                         )}
 
@@ -350,7 +353,7 @@ export const SeasonView: React.FC = () => {
                                 <div className="text-[10px] uppercase tracking-[0.2em] accent-text mb-1 drop-shadow-md">TEMPORADA ATUAL</div>
                                 <h2 className="text-2xl font-black accent-text drop-shadow-lg uppercase">{activeSeason.name}</h2>
                                 <p className="text-xs text-gray-200 italic mt-1 group-hover:text-white transition-colors drop-shadow-md max-w-[80%]">
-                                    "{(activeSeason as any).lore_text?.slice(0, 60) || (activeSeason as any).theme || 'Nova Era'}..."
+                                    "{(activeSeasonLore || 'Nova Era').slice(0, 60)}..."
                                 </p>
                             </div>
                             <div className="text-right">

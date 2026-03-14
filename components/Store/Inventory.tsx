@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { ItemDef, resolveItemDef, isItemCatalogVisible } from '../../constants/items';
@@ -24,8 +24,8 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'sovereign', label: 'Soberano', categories: ['skin', 'hair', 'artifact'] },
     { id: 'glyph', label: 'Glifo', categories: ['glyph', 'aura', 'orb', 'plate'] },
     { id: 'interface', label: 'Interface', categories: ['border', 'ui_skin', 'banner'] },
-    { id: 'insignias', label: 'Insígnias', categories: ['insignia'] },
-    { id: 'chests', label: 'Baús', categories: ['chest'] },
+    { id: 'insignias', label: 'Insignias', categories: ['insignia'] },
+    { id: 'chests', label: 'Baus', categories: ['chest'] },
 ];
 
 export const Inventory: React.FC = () => {
@@ -68,13 +68,35 @@ export const Inventory: React.FC = () => {
     };
 
     const sourceItems = useMemo(() => {
-        return inventory.map<InventoryEntry>(inst => {
+        const visibleItems = inventory.map<InventoryEntry>(inst => {
             const def = resolveItemDef(inst.id);
             return { ...inst, id: def?.id || inst.id, def };
         }).filter((item): item is InventoryEntry & { def: ItemDef } => {
             if (!item.def) return false;
             return isItemCatalogVisible(item.def) || isEquipped(item.id, item.def.category, item.def.imageUrl);
         });
+
+        const deduped = new Map<string, InventoryEntry & { def: ItemDef }>();
+
+        for (const item of visibleItems) {
+            const current = deduped.get(item.id);
+            if (!current) {
+                deduped.set(item.id, item);
+                continue;
+            }
+
+            const currentStamp = Date.parse(current.acquiredAt || '');
+            const nextStamp = Date.parse(item.acquiredAt || '');
+            const shouldReplace =
+                Boolean(item.isEquipped) ||
+                (!current.isEquipped && (Number.isNaN(currentStamp) || (!Number.isNaN(nextStamp) && nextStamp > currentStamp)));
+
+            if (shouldReplace) {
+                deduped.set(item.id, item);
+            }
+        }
+
+        return Array.from(deduped.values());
     }, [inventory, userProfile]);
 
     const filteredItems = useMemo(() => {
@@ -98,23 +120,30 @@ export const Inventory: React.FC = () => {
     const userChests = userProfile.chests || [];
 
     const getChestIcon = (type: string) => {
-        // Map backend lowercase to frontend expectation if needed, or handle both
-        const normalized = type.toLowerCase();
-        if (normalized.includes('comum') || normalized === 'incomum') return '📤'; // Incomum
-        if (normalized.includes('ciclo') || normalized === 'raro') return '🎁'; // Raro/Ciclo
-        if (normalized.includes('radiante') || normalized === 'épico' || normalized === 'epico') return '🗳️'; // Épico/Radiante
-        if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) return '👑'; // Lendário/Season
-        return '📦'; // Fallback
+        const normalized = type.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (normalized.includes('comum') || normalized === 'incomum') return '\u{1F4E4}';
+        if (normalized.includes('raro') || normalized.includes('radiante') || normalized.includes('ciclo')) return '\u{1F381}';
+        if (normalized.includes('epico')) return '\u{1F5F3}\uFE0F';
+        if (normalized.includes('season')) return '\u{1F31F}';
+        if (normalized.includes('lendario') || normalized.includes('legendary')) return '\u{1F451}';
+        return '\u{1F4E6}';
     };
 
     const getChestLabel = (type: string) => {
-        const normalized = type.toLowerCase();
-        if (normalized === 'ciclo') return 'RARO';
-        return type;
+        const normalized = type.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (normalized.includes('skin') && normalized.includes('comum')) return 'SKIN COMUM';
+        if (normalized === 'comum') return 'COMUM';
+        if (normalized === 'incomum') return 'INCOMUM';
+        if (normalized === 'raro' || normalized === 'radiante') return 'RARO';
+        if (normalized === 'ciclo') return 'CICLO';
+        if (normalized === 'epico') return '\u00C9PICO';
+        if (normalized === 'season') return 'SEASON';
+        if (normalized === 'lendario' || normalized === 'legendary') return 'LENDARIO';
+        return type.toUpperCase();
     };
 
     const getChestItemDef = (type: string): ItemDef => {
-        const normalized = type.toLowerCase();
+        const normalized = type.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         const rarity = normalizeVisualRarity(type) || (normalized.includes('ciclo') ? 'rare' : 'common');
 
         return {
@@ -124,7 +153,7 @@ export const Inventory: React.FC = () => {
             tier: rarity === 'legendary' ? 5 : rarity === 'epic' ? 4 : rarity === 'rare' ? 3 : rarity === 'uncommon' ? 2 : 1,
             rarity: rarity === 'quest' ? 'rare' : rarity,
             icon: getChestIcon(type),
-            description: 'Um baú contendo recompensas misteriosas. Abra para descobrir o que há dentro!'
+            description: 'Um bau contendo recompensas misteriosas. Abra para descobrir o que ha dentro!'
         };
     };
 
@@ -160,8 +189,8 @@ export const Inventory: React.FC = () => {
                 {activeTab === 'chests' ? (
                     userChests.length === 0 ? (
                          <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
-                            <div className="text-4xl mb-4">📭</div>
-                            <p>Nenhum baú disponível.</p>
+                            <div className="text-4xl mb-4">🎒</div>
+                            <p>Nenhum bau disponivel.</p>
                         </div>
                     ) : (
                         userChests.map((chest, idx) => (
@@ -189,7 +218,7 @@ export const Inventory: React.FC = () => {
                     filteredItems.length === 0 ? (
                         <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
                             <div className="text-4xl mb-4">🎒</div>
-                            <p>Inventário vazio nesta categoria.</p>
+                            <p>Inventario vazio nesta categoria.</p>
                         </div>
                     ) : (
                         filteredItems.map(item => {
@@ -214,6 +243,7 @@ export const Inventory: React.FC = () => {
                                             src={item.def?.imageUrl}
                                             alt={item.def?.name || item.id}
                                             icon={item.def?.icon}
+                                            category={item.def?.category}
                                             className="w-3/4 h-3/4 flex items-center justify-center"
                                             imgClassName="w-full h-full object-contain"
                                             iconClassName="text-2xl"
@@ -248,13 +278,15 @@ export const Inventory: React.FC = () => {
                         if (selectedItem.def.category === 'chest') {
                             const chestName = selectedItem.def.name;
                             let type: ChestType = 'Comum';
-                            const normalized = chestName.toLowerCase();
+                            const normalized = chestName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                             
                             if (normalized.includes('skin') && normalized.includes('comum')) type = 'Skin Comum';
                             else if (normalized.includes('incomum')) type = 'Incomum';
-                            else if (normalized.includes('raro') || normalized.includes('ciclo')) type = 'Raro';
-                            else if (normalized.includes('épico') || normalized.includes('epico') || normalized.includes('radiante')) type = 'Épico';
-                            else if (normalized.includes('lendário') || normalized.includes('legendary') || normalized.includes('season')) type = 'Lendário';
+                            else if (normalized.includes('raro') || normalized.includes('radiante')) type = 'Raro';
+                            else if (normalized.includes('ciclo')) type = 'Ciclo';
+                            else if (normalized.includes('epico')) type = '\u00C9pico';
+                            else if (normalized.includes('season')) type = 'Season';
+                            else if (normalized.includes('lendario') || normalized.includes('legendary')) type = 'Lend\u00E1rio';
                             
                             setShowChestOpeningModal(type);
                         }
@@ -280,3 +312,4 @@ export const Inventory: React.FC = () => {
         </div>
     );
 };
+

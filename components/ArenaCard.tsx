@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Arena, Action } from '../types';
-import { DollarSignIcon, FlameIcon, CheckIcon, UsersIcon } from './Icons';
+import { CheckIcon, UsersIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { calculateArenaProgress } from '../utils/progressUtils';
@@ -166,7 +166,7 @@ const ActionIcon: React.FC<{
     const clanQuest = getClanQuestForActionName(action.name);
     const isClanQuest = !!clanQuest;
     const isSeasonQuest = normalizedArena.includes('quests - season');
-    const displayIcon = action.icon || '🏆';
+    const displayIcon = action.icon || '\u{1F3DB}\uFE0F';
 
     const currentProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
@@ -188,11 +188,7 @@ const ActionIcon: React.FC<{
         }
         if (isSeasonQuest) return <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />;
 
-        switch (displayIcon) {
-            case '$': return <DollarSignIcon className="w-4 h-4 text-white/80" />;
-            case '🔥': return <FlameIcon className="w-4 h-4 text-white/80" />;
-            default: return <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />;
-        }
+        return <EmojiGlyph symbol={displayIcon} size="action" className="text-white" />;
     };
     return (
         <div 
@@ -201,7 +197,7 @@ const ActionIcon: React.FC<{
             onDragOver={onDragOver}
             onDrop={onDrop}
             style={backgroundStyle} 
-            className={`${compact ? 'w-4 h-4 rounded-[5px]' : 'w-6 h-6 rounded-md'} border ${isDragOver ? 'border-white scale-110' : 'border-[var(--accent-bronze)]'} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
+            className={`${compact ? 'w-[1.32rem] h-[1.32rem] rounded-[6px]' : 'w-6 h-6 rounded-md'} border ${isDragOver ? 'border-white scale-110' : 'border-[var(--accent-bronze)]'} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
         >
             {renderIcon()}
         </div>
@@ -314,7 +310,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     }).progressPercent;
 
     const getIcon = () => {
-        return <EmojiGlyph symbol={arena.icon || '🏆'} size="arena" className="text-white" />;
+        return <EmojiGlyph symbol={arena.icon || '\u{1F3DB}\uFE0F'} size="arena" className="text-white" />;
     };
 
     const isOverview = variant === 'overview';
@@ -322,8 +318,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const visibleMilestones = isCompactThumbnail ? milestoneActions.slice(0, 1) : milestoneActions;
     const visibleBronzeActions = isCompactThumbnail ? bronzeActions.slice(0, 3) : bronzeActions;
     const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
-    const skinColor = 'var(--skin-accent-color)';
-    const baseClasses = `arena-plate rounded-lg border flex flex-col relative overflow-hidden transition-all duration-300 select-none pointer-events-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.03rem]' : 'justify-between px-1 py-[0.34rem]'}`;
+    const skinColor = 'var(--arena-card-border-color, var(--skin-accent-color))';
+    const progressFillColor = 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)';
+    const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none pointer-events-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.14rem]' : 'justify-between px-1 py-[0.34rem]'}`;
     const styleClasses = isOverview 
         ? 'h-[6.7rem]' 
         : variant === 'dossier' ? 'h-full w-full' : 'h-[5.5rem]';
@@ -359,9 +356,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     <>
                     <div className="arena-thumb-header">
                         <div className="arena-thumb-link-space">
-                            {linkType === 'competicao' && <span title="Desafio PVP" className="arena-thumb-link-badge text-red-400">âš”ï¸</span>}
-                            {linkType === 'mentoria' && <span title="Mentoria" className="arena-thumb-link-badge text-blue-400">ðŸ‘ï¸</span>}
-                            {linkType === 'parceria' && <span title="Parceria" className="arena-thumb-link-badge text-purple-400">ðŸ¤</span>}
+                            {linkType === 'competicao' && <EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="arena-thumb-link-badge text-red-400" />}
+                            {linkType === 'mentoria' && <EmojiGlyph symbol={'\u{1F441}\uFE0F'} size="badge" className="arena-thumb-link-badge text-blue-400" />}
+                            {linkType === 'parceria' && <EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="arena-thumb-link-badge text-purple-400" />}
                         </div>
                         <span className="arena-thumb-header-icon-wrap">
                             <span className="arena-icon arena-thumb-header-icon" style={{ lineHeight: 0 }}>
@@ -401,9 +398,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
                 {linkType && !isCompactThumbnail && (
                     <div className="absolute top-1 left-1 z-20">
-                        {linkType === 'competicao' && <span title="Desafio PVP" className="text-[10px] bg-red-500/20 text-red-400 px-1 rounded border border-red-500/30">⚔️</span>}
-                        {linkType === 'mentoria' && <span title="Mentoria" className="text-[10px] bg-blue-500/20 text-blue-400 px-1 rounded border border-blue-500/30">👁️</span>}
-                        {linkType === 'parceria' && <span title="Parceria" className="text-[10px] bg-purple-500/20 text-purple-400 px-1 rounded border border-purple-500/30">🤝</span>}
+                        {linkType === 'competicao' && <span title="Desafio PVP" className="text-[10px] bg-red-500/20 text-red-400 px-1 rounded border border-red-500/30"><EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="text-red-400" /></span>}
+                        {linkType === 'mentoria' && <span title="Mentoria" className="text-[10px] bg-blue-500/20 text-blue-400 px-1 rounded border border-blue-500/30"><EmojiGlyph symbol={'\u{1F441}\uFE0F'} size="badge" className="text-blue-400" /></span>}
+                        {linkType === 'parceria' && <span title="Parceria" className="text-[10px] bg-purple-500/20 text-purple-400 px-1 rounded border border-purple-500/30"><EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="text-purple-400" /></span>}
                     </div>
                 )}
             </div>
@@ -419,7 +416,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         return (
                             <div 
                                 key={action.id} 
-                                className={`relative ${isCompactThumbnail ? 'w-4 h-4' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
+                                className={`relative ${isCompactThumbnail ? 'w-5 h-5' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
                                 title={action.name}
                                 draggable
                                 onDragStart={(e) => handleActionDragStart(e, action.id)}
@@ -429,10 +426,10 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                 <div className={`w-full h-full transform rotate-45 ${isDragOver ? 'brightness-125' : ''}`}>
                                     <div 
                                         style={backgroundStyle}
-                                        className={`w-full h-full border ${isDragOver ? 'border-white' : 'border-[var(--accent-bronze)]'} rounded-sm relative`}
+                                        className={`w-full h-full ${isCompactThumbnail ? 'border-[0.75px]' : 'border'} ${isDragOver ? 'border-white' : 'border-[var(--accent-bronze)]'} rounded-sm relative`}
                                     >
                                         <div className="transform flex items-center justify-center h-full w-full">
-                                            <EmojiGlyph symbol={action.icon || '🏆'} size="milestone" className="transform -rotate-45 text-white" />
+                                            <EmojiGlyph symbol={action.icon || '\u{1F3DB}\uFE0F'} size="milestone" className="transform -rotate-45 text-white" />
                                         </div>
                                         {isCompleted && (
                                             <div className="absolute inset-0 bg-black/60 rounded-sm flex items-center justify-center">
@@ -464,7 +461,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         className="arena-plate-progress-fill"
                         style={{
                             width: `${progress}%`,
-                            backgroundColor: skinColor,
+                            background: progressFillColor,
                         }}
                     ></div>
                 </div>

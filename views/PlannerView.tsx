@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, FolderIcon, DollarSignIcon, FolderStarIcon, FlameIcon, LightbulbIcon, PlusIcon, MinusIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, FolderIcon, FolderStarIcon, LightbulbIcon, PlusIcon, MinusIcon } from '../components/Icons';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
@@ -16,6 +16,7 @@ import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
 import '../components/core-ui.css';
+import { EmojiGlyph } from '../components/EmojiGlyph';
 
 const DayHeader: React.FC<{ currentDate: Date }> = ({ currentDate }) => {
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' });
@@ -67,7 +68,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         };
     }, []);
 
-    const backgroundStyle = action ? getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
+    const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isMilestone = action?.actionType === 'Marco';
     const isFreeAction = action?.actionType === 'Livre';
     const top = (task.startTime - (4 * 60)) * scaleFactor;
@@ -82,14 +83,14 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 style={{ top: `${top}px`, height: `${height}px` }}
                 onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm("Tarefa corrompida detectada (sem ação vinculada). Deseja deletá-la?")) {
+                    if (window.confirm("Tarefa corrompida detectada (sem a\u00E7\u00E3o vinculada). Deseja delet\u00E1-la?")) {
                         deleteTask(task.id);
                     }
                 }}
             >
                 <div className="h-full w-full bg-red-900/40 border border-red-500/30 rounded-lg flex flex-col items-center justify-center p-1 backdrop-blur-sm hover:bg-red-900/60 transition-colors">
-                     <span className="text-lg">⚠️</span>
-                     <span className="text-[10px] text-red-200 font-bold text-center leading-tight mt-1">DADOS INVÁLIDOS<br/>Toque para limpar</span>
+                     <span className="text-lg">{'\u26A0\uFE0F'}</span>
+                     <span className="text-[10px] text-red-200 font-bold text-center leading-tight mt-1">{'DADOS INV\u00C1LIDOS'}<br/>Toque para limpar</span>
                 </div>
             </div>
         );
@@ -98,11 +99,11 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
     const handleLongPress = () => {
         if (isTransitioning) return;
 
-        // Anti-exploit visual no PlannerView: nao animar completação futura
+        // Anti-exploit visual no PlannerView: nao animar completacao futura
         const now = new Date();
         const todayString = getLocalDateString(now);
         if (task.date > todayString && !task.completed) {
-            // O próprio toggleTaskCompletion vai dar o aviso em toast. Aqui só abortamos a visual.
+            // O proprio toggleTaskCompletion vai dar o aviso em toast. Aqui so abortamos a visual.
             toggleTaskCompletion(task.id);
             return;
         }
@@ -139,14 +140,14 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
             <div
-                style={isFreeAction ? { height: '40px', width: '100px' } : { ...backgroundStyle, height: '40px', width: '100px' }}
-                className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80 ${isFreeAction ? 'free-action-shell free-action-outline' : ''}`}
+                style={isFreeAction ?{ height: '40px', width: '100px' } : { ...backgroundStyle, height: '40px', width: '100px' }}
+                className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80 ${isFreeAction ?'free-action-shell free-action-outline' : ''}`}
             >
-                <div className="text-lg z-10">{action?.icon === '$' ? <DollarSignIcon className="w-5 h-5" /> : action?.icon === '🔥' ? <FlameIcon className="w-5 h-5" /> : <span className="text-xl">{action?.icon}</span>}</div>
+                <div className="text-lg z-10"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
                 <div className="text-sm font-semibold truncate w-full z-10">{action?.name}</div>
             </div>
         );
-        const duration = action?.actionType === 'Marco' ? Math.max(15, task.duration) : task.duration;
+        const duration = action?.actionType === 'Marco' ?Math.max(15, task.duration) : task.duration;
         const item = { type: 'reschedule_task', payload: task.id, duration };
         onCustomDragStart(e, item, ghost, taskRef);
     };
@@ -174,12 +175,12 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 <div className="relative w-full h-full">
                     <div className="absolute inset-0 w-full h-full" style={{ ...backgroundStyle, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
                     {task.completed && <div className="absolute inset-0 bg-black/60" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />}
-                    <div className={`absolute inset-0 border-2 ${task.completed ? 'border-[var(--accent-silver)]' : 'border-dashed border-gray-600'}`} style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
-                    <div className={`relative z-10 w-full h-full flex flex-col items-center justify-center text-center p-1 ${task.completed ? 'opacity-70' : ''}`}>
-                        <div className="text-xl">{action?.icon}</div>
+                    <div className={`absolute inset-0 border-2 ${task.completed ?'border-[var(--accent-silver)]' : 'border-dashed border-gray-600'}`} style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
+                    <div className={`relative z-10 w-full h-full flex flex-col items-center justify-center text-center p-1 ${task.completed ?'opacity-70' : ''}`}>
+                        <EmojiGlyph symbol={action?.icon || "🏆"} size="milestone" className="text-white" />
                         <div className="text-xs font-semibold truncate max-w-full px-1">{action?.name}</div>
                     </div>
-                    {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}><div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
+                    {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
                     {showSparkles && <Sparkles />}
                 </div>
                 <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
@@ -197,19 +198,19 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div
-                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${isFreeAction ? 'free-action-shell text-slate-100' : task.completed ? 'text-white/80 font-bold' : 'text-orange-200'}`}
-                style={isFreeAction ? undefined : backgroundStyle}
+                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${isFreeAction ?'free-action-shell text-slate-100' : task.completed ?'text-white/80 font-bold' : 'text-orange-200'}`}
+                style={isFreeAction ?undefined : backgroundStyle}
             >
-                <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ? 'bg-black/45' : 'bg-black/60'} ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
-                <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${isFreeAction ? `free-action-outline ${task.completed ? 'opacity-95' : 'opacity-80'}` : task.completed ? 'border-[var(--bronze)]' : 'border-dashed border-gray-600'}`}></div>
-                <div className="text-lg z-10">{action?.icon === '$' ? <DollarSignIcon className="w-5 h-5" /> : action?.icon === '🔥' ? <FlameIcon className="w-5 h-5" /> : <span className="text-xl">{action?.icon}</span>}</div>
-                <div className={`text-sm font-semibold truncate w-full z-10 ${isFreeAction && task.completed ? 'text-slate-200/85' : ''}`}>{action?.name}</div>
+                <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ?'bg-black/45' : 'bg-black/60'} ${task.completed ?'opacity-100' : 'opacity-0'}`}></div>
+                <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${isFreeAction ?`free-action-outline ${task.completed ?'opacity-95' : 'opacity-80'}` : task.completed ?'border-[var(--bronze)]' : 'border-dashed border-gray-600'}`}></div>
+                <div className="text-lg z-10"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
+                <div className={`text-sm font-semibold truncate w-full z-10 ${isFreeAction && task.completed ?'text-slate-200/85' : ''}`}>{action?.name}</div>
                 {isFreeAction && (
-                    <div className={`z-10 shrink-0 ${task.completed ? 'opacity-100' : 'opacity-45 saturate-50'}`}>
+                    <div className={`z-10 shrink-0 ${task.completed ?'opacity-100' : 'opacity-45 saturate-50'}`}>
                         <div className="free-action-complete-dot scale-[0.82]" />
                     </div>
                 )}
-                {isHolding && (<div className={`absolute inset-0 animate-pulse ${isFreeAction ? 'bg-black/40 rounded-2xl' : 'bg-black/50 rounded-2xl'}`}><div className={`h-full w-full ${task.completed ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ? 'bg-slate-200/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
+                {isHolding && (<div className={`absolute inset-0 animate-pulse ${isFreeAction ?'bg-black/40 rounded-2xl' : 'bg-black/50 rounded-2xl'}`}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ?'bg-slate-200/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
                 {showSparkles && <Sparkles />}
             </div>
             <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
@@ -254,7 +255,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
                     {hours.map(hour => (<div key={hour} className="text-right pr-2" style={{ height: `${60 * scaleFactor}px` }}><span className="text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span></div>))}
                 </div>
                 <div className="flex-grow relative border-l border-white/10 h-full">
-                    {hours.slice(0).map((hour, i) => (<div key={hour} className={`relative ${i > 0 ? 'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}><div className="absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
+                    {hours.slice(0).map((hour, i) => (<div key={hour} className={`relative ${i > 0 ?'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}><div className="absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
                     {tasks.map((task) => <TaskSlot key={task.id} task={task} action={getActionById(task.actionId)} scaleFactor={scaleFactor} onCustomDragStart={onCustomDragStart} onTaskClick={handleTaskClick} />)}
                     {dropIndicator && <DropIndicator top={dropIndicator.top} height={dropIndicator.height} className="w-[calc(100%-0.5rem)] right-2" />}
                     {isToday && timeIndicatorTop >= 0 && <CurrentTimeIndicator ref={timeIndicatorRef} top={timeIndicatorTop} />}
@@ -368,7 +369,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const today = new Date();
     const startOfWeek = new Date(today);
     const dayOfWeek = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ?-6 : 1);
     startOfWeek.setDate(diff);
     startOfWeek.setHours(0, 0, 0, 0);
     const endOfWeek = new Date(startOfWeek);
@@ -394,7 +395,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             curr[0] = i;
             const ai = a.charCodeAt(i - 1);
             for (let j = 1; j <= b.length; j++) {
-                const cost = ai === b.charCodeAt(j - 1) ? 0 : 1;
+                const cost = ai === b.charCodeAt(j - 1) ?0 : 1;
                 curr[j] = Math.min(
                     curr[j - 1] + 1,
                     prev[j] + 1,
@@ -438,7 +439,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const m = s.match(/\b(\d{1,2})\s*(x|vez|vezes)\b/);
         if (!m) return null;
         const n = Number(m[1]);
-        return Number.isFinite(n) ? n : null;
+        return Number.isFinite(n) ?n : null;
     };
 
     const parseTimeMinutes = (raw: string): number | null => {
@@ -473,7 +474,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const m = prefixed || clock || hourOnly;
         if (!m) return null;
         const hh = Number(m[1]);
-        const mm = m[2] ? Number(m[2]) : 0;
+        const mm = m[2] ?Number(m[2]) : 0;
         if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
         if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
         return hh * 60 + mm;
@@ -513,7 +514,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const input = raw.trim();
         const quoteMatch = input.match(/"([^"]+)"/);
         const description = quoteMatch?.[1]?.trim() || '';
-        const withoutQuote = quoteMatch ? input.replace(quoteMatch[0], '').trim() : input;
+        const withoutQuote = quoteMatch ?input.replace(quoteMatch[0], '').trim() : input;
 
         const findAtIndex = (value: string) => {
             for (let i = value.length - 1; i >= 0; i -= 1) {
@@ -557,7 +558,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             normalizedAfter.search(/[|,;]/),
         ].filter(i => i >= 0);
 
-        const cut = cutPoints.length > 0 ? Math.min(...cutPoints) : normalizedAfter.length;
+        const cut = cutPoints.length > 0 ?Math.min(...cutPoints) : normalizedAfter.length;
         const arenaName = normalizedAfter.slice(0, cut).trim();
         const remainder = normalizedAfter.slice(cut).trim();
         const base = `${before} ${remainder}`.trim();
@@ -582,7 +583,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 normalizedBase.search(/\b(?:as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
                 normalizedBase.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
             ].filter(i => i >= 0);
-            const nameEnd = cutPoints.length > 0 ? Math.min(...cutPoints) : normalizedBase.length;
+            const nameEnd = cutPoints.length > 0 ?Math.min(...cutPoints) : normalizedBase.length;
             const parsedName = normalizedBase.slice(0, nameEnd).trim();
             const actionName = parsedName;
             const actionDescription = description;
@@ -605,7 +606,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const dist = levenshteinDistance(normalizedQuery, candName);
                     const maxLen = Math.max(normalizedQuery.length, candName.length) || 1;
                     const score = 1 - dist / maxLen;
-                    const prefixBonus = candName.startsWith(normalizedQuery) || normalizedQuery.startsWith(candName) ? 0.08 : 0;
+                    const prefixBonus = candName.startsWith(normalizedQuery) || normalizedQuery.startsWith(candName) ?0.08 : 0;
                     const finalScore = Math.min(1, score + prefixBonus);
                     if (!best || finalScore > best.score) {
                         best = { arena: candidate.arena, assetId: candidate.assetId, score: finalScore, dist };
@@ -652,7 +653,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             // 4. Create Action
             if (!targetArenaId || !actionName) return;
 
-            const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ? 'Compromisso' : 'Ação Recorrente';
+            const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ?'Compromisso' : 'Ação Recorrente';
 
             const created = await addAction({
                 name: actionName,
@@ -662,7 +663,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 duration,
                 difficulty: 1,
                 actionType,
-                repetitions: actionType === 'Ação Recorrente' ? Math.max(1, repetitions) : 1,
+                repetitions: actionType === 'Ação Recorrente' ?Math.max(1, repetitions) : 1,
             });
 
             if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
@@ -698,7 +699,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         if (typeof window === 'undefined') return 2;
         try {
             const saved = localStorage.getItem('planner_zoom_v3');
-            return saved ? (Number(saved) as 3 | 2 | 1) : 2;
+            return saved ?(Number(saved) as 3 | 2 | 1) : 2;
         } catch {
             return 2;
         }
@@ -746,9 +747,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
     const handleCustomDragStart = (event: MouseEvent | TouchEvent, item: { type: string; payload: any; duration: number; }, ghostElement: React.ReactNode, draggedElementRef: React.RefObject<HTMLDivElement>) => {
         const isTouchEvent = 'touches' in event;
-        const pos = isTouchEvent ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : { x: event.clientX, y: event.clientY };
+        const pos = isTouchEvent ?{ x: event.touches[0].clientX, y: event.touches[0].clientY } : { x: event.clientX, y: event.clientY };
         const elemRect = draggedElementRef.current?.getBoundingClientRect();
-        const offset = elemRect ? { x: pos.x - elemRect.left, y: pos.y - elemRect.top } : { x: 0, y: 0 };
+        const offset = elemRect ?{ x: pos.x - elemRect.left, y: pos.y - elemRect.top } : { x: 0, y: 0 };
         setIsMilestonePoolOpen(false);
         refreshDragTargets();
         if (scrollContainerRef.current) {
@@ -868,7 +869,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             }
             e.stopPropagation();
             const isTouchEvent = 'touches' in e;
-            const pos = isTouchEvent ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
+            const pos = isTouchEvent ?{ x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
             setDragState(prev => ({ ...prev, currentPosition: pos }));
             lastPointerPosRef.current = pos;
 
@@ -876,7 +877,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 refreshDragTargets();
             }
             const bayAreaRect = bayAreaElRef.current?.getBoundingClientRect();
-            const isOverBayAreaCheck = (rect: DOMRect | undefined) => rect ? (pos.y > rect.top && pos.y < rect.bottom && pos.x > rect.left && pos.x < rect.right) : false;
+            const isOverBayAreaCheck = (rect: DOMRect | undefined) => rect ?(pos.y > rect.top && pos.y < rect.bottom && pos.x > rect.left && pos.x < rect.right) : false;
 
             // Snap-back removed because overflow: hidden already prevents scroll. 
             // We rely on auto-scroll loop to update scrollTop programmatically.
@@ -963,7 +964,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 const { type, payload } = dragState.item;
                 if (type === 'reschedule_task') {
                     const task = tasks.find(t => t.id === payload);
-                    const action = task ? getActionById(task.actionId) : undefined;
+                    const action = task ?getActionById(task.actionId) : undefined;
                     if (action && action.actionType !== 'Marco') {
                         returnTaskToPool(payload);
                     } else if (task) {
@@ -975,13 +976,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 const minutesFromViewStart = dailyDropIndicator.top / scaleFactor;
                 const startTimeInMinutes = minutesFromViewStart + (4 * 60);
                 const { type, payload } = dragState.item;
-                const scheduledTask = type === 'new_action' ? scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
+                const scheduledTask = type === 'new_action' ?scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
                 if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
             } else if (isOver(weeklyGridRect, 150) && viewMode === 'week' && weeklyDropIndicator) {
                 const dayIndex = weeklyDropIndicator.dayIndex;
                 const startOfWeek = new Date(currentDate);
                 const dayOfWeek = startOfWeek.getDay();
-                const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ?-6 : 1);
                 startOfWeek.setDate(diff);
                 const dropDate = new Date(startOfWeek);
                 dropDate.setDate(dropDate.getDate() + dayIndex);
@@ -989,7 +990,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 const minutesFromViewStart = weeklyDropIndicator.top / scaleFactor;
                 const startTimeInMinutes = minutesFromViewStart + (4 * 60);
                 const { type, payload } = dragState.item;
-                const scheduledTask = type === 'new_action' ? scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
+                const scheduledTask = type === 'new_action' ?scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
                 if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
             }
 
@@ -1036,7 +1037,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
     // Auto-scroll useEffects
     useEffect(() => { if (viewMode === 'day' && scrollContainerRef.current) { const isToday = currentDate.toDateString() === new Date().toDateString(); if (isToday) { const now = new Date(); const currentHour = now.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { dailyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
-    useEffect(() => { if (viewMode === 'week' && scrollContainerRef.current) { const startOfWeek = new Date(currentDate); const day = startOfWeek.getDay(); const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); startOfWeek.setDate(diff); startOfWeek.setHours(0, 0, 0, 0); const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23, 59, 59, 999); const today = new Date(); if (today >= startOfWeek && today <= endOfWeek) { const currentHour = today.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { weeklyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
+    useEffect(() => { if (viewMode === 'week' && scrollContainerRef.current) { const startOfWeek = new Date(currentDate); const day = startOfWeek.getDay(); const diff = startOfWeek.getDate() - day + (day === 0 ?-6 : 1); startOfWeek.setDate(diff); startOfWeek.setHours(0, 0, 0, 0); const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23, 59, 59, 999); const today = new Date(); if (today >= startOfWeek && today <= endOfWeek) { const currentHour = today.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { weeklyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
 
     // Define milestoneActions before usage
     const milestoneActions = actions.filter(a => a.actionType === 'Marco' && !tasks.some(task => task.actionId === a.id));
@@ -1089,8 +1090,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const poolItemCount = Object.keys(unifiedBayAreaItems).length;
     const isSingleRow = poolItemCount <= 8;
     // Reduced heights as requested
-    const bayAreaHeight = isSingleRow ? 'h-[42px]' : 'h-[84px]';
-    const bayGridRows = isSingleRow ? 'grid-rows-1' : 'grid-rows-2';
+    const bayAreaHeight = isSingleRow ?'h-[42px]' : 'h-[84px]';
+    const bayGridRows = isSingleRow ?'grid-rows-1' : 'grid-rows-2';
 
     return (
         <div id="planner-container" className="flex flex-col h-full min-h-0 bg-[#0d0d0e] overflow-hidden">
@@ -1105,7 +1106,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 text-lg font-bold h-11 mt-1">
                         <div className="flex items-center space-x-1 min-w-0" id="planner-tools">
                             <button onClick={() => setChecklistVisible(true)} className="p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors">
-                                {allTasksCompleted ? <FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}
+                                {allTasksCompleted ?<FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}
                             </button>
                             <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
                                 <LightbulbIcon className="w-4 h-4" />
@@ -1120,8 +1121,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             <button onClick={() => changeDate(1)} className="p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
                         </div>
                         <div className="flex items-center justify-self-end bg-white/[0.03] rounded-full p-0.5 text-[10px] border border-white/6" id="view-mode-selector">
-                            <button onClick={() => setViewMode('day')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'day' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Dia</button>
-                            <button id="eras-button" onClick={() => setViewMode('week')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'week' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Semana</button>
+                            <button onClick={() => setViewMode('day')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'day' ?'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Dia</button>
+                            <button id="eras-button" onClick={() => setViewMode('week')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'week' ?'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Semana</button>
                         </div>
                     </div>
 
@@ -1129,28 +1130,28 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         <div
                             id="planner-pool"
                             data-testid="bay-area"
-                            className={`flex-grow min-w-0 core-surface rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ? 'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
+                            className={`flex-grow min-w-0 core-surface rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ?'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
                         >
                             <div className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden pr-2 scrollbar-hide items-center`}>
                                 {Object.entries(unifiedBayAreaItems).filter(([_, payload]) => {
                                      const p = payload as any;
                                      return p.count > 0 || (p.taskIds && p.taskIds.length > 0);
-                                 }).length > 0 ? 
+                                 }).length > 0 ?
                                      (Object.entries(unifiedBayAreaItems) as [string, { count: number; isUnlimited: boolean; taskIds?: string[] }][])
                                      .filter(([_, payload]) => payload.count > 0 || (payload.taskIds && payload.taskIds.length > 0))
                                      .map(([actionId, payload]) => {
                                          const action = getActionById(actionId);
                                          if (!action) return null;
                                          // Use the first available taskId (FIFO) if any exist in Bay Area
-                                         const nextTaskId = payload.taskIds && payload.taskIds.length > 0 ? payload.taskIds[0] : undefined;
+                                         const nextTaskId = payload.taskIds && payload.taskIds.length > 0 ?payload.taskIds[0] : undefined;
                                          
                                          return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} taskId={nextTaskId} onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })} />);
-                                     }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 tracking-[0.12em] row-span-full col-span-full">Sem ações</div>)}
+                                     }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 tracking-[0.12em] row-span-full col-span-full">{'Sem a\u00E7\u00F5es'}</div>)}
                             </div>
                         </div>
                         <div className={`relative flex-shrink-0 ${bayAreaHeight} transition-all duration-300`}>
                             <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="w-10 h-full core-surface rounded-2xl flex items-center justify-center hover:bg-white/[0.05] transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" /></svg></button>
-                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 core-surface-strong rounded-xl p-2 space-y-1 z-50 animate-fade-in"><h4 className="core-label text-center pb-1 border-b border-white/6">Marcos</h4>{milestoneActions.length > 0 ? milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
+                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 core-surface-strong rounded-xl p-2 space-y-1 z-50 animate-fade-in"><h4 className="core-label text-center pb-1 border-b border-white/6">Marcos</h4>{milestoneActions.length > 0 ?milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
                         </div>
                     </div>
                 </div>
@@ -1162,8 +1163,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 className="flex-grow min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
                 style={{ scrollBehavior: 'smooth' }}
             >
-                <div className={dragState.isDragging ? 'pointer-events-auto' : ''}>
-                    {viewMode === 'day' ? (
+                <div className={dragState.isDragging ?'pointer-events-auto' : ''}>
+                    {viewMode === 'day' ?(
                         <div>
                             <DailyView tasks={scheduledTasks} actions={actions} scaleFactor={scaleFactor} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
                         </div>
@@ -1191,7 +1192,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <div className="absolute bottom-full mb-4 right-0 w-72 z-30">
                         <GlassCard variant="gold" className="p-2 backdrop-blur-xl border border-[var(--skin-accent-color)]/20 shadow-[0_16px_40px_rgba(0,0,0,0.32)]">
                             <div className="flex flex-col space-y-2">
-                                <label className="core-label text-[var(--skin-accent-color)] ml-1">Oráculo</label>
+                                <label className="core-label text-[var(--skin-accent-color)] ml-1">{'Or\u00E1culo'}</label>
                                 <div className="flex items-center space-x-2">
                                     <input
                                         ref={oracleInputRef}
@@ -1199,7 +1200,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                         value={oracleInput}
                                         onChange={(e) => setOracleInput(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder="Ação @ Arena..."
+                                        placeholder={'A\u00E7\u00E3o @ Arena...'}
                                         className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 placeholder-gray-500"
                                     />
                                     <button
@@ -1221,10 +1222,10 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <button
                         id="focus-mode-button"
                         onClick={() => setShowOracleInput(!showOracleInput)}
-                        className={`p-2 rounded-full transition-all ${showOracleInput ? 'bg-[var(--skin-accent-color)] text-black' : 'text-white hover:bg-white/10'}`}
+                        className={`p-2 rounded-full transition-all ${showOracleInput ?'bg-[var(--skin-accent-color)] text-black' : 'text-white hover:bg-white/10'}`}
                         title="Adicionar por texto"
                     >
-                        <span className="text-lg">📝</span>
+                        <span className="text-lg">{'\u{1F4DD}'}</span>
                     </button>
                     <div className="w-full h-px bg-white/10 my-1"></div>
                     <button onClick={() => setZoomLevel(prev => Math.min(3, prev + 1) as 1 | 2 | 3)} disabled={zoomLevel === 3} className="p-2 disabled:opacity-50"><PlusIcon className="w-5 h-5" /></button>

@@ -18,7 +18,7 @@ interface LegacyCycleCardProps {
     style?: React.CSSProperties;
 }
 
-const formatHours = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(1));
+const formatHours = (value: number) => (Number.isInteger(value) ?String(value) : value.toFixed(1));
 
 export const LegacyCycleCard: React.FC<LegacyCycleCardProps> = ({
     rank,
@@ -70,8 +70,8 @@ export const LegacyCycleCard: React.FC<LegacyCycleCardProps> = ({
                     <span className="legacy-cycle-card__metric-value">{progress}%</span>
                 </div>
                 <div className="legacy-cycle-card__metric">
-                    <span className="legacy-cycle-card__metric-label">Horas/AÃ§Ãµes</span>
-                    <span className="legacy-cycle-card__metric-value">{formatHours(totalHours)}h Â· {totalActions}</span>
+                    <span className="legacy-cycle-card__metric-label">Horas/Ações</span>
+                    <span className="legacy-cycle-card__metric-value">{formatHours(totalHours)}h · {totalActions}</span>
                 </div>
                 <div className="legacy-cycle-card__metric">
                     <span className="legacy-cycle-card__metric-label">Horas/dia</span>
@@ -79,7 +79,7 @@ export const LegacyCycleCard: React.FC<LegacyCycleCardProps> = ({
                 </div>
                 <div className="legacy-cycle-card__metric">
                     <span className="legacy-cycle-card__metric-label">Streak/Dias</span>
-                    <span className="legacy-cycle-card__metric-value">{maxStreak} Â· {activeDays}</span>
+                    <span className="legacy-cycle-card__metric-value">{maxStreak} · {activeDays}</span>
                 </div>
             </div>
         </article>

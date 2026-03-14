@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Action, Arena, Campaign } from '../types';
 import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, CheckIcon } from './Icons';
@@ -40,29 +40,31 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     const allArenas = getArenas();
     const previewArenaIds = allArenas.slice(0, 3).map(arena => arena.id);
     const shouldShowPreviewCampaign = (isBuilderMode || userProfile.role === 'gm' || userProfile.role === 'admin') && previewArenaIds.length > 0;
-    const gmPreviewCampaign: Campaign | null = previewCampaign ?? (shouldShowPreviewCampaign
-        ? {
-            id: '__gm_preview_campaign__',
-            userId: 'gm-board',
-            title: 'Preview de Campanha',
-            description: 'Mock do GM Board para validar a miniatura da campanha e a visualizacao interna das arenas.',
-            status: 'active',
-            createdAt: new Date().toISOString(),
-            arenaIds: previewArenaIds,
-            arenaConfig: previewArenaIds.reduce((acc, arenaId, index) => ({
-                ...acc,
-                [arenaId]: {
-                    isLocked: false,
-                    isHidden: false,
-                    prerequisiteArenaIds: index > 0 ? [previewArenaIds[index - 1]] : [],
-                },
-            }), {}),
-            priority: 'media',
-            type: 'parallel',
-            order: -1,
-            priorityOrder: -1,
-        }
-        : null);
+    const gmPreviewCampaign: Campaign | null = previewCampaign
+        ? (shouldShowPreviewCampaign
+            ? {
+                id: '__gm_preview_campaign__',
+                userId: 'gm-board',
+                title: 'Preview de Campanha',
+                description: 'Mock do GM Board para validar a miniatura da campanha e a visualizacao interna das arenas.',
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                arenaIds: previewArenaIds,
+                arenaConfig: previewArenaIds.reduce((acc, arenaId, index) => ({
+                    ...acc,
+                    [arenaId]: {
+                        isLocked: false,
+                        isHidden: false,
+                        prerequisiteArenaIds: index > 0 ? [previewArenaIds[index - 1]] : [],
+                    },
+                }), {}),
+                priority: 'media',
+                type: 'parallel',
+                order: -1,
+                priorityOrder: -1,
+            }
+            : null)
+        : null;
     const validCampaigns = campaigns.filter(Boolean);
     const visibleCampaigns = gmPreviewCampaign ? [gmPreviewCampaign, ...validCampaigns] : validCampaigns;
     const selectedCampaign = selectedCampaignId ? visibleCampaigns.find(c => c.id === selectedCampaignId) : null;
@@ -96,7 +98,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
             const explicitPhase = config[arenaId]?.phase;
             if (typeof explicitPhase === 'number') return Math.max(maxPhase, explicitPhase);
             const prereqCount = config[arenaId]?.prerequisiteArenaIds?.length || 0;
-            return Math.max(maxPhase, prereqCount > 0 ? 1 : 0);
+            return Math.max(maxPhase, prereqCount > 0 ?1 : 0);
         }, 0);
         setVisiblePhaseCount(Math.min(5, Math.max(1, highestPhase + 1)));
     }, [selectedCampaign]);
@@ -134,18 +136,18 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
     const handleDeleteCampaign = () => {
         if (!selectedCampaign || isPreviewCampaign) return;
-        if (confirm('Tem certeza que deseja excluir esta campanha? TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
+        if (confirm('Tem certeza que deseja excluir esta campanha?TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
             deleteCampaign(selectedCampaign.id);
             setSelectedCampaignId(null);
         }
     };
     
     const campaignArenas = selectedCampaign 
-        ? campaignArenasSource.filter(a => selectedCampaign.arenaIds.includes(a.id))
+        ?campaignArenasSource.filter(a => selectedCampaign.arenaIds.includes(a.id))
         : [];
 
     const sortedArenas = selectedCampaign 
-        ? [...campaignArenas].sort((a, b) => {
+        ?[...campaignArenas].sort((a, b) => {
             const indexA = selectedCampaign.arenaIds.indexOf(a.id);
             const indexB = selectedCampaign.arenaIds.indexOf(b.id);
             return indexA - indexB;
@@ -263,7 +265,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         const currentIndex = currentIds.indexOf(arenaId);
         if (currentIndex === -1) return;
         
-        const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+        const newIndex = direction === 'left' ?currentIndex - 1 : currentIndex + 1;
         
         if (newIndex >= 0 && newIndex < currentIds.length) {
             [currentIds[currentIndex], currentIds[newIndex]] = [currentIds[newIndex], currentIds[currentIndex]];
@@ -408,12 +410,12 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         setIsCreatingArena(false);
     };
 
-    const selectedArena = selectedArenaId ? campaignArenasSource.find(a => a.id === selectedArenaId) : null;
+    const selectedArena = selectedArenaId ?campaignArenasSource.find(a => a.id === selectedArenaId) : null;
     const showPhaseHeaders = arenaPhaseRows.length > 1;
     const displayCampaignTitle = editTitle?.trim() || selectedCampaign?.title || '';
     const displayCampaignDescription = editDescription?.trim() || selectedCampaign?.description || '';
     const renderedPhaseRows = Array.from(
-        { length: isEditing ? visiblePhaseCount : Math.max(1, arenaPhaseRows.length) },
+        { length: isEditing ?visiblePhaseCount : Math.max(1, arenaPhaseRows.length) },
         (_, phase) => ({ phase, arenas: arenaPhaseRows.find((row) => row.phase === phase)?.arenas || [] })
     );
     const luxeIconButtonClass = 'flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-gray-300 shadow-[0_14px_40px_rgba(0,0,0,0.28)] transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white';
@@ -424,21 +426,21 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         return (
             <Portal>
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-                    <GlassCard variant="neutral" className="w-full max-w-4xl max-h-[76vh] flex flex-col relative overflow-hidden rounded-[2rem]" onClick={e => e.stopPropagation()}>
+                    <GlassCard variant="neutral" className="relative flex max-h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.7rem]" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-white/10 flex items-center justify-between">
                             <h2 className="text-lg font-bold uppercase tracking-[0.22em] text-white">Campanhas</h2>
                             <button onClick={onClose} className="luxe-skin-button flex h-11 min-w-[3.25rem] items-center justify-center rounded-2xl px-4 text-sm font-bold">
-                                <CheckIcon className="h-5 w-5 text-black" />
+                                <CheckIcon className="h-5 w-5" />
                             </button>
                             {!isCodexCampaign && !isPreviewCampaign && isEditing && visiblePhaseCount < 5 && (
                                 <button
                                     onClick={handleAddPhase}
                                     className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all ${
                                         isLinkingMode 
-                                            ? 'border-blue-500 bg-blue-500/20 text-blue-300 shadow-[0_0_24px_rgba(59,130,246,0.3)]' 
+                                            ?'border-blue-500 bg-blue-500/20 text-blue-300 shadow-[0_0_24px_rgba(59,130,246,0.3)]' 
                                             : 'border-white/10 bg-white/5 text-gray-400 hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white'
                                     }`}
-                                    title={isLinkingMode ? 'Modo de vínculo ativo' : 'Ativar vínculos'}
+                                    title={isLinkingMode ?'Modo de vínculo ativo' : 'Ativar vínculos'}
                                 >
                                     <LinkIcon className="w-4 h-4" />
                                 </button>
@@ -567,7 +569,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     return (
         <Portal>
              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-                 <GlassCard variant="neutral" className="w-full max-w-4xl max-h-[82vh] flex flex-col overflow-hidden relative rounded-[2rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.24),rgba(255,255,255,0.10)_22%,transparent_48%),radial-gradient(circle_at_38%_18%,rgba(255,255,255,0.12),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(109,40,217,0.18),transparent_34%),linear-gradient(145deg,rgba(102,109,120,0.98)_0%,rgba(132,139,151,0.95)_26%,rgba(82,88,101,0.94)_48%,rgba(38,33,53,0.96)_78%,rgba(16,11,28,0.99)_100%)]" onClick={e => e.stopPropagation()}>
+                 <GlassCard variant="neutral" className="relative flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.7rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.24),rgba(255,255,255,0.10)_22%,transparent_48%),radial-gradient(circle_at_38%_18%,rgba(255,255,255,0.12),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(109,40,217,0.18),transparent_34%),linear-gradient(145deg,rgba(102,109,120,0.98)_0%,rgba(132,139,151,0.95)_26%,rgba(82,88,101,0.94)_48%,rgba(38,33,53,0.96)_78%,rgba(16,11,28,0.99)_100%)]" onClick={e => e.stopPropagation()}>
                      <div
                         className="modal-aura-overlay"
                         style={{ '--modal-aura-color': 'rgba(154, 122, 255, 0.16)' } as React.CSSProperties}
@@ -583,10 +585,10 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                 {!isCodexCampaign && !isPreviewCampaign && (
                                     <button
                                         onClick={() => setIsEditing((current) => !current)}
-                                        className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ? 'bg-white/20' : 'bg-transparent'}`}
-                                        title={isEditing ? 'Fechar edi??o' : 'Editar campanha'}
+                                        className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}
+                                        title={isEditing ?'Fechar edição' : 'Editar campanha'}
                                     >
-                                        <EditIcon className={`w-5 h-5 ${isEditing ? 'text-white' : 'text-gray-300'}`} />
+                                        <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>
                                 )}
                                 {!isPreviewCampaign && isEditing && (
@@ -601,7 +603,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                             </div>
 
                             <div className="flex-1 min-w-0 px-1 flex flex-col items-center text-center">
-                                {isEditing ? (
+                                {isEditing ?(
                                     <div className="w-full max-w-[30rem] space-y-2">
                                         <input
                                             value={editTitle}
@@ -615,10 +617,10 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             onChange={e => setEditDescription(e.target.value)}
                                             className="w-full resize-none rounded-lg border border-white/10 bg-black/50 p-2 text-center text-sm text-gray-300 focus:outline-none focus:border-[var(--skin-accent-color)]"
                                             rows={2}
-                                            placeholder="Descri??o..."
+                                            placeholder="Descrição..."
                                         />
                                         <div className="flex justify-center gap-2">
-                                            <button onClick={handleSaveCampaign} className="px-3 py-1 bg-[var(--skin-accent-color)] text-black text-xs font-bold rounded hover:brightness-110">Salvar</button>
+                                            <button onClick={handleSaveCampaign} className="luxe-skin-button rounded-xl px-3 py-1 text-xs font-bold">Salvar</button>
                                             <button onClick={() => setIsEditing(false)} className="px-3 py-1 bg-white/10 text-white text-xs font-bold rounded hover:bg-white/20">Cancelar</button>
                                         </div>
                                     </div>
@@ -633,16 +635,16 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             </h1>
                                         </div>
                                         <div className="relative mt-4 w-full">
-                                            <p className={`mx-auto max-w-[34rem] text-center text-sm leading-relaxed text-gray-400 transition-all ${isDescriptionExpanded ? '' : 'line-clamp-2'}`}>
-                                                {displayCampaignDescription || 'Sem descri??o.'}
+                                            <p className={`mx-auto max-w-[34rem] text-center text-sm leading-relaxed text-gray-400 transition-all ${isDescriptionExpanded ?'' : 'line-clamp-2'}`}>
+                                                {displayCampaignDescription || 'Sem descrição.'}
                                             </p>
                                             {(displayCampaignDescription && displayCampaignDescription.length > 100) && (
                                                 <button
                                                     onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
                                                     className="mx-auto mt-1 flex items-center gap-1 text-xs font-bold text-[var(--skin-accent-color)] hover:underline"
                                                 >
-                                                    {isDescriptionExpanded ? 'Mostrar menos' : 'Mostrar mais'}
-                                                    <ChevronDownIcon className={`w-3 h-3 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
+                                                    {isDescriptionExpanded ?'Mostrar menos' : 'Mostrar mais'}
+                                                    <ChevronDownIcon className={`w-3 h-3 transition-transform ${isDescriptionExpanded ?'rotate-180' : ''}`} />
                                                 </button>
                                             )}
                                         </div>
@@ -669,7 +671,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
                     {/* Grid Area */}
                     <div className="flex-1 overflow-y-auto relative p-4 bg-black/35">
-                        {sortedArenas.length === 0 ? (
+                        {sortedArenas.length === 0 ?(
                             <div className="h-full flex flex-col items-center justify-center text-gray-500">
                                 <p className="mb-4">Nenhuma arena definida nesta campanha.</p>
                                 {!isCodexCampaign && !isPreviewCampaign && (
@@ -700,7 +702,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 Fase {phase + 1}
                                             </div>
                                         )}
-                                        <div className={`flex min-h-[7rem] gap-3 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ? 'bg-black/15 p-2' : ''}`}>
+                                        <div className={`flex min-h-[7rem] gap-3 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : ''}`}>
                                         {arenas.map((arena) => {
                                             const index = sortedArenas.findIndex(item => item.id === arena.id);
                                     const locked = isArenaLocked(arena.id);
@@ -783,7 +785,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 {/* Status Header Overlay */}
                                                 {(locked || campaignArenaStates[arena.id]?.isCleared) && !isLinkingMode && (
                                                     <div className={`absolute top-0 left-0 right-0 h-1 z-10 ${
-                                                        locked ? 'bg-red-500' : 'bg-green-500'
+                                                        locked ?'bg-red-500' : 'bg-green-500'
                                                     }`} />
                                                 )}
                                                 
@@ -797,7 +799,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 )}
 
                                                 {/* Mini Arena Card Content */}
-                                                <div className={`${(isLinkingMode) ? 'pointer-events-none' : ''}`}>
+                                                <div className={`${(isLinkingMode) ?'pointer-events-none' : ''}`}>
                                                     <div className="h-[6.15rem] w-full rounded-[0.95rem] bg-[linear-gradient(180deg,rgba(91,65,167,0.24),rgba(20,20,20,0.45))]">
                                                         <ArenaCard 
                                                             arena={arena}
@@ -819,7 +821,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                                 return (
                                                                     <div key={pid} className={`px-1.5 py-0.5 rounded-full flex items-center gap-1 text-[8px] font-bold border ${
                                                                         pCleared 
-                                                                            ? 'bg-green-900/40 border-green-500/50 text-green-400 opacity-50' 
+                                                                            ?'bg-green-900/40 border-green-500/50 text-green-400 opacity-50' 
                                                                             : 'bg-red-900/40 border-red-500/50 text-red-400'
                                                                     }`} title={`Requer: ${pArena?.name}`}>
                                                                         <LinkIcon className="w-2.5 h-2.5" />
@@ -846,7 +848,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                     className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full luxe-skin-button shadow-lg shadow-black/30"
                                                     title="Adicionar Arena"
                                                 >
-                                                    <PlusIcon className="w-4 h-4 text-black" />
+                                                    <PlusIcon className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         )}

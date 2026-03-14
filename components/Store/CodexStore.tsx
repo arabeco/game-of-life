@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { CheckIcon } from '../Icons';
@@ -16,7 +16,7 @@ const createMockArena = (level: any, codexId: string): Arena => ({
     actionIds: [],
     isArchived: false,
     originCodexId: codexId,
-    codexLevel: level.level
+    codexLevel: level.level,
 });
 
 const createMockActions = (actions: any[], arenaId: string): Action[] =>
@@ -48,9 +48,10 @@ export const CodexStore: React.FC = () => {
     const handlePurchase = async (catalogId: string) => {
         if (purchasing) return;
         setPurchasing(catalogId);
+
         try {
             const catalogItem = codexCatalog.find(c => c.id === catalogId);
-            const isOwned = userCodexes.some(uc => uc.name === catalogItem?.title);
+            const isOwned = userCodexes.some(uc => uc.catalog_id === catalogItem?.id || uc.name === catalogItem?.title);
 
             if (isOwned) {
                 showToast('Você já possui este Codex.');
@@ -68,38 +69,42 @@ export const CodexStore: React.FC = () => {
 
     return (
         <>
-            <div className="space-y-6 animate-fade-in pb-10">
-                <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-4 animate-fade-in pb-8">
+                <div className="grid grid-cols-1 gap-4">
                     {codexCatalog && codexCatalog.length > 0 ? (
                         codexCatalog.map(codex => {
-                            const isOwned = userCodexes.some(uc => uc.name === codex.title);
+                            const isOwned = userCodexes.some(uc => uc.catalog_id === codex.id || uc.name === codex.title);
+                            const goldPrice = Number(codex.price_gold ?? Math.round(codex.price_brl ?? 0));
                             const template = codex.template;
 
                             if (!template) return null;
 
                             return (
-                                <GlassCard key={codex.id} variant="neutral" className="relative group overflow-hidden border-purple-500/30">
-                                    <div className="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none" />
+                                <GlassCard key={codex.id} variant="neutral" className="relative group overflow-hidden border-white/10 sm:border-purple-500/30">
+                                    <div className="absolute top-0 left-0 w-full h-28 sm:h-36 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none" />
 
-                                    <div className="relative z-10 flex flex-col h-full space-y-6 p-2">
-                                        <div className="flex flex-col md:flex-row gap-4 items-start">
-                                            <div className="p-4 bg-black/40 rounded-2xl border border-purple-500/20 text-5xl shadow-[0_0_20px_rgba(168,85,247,0.2)] flex-shrink-0">
+                                    <div className="relative z-10 flex flex-col h-full space-y-4 p-3 sm:p-4">
+                                        <div className="flex flex-col sm:flex-row gap-3 items-start">
+                                            <div className="p-3 bg-black/40 rounded-2xl border border-purple-500/20 text-3xl sm:text-4xl shadow-[0_0_20px_rgba(168,85,247,0.2)] flex-shrink-0">
                                                 {codex.cover_image || '📜'}
                                             </div>
-                                            <div className="flex-grow space-y-2">
-                                                <div className="flex justify-between items-start gap-3">
-                                                    <h2 className="text-2xl font-black text-gray-100 uppercase tracking-tight">{codex.title}</h2>
+                                            <div className="flex-grow space-y-2 min-w-0">
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                                                    <h2 className="text-base sm:text-xl font-black text-gray-100 uppercase tracking-tight leading-tight">
+                                                        {codex.title}
+                                                    </h2>
                                                     {isOwned ? (
-                                                        <span className="px-3 py-1 bg-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-500/30 flex items-center gap-1">
-                                                            <CheckIcon className="w-3 h-3" /> Adquirido
+                                                        <span className="inline-flex items-center gap-1 self-start px-2.5 py-1 bg-green-500/20 text-green-400 text-[9px] font-black uppercase tracking-[0.18em] rounded-full border border-green-500/30 whitespace-nowrap">
+                                                            <CheckIcon className="w-3 h-3" /> Biblioteca
                                                         </span>
                                                     ) : (
-                                                        <div className="px-3 py-1 bg-black/40 text-yellow-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-yellow-500/30">
-                                                            {codex.price_brl === 0 ? 'GRÁTIS' : `R$ ${codex.price_brl}`}
+                                                        <div className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 bg-black/40 text-yellow-300 text-[9px] font-black uppercase tracking-[0.18em] rounded-full border border-yellow-500/30 whitespace-nowrap">
+                                                            <span className="text-[11px] leading-none">🪙</span>
+                                                            <span>{goldPrice === 0 ? 'Grátis' : goldPrice}</span>
                                                         </div>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-gray-400 leading-relaxed max-w-2xl">{codex.description}</p>
+                                                <p className="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-2xl">{codex.description}</p>
                                                 <div className="flex flex-wrap gap-2 pt-1">
                                                     <span className="text-[9px] bg-white/5 px-2 py-0.5 rounded text-gray-500 uppercase font-bold tracking-wider border border-white/5">
                                                         {codex.duration_days} Dias
@@ -113,13 +118,13 @@ export const CodexStore: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3">
+                                        <div className="space-y-2">
                                             <div className="flex items-center justify-between px-1">
                                                 <div className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Estrutura do Protocolo</div>
                                                 <div className="text-[10px] text-gray-600">{template.levels.length} Fases</div>
                                             </div>
 
-                                            <div className="flex overflow-x-auto gap-4 pb-4 px-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent overscroll-x-contain" style={{ touchAction: 'pan-x' }}>
+                                            <div className="flex overflow-x-auto gap-3 pb-3 px-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent overscroll-x-contain" style={{ touchAction: 'pan-x' }}>
                                                 {template.levels.map((level: any) => {
                                                     const mockArena = createMockArena(level, codex.id);
                                                     const mockActions = createMockActions(level.actions, mockArena.id);
@@ -127,7 +132,7 @@ export const CodexStore: React.FC = () => {
                                                     return (
                                                         <div
                                                             key={level.level}
-                                                            className="snap-center flex-shrink-0 w-64 transform transition-transform hover:scale-105"
+                                                            className="snap-center flex-shrink-0 w-44 sm:w-52 lg:w-56 transform transition-transform hover:scale-[1.02]"
                                                         >
                                                             <ArenaCard
                                                                 arena={mockArena}
@@ -142,27 +147,28 @@ export const CodexStore: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="pt-4 border-t border-white/5 flex justify-end gap-3">
+                                        <div className="pt-3 border-t border-white/5 flex justify-end gap-2">
                                             <button
                                                 onClick={() => setCampaignPreview(buildCodexCampaignPreview(codex.id, template))}
-                                                className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-sm hover:bg-white/10 transition-all"
+                                                className="luxe-button-secondary h-9 rounded-xl px-4 text-[11px] font-bold uppercase tracking-[0.16em] text-white/82 hover:bg-white/10"
                                             >
-                                                VER CAMPANHA
+                                                Campanha
                                             </button>
                                             {isOwned ? (
                                                 <button
                                                     disabled
-                                                    className="px-8 py-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-bold text-sm flex items-center gap-2 cursor-default"
+                                                    className="h-9 px-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-bold text-[11px] uppercase tracking-[0.14em] flex items-center gap-2 cursor-default"
                                                 >
-                                                    <CheckIcon className="w-4 h-4" /> NA BIBLIOTECA
+                                                    <CheckIcon className="w-3.5 h-3.5" /> Biblioteca
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => handlePurchase(codex.id)}
                                                     disabled={!!purchasing}
-                                                    className="px-8 py-3 rounded-xl bg-[var(--skin-accent-color)] text-black font-black uppercase tracking-wider hover:brightness-110 transition-all shadow-[0_0_15px_var(--sephirot-glow-color)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="luxe-skin-button h-9 px-4 rounded-xl text-[11px] font-black uppercase tracking-[0.16em] inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    {purchasing === codex.id ? 'PROCESSANDO...' : codex.price_brl === 0 ? 'RESGATAR AGORA' : `COMPRAR • R$ ${codex.price_brl}`}
+                                                    <span className="text-[12px] leading-none">🪙</span>
+                                                    <span>{purchasing === codex.id ? '...' : goldPrice === 0 ? 'Resgatar' : goldPrice}</span>
                                                 </button>
                                             )}
                                         </div>

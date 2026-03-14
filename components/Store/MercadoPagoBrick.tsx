@@ -157,14 +157,14 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[11000] flex items-center justify-center p-4 animate-fade-in">
-                <GlassCard className="w-full max-w-lg relative overflow-hidden flex flex-col max-h-[95vh] border-[var(--skin-accent-color)]/20 shadow-2xl">
+                <GlassCard className="relative flex max-h-[86vh] w-full max-w-md flex-col overflow-hidden rounded-[30px] border-[var(--skin-accent-color)]/20 shadow-2xl">
                     <div className="p-3 border-b border-white/10 flex justify-between items-center bg-black/40 backdrop-blur-md">
                         <div>
                             <h2 className="text-lg font-black text-white uppercase tracking-tight">
                                 {paymentResult ? 'Aguardando Pagamento' : 'Pagamento Seguro'}
                             </h2>
                             <p className="text-[10px] text-[var(--skin-accent-color)] font-bold uppercase tracking-widest">
-                                {goldAmount} Ouros • R$ {amount.toFixed(2)}
+                                🪙 {goldAmount} • R$ {amount.toFixed(2)}
                             </p>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-all text-gray-400 hover:text-white hover:scale-110">
@@ -172,7 +172,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2 custom-scrollbar bg-black/60 scroll-smooth min-h-[400px] flex flex-col">
+                    <div className="custom-scrollbar flex min-h-[320px] flex-1 flex-col overflow-y-auto bg-black/60 p-2 scroll-smooth">
                         {loading && !paymentResult && (
                             <div className="flex flex-col items-center justify-center py-16 space-y-4">
                                 <div className="w-10 h-10 border-4 border-[var(--skin-accent-color)] border-t-transparent rounded-full animate-spin"></div>
@@ -208,7 +208,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
 
                                 <button 
                                     onClick={onClose}
-                                    className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold uppercase tracking-widest text-xs transition-all border border-white/10"
+                                    className="luxe-skin-button w-full rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-all"
                                 >
                                     Fechar e Aguardar Ouro
                                 </button>

@@ -9,6 +9,7 @@ import { IconPickerModal } from './IconPickerModal';
 import { SelectionModal } from './SelectionModal';
 import { CampaignsCodex } from './CampaignsCodex';
 import { buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils/codexPreview';
+import { EmojiGlyph } from './EmojiGlyph';
 import { supabase } from '../supabaseClient';
 
 type CodexDraft = {
@@ -626,7 +627,7 @@ export const CodexModal: React.FC<{
               </select>
               <input type="text" placeholder="Nome da Arena" value={arenaDraft.name} onChange={e => setArenaDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
               <textarea placeholder="Descrição da Meta..." value={arenaDraft.description} onChange={e => setArenaDraft(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
-              <button onClick={() => { setIconTarget('arena'); setIsIconPickerOpen(true); }} className="w-full py-2 rounded-xl bg-black/30 border border-white/20 flex items-center justify-center text-2xl">{arenaDraft.icon}</button>
+              <button onClick={() => { setIconTarget('arena'); setIsIconPickerOpen(true); }} className="w-full py-2 rounded-xl bg-black/30 border border-white/20 flex items-center justify-center text-2xl"><EmojiGlyph symbol={arenaDraft.icon || '???'} size="picker" className="text-white" /></button>
             </div>
             <div className="flex space-x-2 pt-2">
               <button onClick={() => setIsCreatingArena(false)} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
@@ -645,7 +646,7 @@ export const CodexModal: React.FC<{
             </div>
             <div className="flex flex-col items-center text-center space-y-1">
               <div className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center">
-                <span className="text-5xl">{selectedArena.icon}</span>
+                <EmojiGlyph symbol={selectedArena.icon || '???'} size="arena" className="text-white scale-[1.8]" />
               </div>
               <p className="text-sm text-gray-500">{selectedArena.description || 'Sem descrição.'}</p>
             </div>
@@ -659,7 +660,7 @@ export const CodexModal: React.FC<{
               <div className="grid grid-cols-2 gap-2">
                 {selectedArenaActions.map(action => (
                   <button key={action.id} onClick={() => openActionModal(selectedArena.id, action)} className="bg-black/30 border border-white/10 rounded-xl p-2 text-left">
-                    <div className="text-2xl">{action.icon}</div>
+                    <div className="text-2xl"><EmojiGlyph symbol={action.icon || '??'} size="picker" className="text-white" /></div>
                     <div className="text-xs font-bold text-white mt-1 truncate">{action.name}</div>
                     <div className="text-[10px] text-gray-500">{action.actionType}</div>
                   </button>

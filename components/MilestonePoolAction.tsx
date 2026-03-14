@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Action } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { useLongPress } from '../hooks/useLongPress';
+import { EmojiGlyph } from './EmojiGlyph';
 
 interface MilestonePoolActionProps {
     action: Action;
@@ -65,7 +66,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
              <div style={backgroundStyle} className="w-10 h-10 flex-shrink-0 flex items-center justify-center transform rotate-45 bg-gray-700 rounded-md border border-[var(--accent-bronze)] opacity-80">
-                <span className="transform -rotate-45 text-xl">{action.icon}</span>
+                <EmojiGlyph symbol={action.icon || '🏆'} size="milestone" className="transform -rotate-45 text-white" />
             </div>
         );
         const duration = action.actionType === 'Marco' ? Math.max(15, action.duration) : action.duration;
@@ -93,7 +94,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
                 style={backgroundStyle}
                 className="w-8 h-8 flex-shrink-0 flex items-center justify-center transform rotate-45 bg-gray-700 rounded-md border border-[var(--accent-bronze)]"
             >
-                <span className="transform -rotate-45 text-lg">{action.icon}</span>
+                <EmojiGlyph symbol={action.icon || '🏆'} size="milestone" className="transform -rotate-45 text-white" />
             </div>
             <span className="text-xs truncate">{action.name}</span>
 

@@ -374,6 +374,17 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
         </button>
       </div>
 
+      <GlassCard variant="neutral" className="rounded-3xl border border-white/10 px-4 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+          {activeTab === 'created' ? 'Regra da forja' : 'Regra da biblioteca'}
+        </p>
+        <p className="mt-2 text-sm text-gray-300">
+          {activeTab === 'created'
+            ? 'So manuscritos autorais podem ser compartilhados. Codex comprado ou recebido nao entra na forja como produto revendavel.'
+            : 'Instalar um Codex cria arenas e acoes editaveis na sua conta. O Codex original continua intacto e nao pode ser revendido como manuscrito seu.'}
+        </p>
+      </GlassCard>
+
       {listContent}
     </div>
   );

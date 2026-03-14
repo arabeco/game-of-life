@@ -8,6 +8,7 @@ import { PoolAction } from './PoolAction';
 import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
 import { isClanQuestAction } from '../utils/taskDomain.js';
 import './core-ui.css';
+import { EmojiGlyph } from './EmojiGlyph';
 
 const parseDate = (value: string) => {
     const [year, month, day] = value.split('-').map(Number);
@@ -98,7 +99,7 @@ const BattleTaskItem: React.FC<{
             <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ? 'bg-black/45' : 'bg-black/60'} ${isCompleted ? 'opacity-80' : 'opacity-0'}`}></div>
             <div className={`absolute inset-0 rounded-xl transition-all ${isFreeAction ? `free-action-outline ${isCompleted ? 'opacity-95' : 'opacity-80'}` : isCompleted ? 'border-4 border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--skin-accent-color)] opacity-80' : 'border-2 border-dashed border-gray-600/50'}`}></div>
 
-            <div className="text-xl z-10">{action.icon}</div>
+            <div className="text-xl z-10"><EmojiGlyph symbol={action.icon || '📝'} size="action" className="text-white" /></div>
             <div className={`text-sm font-semibold truncate w-full z-10 ${isCompleted ? 'text-gray-300' : ''} ${isFreeAction && !isCompleted ? 'text-slate-100' : ''}`}>{action.name}</div>
 
             {isAdjusting && !isCompleted && (

@@ -16,10 +16,10 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
   showCentralLevel = true,
 }) => {
   const filteredAssets = assets.filter((asset) => asset.id !== 'geral');
-  const levels = filteredAssets.map((asset) => (tempLevels ? tempLevels[asset.id] || 1 : asset.level));
+  const levels = filteredAssets.map((asset) => (tempLevels ?tempLevels[asset.id] || 1 : asset.level));
 
   const totalLevel = tempLevels
-    ? Object.entries(tempLevels)
+    ?Object.entries(tempLevels)
         .filter(([id]) => id !== 'geral')
         .reduce((sum, [, level]) => sum + Number(level), 0)
     : filteredAssets.reduce((sum, asset) => sum + asset.level, 0);
@@ -27,7 +27,7 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
   const labels = filteredAssets.map((asset) => {
     const normalized = asset.name.toUpperCase();
     if (normalized === 'TRABALHO/ESTUDOS') return 'TRABALHO';
-    if (normalized === 'ESPAÇO MENTAL' || normalized === 'ESPAÃ‡O MENTAL') return 'MENTAL';
+    if (normalized === 'ESPA?O MENTAL') return 'MENTAL';
     if (normalized === 'ESPIRITUALIDADE') return 'ESPIRIT.';
     return normalized;
   });
@@ -64,7 +64,7 @@ export const AssetDecagon: React.FC<AssetDecagonProps> = ({
         ]}
       />
 
-      {showCentralLevel ? (
+      {showCentralLevel ?(
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-[6px] uppercase tracking-[0.5em] text-white/10 font-black mb-[-2px] translate-y-[-14px]">TOTAL</span>
           <span

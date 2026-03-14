@@ -35,6 +35,10 @@ Se a pergunta for "qual e o resumo total dos marcos?":
 Se a pergunta for "quem governa cada frente do projeto?":
 - `conselho.md`
 
+Se a pergunta for "onde esta o catalogo de itens e como mexer nele?":
+- `GM_HELP.md`
+- `LOJA.MD`
+
 ## Mapeamento Rapido de Nomes
 
 Quando aparecer nome antigo, lembrar assim:

@@ -4,6 +4,8 @@ interface SephirotFogProps {
   points: { x: number; y: number; level: number }[];
   color: string;
   mode?: 'sephirot' | 'arena' | 'office' | 'deepwork';
+  tintStrength?: number;
+  alphaMaxOverride?: number;
 }
 
 const vertexShaderSource = `
@@ -28,6 +30,7 @@ const fragmentShaderSource = `
   uniform float uFieldDrift;
   uniform float uAlphaMax;
   uniform float uCoreBoost;
+  uniform float uTintStrength;
   uniform int uMode; // 0=sephirot, 1=arena, 2=office, 3=deepwork
   
   varying vec2 vUv;
@@ -91,7 +94,7 @@ const fragmentShaderSource = `
     
     // Global Time for animation
     // Scaled down for a more relaxing, slower movement
-    float scaledTime = uTime * 0.5;
+    float scaledTime = uTime * 0.32;
     
     // Fade in the intensity over the first 2 seconds to make it look like it's "starting"
     float startupFade = smoothstep(0.0, 2.0, uTime);
@@ -236,7 +239,7 @@ const fragmentShaderSource = `
     
     // Push toward pearl-white so the fog feels cleaner and less toxic.
     vec3 pearlWhite = vec3(0.96, 0.97, 0.94);
-    vec3 energyColor = mix(pearlWhite, color, 0.22);
+    vec3 energyColor = mix(pearlWhite, color, uTintStrength);
     
     // Map density to color with startup fade
     vec3 finalColor = energyColor * totalDensity * startupFade * 0.9;
@@ -250,7 +253,13 @@ const fragmentShaderSource = `
   }
 `;
 
-export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 'sephirot' }) => {
+export const SephirotFog: React.FC<SephirotFogProps> = ({
+  points,
+  color,
+  mode = 'sephirot',
+  tintStrength = 0.22,
+  alphaMaxOverride,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -265,6 +274,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
   const uFieldDriftLoc = useRef<WebGLUniformLocation | null>(null);
   const uAlphaMaxLoc = useRef<WebGLUniformLocation | null>(null);
   const uCoreBoostLoc = useRef<WebGLUniformLocation | null>(null);
+  const uTintStrengthLoc = useRef<WebGLUniformLocation | null>(null);
   const uModeLoc = useRef<WebGLUniformLocation | null>(null); // NEW
   const startTimeRef = useRef<number | null>(null);
 
@@ -360,6 +370,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
     uFieldDriftLoc.current = gl.getUniformLocation(program, 'uFieldDrift');
     uAlphaMaxLoc.current = gl.getUniformLocation(program, 'uAlphaMax');
     uCoreBoostLoc.current = gl.getUniformLocation(program, 'uCoreBoost');
+    uTintStrengthLoc.current = gl.getUniformLocation(program, 'uTintStrength');
     uModeLoc.current = gl.getUniformLocation(program, 'uMode'); // NEW
 
     // Set Resolution once
@@ -455,7 +466,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
     const windStrength = arenaMode ? 0.35 : 0.0;
     const pointDrift = arenaMode ? 0.03 : 0.0;
     const fieldDrift = arenaMode ? 1.0 : 0.0;
-    const alphaMax = officeMode ? 0.0 : (arenaMode ? 0.28 : 0.15);
+    const alphaMax = alphaMaxOverride ?? (officeMode ? 0.0 : (arenaMode ? 0.28 : 0.15));
     const coreBoost = arenaMode ? 1.0 : 0.0;
 
     if (uWindStrengthLoc.current) {
@@ -473,12 +484,15 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({ points, color, mode = 
     if (uCoreBoostLoc.current) {
         gl.uniform1f(uCoreBoostLoc.current, coreBoost);
     }
+    if (uTintStrengthLoc.current) {
+        gl.uniform1f(uTintStrengthLoc.current, tintStrength);
+    }
 
     if (uModeLoc.current) {
         const modeVal = mode === 'sephirot' ? 0 : mode === 'arena' ? 1 : mode === 'office' ? 2 : mode === 'deepwork' ? 3 : 0;
         gl.uniform1i(uModeLoc.current, modeVal);
     }
-  }, [points, color, mode]);
+  }, [points, color, mode, tintStrength, alphaMaxOverride]);
 
   // Handle Resize
   useEffect(() => {

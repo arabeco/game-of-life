@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
 import { SeasonQuest, Arena, Action } from '../types';
 import { UsersIcon, LightbulbIcon } from './Icons';
+import { EmojiGlyph } from './EmojiGlyph';
 
 interface SharedArenaViewProps {
     arena: Arena;

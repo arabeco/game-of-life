@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
@@ -152,13 +152,13 @@ export const LoginView: React.FC = () => {
                     nobility: { exp: 0, rankId: 'vagante' },
                     wallet: { gold: 0, fragments: 0 },
                     mood: 50,
-                    chests: [
-                        { type: 'Comum', count: 1 },
-                        { type: 'Skin Comum', count: 1 }
-                    ],
+                    chests: [],
                     inventory: [],
                     role: 'user',
-                    isPremium: false
+                    isPremium: false,
+                    starterRewardsPending: true,
+                    vanguardWelcomePending: false,
+                    vanguardWelcomePayload: null,
                 };
 
                 // Initialize unlocked items with Starter Kit
@@ -193,8 +193,12 @@ export const LoginView: React.FC = () => {
                         unlocked_items: newProfile.unlockedItems,
                         completed_season_missions: newProfile.completedSeasonMissions,
                         nobility: newProfile.nobility,
+                        wallet: newProfile.wallet,
                         mood: newProfile.mood,
                         chests: newProfile.chests,
+                        starter_rewards_pending: newProfile.starterRewardsPending ?? true,
+                        vanguard_welcome_pending: newProfile.vanguardWelcomePending ?? false,
+                        vanguard_welcome_payload: newProfile.vanguardWelcomePayload ?? {},
                         role: newProfile.role,
                         is_premium: newProfile.isPremium ?? false,
                     }]);
@@ -228,7 +232,7 @@ export const LoginView: React.FC = () => {
                     .maybeSingle();
 
                 if (nicknameLookupError) throw nicknameLookupError;
-                if (!profileByNickname?.email) throw new Error('Nickname n?o encontrado');
+                if (!profileByNickname?.email) throw new Error('Nickname não encontrado');
 
                 emailForLogin = profileByNickname.email;
             }

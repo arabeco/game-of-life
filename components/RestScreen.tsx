@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
 import { LockIcon, UnlockIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, SparklesIcon, UsersIcon, ZapIcon, ClockIcon, ShareIcon, XIcon, ArrowRightIcon, EyeIcon } from './Icons';
@@ -12,6 +12,9 @@ import { OracleFeed } from './OracleFeed';
 import { WheelPicker } from './inputs/WheelPicker';
 import { Action, ActionType, Arena, ScheduledTask, DayOfWeek } from '../types';
 import { FocusAudioPlayer } from './FocusAudioPlayer';
+import { RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
+import { showLocalNotification } from '../utils/localNotification';
+import { EmojiGlyph } from './EmojiGlyph';
 
 interface RestScreenProps {
     onClose: () => void;
@@ -19,6 +22,8 @@ interface RestScreenProps {
     onOpenOracle?: () => void;
     onOpenClan?: () => void;
     onOpenDeepWork?: () => void;
+    actionSession?: RestScreenActionSessionDetail | null;
+    onClearActionSession?: () => void;
 }
 
 // Helper functions for parsing (duplicated from PlannerView for now, could be moved to utils)
@@ -96,7 +101,7 @@ const parseDaysOfWeek = (text: string): DayOfWeek[] => {
     return days;
 };
 
-export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onOpenOracle, onOpenClan, onOpenDeepWork }) => {
+export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onOpenOracle, onOpenClan, onOpenDeepWork, actionSession = null, onClearActionSession }) => {
     const {
         activeCycle,
         dailyCommitment,
@@ -109,7 +114,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         addAction,
         scheduleTask,
         scheduleMultipleTasks,
-        getLocalDateString
+        scheduleAndCompleteNow,
+        scheduleAndCompleteMilestoneNow,
+        getLocalDateString,
+        oraclePreferences,
+        showToast
     } = useGame();
     const [isClosing, setIsClosing] = useState(false);
     const [holdProgress, setHoldProgress] = useState(0);
@@ -126,6 +135,12 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const [selectedDeepWorkTime, setSelectedDeepWorkTime] = useState('25');
     const [deepWorkActive, setDeepWorkActive] = useState(false);
     const [deepWorkTimeLeft, setDeepWorkTimeLeft] = useState(0);
+    const [actionSessionTimeLeft, setActionSessionTimeLeft] = useState(0);
+    const [actionSessionCompleteProgress, setActionSessionCompleteProgress] = useState(0);
+    const [isActionSessionCompleting, setIsActionSessionCompleting] = useState(false);
+    const actionSessionCompleteIntervalRef = useRef<number | null>(null);
+    const actionSessionTimeoutPlayedRef = useRef(false);
+    const actionSessionNotificationSentRef = useRef(false);
 
     // Quick Action Input State
     const [showQuickActionInput, setShowQuickActionInput] = useState(false);
@@ -133,6 +148,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const quickActionInputRef = useRef<HTMLInputElement>(null);
 
     const deepWorkOptions = ['15', '20', '25', '30', '40', '45', '50', '60', '90', '120'];
+    const currentActionSessionTask = actionSession?.taskId ? tasks.find(task => task.id === actionSession.taskId) : null;
+    const isActionSessionCompleted = Boolean(currentActionSessionTask?.completed);
 
     useEffect(() => {
         if (showQuickActionInput && quickActionInputRef.current) {
@@ -408,10 +425,141 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         return () => clearInterval(interval);
     }, [deepWorkActive, deepWorkTimeLeft]);
 
+    useEffect(() => {
+        if (!actionSession) {
+            setActionSessionTimeLeft(0);
+            setActionSessionCompleteProgress(0);
+            setIsActionSessionCompleting(false);
+            actionSessionTimeoutPlayedRef.current = false;
+            actionSessionNotificationSentRef.current = false;
+            return;
+        }
+
+        actionSessionTimeoutPlayedRef.current = false;
+        actionSessionNotificationSentRef.current = false;
+        const startedAtMs = new Date(actionSession.startedAt).getTime();
+        const totalSeconds = Math.max(1, Math.round(actionSession.durationMinutes * 60));
+
+        const sync = () => {
+            const elapsedSeconds = Math.floor((Date.now() - startedAtMs) / 1000);
+            setActionSessionTimeLeft(totalSeconds - elapsedSeconds);
+        };
+
+        sync();
+        const interval = window.setInterval(sync, 1000);
+        return () => window.clearInterval(interval);
+    }, [actionSession]);
+
+    useEffect(() => {
+        if (!actionSession || actionSessionTimeLeft > 0 || actionSessionTimeoutPlayedRef.current) return;
+        actionSessionTimeoutPlayedRef.current = true;
+        playActionSessionTimeoutSound();
+    }, [actionSession, actionSessionTimeLeft]);
+
+    useEffect(() => {
+        if (!actionSession || actionSessionTimeLeft > 0 || actionSessionNotificationSentRef.current) return;
+        if (!oraclePreferences?.pushEnabled) return;
+
+        actionSessionNotificationSentRef.current = true;
+        void showLocalNotification({
+            title: 'Tempo encerrado',
+            body: `A acao "${actionSession.actionName}" passou do tempo.`,
+            tag: `action-session-${actionSession.actionId}`,
+            url: '/',
+        });
+    }, [actionSession, actionSessionTimeLeft, oraclePreferences?.pushEnabled]);
+
+    useEffect(() => {
+        return () => {
+            if (actionSessionCompleteIntervalRef.current) {
+                window.clearInterval(actionSessionCompleteIntervalRef.current);
+            }
+        };
+    }, []);
+
     const formatDeepWorkTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
         return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const formatActionSessionTime = (seconds: number) => {
+        const absoluteSeconds = Math.abs(seconds);
+        const minutes = Math.floor(absoluteSeconds / 60);
+        const secs = absoluteSeconds % 60;
+        const prefix = seconds < 0 ? '-' : '';
+        return `${prefix}${minutes}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const playActionSessionTimeoutSound = () => {
+        try {
+            const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+            if (!AudioContextCtor) return;
+            const audioContext = new AudioContextCtor();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(660, audioContext.currentTime + 0.25);
+            gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.16, audioContext.currentTime + 0.03);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.45);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.45);
+            window.setTimeout(() => { void audioContext.close(); }, 700);
+        } catch (error) {
+            console.error('Action session timeout sound failed:', error);
+        }
+    };
+
+    const clearActionSessionCompleteHold = () => {
+        if (actionSessionCompleteIntervalRef.current) {
+            window.clearInterval(actionSessionCompleteIntervalRef.current);
+            actionSessionCompleteIntervalRef.current = null;
+        }
+
+        if (!isActionSessionCompleting) {
+            setActionSessionCompleteProgress(0);
+        }
+    };
+
+    const handleActionSessionComplete = () => {
+        if (!actionSession || actionSessionCompleteIntervalRef.current || isActionSessionCompleted) return;
+
+        const startedAt = Date.now();
+        const holdDuration = 1000;
+
+        actionSessionCompleteIntervalRef.current = window.setInterval(() => {
+            const elapsed = Date.now() - startedAt;
+            const progress = Math.min((elapsed / holdDuration) * 100, 100);
+            setActionSessionCompleteProgress(progress);
+
+            if (progress < 100) return;
+
+            clearActionSessionCompleteHold();
+            setIsActionSessionCompleting(true);
+
+            void (async () => {
+                try {
+                    if (actionSession.actionType === 'Marco') {
+                        await scheduleAndCompleteMilestoneNow(actionSession.actionId);
+                    } else {
+                        await scheduleAndCompleteNow(actionSession.actionId, actionSession.taskId);
+                    }
+
+                    showToast('Acao concluida.', 'success');
+                    onClearActionSession?.();
+                } catch (error) {
+                    console.error('Action session completion failed:', error);
+                    showToast('Nao foi possivel concluir a acao.', 'error');
+                } finally {
+                    setActionSessionCompleteProgress(0);
+                    setIsActionSessionCompleting(false);
+                }
+            })();
+        }, 16);
     };
 
     // Animation for mounting
@@ -605,6 +753,16 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]" />
                 </div>
 
+                {actionSession && (
+                    <button
+                        onClick={() => onClearActionSession?.()}
+                        className="absolute top-5 right-5 z-20 w-10 h-10 rounded-full border border-white/10 bg-black/45 backdrop-blur-md flex items-center justify-center text-gray-300 hover:text-white hover:border-white/20 transition-colors"
+                        aria-label="Fechar cronometro da acao"
+                    >
+                        <XIcon className="w-4 h-4" />
+                    </button>
+                )}
+
                 {/* Top Section: Profile & Clock */}
                 <div className="w-full max-w-md p-2 pt-8 flex flex-col items-center gap-1 z-10 shrink-0">
                     {/* Profile Section */}
@@ -647,16 +805,37 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                     {/* Digital Clock & Status */}
                     <div className="flex flex-col items-center animate-fade-in delay-200">
+                        {actionSession && (
+                            <div className="mb-3 max-w-[18rem] rounded-full border border-white/10 bg-black/35 px-3 py-2 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.28)]">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-8 h-8 rounded-full bg-[var(--skin-accent-color)]/12 border border-[var(--skin-accent-color)]/25 flex items-center justify-center text-sm shrink-0">
+                                        <EmojiGlyph symbol={actionSession.actionIcon || '📝'} size="action" className="text-white" />
+                                    </div>
+                                    <div className="min-w-0 text-left">
+                                        <div className="text-[9px] uppercase tracking-[0.18em] text-gray-500 font-black">Acao atual</div>
+                                        <div className="text-xs font-semibold text-white truncate">{actionSession.actionName}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="text-4xl font-light text-[var(--skin-accent-color)] tracking-tighter tabular-nums drop-shadow-[0_0_20px_var(--skin-accent-color)]">
-                            {deepWorkActive ? formatDeepWorkTime(deepWorkTimeLeft) : formatTime(currentTime)}
+                            {actionSession ? formatActionSessionTime(actionSessionTimeLeft) : deepWorkActive ? formatDeepWorkTime(deepWorkTimeLeft) : formatTime(currentTime)}
                         </div>
 
                         {/* Date/Status */}
-                        <div className="text-[8px] font-bold text-[var(--skin-accent-color)] uppercase tracking-[0.3em] opacity-60 mt-1">
-                            {deepWorkActive ? 'DEEP WORK ATIVO' : formatDate(currentTime)}
+                        <div className="mt-1 flex items-center gap-2 text-[8px] font-bold uppercase tracking-[0.28em] opacity-70">
+                            <span className={`${actionSession && actionSessionTimeLeft < 0 ? 'text-amber-300' : 'text-[var(--skin-accent-color)]'}`}>
+                                {actionSession ? (actionSessionTimeLeft < 0 ? 'TEMPO EXCEDIDO' : 'ACAO EM CURSO') : deepWorkActive ? 'DEEP WORK ATIVO' : formatDate(currentTime)}
+                            </span>
+                            {actionSession && (
+                                <span className={`rounded-full border px-2 py-1 text-[7px] tracking-[0.18em] ${actionSessionTimeLeft < 0 ? 'border-amber-400/20 bg-amber-400/10 text-amber-200' : 'border-white/10 bg-white/[0.04] text-gray-400'}`}>
+                                    {actionSessionTimeLeft < 0 ? 'EXTRA' : 'RODANDO'}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
+
 
                 {/* Center Section: Painel Diário (Main Focus) */}
                 <div className="flex-1 flex flex-col items-center justify-start w-full max-w-md px-4 z-10 animate-fade-in overflow-hidden h-full min-h-0 mb-2">
@@ -712,6 +891,39 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                 {/* Bottom Section: Indicators & Unlock */}
                 <div className="flex-none mb-8 flex flex-col items-center gap-6 z-10 w-full px-6">
+                    {actionSession && (
+                        <div className="w-full max-w-sm mb-2 flex justify-center">
+                            <button
+                                onMouseDown={handleActionSessionComplete}
+                                onMouseUp={clearActionSessionCompleteHold}
+                                onMouseLeave={clearActionSessionCompleteHold}
+                                onTouchStart={handleActionSessionComplete}
+                                onTouchEnd={clearActionSessionCompleteHold}
+                                disabled={isActionSessionCompleted}
+                                className={`relative overflow-hidden rounded-full border px-4 py-3 text-left transition-all ${isActionSessionCompleted ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-black/38 text-white hover:border-[var(--skin-accent-color)]/35 hover:bg-black/48'}`}
+                                style={{ touchAction: 'none' }}
+                            >
+                                <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/5">
+                                    <div
+                                        className="h-full bg-[var(--skin-accent-color)] transition-all duration-75"
+                                        style={{ width: `${actionSessionCompleteProgress}%` }}
+                                    />
+                                </div>
+                                <div className="relative z-10 flex items-center gap-3 pr-2">
+                                    <div className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${isActionSessionCompleted ? 'border-emerald-400/25 bg-emerald-400/10' : 'border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10'}`}>
+                                        <CheckCircleIcon className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="text-xs font-semibold leading-none">{isActionSessionCompleted ? 'Acao concluida' : 'Concluir acao'}</div>
+                                        <div className="mt-1 text-[9px] uppercase tracking-[0.18em] text-gray-500 font-black">
+                                            {isActionSessionCompleting ? 'Concluindo' : 'Segure 1s para concluir'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    )}
+
                     {/* Quick Indicators Row */}
                     <div className="flex items-center justify-center gap-4 animate-fade-in delay-500">
                         {/* Mood Indicator */}
@@ -983,3 +1195,14 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         </Portal>
     );
 };
+
+
+
+
+
+
+
+
+
+
+

@@ -5,6 +5,7 @@ import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
 import { SparklesIcon, LockIcon } from './Icons';
 import './global-header.css';
+import { REST_SCREEN_ACTION_SESSION_EVENT, RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
 
 const MoodModal = React.lazy(() => import('./MoodModal').then(m => ({ default: m.MoodModal })));
 const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default: m.OracleFeed })));
@@ -19,6 +20,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const [isClanOpen, setClanOpen] = useState(false);
     const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
     const [isRestScreenOpen, setRestScreenOpen] = useState(defaultRestScreenOpen);
+    const [restScreenActionSession, setRestScreenActionSession] = useState<RestScreenActionSessionDetail | null>(null);
     const isBasicMode = appMode === 'BASIC';
     
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
@@ -69,6 +71,18 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
         window.addEventListener('openOracleNotifications', handleOpenOracleNotifications);
         return () => window.removeEventListener('openOracleNotifications', handleOpenOracleNotifications);
+    }, []);
+
+    useEffect(() => {
+        const handleRestScreenActionSession = (event: Event) => {
+            const customEvent = event as CustomEvent<RestScreenActionSessionDetail>;
+            if (!customEvent.detail) return;
+            setRestScreenActionSession(customEvent.detail);
+            setRestScreenOpen(true);
+        };
+
+        window.addEventListener(REST_SCREEN_ACTION_SESSION_EVENT, handleRestScreenActionSession as EventListener);
+        return () => window.removeEventListener(REST_SCREEN_ACTION_SESSION_EVENT, handleRestScreenActionSession as EventListener);
     }, []);
 
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '');
@@ -220,11 +234,16 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                 {isClanOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanOpen(false)} />}
                 {isRestScreenOpen && (
                     <RestScreen 
-                        onClose={() => setRestScreenOpen(false)} 
+                        onClose={() => {
+                            setRestScreenOpen(false);
+                            setRestScreenActionSession(null);
+                        }} 
                         onOpenMood={() => setMoodModalOpen(true)}
                         onOpenOracle={() => setOracleOpen(true)}
                         onOpenClan={() => setClanOpen(true)}
                         onOpenDeepWork={() => setDeepWorkOpen(true)}
+                        actionSession={restScreenActionSession}
+                        onClearActionSession={() => setRestScreenActionSession(null)}
                     />
                 )}
             </Suspense>

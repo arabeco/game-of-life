@@ -90,6 +90,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     // NEW: Task duration override state
     const currentTask = taskId ?tasks.find(t => t.id === taskId) : null;
+    const startNowTask = React.useMemo(() => {
+        if (!action) return null;
+
+        const today = getLocalDateString(new Date());
+        if (currentTask && currentTask.date === today && !currentTask.completed) {
+            return currentTask;
+        }
+
+        return tasks.find(task => task.actionId === action.id && task.date === today && !task.completed) || null;
+    }, [action, currentTask, tasks]);
+    const canStartNow = mode === 'view' && !isPreview && Boolean(startNowTask);
     const [editableTaskDuration, setEditableTaskDuration] = useState<number>(currentTask?.duration || action?.duration || 60);
 
     // New View Mode State
@@ -251,7 +262,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     };
 
     const handleStartMission = () => {
-        if (!action || startNowHoldIntervalRef.current) return;
+        if (!action || !startNowTask || startNowHoldIntervalRef.current) return;
 
         setStartNowTriggered(false);
         const startedAt = Date.now();
@@ -270,10 +281,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             window.dispatchEvent(new CustomEvent(REST_SCREEN_ACTION_SESSION_EVENT, {
                 detail: createRestScreenActionSession({
                     actionId: action.id,
-                    taskId,
+                    taskId: startNowTask?.id,
                     actionName: action.name,
                     actionIcon: action.icon,
-                    durationMinutes: currentTask?.duration || action.duration || 60,
+                    durationMinutes: startNowTask?.duration || currentTask?.duration || action.duration || 60,
                     actionType: action.actionType,
                 }),
             }));
@@ -922,7 +933,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     <span className="relative z-10 group-hover:text-black transition-colors">Fechar</span>
                                     <div className="absolute inset-0 transition-colors bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10" />
                                 </button>
-                            ) : mode === 'view' ?(
+                            ) : canStartNow ?(
                                 <button
                                     ref={saveButtonRef}
                                     onMouseDown={handleStartMission}
@@ -955,6 +966,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             </div>
                                         </div>
                                     </div>
+                                </button>
+                            ) : mode === 'view' ?(
+                                <button
+                                    ref={saveButtonRef}
+                                    onClick={onClose}
+                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
+                                >
+                                    <span className="relative z-10 group-hover:text-black transition-colors">Fechar</span>
+                                    <div className="absolute inset-0 transition-colors bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10" />
                                 </button>
                             ) : (
                                 <button

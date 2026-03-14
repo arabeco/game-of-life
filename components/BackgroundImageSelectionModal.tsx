@@ -2,8 +2,9 @@ import React from 'react';
 import { GlassCard } from './GlassCard';
 import { UploadIcon } from './Icons';
 import { Portal } from './Portal';
+import { ProfileBackgroundSurface } from './ProfileBackgroundSurface';
 import { useGame } from '../contexts/GameContext';
-import { PROFILE_BACKGROUND_OPTIONS, resolveProfileBackgroundValue, isCssProfileBackground } from '../utils/profileBackgrounds';
+import { PROFILE_BACKGROUND_OPTIONS, resolveProfileBackgroundValue } from '../utils/profileBackgrounds';
 
 interface BackgroundImageSelectionModalProps {
     currentBackground: string;
@@ -57,8 +58,6 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                             const resolvedValue = resolveProfileBackgroundValue(bg.value);
                             const resolvedCurrent = resolveProfileBackgroundValue(currentBackground);
                             const isSelected = resolvedCurrent === resolvedValue;
-                            const isGradient = isCssProfileBackground(resolvedValue);
-                            const isUrl = resolvedValue.startsWith('http') || resolvedValue.startsWith('data:') || (!isGradient && resolvedValue.includes('.'));
 
                             return (
                                 <div key={bg.id} className="text-center relative">
@@ -66,13 +65,10 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                                         onClick={() => handleSelect(bg)}
                                         className={`aspect-[16/9] w-full rounded-lg overflow-hidden transition-all duration-200 relative ${isSelected ? 'ring-4 ring-offset-2 ring-offset-gray-800 ring-white' : ''} ${bg.isPremiumOnly && !isPremiumUser ? 'opacity-80 grayscale-[0.5]' : ''}`}
                                     >
-                                        <div
-                                            className="w-full h-full"
-                                            style={{
-                                                background: isUrl ? `url(${resolvedValue})` : resolvedValue,
-                                                backgroundSize: 'cover',
-                                                backgroundPosition: 'center',
-                                            }}
+                                        <ProfileBackgroundSurface
+                                            value={resolvedValue}
+                                            className="w-full h-full object-cover"
+                                            alt={bg.name}
                                         />
                                         {bg.isPremiumOnly && !isPremiumUser && (
                                             <div className="absolute top-1 right-1 bg-black/80 rounded-full w-5 h-5 flex items-center justify-center border border-yellow-500/50 shadow-lg">

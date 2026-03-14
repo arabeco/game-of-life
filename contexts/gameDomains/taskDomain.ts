@@ -337,6 +337,13 @@ export const createTaskDomain = ({
 
         const now = new Date();
         const date = getLocalDateString(now);
+        const existingTaskForToday = tasks.find(task => task.actionId === actionId && task.date === date && !task.completed);
+
+        if (existingTaskForToday) {
+            await toggleTaskCompletion(existingTaskForToday.id);
+            return;
+        }
+
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
         const startTime = Math.max(0, nowInMinutes - action.duration);
 

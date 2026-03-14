@@ -1,52 +1,66 @@
-﻿# RELATORIO OPERACIONAL: GLYPH 1.003b
+# RELATORIO OPERACIONAL: GLYPH 1.003b
+Data: 14/03/2026
+Atualizado por: GPT-5.4
 
-Data: 13/03/2026
+---
+## 1. FASE ATUAL: FUNDACAO (T1)
+- Status: ALPHA
+- Missao: Provar onboarding, loop diario, retorno D2 e conclusao de ciclos reais.
 
-## 1. Fase atual
+---
+## [v] 2. STATUS DE ENTREGA (CONCLUIDO)
 
-- Status: `ALPHA`
-- Fase: `FUNDACAO (T1)`
-- Missao da fase: provar onboarding, loop diario, retorno no `D2` e primeiros ciclos com usuarios reais.
+[v] Criar funcao "Comecar Agora" e estabilizar o comportamento da tela bloqueada no fluxo.
+[v] Fechar o furo do custo de envio de Codex.
+[v] Fechar Loja: validar compra de Slots e claim por link; revisar items e Codex no catalogo.
+[v] Criar Codex base de teste (Ativ. Fisica, Nutricao, Mentais, Logistica).
+[v] Revisao da Loja: validar fluxo de compra de Slots, Codex e items; alinhar Biblioteca e Loja ao padrao GlassCard.
+[v] Publicar e validar em ambiente real (Vercel) o que foi fechado localmente.
+[v] Varredura final de encoding em Settings e CodexModal.
+[v] Padronizar a UI mobile de modais centrais em Perfil, Loja, Arena e Assets.
+[v] Reestruturar o card/modal de Season com foco em imagem, descricao e cards compactos.
+[v] Ajustar a customizacao de Soberano, Artefato, Glifo, Aura e Placa no perfil.
+[v] Renovar temporariamente os fundos Ouro e Prata do perfil com versoes escuras texturizadas.
 
-## 2. O que esta confirmado no app
+---
+## [ ] 3. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
 
-- `build` ok e base estrutural estavel.
-- Beta fechado rearmado com `Convite Dourado`.
-- Fluxo de Google ajustado para empurrar usuario novo para cadastro com convite quando ele ainda nao pertence ao beta.
-- Links reais de `Termos` e `Privacidade` ligados no login, no modal legal e em Configuracoes.
-- Exclusao de conta com trilha oficial Supabase preparada via SQL + Edge Function.
-- Novo onboarding operacional de primeiro uso entrou; o antigo `Card 1` deixou de abrir automatico e virou tutorial manual.
-- Painel do GM foi refatorado para ler `marco1_beta_scoreboard` e ignorar usuarios `ouro`.
-- Estrutura de acompanhamento do `Marco 1 / T1` foi criada no Supabase.
-- Forja e Biblioteca de Codex ja possuem base de backend para slots, compartilhamento por link, envio por `@nickname` e reivindicacao.
+### COMANDO (METAS IMEDIATAS & DONO)
+[ ] Fechar QA mobile do pacote Perfil -> Loja -> Customizacao para congelar o padrao visual. - Responsavel: SENTINELA
+[ ] Preparar os novos backgrounds `goldback`, `silverback`, `emeraldback`, `rubiback` e premium extras em `use assets`. - Responsavel: PROTOCOLO
+[ ] Validar conta nova completa: onboarding -> Vanguarda -> Perfil -> Loja -> primeiro retorno. - Responsavel: TRONO
+[ ] Revisar leitura de valor dos cosmeticos basicos vs premium antes de expor isso com mais forca. - Responsavel: TESOURO
 
-## 3. O que ainda precisa de validacao real
+### TRONO (Governanca & Decisao)
+[ ] Disparar os 5 primeiros Bilhetes Dourados (Domingo).
+[ ] Analisar dados reais de Ativacao, D2 e % de Ciclos.
+[ ] Manter o foco absoluto no Marco 1 (ignorar ruido fora do core loop).
+[ ] Validar se o sistema sustenta a entrada da Primeira Linhagem.
 
-- QA ponta a ponta do beta fechado em ambiente real.
-- QA do fluxo `Google -> voltar para criar conta -> usar convite -> entrar`.
-- QA do onboarding operacional com conta nova.
-- QA da exclusao real de conta com usuario descartavel.
-- QA da Forja/Biblioteca de Codex com casos reais de slot, envio e claim.
-- Revisao visual final do pacote de Codex para aderencia total ao padrao dos modais do app.
-- Varredura final de strings/encoding nas telas tocadas recentemente, especialmente `Settings`.
+### PROTOCOLO (Integridade & Codigo)
+[ ] Conferir se `marco1_beta_tracking` esta recebendo os dados corretamente.
+[ ] Preparar o fallback dos novos backgrounds para aceitar `.png` ou `.jpg` sem quebrar o perfil.
+[ ] Revisar se restou alguma dependencia de arte inexistente em previews cosmeticos.
 
-## 4. Prioridades imediatas
+### DOMINIO (Marketing & Presenca)
+[ ] Gravar screen recordings dos fluxos (Arena, Planner, Codex).
+[ ] Criar criativos de "Gatilho de Ordem" para midias sociais.
+[ ] Organizar a apresentacao visual do produto para os 5 primeiros acessos enviados.
 
-1. Fechar e acompanhar os `5` primeiros betas certos.
-2. Alimentar `marco1_beta_tracking` com dados reais de onboarding e retorno.
-3. Medir `Ativacao`, `D2` e `% que fecha 1 ciclo`, ignorando usuarios `ouro`.
-4. Corrigir primeiro qualquer friccao que apareca no loop `arena -> acao -> planner -> sitrep -> ciclo`.
-5. Validar o pacote novo de Codex antes de expor isso como feature confiavel.
+### SENTINELA (Friccao & QA de Campo)
+[ ] QA ponta a ponta: Google -> Criar Conta -> Usar Convite -> Entrar.
+[ ] QA do onboarding operacional com conta nova.
+[ ] QA de limpeza: checar notificacoes, deletar conta e deletar ciclo.
+[ ] Monitorar manualmente os 5 primeiros betas para correcoes D0.
+[ ] Validar no celular os modais reduzidos de Perfil, Vanguarda, Loja e Season.
 
-## 5. Pendencias abertas agora
+### TESOURO (Produto & Economia)
+[ ] Validar a leitura de valor de Ouro, Slots, Codex e cosmeticos no mobile.
+[ ] Revisar o peso real do pacote Vanguarda e do fluxo de recompensa inicial.
+[ ] Confirmar se a Loja esta clara o bastante para compra sem explicacao externa.
 
-- Publicar e validar em ambiente real tudo que foi fechado localmente nesta semana.
-- Confirmar que a exclusao de conta limpa o que precisa limpar no Storage.
-- Conferir se restou algum texto quebrado por encoding em telas antigas.
-- Revisar o acabamento visual do fluxo de Codex para ele parecer 100% GLYPH.
+---
+## 4. LEITURA SECA DO MOMENTO
 
-## 6. Leitura seca do momento
-
-O app ja saiu da fase de "falta base" e entrou na fase de "precisa validar uso real".
-O risco principal deixou de ser codigo ausente e passou a ser friccao de onboarding, retorno e polimento de produto.
-Tudo que nao ajudar a segurar bons usuarios no uso diario continua sendo secundario nesta etapa.
+O app entrou numa fase em que a base ja sustenta uso real, mas ainda existe risco alto de perder usuario por detalhes pequenos de mobile, onboarding e clareza de UI.
+O foco agora nao e abrir frente nova: e fechar consistencia, medir ativacao com limpeza e garantir que os primeiros ciclos completos acontecam sem ruido.

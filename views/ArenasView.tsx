@@ -734,7 +734,7 @@ export const ArenasView: React.FC = () => {
                             </button>
                         </div>
                         {allArenas.length === 0 ? (
-                            <div className="text-center text-xs text-gray-500">Nenhuma arena criada ainda.</div>
+                            <div className="text-center text-xs italic text-gray-500/80">Sem arenas ainda.</div>
                         ) : (
                             <div className="grid grid-cols-2 gap-3">
                                 {allArenas.map(arena => {

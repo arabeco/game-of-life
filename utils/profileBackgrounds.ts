@@ -5,6 +5,9 @@ export interface ProfileBackgroundOption {
     isPremiumOnly?: boolean;
 }
 
+const STORAGE_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
+const PROFILE_BACKGROUND_TOKEN_PREFIX = 'profile-bg:';
+
 const svgToDataUri = (svg: string): string =>
     `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
         svg.replace(/\s{2,}/g, ' ').replace(/>\s+</g, '><').trim(),
@@ -89,32 +92,125 @@ const SILVER_TEXTURE = svgToDataUri(`
 </svg>
 `);
 
+interface ProfileBackgroundAssetDefinition {
+    basename: string;
+    fallbackValue: string;
+}
+
+const toProfileBackgroundToken = (id: string): string => `${PROFILE_BACKGROUND_TOKEN_PREFIX}${id}`;
+
+const PROFILE_BACKGROUND_ASSETS: Record<string, ProfileBackgroundAssetDefinition> = {
+    [toProfileBackgroundToken('black')]: {
+        basename: 'blackback',
+        fallbackValue: 'linear-gradient(180deg, #101010 0%, #000000 100%)',
+    },
+    [toProfileBackgroundToken('blue')]: {
+        basename: 'blueback',
+        fallbackValue: 'linear-gradient(135deg, #061326 0%, #0f4c81 50%, #57a8ff 100%)',
+    },
+    [toProfileBackgroundToken('darkblue')]: {
+        basename: 'darkblueback',
+        fallbackValue: 'linear-gradient(180deg, #050914 0%, #0c1830 55%, #142848 100%)',
+    },
+    [toProfileBackgroundToken('silver')]: {
+        basename: 'silverback',
+        fallbackValue: SILVER_TEXTURE,
+    },
+    [toProfileBackgroundToken('gold')]: {
+        basename: 'goldback',
+        fallbackValue: GOLD_TEXTURE,
+    },
+    [toProfileBackgroundToken('pink')]: {
+        basename: 'pinkback',
+        fallbackValue: 'linear-gradient(135deg, #280816 0%, #7e2148 48%, #f29ac2 100%)',
+    },
+    [toProfileBackgroundToken('purple')]: {
+        basename: 'purpleback',
+        fallbackValue: 'linear-gradient(135deg, #13051f 0%, #4e1778 50%, #b56cff 100%)',
+    },
+    [toProfileBackgroundToken('violet')]: {
+        basename: 'violetback',
+        fallbackValue: 'linear-gradient(135deg, #17061f 0%, #5d2383 46%, #d18cff 100%)',
+    },
+    [toProfileBackgroundToken('emerald')]: {
+        basename: 'emeraldback',
+        fallbackValue: 'linear-gradient(135deg, #071b17 0%, #0f5132 42%, #78d6a3 100%)',
+    },
+    [toProfileBackgroundToken('ruby')]: {
+        basename: 'rubiback',
+        fallbackValue: 'linear-gradient(135deg, #140207 0%, #4d0b1d 48%, #c63d5d 100%)',
+    },
+    [toProfileBackgroundToken('white')]: {
+        basename: 'whiteback',
+        fallbackValue: 'linear-gradient(180deg, #f4f4f4 0%, #dedede 100%)',
+    },
+    [toProfileBackgroundToken('autumn')]: {
+        basename: 'autunback',
+        fallbackValue: 'linear-gradient(135deg, #2b1206 0%, #784019 45%, #d7a45d 100%)',
+    },
+    [toProfileBackgroundToken('anime')]: {
+        basename: 'animeback',
+        fallbackValue: 'linear-gradient(135deg, #1d1025 0%, #4f2a73 48%, #ff8ab5 100%)',
+    },
+};
+
+const buildProfileBackgroundSources = (basename: string): string[] => {
+    return [
+        `${STORAGE_BASE_URL}/background/${basename}.jpg`,
+        `${STORAGE_BASE_URL}/background/${basename}.png`,
+        `${STORAGE_BASE_URL}/background/${basename}.jpeg`,
+    ];
+};
+
 export const PROFILE_BACKGROUND_OPTIONS: ProfileBackgroundOption[] = [
-    { id: 'random', name: 'Aleatoria', value: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800&h=450' },
-    { id: 'slate', name: 'Sobrio', value: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)' },
-    { id: 'ocean', name: 'Oceano Profundo', value: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)' },
-    { id: 'nebula', name: 'Nebulosa Premium', value: 'linear-gradient(45deg, #7028e4 0%, #e5b2ca 100%)' },
-    { id: 'silver', name: 'Prata Escovada', value: SILVER_TEXTURE },
-    { id: 'cyber', name: 'Cyber Neon', value: 'linear-gradient(135deg, #FF0080 0%, #00E0FF 100%)' },
-    { id: 'noir', name: 'Noir Elegante', value: 'radial-gradient(circle at 50% -10%, #333 0%, #000 80%)' },
-    { id: 'sunset', name: 'Amanhecer', value: 'linear-gradient(to right, #ff5f6d, #ffc371)', isPremiumOnly: true },
-    { id: 'midnight', name: 'Noite Profunda', value: 'linear-gradient(180deg, #2c3e50 0%, #000000 100%)', isPremiumOnly: true },
-    { id: 'emerald', name: 'Floresta Esmeralda', value: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', isPremiumOnly: true },
-    { id: 'gold_dust', name: 'Ouro Forjado', value: GOLD_TEXTURE, isPremiumOnly: true },
-    { id: 'royal', name: 'Veludo Real', value: 'linear-gradient(45deg, #800080 0%, #ff00ff 100%)', isPremiumOnly: true },
+    { id: 'gold', name: 'Gold', value: toProfileBackgroundToken('gold') },
+    { id: 'silver', name: 'Silver', value: toProfileBackgroundToken('silver') },
+    { id: 'black', name: 'Black', value: toProfileBackgroundToken('black'), isPremiumOnly: true },
+    { id: 'blue', name: 'Blue', value: toProfileBackgroundToken('blue'), isPremiumOnly: true },
+    { id: 'darkblue', name: 'Dark Blue', value: toProfileBackgroundToken('darkblue'), isPremiumOnly: true },
+    { id: 'violet', name: 'Violet', value: toProfileBackgroundToken('violet'), isPremiumOnly: true },
+    { id: 'pink', name: 'Pink', value: toProfileBackgroundToken('pink'), isPremiumOnly: true },
+    { id: 'purple', name: 'Purple', value: toProfileBackgroundToken('purple'), isPremiumOnly: true },
+    { id: 'ruby', name: 'Rubi', value: toProfileBackgroundToken('ruby'), isPremiumOnly: true },
+    { id: 'white', name: 'White', value: toProfileBackgroundToken('white'), isPremiumOnly: true },
+    { id: 'autumn', name: 'Autumn', value: toProfileBackgroundToken('autumn'), isPremiumOnly: true },
+    { id: 'anime', name: 'Anime', value: toProfileBackgroundToken('anime'), isPremiumOnly: true },
 ];
 
 const LEGACY_BACKGROUND_ALIASES: Record<string, string> = {
-    'linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%)': SILVER_TEXTURE,
-    'radial-gradient(circle, #bf953f 0%, #fcf6ba 50%, #b38728 100%)': GOLD_TEXTURE,
+    'linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%)': toProfileBackgroundToken('silver'),
+    'radial-gradient(circle, #bf953f 0%, #fcf6ba 50%, #b38728 100%)': toProfileBackgroundToken('gold'),
+    'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)': toProfileBackgroundToken('emerald'),
+    SILVER_TEXTURE: toProfileBackgroundToken('silver'),
+    GOLD_TEXTURE: toProfileBackgroundToken('gold'),
 };
 
 export const resolveProfileBackgroundValue = (value: string): string => {
     return LEGACY_BACKGROUND_ALIASES[value] || value;
 };
 
+export const getProfileBackgroundSources = (value: string): string[] => {
+    const resolvedValue = resolveProfileBackgroundValue(value);
+    const assetDefinition = PROFILE_BACKGROUND_ASSETS[resolvedValue];
+
+    if (assetDefinition) {
+        return buildProfileBackgroundSources(assetDefinition.basename);
+    }
+
+    if (!resolvedValue || isCssProfileBackground(resolvedValue)) {
+        return [];
+    }
+
+    return [resolvedValue];
+};
+
+export const getProfileBackgroundFallbackValue = (value: string): string | undefined => {
+    const resolvedValue = resolveProfileBackgroundValue(value);
+    return PROFILE_BACKGROUND_ASSETS[resolvedValue]?.fallbackValue;
+};
+
 export const isCssProfileBackground = (value: string): boolean => {
-    const normalized = value.trim().toLowerCase();
+    const normalized = resolveProfileBackgroundValue(value).trim().toLowerCase();
     return (
         normalized.includes('gradient(') ||
         normalized.startsWith('var(') ||

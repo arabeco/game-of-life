@@ -14,8 +14,8 @@ import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { handleShare } from '../components/Share';
 import { Portal } from '../components/Portal';
+import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
-import { isCssProfileBackground, resolveProfileBackgroundValue } from '../utils/profileBackgrounds';
 const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
 
 const UnifiedSovereignDisplay: React.FC<{
@@ -204,23 +204,9 @@ export const ShareableProfileCard: React.FC<{
     isBasicMode?: boolean;
 }> = ({ id, userProfile, clanName, clanRank, getSlotById, isBasicMode = false }) => {
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
-    const resolvedBackgroundUrl = resolveProfileBackgroundValue(userProfile.backgroundUrl);
-    const isGradientBackground = isCssProfileBackground(resolvedBackgroundUrl);
 
     const renderBackground = () => {
-        if (isGradientBackground) {
-            return <div className="w-full h-full" style={{ background: resolvedBackgroundUrl }} />;
-        }
-        return (
-            <img
-                src={resolvedBackgroundUrl}
-                className="w-full h-full object-cover"
-                alt=""
-                crossOrigin="anonymous"
-                loading="eager"
-                onError={(e) => console.error(`Failed to load background: ${resolvedBackgroundUrl}`)}
-            />
-        );
+        return <ProfileBackgroundSurface value={userProfile.backgroundUrl} className="w-full h-full object-cover" alt="" />;
     };
 
     return (
@@ -477,14 +463,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const currentClanRank = isOwnProfile ? (clan ? clanRanks.find(r => r.id === clan.rankId) : undefined) : viewedClanRank;
     const clanName = isOwnProfile ? (clan ? clan.name : 'Sem Clã') : (viewedClan ? viewedClan.name : 'Sem Clã');
 
-    const resolvedBackgroundUrl = resolveProfileBackgroundValue(displayProfile.backgroundUrl);
-    const isGradientBackground = isCssProfileBackground(resolvedBackgroundUrl);
-
     const renderBackground = () => {
-        if (isGradientBackground) {
-            return <div className="w-full h-full" style={{ background: resolvedBackgroundUrl }} />;
-        }
-        return <img src={resolvedBackgroundUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous" />
+        return <ProfileBackgroundSurface value={displayProfile.backgroundUrl} className="w-full h-full object-cover" alt="" />;
     };
 
     // Layout Adjustment: Ensure the card container is centered and scrollable if needed, matching "comprido" (long) description.

@@ -546,6 +546,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     if (actionSession.actionType === 'Marco') {
                         await scheduleAndCompleteMilestoneNow(actionSession.actionId);
                     } else {
+                        if (!actionSession.taskId || !currentActionSessionTask) {
+                            showToast('Essa acao nao esta mais no Planner de hoje.', 'error');
+                            onClearActionSession?.();
+                            return;
+                        }
                         await scheduleAndCompleteNow(actionSession.actionId, actionSession.taskId);
                     }
 

@@ -13,6 +13,8 @@ const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 
 export const LoginView: React.FC = () => {
     const [isSigningUp, setIsSigningUp] = useState(false);
+    const [googleResumeMode, setGoogleResumeMode] = useState(false);
+    const [googleResumeEmail, setGoogleResumeEmail] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [nickname, setNickname] = useState('');
@@ -36,7 +38,10 @@ export const LoginView: React.FC = () => {
         if (!redirectState) return;
 
         const isSignupRedirect = redirectState.mode === 'signup';
+        const isBlockedGoogleRedirect = redirectState.message.toLowerCase().includes('nao pode entrar novamente');
         setIsSigningUp(isSignupRedirect);
+        setGoogleResumeMode(!isSignupRedirect && !!redirectState.email && !isBlockedGoogleRedirect);
+        setGoogleResumeEmail(!isSignupRedirect && !isBlockedGoogleRedirect ? (redirectState.email || '') : '');
         setEmail(isSignupRedirect ? (redirectState.email || '') : '');
         setPassword('');
         setNickname('');
@@ -423,12 +428,16 @@ export const LoginView: React.FC = () => {
         setError(null);
         setMessage(null);
         setGoldenInviteGuide(null);
+        setGoogleResumeMode(false);
+        setGoogleResumeEmail('');
     };
 
     const toggleMode = () => {
         clearForm();
         setIsSigningUp(!isSigningUp);
     };
+
+    const showManualFields = !googleResumeMode;
 
     const handleResetPassword = async () => {
         if (!email) {
@@ -506,121 +515,141 @@ export const LoginView: React.FC = () => {
                 )}
 
                 <form className="space-y-4" onSubmit={handlePrimarySubmit}>
-                    <input
-                        id="login-email-input"
-                        type="text"
-                        autoComplete={isSigningUp ? 'email' : 'username'}
-                        placeholder="E-mail ou Nickname"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
-                    />
-                    {isSigningUp && isGoldenInviteGateEnabled && (
-                        <input
-                            id="login-invite-input"
-                            type="text"
-                            autoComplete="off"
-                            placeholder="Cole aqui seu Convite Dourado..."
-                            value={inviteCode}
-                            onChange={(e) => setInviteCode(e.target.value)}
-                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
-                        />
-                    )}
-                    <div className="space-y-1">
-                        <input
-                            id="login-password-input"
-                            type="password"
-                            autoComplete={isSigningUp ? 'new-password' : 'current-password'}
-                            placeholder="Senha"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
-                        />
-                        {isSigningUp && password.length > 0 && (
-                            <div className="px-1 py-1">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Força da Senha</span>
-                                    <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÉDIA' ? 'text-yellow-500' : 'text-red-500'}`}>
-                                        {getPasswordStrength(password).label}
-                                    </span>
-                                </div>
-                                <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden flex gap-1">
-                                    <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 1 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
-                                    <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 2 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
-                                    <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 3 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
-                                </div>
-                            </div>
-                        )}
-                        {!isSigningUp && (
-                            <div className="flex justify-end px-1">
-                                <button
-                                    type="button"
-                                    onClick={handleResetPassword}
-                                    className="text-[10px] font-bold text-white/40 hover:text-[var(--skin-accent-color)] transition-colors uppercase tracking-widest"
-                                >
-                                    Esqueci minha senha
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                    {isSigningUp && (
-                        <input
-                            id="login-nickname-input"
-                            type="text"
-                            autoComplete="nickname"
-                            placeholder="Nickname"
-                            value={nickname}
-                            onChange={(e) => setNickname(e.target.value)}
-                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
-                        />
-                    )}
-                    {isSigningUp && (
-                        <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-left">
+                    {showManualFields ? (
+                        <>
                             <input
-                                id="login-legal-checkbox"
-                                type="checkbox"
-                                checked={acceptedLegal}
-                                onChange={(e) => setAcceptedLegal(e.target.checked)}
-                                className="mt-1 h-4 w-4 rounded border border-white/20 bg-black/30 accent-[var(--skin-accent-color)]"
+                                id="login-email-input"
+                                type="text"
+                                autoComplete={isSigningUp ? 'email' : 'username'}
+                                placeholder="E-mail ou Nickname"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                             />
-                            <span className="text-[11px] leading-relaxed text-white/70">
-                                Eu li e concordo com os{' '}
-                                <a
-                                    href={LEGAL_TERMS_URL_PLACEHOLDER}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="font-bold text-[var(--skin-accent-color)] underline underline-offset-2"
-                                >
-                                    Termos de Uso
-                                </a>
-                                {' '}e com a{' '}
-                                <a
-                                    href={LEGAL_PRIVACY_URL_PLACEHOLDER}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="font-bold text-[var(--skin-accent-color)] underline underline-offset-2"
-                                >
-                                    Política de Privacidade
-                                </a>
-                                .
-                            </span>
-                        </label>
+                            {isSigningUp && isGoldenInviteGateEnabled && (
+                                <input
+                                    id="login-invite-input"
+                                    type="text"
+                                    autoComplete="off"
+                                    placeholder="Cole aqui seu Convite Dourado..."
+                                    value={inviteCode}
+                                    onChange={(e) => setInviteCode(e.target.value)}
+                                    className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
+                                />
+                            )}
+                            <div className="space-y-1">
+                                <input
+                                    id="login-password-input"
+                                    type="password"
+                                    autoComplete={isSigningUp ? 'new-password' : 'current-password'}
+                                    placeholder="Senha"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
+                                />
+                                {isSigningUp && password.length > 0 && (
+                                    <div className="px-1 py-1">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Força da Senha</span>
+                                            <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÉDIA' ? 'text-yellow-500' : 'text-red-500'}`}>
+                                                {getPasswordStrength(password).label}
+                                            </span>
+                                        </div>
+                                        <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden flex gap-1">
+                                            <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 1 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                            <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 2 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                            <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 3 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                        </div>
+                                    </div>
+                                )}
+                                {!isSigningUp && (
+                                    <div className="flex justify-end px-1">
+                                        <button
+                                            type="button"
+                                            onClick={handleResetPassword}
+                                            className="text-[10px] font-bold text-white/40 hover:text-[var(--skin-accent-color)] transition-colors uppercase tracking-widest"
+                                        >
+                                            Esqueci minha senha
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            {isSigningUp && (
+                                <input
+                                    id="login-nickname-input"
+                                    type="text"
+                                    autoComplete="nickname"
+                                    placeholder="Nickname"
+                                    value={nickname}
+                                    onChange={(e) => setNickname(e.target.value)}
+                                    className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
+                                />
+                            )}
+                            {isSigningUp && (
+                                <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-left">
+                                    <input
+                                        id="login-legal-checkbox"
+                                        type="checkbox"
+                                        checked={acceptedLegal}
+                                        onChange={(e) => setAcceptedLegal(e.target.checked)}
+                                        className="mt-1 h-4 w-4 rounded border border-white/20 bg-black/30 accent-[var(--skin-accent-color)]"
+                                    />
+                                    <span className="text-[11px] leading-relaxed text-white/70">
+                                        Eu li e concordo com os{' '}
+                                        <a
+                                            href={LEGAL_TERMS_URL_PLACEHOLDER}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="font-bold text-[var(--skin-accent-color)] underline underline-offset-2"
+                                        >
+                                            Termos de Uso
+                                        </a>
+                                        {' '}e com a{' '}
+                                        <a
+                                            href={LEGAL_PRIVACY_URL_PLACEHOLDER}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="font-bold text-[var(--skin-accent-color)] underline underline-offset-2"
+                                        >
+                                            Política de Privacidade
+                                        </a>
+                                        .
+                                    </span>
+                                </label>
+                            )}
+                        </>
+                    ) : (
+                        <div className="rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/8 px-4 py-4 text-left">
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
+                                Google autenticado
+                            </p>
+                            <p className="mt-2 text-sm leading-relaxed text-white/78">
+                                Sua autenticacao com Google ja aconteceu. Agora so falta validar o Bilhete Dourado no modal para liberar a conta.
+                            </p>
+                            {googleResumeEmail && (
+                                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/42">
+                                    {googleResumeEmail}
+                                </p>
+                            )}
+                        </div>
                     )}
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                     {message && <p className="text-green-400 text-sm">{message}</p>}
 
-                    <button
-                        id="login-submit-button"
-                        type="submit"
-                        disabled={loading}
-                        className="login-primary-button luxe-skin-button flex items-center justify-center gap-2 text-sm font-black transition-all"
-                    >
-                        {loading ? (
-                            <div className="w-5 h-5 border-4 border-black/30 border-t-black rounded-full animate-spin" />
-                        ) : (
-                            isSigningUp ? 'CRIAR PERFIL' : 'ENTRAR'
-                        )}
-                    </button>
+                    {showManualFields && (
+                        <button
+                            id="login-submit-button"
+                            type="submit"
+                            disabled={loading}
+                            className="login-primary-button luxe-skin-button flex items-center justify-center gap-2 text-sm font-black transition-all"
+                        >
+                            {loading ? (
+                                <div className="w-5 h-5 border-4 border-black/30 border-t-black rounded-full animate-spin" />
+                            ) : (
+                                isSigningUp ? 'CRIAR PERFIL' : 'ENTRAR'
+                            )}
+                        </button>
+                    )}
 
                     <div className="flex flex-col gap-3">
                         <button
@@ -644,14 +673,29 @@ export const LoginView: React.FC = () => {
                             </p>
                         )}
 
-                        <button
-                            id="login-toggle-mode-button"
-                            type="button"
-                            onClick={toggleMode}
-                            className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
-                        >
-                            {isSigningUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastrar'}
-                        </button>
+                        {showManualFields ? (
+                            <button
+                                id="login-toggle-mode-button"
+                                type="button"
+                                onClick={toggleMode}
+                                className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
+                            >
+                                {isSigningUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastrar'}
+                            </button>
+                        ) : (
+                            <button
+                                id="login-show-manual-button"
+                                type="button"
+                                onClick={() => {
+                                    setGoogleResumeMode(false);
+                                    setGoldenInviteGuide(null);
+                                    setError(null);
+                                }}
+                                className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
+                            >
+                                Usar login manual
+                            </button>
+                        )}
                     </div>
                 </form>
             </div>

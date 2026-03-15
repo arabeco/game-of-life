@@ -56,6 +56,11 @@ const normalizeErrorMessage = (error: unknown) => {
   }
 };
 
+const isAuthUserAlreadyMissing = (message: string): boolean => {
+  const normalized = message.toLowerCase();
+  return normalized.includes("user not found") || normalized.includes("not found");
+};
+
 const listBucketFilesRecursively = async (
   supabaseAdmin: ReturnType<typeof createClient>,
   bucket: string,
@@ -253,7 +258,7 @@ serve(async (req) => {
     }
 
     const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-    if (deleteUserError) {
+    if (deleteUserError && !isAuthUserAlreadyMissing(deleteUserError.message || "")) {
       throw new Error(`Failed to delete auth user: ${deleteUserError.message}`);
     }
 

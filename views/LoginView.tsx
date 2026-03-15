@@ -509,6 +509,7 @@ export const LoginView: React.FC = () => {
                     <input
                         id="login-email-input"
                         type="text"
+                        autoComplete={isSigningUp ? 'email' : 'username'}
                         placeholder="E-mail ou Nickname"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -518,6 +519,7 @@ export const LoginView: React.FC = () => {
                         <input
                             id="login-invite-input"
                             type="text"
+                            autoComplete="off"
                             placeholder="Cole aqui seu Convite Dourado..."
                             value={inviteCode}
                             onChange={(e) => setInviteCode(e.target.value)}
@@ -528,6 +530,7 @@ export const LoginView: React.FC = () => {
                         <input
                             id="login-password-input"
                             type="password"
+                            autoComplete={isSigningUp ? 'new-password' : 'current-password'}
                             placeholder="Senha"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -564,6 +567,7 @@ export const LoginView: React.FC = () => {
                         <input
                             id="login-nickname-input"
                             type="text"
+                            autoComplete="nickname"
                             placeholder="Nickname"
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}

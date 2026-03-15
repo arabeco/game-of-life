@@ -9,6 +9,7 @@ import { IconPickerModal } from './IconPickerModal';
 import { SelectionModal } from './SelectionModal';
 import { CampaignsCodex } from './CampaignsCodex';
 import { buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils/codexPreview';
+import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { EmojiGlyph } from './EmojiGlyph';
 import { supabase } from '../supabaseClient';
 
@@ -52,9 +53,9 @@ const encodeUtf8Base64Url = (text: string) => {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 };
 
-const loadDrafts = (): CodexDraft[] => {
+const loadDrafts = (storageKey: string): CodexDraft[] => {
   try {
-    const saved = localStorage.getItem('codexDrafts');
+    const saved = localStorage.getItem(storageKey);
     if (!saved) return [];
     const parsed = JSON.parse(saved);
     return Array.isArray(parsed) ? parsed : [];
@@ -75,6 +76,10 @@ export const CodexModal: React.FC<{
   onDelivered?: () => void;
 }> = ({ onClose, maxCodexCount, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
   const { assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient } = useGame();
+  const isMentorDraftMode = Boolean(recipientId);
+  const draftStorageKey = isMentorDraftMode
+    ? `mentorCodexDrafts:${relationshipLinkId || recipientId}`
+    : 'codexDrafts';
   const [codexes, setCodexes] = useState<CodexDraft[]>([]);
   const [activeCodexId, setActiveCodexId] = useState<string | null>(null);
   const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
@@ -90,16 +95,52 @@ export const CodexModal: React.FC<{
   const [actionDraft, setActionDraft] = useState<Partial<Action>>({});
   const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
   const [hasHydratedDrafts, setHasHydratedDrafts] = useState(false);
-  const [arenaDraft, setArenaDraft] = useState({ name: '', description: '', icon: '🏆', assetId: '' });
+  const [arenaDraft, setArenaDraft] = useState({ name: '', description: '', icon: '\u{1F3DB}\uFE0F', assetId: '' });
+  const [isArenaIconAuto, setIsArenaIconAuto] = useState(true);
+  const [isActionIconAuto, setIsActionIconAuto] = useState(true);
 
   const [actionTab, setActionTab] = useState<'basic' | 'advanced'>('basic');
   const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'notes' | 'checklist' | 'context'>('media');
 
   useEffect(() => {
+    if (!isCreatingArena || !isArenaIconAuto) return;
+
+    setArenaDraft((prev) => {
+      const nextIcon = suggestEmojiForLabel(prev.name, 'arena', {
+        assetId: prev.assetId,
+        fallback: '\u{1F3DB}\uFE0F',
+      });
+
+      return prev.icon === nextIcon ? prev : { ...prev, icon: nextIcon };
+    });
+  }, [arenaDraft.name, arenaDraft.assetId, isArenaIconAuto, isCreatingArena]);
+
+  useEffect(() => {
+    if (!isActionModalOpen || !isActionIconAuto) return;
+
+    setActionDraft((prev) => {
+      const nextIcon = suggestEmojiForLabel(prev.name, 'action', {
+        actionType: typeof prev.actionType === 'string' ? prev.actionType : undefined,
+        fallback: '\u{1F4DD}',
+      });
+
+      return prev.icon === nextIcon ? prev : { ...prev, icon: nextIcon };
+    });
+  }, [actionDraft.name, actionDraft.actionType, isActionIconAuto, isActionModalOpen]);
+
+  useEffect(() => {
     let isMounted = true;
 
     const hydrateDrafts = async () => {
-      const localDrafts = loadDrafts();
+      const localDrafts = loadDrafts(draftStorageKey);
+
+      if (isMentorDraftMode) {
+        if (isMounted) {
+          setCodexes(localDrafts);
+          setHasHydratedDrafts(true);
+        }
+        return;
+      }
 
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -161,15 +202,15 @@ export const CodexModal: React.FC<{
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [draftStorageKey, isMentorDraftMode]);
 
   useEffect(() => {
     if (!hasHydratedDrafts) return;
-    localStorage.setItem('codexDrafts', JSON.stringify(codexes));
-  }, [codexes, hasHydratedDrafts]);
+    localStorage.setItem(draftStorageKey, JSON.stringify(codexes));
+  }, [codexes, draftStorageKey, hasHydratedDrafts]);
 
   useEffect(() => {
-    if (!hasHydratedDrafts) return;
+    if (!hasHydratedDrafts || isMentorDraftMode) return;
 
     const syncDrafts = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -200,12 +241,15 @@ export const CodexModal: React.FC<{
       const { error } = await supabase.from('codex').upsert(payload, { onConflict: 'id' });
       if (error) {
         console.error('Failed to sync codex drafts', error);
+        if (error.message?.includes('SLOT_LIMIT_REACHED')) {
+          setStatus('Seus slots de criacao chegaram ao limite. Compre outro slot para manter novos manuscritos.');
+        }
       }
     };
 
     const timeoutId = window.setTimeout(syncDrafts, 500);
     return () => window.clearTimeout(timeoutId);
-  }, [codexes, hasHydratedDrafts]);
+  }, [codexes, hasHydratedDrafts, isMentorDraftMode]);
 
   const activeCodex = codexes.find(c => c.id === activeCodexId) || null;
   const visibleArenas = useMemo(() => {
@@ -350,7 +394,13 @@ export const CodexModal: React.FC<{
 
   const openNewArena = () => {
     const firstAsset = assets.find(a => a.id !== 'geral')?.id || assets[0]?.id || '';
-    setArenaDraft({ name: '', description: '', icon: '🏆', assetId: firstAsset });
+    setArenaDraft({
+      name: '',
+      description: '',
+      icon: suggestEmojiForLabel('', 'arena', { assetId: firstAsset, fallback: '\u{1F3DB}\uFE0F' }),
+      assetId: firstAsset,
+    });
+    setIsArenaIconAuto(true);
     setIsCreatingArena(true);
   };
 
@@ -361,7 +411,10 @@ export const CodexModal: React.FC<{
       assetId: arenaDraft.assetId,
       name: arenaDraft.name.trim(),
       description: arenaDraft.description.trim(),
-      icon: arenaDraft.icon || '🏆',
+      icon: arenaDraft.icon || suggestEmojiForLabel(arenaDraft.name, 'arena', {
+        assetId: arenaDraft.assetId,
+        fallback: '\u{1F3DB}\uFE0F',
+      }),
       actionIds: [],
       isArchived: false,
     };
@@ -376,7 +429,15 @@ export const CodexModal: React.FC<{
 
   const openActionModal = (arenaId: string, action?: Action) => {
     setEditingActionId(action?.id || null);
-    setActionDraft(action || { arenaId, icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 });
+    setActionDraft(action || {
+      arenaId,
+      icon: suggestEmojiForLabel('', 'action', { fallback: '\u{1F4DD}' }),
+      duration: 60,
+      repetitions: 1,
+      actionType: 'Ação Recorrente',
+      difficulty: 3,
+    });
+    setIsActionIconAuto(!action);
     setIsActionModalOpen(true);
     setActionTab('basic');
   };
@@ -391,7 +452,10 @@ export const CodexModal: React.FC<{
       arenaId: actionDraft.arenaId,
       name: actionDraft.name.trim(),
       description: actionDraft.description?.trim() || undefined,
-      icon: actionDraft.icon || '📝',
+      icon: actionDraft.icon || suggestEmojiForLabel(actionDraft.name, 'action', {
+        actionType,
+        fallback: '\u{1F4DD}',
+      }),
       duration: actionDraft.duration || 60,
       repetitions,
       actionType,
@@ -415,14 +479,16 @@ export const CodexModal: React.FC<{
     e.stopPropagation();
     if (confirm('Tem certeza que deseja excluir este Codex?')) {
         setCodexes(prev => prev.filter(c => c.id !== id));
-        supabase
-          .from('codex')
-          .delete()
-          .eq('id', id)
-          .eq('schema_version', CODEX_DRAFT_SCHEMA_VERSION)
-          .then(({ error }) => {
-            if (error) console.error('Failed to delete codex draft', error);
-          });
+        if (!isMentorDraftMode) {
+          supabase
+            .from('codex')
+            .delete()
+            .eq('id', id)
+            .eq('schema_version', CODEX_DRAFT_SCHEMA_VERSION)
+            .then(({ error }) => {
+              if (error) console.error('Failed to delete codex draft', error);
+            });
+        }
     }
   };
 
@@ -493,7 +559,7 @@ export const CodexModal: React.FC<{
       return;
     }
 
-    await createMentorCodexForRecipient(
+    const success = await createMentorCodexForRecipient(
       recipientId,
       {
         name: activeCodex.name,
@@ -503,6 +569,10 @@ export const CodexModal: React.FC<{
       relationshipLinkId
     );
 
+    if (!success) return;
+
+    localStorage.removeItem(draftStorageKey);
+    setCodexes([]);
     setStatus(`Codex enviado para ${recipientName || 'o pupilo'}.`);
     window.setTimeout(() => setStatus(null), 1800);
     onDelivered?.();
@@ -599,7 +669,7 @@ export const CodexModal: React.FC<{
                 <button onClick={() => activeCodex && setCampaignPreview(buildDraftPreview(activeCodex))} className="w-full py-2 rounded-xl luxe-button-secondary col-span-2 font-bold tracking-wider">VER CAMPANHA</button>
                 {recipientId ? (
                   <button onClick={handleDeliverCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">
-                    ENTREGAR PARA {recipientName?.toUpperCase() || 'PUPILO'}
+                    FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · 300 OURO
                   </button>
                 ) : (
                   <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">IMPORTAR PARA O JOGO</button>
@@ -627,7 +697,8 @@ export const CodexModal: React.FC<{
               </select>
               <input type="text" placeholder="Nome da Arena" value={arenaDraft.name} onChange={e => setArenaDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
               <textarea placeholder="Descrição da Meta..." value={arenaDraft.description} onChange={e => setArenaDraft(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
-              <button onClick={() => { setIconTarget('arena'); setIsIconPickerOpen(true); }} className="w-full py-2 rounded-xl bg-black/30 border border-white/20 flex items-center justify-center text-2xl"><EmojiGlyph symbol={arenaDraft.icon || '???'} size="picker" className="text-white" /></button>
+              <button onClick={() => { setIconTarget('arena'); setIsIconPickerOpen(true); }} className="w-full py-2 rounded-xl bg-black/30 border border-white/20 flex items-center justify-center text-2xl"><EmojiGlyph symbol={arenaDraft.icon || '\u{1F3DB}\uFE0F'} size="picker" className="text-white" /></button>
+              <div className="text-center text-[10px] text-gray-500">Emoji sugerido automaticamente pelo nome da arena. Toque para trocar se quiser.</div>
             </div>
             <div className="flex space-x-2 pt-2">
               <button onClick={() => setIsCreatingArena(false)} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
@@ -646,7 +717,7 @@ export const CodexModal: React.FC<{
             </div>
             <div className="flex flex-col items-center text-center space-y-1">
               <div className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center">
-                <EmojiGlyph symbol={selectedArena.icon || '???'} size="arena" className="text-white scale-[1.8]" />
+                <EmojiGlyph symbol={selectedArena.icon || '\u{1F3DB}\uFE0F'} size="arena" className="text-white scale-[1.8]" />
               </div>
               <p className="text-sm text-gray-500">{selectedArena.description || 'Sem descrição.'}</p>
             </div>
@@ -660,7 +731,7 @@ export const CodexModal: React.FC<{
               <div className="grid grid-cols-2 gap-2">
                 {selectedArenaActions.map(action => (
                   <button key={action.id} onClick={() => openActionModal(selectedArena.id, action)} className="bg-black/30 border border-white/10 rounded-xl p-2 text-left">
-                    <div className="text-2xl"><EmojiGlyph symbol={action.icon || '??'} size="picker" className="text-white" /></div>
+                    <div className="text-2xl"><EmojiGlyph symbol={action.icon || '\u{1F4DD}'} size="picker" className="text-white" /></div>
                     <div className="text-xs font-bold text-white mt-1 truncate">{action.name}</div>
                     <div className="text-[10px] text-gray-500">{action.actionType}</div>
                   </button>
@@ -688,6 +759,7 @@ export const CodexModal: React.FC<{
                   <button onClick={() => { setIconTarget('action'); setIsIconPickerOpen(true); }} className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--skin-accent-color)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center self-center mx-auto mb-4">
                     <span className="text-5xl">{actionDraft.icon || '📝'}</span>
                   </button>
+                  <div className="text-center text-[10px] text-gray-500 -mt-2 mb-2">Emoji sugerido automaticamente pelo nome da ação. Toque para trocar se quiser.</div>
                   <input type="text" placeholder="Nome da Ação" value={actionDraft.name || ''} onChange={e => setActionDraft(prev => ({ ...prev, name: e.target.value }))} className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-1 mb-2" />
                   <textarea placeholder="Descrição (opcional)" value={actionDraft.description || ''} onChange={e => setActionDraft(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--skin-accent-color)]/50" />
                   <div className="space-y-2">
@@ -861,8 +933,14 @@ export const CodexModal: React.FC<{
       {isIconPickerOpen && (
         <IconPickerModal
           onSelect={icon => {
-            if (iconTarget === 'arena') setArenaDraft(prev => ({ ...prev, icon }));
-            if (iconTarget === 'action') setActionDraft(prev => ({ ...prev, icon }));
+            if (iconTarget === 'arena') {
+              setIsArenaIconAuto(false);
+              setArenaDraft(prev => ({ ...prev, icon }));
+            }
+            if (iconTarget === 'action') {
+              setIsActionIconAuto(false);
+              setActionDraft(prev => ({ ...prev, icon }));
+            }
             setIsIconPickerOpen(false);
             setIconTarget(null);
           }}
@@ -912,3 +990,4 @@ export const CodexModal: React.FC<{
     </Portal>
   );
 };
+

@@ -15,6 +15,7 @@ import { Portal } from '../components/Portal';
 import { SupabaseService } from '../services/SupabaseService';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
+import { hasPremiumAccess } from '../utils/premiumAccess';
 import './settings-ui.css';
 
 const OracleChat = lazy(() =>
@@ -281,7 +282,7 @@ const mapToCamelCase = (obj: any): any => {
 };
 
 const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userProfile, friends, userCodexes, duplicateUserCodexToRecipient } = useGame();
+    const { userProfile, friends, userCodexes, duplicateUserCodexToRecipient, showToast } = useGame();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [invites, setInvites] = useState<RelationshipLinkInvite[]>([]);
@@ -294,6 +295,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [spectatorData, setSpectatorData] = useState<{ arena: Arena, actions: Action[], tasks: ScheduledTask[], pupilName: string, link: RelationshipLink } | null>(null);
     const [selectedPupilLink, setSelectedPupilLink] = useState<RelationshipLink | null>(null);
     const [isMentorCreatorOpen, setMentorCreatorOpen] = useState(false);
+    const canActAsMentor = hasPremiumAccess(userProfile);
 
     const sessionReady = useMemo(() => !!sessionUid && isUuid(sessionUid), [sessionUid]);
 
@@ -426,6 +428,12 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData.session?.user.id;
         if (!uid || !isUuid(uid)) return;
+
+        if (invite.linkType === 'mentoria' && !canActAsMentor) {
+            setError('Mentoria ativa como mentor e exclusiva para Premium.');
+            showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
+            return;
+        }
 
         const { error: updateError } = await supabase
             .from('relationship_link_invites')
@@ -583,6 +591,11 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                                             <div className="space-y-2">
                                                 <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS PUPILOS</div>
+                                                {!canActAsMentor && (
+                                                    <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-3 py-3 text-[11px] leading-relaxed text-amber-200">
+                                                        Mentoria ativa como mentor e envio de Codex para pupilos sao recursos Premium.
+                                                    </div>
+                                                )}
                                                 {myPupils.length === 0 ? (
                                                     <div className="text-center text-sm text-gray-500 py-4">Nenhum vínculo ativo.</div>
                                                 ) : (
@@ -612,9 +625,14 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                     <button
                                                                         onClick={(event) => {
                                                                             event.stopPropagation();
+                                                                            if (!canActAsMentor) {
+                                                                                showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
+                                                                                return;
+                                                                            }
                                                                             setSelectedPupilLink(link);
                                                                         }}
-                                                                        className="px-3 py-2 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[10px] font-bold tracking-wider text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/20 transition-all"
+                                                                        disabled={!canActAsMentor}
+                                                                        className="px-3 py-2 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[10px] font-bold tracking-wider text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                                     >
                                                                         ADICIONAR CODEX
                                                                     </button>
@@ -806,13 +824,21 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         link={selectedPupilLink}
                         pupil={getProfile(selectedPupilLink.pupilId)}
                         codexes={authoredCodexes}
+                        canMentor={canActAsMentor}
                         onClose={() => {
                             setSelectedPupilLink(null);
                             setMentorCreatorOpen(false);
                         }}
-                        onCreateNew={() => setMentorCreatorOpen(true)}
+                        onCreateNew={() => {
+                            if (!canActAsMentor) {
+                                showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
+                                return;
+                            }
+                            setMentorCreatorOpen(true);
+                        }}
                         onGiveCodex={async (codexId) => {
-                            await duplicateUserCodexToRecipient(codexId, selectedPupilLink.pupilId, selectedPupilLink.id);
+                            const success = await duplicateUserCodexToRecipient(codexId, selectedPupilLink.pupilId, selectedPupilLink.id);
+                            if (!success) return;
                             setSelectedPupilLink(null);
                         }}
                     />
@@ -1676,10 +1702,11 @@ const MentorCodexModal: React.FC<{
     link: RelationshipLink;
     pupil?: UserProfile;
     codexes: any[];
+    canMentor: boolean;
     onClose: () => void;
-    onGiveCodex: (codexId: string) => Promise<void>;
+    onGiveCodex: (codexId: string) => Promise<boolean>;
     onCreateNew: () => void;
-}> = ({ pupil, codexes, onClose, onGiveCodex, onCreateNew }) => {
+}> = ({ pupil, codexes, canMentor, onClose, onGiveCodex, onCreateNew }) => {
     const [selectedCodexId, setSelectedCodexId] = useState<string | null>(null);
     const [isSending, setIsSending] = useState(false);
 
@@ -1707,11 +1734,18 @@ const MentorCodexModal: React.FC<{
                         </button>
                     </div>
 
+                    {!canMentor && (
+                        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-3 py-3 text-[11px] leading-relaxed text-amber-200">
+                            So mentores Premium podem operar esta forja.
+                        </div>
+                    )}
+
                     <button
                         onClick={onCreateNew}
-                        className="w-full py-3 rounded-2xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold tracking-wider hover:bg-[var(--skin-accent-color)]/20 transition-all"
+                        disabled={!canMentor}
+                        className="w-full py-3 rounded-2xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold tracking-wider hover:bg-[var(--skin-accent-color)]/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        CRIAR NOVO CODEX PARA ESTE PUPILO
+                        CRIAR NOVO CODEX PARA ESTE PUPILO · 300 OURO
                     </button>
 
                     <div className="space-y-2">
@@ -1748,7 +1782,7 @@ const MentorCodexModal: React.FC<{
                         <button onClick={onClose} className="flex-1 py-2 rounded-xl luxe-button-secondary text-xs font-bold">FECHAR</button>
                         <button
                             onClick={handleSend}
-                            disabled={!selectedCodexId || isSending}
+                            disabled={!canMentor || !selectedCodexId || isSending}
                             className="flex-1 py-2 rounded-xl luxe-skin-button text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSending ? 'ENVIANDO...' : 'ENVIAR CODEX'}

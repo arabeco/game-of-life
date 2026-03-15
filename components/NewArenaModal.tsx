@@ -6,6 +6,7 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
+import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 
 interface NewArenaModalProps {
     assetId?: string;
@@ -69,41 +70,15 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         }
     };
 
-    const assetEmojiMap: Record<string, string> = {
-        saude: '🧘',
-        financas: '💰',
-        trabalho: '💼',
-        hobbies: '🎨',
-        fisico: '💪',
-        geral: '🏆',
-        intelectual: '🧠',
-        social: '🤝',
-        emocional: '❤',
-        espiritual: '🙏',
-        carreira: '🚀',
-        lazer: '🎮',
-        familia: '👨‍👩‍👧‍👦',
-        estudos: '📚',
-        relacionamento: '💑',
-        criatividade: '🎭',
-        aventura: '🧗',
-        natureza: '🌲',
-        tecnologia: '💻',
-        viagem: '✈',
-        culinaria: '🍳',
-        musica: '🎵',
-        esportes: '⚽',
-        leitura: '📖',
-        autoconhecimento: '🪞',
-    };
-
     const handleSave = async () => {
         if (!name.trim() || !assetId) {
             showToast('Escolha o ativo e dê um nome para a arena.', 'warning');
             return;
         }
 
-        const defaultIcon = initialRelationship?.type === 'competition' ? '⚔' : (assetEmojiMap[assetId] || '🏆');
+        const defaultIcon = initialRelationship?.type === 'competition'
+            ? '\u2694\uFE0F'
+            : suggestEmojiForLabel(name, 'arena', { assetId, fallback: '\u{1F3DB}\uFE0F' });
         const finalDescription = initialRelationship
             ? `${description}\n\n[${initialRelationship.type === 'competition' ? 'DESAFIO' : 'VINCULO'}: ${initialRelationship.friendName}]`
             : description;
@@ -199,5 +174,6 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         </>
     );
 };
+
 
 

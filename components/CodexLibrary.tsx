@@ -3,10 +3,11 @@ import { useGame } from '../contexts/GameContext';
 import { CodexShareDeliveryMethod, UserCodex } from '../types';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
-import { ArchiveBoxIcon, CheckIcon, DollarSignIcon, EyeIcon, LayersIcon, LinkIcon, PlusIcon, ShareIcon, Trash2Icon, XIcon } from './Icons';
+import { ArchiveBoxIcon, CheckIcon, DollarSignIcon, EyeIcon, FolderIcon, LayersIcon, LinkIcon, PlusIcon, ShareIcon, Trash2Icon, XIcon } from './Icons';
 import { CampaignsCodex } from './CampaignsCodex';
 import { buildCodexCampaignPreview, CodexCampaignPreview } from '../utils/codexPreview';
 import { CodexModal } from './CodexModal';
+import { CampaignArenaStack } from './CampaignArenaStack';
 
 interface CodexLibraryProps {
   mode?: 'page' | 'modal';
@@ -15,12 +16,29 @@ interface CodexLibraryProps {
 
 const isCreatedCodex = (codex: UserCodex) => (codex.source_type || (codex.catalog_id ? 'catalog' : 'created')) === 'created';
 const isShareableCodex = (codex: UserCodex) => Array.isArray(codex.template?.levels) && codex.template.levels.length > 0;
+const isProbablyImageUrl = (value?: string | null) => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized.startsWith('http://') || normalized.startsWith('https://') || normalized.startsWith('/') || normalized.startsWith('data:image/');
+};
 
 const SourceBadge: React.FC<{ label: string }> = ({ label }) => (
   <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/65">
     {label}
   </span>
 );
+
+const CodexCoverArt: React.FC<{ cover?: string; title: string }> = ({ cover, title }) => {
+  if (isProbablyImageUrl(cover)) {
+    return <img src={cover} alt={title} className="absolute inset-0 h-full w-full object-cover" />;
+  }
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_58%),linear-gradient(180deg,rgba(33,24,16,0.95),rgba(10,8,10,0.98))] text-[3.2rem]">
+      {cover || '📜'}
+    </div>
+  );
+};
 
 const EmptyShelf: React.FC<{ title: string; description: string }> = ({ title, description }) => (
   <GlassCard variant="neutral" className="rounded-3xl border border-dashed border-white/10 p-8 text-center opacity-80">
@@ -244,6 +262,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
 
   const [activeTab, setActiveTab] = useState<'created' | 'imported'>('created');
   const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
+  const [previewCodex, setPreviewCodex] = useState<UserCodex | null>(null);
   const [isCreatorOpen, setCreatorOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<UserCodex | null>(null);
 
@@ -260,6 +279,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
       return;
     }
 
+    setPreviewCodex(codex);
     setCampaignPreview(buildCodexCampaignPreview(codex.id, codex.template));
   };
 
@@ -416,11 +436,22 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
 
       {campaignPreview && (
         <CampaignsCodex
-          onClose={() => setCampaignPreview(null)}
+          onClose={() => {
+            setCampaignPreview(null);
+            setPreviewCodex(null);
+          }}
           initialCampaignId={campaignPreview.campaign.id}
           previewCampaign={campaignPreview.campaign}
           previewArenas={campaignPreview.arenas}
           previewActions={campaignPreview.actions}
+          previewMeta={{
+            coverImage: previewCodex?.template?.coverImage,
+            badgeLabel: activeTab === 'created' ? 'Forja autoral' : 'Biblioteca',
+            author: previewCodex?.author || 'Soberano',
+            note: activeTab === 'created'
+              ? 'Seu manuscrito esta pronto para ser instalado ou refinado.'
+              : 'Voce ja possui este Codex na biblioteca e pode explorar a campanha completa.',
+          }}
         />
       )}
 

@@ -10,6 +10,7 @@ import { PlasmaCanvas } from './PlasmaCanvas';
 import { supabase } from '../supabaseClient';
 import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { hasPremiumAccess } from '../utils/premiumAccess';
 import './arena-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 
@@ -294,6 +295,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             return;
         }
 
+        if (type === 'mentoria' && !hasPremiumAccess(friend)) {
+            setLinkStatus(`${friend.nickname} precisa ser Premium para assumir mentoria.`);
+            return;
+        }
+
         const { error } = await supabase.from('relationship_link_invites').insert({
             sender_id: uid,
             recipient_id: friend.id,
@@ -563,29 +569,39 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                             <button onClick={() => setSelectionType('competicao')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'competicao' ?'bg-red-500 text-white border-red-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Desafio</button>
                             <button onClick={() => setSelectionType('parceria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'parceria' ?'bg-blue-500 text-white border-blue-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Parceria</button>
                         </div>
+                        {selectionType === 'mentoria' && (
+                            <div className="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-400/20 rounded-xl px-3 py-2">
+                                Mentoria ativa exige que o mentor convidado tenha acesso Premium.
+                            </div>
+                        )}
 
                         {availableFriends.length === 0 ?(
                             <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID válido.</div>
                         ) : (
                             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                {availableFriends.map(friend => (
+                                {availableFriends.map(friend => {
+                                    const mentorLocked = selectionType === 'mentoria' && !hasPremiumAccess(friend);
+                                    return (
                                     <button
                                         key={friend.id}
+                                        disabled={mentorLocked}
                                         onClick={() => sendObserverInvite(friend, selectionType)}
-                                        className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-black/30 border border-white/10 flex items-center gap-3"
+                                        className={`w-full p-3 rounded-xl text-left border flex items-center gap-3 ${mentorLocked ? 'bg-black/10 border-white/5 opacity-60 cursor-not-allowed' : 'bg-black/20 hover:bg-black/30 border-white/10'}`}
                                     >
                                         <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
                                             {friend.avatarUrl ?<img src={friend.avatarUrl} alt={friend.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">👤</span>}
                                         </div>
                                         <div className="flex-1">
                                             <div className="text-sm font-bold text-white">{friend.nickname}</div>
-                                            <div className="text-[10px] text-gray-500">{friend.isOnline ?'ONLINE' : 'OFFLINE'}</div>
+                                            <div className="text-[10px] text-gray-500">
+                                                {mentorLocked ? 'MENTOR PREMIUM NECESSARIO' : (friend.isOnline ?'ONLINE' : 'OFFLINE')}
+                                            </div>
                                         </div>
                                         <div className="p-2 bg-white/5 rounded-full">
                                             <SendIcon className="w-4 h-4 text-gray-400" />
                                         </div>
                                     </button>
-                                ))}
+                                )})}
                             </div>
                         )}
                         {linkStatus && <div className="text-xs text-gray-300 bg-black/30 border border-white/10 rounded-xl p-2">{linkStatus}</div>}

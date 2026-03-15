@@ -136,7 +136,11 @@ export const LoginView: React.FC = () => {
         return null;
     };
 
-    const handleSignUp = async (draft: ManualSignupDraft, inviteCode?: string) => {
+    const handleSignUp = async (
+        draft: ManualSignupDraft,
+        inviteCode?: string,
+        options?: { deferSuccessUi?: boolean }
+    ) => {
         const normalizedInvite = inviteCode?.trim() || '';
         let inviteRecord: GoldenInvite | null = null;
 
@@ -272,11 +276,25 @@ export const LoginView: React.FC = () => {
                     }]);
 
                 if (profileError) throw profileError;
-                setMessage('Cadastro realizado. Verifique seu e-mail para confirmar a conta.');
-                setIsSigningUp(false);
-                setManualEntryExpanded(false);
-                setPendingManualSignup(null);
-                setInviteModalOpen(false);
+
+                const finalizeSuccess = () => {
+                    setMessage('Cadastro realizado. Verifique seu e-mail para confirmar a conta.');
+                    setIsSigningUp(false);
+                    setManualEntryExpanded(false);
+                    setPendingManualSignup(null);
+                    setInviteModalOpen(false);
+                };
+
+                if (options?.deferSuccessUi) {
+                    setLoading(false);
+                    return {
+                        success: true,
+                        successMessage: 'Bilhete aceito! Conta liberada.',
+                        onSuccess: finalizeSuccess,
+                    };
+                }
+
+                finalizeSuccess();
             }
         } catch (error: any) {
             const signupError = error.message || 'Erro no cadastro';
@@ -466,21 +484,6 @@ export const LoginView: React.FC = () => {
         setPendingManualSignup(null);
     };
 
-    const toggleMode = () => {
-        setEmail('');
-        setPassword('');
-        setNickname('');
-        setError(null);
-        setMessage(null);
-        setGoldenInviteGuide(null);
-        setGoogleResumeMode(false);
-        setGoogleResumeEmail('');
-        setManualEntryExpanded(true);
-        setInviteModalOpen(false);
-        setPendingManualSignup(null);
-        setIsSigningUp(!isSigningUp);
-    };
-
     const showManualFields = !googleResumeMode && manualEntryExpanded;
 
     const openManualMode = (nextMode: 'login' | 'signup' = 'login') => {
@@ -528,16 +531,23 @@ export const LoginView: React.FC = () => {
             };
         }
 
-        const result = await handleSignUp(pendingManualSignup, normalizedInvite);
+        const result = await handleSignUp(pendingManualSignup, normalizedInvite, { deferSuccessUi: true });
         return {
             success: !!result?.success,
             error: result?.error,
+            successMessage: result?.successMessage,
+            onSuccess: result?.onSuccess,
         };
     };
 
+    const compactGuideTitle = googleResumeMode ? 'Google conectado' : goldenInviteGuide?.title;
+    const compactGuideText = googleResumeMode
+        ? `Falta validar o Bilhete Dourado para ${googleResumeEmail || 'essa conta'}.`
+        : goldenInviteGuide?.text ?? null;
+
     return (
         <div className="login-shell animate-fade-in">
-            <div className="login-card space-y-6">
+            <div className="login-card">
                 {installPromptAvailable && (
                     <button
                         id="login-install-button"
@@ -554,141 +564,54 @@ export const LoginView: React.FC = () => {
                         </svg>
                     </button>
                 )}
-                <div className="login-logo-stage">
-                    <div className="login-logo-halo" />
-                    <div className="login-logo-plasma" />
-                    <img
-                        src="/logo-diamond.png"
-                        alt="GLYPH"
-                        className="login-logo-diamond"
-                    />
-                    <div className="login-logo-core-ring">
-                        <img
-                            src="/logo-core.png"
-                            alt="GLYPH Core"
-                        />
-                    </div>
-                </div>
-
-                <h1 className="login-title luxe-title-ornate mb-8 scale-110 bg-gradient-to-b from-[var(--skin-accent-color)] to-white/50 bg-clip-text text-4xl font-black uppercase tracking-[0.3em] text-transparent drop-shadow-[0_0_15px_var(--skin-accent-color)]">
-                    GLYPH
-                </h1>
-
-                {isGoldenInviteGateEnabled && goldenInviteGuide && (
-                    <div className="login-guide-card">
-                        <div className="login-guide-badge">BETA FECHADO</div>
-                        <h2 className="login-guide-title">{goldenInviteGuide.title}</h2>
-                        <p className="login-guide-text">
-                            {goldenInviteGuide.text}
-                        </p>
-                        <div className="login-guide-steps">
-                            <span>1. Entrar</span>
-                            <span>2. Validar Bilhete</span>
-                            <span>3. Conta liberada</span>
-                        </div>
-                    </div>
-                )}
-
-                <form className="space-y-4" onSubmit={handlePrimarySubmit}>
-                    {!showManualFields && !googleResumeMode && (
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-left">
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
-                                Entrada principal
-                            </p>
-                            <p className="mt-2 text-sm leading-relaxed text-white/78">
-                                Entre com Google primeiro. Se a conta ainda nao estiver liberada no beta, o Bilhete Dourado aparece logo depois da autenticacao.
-                            </p>
-                        </div>
-                    )}
-
-                    {showManualFields ? (
-                        <>
-                            <input
-                                id="login-email-input"
-                                type="text"
-                                autoComplete={isSigningUp ? 'email' : 'username'}
-                                placeholder={isSigningUp ? 'E-mail' : 'E-mail ou Nickname'}
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
+                <div className="login-content">
+                    <div className="login-hero">
+                        <span className="login-kicker">Beta fechado</span>
+                        <div className="login-logo-stage">
+                            <div className="login-logo-halo" />
+                            <div className="login-logo-plasma" />
+                            <img
+                                src="/logo-diamond.png"
+                                alt="GLYPH"
+                                className="login-logo-diamond"
                             />
-                            <div className="space-y-1">
-                                <input
-                                    id="login-password-input"
-                                    type="password"
-                                    autoComplete={isSigningUp ? 'new-password' : 'current-password'}
-                                    placeholder="Senha"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
+                            <div className="login-logo-core-ring">
+                                <img
+                                    src="/logo-core.png"
+                                    alt="GLYPH Core"
                                 />
-                                {isSigningUp && password.length > 0 && (
-                                    <div className="px-1 py-1">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Força da Senha</span>
-                                            <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÉDIA' ? 'text-yellow-500' : 'text-red-500'}`}>
-                                                {getPasswordStrength(password).label}
-                                            </span>
-                                        </div>
-                                        <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden flex gap-1">
-                                            <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 1 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
-                                            <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 2 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
-                                            <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 3 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
-                                        </div>
-                                    </div>
-                                )}
-                                {!isSigningUp && (
-                                    <div className="flex justify-end px-1">
-                                        <button
-                                            type="button"
-                                            onClick={handleResetPassword}
-                                            className="text-[10px] font-bold text-white/40 hover:text-[var(--skin-accent-color)] transition-colors uppercase tracking-widest"
-                                        >
-                                            Esqueci minha senha
-                                        </button>
-                                    </div>
-                                )}
                             </div>
-                            {isSigningUp && isGoldenInviteGateEnabled && (
-                                <p className="px-1 text-[11px] leading-relaxed text-white/45">
-                                    Depois de tocar em criar perfil, o Bilhete Dourado sera pedido em um modal separado.
-                                </p>
-                            )}
-                        </>
-                    ) : (
-                        <div className="rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/8 px-4 py-4 text-left">
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
-                                Google autenticado
-                            </p>
-                            <p className="mt-2 text-sm leading-relaxed text-white/78">
-                                Sua autenticacao com Google ja aconteceu. Agora so falta validar o Bilhete Dourado no modal para liberar a conta.
-                            </p>
-                            {googleResumeEmail && (
-                                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/42">
-                                    {googleResumeEmail}
-                                </p>
-                            )}
+                        </div>
+                        <h1 className="login-title luxe-title-ornate">
+                            GLYPH
+                        </h1>
+                        <p className="login-subtitle">
+                            Entre com Google para começar.
+                        </p>
+                    </div>
+
+                    {(compactGuideTitle && compactGuideText && !showManualFields) && (
+                        <div className="login-status-strip login-status-strip--accent">
+                            <div className="login-status-strip__header">
+                                <span className="login-status-strip__title">{compactGuideTitle}</span>
+                                {googleResumeEmail && <span className="login-status-strip__meta">{googleResumeEmail}</span>}
+                            </div>
+                            <p className="login-status-strip__text">{compactGuideText}</p>
                         </div>
                     )}
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                    {message && <p className="text-green-400 text-sm">{message}</p>}
 
-                    {showManualFields && (
-                        <button
-                            id="login-submit-button"
-                            type="submit"
-                            disabled={loading}
-                            className="login-primary-button luxe-skin-button flex items-center justify-center gap-2 text-sm font-black transition-all"
-                        >
-                            {loading ? (
-                                <div className="w-5 h-5 border-4 border-black/30 border-t-black rounded-full animate-spin" />
-                            ) : (
-                                isSigningUp ? 'CRIAR PERFIL' : 'ENTRAR'
-                            )}
-                        </button>
+                    {error && (
+                        <div className="login-status-strip login-status-strip--error">
+                            <p className="login-status-strip__text">{error}</p>
+                        </div>
+                    )}
+                    {message && (
+                        <div className="login-status-strip login-status-strip--success">
+                            <p className="login-status-strip__text">{message}</p>
+                        </div>
                     )}
 
-                    <div className="flex flex-col gap-3">
+                    <form className="login-form" onSubmit={handlePrimarySubmit}>
                         <button
                             id="login-google-button"
                             type="button"
@@ -704,56 +627,136 @@ export const LoginView: React.FC = () => {
                             </svg>
                             <span className="text-sm">Entrar com Google</span>
                         </button>
-                        {isGoldenInviteGateEnabled && (
-                            <p className="px-3 text-[11px] leading-relaxed text-white/45">
-                                No primeiro acesso com Google, o app pede seu Bilhete Dourado so depois da autenticacao. Voce nao precisa preencher os campos manuais para isso.
-                            </p>
+
+                        {!showManualFields && (
+                            <button
+                                id="login-show-manual-button"
+                                type="button"
+                                onClick={() => openManualMode('login')}
+                                className="login-bridge-link"
+                            >
+                                Entrar com e-mail
+                            </button>
                         )}
 
-                        {showManualFields ? (
-                            <div className="flex flex-col gap-2">
-                                <button
-                                    id="login-toggle-mode-button"
-                                    type="button"
-                                    onClick={toggleMode}
-                                    className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
-                                >
-                                    {isSigningUp ? 'Ja tem uma conta? Entrar' : 'Nao tem conta? Cadastrar'}
-                                </button>
-                                <button
-                                    id="login-hide-manual-button"
-                                    type="button"
-                                    onClick={clearForm}
-                                    className="w-full py-2 text-white/35 hover:text-white/70 transition-colors text-[11px] font-bold uppercase tracking-[0.18em]"
-                                >
-                                    Voltar para Google
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col gap-2">
-                                <button
-                                    id="login-show-manual-button"
-                                    type="button"
-                                    onClick={() => openManualMode('login')}
-                                    className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
-                                >
-                                    Usar e-mail e senha
-                                </button>
-                                <button
-                                    id="login-show-manual-signup-button"
-                                    type="button"
-                                    onClick={() => openManualMode('signup')}
-                                    className="w-full py-2 text-white/35 hover:text-white/70 transition-colors text-[11px] font-bold uppercase tracking-[0.18em]"
-                                >
-                                    Criar conta manual
-                                </button>
+                        {showManualFields && (
+                            <div className="login-email-panel">
+                                <div className="login-email-tabs" role="tablist" aria-label="Modo de acesso manual">
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={!isSigningUp}
+                                        onClick={() => setIsSigningUp(false)}
+                                        className={`login-email-tab ${!isSigningUp ? 'is-active' : ''}`}
+                                    >
+                                        Entrar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={isSigningUp}
+                                        onClick={() => setIsSigningUp(true)}
+                                        className={`login-email-tab ${isSigningUp ? 'is-active' : ''}`}
+                                    >
+                                        Criar conta
+                                    </button>
+                                </div>
+
+                                <div className="login-email-fields">
+                                    <input
+                                        id="login-email-input"
+                                        type="text"
+                                        autoComplete={isSigningUp ? 'email' : 'username'}
+                                        placeholder={isSigningUp ? 'E-mail' : 'E-mail ou nickname'}
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="login-field"
+                                    />
+
+                                    {isSigningUp && (
+                                        <input
+                                            id="login-nickname-input"
+                                            type="text"
+                                            autoComplete="nickname"
+                                            placeholder="Nickname"
+                                            value={nickname}
+                                            onChange={(e) => setNickname(e.target.value)}
+                                            className="login-field"
+                                        />
+                                    )}
+
+                                    <div className="space-y-1">
+                                        <input
+                                            id="login-password-input"
+                                            type="password"
+                                            autoComplete={isSigningUp ? 'new-password' : 'current-password'}
+                                            placeholder="Senha"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="login-field"
+                                        />
+                                        {!isSigningUp && (
+                                            <div className="flex justify-end px-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResetPassword}
+                                                    className="login-forgot-link"
+                                                >
+                                                    Esqueci minha senha
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isSigningUp && password.length > 0 && (
+                                        <div className="login-password-meter">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Força da senha</span>
+                                                <span className={`text-[10px] font-black tracking-widest uppercase ${getPasswordStrength(password).label === 'FORTE' ? 'text-green-500' : getPasswordStrength(password).label === 'MÉDIA' ? 'text-yellow-500' : 'text-red-500'}`}>
+                                                    {getPasswordStrength(password).label}
+                                                </span>
+                                            </div>
+                                            <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden flex gap-1">
+                                                <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 1 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                                <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 2 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                                <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 3 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isSigningUp && isGoldenInviteGateEnabled && (
+                                        <p className="login-manual-hint">
+                                            O Bilhete Dourado aparece em seguida, em um modal separado.
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="login-email-actions">
+                                    <button
+                                        id="login-submit-button"
+                                        type="submit"
+                                        disabled={loading}
+                                        className="login-primary-button luxe-skin-button flex items-center justify-center gap-2 text-sm font-black transition-all"
+                                    >
+                                        {loading ? (
+                                            <div className="w-5 h-5 border-4 border-black/30 border-t-black rounded-full animate-spin" />
+                                        ) : (
+                                            isSigningUp ? 'Criar conta manual' : 'Entrar com e-mail'
+                                        )}
+                                    </button>
+                                    <button
+                                        id="login-hide-manual-button"
+                                        type="button"
+                                        onClick={clearForm}
+                                        className="login-secondary-link"
+                                    >
+                                        Voltar ao Google
+                                    </button>
+                                </div>
                             </div>
                         )}
-                    </div>
 
-                    <div className="border-t border-white/6 pt-3 text-center text-[11px] leading-relaxed text-white/40">
-                        <p>O resumo legal aparece no comeco da conta, antes do uso do app.</p>
-                        <div className="mt-2 flex items-center justify-center gap-3">
+                        <div className="login-legal">
                             <a
                                 href={LEGAL_TERMS_URL_PLACEHOLDER}
                                 target="_blank"
@@ -772,8 +775,8 @@ export const LoginView: React.FC = () => {
                                 Privacidade
                             </a>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
             <ClosedBetaInviteModal
                 open={isInviteModalOpen}

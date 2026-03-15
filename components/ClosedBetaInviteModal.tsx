@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
+export type ClosedBetaInviteValidationResult = {
+  success: boolean;
+  error?: string;
+  successMessage?: string;
+  pendingMessage?: string;
+  onSuccess?: () => void | Promise<void>;
+  successDelayMs?: number;
+};
+
 export const ClosedBetaInviteModal: React.FC<{
   open: boolean;
   title?: string;
@@ -8,7 +17,7 @@ export const ClosedBetaInviteModal: React.FC<{
   confirmLabel?: string;
   cancelLabel?: string;
   onCancel: () => void | Promise<void>;
-  onValidateInvite: (inviteCode: string) => Promise<{ success: boolean; error?: string }>;
+  onValidateInvite: (inviteCode: string) => Promise<ClosedBetaInviteValidationResult>;
 }> = ({
   open,
   title = 'Insira seu Bilhete',
@@ -22,12 +31,16 @@ export const ClosedBetaInviteModal: React.FC<{
   const [inviteCode, setInviteCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
       setInviteCode('');
       setIsSubmitting(false);
       setError(null);
+      setSuccessMessage(null);
+      setPendingMessage(null);
     }
   }, [open]);
 
@@ -37,18 +50,32 @@ export const ClosedBetaInviteModal: React.FC<{
     const normalizedInvite = inviteCode.trim();
     if (!normalizedInvite) {
       setError('Insira seu Bilhete Dourado.');
+      setSuccessMessage(null);
+      setPendingMessage(null);
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
+    setPendingMessage('Validando Bilhete Dourado...');
 
     try {
       const result = await onValidateInvite(normalizedInvite);
       if (!result.success) {
-        setError(result.error || 'Nao consegui validar seu acesso agora.');
+        setPendingMessage(null);
+        setError(result.error || 'Bilhete negado.');
+        return;
       }
+
+      setPendingMessage(null);
+      setSuccessMessage(result.successMessage || 'Bilhete aceito!');
+
+      const delayMs = result.successDelayMs ?? 850;
+      await new Promise(resolve => window.setTimeout(resolve, delayMs));
+      await result.onSuccess?.();
     } catch (submitError: any) {
+      setPendingMessage(null);
       setError(submitError?.message || 'Nao consegui validar seu acesso agora.');
     } finally {
       setIsSubmitting(false);
@@ -58,6 +85,8 @@ export const ClosedBetaInviteModal: React.FC<{
   const handleCancel = async () => {
     setIsSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
+    setPendingMessage(null);
     try {
       await onCancel();
     } finally {
@@ -91,8 +120,19 @@ export const ClosedBetaInviteModal: React.FC<{
             value={inviteCode}
             onChange={(event) => setInviteCode(event.target.value)}
             placeholder="Cole aqui seu Bilhete Dourado"
-            className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/28 focus:outline-none focus:border-[var(--skin-accent-color)]"
+            disabled={isSubmitting}
+            className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/28 focus:outline-none focus:border-[var(--skin-accent-color)] disabled:opacity-60"
           />
+          {pendingMessage && (
+            <p className="text-sm font-semibold text-[var(--skin-accent-color)]">
+              {pendingMessage}
+            </p>
+          )}
+          {successMessage && (
+            <p className="text-sm font-semibold text-emerald-400">
+              {successMessage}
+            </p>
+          )}
           {error && <p className="text-sm text-red-400">{error}</p>}
         </div>
 

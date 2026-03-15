@@ -21,6 +21,7 @@ import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, i
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
+import { hasPremiumAccess } from '../utils/premiumAccess';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -414,14 +415,14 @@ export interface GameContextType {
     codexCatalog: CodexCatalogItem[];
     refreshCodexes: () => Promise<void>;
     buyCodex: (catalogId: string) => Promise<void>;
-    buyCodexCreationSlot: () => Promise<void>;
+    buyCodexCreationSlot: () => Promise<boolean>;
     createCodexShareLink: (codexId: string) => Promise<{ url: string; token: string; shareId: string } | null>;
     sendCodexToNickname: (codexId: string, nickname: string) => Promise<void>;
     getCodexSharePreview: (input: { token?: string; shareId?: string }) => Promise<CodexSharePreview | null>;
     claimCodexShare: (input: { token?: string; shareId?: string }) => Promise<boolean>;
     installCodex: (userCodexId: string) => Promise<void>;
-    duplicateUserCodexToRecipient: (codexId: string, recipientId: string, relationshipLinkId?: string | null) => Promise<void>;
-    createMentorCodexForRecipient: (recipientId: string, codex: { name: string; description?: string; template: any }, relationshipLinkId?: string | null) => Promise<void>;
+    duplicateUserCodexToRecipient: (codexId: string, recipientId: string, relationshipLinkId?: string | null) => Promise<boolean>;
+    createMentorCodexForRecipient: (recipientId: string, codex: { name: string; description?: string; template: any }, relationshipLinkId?: string | null) => Promise<boolean>;
 
     // PWA
     installPrompt: any;
@@ -3250,37 +3251,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const catalogItem = codexCatalog.find(c => c.id === catalogId);
         if (!catalogItem) return;
 
-        const { data, error } = await supabase.from('codex').insert({
-            owner_id: userId,
-            catalog_id: catalogItem.id,
-            name: catalogItem.title,
-            description: catalogItem.description,
-            author: catalogItem.author_name,
-            price: catalogItem.price_brl,
-            template: catalogItem.template,
-            schema_version: 'v2',
-            is_public: false,
-            source_type: 'catalog',
-            created_by_user_id: null,
-            origin_codex_id: null,
-        }).select().single();
+        const { data, error } = await supabase.rpc('buy_codex_catalog_item', {
+            p_catalog_id: catalogId,
+        });
 
         if (error) {
             console.error('Error buying codex:', error);
-            showToast('Erro ao adquirir Codex.');
+            showToast(error.message || 'Erro ao adquirir Codex.');
             return;
         }
 
-        setUserCodexes(prev => [normalizeUserCodexRow(data, codexCatalog), ...prev]);
+        if ((data as any)?.success === false) {
+            showToast(String((data as any)?.error || 'Erro ao adquirir Codex.'), 'error');
+            return;
+        }
+
+        const purchasedCodex = (data as any)?.codex;
+        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+
+        if (purchasedCodex) {
+            setUserCodexes(prev => [normalizeUserCodexRow(purchasedCodex, codexCatalog), ...prev]);
+        }
+
+        updateUserProfile({
+            wallet: { ...userProfile.wallet, gold: nextGold },
+        });
         showToast(`Codex "${catalogItem.title}" adquirido!`);
     };
 
-    const buyCodexCreationSlot = async () => {
+    const buyCodexCreationSlot = async (): Promise<boolean> => {
         const { data, error } = await supabase.rpc('buy_codex_creation_slot');
         if (error) {
             console.error('Error buying codex creation slot:', error);
             showToast(error.message || 'Saldo insuficiente para forjar um novo slot.', 'error');
-            return;
+            return false;
         }
 
         const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - 50));
@@ -3290,6 +3294,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             codexCreationSlotsPurchased: nextSlots,
         });
         showToast('Novo slot de criacao forjado.', 'success');
+        return true;
     };
 
     const createCodexShareLink = async (codexId: string): Promise<{ url: string; token: string; shareId: string } | null> => {
@@ -3460,80 +3465,88 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const duplicateUserCodexToRecipient = async (codexId: string, recipientId: string, relationshipLinkId: string | null = null) => {
+    const duplicateUserCodexToRecipient = async (codexId: string, recipientId: string, relationshipLinkId: string | null = null): Promise<boolean> => {
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) return false;
+
+        if (!hasPremiumAccess(userProfile)) {
+            showToast('Mentoria ativa como mentor e entrega de Codex autoral sao recursos Premium.', 'warning');
+            return false;
+        }
 
         const sourceCodex = userCodexes.find(c => c.id === codexId && c.owner_id === userId);
         if (!sourceCodex) {
             showToast('Codex n\u00E3o encontrado.');
-            return;
+            return false;
         }
 
         if (sourceCodex.catalog_id) {
             showToast('Codex comprado n\u00E3o pode ser copiado para pupilos.');
-            return;
+            return false;
         }
 
-        const payload = {
-            owner_id: recipientId,
-            name: sourceCodex.name,
-            description: sourceCodex.description || '',
-            author: sourceCodex.author || userProfile.nickname || 'Mentor',
-            price: null,
-            template: sourceCodex.template,
-            schema_version: sourceCodex.schema_version || 'v2',
-            is_public: false,
-            source_type: 'gift_in_app',
-            origin_codex_id: sourceCodex.id,
-            created_by_user_id: sourceCodex.created_by_user_id || sourceCodex.owner_id,
-        };
+        if (!Array.isArray(sourceCodex.template?.levels) || sourceCodex.template.levels.length === 0) {
+            showToast('Finalize o manuscrito antes de entregar ao pupilo.');
+            return false;
+        }
 
-        const { error } = await supabase.from('codex').insert(payload);
+        const { data, error } = await supabase.rpc('deliver_authored_codex_to_pupil', {
+            p_source_codex_id: codexId,
+            p_recipient_id: recipientId,
+            p_relationship_link_id: relationshipLinkId,
+        });
         if (error) {
             console.error('Error duplicating mentor codex:', error);
-            showToast('Erro ao entregar Codex ao pupilo.');
-            return;
+            showToast(error.message || 'Erro ao entregar Codex ao pupilo.');
+            return false;
         }
 
-        showToast('Codex entregue ao pupilo.');
+        if ((data as any)?.success === false) {
+            showToast(String((data as any)?.error || 'Erro ao entregar Codex ao pupilo.'), 'error');
+            return false;
+        }
+
+        showToast('Codex autoral entregue ao pupilo.', 'success');
+        return true;
     };
 
     const createMentorCodexForRecipient = async (
         recipientId: string,
         codex: { name: string; description?: string; template: any },
         relationshipLinkId: string | null = null
-    ) => {
+    ): Promise<boolean> => {
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) return false;
+
+        if (!hasPremiumAccess(userProfile)) {
+            showToast('A forja de Codex para pupilos e exclusiva para mentores Premium.', 'warning');
+            return false;
+        }
 
         if (!codex?.template || !Array.isArray(codex.template.levels) || codex.template.levels.length === 0) {
             showToast('Esse Codex ainda n\u00E3o tem fases para enviar.');
-            return;
+            return false;
         }
 
-        const payload = {
-            owner_id: recipientId,
-            name: codex.name?.trim() || 'Novo Codex',
-            description: codex.description?.trim() || '',
-            author: userProfile.nickname || 'Mentor',
-            price: null,
-            template: codex.template,
-            schema_version: 'v2',
-            is_public: false,
-            source_type: 'gift_in_app',
-            origin_codex_id: null,
-            created_by_user_id: userId,
-        };
-
-        const { error } = await supabase.from('codex').insert(payload);
+        const { data, error } = await supabase.rpc('forge_mentor_codex_for_pupil', {
+            p_recipient_id: recipientId,
+            p_name: codex.name?.trim() || 'Novo Codex',
+            p_description: codex.description?.trim() || '',
+            p_template: codex.template,
+            p_relationship_link_id: relationshipLinkId,
+        });
         if (error) {
             console.error('Error creating mentor codex for recipient:', error);
-            showToast('Erro ao criar Codex para o pupilo.');
-            return;
+            showToast(error.message || 'Erro ao criar Codex para o pupilo.', 'error');
+            return false;
         }
 
-        showToast('Novo Codex enviado ao pupilo.');
+        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        updateUserProfile({
+            wallet: { ...userProfile.wallet, gold: nextGold },
+        });
+        showToast('Novo Codex enviado ao pupilo por 300 de ouro.', 'success');
+        return true;
     };
 
     const installCodex = async (userCodexId: string) => {

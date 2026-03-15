@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Action, Arena, Campaign } from '../types';
-import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, CheckIcon } from './Icons';
+import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, CheckIcon, EyeOffIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
 import { NewArenaModal } from './NewArenaModal';
 import { ArenaDetailModal } from './ArenaDetailModal';
@@ -9,7 +9,6 @@ import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { CampaignArenaStack } from './CampaignArenaStack';
 import { calculateCampaignProgress, getCampaignArenaStates } from '../utils/progressUtils';
-import { useCodexBuilder } from '../contexts/CodexBuilderContext';
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -17,11 +16,23 @@ interface CampaignsCodexProps {
     previewCampaign?: Campaign | null;
     previewArenas?: Arena[];
     previewActions?: Action[];
+    previewMeta?: {
+        coverImage?: string;
+        badgeLabel?: string;
+        author?: string;
+        note?: string;
+        hideArenaDetails?: boolean;
+    };
 }
 
-export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId, previewCampaign, previewArenas = [], previewActions = [] }) => {
-    const { campaigns, getArenas, actions, tasks, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userProfile } = useGame();
-    const { isBuilderMode } = useCodexBuilder();
+const isProbablyImageUrl = (value?: string | null) => {
+    if (!value) return false;
+    const normalized = value.trim().toLowerCase();
+    return normalized.startsWith('http://') || normalized.startsWith('https://') || normalized.startsWith('/') || normalized.startsWith('data:image/');
+};
+
+export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId, previewCampaign, previewArenas = [], previewActions = [], previewMeta }) => {
+    const { campaigns, getArenas, actions, tasks, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -30,7 +41,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     
     const [draggedArenaId, setDraggedArenaId] = useState<string | null>(null);
-    const [isLinkingMode, setIsLinkingMode] = useState(false);
+    const [isLinkingMode] = useState(false);
     const [linkingSourceId] = useState<string | null>(null);
     const [visiblePhaseCount, setVisiblePhaseCount] = useState(1);
 
@@ -38,37 +49,19 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
     const allArenas = getArenas();
-    const previewArenaIds = allArenas.slice(0, 3).map(arena => arena.id);
-    const shouldShowPreviewCampaign = (isBuilderMode || userProfile.role === 'gm' || userProfile.role === 'admin') && previewArenaIds.length > 0;
-    const gmPreviewCampaign: Campaign | null = previewCampaign
-        ? (shouldShowPreviewCampaign
-            ? {
-                id: '__gm_preview_campaign__',
-                userId: 'gm-board',
-                title: 'Preview de Campanha',
-                description: 'Mock do GM Board para validar a miniatura da campanha e a visualizacao interna das arenas.',
-                status: 'active',
-                createdAt: new Date().toISOString(),
-                arenaIds: previewArenaIds,
-                arenaConfig: previewArenaIds.reduce((acc, arenaId, index) => ({
-                    ...acc,
-                    [arenaId]: {
-                        isLocked: false,
-                        isHidden: false,
-                        prerequisiteArenaIds: index > 0 ? [previewArenaIds[index - 1]] : [],
-                    },
-                }), {}),
-                priority: 'media',
-                type: 'parallel',
-                order: -1,
-                priorityOrder: -1,
-            }
-            : null)
+    const effectivePreviewCampaign: Campaign | null = previewCampaign
+        ? {
+            ...previewCampaign,
+            order: previewCampaign.order ?? -1,
+            priorityOrder: previewCampaign.priorityOrder ?? -1,
+        }
         : null;
     const validCampaigns = campaigns.filter(Boolean);
-    const visibleCampaigns = gmPreviewCampaign ? [gmPreviewCampaign, ...validCampaigns] : validCampaigns;
+    const visibleCampaigns = effectivePreviewCampaign
+        ? [effectivePreviewCampaign, ...validCampaigns.filter((campaign) => campaign.id !== effectivePreviewCampaign.id)]
+        : validCampaigns;
     const selectedCampaign = selectedCampaignId ? visibleCampaigns.find(c => c.id === selectedCampaignId) : null;
-    const isPreviewCampaign = selectedCampaignId === gmPreviewCampaign?.id;
+    const isPreviewCampaign = selectedCampaignId === effectivePreviewCampaign?.id;
     const campaignArenasSource = isPreviewCampaign ? previewArenas : allArenas;
     const campaignActionsSource = isPreviewCampaign ? previewActions : actions;
     
@@ -345,48 +338,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
     const handleArenaClick = (arenaId: string) => {
         if (!selectedCampaign) return;
+        if (isPreviewCampaign && previewMeta?.hideArenaDetails) return;
         setSelectedArenaId(arenaId);
-        return;
-
-        if (isLinkingMode) {
-            if (isCodexCampaign) return; // Disable linking for Codex campaigns
-            if (!linkingSourceId) {
-                setLinkingSourceId(arenaId);
-            } else {
-                if (linkingSourceId === arenaId) {
-                    setLinkingSourceId(null);
-                    return;
-                }
-                const currentConfig = selectedCampaign.arenaConfig || {};
-                const targetConfig = currentConfig[arenaId] || {};
-                const currentPrereqs = targetConfig.prerequisiteArenaIds || [];
-                
-                let newPrereqs;
-                if (currentPrereqs.includes(linkingSourceId)) {
-                    newPrereqs = currentPrereqs.filter(id => id !== linkingSourceId);
-                } else {
-                    const sourceConfig = currentConfig[linkingSourceId] || {};
-                    const sourcePrereqs = sourceConfig.prerequisiteArenaIds || [];
-                    if (sourcePrereqs.includes(arenaId)) {
-                        alert("Não é possível criar dependência circular!");
-                        return;
-                    }
-                    newPrereqs = [...currentPrereqs, linkingSourceId];
-                }
-
-                updateCampaign(selectedCampaign.id, {
-                    arenaConfig: {
-                        ...currentConfig,
-                        [arenaId]: {
-                            ...targetConfig,
-                            prerequisiteArenaIds: newPrereqs
-                        }
-                    }
-                });
-            }
-        } else {
-            setSelectedArenaId(arenaId);
-        }
     };
 
     const handleCreateFutureArena = () => {
@@ -414,13 +367,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     const showPhaseHeaders = arenaPhaseRows.length > 1;
     const displayCampaignTitle = editTitle?.trim() || selectedCampaign?.title || '';
     const displayCampaignDescription = editDescription?.trim() || selectedCampaign?.description || '';
+    const previewActionCount = isPreviewCampaign ? previewActions.length : 0;
     const renderedPhaseRows = Array.from(
         { length: isEditing ?visiblePhaseCount : Math.max(1, arenaPhaseRows.length) },
         (_, phase) => ({ phase, arenas: arenaPhaseRows.find((row) => row.phase === phase)?.arenas || [] })
     );
-    const luxeIconButtonClass = 'flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-gray-300 shadow-[0_14px_40px_rgba(0,0,0,0.28)] transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white';
-    const luxeHeaderGroupClass = 'flex items-center gap-2 rounded-[1.15rem] border border-white/8 bg-black/30 px-2 py-2 backdrop-blur-md';
-
     // RENDER: LIST VIEW (Grid of Campaigns)
     if (!selectedCampaign) {
         return (
@@ -525,9 +476,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                     Codex
                                                 </div>
                                             )}
-                                            {campaign.id === gmPreviewCampaign?.id && (
+                                            {campaign.id === effectivePreviewCampaign?.id && (
                                                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-white/10 border border-white/15 rounded text-[9px] font-bold text-gray-200 uppercase tracking-wider z-10">
-                                                    GM Preview
+                                                    {previewMeta?.badgeLabel || 'Preview'}
                                                 </div>
                                             )}
 
@@ -671,6 +622,56 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
                     {/* Grid Area */}
                     <div className="flex-1 overflow-y-auto relative p-4 bg-black/35">
+                        {isPreviewCampaign && previewMeta && (
+                            <div className="mb-4 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                                <div className="grid gap-3 md:grid-cols-[10rem,1fr] md:items-center">
+                                    <div className="relative min-h-[10rem] overflow-hidden rounded-[1.1rem] border border-white/10 bg-black/35">
+                                        {isProbablyImageUrl(previewMeta.coverImage) ? (
+                                            <img
+                                                src={previewMeta.coverImage}
+                                                alt={displayCampaignTitle}
+                                                className="absolute inset-0 h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_60%),linear-gradient(180deg,rgba(26,20,12,0.96),rgba(9,8,12,0.98))] text-[3.2rem]">
+                                                {previewMeta.coverImage || '📜'}
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent px-3 py-2">
+                                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)]">
+                                                {previewMeta.badgeLabel || 'Preview'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 text-left">
+                                        <div className="flex flex-wrap gap-2">
+                                            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/68">
+                                                {sortedArenas.length} arenas
+                                            </span>
+                                            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/68">
+                                                {previewActionCount} acoes
+                                            </span>
+                                            {previewMeta.author && (
+                                                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/68">
+                                                    {previewMeta.author}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-sm leading-relaxed text-white/76">
+                                            {previewMeta.note || 'Visualize a estrutura da campanha antes de instalar.'}
+                                        </p>
+                                        {previewMeta.hideArenaDetails && (
+                                            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-amber-200">
+                                                <EyeOffIcon className="h-3.5 w-3.5" />
+                                                Detalhes internos protegidos ate a compra
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {sortedArenas.length === 0 ?(
                             <div className="h-full flex flex-col items-center justify-center text-gray-500">
                                 <p className="mb-4">Nenhuma arena definida nesta campanha.</p>
@@ -735,7 +736,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     return (
                                         <div 
                                             key={arena.id} 
-                                            className={`relative w-[79px] flex-shrink-0 transition-all duration-300 group ${scaleClass}`}
+                                            className={`relative w-[79px] flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
                                             onClick={() => handleArenaClick(arena.id)}
                                             draggable={isEditing && !isCodexCampaign && !isPreviewCampaign}
                                             onDragStart={() => handleArenaDragStart(arena.id)}
@@ -880,7 +881,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                         />
                     )}
                     
-                    {selectedArena && (
+                    {selectedArena && !(isPreviewCampaign && previewMeta?.hideArenaDetails) && (
                         <ArenaDetailModal 
                             arena={selectedArena}
                             onClose={() => setSelectedArenaId(null)}

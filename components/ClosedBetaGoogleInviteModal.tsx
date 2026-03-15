@@ -53,8 +53,11 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
         };
       }
 
-      onComplete(session);
-      return { success: true };
+      return {
+        success: true,
+        successMessage: 'Bilhete aceito! Liberando sua conta...',
+        onSuccess: () => onComplete(session),
+      };
     } catch (submitError: any) {
       return {
         success: false,

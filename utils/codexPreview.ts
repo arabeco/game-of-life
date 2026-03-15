@@ -1,4 +1,5 @@
 import { Action, Arena, Campaign } from '../types';
+import { suggestEmojiForLabel } from './suggestEmojiForLabel';
 
 type CodexTemplateLevelAction = {
   name?: string;
@@ -76,7 +77,9 @@ export const buildCodexCampaignPreview = (
       assetId: 'geral',
       name: level?.title || `Fase ${levelNumber}`,
       description: level?.description || '',
-      icon: arenaActions[0]?.icon || '🏛️',
+      icon: suggestEmojiForLabel(level?.title, 'arena', {
+        fallback: arenaActions[0]?.icon || '\u{1F3DB}\uFE0F',
+      }),
       actionIds: [],
       isArchived: false,
       originCodexId: codexId,
@@ -99,7 +102,10 @@ export const buildCodexCampaignPreview = (
         arenaId,
         name: action?.name || `Ação ${actionIndex + 1}`,
         description: action?.description || '',
-        icon: action?.icon || '✨',
+        icon: suggestEmojiForLabel(action?.name, 'action', {
+          actionType: action?.actionType,
+          fallback: action?.icon || '\u2728',
+        }),
         duration: typeof action?.duration === 'number' ? action.duration : 15,
         repetitions: typeof action?.repetitions === 'number' ? Math.max(1, Math.floor(action.repetitions)) : 1,
         actionType: normalizeActionType(action?.actionType),
@@ -147,7 +153,9 @@ export const buildCodexTemplateFromDraft = (draft: {
   return {
     title: draft.name?.trim() || 'Novo Codex',
     description: draft.description?.trim() || '',
-    coverImage: arenas[0]?.icon || '📜',
+    coverImage: suggestEmojiForLabel(draft.name, 'codex', {
+      fallback: arenas[0]?.icon || '\u{1F4DC}',
+    }),
     levels: arenas.map((arena, index) => ({
       level: index + 1,
       title: arena.name || `Fase ${index + 1}`,
@@ -172,3 +180,4 @@ export const buildCodexTemplateFromDraft = (draft: {
     })),
   };
 };
+

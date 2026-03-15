@@ -9,6 +9,8 @@ const ignoreFragments = [
   `${path.sep}.git${path.sep}`,
   `${path.sep}contexts${path.sep}GameContext_utf8.tsx`,
   `${path.sep}temp_`,
+  `${path.sep}ActionModal.head.tsx`,
+  `${path.sep}tmp_ActionModal_HEAD.tsx`,
 ];
 
 const suspiciousTokens = [

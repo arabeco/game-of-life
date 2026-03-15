@@ -1003,11 +1003,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 5. Build Context
-        let timeOfDay: "night" | "morning" | "afternoon" | "evening" = "morning";
-        if (hour >= 0 && hour < 6) timeOfDay = "night";
-        else if (hour >= 6 && hour < 12) timeOfDay = "morning";
-        else if (hour >= 12 && hour < 18) timeOfDay = "afternoon";
-        else timeOfDay = "evening";
+        let timeOfDay: "madrugada" | "manha" | "tarde" | "noite" = "manha";
+        if (hour >= 0 && hour < 6) timeOfDay = "madrugada";
+        else if (hour >= 6 && hour < 12) timeOfDay = "manha";
+        else if (hour >= 12 && hour < 18) timeOfDay = "tarde";
+        else timeOfDay = "noite";
 
         const contextData: OracleContext = {
             currentTime: now.toISOString(),
@@ -7459,3 +7459,4 @@ export const useGame = () => {
     if (!builder.isBuilderMode) return context;
     return { ...context, ...builder.gameOverrides };
 };
+

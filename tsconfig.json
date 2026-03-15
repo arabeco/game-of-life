@@ -51,6 +51,8 @@
                     "supabase/functions",
                     "api_checkout_nextjs_sample.ts",
                     "contexts/GameContext_utf8.tsx",
-                    "temp_sephirotfog_original.tsx"
+                    "temp_sephirotfog_original.tsx",
+                    "ActionModal.head.tsx",
+                    "tmp_ActionModal_HEAD.tsx"
                 ]
 }

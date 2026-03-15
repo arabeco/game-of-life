@@ -208,23 +208,6 @@ export const useSensoryFeedback = () => {
             }
 
             switch (type) {
-                case 'click': {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-
-                    osc.type = sensoryProfile === 'basic' ? 'sine' : 'triangle';
-                    osc.frequency.setValueAtTime(sensoryProfile === 'basic' ? 700 : 800, now);
-                    osc.frequency.exponentialRampToValueAtTime(sensoryProfile === 'basic' ? 450 : 300, now + 0.1);
-
-                    gain.gain.setValueAtTime(sensoryProfile === 'basic' ? 0.06 : 0.1, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-
-                    osc.start(now);
-                    osc.stop(now + 0.1);
-                    break;
-                }
                 case 'whoosh': {
                     const bufferSize = ctx.sampleRate * 0.5;
                     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -267,41 +250,6 @@ export const useSensoryFeedback = () => {
 
                     osc.start(now);
                     osc.stop(now + 0.2);
-                    break;
-                }
-                case 'warning': {
-                    const knockA = ctx.createBufferSource();
-                    const knockB = ctx.createBufferSource();
-                    const filterA = ctx.createBiquadFilter();
-                    const filterB = ctx.createBiquadFilter();
-                    const gainA = ctx.createGain();
-                    const gainB = ctx.createGain();
-
-                    knockA.buffer = createNoiseBuffer(ctx, 0.04);
-                    knockB.buffer = createNoiseBuffer(ctx, 0.04);
-                    filterA.type = 'bandpass';
-                    filterB.type = 'bandpass';
-                    filterA.frequency.setValueAtTime(900, now);
-                    filterB.frequency.setValueAtTime(760, now + 0.055);
-                    filterA.Q.value = 0.8;
-                    filterB.Q.value = 0.8;
-
-                    knockA.connect(filterA);
-                    filterA.connect(gainA);
-                    gainA.connect(ctx.destination);
-                    knockB.connect(filterB);
-                    filterB.connect(gainB);
-                    gainB.connect(ctx.destination);
-
-                    gainA.gain.setValueAtTime(0.04, now);
-                    gainA.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-                    gainB.gain.setValueAtTime(0.03, now + 0.055);
-                    gainB.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
-
-                    knockA.start(now);
-                    knockA.stop(now + 0.04);
-                    knockB.start(now + 0.055);
-                    knockB.stop(now + 0.095);
                     break;
                 }
                 case 'fanfare':

@@ -158,9 +158,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     const config = ORACLE_MODES[currentMode];
     const now = new Date();
     const hour = now.getHours();
-    let timeOfDay: "madrugada" | "manhã" | "tarde" | "noite" = "manhã";
+    let timeOfDay: "madrugada" | "manha" | "tarde" | "noite" = "manha";
     if (hour >= 0 && hour < 6) timeOfDay = "madrugada";
-    else if (hour >= 6 && hour < 12) timeOfDay = "manhã";
+    else if (hour >= 6 && hour < 12) timeOfDay = "manha";
     else if (hour >= 12 && hour < 18) timeOfDay = "tarde";
     else timeOfDay = "noite";
 

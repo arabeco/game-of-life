@@ -50,8 +50,9 @@ export const ItemsStore: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<ItemDef | null>(null);
 
     const items = useMemo(() => {
-        const catalog = getCatalogItems(item => LOW_TICKET_ITEM_IDS.includes(item.id as typeof LOW_TICKET_ITEM_IDS[number]));
-        const order = new Map(LOW_TICKET_ITEM_IDS.map((id, index) => [id, index]));
+        const lowTicketIds = new Set<string>(LOW_TICKET_ITEM_IDS);
+        const catalog = getCatalogItems(item => lowTicketIds.has(item.id));
+        const order = new Map<string, number>(LOW_TICKET_ITEM_IDS.map((id, index) => [id, index]));
 
         return [...catalog].sort((a, b) => {
             const left = order.get(a.id) ?? 999;

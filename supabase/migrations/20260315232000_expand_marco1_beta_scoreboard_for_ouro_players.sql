@@ -1,89 +1,3 @@
-create extension if not exists pgcrypto;
-
-create table if not exists public.marco1_beta_tracking (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid null references auth.users(id) on delete set null,
-  email text null,
-  nickname text null,
-  full_name text null,
-  whatsapp text null,
-  source text null,
-  cohort_label text not null default 'marco1',
-  beta_tier text null check (beta_tier in ('ouro', 'prata', 'bronze')),
-  stage text not null default 'candidate'
-    check (stage in (
-      'candidate',
-      'invited',
-      'scheduled',
-      'onboarding',
-      'activated',
-      'observed',
-      'retained',
-      'cycled',
-      'lost',
-      'ignored'
-    )),
-  invite_code text null references public.golden_invites(code) on update cascade on delete set null,
-  first_contact_at timestamptz null,
-  invited_at timestamptz null,
-  onboarding_call_scheduled_at timestamptz null,
-  onboarding_call_completed_at timestamptz null,
-  observation_started_at timestamptz null,
-  observation_ends_at timestamptz null,
-  first_value_at timestamptz null,
-  first_value_minutes integer null check (first_value_minutes is null or first_value_minutes >= 0),
-  activated_at timestamptz null,
-  d2_returned_override boolean null,
-  d7_returned_override boolean null,
-  cycle_started_override boolean null,
-  cycle_closed_override boolean null,
-  active_days_14d integer null check (active_days_14d is null or active_days_14d >= 0),
-  tasks_completed_14d integer null check (tasks_completed_14d is null or tasks_completed_14d >= 0),
-  where_stuck text null,
-  what_confused text null,
-  what_made_them_return text null,
-  qualitative_feedback text null,
-  ceo_notes text null,
-  next_follow_up_at timestamptz null,
-  ignore_in_marco1 boolean not null default false,
-  ignore_reason text null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint marco1_beta_tracking_user_id_unique unique (user_id)
-);
-
-create unique index if not exists marco1_beta_tracking_email_unique_idx
-  on public.marco1_beta_tracking ((lower(email)))
-  where email is not null;
-
-create index if not exists marco1_beta_tracking_stage_idx
-  on public.marco1_beta_tracking (stage, created_at desc);
-
-create index if not exists marco1_beta_tracking_follow_up_idx
-  on public.marco1_beta_tracking (next_follow_up_at)
-  where next_follow_up_at is not null;
-
-create index if not exists marco1_beta_tracking_ignore_idx
-  on public.marco1_beta_tracking (ignore_in_marco1, stage);
-
-create or replace function public.set_marco1_beta_tracking_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
-drop trigger if exists marco1_beta_tracking_set_updated_at on public.marco1_beta_tracking;
-create trigger marco1_beta_tracking_set_updated_at
-before update on public.marco1_beta_tracking
-for each row
-execute function public.set_marco1_beta_tracking_updated_at();
-
-alter table public.marco1_beta_tracking enable row level security;
-
 create or replace view public.marco1_beta_scoreboard_base as
 with tracked_manual as (
   select
@@ -269,7 +183,7 @@ activity_days as (
 ),
 joined as (
   select
-    t.*, 
+    t.*,
     coalesce(t.profile_email, t.tracking_email) as email,
     coalesce(t.profile_nickname, t.tracking_nickname) as nickname,
     coalesce(a.arenas_count, 0) as arenas_count,
@@ -433,8 +347,3 @@ select
   count(*) filter (where first_value_minutes is not null and first_value_minutes <= 7) as users_under_7m,
   round((count(*) filter (where first_value_minutes is not null and first_value_minutes <= 7)::numeric / nullif(count(*) filter (where first_value_minutes is not null), 0)) * 100, 2) as first_value_under_7m_pct
 from public.marco1_beta_scoreboard;
-
-comment on table public.marco1_beta_tracking is 'Operacao manual do Marco 1: convites, onboarding, checkpoints e feedback qualitativo dos betas assistidos.';
-comment on view public.marco1_beta_scoreboard is 'Scoreboard por usuario do Marco 1, filtrando GM/admin/admin_gm e contas marcadas para ignorar.';
-comment on view public.marco1_beta_funnel is 'Funil resumido do Marco 1: ativacao, D2, D7 e fechamento de ciclo.';
-

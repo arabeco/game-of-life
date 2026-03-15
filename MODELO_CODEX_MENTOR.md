@@ -1,4 +1,4 @@
-# MODELO DE CODEX PARA MENTOR (GLYPH)
+ï»¿# MODELO DE CODEX PARA MENTOR (GLYPH)
 
 Use este documento como formulario mestre para estruturar um Codex completo no padrao do GLYPH.
 Ele foi pensado para cobrir ao mesmo tempo:
@@ -325,7 +325,7 @@ Como o usuario sabe que concluiu bem?
 ex: terminou com um diagnostico claro e uma resposta pratica para o mesmo padrao.  
 ___________________________________________
 
-**Mídia / assets** `[RECOMENDADO]`  
+**Midia / assets** `[RECOMENDADO]`  
 Repita se precisar.
 - Tipo: video / image / pdf / audio / link
 - Titulo: ex: PDF de Inventario de Ruido
@@ -653,3 +653,4 @@ Se quiser uma Fase 2 mais leve no Google Forms:
 - e deixe o JSON completo como atalho opcional no final
 
 Assim voce nao cria um formulario bonito no papel e sofrido de preencher na vida real.
+

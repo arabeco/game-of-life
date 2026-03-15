@@ -1,4 +1,4 @@
-import { Action, Arena, Campaign } from '../types';
+import { Action, Arena, Campaign, DayOfWeek } from '../types';
 import { suggestEmojiForLabel } from './suggestEmojiForLabel';
 
 type CodexTemplateLevelAction = {
@@ -48,11 +48,22 @@ export type CodexTemplatePayload = {
   }>;
 };
 
+const DAY_OF_WEEK_VALUES: DayOfWeek[] = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+const RECURRING_ACTION_TYPE: Action['actionType'] = 'Ação Recorrente';
+
+const normalizeScheduledDays = (scheduledDays?: string[]): DayOfWeek[] | undefined => {
+  if (!Array.isArray(scheduledDays)) return undefined;
+  const normalized = scheduledDays.filter((day): day is DayOfWeek =>
+    DAY_OF_WEEK_VALUES.includes(day as DayOfWeek)
+  );
+  return normalized.length ? normalized : undefined;
+};
+
 const normalizeActionType = (actionType?: string): Action['actionType'] => {
-  if (actionType === 'Marco' || actionType === 'Compromisso' || actionType === 'Ação Recorrente') {
+  if (actionType === 'Marco' || actionType === 'Compromisso' || actionType === RECURRING_ACTION_TYPE) {
     return actionType;
   }
-  return 'Ação Recorrente';
+  return RECURRING_ACTION_TYPE;
 };
 
 export const buildCodexCampaignPreview = (
@@ -114,7 +125,7 @@ export const buildCodexCampaignPreview = (
         assets: action?.assets,
         preFlight: action?.preFlight,
         context: action?.context,
-        scheduledDays: action?.scheduledDays,
+        scheduledDays: normalizeScheduledDays(action?.scheduledDays),
         scheduledStartTime: action?.scheduledStartTime,
         originCodexId: codexId,
       });
@@ -174,10 +185,9 @@ export const buildCodexTemplateFromDraft = (draft: {
           assets: action.assets,
           preFlight: action.preFlight,
           context: action.context,
-          scheduledDays: action.scheduledDays,
+          scheduledDays: normalizeScheduledDays(action.scheduledDays),
           scheduledStartTime: action.scheduledStartTime,
         })),
     })),
   };
 };
-

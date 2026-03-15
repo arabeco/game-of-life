@@ -1,4 +1,4 @@
-export interface CodexLevel {
+﻿export interface CodexLevel {
   level: number;
   title: string;
   description: string;
@@ -93,7 +93,7 @@ export interface Slot {
 }
 
 export type DayOfWeek = 'DOM' | 'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB';
-export type ActionType = 'Marco' | 'Compromisso' | 'Ação Recorrente' | 'Livre';
+export type ActionType = 'Marco' | 'Compromisso' | 'A\u00e7\u00e3o Recorrente' | 'Livre';
 
 export interface Action {
   id: string;
@@ -934,7 +934,7 @@ export interface OracleMessage {
 
 export interface OracleContext {
   currentTime: string;
-  timeOfDay: "madrugada" | "manhï¿½" | "tarde" | "noite";
+  timeOfDay: "madrugada" | "manha" | "tarde" | "noite";
   hasCycle: boolean;
   cycleDayNumber: number | null;
   cycleTotalDays: number | null;
@@ -1036,3 +1036,4 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
+

@@ -20,6 +20,7 @@ import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
+import { parseBooleanEnvFlag } from '../utils/envFlags';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -450,6 +451,8 @@ export interface GameContextType {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode, session: Session | null }> = ({ children, session }) => {
+    const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
+    const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
 
     const [userProfile, setUserProfile] = useState<UserProfile>(() => {
         const userId = session?.user.id;
@@ -2611,6 +2614,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { data: profileData, error: profileError } = profileResult;
 
             if (!profileData && !profileError) {
+                if (isGoldenInviteGateEnabled) {
+                    const accessStatus = await SupabaseService.getClosedBetaAccessStatus();
+                    if (!accessStatus?.hasInvite) {
+                        console.warn('Closed beta guard prevented implicit profile creation before Bilhete Dourado validation.');
+                        return;
+                    }
+                }
+
                 const [
                     arenasCountResult,
                     actionsCountResult,

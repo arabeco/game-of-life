@@ -3,6 +3,25 @@ import { UserProfile, GoldenInvite, SovereignConfig, Notification } from '../typ
 
 // Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
+  private static shouldFallbackDeleteToRpc(error: unknown): boolean {
+    const functionError = error as { name?: string; message?: string; context?: Response };
+    const message = String(functionError?.message || '').toLowerCase();
+    const name = String(functionError?.name || '').toLowerCase();
+    const status = functionError?.context?.status ?? null;
+
+    return (
+      name.includes('functions') ||
+      message.includes('edge function') ||
+      message.includes('failed to send a request') ||
+      message.includes('forbidden') ||
+      message.includes('not found') ||
+      message.includes('404') ||
+      message.includes('403') ||
+      message.includes('500') ||
+      (typeof status === 'number' && status >= 400)
+    );
+  }
+
   private static mapGoldenInvite(row: any): GoldenInvite | null {
     if (!row?.id || !row?.code) return null;
     return {
@@ -336,30 +355,32 @@ export class SupabaseService {
       }
 
       console.error('Erro ao excluir conta via Edge Function:', error);
-      const functionErrorMessage = String((error as any)?.message || '');
-      const canFallbackToRpc =
-        functionErrorMessage.includes('Failed to send a request to the Edge Function') ||
-        functionErrorMessage.includes('404') ||
-        functionErrorMessage.includes('FunctionsFetchError');
+      const functionError = error as { message?: string; context?: Response };
+      const functionErrorMessage = String(functionError?.message || '');
+      const responseStatus = functionError?.context?.status ?? null;
+      const canFallbackToRpc = this.shouldFallbackDeleteToRpc(error);
 
       if (!canFallbackToRpc) {
-        return { success: false, error: functionErrorMessage || 'Nao foi possivel excluir a conta.' };
+        return {
+          success: false,
+          error: functionErrorMessage || (responseStatus ? `Não foi possível excluir a conta. HTTP ${responseStatus}.` : 'Não foi possível excluir a conta.'),
+        };
       }
 
       const { data: rpcData, error: rpcError } = await supabase.rpc('delete_my_account');
       if (rpcError) {
         console.error('Erro ao excluir conta via RPC:', rpcError);
-        return { success: false, error: rpcError.message || 'Nao foi possivel excluir a conta.' };
+        return { success: false, error: rpcError.message || 'Não foi possível excluir a conta.' };
       }
 
       if ((rpcData as any)?.success === false) {
-        return { success: false, error: (rpcData as any)?.error || 'Nao foi possivel excluir a conta.' };
+        return { success: false, error: (rpcData as any)?.error || 'Não foi possível excluir a conta.' };
       }
 
       return { success: true };
     } catch (error) {
       console.error('Erro inesperado ao excluir conta:', error);
-      return { success: false, error: (error as any)?.message || 'Nao foi possivel excluir a conta.' };
+      return { success: false, error: (error as any)?.message || 'Não foi possível excluir a conta.' };
     }
   }
   static async getFeedbackReports(): Promise<any[]> {

@@ -114,7 +114,7 @@ const App: React.FC = () => {
                 saveClosedBetaGoogleRedirect({
                     mode: 'login',
                     email: candidate.user.email || '',
-                    message: 'Nao foi possivel validar seu acesso com Google agora. Tente novamente em instantes.',
+                    message: 'Não foi possível validar seu acesso com Google agora. Tente novamente em instantes.',
                 });
                 await supabase.auth.signOut({ scope: 'local' });
                 return null;
@@ -123,7 +123,7 @@ const App: React.FC = () => {
             saveClosedBetaGoogleRedirect({
                 mode: 'signup',
                 email: candidate.user.email || '',
-                message: 'Esse Google ainda nao tem conta no beta. Preencha o Convite Dourado para criar sua conta.',
+                message: 'Esse Google ainda não tem conta no beta. Preencha o Convite Dourado para criar sua conta.',
             });
 
             const deletionResult = await SupabaseService.deleteMyAccount();
@@ -132,7 +132,7 @@ const App: React.FC = () => {
                 saveClosedBetaGoogleRedirect({
                     mode: 'login',
                     email: candidate.user.email || '',
-                    message: 'Nao consegui limpar o acesso temporario do Google sozinho. Me chama que apagamos esse usuario no Supabase.',
+                    message: 'Não consegui limpar o acesso temporário do Google sozinho. Me chama que apagamos esse usuário no Supabase.',
                 });
             }
 

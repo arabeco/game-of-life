@@ -497,18 +497,19 @@ const MainApp: React.FC = () => {
     const requiresTermsAcceptance = !acceptedTerms && isProfileLoaded && userProfile.id !== 'placeholder_user';
     const showTerms = forceShowTerms || requiresTermsAcceptance;
     const needsModeSelection = acceptedTerms && !userProfile.appMode;
+    const needsFirstUseOnboarding = shouldAutoStartOnboarding(userProfile);
     const [isFirstUseOnboardingActive, setFirstUseOnboardingActive] = useState(false);
     const [onboardingShownInSession, setOnboardingShownInSession] = useState(false);
     const [claimToken, setClaimToken] = useState<string | null>(null);
     const shouldHoldVanguardWelcome =
-        shouldAutoStartOnboarding(userProfile) &&
+        needsFirstUseOnboarding &&
         !userProfile.onboardingCompletedAt &&
         !userProfile.onboardingDismissedAt &&
         !onboardingShownInSession;
 
     useEffect(() => {
         if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms || needsModeSelection) return;
-        if (!shouldAutoStartOnboarding(userProfile) || isFirstUseOnboardingActive || onboardingShownInSession) return;
+        if (!needsFirstUseOnboarding || isFirstUseOnboardingActive || onboardingShownInSession) return;
 
         updateUserProfile(buildOnboardingStartPatch(userProfile));
         setFirstUseOnboardingActive(true);
@@ -518,6 +519,7 @@ const MainApp: React.FC = () => {
         isProfileLoaded,
         showTerms,
         needsModeSelection,
+        needsFirstUseOnboarding,
         isFirstUseOnboardingActive,
         onboardingShownInSession,
         updateUserProfile,
@@ -552,6 +554,16 @@ const MainApp: React.FC = () => {
     const handleCompleteOnboarding = useCallback(() => {
         updateUserProfile(buildOnboardingCompletePatch(userProfile));
         setFirstUseOnboardingActive(false);
+        window.setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tutorialNavigate', {
+                detail: {
+                    view: 'planner',
+                    showReports: false,
+                    showRestScreen: true,
+                    showArenaId: null,
+                },
+            }));
+        }, 120);
     }, [updateUserProfile, userProfile]);
 
     const handleCloseVanguardWelcome = useCallback(() => {
@@ -601,6 +613,13 @@ const MainApp: React.FC = () => {
         }
     }, [isTutorialCompleted, userProfile.completedSeasonMissions, addProfileFlag]);
 
+    const shouldOpenRestByDefault =
+        !showTerms &&
+        !needsModeSelection &&
+        !claimToken &&
+        !needsFirstUseOnboarding &&
+        !isFirstUseOnboardingActive;
+
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
@@ -625,7 +644,7 @@ const MainApp: React.FC = () => {
 
     return (
         <>
-            {!requiresTermsAcceptance && <AppWithTutorial defaultRestScreenOpen={!showTerms && !needsModeSelection && !isFirstUseOnboardingActive && !claimToken} />}
+            {!requiresTermsAcceptance && <AppWithTutorial defaultRestScreenOpen={shouldOpenRestByDefault} />}
             {!showTerms && (
                 <Suspense fallback={null}>
                     <ModeSelectionOverlay />

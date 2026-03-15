@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
@@ -311,7 +311,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         body: {
           systemPrompt,
           userPrompt: userMessage.content,
-          model: 'google/gemini-2.0-flash-001',
         }
       });
 

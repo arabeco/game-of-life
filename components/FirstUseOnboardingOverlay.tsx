@@ -75,7 +75,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'cycle-entry',
       title: 'Primeiro ciclo',
-      text: 'Seu historico ainda esta vazio. Comece por aqui e abra o setup do seu primeiro ciclo real.',
+      text: 'Seu histórico ainda está vazio. Comece por aqui e abra o setup do seu primeiro ciclo real.',
       targetSelector: '#start-new-cycle-button',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       autoAdvanceSelector: '#new-cycle-name-input',
@@ -84,7 +84,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'cycle-name',
       title: 'Nomeie a fase',
-      text: 'De um nome simples para essa fase. Pense em uma janela curta, clara e executavel.',
+      text: 'Dê um nome simples para essa fase. Pense em uma janela curta, clara e executável.',
       targetSelector: '#new-cycle-name-input',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       padding: 10,
@@ -92,7 +92,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'cycle-date',
       title: 'Escolha a data final',
-      text: 'Aqui voce define quando esse ciclo fecha. O calendario segura o ritmo da fase.',
+      text: 'Aqui você define quando esse ciclo fecha. O calendário segura o ritmo da fase.',
       targetSelector: '#new-cycle-date-button',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       padding: 10,
@@ -100,7 +100,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'cycle-save',
       title: 'Inicie o ciclo',
-      text: 'Quando estiver bom, confirme aqui. Assim o seu primeiro ciclo ja nasce como dado real.',
+      text: 'Quando estiver bom, confirme aqui. Assim o seu primeiro ciclo já nasce como dado real.',
       targetSelector: '#new-cycle-submit-button',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       waitForEvent: FIRST_USE_ONBOARDING_EVENTS.cycleCreated,
@@ -119,7 +119,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'arena-asset',
       title: 'Ativo pai',
-      text: 'Aqui voce escolhe o ativo pai da arena. E uma forma de dizer em qual dominio essa frente mora.',
+      text: 'Aqui você escolhe o ativo pai da arena. É uma forma de dizer em qual domínio essa frente mora.',
       targetSelector: '#new-arena-asset-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 10,
@@ -127,7 +127,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'arena-name',
       title: 'Nome da arena',
-      text: 'Diga o nome da frente. Nao precisa ser perfeito. Clareza vale mais do que sofisticacao.',
+      text: 'Diga o nome da frente. Não precisa ser perfeito. Clareza vale mais do que sofisticação.',
       targetSelector: '#new-arena-name-input',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 10,
@@ -152,8 +152,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'action-entry',
-      title: 'Primeira acao',
-      text: 'Perfeito. Sua arena abriu. Agora crie a primeira acao real dentro dela.',
+      title: 'Primeira ação',
+      text: 'Perfeito. Sua arena abriu. Agora crie a primeira ação real dentro dela.',
       targetSelector: '#add-action-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       autoAdvanceSelector: '#onboarding-action-name-input',
@@ -161,40 +161,40 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'action-name',
-      title: 'Titulo da acao',
-      text: 'Comece pelo titulo. Esse e o unico ponto realmente obrigatorio agora. O resto pode ser ajustado sem pressa.',
+      title: 'Título da ação',
+      text: 'Comece pelo título. Esse é o único ponto realmente obrigatório agora. O resto pode ser ajustado sem pressa.',
       targetSelector: '#onboarding-action-name-input',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
       id: 'action-type',
-      title: 'Tipo da acao',
-      text: 'Aqui voce escolhe o formato da acao. Pode tocar e experimentar, ou seguir para frente quando entender a logica.',
+      title: 'Tipo da ação',
+      text: 'Aqui você escolhe o formato da ação. Pode tocar e experimentar, ou seguir para frente quando entender a lógica.',
       targetSelector: '#onboarding-action-type-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
       id: 'action-reps',
-      title: 'Repeticoes',
-      text: 'Se a acao for recorrente, ajuste quantas repeticoes ela pede. Se nao for o caso, eu pulo esse passo.',
+      title: 'Repetições',
+      text: 'Se a ação for recorrente, ajuste quantas repetições ela pede. Se não for o caso, eu pulo esse passo.',
       targetSelector: '#onboarding-action-repetitions',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
       id: 'action-duration',
-      title: 'Duracao base',
-      text: 'Defina uma duracao base simples. Ela ajuda o planner a estimar carga sem complicar seu fluxo.',
+      title: 'Duração base',
+      text: 'Defina uma duração base simples. Ela ajuda o planner a estimar carga sem complicar seu fluxo.',
       targetSelector: '#onboarding-action-duration',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
       id: 'action-save',
-      title: 'Salvar acao',
-      text: 'Quando estiver pronta, confirme aqui. Eu levo voce para o planner assim que a acao for criada.',
+      title: 'Salvar ação',
+      text: 'Quando estiver pronta, confirme aqui. Eu levo você para o planner assim que a ação for criada.',
       targetSelector: '#onboarding-action-save-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       waitForEvent: FIRST_USE_ONBOARDING_EVENTS.actionCreated,
@@ -204,7 +204,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'planner-pool',
       title: 'Planner',
-      text: 'Sua primeira acao agora aparece pronta para uso. Voce pode arrastar para agendar ou segurar para concluir no fluxo do dia.',
+      text: 'Sua primeira ação agora aparece pronta para uso. Você pode arrastar para agendar ou segurar para concluir no fluxo do dia.',
       targetSelector: createdActionId ? `[data-action-id="${createdActionId}"]` : '#planner-pool',
       navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 14,
@@ -212,7 +212,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'rest-entry',
       title: 'Tela de descanso',
-      text: 'Esse atalho abre a camada do dia. Toque aqui quando quiser entrar no painel vivo do agora.',
+      text: 'Esse atalho abre a tela de descanso. Toque aqui quando quiser entrar no Painel Diário do agora.',
       targetSelector: '#lock-icon-button',
       navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
       autoAdvanceSelector: '#sitrep-embedded-card',
@@ -220,8 +220,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'sitrep-card',
-      title: 'SITREP',
-      text: 'Aqui voce acompanha o dia de hoje. Nao precisa travar nada agora. O importante e saber onde o fluxo diario mora.',
+      title: 'Painel Diário',
+      text: 'Aqui você acompanha o dia de hoje. Não precisa mexer em tudo agora. O importante é saber onde o fluxo diário mora e como destravar essa camada quando quiser agir.',
       targetSelector: '#sitrep-embedded-card',
       navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
       padding: 14,
@@ -229,8 +229,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'finish',
       title: 'Base pronta',
-      text: 'Sua base inicial esta pronta. Se quiser entender o resto do sistema, os outros tutoriais continuam em Configuracoes > Tutoriais.',
-      navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
+      text: 'Sua base inicial está pronta. Você já pode começar por esta tela. Se quiser revisar o resto depois, o tutorial continua em Configurações > Tutoriais.',
+      navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
       final: true,
     },
   ], [createdActionId, createdArenaId]);
@@ -393,7 +393,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }
 
     if (step.final) {
-      window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { ...defaultNavigation, view: 'planner' } }));
       onComplete();
       return;
     }
@@ -499,10 +498,10 @@ export const FirstUseOnboardingOverlay: React.FC<{
                     {isTyping && <span className="animate-pulse inline-block w-1 h-3 md:w-1.5 md:h-4 bg-[#f3d48a] ml-1 align-middle opacity-80" />}
                   </p>
 
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <div className="text-[9px] md:text-[11px] text-gray-500 tracking-[0.08em]">
-                      {step.hideNext ? (step.autoAdvanceSelector ? 'Toque no destaque para abrir o proximo passo.' : 'Salve no app para eu seguir sozinho.') : step.id === 'action-name' && !canAdvance ? 'Preencha o titulo para liberar o proximo passo.' : 'Voce pode tocar no app e seguir no seu ritmo.'}
-                    </div>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <div className="text-[9px] md:text-[11px] text-gray-500 tracking-[0.08em]">
+                      {step.hideNext ? (step.autoAdvanceSelector ? 'Toque no destaque para abrir o próximo passo.' : 'Salve no app para eu seguir sozinho.') : step.id === 'action-name' && !canAdvance ? 'Preencha o título para liberar o próximo passo.' : 'Você pode tocar no app e seguir no seu ritmo.'}
+                        </div>
 
                     {!step.hideNext && (
                       <button
@@ -510,7 +509,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
                         disabled={!canAdvance}
                         className="shrink-0 rounded-full border border-[#f3d48a]/35 bg-[#f3d48a]/12 px-4 py-2 text-[10px] md:text-[11px] font-black uppercase tracking-[0.18em] text-[#f6dfab] transition hover:bg-[#f3d48a]/20 disabled:opacity-40 disabled:hover:bg-[#f3d48a]/12"
                       >
-                        {step.final ? 'Concluir' : 'Proximo'}
+                        {step.final ? 'Concluir' : 'Próximo'}
                       </button>
                     )}
                   </div>

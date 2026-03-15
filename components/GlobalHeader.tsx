@@ -166,10 +166,10 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                 <button
                                     id="lock-icon-button"
                                     onClick={() => setRestScreenOpen(true)}
-                                    className="shell-float-button absolute right-full mr-2 group"
+                                    className="shell-float-button absolute right-full mr-2 group border border-[var(--skin-accent-color)]/30 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),rgba(0,0,0,0.82))] shadow-[0_0_18px_rgba(212,175,55,0.22)] hover:shadow-[0_0_24px_rgba(212,175,55,0.32)]"
                                     aria-label="Tela de Descanso"
                                 >
-                                    <LockIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                                    <LockIcon className="w-4 h-4 text-[var(--skin-accent-color)] group-hover:text-white transition-colors drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
                                 </button>
 
                                 <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0" id="nobility-badge">

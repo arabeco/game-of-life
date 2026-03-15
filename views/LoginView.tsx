@@ -20,6 +20,7 @@ export const LoginView: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [goldenInviteGuide, setGoldenInviteGuide] = useState<{ title: string; text: string } | null>(null);
     const [installPromptAvailable, setInstallPromptAvailable] = useState(() => Boolean(getInstallPrompt()));
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
     const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
@@ -40,7 +41,40 @@ export const LoginView: React.FC = () => {
         setAcceptedLegal(false);
         setMessage(null);
         setError(redirectState.message);
+        if (redirectState.mode === 'signup') {
+            setGoldenInviteGuide({
+                title: 'Conta nova detectada',
+                text: 'Esse acesso ainda não tem conta no beta. Cole o Convite Dourado, crie seu perfil e depois, se quiser, entre também com Google.',
+            });
+        }
     }, []);
+
+    const findProfileAccess = async (identifier: string) => {
+        const normalizedIdentifier = identifier.trim();
+        if (!normalizedIdentifier) return null;
+
+        if (normalizedIdentifier.includes('@')) {
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('email, nickname')
+                .ilike('email', normalizedIdentifier)
+                .limit(1)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data ?? null;
+        }
+
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .select('email, nickname')
+            .ilike('nickname', normalizedIdentifier)
+            .limit(1)
+            .maybeSingle();
+
+        if (error) throw error;
+        return data ?? null;
+    };
 
     const getPasswordStrength = (pass: string) => {
         if (pass.length === 0) return { score: 0, label: '', color: 'bg-gray-800' };
@@ -55,7 +89,7 @@ export const LoginView: React.FC = () => {
 
     const handleSignUp = async () => {
         if (!acceptedLegal) {
-            setError('Voce precisa aceitar os Termos de Uso e a Politica de Privacidade para criar a conta.');
+            setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar a conta.');
             return;
         }
 
@@ -79,17 +113,18 @@ export const LoginView: React.FC = () => {
             inviteRecord = await SupabaseService.checkGoldenInvite(normalizedInvite);
             console.log('Resultado da busca segura:', inviteRecord);
             if (!inviteRecord) {
-                setError(`Convite Dourado "${normalizedInvite}" nao encontrado no banco de dados.`);
+                setError(`Convite Dourado "${normalizedInvite}" não encontrado no banco de dados.`);
                 return;
             }
             if (inviteRecord.is_used) {
-                setError('Convite Dourado ja utilizado.');
+                setError('Convite Dourado já utilizado.');
                 return;
             }
         }
         setLoading(true);
         setError(null);
         setMessage(null);
+        setGoldenInviteGuide(null);
 
         try {
             const { data, error } = await supabase.auth.signUp({
@@ -204,7 +239,7 @@ export const LoginView: React.FC = () => {
                     }]);
 
                 if (profileError) throw profileError;
-                setMessage('Cadastro realizado! Verifique seu email para confirmar a conta.');
+                setMessage('Cadastro realizado. Verifique seu e-mail para confirmar a conta.');
                 setIsSigningUp(false);
             }
         } catch (error: any) {
@@ -218,26 +253,26 @@ export const LoginView: React.FC = () => {
         setLoading(true);
         setError(null);
         setMessage(null);
+        setGoldenInviteGuide(null);
 
         try {
             const identifier = email.trim();
-            let emailForLogin = identifier;
+            const matchedProfile = await findProfileAccess(identifier);
 
-            if (!identifier.includes('@')) {
-                const { data: profileByNickname, error: nicknameLookupError } = await supabase
-                    .from('user_profiles')
-                    .select('email')
-                    .ilike('nickname', identifier)
-                    .limit(1)
-                    .maybeSingle();
-
-                if (nicknameLookupError) throw nicknameLookupError;
-                if (!profileByNickname?.email) throw new Error('Nickname não encontrado');
-
-                emailForLogin = profileByNickname.email;
+            if (!matchedProfile?.email) {
+                setIsSigningUp(true);
+                setPassword('');
+                setAcceptedLegal(false);
+                setError('Essa conta ainda não existe. Crie sua conta e informe o Convite Dourado primeiro.');
+                setGoldenInviteGuide({
+                    title: 'Primeiro acesso ao beta',
+                    text: 'Para entrar pela primeira vez, você precisa criar a conta com Convite Dourado. Depois disso, o login normal e o Google ficam liberados.',
+                });
+                setLoading(false);
+                return;
             }
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email: emailForLogin, password });
+            const { data, error } = await supabase.auth.signInWithPassword({ email: matchedProfile.email, password });
 
             if (error) throw error;
 
@@ -307,21 +342,45 @@ export const LoginView: React.FC = () => {
     };
 
     const handleGoogleLogin = async () => {
-        if (isGoldenInviteGateEnabled && isSigningUp) {
-            setError('Durante o beta fechado, crie sua conta com email e Convite Dourado. Depois o Google funciona para entrar.');
-            return;
-        }
-
-        if (isSigningUp && !acceptedLegal) {
-            setError('Voce precisa aceitar os Termos de Uso e a Politica de Privacidade para criar a conta.');
-            return;
-        }
-
         clearClosedBetaGoogleRedirect();
         setLoading(true);
         setError(null);
         setMessage(null);
+        setGoldenInviteGuide(null);
         try {
+            if (isGoldenInviteGateEnabled) {
+                const identifier = email.trim();
+
+                if (identifier) {
+                    const matchedProfile = await findProfileAccess(identifier);
+                    if (!matchedProfile?.email) {
+                        setIsSigningUp(true);
+                        setPassword('');
+                        setInviteCode('');
+                        setAcceptedLegal(false);
+                        setError('Essa conta ainda não existe. Informe o Convite Dourado e crie sua conta primeiro.');
+                        setGoldenInviteGuide({
+                            title: 'Google precisa de conta existente',
+                            text: 'No beta fechado, o Google entra em contas que já existem. Se ainda for seu primeiro acesso, crie a conta com Convite Dourado e depois volte para o Google.',
+                        });
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (matchedProfile.email !== identifier) {
+                        setEmail(matchedProfile.email);
+                    }
+                } else if (isSigningUp) {
+                    setError('Digite o e-mail da conta. Se ela ainda não existir, vamos pedir o Convite Dourado e criar primeiro.');
+                    setGoldenInviteGuide({
+                        title: 'Fluxo de criação',
+                        text: 'Informe seu e-mail, cole o Convite Dourado e finalize a criação da conta. Depois disso, o Google pode virar seu atalho de entrada.',
+                    });
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -344,7 +403,7 @@ export const LoginView: React.FC = () => {
         try {
             await promptForInstall();
         } catch (installError: any) {
-            setError(installError?.message || 'Nao foi possivel abrir a instalacao do app agora.');
+            setError(installError?.message || 'Não foi possível abrir a instalação do app agora.');
         }
     };
 
@@ -356,6 +415,7 @@ export const LoginView: React.FC = () => {
         setAcceptedLegal(false);
         setError(null);
         setMessage(null);
+        setGoldenInviteGuide(null);
     };
 
     const toggleMode = () => {
@@ -365,7 +425,7 @@ export const LoginView: React.FC = () => {
 
     const handleResetPassword = async () => {
         if (!email) {
-            setError('Digite seu email para recuperar a senha.');
+            setError('Digite seu e-mail para recuperar a senha.');
             return;
         }
         setLoading(true);
@@ -376,9 +436,9 @@ export const LoginView: React.FC = () => {
                 redirectTo: `${window.location.origin}/auth/callback`,
             });
             if (error) throw error;
-            setMessage('Email de recuperação enviado! Verifique sua caixa de entrada.');
+            setMessage('E-mail de recuperação enviado. Verifique sua caixa de entrada.');
         } catch (err: any) {
-            setError(err.message || 'Erro ao enviar email de recuperação.');
+            setError(err.message || 'Erro ao enviar e-mail de recuperação.');
         } finally {
             setLoading(false);
         }
@@ -423,15 +483,40 @@ export const LoginView: React.FC = () => {
                     GLYPH
                 </h1>
 
+                {isGoldenInviteGateEnabled && (goldenInviteGuide || isSigningUp) && (
+                    <div className="login-guide-card">
+                        <div className="login-guide-badge">BETA FECHADO</div>
+                        <h2 className="login-guide-title">{goldenInviteGuide?.title || 'Criação da conta'}</h2>
+                        <p className="login-guide-text">
+                            {goldenInviteGuide?.text || 'Cole o Convite Dourado, crie seu perfil e depois entre normalmente. O Google continua disponível depois que a conta existir.'}
+                        </p>
+                        <div className="login-guide-steps">
+                            <span>1. Convite Dourado</span>
+                            <span>2. Criar perfil</span>
+                            <span>3. Entrar</span>
+                        </div>
+                    </div>
+                )}
+
                 <div className="space-y-4">
                     <input
                         id="login-email-input"
                         type="text"
-                        placeholder="Email ou Nickname"
+                        placeholder="E-mail ou Nickname"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                     />
+                    {isSigningUp && isGoldenInviteGateEnabled && (
+                        <input
+                            id="login-invite-input"
+                            type="text"
+                            placeholder="Cole aqui seu Convite Dourado..."
+                            value={inviteCode}
+                            onChange={(e) => setInviteCode(e.target.value)}
+                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
+                        />
+                    )}
                     <div className="space-y-1">
                         <input
                             id="login-password-input"
@@ -477,16 +562,6 @@ export const LoginView: React.FC = () => {
                             className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
                         />
                     )}
-                    {isSigningUp && isGoldenInviteGateEnabled && (
-                        <input
-                            id="login-invite-input"
-                            type="text"
-                            placeholder="Cole aqui seu Convite Dourado..."
-                            value={inviteCode}
-                            onChange={(e) => setInviteCode(e.target.value)}
-                            className="w-full px-4 py-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors placeholder-gray-500"
-                        />
-                    )}
                     {isSigningUp && (
                         <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-left">
                             <input
@@ -513,7 +588,7 @@ export const LoginView: React.FC = () => {
                                     rel="noopener noreferrer"
                                     className="font-bold text-[var(--skin-accent-color)] underline underline-offset-2"
                                 >
-                                    Politica de Privacidade
+                                    Política de Privacidade
                                 </a>
                                 .
                             </span>
@@ -551,14 +626,12 @@ export const LoginView: React.FC = () => {
                                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                             </svg>
-                            <span className="text-sm">
-                                {isSigningUp ? 'Criar conta com Google' : 'Entrar com Google'}
-                            </span>
+                            <span className="text-sm">Entrar com Google</span>
                         </button>
 
                         <button
                             id="login-toggle-mode-button"
-                            onClick={() => setIsSigningUp(!isSigningUp)}
+                            onClick={toggleMode}
                             className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
                         >
                             {isSigningUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastrar'}

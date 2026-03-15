@@ -6,11 +6,36 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const ALLOWED_ORIGINS = (
   Deno.env.get("ALLOWED_ORIGINS") ||
-  "https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173"
+  "https://www.glyph.life,https://glyph.life,https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173"
 )
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+const isLocalDevOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+};
+
+const isVercelPreviewOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+};
+
+const isGlyphOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  return /^https:\/\/([a-z0-9-]+\.)?glyph\.life$/i.test(origin);
+};
+
+const isAllowedRequestOrigin = (origin: string | null): boolean => {
+  return (
+    !origin ||
+    ALLOWED_ORIGINS.includes(origin) ||
+    isLocalDevOrigin(origin) ||
+    isVercelPreviewOrigin(origin) ||
+    isGlyphOrigin(origin)
+  );
+};
 
 const buildCorsHeaders = (origin: string | null) => ({
   "Access-Control-Allow-Origin": origin || ALLOWED_ORIGINS[0] || "",
@@ -72,7 +97,7 @@ const listBucketFilesRecursively = async (
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
-  const isAllowedOrigin = !origin || ALLOWED_ORIGINS.includes(origin);
+  const isAllowedOrigin = isAllowedRequestOrigin(origin);
   const corsHeaders = buildCorsHeaders(origin && isAllowedOrigin ? origin : null);
 
   if (req.method === "OPTIONS") {

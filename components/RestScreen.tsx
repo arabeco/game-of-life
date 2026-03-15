@@ -150,6 +150,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const deepWorkOptions = ['15', '20', '25', '30', '40', '45', '50', '60', '90', '120'];
     const currentActionSessionTask = actionSession?.taskId ? tasks.find(task => task.id === actionSession.taskId) : null;
     const isActionSessionCompleted = Boolean(currentActionSessionTask?.completed);
+    const sitrepStatusLabel = isSitrepLocked ? 'Travado' : 'Liberado';
+    const sitrepStatusHint = isSitrepLocked
+        ? 'Toque no cadeado para liberar o Painel Diário e interagir com o dia.'
+        : 'Painel Diário liberado para concluir ações, revisar o ciclo e ajustar o fluxo.';
+    const unlockHint = isUnlocked ? 'Saindo...' : 'Segure 1s para desbloquear';
 
     useEffect(() => {
         if (showQuickActionInput && quickActionInputRef.current) {
@@ -868,26 +873,29 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    {isSitrepLocked && (
-                                        <div className="flex items-center gap-1.5 animate-fade-in">
-                                            <EyeIcon className="w-3 h-3 text-gray-500" />
-                                            <span className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">Visualização</span>
-                                        </div>
-                                    )}
+                                    <div className={`hidden sm:flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${isSitrepLocked ? 'border-amber-300/25 bg-amber-300/10 text-amber-200 shadow-[0_0_16px_rgba(251,191,36,0.10)]' : 'border-emerald-300/25 bg-emerald-300/10 text-emerald-200 shadow-[0_0_16px_rgba(52,211,153,0.10)]'}`}>
+                                        {isSitrepLocked ? <EyeIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
+                                        <span>{sitrepStatusLabel}</span>
+                                    </div>
                                     <button
                                         onClick={() => setIsSitrepLocked(!isSitrepLocked)}
-                                        className={`p-2 rounded-full transition-all ${isSitrepLocked
-                                            ? 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'
-                                            : 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border border-[var(--skin-accent-color)]/30'
+                                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all ${isSitrepLocked
+                                            ? 'border-amber-300/30 bg-amber-300/12 text-amber-100 shadow-[0_0_20px_rgba(251,191,36,0.14)] hover:bg-amber-300/18'
+                                            : 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border border-[var(--skin-accent-color)]/30 shadow-[0_0_20px_rgba(212,175,55,0.14)]'
                                             }`}
                                     >
                                         {isSitrepLocked ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
+                                        <span className="text-[9px] font-black uppercase tracking-[0.18em]">{sitrepStatusLabel}</span>
                                     </button>
                                 </div>
                             </div>
 
+                            <div className={`rounded-2xl border px-3 py-2 text-[10px] font-semibold leading-relaxed ${isSitrepLocked ? 'border-amber-300/20 bg-amber-300/8 text-amber-100/90' : 'border-emerald-300/20 bg-emerald-300/8 text-emerald-100/90'}`}>
+                                {sitrepStatusHint}
+                            </div>
+
                             {/* Content Area */}
-                            <div className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 ${isSitrepLocked ? 'opacity-80 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+                            <div className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 ${isSitrepLocked ? 'opacity-65 saturate-75 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
                                 <SitrepContent />
                             </div>
                         </GlassCard>
@@ -1056,7 +1064,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                         </button>
                     </div>
 
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center gap-2">
                         <button
                             onMouseDown={handleStartHold}
                             onMouseUp={handleEndHold}
@@ -1066,8 +1074,10 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             className="relative group active:scale-95 transition-transform duration-200"
                             style={{ WebkitTapHighlightColor: 'transparent' }}
                         >
+                            <div className="absolute inset-[-14px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,rgba(212,175,55,0.18)_28%,transparent_72%)] opacity-90 blur-md" />
+
                             {/* Progress Ring Background */}
-                            <div className="absolute inset-0 rounded-full border-2 border-white/5" />
+                            <div className="absolute inset-0 rounded-full border-2 border-white/10" />
 
                             {/* Progress Ring Active */}
                             <svg className="absolute inset-[-4px] -rotate-90 w-[calc(100%+8px)] h-[calc(100%+8px)] pointer-events-none" viewBox="0 0 100 100">
@@ -1086,15 +1096,23 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             </svg>
 
                             {/* Button Content */}
-                            <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center relative z-10 overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-[var(--skin-accent-color)]/5 to-transparent opacity-50" />
+                            <div className="w-[4.5rem] h-[4.5rem] rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.18),rgba(0,0,0,0.78))] backdrop-blur-md border border-[var(--skin-accent-color)]/35 flex items-center justify-center relative z-10 overflow-hidden shadow-[0_0_25px_rgba(212,175,55,0.20)]">
+                                <div className="absolute inset-0 bg-gradient-to-tr from-[var(--skin-accent-color)]/20 via-white/5 to-transparent opacity-90" />
                                 {isUnlocked ? (
-                                    <UnlockIcon className="w-6 h-6 text-[var(--skin-accent-color)] animate-unlock" />
+                                    <UnlockIcon className="w-7 h-7 text-[var(--skin-accent-color)] animate-unlock drop-shadow-[0_0_10px_var(--skin-accent-color)]" />
                                 ) : (
-                                    <LockIcon className="w-6 h-6 text-gray-500 group-active:text-[var(--skin-accent-color)] transition-colors duration-300" />
+                                    <LockIcon className="w-7 h-7 text-[var(--skin-accent-color)] group-active:text-white transition-colors duration-300 drop-shadow-[0_0_10px_var(--skin-accent-color)]" />
                                 )}
                             </div>
                         </button>
+                        <div className="flex flex-col items-center gap-0.5 text-center">
+                            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
+                                {unlockHint}
+                            </span>
+                            <span className="text-[10px] text-white/55">
+                                Solte antes de completar para cancelar.
+                            </span>
+                        </div>
                     </div>
                 </div>
 

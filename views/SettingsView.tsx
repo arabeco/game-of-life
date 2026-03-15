@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+﻿import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
@@ -1145,6 +1145,14 @@ const GeralTab: React.FC = () => {
             localStorage.removeItem(`${STORAGE_KEY_ASSET_LEVELS}_${userProfile.id}`);
         }
 
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+            const key = localStorage.key(index);
+            if (!key) continue;
+            if (key.startsWith('sb-') || key.includes('supabase.auth.token')) {
+                localStorage.removeItem(key);
+            }
+        }
+
         const { error } = await supabase.auth.signOut();
         if (error) {
             console.error("Error logging out:", error.message);
@@ -1159,7 +1167,7 @@ const GeralTab: React.FC = () => {
         if (confirmation === null) return;
 
         if (confirmation.trim().toUpperCase() !== 'DELETAR') {
-            showToast('Exclusao cancelada. Digite DELETAR para confirmar.', 'info');
+            showToast('Exclusão cancelada. Digite DELETAR para confirmar.', 'info');
             return;
         }
 
@@ -1169,7 +1177,7 @@ const GeralTab: React.FC = () => {
         const result = await SupabaseService.deleteMyAccount();
         if (!result.success) {
             setIsDeletingAccount(false);
-            showToast(result.error || 'Nao foi possivel excluir a conta.', 'error');
+            showToast(result.error || 'Não foi possível excluir a conta.', 'error');
             return;
         }
 
@@ -1178,13 +1186,21 @@ const GeralTab: React.FC = () => {
             localStorage.removeItem(`${STORAGE_KEY_ASSET_LEVELS}_${userProfile.id}`);
         }
 
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+            const key = localStorage.key(index);
+            if (!key) continue;
+            if (key.startsWith('sb-') || key.includes('supabase.auth.token')) {
+                localStorage.removeItem(key);
+            }
+        }
+
         try {
             await supabase.auth.signOut({ scope: 'local' });
         } catch (error) {
             console.error('Error clearing local session after account deletion:', error);
         }
 
-        showToast('Conta excluida. Encerrando sessao...', 'success');
+        showToast('Conta excluída. Encerrando sessão...', 'success');
         window.setTimeout(() => window.location.reload(), 900);
     };
 
@@ -1389,7 +1405,7 @@ const GeralTab: React.FC = () => {
                 <ConfirmationModal
                     title="Deletar Conta"
                     message="Tem certeza? Esta ação é irreversível."
-                    onConfirm={() => alert('Conta deletada!')}
+                    onConfirm={handleDeleteAccount}
                     onCancel={() => setShowDeleteConfirm(false)}
                 />
             )}

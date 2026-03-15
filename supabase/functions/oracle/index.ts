@@ -2,11 +2,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
+const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") || "google/gemini-2.0-flash-001";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+const SITE_URL = Deno.env.get("SITE_URL") || "https://www.glyph.life";
 const ALLOWED_ORIGINS = (
   Deno.env.get("ALLOWED_ORIGINS") ||
-  "https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173"
+  "https://www.glyph.life,https://glyph.life,https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173"
 )
   .split(",")
   .map((o) => o.trim())
@@ -22,12 +24,18 @@ const isVercelPreviewOrigin = (origin: string | null): boolean => {
   return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
 };
 
+const isGlyphOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  return /^https:\/\/([a-z0-9-]+\.)?glyph\.life$/i.test(origin);
+};
+
 const isAllowedRequestOrigin = (origin: string | null): boolean => {
   return (
     !origin ||
     ALLOWED_ORIGINS.includes(origin) ||
     isLocalDevOrigin(origin) ||
-    isVercelPreviewOrigin(origin)
+    isVercelPreviewOrigin(origin) ||
+    isGlyphOrigin(origin)
   );
 };
 
@@ -90,7 +98,8 @@ serve(async (req) => {
     const body = await req.json();
     const systemPrompt = String(body?.systemPrompt || "").trim();
     const userPrompt = String(body?.userPrompt || "").trim();
-    const model = String(body?.model || "google/gemini-2.0-flash-001");
+    const model = String(body?.model || OPENROUTER_MODEL).trim() || OPENROUTER_MODEL;
+    const referer = origin || SITE_URL;
 
     if (!systemPrompt || !userPrompt) {
       return new Response(
@@ -104,6 +113,8 @@ serve(async (req) => {
       headers: {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": referer,
+        "X-Title": "GLYPH",
       },
       body: JSON.stringify({
         model,

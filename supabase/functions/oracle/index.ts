@@ -82,11 +82,19 @@ serve(async (req) => {
     );
   }
 
+  const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!accessToken) {
+    return new Response(
+      JSON.stringify({ error: "Missing bearer token." }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
+    auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: authData, error: authError } = await supabaseAuth.auth.getUser();
+  const { data: authData, error: authError } = await supabaseAuth.auth.getUser(accessToken);
   if (authError || !authData?.user) {
     return new Response(
       JSON.stringify({ error: "Unauthorized request." }),

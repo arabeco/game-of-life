@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { saveClosedBetaGoogleRedirect } from '../utils/closedBetaAuth';
+import { signOutAndClearSupabaseSession } from '../utils/authSession';
 
 const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 
@@ -31,7 +32,7 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
     });
 
     try {
-      await supabase.auth.signOut({ scope: 'local' });
+      await signOutAndClearSupabaseSession('local');
     } catch (signOutError) {
       console.error('Failed to clear local Google session after invite cancel:', signOutError);
     } finally {

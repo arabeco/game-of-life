@@ -14,6 +14,7 @@ import { CODEXES } from '../constants/items';
 import { Portal } from '../components/Portal';
 import { SupabaseService } from '../services/SupabaseService';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
+import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import './settings-ui.css';
 
 const OracleChat = lazy(() =>
@@ -1145,18 +1146,7 @@ const GeralTab: React.FC = () => {
             localStorage.removeItem(`${STORAGE_KEY_ASSET_LEVELS}_${userProfile.id}`);
         }
 
-        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
-            const key = localStorage.key(index);
-            if (!key) continue;
-            if (key.startsWith('sb-') || key.includes('supabase.auth.token')) {
-                localStorage.removeItem(key);
-            }
-        }
-
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            console.error("Error logging out:", error.message);
-        }
+        await signOutAndClearSupabaseSession('global');
 
         // Force reload to clear in-memory state and reset context
         window.location.reload();
@@ -1186,19 +1176,8 @@ const GeralTab: React.FC = () => {
             localStorage.removeItem(`${STORAGE_KEY_ASSET_LEVELS}_${userProfile.id}`);
         }
 
-        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
-            const key = localStorage.key(index);
-            if (!key) continue;
-            if (key.startsWith('sb-') || key.includes('supabase.auth.token')) {
-                localStorage.removeItem(key);
-            }
-        }
-
-        try {
-            await supabase.auth.signOut({ scope: 'local' });
-        } catch (error) {
-            console.error('Error clearing local session after account deletion:', error);
-        }
+        clearSupabaseSessionStorage();
+        await signOutAndClearSupabaseSession('local');
 
         showToast('Conta excluída. Encerrando sessão...', 'success');
         window.setTimeout(() => window.location.reload(), 900);

@@ -1,5 +1,5 @@
 ﻿# 🛰️ GLYPH STATUS: 1.003b (ESTADO DE SOBERANIA)
-**Data:** 14/03/2026 | **Fase:** FUNDAÇÃO (T1) | **Soberano:** Zee
+**Data:** 15/03/2026 | **Fase:** FUNDAÇÃO (T1 | MARCO 1: PROVA) | **Soberano:** Zee
 
 ## 1. ESTRUTURA (O CONSELHO)
 | Pilar | Peso | Agente | Estado |
@@ -13,7 +13,7 @@
 ## 2. SCORECARD DE AUDITORIA
 - **EXECUÇÃO REAL: 9.3** (Build/Type-check/Test ok. Core loop blindado. Baús/Catálogo coerentes).
 - **ID VISUAL: 9.1** (Histórico/Legado separados. Legado full-screen estruturado).
-- **FLUXO USUÁRIO: 9.0** (AssetsView otimizada. Pendente: Tutorial e polimento de miniaturas).
+- **FLUXO USUÁRIO: 9.1** (Smoke verde em onboarding, Oráculo e exclusão. Pendente: QA real de conta nova e polimento final).
 
 ## 3. CORE LOOP (O MOTOR)
 1. Criar Arena → 2. Criar Ação → 3. Jogar no Planner → 4. Usar Painel Diario (SITREP) → 5. Fechar o Dia → 6. Fechar Ciclo → 7. Revisar Histórico → 8. Abrir Legado.
@@ -61,5 +61,14 @@
 - **Painel Diario (SITREP)** interpreta o dia.
 - **Ciclo** interpreta a fase.
 - **Legado** interpreta a identidade.
+
+## 6. MAPA DE MARCOS
+- **Fase 0 - O Pré-Jogo (agora -> mar/2026):** preparar a base estrutural antes da prova de mercado.
+- **Marco 1 - Prova (mar -> dez/2026):** sair de projeto para produto validado com `1.000 usuarios`.
+- **T1 - Fundação (mar -> mai/2026):** `5 -> 20 -> 50 usuarios` com meta `60/30/20`.
+- **T2 - O Cerco (jun -> ago/2026):** publicar nas stores e atrair `300 usuarios externos`.
+- **T3 - A Ascensao (set -> dez/2026):** escalar e cravar `1.000 usuarios ativos`.
+- **Marco 2 - Coroa (jan -> jun/2027):** `5.000 -> 10.000 usuarios` e maquina de tração.
+- **Marco 3 - Soberania (jul -> dez/2027):** `50.000+ usuarios`, dominância de categoria e ecossistema.
 
 

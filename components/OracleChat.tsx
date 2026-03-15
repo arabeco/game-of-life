@@ -307,7 +307,16 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
 
     try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (sessionError || !accessToken) {
+        throw new Error('Sessao autenticada ausente para consultar o Oraculo.');
+      }
+
       const { data, error } = await supabase.functions.invoke('oracle', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: {
           systemPrompt,
           userPrompt: userMessage.content,

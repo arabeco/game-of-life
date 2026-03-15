@@ -1073,7 +1073,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // 7. Call AI via Edge Function (server-side secret)
         try {
+            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+            const accessToken = sessionData.session?.access_token;
+            if (sessionError || !accessToken) {
+                console.error('Oracle Edge Function skipped: authenticated session missing.');
+                return;
+            }
+
             const { data: oracleData, error: oracleError } = await supabase.functions.invoke('oracle', {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
                 body: {
                     systemPrompt,
                     userPrompt

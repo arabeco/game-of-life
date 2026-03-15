@@ -3,6 +3,19 @@ import { UserProfile, GoldenInvite, SovereignConfig, Notification } from '../typ
 
 // Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
+  private static async getFunctionAuthHeaders(): Promise<Record<string, string>> {
+    const { data, error } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+
+    if (error || !accessToken) {
+      throw new Error('Sessao autenticada ausente para chamar a funcao protegida.');
+    }
+
+    return {
+      Authorization: `Bearer ${accessToken}`,
+    };
+  }
+
   private static async readErrorContextBody(error: unknown): Promise<{ error?: string; details?: unknown } | null> {
     const response = (error as { context?: Response })?.context;
     if (!response) return null;
@@ -361,7 +374,9 @@ export class SupabaseService {
 
   static async deleteMyAccount(): Promise<{ success: boolean; error?: string }> {
     try {
+      const headers = await this.getFunctionAuthHeaders();
       const { data, error } = await supabase.functions.invoke('account-delete', {
+        headers,
         body: {},
       });
 

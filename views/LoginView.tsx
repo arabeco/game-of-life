@@ -6,6 +6,7 @@ import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../c
 import { clearClosedBetaGoogleRedirect, consumeClosedBetaGoogleRedirect } from '../utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
+import { signOutAndClearSupabaseSession } from '../utils/authSession';
 import './login-ui.css';
 
 const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
@@ -144,7 +145,7 @@ export const LoginView: React.FC = () => {
                     const consumed = await SupabaseService.consumeGoldenInviteCode(normalizedInvite, data.user.id);
                     if (!consumed) {
                         setError('Convite Dourado já utilizado.');
-                        await supabase.auth.signOut();
+                        await signOutAndClearSupabaseSession('local');
                         setLoading(false);
                         return;
                     }

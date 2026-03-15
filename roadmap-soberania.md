@@ -1,144 +1,46 @@
-﻿# ROADMAP DE SOBERANIA DO GLYPH
+============================================================
+           GLYPH: ROADMAP DEFINITIVO DE SOBERANIA
+============================================================
+STATUS: [ ] PLANEJAMENTO | [X] EXECUCAO
+DIRETRIZ: Um item por linha. Foco absoluto no progresso.
+============================================================
 
-## Leitura em 20 segundos
+------------------------------------------------------------
+FASE 0: O PRE-JOGO (Agora - Marco/2026)
+------------------------------------------------------------
+[x] A Terra: Dominio do site comprado e garantido.
+[ ] O Acordo: Contrato societario fechado (80% Trono / 20% Pilares).
 
-A progressao certa e esta:
+------------------------------------------------------------
+MARCO 1: PROVA (Marco - Dezembro/2026)
+Objetivo: Sair do projeto para produto validado com 1.000 usuarios.
+------------------------------------------------------------
+[ ] T1 (Fundacao | Mar-Mai): 5 -> 20 -> 50 usuarios (Meta: 60% ativam / 30% D2 / 20% fecham ciclo).
+[ ] O CNPJ: Abertura da LTDA para habilitar pagamentos reais na Loja/Forja.
+[ ] T2 (O Cerco | Jun-Ago): Publicar na Apple/Play Store e atrair 300 usuarios externos.
+[ ] Maquina Organica: Conteudo de lifestyle e bastidores do app bombando no TikTok, Reels e YouTube.
+[ ] O Cobaia: 1 Mentor externo operando de verdade e vendendo na Loja de Codex.
+[ ] T3 (A Ascensao | Set-Dez): Escalar e cravar 1.000 usuarios ativos operando liso.
+[ ] O Sangue: Validar a primeira Receita Recorrente Mensal (MRR).
 
-1. `Fundacao`: segurar `5 -> 20 -> 50`
-2. `Cerco`: chegar a `300 usuarios externos`
-3. `Ascensao`: bater `1.000 usuarios ativos`
-4. `Marco 2 - Coroa`: chegar a `5.000 -> 10.000 usuarios`
-5. `Marco 3 - Ascencao`: chegar a `50.000+ usuarios ativos`
+------------------------------------------------------------
+MARCO 2: COROA (Janeiro - Junho/2027)
+Objetivo: 5.000 a 10.000 usuarios e maquina de tracao financeira.
+------------------------------------------------------------
+[ ] O Salto: Multiplicar a base cravando de 5.000 a 10.000 usuarios ativos.
+[ ] Guerra de Clas: Megaevento competitivo de Temporada para gerar boca a boca agressivo.
+[ ] O Cartel: 5 mentores externos de peso faturando e retendo alunos no GLYPH.
+[ ] O Tubarao: Sair para captar investimento (Anjo/VC) ditando as regras do valuation.
 
-Os trimestres sao mini checkpoints.
-Os marcos sao as vitorias maiores.
+------------------------------------------------------------
+MARCO 3: SOBERANIA (Julho - Dezembro/2027)
+Objetivo: 50.000+ usuarios, dominancia de categoria e ecossistema.
+------------------------------------------------------------
+[ ] O Refatoramento: Reescrever arquitetura de servidores e DB para aguentar escala global.
+[ ] A Conquista: Bater a marca mestre de 50.000+ usuarios ativos na plataforma.
+[ ] A Fortaleza: Alugar e inaugurar o escritorio fisico (QG) unificando a diretoria.
+[ ] A Fronteira: Lancamento das versoes em Ingles e Espanhol para dominio internacional.
 
-## Trimestre 1 - A Fundacao (Marco - Maio)
-
-Foco:
-- `SENTINELA`
-- `PROTOCOLO`
-
-Objetivo:
-- provar onboarding
-- provar loop diario
-- provar retorno
-- fechar os primeiros ciclos
-
-Checkpoint principal:
-- `5 -> 20 -> 50 usuarios`
-
-Metricas de passagem:
-- `60%+` criam `1 arena + 1 acao + 1 tarefa`
-- `30%+` voltam no `D2`
-- `20%+` fecham `1 ciclo`
-
-Documento base:
-- `plano-marco-1.md`
-
-## Trimestre 2 - O Cerco (Junho - Agosto)
-
-Foco:
-- `DOMINIO`
-- `TESOURO`
-
-Objetivo:
-- sair do beta assistido
-- trazer gente de fora do circulo inicial
-- validar valor percebido no uso real
-
-Checkpoint principal:
-- `300 usuarios externos`
-
-Metricas de passagem:
-- `300 usuarios externos`
-- `D7` estavel nas cohorts novas
-- `1 Codex Mentor` testado em uso real
-
-Se passar:
-- o produto prova que consegue atrair e reter interesse fora da base inicial
-
-## Trimestre 3 - A Ascensao (Setembro - Dezembro)
-
-Foco:
-- escala
-- retencao
-- consolidacao de produto + operacao
-
-Objetivo:
-- sair da fase de projeto
-- provar que o app sustenta rotina recorrente
-- fechar 2026 com o `Marco 1` batido
-
-Checkpoint principal:
-- `1.000 usuarios ativos`
-
-Metricas de passagem:
-- `1.000 usuarios ativos`
-- `D7` e fechamento de ciclo estaveis
-- operacao com qualidade sem depender de improviso
-
-Se passar:
-- o GLYPH vira produto validado com base para expandir
-
-## Marco 1 - Prova (Marco - Dezembro 2026)
-
-Foco:
-- onboarding
-- retencao
-- saida do estado de projeto para produto validado
-
-Metricas de gloria:
-- `1.000 usuarios ativos`
-- `retencao e conclusao de ciclo em faixa estavel`
-
-Papeis chave:
-- `SENTINELA` na retencao
-- `DOMINIO` no organico
-
-## Marco 2 - Coroa (Janeiro - Junho 2027)
-
-Foco:
-- escala
-- autoridade
-- profissionalizacao da operacao
-
-Objetivo:
-- transformar o que funcionou em maquina repetivel
-- trazer mentores externos
-- consolidar governanca de produto
-
-Checkpoint principal:
-- `5.000 -> 10.000 usuarios`
-
-Metricas de passagem:
-- `20%` de crescimento MoM
-- `5.000 -> 10.000 usuarios`
-- `5 mentores externos` ativos na Loja de Codex
-
-## Marco 3 - Ascencao (Julho - Dezembro 2027)
-
-Foco:
-- expansao de ecossistema
-- dominancia de categoria
-- escala com identidade forte
-
-Objetivo:
-- transformar o GLYPH em infraestrutura padrao para mentores e comunidades de alta performance
-
-Checkpoint principal:
-- `50.000+ usuarios ativos`
-
-Metricas de passagem:
-- `50.000+ usuarios ativos`
-- operacao pronta para nova fase de escala
-- produto com posicionamento consolidado
-
-## Regra de leitura
-
-- se a Fundacao falhar, o resto e fantasia
-- se o Cerco falhar, a Ascensao vira promessa
-- se a Ascensao funcionar, Marco 2 e Marco 3 viram progressao natural
-
-
-
+============================================================
+REGRA DE LEITURA: Se a Fundacao falhar, o resto e fantasia.
+============================================================

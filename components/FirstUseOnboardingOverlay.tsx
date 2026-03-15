@@ -386,14 +386,14 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const handleNext = useCallback(() => {
     if (!step) return;
 
-    if (isTyping) {
-      setDisplayedText(step.text);
-      setIsTyping(false);
+    if (step.final) {
+      onComplete();
       return;
     }
 
-    if (step.final) {
-      onComplete();
+    if (isTyping) {
+      setDisplayedText(step.text);
+      setIsTyping(false);
       return;
     }
 
@@ -480,7 +480,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
                           {progress}
                         </span>
                       </div>
-                      <h3 className="text-[#f6dfab] font-bold uppercase tracking-[0.16em] text-[10px] md:text-sm leading-tight">
+                      <h3 id="first-use-onboarding-title" className="text-[#f6dfab] font-bold uppercase tracking-[0.16em] text-[10px] md:text-sm leading-tight">
                         {step.title}
                       </h3>
                     </div>
@@ -505,6 +505,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
                     {!step.hideNext && (
                       <button
+                        id="first-use-onboarding-next"
                         onClick={handleNext}
                         disabled={!canAdvance}
                         className="shrink-0 rounded-full border border-[#f3d48a]/35 bg-[#f3d48a]/12 px-4 py-2 text-[10px] md:text-[11px] font-black uppercase tracking-[0.18em] text-[#f6dfab] transition hover:bg-[#f3d48a]/20 disabled:opacity-40 disabled:hover:bg-[#f3d48a]/12"

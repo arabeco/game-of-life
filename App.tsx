@@ -7,6 +7,7 @@ import { SupabaseService } from './services/SupabaseService';
 import { saveClosedBetaGoogleRedirect } from './utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from './utils/envFlags';
 import { startInstallPromptCapture } from './utils/installPrompt';
+import { signOutAndClearSupabaseSession } from './utils/authSession';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then((m) => ({ default: m.LoginView })));
 const LegacyRenderView = React.lazy(() => import('./views/LegacyRenderView').then((m) => ({ default: m.LegacyRenderView })));
@@ -121,7 +122,7 @@ const App: React.FC = () => {
                     email: candidate.user.email || '',
                     message: 'Não foi possível validar seu acesso com Google agora. Tente novamente em instantes.',
                 });
-                await supabase.auth.signOut({ scope: 'local' });
+                await signOutAndClearSupabaseSession('local');
                 return null;
             }
 
@@ -169,7 +170,7 @@ const App: React.FC = () => {
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                     if ((event as string) === 'TOKEN_REFRESH_ERROR') {
-                        await supabase.auth.signOut();
+                        await signOutAndClearSupabaseSession('global');
                     }
                 } else if (event === 'PASSWORD_RECOVERY') {
                     setShowResetPassword(true);

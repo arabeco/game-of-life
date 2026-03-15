@@ -1,5 +1,5 @@
 ﻿# PROGRESSO HISTORICO: GLYPH
-Data de consolidacao: 14/03/2026
+Data de consolidacao: 15/03/2026
 Fonte: itens [v] removidos do relatorio operacional
 
 ## Entregas consolidadas
@@ -14,3 +14,4 @@ Fonte: itens [v] removidos do relatorio operacional
 [v] Reestruturar o card/modal de Season com foco em imagem, descricao e cards compactos.
 [v] Ajustar a customizacao de Soberano, Artefato, Glifo, Aura e Placa no perfil.
 [v] Renovar temporariamente os fundos Ouro e Prata do perfil com versoes escuras texturizadas.
+[v] Preparar os novos backgrounds `goldback`, `silverback`, `emeraldback`, `rubiback` e premium extras em `use assets`.

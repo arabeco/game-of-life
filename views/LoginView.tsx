@@ -167,9 +167,9 @@ export const LoginView: React.FC = () => {
 
             if (data.user) {
                 if (isGoldenInviteGateEnabled && inviteRecord) {
-                    const consumed = await SupabaseService.consumeGoldenInviteCode(normalizedInvite, data.user.id);
-                    if (!consumed) {
-                        setError('Convite Dourado já utilizado.');
+                    const consumeResult = await SupabaseService.consumeGoldenInviteCodeDetailed(normalizedInvite, data.user.id);
+                    if (!consumeResult.success) {
+                        setError(SupabaseService.describeGoldenInviteConsumeError(consumeResult.error));
                         await signOutAndClearSupabaseSession('local');
                         setLoading(false);
                         return;

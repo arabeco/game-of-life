@@ -8,6 +8,7 @@ import { saveClosedBetaGoogleRedirect } from './utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from './utils/envFlags';
 import { startInstallPromptCapture } from './utils/installPrompt';
 import { signOutAndClearSupabaseSession } from './utils/authSession';
+import { ensureClosedBetaUserProfile } from './utils/closedBetaProfile';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then((m) => ({ default: m.LoginView })));
 const LegacyRenderView = React.lazy(() => import('./views/LegacyRenderView').then((m) => ({ default: m.LegacyRenderView })));
@@ -133,6 +134,43 @@ const App: React.FC = () => {
                 return candidate;
             }
 
+            const accessStatus = await SupabaseService.getClosedBetaAccessStatus();
+            const hasProfile = accessStatus?.hasProfile === true || await hasUserProfile(candidate.user?.id);
+
+            if (accessStatus?.reentryBlocked && isGoogleSession(candidate)) {
+                saveClosedBetaGoogleRedirect({
+                    mode: 'login',
+                    email: candidate.user.email || '',
+                    message: 'Esta conta foi excluida e nao pode entrar novamente com este Google.',
+                });
+                const cleanupResult = await SupabaseService.deleteMyAccount({
+                    blockReentry: false,
+                    reason: 'deleted_account_reentry_cleanup',
+                });
+                if (!cleanupResult.success) {
+                    console.error('Failed to delete provisional Google reentry account after access status block:', cleanupResult.error);
+                }
+                await signOutAndClearSupabaseSession('local');
+                return null;
+            }
+
+            if (!hasProfile && accessStatus?.hasInvite) {
+                const repairResult = await ensureClosedBetaUserProfile(candidate);
+                if (repairResult.success) {
+                    setPendingGoogleInviteSession(null);
+                    return candidate;
+                }
+
+                console.error('Failed to rebuild user_profile for authenticated closed beta account:', repairResult.error);
+                saveClosedBetaGoogleRedirect({
+                    mode: 'login',
+                    email: candidate.user.email || '',
+                    message: repairResult.error || 'Seu acesso ja tinha Bilhete vinculado, mas nao consegui reconstruir o perfil agora.',
+                });
+                await signOutAndClearSupabaseSession('local');
+                return null;
+            }
+
             if (!isGoogleSession(candidate)) {
                 setPendingGoogleInviteSession(null);
                 return candidate;
@@ -154,26 +192,6 @@ const App: React.FC = () => {
                 });
                 if (!cleanupResult.success) {
                     console.error('Failed to delete provisional Google reentry account:', cleanupResult.error);
-                }
-                await signOutAndClearSupabaseSession('local');
-                return null;
-            }
-
-            const accessStatus = await SupabaseService.getClosedBetaAccessStatus();
-            const hasProfile = accessStatus?.hasProfile === true || await hasUserProfile(candidate.user?.id);
-
-            if (accessStatus?.reentryBlocked) {
-                saveClosedBetaGoogleRedirect({
-                    mode: 'login',
-                    email: candidate.user.email || '',
-                    message: 'Esta conta foi excluida e nao pode entrar novamente com este Google.',
-                });
-                const cleanupResult = await SupabaseService.deleteMyAccount({
-                    blockReentry: false,
-                    reason: 'deleted_account_reentry_cleanup',
-                });
-                if (!cleanupResult.success) {
-                    console.error('Failed to delete provisional Google reentry account after access status block:', cleanupResult.error);
                 }
                 await signOutAndClearSupabaseSession('local');
                 return null;

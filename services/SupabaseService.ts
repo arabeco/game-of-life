@@ -329,9 +329,33 @@ export class SupabaseService {
     }
   }
 
-  static async consumeGoldenInviteCode(code: string, userId: string): Promise<GoldenInvite | null> {
+  static describeGoldenInviteConsumeError(errorCode?: string | null): string {
+    switch (String(errorCode || '').toUpperCase()) {
+      case 'EMPTY_CODE':
+        return 'Insira seu Bilhete Dourado.';
+      case 'EMPTY_USER':
+      case 'USER_NOT_FOUND':
+        return 'Sua sessao Google nao foi reconhecida por completo. Tente entrar com Google novamente.';
+      case 'USER_MISMATCH':
+        return 'Essa sessao nao combina com a conta que esta validando o Bilhete. Entre com Google novamente.';
+      case 'INVITE_NOT_FOUND':
+        return 'Bilhete Dourado nao encontrado.';
+      case 'INVITE_ALREADY_USED':
+        return 'Esse Bilhete Dourado ja foi usado por outra conta.';
+      default:
+        return 'Nao consegui validar esse Bilhete Dourado agora.';
+    }
+  }
+
+  static async consumeGoldenInviteCodeDetailed(code: string, userId: string): Promise<{ success: boolean; invite: GoldenInvite | null; error?: string | null }> {
     const normalizedCode = code.trim();
-    if (!normalizedCode || !userId) return null;
+    if (!normalizedCode || !userId) {
+      return {
+        success: false,
+        invite: null,
+        error: !normalizedCode ? 'EMPTY_CODE' : 'EMPTY_USER',
+      };
+    }
 
     try {
       const { data, error } = await supabase.rpc('consume_golden_invite', {
@@ -341,15 +365,40 @@ export class SupabaseService {
 
       if (error) {
         console.error('Erro ao consumir convite via RPC:', error);
-        return null;
+        return {
+          success: false,
+          invite: null,
+          error: error.message || 'RPC_ERROR',
+        };
       }
 
-      const invite = (data as any)?.invite;
-      return this.mapGoldenInvite(invite);
-    } catch (error) {
+      const payload = data as any;
+      if (payload?.success === false) {
+        return {
+          success: false,
+          invite: this.mapGoldenInvite(payload?.invite),
+          error: typeof payload?.error === 'string' ? payload.error : 'UNKNOWN_ERROR',
+        };
+      }
+
+      return {
+        success: true,
+        invite: this.mapGoldenInvite(payload?.invite),
+        error: null,
+      };
+    } catch (error: any) {
       console.error('Erro inesperado ao consumir convite:', error);
-      return null;
+      return {
+        success: false,
+        invite: null,
+        error: error?.message || 'UNEXPECTED_ERROR',
+      };
     }
+  }
+
+  static async consumeGoldenInviteCode(code: string, userId: string): Promise<GoldenInvite | null> {
+    const result = await this.consumeGoldenInviteCodeDetailed(code, userId);
+    return result.success ? result.invite : null;
   }
 
   static async getClosedBetaAccessStatus(): Promise<{ authorized: boolean; hasInvite: boolean; hasProfile: boolean; reentryBlocked?: boolean; blockedReason?: string | null } | null> {

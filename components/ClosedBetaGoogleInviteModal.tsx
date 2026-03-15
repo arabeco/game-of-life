@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { saveClosedBetaGoogleRedirect } from '../utils/closedBetaAuth';
 import { signOutAndClearSupabaseSession } from '../utils/authSession';
-
-const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
+import { ensureClosedBetaUserProfile } from '../utils/closedBetaProfile';
 
 export const ClosedBetaGoogleInviteModal: React.FC<{
   session: Session;
@@ -55,87 +53,16 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
     setError(null);
 
     try {
-      const inviteRecord = await SupabaseService.checkGoldenInvite(normalizedInvite);
-      if (!inviteRecord) {
-        setError('Bilhete Dourado nao encontrado.');
+      const consumeResult = await SupabaseService.consumeGoldenInviteCodeDetailed(normalizedInvite, session.user.id);
+      if (!consumeResult.success) {
+        setError(SupabaseService.describeGoldenInviteConsumeError(consumeResult.error));
         setIsSubmitting(false);
         return;
       }
 
-      const consumedInvite = await SupabaseService.consumeGoldenInviteCode(normalizedInvite, session.user.id);
-      if (!consumedInvite) {
-        setError('Nao consegui vincular esse Bilhete Dourado a sua conta. Se ele ja foi usado por outra conta, sera preciso um novo bilhete.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      const fallbackNickname = String(
-        session.user.user_metadata?.full_name ||
-        session.user.user_metadata?.name ||
-        session.user.email?.split('@')[0] ||
-        'Soberano'
-      ).trim();
-
-      const profilePayload = {
-        id: session.user.id,
-        email: session.user.email || '',
-        nickname: fallbackNickname,
-        app_mode: null,
-        avatar_url: session.user.user_metadata?.avatar_url || `https://picsum.photos/seed/${session.user.id}/100/100`,
-        border: 'default',
-        level: 1,
-        background_url: `https://picsum.photos/seed/bg-${session.user.id}/400/150`,
-        is_online: true,
-        visible_widgets: ['consciencia.lema'],
-        skin: 'BASIC',
-        unlocked_skins: { BASIC: true },
-        unlocked_items: {
-          bodyStyles: {},
-          hairStyles: {
-            cachos: true,
-            medio_reto: true,
-            grunge_longo: true,
-            textured_crop: true,
-          },
-          outfits: {},
-          head_under_items: {},
-          helmets: {},
-          head_over_items: {},
-          artifacts: {},
-          codexes: {},
-          skins: {},
-          borders: {},
-          banners: {},
-          glyphs: {},
-          auras: {},
-          orbs: {
-            item_orb_1_002: true,
-          },
-          plates: {
-            item_plate_1_001: true,
-          },
-          ornament: {},
-          insignias: {},
-          ui_skins: { BASIC: true },
-        },
-        completed_season_missions: [PROFILE_FLAG_TERMS_PENDING],
-        nobility: { exp: 0, rankId: 'vagante' },
-        wallet: { gold: 0, fragments: 0 },
-        mood: 50,
-        chests: [],
-        starter_rewards_pending: true,
-        vanguard_welcome_pending: false,
-        vanguard_welcome_payload: {},
-        role: 'user',
-        is_premium: false,
-      };
-
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert([profilePayload], { onConflict: 'id' });
-
-      if (profileError) {
-        setError(profileError.message || 'Nao consegui criar seu perfil depois de validar o bilhete.');
+      const profileResult = await ensureClosedBetaUserProfile(session);
+      if (!profileResult.success) {
+        setError(profileResult.error || 'Nao consegui criar seu perfil depois de validar o bilhete.');
         setIsSubmitting(false);
         return;
       }

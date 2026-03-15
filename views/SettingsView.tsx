@@ -1164,7 +1164,10 @@ const GeralTab: React.FC = () => {
         setShowDeleteConfirm(false);
         setIsDeletingAccount(true);
 
-        const result = await SupabaseService.deleteMyAccount();
+        const result = await SupabaseService.deleteMyAccount({
+            blockReentry: true,
+            reason: 'user_requested_account_deletion',
+        });
         if (!result.success) {
             setIsDeletingAccount(false);
             showToast(result.error || 'Não foi possível excluir a conta.', 'error');

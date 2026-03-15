@@ -235,6 +235,13 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
   ], [createdActionId, createdArenaId]);
 
+  const stepIndexById = useMemo(() => {
+    return steps.reduce<Record<string, number>>((accumulator, currentStep, index) => {
+      accumulator[currentStep.id] = index;
+      return accumulator;
+    }, {});
+  }, [steps]);
+
   const step = active ? steps[currentStepIndex] : undefined;
 
   const bubblePosition = useMemo(() => {
@@ -377,6 +384,43 @@ export const FirstUseOnboardingOverlay: React.FC<{
     window.addEventListener(step.waitForEvent, handleEvent as EventListener);
     return () => window.removeEventListener(step.waitForEvent!, handleEvent as EventListener);
   }, [active, step?.id, step?.waitForEvent, advanceStep]);
+
+  useEffect(() => {
+    if (!active) return;
+
+    const jumpToAtLeast = (targetStepId: string) => {
+      const targetIndex = stepIndexById[targetStepId];
+      if (typeof targetIndex !== 'number') return;
+
+      setCurrentStepIndex((previous) => previous >= targetIndex ? previous : targetIndex);
+    };
+
+    const handleCycleCreated = () => {
+      jumpToAtLeast('arena-entry');
+    };
+
+    const handleArenaCreated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ arenaId?: string }>;
+      setCreatedArenaId(customEvent.detail?.arenaId || null);
+      jumpToAtLeast('action-entry');
+    };
+
+    const handleActionCreated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ actionId?: string }>;
+      setCreatedActionId(customEvent.detail?.actionId || null);
+      jumpToAtLeast('planner-pool');
+    };
+
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleCreated, handleCycleCreated as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, handleArenaCreated as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.actionCreated, handleActionCreated as EventListener);
+
+    return () => {
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleCreated, handleCycleCreated as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, handleArenaCreated as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.actionCreated, handleActionCreated as EventListener);
+    };
+  }, [active, stepIndexById]);
 
   const handleDismiss = useCallback(() => {
     window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { ...defaultNavigation, view: 'planner' } }));

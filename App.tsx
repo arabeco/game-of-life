@@ -94,6 +94,35 @@ const App: React.FC = () => {
             }
         };
 
+        const isGoogleSession = (candidate: Session): boolean => {
+            const directProvider = String(candidate.user?.app_metadata?.provider || '').toLowerCase();
+            const providerList = Array.isArray(candidate.user?.app_metadata?.providers)
+                ? candidate.user.app_metadata.providers.map((provider) => String(provider).toLowerCase())
+                : [];
+            const identityList = Array.isArray((candidate.user as { identities?: Array<{ provider?: string }> })?.identities)
+                ? ((candidate.user as { identities?: Array<{ provider?: string }> }).identities || []).map((identity) => String(identity?.provider || '').toLowerCase())
+                : [];
+
+            return directProvider === 'google' || providerList.includes('google') || identityList.includes('google');
+        };
+
+        const hasUserProfile = async (userId?: string | null) => {
+            if (!userId) return false;
+
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (error) {
+                console.warn('Failed to verify user profile after auth:', error);
+                return false;
+            }
+
+            return !!data?.id;
+        };
+
         const resolveClosedBetaSession = async (candidate: Session | null): Promise<Session | null> => {
             if (!candidate) return null;
 
@@ -104,26 +133,55 @@ const App: React.FC = () => {
                 return candidate;
             }
 
-            const provider = candidate.user?.app_metadata?.provider;
-            if (provider !== 'google') {
+            if (!isGoogleSession(candidate)) {
                 setPendingGoogleInviteSession(null);
                 return candidate;
             }
 
-            const accessStatus = await SupabaseService.getClosedBetaAccessStatus();
-            if (accessStatus?.authorized) {
-                setPendingGoogleInviteSession(null);
-                return candidate;
-            }
+            const deletedAccountBlock = candidate.user.email
+                ? await SupabaseService.getDeletedAccountBlockStatus(candidate.user.email)
+                : null;
 
-            if (!accessStatus) {
+            if (deletedAccountBlock?.blocked) {
                 saveClosedBetaGoogleRedirect({
                     mode: 'login',
                     email: candidate.user.email || '',
-                    message: 'Não foi possível validar seu acesso com Google agora. Tente novamente em instantes.',
+                    message: 'Esta conta foi excluida e nao pode entrar novamente com este Google.',
                 });
+                const cleanupResult = await SupabaseService.deleteMyAccount({
+                    blockReentry: false,
+                    reason: 'deleted_account_reentry_cleanup',
+                });
+                if (!cleanupResult.success) {
+                    console.error('Failed to delete provisional Google reentry account:', cleanupResult.error);
+                }
                 await signOutAndClearSupabaseSession('local');
                 return null;
+            }
+
+            const accessStatus = await SupabaseService.getClosedBetaAccessStatus();
+            const hasProfile = accessStatus?.hasProfile === true || await hasUserProfile(candidate.user?.id);
+
+            if (accessStatus?.reentryBlocked) {
+                saveClosedBetaGoogleRedirect({
+                    mode: 'login',
+                    email: candidate.user.email || '',
+                    message: 'Esta conta foi excluida e nao pode entrar novamente com este Google.',
+                });
+                const cleanupResult = await SupabaseService.deleteMyAccount({
+                    blockReentry: false,
+                    reason: 'deleted_account_reentry_cleanup',
+                });
+                if (!cleanupResult.success) {
+                    console.error('Failed to delete provisional Google reentry account after access status block:', cleanupResult.error);
+                }
+                await signOutAndClearSupabaseSession('local');
+                return null;
+            }
+
+            if (hasProfile) {
+                setPendingGoogleInviteSession(null);
+                return candidate;
             }
 
             setPendingGoogleInviteSession(candidate);

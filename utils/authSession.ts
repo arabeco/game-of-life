@@ -22,7 +22,13 @@ export const signOutAndClearSupabaseSession = async (scope: 'global' | 'local' =
   try {
     await supabase.auth.signOut({ scope });
   } catch (error) {
-    console.error('Supabase signOut failed while clearing session:', error);
+    const status = (error as { status?: number })?.status;
+    const message = String((error as { message?: string })?.message || '');
+    const isExpectedAfterDelete = status === 403 || message.includes('403') || message.toLowerCase().includes('session');
+
+    if (!isExpectedAfterDelete) {
+      console.error('Supabase signOut failed while clearing session:', error);
+    }
   } finally {
     clearSupabaseSessionStorage();
   }

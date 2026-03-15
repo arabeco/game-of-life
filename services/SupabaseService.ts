@@ -352,7 +352,7 @@ export class SupabaseService {
     }
   }
 
-  static async getClosedBetaAccessStatus(): Promise<{ authorized: boolean; hasInvite: boolean; hasProfile: boolean } | null> {
+  static async getClosedBetaAccessStatus(): Promise<{ authorized: boolean; hasInvite: boolean; hasProfile: boolean; reentryBlocked?: boolean; blockedReason?: string | null } | null> {
     try {
       const { data, error } = await supabase.rpc('get_closed_beta_access_status');
 
@@ -365,6 +365,8 @@ export class SupabaseService {
         authorized: !!(data as any)?.authorized,
         hasInvite: !!(data as any)?.has_invite,
         hasProfile: !!(data as any)?.has_profile,
+        reentryBlocked: !!(data as any)?.reentry_blocked,
+        blockedReason: typeof (data as any)?.blocked_reason === 'string' ? (data as any)?.blocked_reason : null,
       };
     } catch (error) {
       console.error('Erro inesperado ao validar sessao do beta fechado:', error);
@@ -372,12 +374,43 @@ export class SupabaseService {
     }
   }
 
-  static async deleteMyAccount(): Promise<{ success: boolean; error?: string }> {
+  static async getDeletedAccountBlockStatus(email: string): Promise<{ blocked: boolean; reason?: string | null; deletedAt?: string | null } | null> {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) return { blocked: false };
+
+    try {
+      const { data, error } = await supabase.rpc('get_deleted_account_block_status', {
+        p_email: normalizedEmail,
+      });
+
+      if (error) {
+        console.error('Erro ao verificar bloqueio de reentrada:', error);
+        return null;
+      }
+
+      return {
+        blocked: !!(data as any)?.blocked,
+        reason: typeof (data as any)?.reason === 'string' ? (data as any)?.reason : null,
+        deletedAt: typeof (data as any)?.deleted_at === 'string' ? (data as any)?.deleted_at : null,
+      };
+    } catch (error) {
+      console.error('Erro inesperado ao verificar bloqueio de reentrada:', error);
+      return null;
+    }
+  }
+
+  static async deleteMyAccount(options?: { blockReentry?: boolean; reason?: string }): Promise<{ success: boolean; error?: string }> {
+    const blockReentry = options?.blockReentry !== false;
+    const reason = options?.reason?.trim() || null;
+
     try {
       const headers = await this.getFunctionAuthHeaders();
       const { data, error } = await supabase.functions.invoke('account-delete', {
         headers,
-        body: {},
+        body: {
+          blockReentry,
+          reason,
+        },
       });
 
       if (!error) {
@@ -402,37 +435,71 @@ export class SupabaseService {
       if (!canFallbackToRpc) {
         return {
           success: false,
-          error: contextualMessage || (responseStatus ? `Não foi possível excluir a conta. HTTP ${responseStatus}.` : 'Não foi possível excluir a conta.'),
+          error: contextualMessage || (responseStatus ? `Nao foi possivel excluir a conta. HTTP ${responseStatus}.` : 'Nao foi possivel excluir a conta.'),
         };
       }
 
-      const { data: rpcData, error: rpcError } = await supabase.rpc('delete_my_account');
+      const { data: rpcData, error: rpcError } = await supabase.rpc('delete_my_account_with_policy', {
+        p_block_reentry: blockReentry,
+        p_reason: reason,
+      });
+
       if (rpcError) {
         console.error('Erro ao excluir conta via RPC:', rpcError);
         const rpcMessage = String(rpcError.message || '');
+
+        if (
+          rpcMessage.includes('Could not find the function public.delete_my_account_with_policy') ||
+          rpcMessage.includes('delete_my_account_with_policy(')
+        ) {
+          const { data: legacyRpcData, error: legacyRpcError } = await supabase.rpc('delete_my_account');
+          if (legacyRpcError) {
+            console.error('Erro ao excluir conta via RPC legada:', legacyRpcError);
+            const legacyMessage = String(legacyRpcError.message || '');
+            if (
+              legacyMessage.includes('Could not find the function public.delete_my_account') ||
+              legacyMessage.includes('delete_my_account without parameters')
+            ) {
+              return {
+                success: false,
+                error: 'A exclusao caiu no plano B, mas a RPC de suporte nao esta instalada neste projeto. Precisamos publicar a Edge Function account-delete corretamente ou rodar o SQL de suporte da exclusao.',
+              };
+            }
+
+            return { success: false, error: legacyMessage || 'Nao foi possivel excluir a conta.' };
+          }
+
+          if ((legacyRpcData as any)?.success === false) {
+            return { success: false, error: (legacyRpcData as any)?.error || 'Nao foi possivel excluir a conta.' };
+          }
+
+          return { success: true };
+        }
+
         if (
           rpcMessage.includes('Could not find the function public.delete_my_account') ||
           rpcMessage.includes('delete_my_account without parameters')
         ) {
           return {
             success: false,
-            error: 'A exclusão caiu no plano B, mas a RPC delete_my_account() não está instalada neste projeto. Precisamos publicar a Edge Function account-delete corretamente ou rodar o SQL de suporte da exclusão.',
+            error: 'A exclusao caiu no plano B, mas a RPC delete_my_account() nao esta instalada neste projeto. Precisamos publicar a Edge Function account-delete corretamente ou rodar o SQL de suporte da exclusao.',
           };
         }
 
-        return { success: false, error: rpcMessage || 'Não foi possível excluir a conta.' };
+        return { success: false, error: rpcMessage || 'Nao foi possivel excluir a conta.' };
       }
 
       if ((rpcData as any)?.success === false) {
-        return { success: false, error: (rpcData as any)?.error || 'Não foi possível excluir a conta.' };
+        return { success: false, error: (rpcData as any)?.error || 'Nao foi possivel excluir a conta.' };
       }
 
       return { success: true };
     } catch (error) {
       console.error('Erro inesperado ao excluir conta:', error);
-      return { success: false, error: (error as any)?.message || 'Não foi possível excluir a conta.' };
+      return { success: false, error: (error as any)?.message || 'Nao foi possivel excluir a conta.' };
     }
   }
+
   static async getFeedbackReports(): Promise<any[]> {
     try {
       const { data, error } = await supabase
@@ -451,3 +518,4 @@ export class SupabaseService {
     }
   }
 }
+

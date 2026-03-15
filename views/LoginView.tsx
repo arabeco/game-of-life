@@ -35,17 +35,24 @@ export const LoginView: React.FC = () => {
         const redirectState = consumeClosedBetaGoogleRedirect();
         if (!redirectState) return;
 
-        setIsSigningUp(redirectState.mode === 'signup');
-        setEmail(redirectState.email || '');
+        const isSignupRedirect = redirectState.mode === 'signup';
+        setIsSigningUp(isSignupRedirect);
+        setEmail(isSignupRedirect ? (redirectState.email || '') : '');
         setPassword('');
+        setNickname('');
         setInviteCode('');
         setAcceptedLegal(false);
         setMessage(null);
         setError(redirectState.message);
-        if (redirectState.mode === 'signup') {
+        if (isSignupRedirect) {
             setGoldenInviteGuide({
                 title: 'Conta nova detectada',
                 text: 'Esse acesso ainda não tem conta no beta. Se vier pelo Google, o app vai pedir seu Bilhete Dourado logo depois da autenticação.',
+            });
+        } else if (redirectState.email) {
+            setGoldenInviteGuide({
+                title: 'Acesso com Google',
+                text: 'Para entrar com Google no primeiro acesso, voce nao precisa preencher e-mail, nickname ou senha aqui. Ignore os campos abaixo, toque em Entrar com Google e valide o Bilhete Dourado no modal.',
             });
         }
     }, []);
@@ -88,6 +95,14 @@ export const LoginView: React.FC = () => {
         return { score: 2, label: 'MÉDIA', color: 'bg-yellow-500' };
     };
 
+    const isDeletedAccountBlocked = async (rawEmail: string) => {
+        const normalizedEmail = rawEmail.trim();
+        if (!normalizedEmail || !normalizedEmail.includes('@')) return false;
+
+        const blockStatus = await SupabaseService.getDeletedAccountBlockStatus(normalizedEmail);
+        return !!blockStatus?.blocked;
+    };
+
     const handleSignUp = async () => {
         if (!acceptedLegal) {
             setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar a conta.');
@@ -96,6 +111,11 @@ export const LoginView: React.FC = () => {
 
         const normalizedInvite = inviteCode.trim();
         let inviteRecord: GoldenInvite | null = null;
+
+        if (await isDeletedAccountBlocked(email)) {
+            setError('Essa conta foi excluida e nao pode criar um novo acesso com este e-mail.');
+            return;
+        }
 
         if (isGoldenInviteGateEnabled && !normalizedInvite) {
             setError('Informe um Convite Dourado.');
@@ -258,6 +278,13 @@ export const LoginView: React.FC = () => {
 
         try {
             const identifier = email.trim();
+
+            if (await isDeletedAccountBlocked(identifier)) {
+                setError('Essa conta foi excluida e nao pode entrar novamente com este e-mail.');
+                setLoading(false);
+                return;
+            }
+
             const matchedProfile = await findProfileAccess(identifier);
 
             if (!matchedProfile?.email) {
@@ -267,7 +294,7 @@ export const LoginView: React.FC = () => {
                 setError('Essa conta ainda não existe. Crie sua conta e informe o Convite Dourado primeiro.');
                 setGoldenInviteGuide({
                     title: 'Primeiro acesso ao beta',
-                    text: 'Para entrar pela primeira vez, você precisa criar a conta com Convite Dourado. Depois disso, o login normal e o Google ficam liberados.',
+                    text: 'Voce pode criar a conta com Convite Dourado ou, se preferir, ignorar os campos abaixo e tocar em Entrar com Google. Nesse caso, o Bilhete Dourado sera pedido depois da autenticacao.',
                 });
                 setLoading(false);
                 return;
@@ -365,6 +392,18 @@ export const LoginView: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePrimarySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (loading) return;
+
+        if (isSigningUp) {
+            await handleSignUp();
+            return;
+        }
+
+        await handleLogin();
     };
 
     const handleInstallApp = async () => {
@@ -466,7 +505,7 @@ export const LoginView: React.FC = () => {
                     </div>
                 )}
 
-                <div className="space-y-4">
+                <form className="space-y-4" onSubmit={handlePrimarySubmit}>
                     <input
                         id="login-email-input"
                         type="text"
@@ -512,6 +551,7 @@ export const LoginView: React.FC = () => {
                         {!isSigningUp && (
                             <div className="flex justify-end px-1">
                                 <button
+                                    type="button"
                                     onClick={handleResetPassword}
                                     className="text-[10px] font-bold text-white/40 hover:text-[var(--skin-accent-color)] transition-colors uppercase tracking-widest"
                                 >
@@ -562,15 +602,12 @@ export const LoginView: React.FC = () => {
                             </span>
                         </label>
                     )}
-                </div>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    {message && <p className="text-green-400 text-sm">{message}</p>}
 
-                {error && <p className="text-red-500 text-sm">{error}</p>}
-                {message && <p className="text-green-400 text-sm">{message}</p>}
-
-                <div className="space-y-4">
                     <button
                         id="login-submit-button"
-                        onClick={isSigningUp ? handleSignUp : handleLogin}
+                        type="submit"
                         disabled={loading}
                         className="login-primary-button luxe-skin-button flex items-center justify-center gap-2 text-sm font-black transition-all"
                     >
@@ -584,6 +621,7 @@ export const LoginView: React.FC = () => {
                     <div className="flex flex-col gap-3">
                         <button
                             id="login-google-button"
+                            type="button"
                             onClick={handleGoogleLogin}
                             disabled={loading}
                             className="login-google-button"
@@ -598,19 +636,20 @@ export const LoginView: React.FC = () => {
                         </button>
                         {isGoldenInviteGateEnabled && (
                             <p className="px-3 text-[11px] leading-relaxed text-white/45">
-                                No primeiro acesso com Google, o app pede seu Bilhete Dourado logo depois da autenticação.
+                                No primeiro acesso com Google, o app pede seu Bilhete Dourado so depois da autenticacao. Voce nao precisa preencher os campos acima para isso.
                             </p>
                         )}
 
                         <button
                             id="login-toggle-mode-button"
+                            type="button"
                             onClick={toggleMode}
                             className="w-full py-2 text-white/60 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
                         >
                             {isSigningUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastrar'}
                         </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     );

@@ -124,6 +124,13 @@ serve(async (req) => {
     );
   }
 
+  let payload: { blockReentry?: boolean; reason?: string } = {};
+  try {
+    payload = await req.json();
+  } catch {
+    payload = {};
+  }
+
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     return new Response(
@@ -156,6 +163,10 @@ serve(async (req) => {
   }
 
   const userId = authData.user.id;
+  const userEmail = String(authData.user.email || "").trim();
+  const userProvider = String(authData.user.app_metadata?.provider || authData.user.user_metadata?.provider || "").trim();
+  const blockReentry = payload.blockReentry !== false;
+  const deletionReason = typeof payload.reason === "string" && payload.reason.trim() ? payload.reason.trim() : null;
   const storagePrefixes = [`slots/${userId}`];
   let deletionRequestId: number | null = null;
   let removedFiles: string[] = [];
@@ -169,6 +180,8 @@ serve(async (req) => {
         metadata: {
           deleted_via: "edge_function",
           storage_prefixes: storagePrefixes,
+          block_reentry: blockReentry,
+          reason: deletionReason,
         },
       })
       .select("id")
@@ -179,6 +192,41 @@ serve(async (req) => {
     }
 
     deletionRequestId = Number(deletionRequest.id);
+
+    if (!blockReentry) {
+      const { data: releaseData, error: releaseError } = await supabaseAdmin.rpc("release_golden_invite_claim_for_user", {
+        p_user_id: userId,
+      });
+
+      if (releaseError) {
+        throw new Error(`Failed to release provisional golden invite: ${releaseError.message}`);
+      }
+
+      if (releaseData?.success === false) {
+        throw new Error(releaseData.error || "Failed to release provisional golden invite.");
+      }
+    }
+
+    if (blockReentry && userEmail) {
+      const { data: blockData, error: blockError } = await supabaseAdmin.rpc("register_deleted_account_block", {
+        p_email: userEmail,
+        p_user_id: userId,
+        p_provider: userProvider || null,
+        p_reason: deletionReason || "user_requested_account_deletion",
+        p_metadata: {
+          source: "account-delete-edge-function",
+          request_id: deletionRequestId,
+        },
+      });
+
+      if (blockError) {
+        throw new Error(`Failed to register deleted account block: ${blockError.message}`);
+      }
+
+      if (blockData?.success === false) {
+        throw new Error(blockData.error || "Failed to register deleted account block.");
+      }
+    }
 
     for (const prefix of storagePrefixes) {
       const files = await listBucketFilesRecursively(supabaseAdmin, "user-images", prefix);
@@ -220,6 +268,8 @@ serve(async (req) => {
             storage_prefixes: storagePrefixes,
             storage_removed_count: removedFiles.length,
             auth_deleted: true,
+            block_reentry: blockReentry,
+            reason: deletionReason,
           },
         })
         .eq("id", deletionRequestId);
@@ -242,6 +292,8 @@ serve(async (req) => {
             deleted_via: "edge_function",
             storage_prefixes: storagePrefixes,
             storage_removed_count: removedFiles.length,
+            block_reentry: blockReentry,
+            reason: deletionReason,
             error: message,
           },
         })

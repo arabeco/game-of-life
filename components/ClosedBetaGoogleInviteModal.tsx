@@ -20,15 +20,18 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
     setIsSubmitting(true);
     setError(null);
 
-    const deletionResult = await SupabaseService.deleteMyAccount();
+    const deletionResult = await SupabaseService.deleteMyAccount({
+      blockReentry: false,
+      reason: 'closed_beta_google_invite_cancel',
+    });
     if (!deletionResult.success) {
       console.error('Failed to delete provisional Google account after invite cancel:', deletionResult.error);
     }
 
     saveClosedBetaGoogleRedirect({
-      mode: 'signup',
+      mode: 'login',
       email: session.user.email || '',
-      message: 'O acesso com Google foi encerrado porque o Bilhete Dourado não foi validado.',
+      message: 'O acesso com Google foi encerrado porque o Bilhete Dourado nao foi validado. Quando tiver um bilhete, toque em Entrar com Google novamente.',
     });
 
     try {
@@ -54,20 +57,14 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
     try {
       const inviteRecord = await SupabaseService.checkGoldenInvite(normalizedInvite);
       if (!inviteRecord) {
-        setError('Bilhete Dourado não encontrado.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (inviteRecord.is_used) {
-        setError('Bilhete Dourado já utilizado.');
+        setError('Bilhete Dourado nao encontrado.');
         setIsSubmitting(false);
         return;
       }
 
       const consumedInvite = await SupabaseService.consumeGoldenInviteCode(normalizedInvite, session.user.id);
       if (!consumedInvite) {
-        setError('Não consegui vincular esse Bilhete Dourado à sua conta.');
+        setError('Nao consegui vincular esse Bilhete Dourado a sua conta. Se ele ja foi usado por outra conta, sera preciso um novo bilhete.');
         setIsSubmitting(false);
         return;
       }
@@ -138,14 +135,14 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
         .upsert([profilePayload], { onConflict: 'id' });
 
       if (profileError) {
-        setError(profileError.message || 'Não consegui criar seu perfil depois de validar o bilhete.');
+        setError(profileError.message || 'Nao consegui criar seu perfil depois de validar o bilhete.');
         setIsSubmitting(false);
         return;
       }
 
       onComplete(session);
     } catch (submitError: any) {
-      setError(submitError?.message || 'Não consegui validar seu acesso agora.');
+      setError(submitError?.message || 'Nao consegui validar seu acesso agora.');
     } finally {
       setIsSubmitting(false);
     }
@@ -162,7 +159,7 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
             Insira seu Bilhete
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-white/68">
-            Seu Google entrou, mas esta conta ainda não foi liberada no beta. Valide o acesso com o Bilhete Dourado para continuar.
+            Seu Google entrou, mas esta conta ainda nao foi liberada no beta. Valide o acesso com o Bilhete Dourado para continuar.
           </p>
           <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/40">
             {session.user.email || 'Conta Google conectada'}

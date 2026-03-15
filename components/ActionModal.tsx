@@ -120,9 +120,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const [newAssetUrl, setNewAssetUrl] = useState('');
     const [mediaSlot, setMediaSlot] = useState({ imageUrl: '', caption: '' });
 
-    const handleTutorialNextFormStep = () => {
-        // No-op
-    }
+    const dispatchFirstUseEvent = (eventName: string, detail?: Record<string, unknown>) => {
+        if (!isNew || isPreview) return;
+        window.dispatchEvent(new CustomEvent(eventName, detail ? { detail } : undefined));
+    };
+
+    const handleTutorialNextFormStep = (eventName?: string, detail?: Record<string, unknown>) => {
+        if (!eventName) return;
+        dispatchFirstUseEvent(eventName, detail);
+    };
 
     useEffect(() => {
         return () => {
@@ -131,6 +137,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             }
         };
     }, []);
+
+    useEffect(() => {
+        if (!isNew || isPreview || mode !== 'edit') return;
+        dispatchFirstUseEvent(FIRST_USE_ONBOARDING_EVENTS.actionModalOpened);
+    }, [isNew, isPreview, mode]);
 
 
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
@@ -322,6 +333,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             setSelectedDate(null);
         }
         setIsActionTypePickerOpen(false);
+        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionTypeSelected, { actionType: type });
     }
     const handleArenaSelect = (id: string) => { setEditableAction(p => ({ ...p, arenaId: id })); setIsArenaPickerOpen(false); };
     const handleTimeSelect = (time: string) => { setStartTime(time); };
@@ -583,7 +595,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             type="text"
                                             placeholder="Nome da Ação"
                                             value={editableAction.name || ''}
-                                            onBlur={handleTutorialNextFormStep}
+                                            onBlur={(event) => {
+                                                if (!event.target.value.trim()) return;
+                                                const relatedTarget = event.relatedTarget as HTMLElement | null;
+                                                if (relatedTarget?.id === 'first-use-onboarding-next') return;
+                                                handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted);
+                                            }}
                                             onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
                                             className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-2 placeholder:text-gray-600"
                                         />
@@ -631,12 +648,28 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                                     label="Duração (Base)"
                                                     value={editableAction.duration || 60}
                                                     min={15} max={240} step={15} unit="min"
-                                                    onChange={val => { setEditableAction(p => ({ ...p, duration: val })); handleTutorialNextFormStep(); }}
+                                                    onChange={val => {
+                                                        setEditableAction(p => ({ ...p, duration: val }));
+                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, { duration: val });
+                                                    }}
                                                 />
                                             )}
 
                                             {editableAction.actionType === 'Ação Recorrente' && (
-                                                <StyledRangeInput containerId="onboarding-action-repetitions" inputRef={repsInputRef} label="Repetições" value={editableAction.repetitions || 1} min={1} max={50} step={1} unit="x" onChange={val => { setEditableAction(p => ({ ...p, repetitions: val })); handleTutorialNextFormStep(); }} />
+                                                <StyledRangeInput
+                                                    containerId="onboarding-action-repetitions"
+                                                    inputRef={repsInputRef}
+                                                    label="Repetições"
+                                                    value={editableAction.repetitions || 1}
+                                                    min={1}
+                                                    max={50}
+                                                    step={1}
+                                                    unit="x"
+                                                    onChange={val => {
+                                                        setEditableAction(p => ({ ...p, repetitions: val }));
+                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionRepetitionsAdjusted, { repetitions: val });
+                                                    }}
+                                                />
                                             )}
 
                                             <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3) - 1]} onChange={val => setEditableAction(p => ({ ...p, difficulty: val }))} />

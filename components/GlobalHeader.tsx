@@ -1,5 +1,5 @@
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
@@ -21,6 +21,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
     const [isRestScreenOpen, setRestScreenOpen] = useState(defaultRestScreenOpen);
     const [restScreenActionSession, setRestScreenActionSession] = useState<RestScreenActionSessionDetail | null>(null);
+    const hiddenAtRef = useRef<number | null>(null);
     const isBasicMode = appMode === 'BASIC';
     
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
@@ -50,6 +51,27 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
             setRestScreenOpen(false);
         }
     }, [defaultRestScreenOpen]);
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                hiddenAtRef.current = Date.now();
+                return;
+            }
+
+            const hiddenAt = hiddenAtRef.current;
+            hiddenAtRef.current = null;
+            if (!defaultRestScreenOpen || isRestScreenOpen || !hiddenAt) return;
+
+            const hiddenDuration = Date.now() - hiddenAt;
+            if (hiddenDuration >= 15000) {
+                setRestScreenOpen(true);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [defaultRestScreenOpen, isRestScreenOpen]);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);

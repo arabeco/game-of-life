@@ -720,6 +720,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const lastPointerPosRef = useRef<{ x: number; y: number } | null>(null);
     const lastScrollTopRef = useRef<number>(0);
     const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const dropAnchorOffsetRef = useRef(20);
     const bayAreaElRef = useRef<HTMLElement | null>(null);
     const dailyGridElRef = useRef<HTMLElement | null>(null);
     const weeklyGridElRef = useRef<HTMLElement | null>(null);
@@ -750,6 +751,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const pos = isTouchEvent ?{ x: event.touches[0].clientX, y: event.touches[0].clientY } : { x: event.clientX, y: event.clientY };
         const elemRect = draggedElementRef.current?.getBoundingClientRect();
         const offset = elemRect ?{ x: pos.x - elemRect.left, y: pos.y - elemRect.top } : { x: 0, y: 0 };
+        const elementHeight = elemRect?.height || Math.max(40, item.duration * scaleFactor);
+        dropAnchorOffsetRef.current = Math.min(Math.max(offset.y, 16), Math.min(32, elementHeight * 0.45));
         setIsMilestonePoolOpen(false);
         refreshDragTargets();
         if (scrollContainerRef.current) {
@@ -759,6 +762,18 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         dragOffsetRef.current = offset;
         setDragState({ isDragging: true, item, ghostElement, pointerOffset: offset, currentPosition: pos });
     };
+
+    const buildClampedDropIndicator = useCallback((dropY: number, durationMinutes: number) => {
+        const totalMinutesInView = 21 * 60;
+        const maxTopMinutes = Math.max(0, totalMinutesInView - durationMinutes);
+        const rawMinutes = Math.max(0, dropY / scaleFactor);
+        const snappedMinutes = Math.round(rawMinutes / 15) * 15;
+        const clampedMinutes = Math.min(Math.max(0, snappedMinutes), maxTopMinutes);
+        return {
+            top: clampedMinutes * scaleFactor,
+            height: durationMinutes * scaleFactor,
+        };
+    }, [scaleFactor]);
 
     useEffect(() => {
         if (!dragState.isDragging) return;
@@ -901,13 +916,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         return;
                     }
 
-                    // Calcular dropY relativo ao topo do grid rolável (compensando o offset do grab)
-                    let dropY = (pos.y - gridRect.top) - (dragState.pointerOffset?.y || 0) + scrollContainerRef.current.scrollTop;
-                    dropY = Math.max(0, dropY); // Impedir valores negativos
-
-                    const minutesFromViewStart = dropY / scaleFactor;
-                    const snappedMinutes = Math.round(minutesFromViewStart / 15) * 15;
-                    setDailyDropIndicator({ top: snappedMinutes * scaleFactor, height: dragState.item.duration * scaleFactor });
+                    let dropY = (pos.y - gridRect.top) - dropAnchorOffsetRef.current + scrollContainerRef.current.scrollTop;
+                    dropY = Math.max(0, dropY);
+                    setDailyDropIndicator(buildClampedDropIndicator(dropY, dragState.item.duration));
                 } else if (viewMode === 'week' && scrollContainerRef.current && dragState.item) {
                     setDailyDropIndicator(null);
                     const daysContainer = weeklyDaysContainerRef.current;
@@ -920,11 +931,10 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         let dayIndex = Math.floor((pos.x - containerRect.left) / dayColumnWidth);
                         dayIndex = Math.max(0, Math.min(6, dayIndex));
                         const headerHeight = 32;
-                        let dropY = (pos.y - containerRect.top - headerHeight) - (dragState.pointerOffset?.y || 0) + scrollContainerRef.current.scrollTop;
+                        let dropY = (pos.y - containerRect.top - headerHeight) - dropAnchorOffsetRef.current + scrollContainerRef.current.scrollTop;
                         if (dropY < 0) dropY = 0;
-                        const minutesFromViewStart = dropY / scaleFactor;
-                        const snappedMinutes = Math.round(minutesFromViewStart / 15) * 15;
-                        setWeeklyDropIndicator({ dayIndex, top: snappedMinutes * scaleFactor, height: dragState.item.duration * scaleFactor });
+                        const indicator = buildClampedDropIndicator(dropY, dragState.item.duration);
+                        setWeeklyDropIndicator({ dayIndex, top: indicator.top, height: indicator.height });
                     } else { setWeeklyDropIndicator(null); }
                 } else {
                     setDailyDropIndicator(null);
@@ -1028,7 +1038,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 (el as HTMLElement).style.pointerEvents = '';
             });
         };
-    }, [dragState.isDragging, currentDate, scaleFactor, viewMode, dailyDropIndicator, weeklyDropIndicator]);
+    }, [buildClampedDropIndicator, dragState.isDragging, currentDate, scaleFactor, viewMode, dailyDropIndicator, weeklyDropIndicator]);
 
     useEffect(() => {
         const timerId = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -1240,5 +1250,4 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         </div>
     );
 };
-
 

@@ -122,10 +122,13 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     } = useGame();
     const [isClosing, setIsClosing] = useState(false);
     const [holdProgress, setHoldProgress] = useState(0);
-    const holdInterval = useRef<number | null>(null);
+    const holdAnimationFrameRef = useRef<number | null>(null);
+    const holdStartTimeRef = useRef<number | null>(null);
+    const unlockHintTimeoutRef = useRef<number | null>(null);
     const actionHoldInterval = useRef<number | null>(null);
     const [actionProgress, setActionProgress] = useState<{ id: string, progress: number } | null>(null);
     const [isUnlocked, setIsUnlocked] = useState(false);
+    const [showUnlockHint, setShowUnlockHint] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isMoodOpen, setIsMoodOpen] = useState(false);
     const [isOracleOpen, setIsOracleOpen] = useState(false);
@@ -152,12 +155,39 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const isActionSessionCompleted = Boolean(currentActionSessionTask?.completed);
     const sitrepStatusLabel = isSitrepLocked ? 'Travado' : 'Liberado';
     const unlockHint = isUnlocked ? 'Saindo...' : 'Segure 1s para desbloquear';
+    const shouldShowUnlockHint = isUnlocked || showUnlockHint;
+
+    const clearUnlockHintTimeout = () => {
+        if (unlockHintTimeoutRef.current) {
+            window.clearTimeout(unlockHintTimeoutRef.current);
+            unlockHintTimeoutRef.current = null;
+        }
+    };
+
+    const revealUnlockHint = () => {
+        if (isUnlocked) return;
+        clearUnlockHintTimeout();
+        setShowUnlockHint(true);
+        unlockHintTimeoutRef.current = window.setTimeout(() => {
+            setShowUnlockHint(false);
+            unlockHintTimeoutRef.current = null;
+        }, 1800);
+    };
 
     useEffect(() => {
         if (showQuickActionInput && quickActionInputRef.current) {
             quickActionInputRef.current.focus();
         }
     }, [showQuickActionInput]);
+
+    useEffect(() => {
+        return () => {
+            if (holdAnimationFrameRef.current) {
+                cancelAnimationFrame(holdAnimationFrameRef.current);
+            }
+            clearUnlockHintTimeout();
+        };
+    }, []);
 
     const handleQuickActionStart = (action: 'mood' | 'oracle' | 'clan' | 'deepwork' | 'real_oracle' | 'new_action') => {
         if (actionHoldInterval.current) return;
@@ -589,34 +619,48 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     };
 
     const handleStartHold = () => {
-        if (holdInterval.current) return;
+        if (holdAnimationFrameRef.current) return;
+        clearUnlockHintTimeout();
+        setShowUnlockHint(false);
+        holdStartTimeRef.current = null;
+        const duration = 1000;
 
-        const startTime = Date.now();
-        const duration = 1000; // 1 second to unlock
-
-        holdInterval.current = window.setInterval(() => {
-            const elapsed = Date.now() - startTime;
+        const tick = (timestamp: number) => {
+            if (!holdStartTimeRef.current) holdStartTimeRef.current = timestamp;
+            const elapsed = timestamp - holdStartTimeRef.current;
             const progress = Math.min((elapsed / duration) * 100, 100);
             setHoldProgress(progress);
 
             if (progress >= 100) {
-                if (holdInterval.current) clearInterval(holdInterval.current);
+                if (holdAnimationFrameRef.current) {
+                    cancelAnimationFrame(holdAnimationFrameRef.current);
+                    holdAnimationFrameRef.current = null;
+                }
                 handleUnlock();
+                return;
             }
-        }, 16);
+            holdAnimationFrameRef.current = requestAnimationFrame(tick);
+        };
+
+        holdAnimationFrameRef.current = requestAnimationFrame(tick);
     };
 
     const handleEndHold = () => {
-        if (holdInterval.current) {
-            clearInterval(holdInterval.current);
-            holdInterval.current = null;
+        const wasHolding = holdAnimationFrameRef.current !== null || holdStartTimeRef.current !== null;
+        if (holdAnimationFrameRef.current) {
+            cancelAnimationFrame(holdAnimationFrameRef.current);
+            holdAnimationFrameRef.current = null;
         }
+        holdStartTimeRef.current = null;
         if (!isUnlocked) {
             setHoldProgress(0);
+            if (wasHolding) revealUnlockHint();
         }
     };
 
     const handleUnlock = () => {
+        holdStartTimeRef.current = null;
+        setShowUnlockHint(false);
         setIsUnlocked(true);
         setIsClosing(true);
         setTimeout(onClose, 700); // Wait for slide up animation
@@ -1057,7 +1101,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                         </button>
                     </div>
 
-                    <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center gap-2 min-h-[4.5rem] justify-end">
                         <button
                             onMouseDown={handleStartHold}
                             onMouseUp={handleEndHold}
@@ -1069,27 +1113,16 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                         >
                             <div className="absolute inset-[-14px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,rgba(212,175,55,0.18)_28%,transparent_72%)] opacity-90 blur-md" />
 
-                            {/* Progress Ring Background */}
                             <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-
-                            {/* Progress Ring Active */}
-                            <svg className="absolute inset-[-4px] -rotate-90 w-[calc(100%+8px)] h-[calc(100%+8px)] pointer-events-none" viewBox="0 0 100 100">
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    r="48"
-                                    fill="none"
-                                    stroke="var(--skin-accent-color)"
-                                    strokeWidth="2"
-                                    strokeDasharray="301.6" // 2 * pi * 48
-                                    strokeDashoffset={301.6 - (301.6 * holdProgress) / 100}
-                                    className="transition-all duration-75 ease-linear"
-                                    style={{ filter: 'drop-shadow(0 0 5px var(--skin-accent-color))' }}
-                                />
-                            </svg>
 
                             {/* Button Content */}
                             <div className="w-[4.5rem] h-[4.5rem] rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.18),rgba(0,0,0,0.78))] backdrop-blur-md border border-[var(--skin-accent-color)]/35 flex items-center justify-center relative z-10 overflow-hidden shadow-[0_0_25px_rgba(212,175,55,0.20)]">
+                                <div className="absolute inset-[4px] rounded-full overflow-hidden">
+                                    <div
+                                        className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(212,175,55,0.24)_40%,rgba(212,175,55,0.52)_100%)] transition-[height] duration-75 ease-linear"
+                                        style={{ height: `${holdProgress}%` }}
+                                    />
+                                </div>
                                 <div className="absolute inset-0 bg-gradient-to-tr from-[var(--skin-accent-color)]/20 via-white/5 to-transparent opacity-90" />
                                 {isUnlocked ? (
                                     <UnlockIcon className="w-7 h-7 text-[var(--skin-accent-color)] animate-unlock drop-shadow-[0_0_10px_var(--skin-accent-color)]" />
@@ -1098,14 +1131,18 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                 )}
                             </div>
                         </button>
-                        <div className="flex flex-col items-center gap-0.5 text-center">
-                            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
-                                {unlockHint}
-                            </span>
-                            <span className="text-[10px] text-white/55">
-                                Solte antes de completar para cancelar.
-                            </span>
-                        </div>
+                        {shouldShowUnlockHint && (
+                            <div className="flex flex-col items-center gap-0.5 text-center animate-fade-in">
+                                <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
+                                    {unlockHint}
+                                </span>
+                                {!isUnlocked && (
+                                    <span className="text-[10px] text-white/55">
+                                        Solte antes de completar para cancelar.
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 

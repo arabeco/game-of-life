@@ -11,6 +11,7 @@ import { supabase } from '../supabaseClient';
 import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { hasPremiumAccess } from '../utils/premiumAccess';
+import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import './arena-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 
@@ -269,6 +270,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             showToast('Essa arena especial recebe missões pelo menu de Missões.', 'warning');
             return;
         }
+        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.actionModalOpened));
         setActionModalState({ action: null, mode: 'edit', key: `new-action-modal-${Date.now()}` });
     };
 

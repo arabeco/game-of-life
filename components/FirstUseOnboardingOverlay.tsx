@@ -46,7 +46,7 @@ const getTargetElement = (selector?: string) => {
 
 const canAdvanceFromStep = (step: StepDef | undefined) => {
   if (!step) return false;
-  if (step.id !== 'action-name') return true;
+  if (!['cycle-name', 'arena-name', 'action-name'].includes(step.id)) return true;
   const target = getTargetElement(step.targetSelector) as HTMLInputElement | null;
   return Boolean(target?.value?.trim());
 };
@@ -66,11 +66,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [, setInteractionTick] = useState(0);
   const [createdArenaId, setCreatedArenaId] = useState<string | null>(null);
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
   const autoAdvanceStepRef = useRef<string | null>(null);
-  const currentStepIndexRef = useRef(0);
   const currentStepRef = useRef<StepDef | undefined>(undefined);
   const isTypingRef = useRef(false);
 
@@ -81,7 +79,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
       text: 'Seu historico ainda esta vazio. Comece por aqui e abra o setup do seu primeiro ciclo real.',
       targetSelector: '#start-new-cycle-button',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
-      autoAdvanceSelector: '#new-cycle-name-input',
       padding: 12,
     },
     {
@@ -116,7 +113,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
       text: 'Agora vamos abrir a primeira frente real da sua vida. Toque no botao + no canto inferior direito para criar uma Arena.',
       targetSelector: '#new-action-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
-      autoAdvanceSelector: '#new-arena-asset-button',
       padding: 14,
     },
     {
@@ -159,7 +155,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
       text: 'Perfeito. Sua arena abriu. Agora toque em Nova acao dentro dela para criar a primeira acao real.',
       targetSelector: '#add-action-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
-      autoAdvanceSelector: '#onboarding-action-name-input',
       padding: 14,
     },
     {
@@ -252,28 +247,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
     setCurrentStepIndex((previous) => previous >= targetIndex ? previous : targetIndex);
   }, [stepIndexById]);
 
-  const interactionStepTargets = useMemo(() => [
-    { selector: '#start-new-cycle-button', stepId: 'cycle-entry' },
-    { selector: '#new-cycle-name-input', stepId: 'cycle-name' },
-    { selector: '#new-cycle-date-button', stepId: 'cycle-date' },
-    { selector: '#new-cycle-submit-button', stepId: 'cycle-save' },
-    { selector: '#new-action-button', stepId: 'arena-entry' },
-    { selector: '[data-onboarding-id="new-arena-button"]', stepId: 'arena-entry' },
-    { selector: '#new-arena-asset-button', stepId: 'arena-asset' },
-    { selector: '#new-arena-name-input', stepId: 'arena-name' },
-    { selector: '#new-arena-description-input', stepId: 'arena-description' },
-    { selector: '#new-arena-submit-button', stepId: 'arena-save' },
-    { selector: '#add-action-button', stepId: 'action-entry' },
-    { selector: '#onboarding-action-name-input', stepId: 'action-name' },
-    { selector: '#onboarding-action-type-button', stepId: 'action-type' },
-    { selector: '#onboarding-action-repetitions', stepId: 'action-reps' },
-    { selector: '#onboarding-action-duration', stepId: 'action-duration' },
-    { selector: '#onboarding-action-save-button', stepId: 'action-save' },
-    { selector: '#planner-pool', stepId: 'planner-pool' },
-    { selector: '#lock-icon-button', stepId: 'rest-entry' },
-    { selector: '#sitrep-embedded-card', stepId: 'sitrep-card' },
-  ], []);
-
   const step = active ? steps[currentStepIndex] : undefined;
 
   const bubblePosition = useMemo(() => {
@@ -304,19 +277,13 @@ export const FirstUseOnboardingOverlay: React.FC<{
       setSpotlightRect(null);
       setDisplayedText('');
       setIsTyping(false);
-      setInteractionTick(0);
       setCreatedArenaId(null);
       setCreatedActionId(null);
       autoAdvanceStepRef.current = null;
-      currentStepIndexRef.current = 0;
       currentStepRef.current = undefined;
       isTypingRef.current = false;
     }
   }, [active]);
-
-  useEffect(() => {
-    currentStepIndexRef.current = currentStepIndex;
-  }, [currentStepIndex]);
 
   useEffect(() => {
     currentStepRef.current = step;
@@ -416,20 +383,25 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
   useEffect(() => {
     if (!active || !step?.targetSelector) return;
-    const target = getTargetElement(step.targetSelector);
-    if (!target) return;
+    const revealCurrentStepText = (event: Event) => {
+      const liveStep = currentStepRef.current;
+      if (!isTypingRef.current || !liveStep?.targetSelector) return;
+      if (!(event.target instanceof Element)) return;
+      if (!event.target.matches(liveStep.targetSelector) && !event.target.closest(liveStep.targetSelector)) return;
+      setDisplayedText(liveStep.text);
+      setIsTyping(false);
+    };
 
-    const bump = () => setInteractionTick((value) => value + 1);
-    target.addEventListener('input', bump);
-    target.addEventListener('change', bump);
-    target.addEventListener('blur', bump);
-    target.addEventListener('click', bump);
+    document.addEventListener('pointerdown', revealCurrentStepText, true);
+    document.addEventListener('focusin', revealCurrentStepText, true);
+    document.addEventListener('input', revealCurrentStepText, true);
+    document.addEventListener('change', revealCurrentStepText, true);
 
     return () => {
-      target.removeEventListener('input', bump);
-      target.removeEventListener('change', bump);
-      target.removeEventListener('blur', bump);
-      target.removeEventListener('click', bump);
+      document.removeEventListener('pointerdown', revealCurrentStepText, true);
+      document.removeEventListener('focusin', revealCurrentStepText, true);
+      document.removeEventListener('input', revealCurrentStepText, true);
+      document.removeEventListener('change', revealCurrentStepText, true);
     };
   }, [active, step?.id, step?.targetSelector]);
 
@@ -454,8 +426,32 @@ export const FirstUseOnboardingOverlay: React.FC<{
   useEffect(() => {
     if (!active) return;
 
+    const handleCycleSetupOpened = () => {
+      jumpToAtLeast('cycle-name');
+    };
+
+    const handleCycleNameCompleted = () => {
+      jumpToAtLeast('cycle-date');
+    };
+
+    const handleCycleEndDateSelected = () => {
+      jumpToAtLeast('cycle-save');
+    };
+
     const handleCycleCreated = () => {
       jumpToAtLeast('arena-entry');
+    };
+
+    const handleArenaModalOpened = () => {
+      jumpToAtLeast('arena-asset');
+    };
+
+    const handleArenaAssetSelected = () => {
+      jumpToAtLeast('arena-name');
+    };
+
+    const handleArenaNameCompleted = () => {
+      jumpToAtLeast('arena-description');
     };
 
     const handleArenaCreated = (event: Event) => {
@@ -464,77 +460,69 @@ export const FirstUseOnboardingOverlay: React.FC<{
       jumpToAtLeast('action-entry');
     };
 
+    const handleActionModalOpened = () => {
+      jumpToAtLeast('action-name');
+    };
+
+    const handleActionNameCompleted = () => {
+      jumpToAtLeast('action-type');
+    };
+
+    const handleActionTypeSelected = (event: Event) => {
+      const customEvent = event as CustomEvent<{ actionType?: string }>;
+      if (customEvent.detail?.actionType === 'Ação Recorrente') {
+        jumpToAtLeast('action-reps');
+        return;
+      }
+      jumpToAtLeast('action-duration');
+    };
+
+    const handleActionRepetitionsAdjusted = () => {
+      jumpToAtLeast('action-duration');
+    };
+
+    const handleActionDurationAdjusted = () => {
+      jumpToAtLeast('action-save');
+    };
+
     const handleActionCreated = (event: Event) => {
       const customEvent = event as CustomEvent<{ actionId?: string }>;
       setCreatedActionId(customEvent.detail?.actionId || null);
       jumpToAtLeast('planner-pool');
     };
 
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleSetupOpened, handleCycleSetupOpened as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleNameCompleted, handleCycleNameCompleted as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleEndDateSelected, handleCycleEndDateSelected as EventListener);
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleCreated, handleCycleCreated as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaModalOpened, handleArenaModalOpened as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaAssetSelected, handleArenaAssetSelected as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaNameCompleted, handleArenaNameCompleted as EventListener);
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, handleArenaCreated as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.actionModalOpened, handleActionModalOpened as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted, handleActionNameCompleted as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.actionTypeSelected, handleActionTypeSelected as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.actionRepetitionsAdjusted, handleActionRepetitionsAdjusted as EventListener);
+    window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, handleActionDurationAdjusted as EventListener);
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.actionCreated, handleActionCreated as EventListener);
 
     return () => {
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleSetupOpened, handleCycleSetupOpened as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleNameCompleted, handleCycleNameCompleted as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleEndDateSelected, handleCycleEndDateSelected as EventListener);
       window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleCreated, handleCycleCreated as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaModalOpened, handleArenaModalOpened as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaAssetSelected, handleArenaAssetSelected as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaNameCompleted, handleArenaNameCompleted as EventListener);
       window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, handleArenaCreated as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.actionModalOpened, handleActionModalOpened as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted, handleActionNameCompleted as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.actionTypeSelected, handleActionTypeSelected as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.actionRepetitionsAdjusted, handleActionRepetitionsAdjusted as EventListener);
+      window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, handleActionDurationAdjusted as EventListener);
       window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.actionCreated, handleActionCreated as EventListener);
     };
   }, [active, jumpToAtLeast]);
-
-  useEffect(() => {
-    if (!active) return;
-
-    const resolveTargetStepId = (rawTarget: EventTarget | null) => {
-      if (!(rawTarget instanceof Element)) return null;
-
-      let resolvedStepId: string | null = null;
-      let resolvedIndex = -1;
-
-      interactionStepTargets.forEach(({ selector, stepId }) => {
-        const stepIndex = stepIndexById[stepId];
-        if (typeof stepIndex !== 'number') return;
-        if (!rawTarget.matches(selector) && !rawTarget.closest(selector)) return;
-
-        if (stepIndex > resolvedIndex) {
-          resolvedIndex = stepIndex;
-          resolvedStepId = stepId;
-        }
-      });
-
-      return resolvedStepId;
-    };
-
-    const syncProgressFromInteraction = (event: Event) => {
-      const resolvedStepId = resolveTargetStepId(event.target);
-      if (!resolvedStepId) return;
-
-      const targetIndex = stepIndexById[resolvedStepId];
-      const currentIndex = currentStepIndexRef.current;
-
-      if (targetIndex > currentIndex) {
-        jumpToAtLeast(resolvedStepId);
-        return;
-      }
-
-      const liveStep = currentStepRef.current;
-      if (isTypingRef.current && liveStep && liveStep.id === resolvedStepId) {
-        setDisplayedText(liveStep.text);
-        setIsTyping(false);
-      }
-    };
-
-    document.addEventListener('pointerdown', syncProgressFromInteraction, true);
-    document.addEventListener('focusin', syncProgressFromInteraction, true);
-    document.addEventListener('input', syncProgressFromInteraction, true);
-    document.addEventListener('change', syncProgressFromInteraction, true);
-
-    return () => {
-      document.removeEventListener('pointerdown', syncProgressFromInteraction, true);
-      document.removeEventListener('focusin', syncProgressFromInteraction, true);
-      document.removeEventListener('input', syncProgressFromInteraction, true);
-      document.removeEventListener('change', syncProgressFromInteraction, true);
-    };
-  }, [active, interactionStepTargets, jumpToAtLeast, stepIndexById]);
 
   const handleDismiss = useCallback(() => {
     window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { ...defaultNavigation, view: 'planner' } }));

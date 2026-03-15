@@ -69,6 +69,10 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     const [isDatePickerOpen, setDatePickerOpen] = useState(false);
     const today = getLocalDateString();
 
+    useEffect(() => {
+        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.cycleSetupOpened));
+    }, []);
+
     const handleStatusChange = (arenaId: string, status: ArenaStatus) => {
         setArenaChanges(prev => new Map(prev).set(arenaId, status));
     };
@@ -84,6 +88,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     const handleDateSelect = (date: Date) => {
         setCycleEndDate(getLocalDateString(date));
         setDatePickerOpen(false);
+        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.cycleEndDateSelected));
     };
 
     return (
@@ -122,6 +127,12 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                     placeholder='Nome do Novo Ciclo'
                                     value={cycleName}
                                     onChange={e => setCycleName(e.target.value)}
+                                    onBlur={(event) => {
+                                        if (!event.target.value.trim()) return;
+                                        const relatedTarget = event.relatedTarget as HTMLElement | null;
+                                        if (relatedTarget?.id === 'first-use-onboarding-next') return;
+                                        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.cycleNameCompleted));
+                                    }}
                                     className='w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 focus:border-[var(--skin-accent-color)] outline-none transition-colors'
                                 />
                                 <button

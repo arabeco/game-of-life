@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Arena } from '../types';
 import { CrownIcon, ChevronRightIcon } from './Icons';
@@ -55,6 +55,11 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     const [assetId, setAssetId] = useState(initialAssetId || 'geral');
     const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
     const modalCardRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaModalOpened));
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -155,7 +160,20 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                                 <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione o Ativo Pai'}</span>
                                 <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                             </button>
-                            <input id="new-arena-name-input" type="text" placeholder="Nome da Arena" value={name} onChange={e => setName(e.target.value)} className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
+                            <input
+                                id="new-arena-name-input"
+                                type="text"
+                                placeholder="Nome da Arena"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                onBlur={(event) => {
+                                    if (!event.target.value.trim()) return;
+                                    const relatedTarget = event.relatedTarget as HTMLElement | null;
+                                    if (relatedTarget?.id === 'first-use-onboarding-next') return;
+                                    window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaNameCompleted));
+                                }}
+                                className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]"
+                            />
                             <textarea id="new-arena-description-input" placeholder="Descricao da Meta..." value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />
                         </div>
 
@@ -170,7 +188,11 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                     </GlassCard>
                 </div>
             </Portal>
-            {isAssetPickerOpen && <AssetSelectionModal currentAssetId={assetId} onSelect={(id) => { setAssetId(id); setIsAssetPickerOpen(false); }} onClose={() => setIsAssetPickerOpen(false)} />}
+            {isAssetPickerOpen && <AssetSelectionModal currentAssetId={assetId} onSelect={(id) => {
+                setAssetId(id);
+                setIsAssetPickerOpen(false);
+                window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaAssetSelected, { detail: { assetId: id } }));
+            }} onClose={() => setIsAssetPickerOpen(false)} />}
         </>
     );
 };

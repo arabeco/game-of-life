@@ -70,12 +70,15 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const [createdArenaId, setCreatedArenaId] = useState<string | null>(null);
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
   const autoAdvanceStepRef = useRef<string | null>(null);
+  const currentStepIndexRef = useRef(0);
+  const currentStepRef = useRef<StepDef | undefined>(undefined);
+  const isTypingRef = useRef(false);
 
   const steps = useMemo<StepDef[]>(() => [
     {
       id: 'cycle-entry',
       title: 'Primeiro ciclo',
-      text: 'Seu histórico ainda está vazio. Comece por aqui e abra o setup do seu primeiro ciclo real.',
+      text: 'Seu historico ainda esta vazio. Comece por aqui e abra o setup do seu primeiro ciclo real.',
       targetSelector: '#start-new-cycle-button',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       autoAdvanceSelector: '#new-cycle-name-input',
@@ -84,7 +87,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'cycle-name',
       title: 'Nomeie a fase',
-      text: 'Dê um nome simples para essa fase. Pense em uma janela curta, clara e executável.',
+      text: 'De um nome simples para essa fase. Pense em uma janela curta, clara e executavel.',
       targetSelector: '#new-cycle-name-input',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       padding: 10,
@@ -92,7 +95,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'cycle-date',
       title: 'Escolha a data final',
-      text: 'Aqui você define quando esse ciclo fecha. O calendário segura o ritmo da fase.',
+      text: 'Aqui voce define quando esse ciclo fecha. O calendario segura o ritmo da fase.',
       targetSelector: '#new-cycle-date-button',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       padding: 10,
@@ -100,7 +103,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'cycle-save',
       title: 'Inicie o ciclo',
-      text: 'Quando estiver bom, confirme aqui. Assim o seu primeiro ciclo já nasce como dado real.',
+      text: 'Quando estiver bom, confirme aqui. Assim o seu primeiro ciclo ja nasce como dado real.',
       targetSelector: '#new-cycle-submit-button',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       waitForEvent: FIRST_USE_ONBOARDING_EVENTS.cycleCreated,
@@ -110,7 +113,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'arena-entry',
       title: 'Crie sua primeira arena',
-      text: 'Agora vamos abrir a primeira frente real da sua vida. Toque no mais para criar uma Arena.',
+      text: 'Agora vamos abrir a primeira frente real da sua vida. Toque no botao + no canto inferior direito para criar uma Arena.',
       targetSelector: '#new-action-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       autoAdvanceSelector: '#new-arena-asset-button',
@@ -119,7 +122,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'arena-asset',
       title: 'Ativo pai',
-      text: 'Aqui você escolhe o ativo pai da arena. É uma forma de dizer em qual domínio essa frente mora.',
+      text: 'Aqui voce escolhe o ativo pai da arena. E uma forma de dizer em qual dominio essa frente mora.',
       targetSelector: '#new-arena-asset-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 10,
@@ -127,7 +130,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'arena-name',
       title: 'Nome da arena',
-      text: 'Diga o nome da frente. Não precisa ser perfeito. Clareza vale mais do que sofisticação.',
+      text: 'Diga o nome da frente. Nao precisa ser perfeito. Clareza vale mais do que sofisticacao.',
       targetSelector: '#new-arena-name-input',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 10,
@@ -152,8 +155,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'action-entry',
-      title: 'Primeira ação',
-      text: 'Perfeito. Sua arena abriu. Agora crie a primeira ação real dentro dela.',
+      title: 'Primeira acao',
+      text: 'Perfeito. Sua arena abriu. Agora toque em Nova acao dentro dela para criar a primeira acao real.',
       targetSelector: '#add-action-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       autoAdvanceSelector: '#onboarding-action-name-input',
@@ -161,40 +164,40 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'action-name',
-      title: 'Título da ação',
-      text: 'Comece pelo título. Esse é o único ponto realmente obrigatório agora. O resto pode ser ajustado sem pressa.',
+      title: 'Titulo da acao',
+      text: 'Comece pelo titulo. Esse e o unico ponto realmente obrigatorio agora. O resto pode ser ajustado sem pressa.',
       targetSelector: '#onboarding-action-name-input',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
       id: 'action-type',
-      title: 'Tipo da ação',
-      text: 'Aqui você escolhe o formato da ação. Pode tocar e experimentar, ou seguir para frente quando entender a lógica.',
+      title: 'Tipo da acao',
+      text: 'Aqui voce escolhe o formato da acao. Pode tocar e experimentar, ou seguir para frente quando entender a logica.',
       targetSelector: '#onboarding-action-type-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
       id: 'action-reps',
-      title: 'Repetições',
-      text: 'Se a ação for recorrente, ajuste quantas repetições ela pede. Se não for o caso, eu pulo esse passo.',
+      title: 'Repeticoes',
+      text: 'Se a acao for recorrente, ajuste quantas repeticoes ela pede. Se nao for o caso, eu pulo esse passo.',
       targetSelector: '#onboarding-action-repetitions',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
       id: 'action-duration',
-      title: 'Duração base',
-      text: 'Defina uma duração base simples. Ela ajuda o planner a estimar carga sem complicar seu fluxo.',
+      title: 'Duracao base',
+      text: 'Defina uma duracao base simples. Ela ajuda o planner a estimar carga sem complicar seu fluxo.',
       targetSelector: '#onboarding-action-duration',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
       id: 'action-save',
-      title: 'Salvar ação',
-      text: 'Quando estiver pronta, confirme aqui. Eu levo você para o planner assim que a ação for criada.',
+      title: 'Salvar acao',
+      text: 'Quando estiver pronta, confirme aqui. Eu levo voce para o planner assim que a acao for criada.',
       targetSelector: '#onboarding-action-save-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       waitForEvent: FIRST_USE_ONBOARDING_EVENTS.actionCreated,
@@ -204,7 +207,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'planner-pool',
       title: 'Planner',
-      text: 'Sua primeira ação agora aparece pronta para uso. Você pode arrastar para agendar ou segurar para concluir no fluxo do dia.',
+      text: 'Sua primeira acao agora aparece pronta para uso. Voce pode arrastar para agendar ou segurar para concluir no fluxo do dia.',
       targetSelector: createdActionId ? `[data-action-id="${createdActionId}"]` : '#planner-pool',
       navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 14,
@@ -212,7 +215,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'rest-entry',
       title: 'Tela de descanso',
-      text: 'Esse atalho abre a tela de descanso. Toque aqui quando quiser entrar no Painel Diário do agora.',
+      text: 'Esse atalho abre a tela de descanso. Toque aqui quando quiser entrar no Painel Diario do agora.',
       targetSelector: '#lock-icon-button',
       navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
       autoAdvanceSelector: '#sitrep-embedded-card',
@@ -220,8 +223,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'sitrep-card',
-      title: 'Painel Diário',
-      text: 'Aqui você acompanha o dia de hoje. Não precisa mexer em tudo agora. O importante é saber onde o fluxo diário mora e como destravar essa camada quando quiser agir.',
+      title: 'Painel Diario',
+      text: 'Aqui voce acompanha o dia de hoje. Nao precisa mexer em tudo agora. O importante e saber onde o fluxo diario mora e como destravar essa camada quando quiser agir.',
       targetSelector: '#sitrep-embedded-card',
       navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
       padding: 14,
@@ -229,7 +232,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'finish',
       title: 'Base pronta',
-      text: 'Sua base inicial está pronta. Você já pode começar por esta tela. Se quiser revisar o resto depois, o tutorial continua em Configurações > Tutoriais.',
+      text: 'Sua base inicial esta pronta. Voce ja pode comecar por esta tela. Se quiser revisar o resto depois, o tutorial continua em Configuracoes > Tutoriais.',
       navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
       final: true,
     },
@@ -241,6 +244,35 @@ export const FirstUseOnboardingOverlay: React.FC<{
       return accumulator;
     }, {});
   }, [steps]);
+
+  const jumpToAtLeast = useCallback((targetStepId: string) => {
+    const targetIndex = stepIndexById[targetStepId];
+    if (typeof targetIndex !== 'number') return;
+
+    setCurrentStepIndex((previous) => previous >= targetIndex ? previous : targetIndex);
+  }, [stepIndexById]);
+
+  const interactionStepTargets = useMemo(() => [
+    { selector: '#start-new-cycle-button', stepId: 'cycle-entry' },
+    { selector: '#new-cycle-name-input', stepId: 'cycle-name' },
+    { selector: '#new-cycle-date-button', stepId: 'cycle-date' },
+    { selector: '#new-cycle-submit-button', stepId: 'cycle-save' },
+    { selector: '#new-action-button', stepId: 'arena-entry' },
+    { selector: '[data-onboarding-id="new-arena-button"]', stepId: 'arena-entry' },
+    { selector: '#new-arena-asset-button', stepId: 'arena-asset' },
+    { selector: '#new-arena-name-input', stepId: 'arena-name' },
+    { selector: '#new-arena-description-input', stepId: 'arena-description' },
+    { selector: '#new-arena-submit-button', stepId: 'arena-save' },
+    { selector: '#add-action-button', stepId: 'action-entry' },
+    { selector: '#onboarding-action-name-input', stepId: 'action-name' },
+    { selector: '#onboarding-action-type-button', stepId: 'action-type' },
+    { selector: '#onboarding-action-repetitions', stepId: 'action-reps' },
+    { selector: '#onboarding-action-duration', stepId: 'action-duration' },
+    { selector: '#onboarding-action-save-button', stepId: 'action-save' },
+    { selector: '#planner-pool', stepId: 'planner-pool' },
+    { selector: '#lock-icon-button', stepId: 'rest-entry' },
+    { selector: '#sitrep-embedded-card', stepId: 'sitrep-card' },
+  ], []);
 
   const step = active ? steps[currentStepIndex] : undefined;
 
@@ -276,8 +308,23 @@ export const FirstUseOnboardingOverlay: React.FC<{
       setCreatedArenaId(null);
       setCreatedActionId(null);
       autoAdvanceStepRef.current = null;
+      currentStepIndexRef.current = 0;
+      currentStepRef.current = undefined;
+      isTypingRef.current = false;
     }
   }, [active]);
+
+  useEffect(() => {
+    currentStepIndexRef.current = currentStepIndex;
+  }, [currentStepIndex]);
+
+  useEffect(() => {
+    currentStepRef.current = step;
+  }, [step]);
+
+  useEffect(() => {
+    isTypingRef.current = isTyping;
+  }, [isTyping]);
 
   useEffect(() => {
     if (!active || !step) return;
@@ -305,7 +352,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }, 14);
 
     return () => window.clearInterval(typingInterval);
-  }, [active, step?.id]);
+  }, [active, step?.id, step?.text]);
 
   useEffect(() => {
     if (!active || !step) return;
@@ -350,6 +397,25 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
   useEffect(() => {
     if (!active || !step?.targetSelector) return;
+
+    const timer = window.setTimeout(() => {
+      const target = getTargetElement(step.targetSelector);
+      if (!target) return;
+
+      const rect = target.getBoundingClientRect();
+      const isFixedTarget = window.getComputedStyle(target).position === 'fixed';
+      const isOutOfView = rect.top < 96 || rect.bottom > window.innerHeight - 96;
+
+      if (!isFixedTarget && isOutOfView) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [active, step?.id, step?.targetSelector]);
+
+  useEffect(() => {
+    if (!active || !step?.targetSelector) return;
     const target = getTargetElement(step.targetSelector);
     if (!target) return;
 
@@ -382,18 +448,11 @@ export const FirstUseOnboardingOverlay: React.FC<{
     };
 
     window.addEventListener(step.waitForEvent, handleEvent as EventListener);
-    return () => window.removeEventListener(step.waitForEvent!, handleEvent as EventListener);
+    return () => window.removeEventListener(step.waitForEvent, handleEvent as EventListener);
   }, [active, step?.id, step?.waitForEvent, advanceStep]);
 
   useEffect(() => {
     if (!active) return;
-
-    const jumpToAtLeast = (targetStepId: string) => {
-      const targetIndex = stepIndexById[targetStepId];
-      if (typeof targetIndex !== 'number') return;
-
-      setCurrentStepIndex((previous) => previous >= targetIndex ? previous : targetIndex);
-    };
 
     const handleCycleCreated = () => {
       jumpToAtLeast('arena-entry');
@@ -420,7 +479,62 @@ export const FirstUseOnboardingOverlay: React.FC<{
       window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, handleArenaCreated as EventListener);
       window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.actionCreated, handleActionCreated as EventListener);
     };
-  }, [active, stepIndexById]);
+  }, [active, jumpToAtLeast]);
+
+  useEffect(() => {
+    if (!active) return;
+
+    const resolveTargetStepId = (rawTarget: EventTarget | null) => {
+      if (!(rawTarget instanceof Element)) return null;
+
+      let resolvedStepId: string | null = null;
+      let resolvedIndex = -1;
+
+      interactionStepTargets.forEach(({ selector, stepId }) => {
+        const stepIndex = stepIndexById[stepId];
+        if (typeof stepIndex !== 'number') return;
+        if (!rawTarget.matches(selector) && !rawTarget.closest(selector)) return;
+
+        if (stepIndex > resolvedIndex) {
+          resolvedIndex = stepIndex;
+          resolvedStepId = stepId;
+        }
+      });
+
+      return resolvedStepId;
+    };
+
+    const syncProgressFromInteraction = (event: Event) => {
+      const resolvedStepId = resolveTargetStepId(event.target);
+      if (!resolvedStepId) return;
+
+      const targetIndex = stepIndexById[resolvedStepId];
+      const currentIndex = currentStepIndexRef.current;
+
+      if (targetIndex > currentIndex) {
+        jumpToAtLeast(resolvedStepId);
+        return;
+      }
+
+      const liveStep = currentStepRef.current;
+      if (isTypingRef.current && liveStep && liveStep.id === resolvedStepId) {
+        setDisplayedText(liveStep.text);
+        setIsTyping(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', syncProgressFromInteraction, true);
+    document.addEventListener('focusin', syncProgressFromInteraction, true);
+    document.addEventListener('input', syncProgressFromInteraction, true);
+    document.addEventListener('change', syncProgressFromInteraction, true);
+
+    return () => {
+      document.removeEventListener('pointerdown', syncProgressFromInteraction, true);
+      document.removeEventListener('focusin', syncProgressFromInteraction, true);
+      document.removeEventListener('input', syncProgressFromInteraction, true);
+      document.removeEventListener('change', syncProgressFromInteraction, true);
+    };
+  }, [active, interactionStepTargets, jumpToAtLeast, stepIndexById]);
 
   const handleDismiss = useCallback(() => {
     window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { ...defaultNavigation, view: 'planner' } }));
@@ -467,6 +581,21 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const canAdvance = canAdvanceFromStep(step);
   const padding = step.padding ?? 12;
   const progress = `${currentStepIndex + 1} / ${steps.length}`;
+  const helperText = step.hideNext
+    ? step.id === 'arena-save'
+      ? 'Crie a arena e eu ja sigo para a proxima etapa.'
+      : step.id === 'action-save'
+        ? 'Salve a acao no app que eu acompanho sem te travar.'
+        : step.autoAdvanceSelector
+          ? 'Toque no destaque e eu pulo junto para o proximo passo.'
+          : 'Salve no app para eu seguir sozinho.'
+    : step.id === 'arena-entry'
+      ? 'Procure o botao + no canto inferior direito.'
+      : step.id === 'action-entry'
+        ? 'Abra a arena e toque em Nova acao para eu continuar com voce.'
+        : step.id === 'action-name' && !canAdvance
+          ? 'Preencha o titulo para liberar o proximo passo.'
+          : 'Se voce adiantar alguma etapa, eu acompanho.';
 
   return (
     <Portal>
@@ -493,10 +622,10 @@ export const FirstUseOnboardingOverlay: React.FC<{
               height: spotlightRect.height + padding * 2,
             }}
           >
-            <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-[#ffe9b0]" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-[#ffe9b0]" />
-            <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-[#ffe9b0]" />
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-[#ffe9b0]" />
+            <div className="absolute -top-1 -left-1 h-3 w-3 border-l-2 border-t-2 border-[#ffe9b0]" />
+            <div className="absolute -top-1 -right-1 h-3 w-3 border-r-2 border-t-2 border-[#ffe9b0]" />
+            <div className="absolute -bottom-1 -left-1 h-3 w-3 border-b-2 border-l-2 border-[#ffe9b0]" />
+            <div className="absolute -bottom-1 -right-1 h-3 w-3 border-b-2 border-r-2 border-[#ffe9b0]" />
           </div>
         )}
 
@@ -508,53 +637,53 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
               <div className="flex gap-4 p-4 md:p-5">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-[#2d261c] to-black border border-[#f3d48a]/50 flex items-center justify-center shadow-[0_0_24px_rgba(255,215,0,0.16)]">
-                    <OracleIcon className="w-6 h-6 md:w-10 md:h-10 animate-pulse-slow" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f3d48a]/50 bg-gradient-to-br from-[#2d261c] to-black shadow-[0_0_24px_rgba(255,215,0,0.16)] md:h-16 md:w-16">
+                    <OracleIcon className="h-6 w-6 animate-pulse-slow md:h-10 md:w-10" />
                   </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="inline-flex items-center rounded-full border border-[#f3d48a]/25 bg-[#f3d48a]/10 px-2 py-1 text-[8px] md:text-[10px] font-black tracking-[0.22em] text-[#f3d48a]">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full border border-[#f3d48a]/25 bg-[#f3d48a]/10 px-2 py-1 text-[8px] font-black tracking-[0.22em] text-[#f3d48a] md:text-[10px]">
                           ONBOARDING
                         </span>
-                        <span className="text-[9px] md:text-[10px] text-gray-500 tracking-[0.16em] uppercase">
+                        <span className="text-[9px] uppercase tracking-[0.16em] text-gray-500 md:text-[10px]">
                           {progress}
                         </span>
                       </div>
-                      <h3 id="first-use-onboarding-title" className="text-[#f6dfab] font-bold uppercase tracking-[0.16em] text-[10px] md:text-sm leading-tight">
+                      <h3 id="first-use-onboarding-title" className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-[#f6dfab] md:text-sm">
                         {step.title}
                       </h3>
                     </div>
 
                     <button
                       onClick={handleDismiss}
-                      className="shrink-0 text-[10px] text-gray-500 hover:text-white uppercase tracking-[0.18em] transition-colors px-1"
+                      className="shrink-0 px-1 text-[10px] uppercase tracking-[0.18em] text-gray-500 transition-colors hover:text-white"
                     >
                       X
                     </button>
                   </div>
 
-                  <p className="text-gray-100/92 text-[12px] md:text-[15px] leading-[1.45] md:leading-[1.6] whitespace-pre-wrap">
+                  <p className="whitespace-pre-wrap text-[12px] leading-[1.45] text-gray-100/92 md:text-[15px] md:leading-[1.6]">
                     {displayedText}
-                    {isTyping && <span className="animate-pulse inline-block w-1 h-3 md:w-1.5 md:h-4 bg-[#f3d48a] ml-1 align-middle opacity-80" />}
+                    {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle bg-[#f3d48a] opacity-80 md:h-4 md:w-1.5" />}
                   </p>
 
-                      <div className="mt-3 flex items-center justify-between gap-3">
-                        <div className="text-[9px] md:text-[11px] text-gray-500 tracking-[0.08em]">
-                      {step.hideNext ? (step.autoAdvanceSelector ? 'Toque no destaque para abrir o próximo passo.' : 'Salve no app para eu seguir sozinho.') : step.id === 'action-name' && !canAdvance ? 'Preencha o título para liberar o próximo passo.' : 'Você pode tocar no app e seguir no seu ritmo.'}
-                        </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="text-[9px] tracking-[0.08em] text-gray-500 md:text-[11px]">
+                      {helperText}
+                    </div>
 
                     {!step.hideNext && (
                       <button
                         id="first-use-onboarding-next"
                         onClick={handleNext}
                         disabled={!canAdvance}
-                        className="shrink-0 rounded-full border border-[#f3d48a]/35 bg-[#f3d48a]/12 px-4 py-2 text-[10px] md:text-[11px] font-black uppercase tracking-[0.18em] text-[#f6dfab] transition hover:bg-[#f3d48a]/20 disabled:opacity-40 disabled:hover:bg-[#f3d48a]/12"
+                        className="shrink-0 rounded-full border border-[#f3d48a]/35 bg-[#f3d48a]/12 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#f6dfab] transition hover:bg-[#f3d48a]/20 disabled:opacity-40 disabled:hover:bg-[#f3d48a]/12 md:text-[11px]"
                       >
-                        {step.final ? 'Concluir' : 'Próximo'}
+                        {step.final ? 'Concluir' : 'Proximo'}
                       </button>
                     )}
                   </div>
@@ -567,6 +696,3 @@ export const FirstUseOnboardingOverlay: React.FC<{
     </Portal>
   );
 };
-
-
-

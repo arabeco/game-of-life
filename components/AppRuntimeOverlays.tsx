@@ -73,7 +73,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
             setIsSealing(false);
             setStep(0);
             onAccept();
-        }, 500);
+        }, 820);
     };
 
     const longPressEvents = useLongPress({
@@ -119,10 +119,24 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                 style={{ background: 'radial-gradient(circle at center, #0A0A0A 0%, #000000 72%)' }}
             >
                 <div className="absolute inset-4 pointer-events-none rounded-[32px] border border-white/10" />
-                {isSealing && <div className="absolute inset-0 z-50 animate-fade-in bg-[radial-gradient(circle_at_center,var(--gold),rgba(0,0,0,0.95))]" />}
+                {isSealing && <div className="absolute inset-0 z-40 animate-fade-in bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.18),rgba(0,0,0,0.96)_68%)]" />}
 
-                <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center px-6">
-                    <div className="animate-fade-in-down flex w-full gap-4 rounded-xl border border-black/10 border-b-4 border-b-[var(--gold)] bg-white/90 p-4 shadow-2xl backdrop-blur-xl md:p-6">
+                <div className="relative mx-auto flex w-full max-w-[min(92vw,42rem)] flex-col items-center px-4 sm:px-6">
+                    <div className="terms-contract-shell relative w-full">
+                        {isSealing && (
+                            <>
+                                <div className="pointer-events-none absolute inset-0 z-30 overflow-hidden rounded-[24px]">
+                                    <div className="terms-seal-shutter terms-seal-shutter--top" />
+                                    <div className="terms-seal-shutter terms-seal-shutter--bottom" />
+                                </div>
+                                <div className="terms-seal-emblem pointer-events-none absolute left-1/2 top-1/2 z-40 flex h-28 w-28 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-[var(--gold)]/50 bg-[radial-gradient(circle,#fff4c2_0%,#f4cd67_42%,#6c4a06_100%)] text-black shadow-[0_0_40px_rgba(255,215,0,0.35)]">
+                                    <OracleIcon className="h-9 w-9 opacity-90" />
+                                    <span className="mt-1 text-[10px] font-black uppercase tracking-[0.28em]">PACTO</span>
+                                </div>
+                            </>
+                        )}
+
+                        <div className={`animate-fade-in-down flex w-full gap-4 rounded-[24px] border border-black/10 border-b-4 border-b-[var(--gold)] bg-white/90 p-4 shadow-2xl backdrop-blur-xl md:p-6 ${isSealing ? 'terms-contract-card--sealing' : ''}`}>
                         <div className="flex-shrink-0">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--gold)] bg-gradient-to-br from-gray-100 to-white shadow-lg md:h-16 md:w-16">
                                 <OracleIcon className="h-8 w-8 opacity-80 md:h-10 md:w-10" />
@@ -213,6 +227,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
 
             <style>{`
@@ -222,6 +237,78 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                 @keyframes fade-in-down {
                     from { opacity: 0; transform: translateY(-10px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                .terms-contract-shell {
+                    isolation: isolate;
+                }
+                .terms-contract-card--sealing {
+                    animation: contract-seal-card 820ms cubic-bezier(0.18, 0.84, 0.32, 1) forwards;
+                    transform-origin: center center;
+                }
+                .terms-seal-shutter {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    height: 52%;
+                    background:
+                        linear-gradient(180deg, rgba(255, 247, 214, 0.96), rgba(230, 190, 95, 0.95) 58%, rgba(102, 70, 10, 0.98)),
+                        radial-gradient(circle at center, rgba(255, 255, 255, 0.24), transparent 70%);
+                    box-shadow: inset 0 0 0 1px rgba(255, 236, 170, 0.45);
+                }
+                .terms-seal-shutter--top {
+                    top: 0;
+                    transform: translateY(-110%);
+                    border-radius: 24px 24px 0 0;
+                    animation: contract-shutter-top 620ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+                }
+                .terms-seal-shutter--bottom {
+                    bottom: 0;
+                    transform: translateY(110%);
+                    border-radius: 0 0 24px 24px;
+                    animation: contract-shutter-bottom 620ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+                }
+                .terms-seal-emblem {
+                    opacity: 0;
+                    animation: contract-seal-emblem 720ms cubic-bezier(0.12, 0.9, 0.24, 1) forwards;
+                }
+                @keyframes contract-seal-card {
+                    0% {
+                        transform: scale(1);
+                        opacity: 1;
+                        filter: blur(0);
+                    }
+                    38% {
+                        transform: scale(0.985) translateY(2px);
+                        opacity: 1;
+                        filter: blur(0);
+                    }
+                    100% {
+                        transform: scale(0.95) translateY(12px);
+                        opacity: 0.08;
+                        filter: blur(6px);
+                    }
+                }
+                @keyframes contract-shutter-top {
+                    0% { transform: translateY(-110%); }
+                    100% { transform: translateY(0); }
+                }
+                @keyframes contract-shutter-bottom {
+                    0% { transform: translateY(110%); }
+                    100% { transform: translateY(0); }
+                }
+                @keyframes contract-seal-emblem {
+                    0% {
+                        opacity: 0;
+                        transform: translate(-50%, -52%) scale(0.72);
+                    }
+                    45% {
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1.04);
+                    }
+                    100% {
+                        opacity: 0.96;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
                 }
             `}</style>
         </Portal>

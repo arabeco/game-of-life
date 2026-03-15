@@ -2,6 +2,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
+import { ClosedBetaGoogleInviteModal } from './components/ClosedBetaGoogleInviteModal';
 import { SupabaseService } from './services/SupabaseService';
 import { saveClosedBetaGoogleRedirect } from './utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from './utils/envFlags';
@@ -50,6 +51,7 @@ const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; t
 
 const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
+    const [pendingGoogleInviteSession, setPendingGoogleInviteSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [authGuardLoading, setAuthGuardLoading] = useState(false);
     const [showResetPassword, setShowResetPassword] = useState(false);
@@ -97,16 +99,19 @@ const App: React.FC = () => {
             preloadBootVisuals(candidate.user?.id);
 
             if (!isGoldenInviteGateEnabled) {
+                setPendingGoogleInviteSession(null);
                 return candidate;
             }
 
             const provider = candidate.user?.app_metadata?.provider;
             if (provider !== 'google') {
+                setPendingGoogleInviteSession(null);
                 return candidate;
             }
 
             const accessStatus = await SupabaseService.getClosedBetaAccessStatus();
             if (accessStatus?.authorized) {
+                setPendingGoogleInviteSession(null);
                 return candidate;
             }
 
@@ -120,23 +125,7 @@ const App: React.FC = () => {
                 return null;
             }
 
-            saveClosedBetaGoogleRedirect({
-                mode: 'signup',
-                email: candidate.user.email || '',
-                message: 'Esse Google ainda não tem conta no beta. Preencha o Convite Dourado para criar sua conta.',
-            });
-
-            const deletionResult = await SupabaseService.deleteMyAccount();
-            if (!deletionResult.success) {
-                console.error('Failed to remove provisional Google account during closed beta:', deletionResult.error);
-                saveClosedBetaGoogleRedirect({
-                    mode: 'login',
-                    email: candidate.user.email || '',
-                    message: 'Não consegui limpar o acesso temporário do Google sozinho. Me chama que apagamos esse usuário no Supabase.',
-                });
-            }
-
-            await supabase.auth.signOut({ scope: 'local' });
+            setPendingGoogleInviteSession(candidate);
             return null;
         };
 
@@ -178,6 +167,7 @@ const App: React.FC = () => {
             void (async () => {
                 if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_ERROR') {
                     setSession(null);
+                    setPendingGoogleInviteSession(null);
                     if ((event as string) === 'TOKEN_REFRESH_ERROR') {
                         await supabase.auth.signOut();
                     }
@@ -259,6 +249,16 @@ const App: React.FC = () => {
                         <Suspense fallback={null}>
                             <ResetPasswordOverlay onClose={() => setShowResetPassword(false)} />
                         </Suspense>
+                    )}
+                    {pendingGoogleInviteSession && (
+                        <ClosedBetaGoogleInviteModal
+                            session={pendingGoogleInviteSession}
+                            onClose={() => setPendingGoogleInviteSession(null)}
+                            onComplete={(nextSession) => {
+                                setPendingGoogleInviteSession(null);
+                                setSession(nextSession);
+                            }}
+                        />
                     )}
                 </div>
             )}

@@ -286,10 +286,6 @@ from public.issue_golden_invites(
   )
 );
 
--- ---------------------------------------------------------------------------
--- 2) Real account deletion RPC
--- ---------------------------------------------------------------------------
-
 create or replace function public.delete_account_data_for_user(p_user_id uuid)
 returns jsonb
 language plpgsql
@@ -336,6 +332,10 @@ $$;
 
 revoke all on function public.delete_account_data_for_user(uuid) from public;
 grant execute on function public.delete_account_data_for_user(uuid) to service_role;
+
+-- ---------------------------------------------------------------------------
+-- 2) Real account deletion RPC
+-- ---------------------------------------------------------------------------
 
 
 create table if not exists public.account_deletion_requests (
@@ -576,34 +576,3 @@ revoke all on function public._nullify_public_uuid_column(text, text, uuid) from
 revoke all on function public.delete_my_account() from public;
 
 grant execute on function public.delete_my_account() to authenticated;
-
--- ---------------------------------------------------------------------------
--- 3) Inspection queries after running the script
--- ---------------------------------------------------------------------------
-
--- Live invites after cleanup + top-up.
-select
-  code,
-  is_used,
-  created_at,
-  claimed_at,
-  claimed_by_user_id
-from public.golden_invites
-order by is_used asc, created_at desc, code asc;
-
--- Auth users and which invite they consumed.
-select
-  au.created_at as auth_created_at,
-  au.email,
-  up.nickname,
-  gi.code as invite_code,
-  gi.claimed_at
-from auth.users au
-left join public.user_profiles up
-  on up.id = au.id
-left join public.golden_invites gi
-  on gi.claimed_by_user_id = au.id
-order by au.created_at desc;
-
--- Optional manual cleanup after review in Authentication:
--- delete from auth.users where email in ('anpssos0210@outlook.com');

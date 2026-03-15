@@ -44,7 +44,7 @@ export const LoginView: React.FC = () => {
         if (redirectState.mode === 'signup') {
             setGoldenInviteGuide({
                 title: 'Conta nova detectada',
-                text: 'Esse acesso ainda não tem conta no beta. Cole o Convite Dourado, crie seu perfil e depois, se quiser, entre também com Google.',
+                text: 'Esse acesso ainda não tem conta no beta. Se vier pelo Google, o app vai pedir seu Bilhete Dourado logo depois da autenticação.',
             });
         }
     }, []);
@@ -348,39 +348,6 @@ export const LoginView: React.FC = () => {
         setMessage(null);
         setGoldenInviteGuide(null);
         try {
-            if (isGoldenInviteGateEnabled) {
-                const identifier = email.trim();
-
-                if (identifier) {
-                    const matchedProfile = await findProfileAccess(identifier);
-                    if (!matchedProfile?.email) {
-                        setIsSigningUp(true);
-                        setPassword('');
-                        setInviteCode('');
-                        setAcceptedLegal(false);
-                        setError('Essa conta ainda não existe. Informe o Convite Dourado e crie sua conta primeiro.');
-                        setGoldenInviteGuide({
-                            title: 'Google precisa de conta existente',
-                            text: 'No beta fechado, o Google entra em contas que já existem. Se ainda for seu primeiro acesso, crie a conta com Convite Dourado e depois volte para o Google.',
-                        });
-                        setLoading(false);
-                        return;
-                    }
-
-                    if (matchedProfile.email !== identifier) {
-                        setEmail(matchedProfile.email);
-                    }
-                } else if (isSigningUp) {
-                    setError('Digite o e-mail da conta. Se ela ainda não existir, vamos pedir o Convite Dourado e criar primeiro.');
-                    setGoldenInviteGuide({
-                        title: 'Fluxo de criação',
-                        text: 'Informe seu e-mail, cole o Convite Dourado e finalize a criação da conta. Depois disso, o Google pode virar seu atalho de entrada.',
-                    });
-                    setLoading(false);
-                    return;
-                }
-            }
-
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -488,12 +455,12 @@ export const LoginView: React.FC = () => {
                         <div className="login-guide-badge">BETA FECHADO</div>
                         <h2 className="login-guide-title">{goldenInviteGuide?.title || 'Criação da conta'}</h2>
                         <p className="login-guide-text">
-                            {goldenInviteGuide?.text || 'Cole o Convite Dourado, crie seu perfil e depois entre normalmente. O Google continua disponível depois que a conta existir.'}
+                            {goldenInviteGuide?.text || 'Você pode criar por e-mail e Convite Dourado, ou entrar com Google e validar o Bilhete logo depois da autenticação.'}
                         </p>
                         <div className="login-guide-steps">
-                            <span>1. Convite Dourado</span>
-                            <span>2. Criar perfil</span>
-                            <span>3. Entrar</span>
+                            <span>1. Entrar</span>
+                            <span>2. Validar Bilhete</span>
+                            <span>3. Conta liberada</span>
                         </div>
                     </div>
                 )}
@@ -628,6 +595,11 @@ export const LoginView: React.FC = () => {
                             </svg>
                             <span className="text-sm">Entrar com Google</span>
                         </button>
+                        {isGoldenInviteGateEnabled && (
+                            <p className="px-3 text-[11px] leading-relaxed text-white/45">
+                                No primeiro acesso com Google, o app pede seu Bilhete Dourado logo depois da autenticação.
+                            </p>
+                        )}
 
                         <button
                             id="login-toggle-mode-button"

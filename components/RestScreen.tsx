@@ -151,9 +151,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const currentActionSessionTask = actionSession?.taskId ? tasks.find(task => task.id === actionSession.taskId) : null;
     const isActionSessionCompleted = Boolean(currentActionSessionTask?.completed);
     const sitrepStatusLabel = isSitrepLocked ? 'Travado' : 'Liberado';
-    const sitrepStatusHint = isSitrepLocked
-        ? 'Toque no cadeado para liberar o Painel Diário e interagir com o dia.'
-        : 'Painel Diário liberado para concluir ações, revisar o ciclo e ajustar o fluxo.';
     const unlockHint = isUnlocked ? 'Saindo...' : 'Segure 1s para desbloquear';
 
     useEffect(() => {
@@ -888,10 +885,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         <span className="text-[9px] font-black uppercase tracking-[0.18em]">{sitrepStatusLabel}</span>
                                     </button>
                                 </div>
-                            </div>
-
-                            <div className={`rounded-2xl border px-3 py-2 text-[10px] font-semibold leading-relaxed ${isSitrepLocked ? 'border-amber-300/20 bg-amber-300/8 text-amber-100/90' : 'border-emerald-300/20 bg-emerald-300/8 text-emerald-100/90'}`}>
-                                {sitrepStatusHint}
                             </div>
 
                             {/* Content Area */}

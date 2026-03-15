@@ -3,6 +3,23 @@ import { UserProfile, GoldenInvite, SovereignConfig, Notification } from '../typ
 
 // Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
+  private static async readErrorContextBody(error: unknown): Promise<{ error?: string; details?: unknown } | null> {
+    const response = (error as { context?: Response })?.context;
+    if (!response) return null;
+
+    try {
+      const json = await response.clone().json();
+      return typeof json === 'object' && json ? (json as { error?: string; details?: unknown }) : null;
+    } catch {
+      try {
+        const text = await response.clone().text();
+        return text ? { error: text } : null;
+      } catch {
+        return null;
+      }
+    }
+  }
+
   private static shouldFallbackDeleteToRpc(error: unknown): boolean {
     const functionError = error as { name?: string; message?: string; context?: Response };
     const message = String(functionError?.message || '').toLowerCase();
@@ -10,15 +27,17 @@ export class SupabaseService {
     const status = functionError?.context?.status ?? null;
 
     return (
-      name.includes('functions') ||
-      message.includes('edge function') ||
+      name.includes('functionsfetcherror') ||
       message.includes('failed to send a request') ||
+      message.includes('failed to fetch') ||
+      message.includes('networkerror') ||
+      message.includes('functionsfetcherror') ||
       message.includes('forbidden') ||
       message.includes('not found') ||
       message.includes('404') ||
       message.includes('403') ||
-      message.includes('500') ||
-      (typeof status === 'number' && status >= 400)
+      status === 403 ||
+      status === 404
     );
   }
 
@@ -356,21 +375,37 @@ export class SupabaseService {
 
       console.error('Erro ao excluir conta via Edge Function:', error);
       const functionError = error as { message?: string; context?: Response };
+      const functionErrorBody = await this.readErrorContextBody(error);
       const functionErrorMessage = String(functionError?.message || '');
       const responseStatus = functionError?.context?.status ?? null;
+      const contextualMessage =
+        (typeof functionErrorBody?.error === 'string' && functionErrorBody.error.trim())
+          ? functionErrorBody.error
+          : functionErrorMessage;
       const canFallbackToRpc = this.shouldFallbackDeleteToRpc(error);
 
       if (!canFallbackToRpc) {
         return {
           success: false,
-          error: functionErrorMessage || (responseStatus ? `Não foi possível excluir a conta. HTTP ${responseStatus}.` : 'Não foi possível excluir a conta.'),
+          error: contextualMessage || (responseStatus ? `Não foi possível excluir a conta. HTTP ${responseStatus}.` : 'Não foi possível excluir a conta.'),
         };
       }
 
       const { data: rpcData, error: rpcError } = await supabase.rpc('delete_my_account');
       if (rpcError) {
         console.error('Erro ao excluir conta via RPC:', rpcError);
-        return { success: false, error: rpcError.message || 'Não foi possível excluir a conta.' };
+        const rpcMessage = String(rpcError.message || '');
+        if (
+          rpcMessage.includes('Could not find the function public.delete_my_account') ||
+          rpcMessage.includes('delete_my_account without parameters')
+        ) {
+          return {
+            success: false,
+            error: 'A exclusão caiu no plano B, mas a RPC delete_my_account() não está instalada neste projeto. Precisamos publicar a Edge Function account-delete corretamente ou rodar o SQL de suporte da exclusão.',
+          };
+        }
+
+        return { success: false, error: rpcMessage || 'Não foi possível excluir a conta.' };
       }
 
       if ((rpcData as any)?.success === false) {

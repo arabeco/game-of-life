@@ -1,4 +1,5 @@
 export const CLOSED_BETA_GOOGLE_REDIRECT_KEY = '__closed_beta_google_redirect_v1';
+export const CLOSED_BETA_GOOGLE_SIGNUP_INTENT_KEY = '__closed_beta_google_signup_intent_v1';
 
 export type ClosedBetaGoogleRedirectMode = 'login' | 'signup';
 
@@ -6,6 +7,12 @@ export interface ClosedBetaGoogleRedirectState {
     mode: ClosedBetaGoogleRedirectMode;
     email?: string;
     message: string;
+}
+
+export interface ClosedBetaGoogleSignupIntent {
+    inviteCode: string;
+    nickname?: string;
+    acceptedLegal: boolean;
 }
 
 export const saveClosedBetaGoogleRedirect = (state: ClosedBetaGoogleRedirectState) => {
@@ -43,5 +50,42 @@ export const clearClosedBetaGoogleRedirect = () => {
         sessionStorage.removeItem(CLOSED_BETA_GOOGLE_REDIRECT_KEY);
     } catch (error) {
         console.warn('Failed to clear closed beta redirect state:', error);
+    }
+};
+
+export const saveClosedBetaGoogleSignupIntent = (state: ClosedBetaGoogleSignupIntent) => {
+    try {
+        sessionStorage.setItem(CLOSED_BETA_GOOGLE_SIGNUP_INTENT_KEY, JSON.stringify(state));
+    } catch (error) {
+        console.warn('Failed to persist closed beta google signup intent:', error);
+    }
+};
+
+export const readClosedBetaGoogleSignupIntent = (): ClosedBetaGoogleSignupIntent | null => {
+    try {
+        const raw = sessionStorage.getItem(CLOSED_BETA_GOOGLE_SIGNUP_INTENT_KEY);
+        if (!raw) return null;
+
+        const parsed = JSON.parse(raw) as Partial<ClosedBetaGoogleSignupIntent> | null;
+        if (!parsed?.inviteCode || parsed.acceptedLegal !== true) {
+            return null;
+        }
+
+        return {
+            inviteCode: parsed.inviteCode,
+            nickname: typeof parsed.nickname === 'string' ? parsed.nickname : '',
+            acceptedLegal: true,
+        };
+    } catch (error) {
+        console.warn('Failed to restore closed beta google signup intent:', error);
+        return null;
+    }
+};
+
+export const clearClosedBetaGoogleSignupIntent = () => {
+    try {
+        sessionStorage.removeItem(CLOSED_BETA_GOOGLE_SIGNUP_INTENT_KEY);
+    } catch (error) {
+        console.warn('Failed to clear closed beta google signup intent:', error);
     }
 };

@@ -5,10 +5,10 @@ const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
 const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") || "google/gemini-2.0-flash-001";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
-const SITE_URL = Deno.env.get("SITE_URL") || "https://www.glyph.life";
+const SITE_URL = Deno.env.get("SITE_URL") || "https://app.glyph.life";
 const ALLOWED_ORIGINS = (
   Deno.env.get("ALLOWED_ORIGINS") ||
-  "https://www.glyph.life,https://glyph.life,https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173"
+  "https://app.glyph.life,https://www.glyph.life,https://glyph.life,https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173"
 )
   .split(",")
   .map((o) => o.trim())

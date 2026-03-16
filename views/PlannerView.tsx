@@ -1052,16 +1052,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     // Define milestoneActions before usage
     const milestoneActions = actions.filter(a => a.actionType === 'Marco' && !tasks.some(task => task.actionId === a.id));
 
-    const currentDayStr = toDateString(currentDate);
-
-    // Recalculate Available Task Pool based on ACTIONS (Mirror Arenas) - Scheduled Tasks for Current Date
-    const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, currentDayStr), [actions, taskPool, tasks, currentDayStr]);
+    // Planner bay is global stock: changing day cannot create a second count for the same action.
+    const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, null), [actions, taskPool, tasks]);
 
     const getActionById = (id: string) => actions.find(a => a.id === id);
     const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
     
     const dailyTasks = getTasksForDate(currentDate);
-    const bayAreaTasks = dailyTasks.filter(isTaskInPool); // Only uncompleted tasks in Bay Area
+    const bayAreaTasks = tasks.filter(isTaskInPool); // Global waiting bay, independent of selected day
     const scheduledTasks = dailyTasks.filter(hasScheduledTime); // For DailyView
     
     const allTasksCompleted = checklistItems.every(item => item.completed);

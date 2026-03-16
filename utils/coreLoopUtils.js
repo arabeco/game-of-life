@@ -110,7 +110,7 @@ export const buildDailyArenaFocus = (taskStatuses, actions, arenas) => {
  * @param {Action[]} actions
  * @param {TaskPoolItemLike[]} taskPool
  * @param {ScheduledTask[]} tasks
- * @param {string} date
+ * @param {string | null | undefined} date
  * @param {string[]} [trackedTaskIds=[]]
  * @returns {Record<string, { count: number, isUnlimited: boolean, taskIds: string[] }>}
  */
@@ -124,7 +124,10 @@ export const buildActionPoolByDate = (actions, taskPool, tasks, date, trackedTas
 
         const maxRepetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
         const isUnlimited = taskPool.some(item => item.actionId === action.id && item.unlimited);
-        const tasksForAction = tasks.filter(task => task.actionId === action.id && task.date === date);
+        const tasksForAction = tasks.filter(task =>
+            task.actionId === action.id &&
+            (!date || task.date === date)
+        );
         const consumedCount = tasksForAction.filter(task => doesTaskConsumePoolCapacity(task, trackedTaskIds)).length;
         const remaining = isUnlimited ? 99 : Math.max(0, maxRepetitions - consumedCount);
 

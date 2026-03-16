@@ -516,7 +516,20 @@ export const createTaskDomain = ({
     };
 
     const rescheduleTask = (taskId: string, newDate: string, newStartTime: number) => {
-        updateTask(taskId, { date: newDate, startTime: newStartTime });
+        const currentTask = tasks.find(task => task.id === taskId);
+        if (!currentTask) return;
+
+        const action = getActionById(currentTask.actionId);
+        const shouldSyncDurationFromAction =
+            currentTask.startTime < 0 &&
+            !currentTask.completed &&
+            Number.isFinite(action?.duration);
+
+        updateTask(taskId, {
+            date: newDate,
+            startTime: newStartTime,
+            ...(shouldSyncDurationFromAction ? { duration: action?.duration } : {}),
+        });
     };
 
     const returnTaskToPool = (taskId: string) => {

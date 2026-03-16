@@ -72,6 +72,7 @@ const App: React.FC = () => {
     const renderMode = useMemo(() => new URLSearchParams(window.location.search).get('render'), []);
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
     const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
+    const showFullScreenBoot = loading || (!session && authGuardLoading);
 
     const handleSplashComplete = () => {
         sessionStorage.setItem('hasSeenSplash', 'true');
@@ -341,7 +342,7 @@ const App: React.FC = () => {
                 </Suspense>
             ) : (
                 <div className="relative flex min-h-screen flex-col overflow-hidden bg-black font-sans text-white">
-                    {loading || authGuardLoading ? (
+                    {showFullScreenBoot ? (
                         <AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />
                     ) : (
                         <Suspense fallback={<AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />}>
@@ -353,7 +354,7 @@ const App: React.FC = () => {
                             <ResetPasswordOverlay onClose={() => setShowResetPassword(false)} />
                         </Suspense>
                     )}
-                    {!loading && !authGuardLoading && pendingGoogleInviteSession && (
+                    {!showFullScreenBoot && pendingGoogleInviteSession && (
                         <ClosedBetaGoogleInviteModal
                             session={pendingGoogleInviteSession}
                             onClose={() => setPendingGoogleInviteSession(null)}
@@ -366,7 +367,7 @@ const App: React.FC = () => {
                 </div>
             )}
             {!isSplashComplete && renderMode !== 'legacy' && (
-                <SplashScreen onComplete={handleSplashComplete} isLoading={loading || authGuardLoading} />
+                <SplashScreen onComplete={handleSplashComplete} isLoading={showFullScreenBoot} />
             )}
         </>
     );

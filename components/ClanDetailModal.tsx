@@ -158,6 +158,8 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
     const expToNextRank = expForNextRank - expForCurrentRank;
     const rawPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
     const progressPercentage = Math.floor(Math.max(0, Math.min(100, rawPercentage)));
+    const description = (clan.description || '').trim() || 'Sem descricao registrada.';
+    const hasExpandableDescription = description.length > 90 || description.includes('\n');
 
     const handleSaveDescription = async () => {
         if (!clan) return;
@@ -178,39 +180,42 @@ const ClanHeader: React.FC<{ userClanRole?: 'leader' | 'member'; expandDescripti
                 <div className="text-[10px] text-center text-gray-400 font-mono mt-0.5">
                     {Math.floor(progressInRank)} / {expToNextRank} XP
                 </div>
-                <div className="flex items-center justify-center space-x-4 border-t border-white/10 pt-1 mt-1">
-                    <button
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className="text-xs text-gray-400 hover:text-white flex items-center space-x-1"
-                    >
-                        <span>{isExpanded ? 'Ocultar' : 'Ver'} descrição</span>
-                        <ChevronDownIcon className={`w-4 h-4 ${isExpanded ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isExpanded && userClanRole === 'leader' && (
-                        <>
-                            <div className="w-px h-3 bg-white/20"></div>
-                            {isEditingDescription ? (
-                                <button onClick={handleSaveDescription} className="text-xs font-bold text-green-400">Salvar</button>
-                            ) : (
-                                <button onClick={() => { setIsEditingDescription(true); setEditableDescription(clan.description); }} className="text-xs text-gray-400 hover:text-white">Editar</button>
-                            )}
-                        </>
+                <div className="border-t border-white/10 pt-2 mt-1">
+                    {isEditingDescription ? (
+                        <textarea
+                            value={editableDescription}
+                            onChange={(e) => setEditableDescription(e.target.value)}
+                            className="w-full bg-black/30 p-2 rounded-lg text-xs text-white"
+                            rows={3}
+                        />
+                    ) : (
+                        <p className={`text-xs text-gray-300 text-center ${!isExpanded ? 'line-clamp-1' : ''}`}>
+                            {description}
+                        </p>
                     )}
-                </div>
-                {isExpanded && (
-                    <div className="text-xs text-gray-300 text-center pt-1">
-                        {isEditingDescription ? (
-                            <textarea
-                                value={editableDescription}
-                                onChange={(e) => setEditableDescription(e.target.value)}
-                                className="w-full bg-black/30 p-2 rounded-lg text-xs text-white"
-                                rows={3}
-                            />
-                        ) : (
-                            <p>{clan.description}</p>
+
+                    <div className="mt-2 flex items-center justify-center gap-3">
+                        {hasExpandableDescription && !isEditingDescription && (
+                            <button
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="text-[11px] text-gray-400 hover:text-white flex items-center space-x-1"
+                            >
+                                <span>{isExpanded ? 'Mostrar menos' : 'Mostrar mais'}</span>
+                                <ChevronDownIcon className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            </button>
+                        )}
+                        {userClanRole === 'leader' && (
+                            <>
+                                {hasExpandableDescription && !isEditingDescription && <div className="w-px h-3 bg-white/20"></div>}
+                                {isEditingDescription ? (
+                                    <button onClick={handleSaveDescription} className="text-xs font-bold text-green-400">Salvar</button>
+                                ) : (
+                                    <button onClick={() => { setIsEditingDescription(true); setEditableDescription(clan.description); }} className="text-[11px] text-gray-400 hover:text-white">Editar</button>
+                                )}
+                            </>
                         )}
                     </div>
-                )}
+                </div>
             </GlassCard>
         </div>
     );
@@ -1161,7 +1166,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                 <span>{clanJoinRequestsIncoming.length} pendentes</span>
                                             </div>
                                             {clanJoinRequestsIncoming.map(request => {
-                                                const nickname = request.requesterProfile?.nickname || 'Soberano';
+                                                const nickname = request.requesterProfile?.nickname || 'Usuario';
                                                 const initial = nickname.charAt(0).toUpperCase();
                                                 return (
                                                     <div key={request.id} className="bg-black/20 p-3 rounded-2xl flex items-center space-x-3 border border-white/10">

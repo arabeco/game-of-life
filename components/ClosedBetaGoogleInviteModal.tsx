@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { SupabaseService } from '../services/SupabaseService';
-import { saveClosedBetaGoogleRedirect } from '../utils/closedBetaAuth';
+import { rememberClosedBetaGoogleAccess, saveClosedBetaGoogleRedirect } from '../utils/closedBetaAuth';
 import { signOutAndClearSupabaseSession } from '../utils/authSession';
 import { ensureClosedBetaUserProfile } from '../utils/closedBetaProfile';
 import { ClosedBetaInviteModal } from './ClosedBetaInviteModal';
@@ -56,7 +56,10 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
       return {
         success: true,
         successMessage: 'Bilhete aceito! Liberando sua conta...',
-        onSuccess: () => onComplete(session),
+        onSuccess: () => {
+          rememberClosedBetaGoogleAccess(session.user.id, session.user.email);
+          onComplete(session);
+        },
       };
     } catch (submitError: any) {
       return {

@@ -1,9 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { AlertCircle, Check, Flag, Minus, RotateCcw, Users, Zap, type LucideIcon } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Activity,
+  AlertCircle,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  Flag,
+  Mail,
+  Minus,
+  RotateCcw,
+  Users,
+  X,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
-import { VanguardWelcomeModal } from '../components/VanguardWelcomeModal';
 import { supabase } from '../supabaseClient';
-import type { AppMode, VanguardWelcomePayload } from '../types';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
 
@@ -25,37 +37,23 @@ interface Marco1BetaScoreboardRow {
   email: string | null;
   nickname: string | null;
   beta_tier: BetaTier;
+  manual_stage: Marco1Stage | null;
   stage_suggested: Marco1Stage | null;
   activation_passed: boolean | null;
   d2_returned: boolean | null;
   cycle_closed: boolean | null;
   active_days_14d: number | null;
+  invite_code: string | null;
+  claimed_invite_code: string | null;
   created_at: string;
 }
 
-const REAL_WORLD_TIERS = ['prata', 'bronze'] as const;
+const TRACKED_TIERS = ['ouro', 'prata', 'bronze'] as const;
 const KPI_GOALS = {
-  population: 45,
+  population: 50,
   activationPct: 60,
   d2Pct: 30,
   cyclePct: 20,
-};
-
-const VANGUARD_PREVIEW_PAYLOAD: VanguardWelcomePayload = {
-  inviteCode: 'ouro-preview',
-  gold: 50,
-  chestType: 'Incomum',
-  itemIds: [
-    'item_border_vanguarda_01',
-    'item_banner_vanguarda_01',
-    'dreads',
-    'mullet_topete',
-    'item_artifact_2_001',
-    'item_artifact_3_002',
-    'item_artifact_3_004',
-    'item_orb_2_002',
-    'item_plate_2_001',
-  ],
 };
 
 const stageStyles: Record<string, string> = {
@@ -79,6 +77,24 @@ const tierStyles: Record<Exclude<BetaTier, null>, string> = {
 
 const formatPercent = (value: number) => `${value.toFixed(0)}%`;
 
+const formatStageLabel = (value: string | null | undefined) => {
+  if (!value) return 'candidate';
+  return value.replace(/_/g, ' ');
+};
+
+const formatDateTime = (value: string | null | undefined) => {
+  if (!value) return 'Nao informado';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Nao informado';
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
+
 const getDisplayName = (row: Marco1BetaScoreboardRow) => {
   const nickname = row.nickname?.trim();
   if (nickname) return nickname;
@@ -86,7 +102,7 @@ const getDisplayName = (row: Marco1BetaScoreboardRow) => {
   const emailPrefix = row.email?.split('@')[0]?.trim();
   if (emailPrefix) return emailPrefix;
 
-  return 'Soberano sem nome';
+  return 'Usuario sem nome';
 };
 
 const getInitials = (value: string) => {
@@ -111,6 +127,16 @@ const getTierClassName = (tier: BetaTier) => {
   return tierStyles[tier] || 'border-white/10 bg-zinc-900 text-zinc-400';
 };
 
+const getProgressTone = (progressPct: number, targetPct: number) => {
+  if (progressPct >= targetPct) {
+    return 'from-emerald-400 via-emerald-300 to-lime-300';
+  }
+  if (progressPct >= targetPct * 0.6) {
+    return 'from-amber-300 via-amber-200 to-yellow-200';
+  }
+  return 'from-rose-400 via-orange-300 to-amber-200';
+};
+
 const CheckCell: React.FC<{ value: boolean | null | undefined }> = ({ value }) => {
   if (value) {
     return (
@@ -127,28 +153,47 @@ const CheckCell: React.FC<{ value: boolean | null | undefined }> = ({ value }) =
   );
 };
 
+const MetricBar: React.FC<{ valuePct: number; tone: string }> = ({ valuePct, tone }) => {
+  const safeValue = Math.max(0, Math.min(100, valuePct));
+
+  return (
+    <div className="h-2 overflow-hidden rounded-full bg-white/8">
+      <div
+        className={`h-full rounded-full bg-gradient-to-r ${tone} transition-all duration-500`}
+        style={{ width: `${safeValue}%` }}
+      />
+    </div>
+  );
+};
+
 const KpiCard: React.FC<{
   icon: LucideIcon;
   title: string;
   value: string;
   helper: string;
   target: string;
-}> = ({ icon: Icon, title, value, helper, target }) => (
-  <GlassCard variant="neutral" className="p-3 md:p-3.5">
+  progressPct: number;
+  tone: string;
+}> = ({ icon: Icon, title, value, helper, target, progressPct, tone }) => (
+  <GlassCard variant="neutral" className="p-3 sm:p-3.5">
     <div className="flex items-start justify-between gap-2.5">
       <div className="space-y-1.5">
         <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">{title}</p>
         <div className="space-y-1">
-          <p className="text-2xl font-black tracking-tight text-white md:text-[1.75rem]">{value}</p>
-          <p className="truncate text-[11px] text-zinc-400">{helper}</p>
+          <p className="text-[1.7rem] font-black tracking-tight text-white sm:text-2xl md:text-[1.75rem]">{value}</p>
+          <p className="text-[11px] text-zinc-400">{helper}</p>
         </div>
       </div>
       <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300">
         <Icon className="h-4 w-4" />
       </div>
     </div>
-    <div className="mt-3 border-t border-white/6 pt-2 text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-      Meta: <span className="text-zinc-300">{target}</span>
+    <div className="mt-3 space-y-2">
+      <MetricBar valuePct={progressPct} tone={tone} />
+      <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+        <span>Meta</span>
+        <span className="text-zinc-300">{target}</span>
+      </div>
     </div>
   </GlassCard>
 );
@@ -163,14 +208,14 @@ const KpiSkeletonCard: React.FC = () => (
       </div>
       <div className="h-9 w-9 rounded-xl border border-white/6 bg-white/5" />
     </div>
-    <div className="mt-4 h-2.5 w-16 rounded-full bg-white/8" />
+    <div className="mt-4 h-2.5 rounded-full bg-white/8" />
   </GlassCard>
 );
 
 const TableSkeleton: React.FC = () => (
   <div className="animate-pulse divide-y divide-white/6">
     {Array.from({ length: 6 }).map((_, index) => (
-      <div key={index} className="grid min-w-[820px] grid-cols-[2.4fr_1.2fr_0.9fr_0.9fr_1.1fr_0.8fr] items-center gap-4 px-4 py-4 md:px-6">
+      <div key={index} className="grid min-w-[900px] grid-cols-[2.5fr_1.1fr_1.3fr_0.9fr_0.9fr_0.9fr_1.2fr_0.5fr] items-center gap-4 px-4 py-4 md:px-6">
         <div className="flex items-center gap-3">
           <div className="h-11 w-11 rounded-full bg-white/8" />
           <div className="space-y-1.5">
@@ -178,21 +223,157 @@ const TableSkeleton: React.FC = () => (
             <div className="h-2.5 w-16 rounded-full bg-white/8" />
           </div>
         </div>
+        <div className="h-8 w-16 rounded-full bg-white/8" />
         <div className="h-8 w-24 rounded-full bg-white/8" />
         <div className="h-7 w-7 rounded-full bg-white/8" />
         <div className="h-7 w-7 rounded-full bg-white/8" />
         <div className="h-7 w-7 rounded-full bg-white/8" />
-        <div className="h-3 w-10 rounded-full bg-white/8" />
+        <div className="h-3 w-16 rounded-full bg-white/8" />
+        <div className="h-4 w-4 rounded-full bg-white/8" />
       </div>
     ))}
   </div>
 );
 
+const DetailMetric: React.FC<{
+  title: string;
+  value: string;
+  helper: string;
+  progressPct: number;
+  tone: string;
+}> = ({ title, value, helper, progressPct, tone }) => (
+  <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{title}</p>
+        <p className="mt-1 text-lg font-black text-white">{value}</p>
+      </div>
+      <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-zinc-300">
+        {helper}
+      </span>
+    </div>
+    <div className="mt-3">
+      <MetricBar valuePct={progressPct} tone={tone} />
+    </div>
+  </div>
+);
+
+const PlayerInsightModal: React.FC<{
+  row: Marco1BetaScoreboardRow;
+  onClose: () => void;
+}> = ({ row, onClose }) => {
+  const displayName = getDisplayName(row);
+  const tier = row.beta_tier || 'sem-tier';
+  const stage = row.stage_suggested || row.manual_stage || 'candidate';
+  const activeDays = row.active_days_14d ?? 0;
+  const activeDaysPct = Math.min(100, (activeDays / 14) * 100);
+
+  return (
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/72 px-3 py-4 backdrop-blur-sm sm:px-4 sm:py-6" onClick={onClose}>
+      <GlassCard
+        variant="neutral"
+        className="relative max-h-[94vh] w-full max-w-2xl overflow-y-auto border border-white/12 bg-[#090909]/96 p-4 shadow-[0_30px_100px_rgba(0,0,0,0.55)] sm:p-5 md:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white sm:right-4 sm:top-4"
+          aria-label="Fechar detalhes"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/12 bg-gradient-to-br from-white/10 via-white/5 to-transparent text-xs font-black uppercase tracking-[0.16em] text-white sm:h-14 sm:w-14 sm:text-sm">
+            {getInitials(displayName)}
+          </div>
+          <div className="min-w-0 flex-1 space-y-2 pr-12 sm:pr-10">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Leitura individual</p>
+              <h2 className="truncate text-xl font-black tracking-tight text-white sm:text-2xl">{displayName}</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${getTierClassName(row.beta_tier)}`}>
+                {tier}
+              </span>
+              <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${getStageClassName(stage)}`}>
+                {formatStageLabel(stage)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+            <div className="flex items-center gap-2 text-zinc-300">
+              <Mail className="h-4 w-4" />
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Email</p>
+            </div>
+            <p className="mt-2 break-all text-sm font-semibold text-white">{row.email || 'Nao informado'}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+            <div className="flex items-center gap-2 text-zinc-300">
+              <CalendarDays className="h-4 w-4" />
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Entrada</p>
+            </div>
+            <p className="mt-2 text-sm font-semibold text-white">{formatDateTime(row.created_at)}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <DetailMetric
+            title="Ativacao"
+            value={row.activation_passed ? 'Passou' : 'Nao passou'}
+            helper={row.activation_passed ? 'loop criado' : 'pendente'}
+            progressPct={row.activation_passed ? 100 : 18}
+            tone={getProgressTone(row.activation_passed ? 100 : 18, KPI_GOALS.activationPct)}
+          />
+          <DetailMetric
+            title="Retorno D2"
+            value={row.d2_returned ? 'Voltou' : 'Nao voltou'}
+            helper={row.d2_returned ? 'dia 2' : 'pendente'}
+            progressPct={row.d2_returned ? 100 : 12}
+            tone={getProgressTone(row.d2_returned ? 100 : 12, KPI_GOALS.d2Pct)}
+          />
+          <DetailMetric
+            title="Ciclo"
+            value={row.cycle_closed ? 'Fechado' : 'Aberto'}
+            helper={row.cycle_closed ? 'concluiu 1' : 'pendente'}
+            progressPct={row.cycle_closed ? 100 : 10}
+            tone={getProgressTone(row.cycle_closed ? 100 : 10, KPI_GOALS.cyclePct)}
+          />
+          <DetailMetric
+            title="Motor 14d"
+            value={`${activeDays}/14 dias`}
+            helper="tracao recente"
+            progressPct={activeDaysPct}
+            tone={getProgressTone(activeDaysPct, 45)}
+          />
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Bilhete</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-zinc-200">
+              Convite: {row.claimed_invite_code || row.invite_code || 'nao informado'}
+            </span>
+            {row.manual_stage && row.manual_stage !== stage && (
+              <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-zinc-200">
+                Manual: {formatStageLabel(row.manual_stage)}
+              </span>
+            )}
+          </div>
+        </div>
+      </GlassCard>
+    </div>
+  );
+};
+
 export const SovereignPanelView: React.FC = () => {
   const [rows, setRows] = useState<Marco1BetaScoreboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [vanguardPreviewMode, setVanguardPreviewMode] = useState<AppMode | null>(null);
+  const [selectedRow, setSelectedRow] = useState<Marco1BetaScoreboardRow | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -203,8 +384,8 @@ export const SovereignPanelView: React.FC = () => {
 
       const { data, error } = await supabase
         .from('marco1_beta_scoreboard')
-        .select('id, email, nickname, beta_tier, stage_suggested, activation_passed, d2_returned, cycle_closed, active_days_14d, created_at')
-        .in('beta_tier', [...REAL_WORLD_TIERS])
+        .select('id, email, nickname, beta_tier, manual_stage, stage_suggested, activation_passed, d2_returned, cycle_closed, active_days_14d, invite_code, claimed_invite_code, created_at')
+        .in('beta_tier', [...TRACKED_TIERS])
         .order('created_at', { ascending: false });
 
       if (!isMounted) return;
@@ -227,33 +408,49 @@ export const SovereignPanelView: React.FC = () => {
     };
   }, []);
 
-  const totalPopulation = rows.length;
-  const activatedCount = rows.filter((row) => row.activation_passed === true).length;
-  const d2Count = rows.filter((row) => row.d2_returned === true).length;
-  const cycleClosedCount = rows.filter((row) => row.cycle_closed === true).length;
+  const stats = useMemo(() => {
+    const totalPopulation = rows.length;
+    const activatedCount = rows.filter((row) => row.activation_passed === true).length;
+    const d2Count = rows.filter((row) => row.d2_returned === true).length;
+    const cycleClosedCount = rows.filter((row) => row.cycle_closed === true).length;
 
-  const activationPct = totalPopulation > 0 ? (activatedCount / totalPopulation) * 100 : 0;
-  const d2Pct = totalPopulation > 0 ? (d2Count / totalPopulation) * 100 : 0;
-  const cycleClosedPct = totalPopulation > 0 ? (cycleClosedCount / totalPopulation) * 100 : 0;
+    const activationPct = totalPopulation > 0 ? (activatedCount / totalPopulation) * 100 : 0;
+    const d2Pct = totalPopulation > 0 ? (d2Count / totalPopulation) * 100 : 0;
+    const cycleClosedPct = totalPopulation > 0 ? (cycleClosedCount / totalPopulation) * 100 : 0;
 
-  const openVanguardPreview = (mode: AppMode) => setVanguardPreviewMode(mode);
-  const closeVanguardPreview = () => setVanguardPreviewMode(null);
+    const tierCounts = {
+      ouro: rows.filter((row) => row.beta_tier === 'ouro').length,
+      prata: rows.filter((row) => row.beta_tier === 'prata').length,
+      bronze: rows.filter((row) => row.beta_tier === 'bronze').length,
+    };
+
+    return {
+      totalPopulation,
+      activatedCount,
+      d2Count,
+      cycleClosedCount,
+      activationPct,
+      d2Pct,
+      cycleClosedPct,
+      tierCounts,
+    };
+  }, [rows]);
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
-      <div className="space-y-2 text-center">
+      <div className="space-y-3 text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-950/30 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">
-          Trimestre 1 · Fundacao
+          Trimestre 1 . Fundacao
         </div>
         <h1 className="luxe-title-shadow text-2xl font-black uppercase tracking-[0.18em] text-white md:text-3xl">
-          Painel do GM
+          Dashboard de Metricas
         </h1>
         <p className="mx-auto max-w-2xl text-sm text-zinc-400">
-          Leitura do mundo real. Usuarios <span className="font-semibold text-zinc-200">ouro</span> ficam totalmente fora deste painel.
+          Leitura de campo dos jogadores reais do beta. Ouro, prata e bronze entram aqui; GM e admin continuam fora.
         </p>
       </div>
 
-      <section className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <section className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {loading ? (
           <>
             <KpiSkeletonCard />
@@ -265,31 +462,39 @@ export const SovereignPanelView: React.FC = () => {
           <>
             <KpiCard
               icon={Users}
-              title="Populacao Prata/Bronze"
-              value={`${totalPopulation} / ${KPI_GOALS.population}`}
-              helper="Base real acompanhada no trimestre"
+              title="Populacao"
+              value={`${stats.totalPopulation} / ${KPI_GOALS.population}`}
+              helper="base acompanhada no trimestre"
               target={`${KPI_GOALS.population}`}
+              progressPct={Math.min(100, (stats.totalPopulation / KPI_GOALS.population) * 100)}
+              tone={getProgressTone(Math.min(100, (stats.totalPopulation / KPI_GOALS.population) * 100), 100)}
             />
             <KpiCard
               icon={Zap}
               title="Ativacao"
-              value={formatPercent(activationPct)}
-              helper={`${activatedCount} de ${totalPopulation} ativaram o loop`}
+              value={formatPercent(stats.activationPct)}
+              helper={`${stats.activatedCount} de ${stats.totalPopulation} ativaram o loop`}
               target={`${KPI_GOALS.activationPct}%`}
+              progressPct={stats.activationPct}
+              tone={getProgressTone(stats.activationPct, KPI_GOALS.activationPct)}
             />
             <KpiCard
               icon={RotateCcw}
               title="Retorno D2"
-              value={formatPercent(d2Pct)}
-              helper={`${d2Count} de ${totalPopulation} voltaram no dia 2`}
+              value={formatPercent(stats.d2Pct)}
+              helper={`${stats.d2Count} de ${stats.totalPopulation} voltaram no dia 2`}
               target={`${KPI_GOALS.d2Pct}%`}
+              progressPct={stats.d2Pct}
+              tone={getProgressTone(stats.d2Pct, KPI_GOALS.d2Pct)}
             />
             <KpiCard
               icon={Flag}
-              title="Ciclos Fechados"
-              value={formatPercent(cycleClosedPct)}
-              helper={`${cycleClosedCount} de ${totalPopulation} fecharam 1 ciclo`}
+              title="Ciclo Fechado"
+              value={formatPercent(stats.cycleClosedPct)}
+              helper={`${stats.cycleClosedCount} de ${stats.totalPopulation} fecharam 1 ciclo`}
               target={`${KPI_GOALS.cyclePct}%`}
+              progressPct={stats.cycleClosedPct}
+              tone={getProgressTone(stats.cycleClosedPct, KPI_GOALS.cyclePct)}
             />
           </>
         )}
@@ -297,28 +502,17 @@ export const SovereignPanelView: React.FC = () => {
 
       <section>
         <GlassCard variant="neutral" className="p-4 md:p-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Teste interno</p>
-              <h2 className="text-lg font-black text-white">Preview do modal da Vanguarda</h2>
-              <p className="text-xs text-zinc-400">
-                Abre o modal de boas-vindas com payload fixo para validar o fluxo visual em GAME e BASIC.
-              </p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Composicao da base</p>
+              <h2 className="text-lg font-black text-white">Quem esta dentro do radar</h2>
             </div>
-
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => openVanguardPreview('GAME')}
-                className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-yellow-200 transition-colors hover:bg-yellow-500/16"
-              >
-                Testar modal GAME
-              </button>
-              <button
-                onClick={() => openVanguardPreview('BASIC')}
-                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-zinc-200 transition-colors hover:bg-white/10"
-              >
-                Testar modal BASIC
-              </button>
+              {TRACKED_TIERS.map((tier) => (
+                <span key={tier} className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${getTierClassName(tier)}`}>
+                  {tier} . {stats.tierCounts[tier]}
+                </span>
+              ))}
             </div>
           </div>
         </GlassCard>
@@ -328,11 +522,11 @@ export const SovereignPanelView: React.FC = () => {
         <GlassCard variant="neutral" className="overflow-hidden p-0">
           <div className="flex flex-col gap-2 border-b border-white/6 px-4 py-4 md:flex-row md:items-end md:justify-between md:px-6">
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">A lista real</p>
-              <h2 className="text-lg font-black text-white">Prata e Bronze somente</h2>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Leitura individual</p>
+              <h2 className="text-lg font-black text-white">Jogadores acompanhados</h2>
             </div>
             <p className="text-xs text-zinc-500">
-              Read-only no dado. O unico modal aqui e o preview tecnico da Vanguarda.
+              Toque numa linha para abrir o detalhe do jogador.
             </p>
           </div>
 
@@ -346,35 +540,44 @@ export const SovereignPanelView: React.FC = () => {
                 <AlertCircle className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-white">Falha ao carregar o painel</p>
+                <p className="text-sm font-semibold text-white">Falha ao carregar o dashboard</p>
                 <p className="text-xs text-zinc-400">{errorMessage}</p>
               </div>
             </div>
           ) : rows.length === 0 ? (
             <div className="px-6 py-14 text-center">
-              <p className="text-sm font-semibold text-white">Nenhum usuario prata ou bronze encontrado.</p>
-              <p className="mt-1 text-xs text-zinc-400">Assim que eles entrarem no Marco 1, esta lista passa a refletir o comportamento real.</p>
+              <p className="text-sm font-semibold text-white">Nenhum jogador do beta apareceu ainda.</p>
+              <p className="mt-1 text-xs text-zinc-400">Assim que os bilhetes comecarem a rodar, esta lista reflete o comportamento real.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-[860px] w-full table-auto text-sm">
+              <table className="min-w-[900px] w-full table-auto text-sm">
                 <thead>
                   <tr className="border-b border-white/6 bg-white/[0.02] text-left text-[10px] uppercase tracking-[0.22em] text-zinc-500">
-                    <th className="px-4 py-3 font-black md:px-6">Soberano</th>
-                    <th className="px-4 py-3 font-black">Status</th>
-                    <th className="px-4 py-3 font-black text-center">Ativou?</th>
-                    <th className="px-4 py-3 font-black text-center">Voltou D2?</th>
-                    <th className="px-4 py-3 font-black text-center">Fechou Ciclo?</th>
-                    <th className="px-4 py-3 font-black text-center md:px-6">Motor</th>
+                    <th className="px-4 py-3 font-black md:px-6">Jogador</th>
+                    <th className="px-4 py-3 font-black">Tier</th>
+                    <th className="px-4 py-3 font-black">Etapa</th>
+                    <th className="px-4 py-3 font-black text-center">Loop</th>
+                    <th className="px-4 py-3 font-black text-center">D2</th>
+                    <th className="px-4 py-3 font-black text-center">Ciclo</th>
+                    <th className="px-4 py-3 font-black">Motor</th>
+                    <th className="px-4 py-3 font-black text-right md:px-6">Abrir</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => {
                     const displayName = getDisplayName(row);
-                    const displayTier = row.beta_tier || 'sem-tier';
+                    const tier = row.beta_tier || 'sem-tier';
+                    const stage = row.stage_suggested || row.manual_stage || 'candidate';
+                    const activeDays = row.active_days_14d ?? 0;
+                    const activeDaysPct = Math.min(100, (activeDays / 14) * 100);
 
                     return (
-                      <tr key={row.id} className="border-b border-white/6 last:border-b-0">
+                      <tr
+                        key={row.id}
+                        className="cursor-pointer border-b border-white/6 transition-colors hover:bg-white/[0.035] last:border-b-0"
+                        onClick={() => setSelectedRow(row)}
+                      >
                         <td className="px-4 py-4 md:px-6">
                           <div className="flex items-center gap-3">
                             <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-white/10 to-transparent text-xs font-black uppercase tracking-[0.16em] text-zinc-200">
@@ -382,17 +585,18 @@ export const SovereignPanelView: React.FC = () => {
                             </div>
                             <div className="min-w-0 space-y-1">
                               <p className="truncate font-semibold text-white">{displayName}</p>
-                              <div className="flex items-center gap-2">
-                                <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] ${getTierClassName(row.beta_tier)}`}>
-                                  {displayTier}
-                                </span>
-                              </div>
+                              <p className="truncate text-xs text-zinc-500">{row.email || 'sem email'}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${getStageClassName(row.stage_suggested)}`}>
-                            {row.stage_suggested || 'candidate'}
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] ${getTierClassName(row.beta_tier)}`}>
+                            {tier}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${getStageClassName(stage)}`}>
+                            {formatStageLabel(stage)}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-center">
@@ -404,8 +608,27 @@ export const SovereignPanelView: React.FC = () => {
                         <td className="px-4 py-4 text-center">
                           <CheckCell value={row.cycle_closed} />
                         </td>
-                        <td className="px-4 py-4 text-center font-semibold text-zinc-200 md:px-6">
-                          {row.active_days_14d ?? 0}
+                        <td className="px-4 py-4">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-200">
+                              <span>{activeDays}/14 dias</span>
+                              <Activity className="h-3.5 w-3.5 text-zinc-500" />
+                            </div>
+                            <MetricBar valuePct={activeDaysPct} tone={getProgressTone(activeDaysPct, 45)} />
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-right md:px-6">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setSelectedRow(row);
+                            }}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
+                            aria-label={`Abrir detalhes de ${displayName}`}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -417,12 +640,7 @@ export const SovereignPanelView: React.FC = () => {
         </GlassCard>
       </section>
 
-      <VanguardWelcomeModal
-        open={Boolean(vanguardPreviewMode)}
-        mode={vanguardPreviewMode || 'GAME'}
-        payload={VANGUARD_PREVIEW_PAYLOAD}
-        onClose={closeVanguardPreview}
-      />
+      {selectedRow && <PlayerInsightModal row={selectedRow} onClose={() => setSelectedRow(null)} />}
     </div>
   );
 };

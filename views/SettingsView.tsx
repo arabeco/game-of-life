@@ -30,9 +30,6 @@ const SovereignCustomizer = lazy(() =>
 const SovereignPanelView = lazy(() =>
     import('./SovereignPanelView').then((module) => ({ default: module.SovereignPanelView }))
 );
-const DebugRewardControls = lazy(() =>
-    import('../components/DebugRewardControls').then((module) => ({ default: module.DebugRewardControls }))
-);
 const NewArenaModal = lazy(() =>
     import('../components/NewArenaModal').then((module) => ({ default: module.NewArenaModal }))
 );
@@ -245,8 +242,8 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
     return {
         id: row.id,
         email: row.email ?? undefined,
-        username: row.username ?? row.nickname ?? 'Soberano',
-        nickname: row.nickname ?? 'Soberano',
+        username: row.username ?? row.nickname ?? 'usuario',
+        nickname: row.nickname ?? 'Usuario',
         avatarUrl: row.avatar_url ?? row.avatarUrl ?? '',
         border: row.border ?? 'default',
         level: typeof row.level === 'number' ? row.level : 1,
@@ -1473,16 +1470,20 @@ const PreferenciasTab: React.FC = () => {
     const { userProfile, oraclePreferences, updateUserProfile } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
-    const normalizeVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
-        if (value === 'friends' || value === 'nobody') return value;
-        return 'all';
+    const normalizeAssetsVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
+        if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+        return 'nobody';
+    };
+    const normalizeMasteryVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
+        if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+        return 'friends';
     };
 
     const [assetsVisibility, setAssetsVisibility] = useState<ProfileVisibilityOption>(
-        normalizeVisibilityOption(userProfile.assetsVisibility)
+        normalizeAssetsVisibilityOption(userProfile.assetsVisibility)
     );
     const [masteryVisibility, setMasteryVisibility] = useState<ProfileVisibilityOption>(
-        normalizeVisibilityOption(userProfile.masteryVisibility)
+        normalizeMasteryVisibilityOption(userProfile.masteryVisibility)
     );
 
     useEffect(() => {
@@ -1508,8 +1509,8 @@ const PreferenciasTab: React.FC = () => {
     const tutorialStatus = completedFlags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED) ? 'Assistido' : 'Pendente';
 
     useEffect(() => {
-        setAssetsVisibility(normalizeVisibilityOption(userProfile.assetsVisibility));
-        setMasteryVisibility(normalizeVisibilityOption(userProfile.masteryVisibility));
+        setAssetsVisibility(normalizeAssetsVisibilityOption(userProfile.assetsVisibility));
+        setMasteryVisibility(normalizeMasteryVisibilityOption(userProfile.masteryVisibility));
     }, [userProfile.assetsVisibility, userProfile.masteryVisibility]);
 
     const handleAssetsVisibilityChange = (value: ProfileVisibilityOption) => {
@@ -1649,7 +1650,6 @@ const PremiumTab: React.FC = () => {
                 <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
                     <Suspense fallback={<div className="h-24 rounded-2xl bg-black/20 animate-pulse" />}>
                         <SovereignPanelView />
-                        <DebugRewardControls />
                     </Suspense>
                 </div>
             )}

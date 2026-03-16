@@ -70,9 +70,9 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                     <p
                         className={`${isCompact ? 'text-[0.7rem] leading-[0.94] px-1' : 'text-[1.02rem] leading-none px-2'} block truncate font-black uppercase tracking-[0.02em]`}
                         style={{ ...etchedValue, fontFamily: 'var(--font-heading)' }}
-                        title={sovereignName || 'Soberano'}
+                        title={sovereignName || 'Usuario'}
                     >
-                        {sovereignName || 'Soberano'}
+                        {sovereignName || 'Usuario'}
                     </p>
                 </div>
 

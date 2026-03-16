@@ -94,6 +94,16 @@ const CLAN_RANKS: ClanRank[] = [
 ];
 
 
+const normalizeAssetsVisibilityScope = (value: unknown): ProfileVisibilityScope => {
+    if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+    return 'nobody';
+};
+
+const normalizeMasteryVisibilityScope = (value: unknown): ProfileVisibilityScope => {
+    if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+    return 'friends';
+};
+
 const DEFAULT_USER_PROFILE: UserProfile = {
     id: 'placeholder_user',
     nickname: 'Soberano',
@@ -104,8 +114,8 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     backgroundUrl: '',
     isOnline: false,
     visibleWidgets: [],
-    assetsVisibility: 'all',
-    masteryVisibility: 'all',
+    assetsVisibility: 'nobody',
+    masteryVisibility: 'friends',
     sovereign: DEFAULT_SOVEREIGN_CONFIG,
     nobility: { exp: 0, rankId: 'vagante' },
     mood: 50,
@@ -143,11 +153,6 @@ const DEFAULT_USER_PROFILE: UserProfile = {
 };
 
 const defaultChecklistItems: ChecklistItem[] = [];
-
-const DEFAULT_FRIENDS: UserProfile[] = [
-    { ...DEFAULT_USER_PROFILE, id: 'friend_01', nickname: 'Nexus', avatarUrl: 'https://picsum.photos/seed/friend01/100/100', sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, body: 'body_fem_1', hairStyle: 'parted', hairColor: '#B8860B', outfit: 'lab_coat', head_under: 'glasses' }, isOnline: true, role: 'user' },
-    { ...DEFAULT_USER_PROFILE, id: 'friend_02', nickname: 'Zypher', avatarUrl: 'https://picsum.photos/seed/friend02/100/100', sovereign: { ...DEFAULT_SOVEREIGN_CONFIG, hairStyle: 'mullet', hairColor: '#FFFFFF', skinTone: '#C68642', outfit: 'silver_armor', helmet: 'silver_helm' }, isOnline: false, role: 'user' },
-]
 
 type TaskPoolItem = {
     actionId: string;
@@ -195,11 +200,6 @@ const createDefaultActions = (newUser: boolean): Action[] => {
         return [...defaultActions, TUTORIAL_ACTION];
     }
     return defaultActions;
-};
-
-const normalizeProfileVisibilityScope = (value: unknown): ProfileVisibilityScope => {
-    if (value === 'friends' || value === 'nobody') return value;
-    return 'all';
 };
 
 interface EndCycleResult {
@@ -1684,7 +1684,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [enrichedClanMembers, setEnrichedClanMembers] = useState<EnrichedClanMember[]>([]);
 
-    const [friends, setFriends] = useState<UserProfile[]>(DEFAULT_FRIENDS);
+    const [friends, setFriends] = useState<UserProfile[]>(() => []);
     const [friendRequestsIncoming, setFriendRequestsIncoming] = useState<FriendRequest[]>([]);
     const [friendRequestsOutgoing, setFriendRequestsOutgoing] = useState<FriendRequest[]>([]);
     const [clanJoinRequestsIncoming, setClanJoinRequestsIncoming] = useState<ClanJoinRequest[]>([]);
@@ -2699,8 +2699,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         skin: normalizedSkin,
                         unlockedSkins: normalizedUnlockedSkins,
                     } as UserProfile;
-                    next.assetsVisibility = normalizeProfileVisibilityScope(next.assetsVisibility);
-                    next.masteryVisibility = normalizeProfileVisibilityScope(next.masteryVisibility);
+                    next.assetsVisibility = normalizeAssetsVisibilityScope(next.assetsVisibility);
+                    next.masteryVisibility = normalizeMasteryVisibilityScope(next.masteryVisibility);
                     const pendingPatch = pendingProfilePatchRef.current;
                     if (pendingPatch) {
                         next = { ...next, ...pendingPatch };
@@ -3408,7 +3408,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             codexId: String((data as any)?.codex_id || ''),
             codexName: String((data as any)?.codex_name || 'Codex sem nome'),
             codexDescription: String((data as any)?.codex_description || ''),
-            codexAuthor: String((data as any)?.codex_author || 'Soberano'),
+            codexAuthor: String((data as any)?.codex_author || 'Autor desconhecido'),
             codexTemplate: template,
             senderNickname: (data as any)?.sender_nickname || null,
             recipientNickname: (data as any)?.recipient_nickname || null,
@@ -4986,7 +4986,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const identitySnapshot = {
             avatarUrl: userProfile.avatarUrl,
-            nickname: userProfile.nickname || userProfile.username || 'Soberano',
+            nickname: userProfile.nickname || userProfile.username || 'Usuario',
             title: userProfile.title,
             level: userProfile.level || 1,
             nobilityRankId: userProfile.nobility?.rankId,
@@ -5343,13 +5343,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let publicProfile: UserProfile | null = null;
         if (profileRes.data) {
             publicProfile = mapToCamelCase(profileRes.data) as UserProfile;
-            publicProfile.assetsVisibility = normalizeProfileVisibilityScope(publicProfile.assetsVisibility);
-            publicProfile.masteryVisibility = normalizeProfileVisibilityScope(publicProfile.masteryVisibility);
+            publicProfile.assetsVisibility = normalizeAssetsVisibilityScope(publicProfile.assetsVisibility);
+            publicProfile.masteryVisibility = normalizeMasteryVisibilityScope(publicProfile.masteryVisibility);
         }
 
         const isOwner = userProfile.id === userId;
         const isFriend = friends.some((friend) => friend.id === userId);
-        const masteryVisibility = normalizeProfileVisibilityScope(publicProfile?.masteryVisibility);
+        const assetsVisibility = normalizeAssetsVisibilityScope(publicProfile?.assetsVisibility);
+        const masteryVisibility = normalizeMasteryVisibilityScope(publicProfile?.masteryVisibility);
+        const canViewAssets = isOwner || assetsVisibility === 'all' || (assetsVisibility === 'friends' && isFriend);
         const canViewMastery = isOwner || masteryVisibility === 'all' || (masteryVisibility === 'friends' && isFriend);
 
         // Merge slots with defaults to ensure all widgets are available even if not in DB
@@ -5372,11 +5374,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
 
+        if (publicProfile && !canViewAssets && !isOwner) {
+            publicProfile.visibleWidgets = [];
+        }
+
         return {
             profile: publicProfile,
             clan: clanData,
             clanRank,
-            slots: userSlots,
+            slots: canViewAssets ? userSlots : [],
             levels: canViewMastery ?userLevels : {},
         };
     }, [friends, userProfile.id]);

@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Action, Arena, Campaign } from '../types';
-import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, CheckIcon, EyeOffIcon } from './Icons';
+import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, CheckIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
 import { NewArenaModal } from './NewArenaModal';
 import { ArenaDetailModal } from './ArenaDetailModal';
@@ -9,6 +9,7 @@ import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { CampaignArenaStack } from './CampaignArenaStack';
 import { calculateCampaignProgress, getCampaignArenaStates } from '../utils/progressUtils';
+import { EmojiGlyph } from './EmojiGlyph';
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -29,6 +30,47 @@ const isProbablyImageUrl = (value?: string | null) => {
     if (!value) return false;
     const normalized = value.trim().toLowerCase();
     return normalized.startsWith('http://') || normalized.startsWith('https://') || normalized.startsWith('/') || normalized.startsWith('data:image/');
+};
+
+const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ arena, actions }) => {
+    const visibleActions = actions.slice(0, 3);
+    const hiddenActions = Math.max(0, actions.length - visibleActions.length);
+
+    return (
+        <div className="w-[10rem] flex-shrink-0 rounded-[0.95rem] border border-white/10 bg-[linear-gradient(180deg,rgba(91,65,167,0.18),rgba(17,17,20,0.96))] p-2 shadow-[0_12px_20px_rgba(0,0,0,0.22)]">
+            <div className="flex items-start gap-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.8rem] border border-white/10 bg-black/35 text-white">
+                    <EmojiGlyph symbol={arena.icon || '🏛️'} size="action" className="text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="line-clamp-2 text-[11px] font-black uppercase leading-tight text-white">
+                        {arena.name}
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-1">
+                {visibleActions.length > 0 ? visibleActions.map((action) => (
+                    <span
+                        key={action.id}
+                        className="inline-flex max-w-full items-center gap-1 rounded-full border border-white/8 bg-white/[0.05] px-1.5 py-1 text-[9px] font-semibold text-white/72"
+                    >
+                        <span className="shrink-0 leading-none">{action.icon || '📝'}</span>
+                        <span className="truncate">{action.name}</span>
+                    </span>
+                )) : (
+                    <span className="inline-flex rounded-full border border-white/8 bg-white/[0.05] px-2 py-1 text-[10px] font-semibold text-white/45">
+                        Sem acoes
+                    </span>
+                )}
+                {hiddenActions > 0 && (
+                    <span className="inline-flex rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">
+                        +{hiddenActions}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId, previewCampaign, previewArenas = [], previewActions = [], previewMeta }) => {
@@ -519,8 +561,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     // RENDER: DETAIL VIEW
     return (
         <Portal>
-             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-                 <GlassCard variant="neutral" className="relative flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.7rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.24),rgba(255,255,255,0.10)_22%,transparent_48%),radial-gradient(circle_at_38%_18%,rgba(255,255,255,0.12),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(109,40,217,0.18),transparent_34%),linear-gradient(145deg,rgba(102,109,120,0.98)_0%,rgba(132,139,151,0.95)_26%,rgba(82,88,101,0.94)_48%,rgba(38,33,53,0.96)_78%,rgba(16,11,28,0.99)_100%)]" onClick={e => e.stopPropagation()}>
+             <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+                 <GlassCard variant="neutral" className="relative flex max-h-[92vh] w-full max-w-[40rem] flex-col overflow-hidden rounded-[1.45rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.24),rgba(255,255,255,0.10)_22%,transparent_48%),radial-gradient(circle_at_38%_18%,rgba(255,255,255,0.12),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(109,40,217,0.18),transparent_34%),linear-gradient(145deg,rgba(102,109,120,0.98)_0%,rgba(132,139,151,0.95)_26%,rgba(82,88,101,0.94)_48%,rgba(38,33,53,0.96)_78%,rgba(16,11,28,0.99)_100%)]" onClick={e => e.stopPropagation()}>
                      <div
                         className="modal-aura-overlay"
                         style={{ '--modal-aura-color': 'rgba(154, 122, 255, 0.16)' } as React.CSSProperties}
@@ -530,6 +572,63 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                         style={{ '--modal-sheen-color': 'rgba(154, 122, 255, 0.50)' } as React.CSSProperties}
                      />
                     {/* Header */}
+                    {isPreviewCampaign ? (
+                        <div className="shrink-0 border-b border-white/10 bg-black/25 p-2.5">
+                            <div className="flex items-start gap-2.5">
+                                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[0.95rem] border border-white/10 bg-black/35">
+                                    {isProbablyImageUrl(previewMeta?.coverImage) ? (
+                                        <img
+                                            src={previewMeta?.coverImage}
+                                            alt={displayCampaignTitle}
+                                            className="absolute inset-0 h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.16),transparent_60%),linear-gradient(180deg,rgba(26,20,12,0.94),rgba(9,8,12,0.98))] text-[1.5rem]">
+                                            {previewMeta?.coverImage || '📜'}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <h1
+                                                className="text-left font-black uppercase tracking-[0.05em] text-[17px] leading-[0.94] text-[color:var(--skin-accent-color)]"
+                                                style={{ overflowWrap: 'anywhere', wordBreak: 'normal' }}
+                                            >
+                                                {displayCampaignTitle}
+                                            </h1>
+                                            {previewMeta?.author && (
+                                                <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/46">
+                                                    {previewMeta.author}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button onClick={onClose} className="shrink-0 rounded-xl px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] luxe-skin-button">
+                                            OK
+                                        </button>
+                                    </div>
+
+                                    <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-white/68">
+                                        {displayCampaignDescription || 'Sem descrição.'}
+                                    </p>
+
+                                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/64">
+                                            {sortedArenas.length} arenas
+                                        </span>
+                                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/64">
+                                            {previewActionCount} acoes
+                                        </span>
+                                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/64">
+                                            {renderedPhaseRows.filter((row) => row.arenas.length > 0).length} fases
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
                     <div className="p-4 border-b border-white/10 shrink-0 bg-black/20">
                         <div className="arena-plate-header flex justify-between items-start gap-1 rounded-xl px-1 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1 pl-0.5">
@@ -619,59 +718,10 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                             </div>
                         </div>
                     </div>
+                    )}
 
                     {/* Grid Area */}
-                    <div className="flex-1 overflow-y-auto relative p-4 bg-black/35">
-                        {isPreviewCampaign && previewMeta && (
-                            <div className="mb-4 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                                <div className="grid gap-3 md:grid-cols-[10rem,1fr] md:items-center">
-                                    <div className="relative min-h-[10rem] overflow-hidden rounded-[1.1rem] border border-white/10 bg-black/35">
-                                        {isProbablyImageUrl(previewMeta.coverImage) ? (
-                                            <img
-                                                src={previewMeta.coverImage}
-                                                alt={displayCampaignTitle}
-                                                className="absolute inset-0 h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_60%),linear-gradient(180deg,rgba(26,20,12,0.96),rgba(9,8,12,0.98))] text-[3.2rem]">
-                                                {previewMeta.coverImage || '📜'}
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent px-3 py-2">
-                                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)]">
-                                                {previewMeta.badgeLabel || 'Preview'}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3 text-left">
-                                        <div className="flex flex-wrap gap-2">
-                                            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/68">
-                                                {sortedArenas.length} arenas
-                                            </span>
-                                            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/68">
-                                                {previewActionCount} acoes
-                                            </span>
-                                            {previewMeta.author && (
-                                                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/68">
-                                                    {previewMeta.author}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-sm leading-relaxed text-white/76">
-                                            {previewMeta.note || 'Visualize a estrutura da campanha antes de instalar.'}
-                                        </p>
-                                        {previewMeta.hideArenaDetails && (
-                                            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-amber-200">
-                                                <EyeOffIcon className="h-3.5 w-3.5" />
-                                                Detalhes internos protegidos ate a compra
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
+                    <div className="relative flex-1 overflow-y-auto bg-black/35 p-2.5">
                         {sortedArenas.length === 0 ?(
                             <div className="h-full flex flex-col items-center justify-center text-gray-500">
                                 <p className="mb-4">Nenhuma arena definida nesta campanha.</p>
@@ -686,8 +736,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                             </div>
                         ) : (
                             <>
-                            <div className="rounded-[1.8rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.30),rgba(255,255,255,0.10)_24%,transparent_54%),radial-gradient(circle_at_40%_18%,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(109,40,217,0.16),transparent_34%),linear-gradient(180deg,rgba(177,184,194,0.34)_0%,rgba(121,128,141,0.90)_28%,rgba(74,79,91,0.92)_50%,rgba(38,31,53,0.96)_78%,rgba(12,10,20,0.99)_100%)] px-4 pb-4 pt-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
-                                <div className="space-y-4">
+                            <div className="rounded-[1.35rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.30),rgba(255,255,255,0.10)_24%,transparent_54%),radial-gradient(circle_at_40%_18%,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(109,40,217,0.16),transparent_34%),linear-gradient(180deg,rgba(177,184,194,0.34)_0%,rgba(121,128,141,0.90)_28%,rgba(74,79,91,0.92)_50%,rgba(38,31,53,0.96)_78%,rgba(12,10,20,0.99)_100%)] px-2.5 pb-2.5 pt-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
+                                <div className="space-y-2.5">
                                 {renderedPhaseRows.map(({ phase, arenas }, phaseIndex) => (
                                     <div
                                         key={phase}
@@ -703,7 +753,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 Fase {phase + 1}
                                             </div>
                                         )}
-                                        <div className={`flex min-h-[7rem] gap-3 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : ''}`}>
+                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[5.8rem]' : 'min-h-[7rem]'} gap-2 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
                                         {arenas.map((arena) => {
                                             const index = sortedArenas.findIndex(item => item.id === arena.id);
                                     const locked = isArenaLocked(arena.id);
@@ -712,6 +762,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     const isSource = linkingSourceId === arena.id;
                                     const isPrereqOfSource = linkingSourceId && selectedCampaign.arenaConfig?.[linkingSourceId]?.prerequisiteArenaIds?.includes(arena.id);
                                     const isTargetOfSource = linkingSourceId && prereqs.includes(linkingSourceId);
+                                    const arenaActions = campaignActionsSource.filter(a => a.arenaId === arena.id);
                                     
                                     // Highlight logic for linking mode
                                     let borderClass = 'border-transparent';
@@ -736,7 +787,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     return (
                                         <div 
                                             key={arena.id} 
-                                            className={`relative w-[79px] flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
+                                            className={`relative ${isPreviewCampaign ? 'w-[10rem]' : 'w-[79px]'} flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
                                             onClick={() => handleArenaClick(arena.id)}
                                             draggable={isEditing && !isCodexCampaign && !isPreviewCampaign}
                                             onDragStart={() => handleArenaDragStart(arena.id)}
@@ -801,14 +852,18 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
                                                 {/* Mini Arena Card Content */}
                                                 <div className={`${(isLinkingMode) ?'pointer-events-none' : ''}`}>
-                                                    <div className="h-[6.15rem] w-full rounded-[0.95rem] bg-[linear-gradient(180deg,rgba(91,65,167,0.24),rgba(20,20,20,0.45))]">
-                                                        <ArenaCard 
-                                                            arena={arena}
-                                                            actions={campaignActionsSource.filter(a => a.arenaId === arena.id)}
-                                                            variant="compact" 
-                                                            onClick={() => {}}
-                                                        />
-                                                    </div>
+                                                    {isPreviewCampaign ? (
+                                                        <PreviewArenaMiniCard arena={arena} actions={arenaActions} />
+                                                    ) : (
+                                                        <div className="h-[6.15rem] w-full rounded-[0.95rem] bg-[linear-gradient(180deg,rgba(91,65,167,0.24),rgba(20,20,20,0.45))]">
+                                                            <ArenaCard 
+                                                                arena={arena}
+                                                                actions={arenaActions}
+                                                                variant="compact" 
+                                                                onClick={() => {}}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Footer Controls / Prerequisites */}

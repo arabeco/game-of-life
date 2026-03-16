@@ -1017,7 +1017,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const legacyFallbackIdentity = useMemo(() => ({
         avatarUrl: userProfile.avatarUrl,
-        nickname: userProfile.nickname || userProfile.username || 'Soberano',
+        nickname: userProfile.nickname || userProfile.username || 'Usuario',
         title: userProfile.title,
         level: userProfile.level || 1,
         nobilityRankId: userProfile.nobility?.rankId,
@@ -1028,7 +1028,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         capturedAt: new Date().toISOString(),
     }), [userProfile.avatarUrl, userProfile.clanIcon, userProfile.clanName, userProfile.level, userProfile.nickname, userProfile.nobility, userProfile.title, userProfile.username]);
 
-    const sovereignName = userProfile.nickname || userProfile.username || 'Soberano';
+    const sovereignName = userProfile.nickname || userProfile.username || 'Usuario';
     const historicalAverageScore = useMemo(
         () => sortedReports.length > 0 ?sortedReports.reduce((sum, report) => sum + report.performanceScore, 0) / sortedReports.length : 0,
         [sortedReports]
@@ -1920,7 +1920,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
 
 
 

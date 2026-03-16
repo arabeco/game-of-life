@@ -202,7 +202,7 @@ const CodexCard: React.FC<{
         </div>
         <div className="rounded-2xl bg-black/25 border border-white/10 px-3 py-2">
           <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Autor</div>
-          <div className="mt-1 text-xs font-bold text-white truncate">{codex.author || 'Soberano'}</div>
+          <div className="mt-1 text-xs font-bold text-white truncate">{codex.author || 'Autor desconhecido'}</div>
         </div>
         <div className="rounded-2xl bg-black/25 border border-white/10 px-3 py-2">
           <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Origem</div>
@@ -447,7 +447,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
           previewMeta={{
             coverImage: previewCodex?.template?.coverImage,
             badgeLabel: activeTab === 'created' ? 'Forja autoral' : 'Biblioteca',
-            author: previewCodex?.author || 'Soberano',
+            author: previewCodex?.author || 'Autor desconhecido',
             note: activeTab === 'created'
               ? 'Seu manuscrito esta pronto para ser instalado ou refinado.'
               : 'Voce ja possui este Codex na biblioteca e pode explorar a campanha completa.',

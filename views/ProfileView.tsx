@@ -15,13 +15,57 @@ import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { handleShare } from '../components/Share';
 import { Portal } from '../components/Portal';
 import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
+import { ProfileAssetsPreview } from '../components/ProfileAssetsPreview';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
 const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
 
-const normalizeProfileVisibility = (value?: UserProfile['assetsVisibility']): 'all' | 'friends' | 'nobody' => {
-    if (value === 'friends' || value === 'nobody') return value;
-    return 'all';
+const normalizeAssetsVisibility = (value?: UserProfile['assetsVisibility']): 'all' | 'friends' | 'nobody' => {
+    if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+    return 'nobody';
 };
+
+const normalizeMasteryVisibility = (value?: UserProfile['masteryVisibility']): 'all' | 'friends' | 'nobody' => {
+    if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+    return 'friends';
+};
+
+const ProfileMasteryOrb: React.FC<{
+    level: number;
+    skinId?: string;
+    onClick: () => void;
+}> = ({ level, skinId = 'BASIC', onClick }) => (
+    <div data-skin={skinId}>
+        <button
+            type="button"
+            onClick={onClick}
+            className="group absolute bottom-4 left-4 z-30 rounded-full border border-white/10 bg-black/55 p-1.5 backdrop-blur-sm transition-transform hover:scale-[1.03]"
+            style={{ borderColor: 'var(--skin-accent-color)' }}
+            title="Ver ativos"
+        >
+            <div
+                className="relative flex h-14 w-14 items-center justify-center rounded-full"
+                style={{
+                    backgroundImage: 'var(--sephirot-bg-image), var(--sephirot-base-fill), var(--sephirot-bg-gradient)',
+                    backgroundSize: 'var(--sephirot-image-size, 92%), 100% 100%, cover',
+                    backgroundPosition: 'center, center, center',
+                    backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
+                    boxShadow: '0 0 9px rgba(0,0,0,0.35), inset 0 0 0 var(--sephirot-ring-width, 0.8px) var(--sephirot-border-color)',
+                }}
+            >
+                <span
+                    className="pointer-events-none relative z-[1] text-[1.15rem] font-black leading-none tracking-[-0.02em]"
+                    style={{
+                        color: 'var(--sephirot-text-color)',
+                        textShadow: '0 1px 0 rgba(255,255,255,0.14), 0 0 4px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.85)',
+                        WebkitTextStroke: '1.2px rgba(8, 8, 10, 0.98)',
+                    }}
+                >
+                    {level}
+                </span>
+            </div>
+        </button>
+    </div>
+);
 
 const UnifiedSovereignDisplay: React.FC<{
     sovereignConfig: UserProfile['sovereign'];
@@ -337,6 +381,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [isClanModalOpen, setClanModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
+    const [isAssetsPreviewOpen, setIsAssetsPreviewOpen] = useState(false);
     const [activeWidgetTab, setActiveWidgetTab] = useState<'mural' | 'maestria'>('mural');
 
     const [viewedClan, setViewedClan] = useState<Clan | null>(null);
@@ -468,20 +513,40 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     ), [assets]);
 
     const isFriendProfile = !isOwnProfile && friends.some(friend => friend.id === displayProfile.id);
-    const assetsVisibility = normalizeProfileVisibility(displayProfile.assetsVisibility);
-    const masteryVisibility = normalizeProfileVisibility(displayProfile.masteryVisibility);
+    const assetsVisibility = normalizeAssetsVisibility(displayProfile.assetsVisibility);
+    const masteryVisibility = normalizeMasteryVisibility(displayProfile.masteryVisibility);
     const canResolvePublicVisibility = isOwnProfile || !!fetchedProfile;
-    const canViewAssetsBadge = isOwnProfile || (canResolvePublicVisibility && (assetsVisibility === 'all' || (assetsVisibility === 'friends' && isFriendProfile)));
+    const canViewAssetsPreview = isOwnProfile || (canResolvePublicVisibility && (assetsVisibility === 'all' || (assetsVisibility === 'friends' && isFriendProfile)));
     const canViewMastery = isOwnProfile || (canResolvePublicVisibility && (masteryVisibility === 'all' || (masteryVisibility === 'friends' && isFriendProfile)));
     const profileDecagonLevels = !isOwnProfile
         ? (Object.keys(viewedLevels).length > 0 ? viewedLevels : fallbackViewedLevels)
         : undefined;
+    const profileAssets = useMemo(() => {
+        const baseAssets = assets.filter((asset) => asset.id !== 'geral');
+        if (isOwnProfile) return baseAssets;
+
+        const viewedSlotMap = new Map(viewedSlots.map((slot) => [slot.id, slot]));
+        const viewedLevelMap = Object.keys(viewedLevels).length > 0 ? viewedLevels : fallbackViewedLevels;
+
+        return baseAssets.map((asset) => ({
+            ...asset,
+            level: canViewMastery ? (viewedLevelMap[asset.id] ?? 1) : 1,
+            slots: asset.slots.map((slot) => viewedSlotMap.get(slot.id) || slot),
+            arenas: [],
+        }));
+    }, [assets, canViewMastery, fallbackViewedLevels, isOwnProfile, viewedLevels, viewedSlots]);
 
     useEffect(() => {
         if (activeWidgetTab === 'maestria' && !canViewMastery) {
             setActiveWidgetTab('mural');
         }
     }, [activeWidgetTab, canViewMastery]);
+
+    useEffect(() => {
+        if (isAssetsPreviewOpen && !canViewAssetsPreview) {
+            setIsAssetsPreviewOpen(false);
+        }
+    }, [canViewAssetsPreview, isAssetsPreviewOpen]);
 
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === displayProfile.border);
 
@@ -696,6 +761,10 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                     })}
                                                 </div>
                                             </div>
+                                        ) : !isOwnProfile && !canViewAssetsPreview && !isBasicMode ? (
+                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                                <p className="py-4 text-center text-sm text-gray-500">Ativos privados.</p>
+                                            </div>
                                         ) : (
                                             <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
                                                 {displayProfile.visibleWidgets.length > 0 && !isBasicMode ? (
@@ -748,33 +817,12 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             </div>
                         </div>
 
-                        {!isBasicMode && canViewAssetsBadge && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (canViewMastery) setActiveWidgetTab('maestria');
-                                }}
-                                className={`absolute bottom-4 left-4 z-30 rounded-full p-1.5 border bg-black/60 backdrop-blur-sm transition-colors ${canViewMastery ? 'hover:bg-black/75' : ''}`}
-                                style={{ borderColor: 'var(--skin-accent-color)' }}
-                                title={canViewMastery ? 'Ver maestria' : 'Ativos visiveis'}
-                            >
-                                <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/10 bg-black/50">
-                                    <Suspense fallback={<div className="h-full w-full bg-black/40" />}>
-                                        <AssetDecagon
-                                            assets={assets}
-                                            tempLevels={profileDecagonLevels}
-                                            size={56}
-                                            showCentralLevel={false}
-                                        />
-                                    </Suspense>
-                                </div>
-                                <div
-                                    className="absolute -bottom-1 -right-1 h-6 min-w-6 rounded-full bg-gray-900/95 px-1.5 text-center border"
-                                    style={{ borderColor: 'var(--skin-accent-color)' }}
-                                >
-                                    <span className="text-[10px] font-black leading-6 text-white">{displayProfile.level}</span>
-                                </div>
-                            </button>
+                        {!isBasicMode && canViewAssetsPreview && (
+                            <ProfileMasteryOrb
+                                level={displayProfile.level}
+                                skinId={displayProfile.skin}
+                                onClick={() => setIsAssetsPreviewOpen(true)}
+                            />
                         )}
 
                         {/* Unified Sovereign Display - Hidden in Basic Mode */}
@@ -784,6 +832,16 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 onClick={() => setIsSovereignModalOpen(true)}
                                 className="absolute top-[60px] right-4 w-[70px] h-[95px]"
                             />
+                        )}
+
+                        {isAssetsPreviewOpen && canViewAssetsPreview && (
+                            <div className="absolute inset-0 z-40 bg-black/88 backdrop-blur-md p-3">
+                                <ProfileAssetsPreview
+                                    assets={profileAssets}
+                                    skinId={displayProfile.skin}
+                                    onClose={() => setIsAssetsPreviewOpen(false)}
+                                />
+                            </div>
                         )}
                     </GlassCard>
                 </div>

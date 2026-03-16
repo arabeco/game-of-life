@@ -1,5 +1,6 @@
 export const CLOSED_BETA_GOOGLE_REDIRECT_KEY = '__closed_beta_google_redirect_v1';
 export const CLOSED_BETA_GOOGLE_SIGNUP_INTENT_KEY = '__closed_beta_google_signup_intent_v1';
+const CLOSED_BETA_GOOGLE_GRANTED_PREFIX = '__closed_beta_google_granted_v1__';
 
 export type ClosedBetaGoogleRedirectMode = 'login' | 'signup';
 
@@ -87,5 +88,39 @@ export const clearClosedBetaGoogleSignupIntent = () => {
         sessionStorage.removeItem(CLOSED_BETA_GOOGLE_SIGNUP_INTENT_KEY);
     } catch (error) {
         console.warn('Failed to clear closed beta google signup intent:', error);
+    }
+};
+
+export const rememberClosedBetaGoogleAccess = (userId?: string | null, email?: string | null) => {
+    if (!userId) return;
+
+    try {
+        localStorage.setItem(`${CLOSED_BETA_GOOGLE_GRANTED_PREFIX}${userId}`, JSON.stringify({
+            email: email || '',
+            rememberedAt: new Date().toISOString(),
+        }));
+    } catch (error) {
+        console.warn('Failed to persist closed beta granted access:', error);
+    }
+};
+
+export const hasRememberedClosedBetaGoogleAccess = (userId?: string | null): boolean => {
+    if (!userId) return false;
+
+    try {
+        return !!localStorage.getItem(`${CLOSED_BETA_GOOGLE_GRANTED_PREFIX}${userId}`);
+    } catch (error) {
+        console.warn('Failed to read closed beta granted access:', error);
+        return false;
+    }
+};
+
+export const clearRememberedClosedBetaGoogleAccess = (userId?: string | null) => {
+    if (!userId) return;
+
+    try {
+        localStorage.removeItem(`${CLOSED_BETA_GOOGLE_GRANTED_PREFIX}${userId}`);
+    } catch (error) {
+        console.warn('Failed to clear closed beta granted access:', error);
     }
 };

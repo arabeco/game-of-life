@@ -1,10 +1,15 @@
-﻿import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
 import { ClosedBetaGoogleInviteModal } from './components/ClosedBetaGoogleInviteModal';
 import { SupabaseService } from './services/SupabaseService';
-import { saveClosedBetaGoogleRedirect } from './utils/closedBetaAuth';
+import {
+    clearRememberedClosedBetaGoogleAccess,
+    hasRememberedClosedBetaGoogleAccess,
+    rememberClosedBetaGoogleAccess,
+    saveClosedBetaGoogleRedirect,
+} from './utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from './utils/envFlags';
 import { startInstallPromptCapture } from './utils/installPrompt';
 import { signOutAndClearSupabaseSession } from './utils/authSession';
@@ -58,6 +63,7 @@ const App: React.FC = () => {
     const [authGuardLoading, setAuthGuardLoading] = useState(false);
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [isSplashComplete, setIsSplashComplete] = useState(() => sessionStorage.getItem('hasSeenSplash') === 'true');
+    const authResolutionRef = useRef(0);
     const [bootVisuals, setBootVisuals] = useState<{ skin: string; mode: 'GAME' | 'BASIC'; theme: 'LIGHT' | 'DARK' | null }>({
         skin: 'BASIC',
         mode: 'GAME',
@@ -124,20 +130,32 @@ const App: React.FC = () => {
             return !!data?.id;
         };
 
-        const resolveClosedBetaSession = async (candidate: Session | null): Promise<Session | null> => {
+        const setPendingInviteSessionIfCurrent = (resolutionId: number, nextSession: Session | null) => {
+            if (authResolutionRef.current !== resolutionId) return;
+            setPendingGoogleInviteSession(nextSession);
+        };
+
+        const setSessionIfCurrent = (resolutionId: number, nextSession: Session | null) => {
+            if (authResolutionRef.current !== resolutionId) return;
+            setSession(nextSession);
+        };
+
+        const resolveClosedBetaSession = async (candidate: Session | null, resolutionId: number): Promise<Session | null> => {
             if (!candidate) return null;
 
             preloadBootVisuals(candidate.user?.id);
 
             if (!isGoldenInviteGateEnabled) {
-                setPendingGoogleInviteSession(null);
+                setPendingInviteSessionIfCurrent(resolutionId, null);
                 return candidate;
             }
 
             const accessStatus = await SupabaseService.getClosedBetaAccessStatus();
             const hasProfile = accessStatus?.hasProfile === true || await hasUserProfile(candidate.user?.id);
+            const hasRememberedAccess = hasRememberedClosedBetaGoogleAccess(candidate.user?.id);
 
             if (accessStatus?.reentryBlocked && isGoogleSession(candidate)) {
+                clearRememberedClosedBetaGoogleAccess(candidate.user?.id);
                 saveClosedBetaGoogleRedirect({
                     mode: 'login',
                     email: candidate.user.email || '',
@@ -154,10 +172,11 @@ const App: React.FC = () => {
                 return null;
             }
 
-            if (!hasProfile && accessStatus?.hasInvite) {
+            if (!hasProfile && (accessStatus?.hasInvite || hasRememberedAccess)) {
                 const repairResult = await ensureClosedBetaUserProfile(candidate);
                 if (repairResult.success) {
-                    setPendingGoogleInviteSession(null);
+                    rememberClosedBetaGoogleAccess(candidate.user?.id, candidate.user.email);
+                    setPendingInviteSessionIfCurrent(resolutionId, null);
                     return candidate;
                 }
 
@@ -172,7 +191,7 @@ const App: React.FC = () => {
             }
 
             if (!isGoogleSession(candidate)) {
-                setPendingGoogleInviteSession(null);
+                setPendingInviteSessionIfCurrent(resolutionId, null);
                 return candidate;
             }
 
@@ -181,6 +200,7 @@ const App: React.FC = () => {
                 : null;
 
             if (deletedAccountBlock?.blocked) {
+                clearRememberedClosedBetaGoogleAccess(candidate.user?.id);
                 saveClosedBetaGoogleRedirect({
                     mode: 'login',
                     email: candidate.user.email || '',
@@ -198,21 +218,26 @@ const App: React.FC = () => {
             }
 
             if (hasProfile) {
-                setPendingGoogleInviteSession(null);
+                rememberClosedBetaGoogleAccess(candidate.user?.id, candidate.user.email);
+                setPendingInviteSessionIfCurrent(resolutionId, null);
                 return candidate;
             }
 
-            setPendingGoogleInviteSession(candidate);
+            setPendingInviteSessionIfCurrent(resolutionId, candidate);
             return null;
         };
 
         const applyResolvedSession = async (candidate: Session | null) => {
+            const resolutionId = authResolutionRef.current + 1;
+            authResolutionRef.current = resolutionId;
             setAuthGuardLoading(true);
             try {
-                const resolvedSession = await resolveClosedBetaSession(candidate);
-                setSession(resolvedSession);
+                const resolvedSession = await resolveClosedBetaSession(candidate, resolutionId);
+                setSessionIfCurrent(resolutionId, resolvedSession);
             } finally {
-                setAuthGuardLoading(false);
+                if (authResolutionRef.current === resolutionId) {
+                    setAuthGuardLoading(false);
+                }
             }
         };
 
@@ -243,6 +268,7 @@ const App: React.FC = () => {
         } = supabase.auth.onAuthStateChange((event, nextSession) => {
             void (async () => {
                 if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_ERROR') {
+                    authResolutionRef.current += 1;
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                     if ((event as string) === 'TOKEN_REFRESH_ERROR') {
@@ -327,7 +353,7 @@ const App: React.FC = () => {
                             <ResetPasswordOverlay onClose={() => setShowResetPassword(false)} />
                         </Suspense>
                     )}
-                    {pendingGoogleInviteSession && (
+                    {!loading && !authGuardLoading && pendingGoogleInviteSession && (
                         <ClosedBetaGoogleInviteModal
                             session={pendingGoogleInviteSession}
                             onClose={() => setPendingGoogleInviteSession(null)}
@@ -347,3 +373,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

@@ -916,7 +916,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         return;
                     }
 
-                    let dropY = (pos.y - gridRect.top) - dropAnchorOffsetRef.current + scrollContainerRef.current.scrollTop;
+                    let dropY = (pos.y - gridRect.top) - dropAnchorOffsetRef.current;
                     dropY = Math.max(0, dropY);
                     setDailyDropIndicator(buildClampedDropIndicator(dropY, dragState.item.duration));
                 } else if (viewMode === 'week' && scrollContainerRef.current && dragState.item) {
@@ -931,7 +931,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         let dayIndex = Math.floor((pos.x - containerRect.left) / dayColumnWidth);
                         dayIndex = Math.max(0, Math.min(6, dayIndex));
                         const headerHeight = 32;
-                        let dropY = (pos.y - containerRect.top - headerHeight) - dropAnchorOffsetRef.current + scrollContainerRef.current.scrollTop;
+                        let dropY = (pos.y - containerRect.top - headerHeight) - dropAnchorOffsetRef.current;
                         if (dropY < 0) dropY = 0;
                         const indicator = buildClampedDropIndicator(dropY, dragState.item.duration);
                         setWeeklyDropIndicator({ dayIndex, top: indicator.top, height: indicator.height });
@@ -1250,4 +1250,3 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         </div>
     );
 };
-

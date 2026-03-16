@@ -1,5 +1,5 @@
 ============================================================
-           GLYPH: MASTER SYSTEM STATE (15/03/26)
+           GLYPH: MASTER SYSTEM STATE (16/03/26)
 ============================================================
 STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
 FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
@@ -12,9 +12,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 - Trilha oficial do Marco 1: `T1 Fundacao -> T2 O Cerco -> T3 A Ascensao`.
 
 ## 2. SCORECARD DE AUDITORIA
-- **EXECUCAO REAL: 9.4** (Build ok. Auth beta, exclusao, banco e Codex/Mentoria mais blindados).
-- **ID VISUAL: 9.3** (Login, modal de modo e ecossistema de Codex mais coerentes no padrao luxe).
-- **FLUXO USUARIO: 9.3** (Conta real Google/Bilhete, onboarding e exclusao validados. Pendente: e-mail/Convite, D2 e publish do pacote Codex).
+- **EXECUCAO REAL: 9.5** (Build/Type-check/Encoding ok. Auth beta, Planner, tracking e Codex/Mentoria mais blindados).
+- **ID VISUAL: 9.4** (Login, GM Board, Perfil e ecossistema de Codex mais coerentes no padrao luxe).
+- **FLUXO USUARIO: 9.4** (Conta real Google/Bilhete, onboarding e exclusao validados. Planner/Rest/boot mobile mais refinados. Pendente: e-mail/Convite, D2 e publish do pacote).
 - **RETENCAO: --** (Aguardando Beta)
 - **AQUISICAO: --** (Aguardando Videos)
 
@@ -30,17 +30,24 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [x] Reorganizar Login, modal de selecao de modo e feedback do Bilhete Dourado no padrao visual atual, com foco em clareza, estado e mobile. - Responsavel: PROTOCOLO
 [x] Reforcar o sistema de Codex/Mentoria: mentor so Premium, forja para pupilo por `300 ouro`, entrega autoral via RPC e limite de slots blindado no backend. - Responsavel: PROTOCOLO
 [x] Unificar Loja, Biblioteca e Claim de Codex no padrao luxe e estruturar os formularios `Mini -> Fase 2` para curadoria de mentores. - Responsavel: PROTOCOLO
+[x] Fechar a varredura tecnica do pacote atual com `type-check` e `check:encoding` verdes, limpando temporarios, drift de tipos e residuos de alpha. - Responsavel: PROTOCOLO
+[x] Expandir `marco1_beta_tracking` e o GM Panel para incluir jogadores de `Bilhete Ouro`, esconder GMs do scoreboard e deixar o dashboard operacional mais limpo e legivel. - Responsavel: PROTOCOLO
+[x] Limpar mocks e fallbacks visiveis do alpha, removendo perfis fake, placeholders externos e paineis de debug que ainda piscavam antes da hidratacao real. - Responsavel: PROTOCOLO
+[x] Refinar onboarding guiado, Planner e Rest Screen no mobile: passos reais de ciclo/arena/acao, bay global por usuario, duracao coerente no drop, drag mais proximo do dedo e desbloqueio/retorno mais fluido. - Responsavel: PROTOCOLO
+[x] Reduzir o ruido de boot do app, fazendo `Preparando o ambiente...` aparecer so no boot real, e nao em toda revalidacao de sessao ao voltar da aba/celular. - Responsavel: PROTOCOLO
+[x] Reforcar a privacidade do perfil publico e a leitura de ativos: `assets = nobody`, `mastery = friends`, Asset View focado em widgets e cards/modais de Cla/Codex mais compactos no mobile. - Responsavel: PROTOCOLO
 
 ## 4. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
 ### COMANDO (METAS IMEDIATAS & DONO)
-[-] Fechar a validacao de conta nova real restante: e-mail/Convite, checkbox de Termos no manual e primeiro retorno D2. - Responsavel: TRONO
-[-] Publicar e validar em `app.glyph.life` o pacote fechado hoje de Login/Codex/Mentoria antes de abrir os primeiros Bilhetes. - Responsavel: PROTOCOLO
+[-] Fechar a validacao de conta nova real restante: e-mail/Convite, aceite explicito de Termos no cadastro manual e primeiro retorno D2. - Responsavel: TRONO
+[-] Publicar e validar em `app.glyph.life` o pacote fechado hoje de Login/Codex/Mentoria/Planner antes de abrir os primeiros Bilhetes. - Responsavel: PROTOCOLO
 [ ] Rodar 3 contas reais de ensaio e registrar tempo, travas e duvidas do D0 ao primeiro retorno. - Responsavel: SENTINELA
 [ ] Rodar smoke real do pacote Codex: compra na Loja, compra de Slot, limite de slots, envio mentor -> pupilo e forja por `300 ouro`. - Responsavel: SENTINELA
+[ ] Rodar smoke real do Planner/Rest: bay global, duracao de acao apos drop, drag noturno com auto-scroll e retorno do app apos background/bloqueio. - Responsavel: SENTINELA
 [ ] Montar uma estacao fixa de QA na sala: suporte de celular, carregador, luz estavel e planilha/bloco de friccao. - Responsavel: SENTINELA
 [ ] Deixar um quadro visivel na sala com `60/30/20`, 5 Bilhetes enviados e os 3 bugs P0/P1 do dia. - Responsavel: TRONO
-[-] Fechar QA mobile do pacote Login -> Perfil -> Loja -> Codex -> Customizacao e congelar o padrao visual. - Responsavel: SENTINELA
 [ ] Revisar leitura de valor da Loja, Vanguarda e cosmeticos antes de expor isso com mais forca. - Responsavel: TESOURO
+[-] Fechar QA mobile do pacote Login -> Perfil -> Loja -> Codex -> Planner -> Customizacao e congelar o padrao visual. - Responsavel: SENTINELA
 
 ### TRONO (Governanca & Decisao)
 [ ] Disparar os 5 primeiros Bilhetes Dourados.
@@ -48,16 +55,16 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Validar se o sistema sustenta a entrada da Primeira Linhagem.
 
 ### PROTOCOLO (Integridade & Codigo)
-[-] Confirmar se `marco1_beta_tracking` e o GM Panel estao coerentes nas metas `60/30/20`.
-[-] Fazer varredura final de pt-BR/encoding residual e revisar o cadastro manual apos os ajustes de auth e closed beta.
+[-] Validar em uso real se o novo `marco1_beta_tracking`/GM Panel esta lendo bem `ouro`, `prata`, `bronze` e o funil `60/30/20`.
+[-] Revisar o cadastro manual para explicitar Termos/Privacidade antes da criacao da conta e concluir a ultima passada de pt-BR residual.
 
 ### DOMINIO (Marketing & Presenca)
 [ ] Gravar screen recordings dos fluxos principais e organizar a apresentacao dos 5 primeiros acessos.
 [ ] Criar criativos de "Gatilho de Ordem" para midias sociais.
 
 ### SENTINELA (Friccao & QA de Campo)
-[-] Fechar QA manual em campo do restante: e-mail/Convite, pacote Codex/Mentoria e retorno inicial no celular.
-[ ] Validar no celular os modais reduzidos de Perfil, Vanguarda, Loja, Season e selecao de modo.
+[-] Fechar QA manual em campo do restante: e-mail/Convite, pacote Codex/Mentoria, Planner/Rest e retorno inicial no celular.
+[ ] Validar no celular os modais reduzidos de Perfil, Vanguarda, Loja, Season, selecao de modo e preview de Codex/Campanha.
 
 ### TESOURO (Produto & Economia)
 [ ] Validar no mobile a leitura de valor de Ouro, Slots, Codex, cosmeticos e pacote Vanguarda.
@@ -91,9 +98,9 @@ Monitor complementar:
 [ ] Friccao mobile critica (P0/P1): 0/0
 
 ## 7. RESUMO ATUALIZADO
-- Data: 15/03/2026
+- Data: 16/03/2026
 - Atualizado por: GPT-5.4
-- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e hoje ampliou o bloco verde do sistema: auth fechado com Google/Bilhete validado em conta real, exclusao blindada no banco e testada ponta a ponta, Login/Codex mais alinhados ao padrao visual e a economia de Codex/Mentoria endurecida com mentor Premium, custo de `300 ouro` e slots no backend. O foco imediato agora e publicar esse pacote, fechar o restante do fluxo manual/e-mail, rodar smoke real de Loja/Codex/Mentoria e organizar o QA mobile de campo.
+- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e a atualizacao basica de hoje consolidou um segundo bloco forte de refinamento: type-check/encoding verdes, tracking do beta e GM Panel mais confiaveis, limpeza de mocks/fallbacks do alpha, Planner/Rest/Onboarding mobile mais coerentes e o boot `Preparando o ambiente...` restrito ao boot real. O foco imediato agora e publicar esse pacote, fechar o ramo manual/e-mail com Termos explicitos, rodar smoke real de Loja/Codex/Mentoria/Planner e validar o comportamento no celular sem ruido.
 - Texto do relatorio: atualizado a cada fechamento.
 
 ## 8. MODO DE USO DO RELATORIO
@@ -118,10 +125,10 @@ Monitor complementar:
 12. So converter `[x]` em `[v]` e mover `[v]` para `progresso.md` quando eu pedir claramente para `fechar o dia`, `fechar ciclo` ou equivalente.
 
 ## 9. BLOQUEIOS ATUAIS (ABERTOS)
-[ ] Conta nova real: ainda falta fechar sem ruido o ramo e-mail/Convite, o cadastro manual e o primeiro retorno D2.
-[ ] Pacote de hoje ainda pede publicacao e smoke real em `app.glyph.life` para Login/Codex/Mentoria.
+[ ] Conta nova real: ainda falta fechar sem ruido o ramo e-mail/Convite, o aceite de Termos no cadastro manual e o primeiro retorno D2.
+[ ] Pacote de hoje ainda pede publicacao e smoke real em `app.glyph.life` para Login/Codex/Mentoria/Planner.
 [ ] Operacao solo: execucao, QA e revisao ainda concentrados em 1 pessoa.
-[ ] Acabamento final: pt-BR, encoding residual e mobile ainda pedem ultima passada.
+[ ] Acabamento final: mobile, pt-BR residual e o comportamento de retorno/background ainda pedem ultima passada.
 [ ] Tese de valor: Loja, Codex, Mentoria e Vanguarda ainda sem validacao forte em beta real.
 
 Legenda rapida:

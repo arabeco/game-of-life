@@ -269,7 +269,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
   const createdCodexes = useMemo(() => userCodexes.filter(isCreatedCodex), [userCodexes]);
   const importedCodexes = useMemo(() => userCodexes.filter((codex) => !isCreatedCodex(codex)), [userCodexes]);
   const purchasedSlots = userProfile.codexCreationSlotsPurchased || 0;
-  const totalSlots = 1 + purchasedSlots;
+  const totalSlots = 5 + purchasedSlots;
   const usedSlots = createdCodexes.length;
   const remainingSlots = Math.max(0, totalSlots - usedSlots);
 
@@ -314,7 +314,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
     <EmptyShelf
       title={activeTab === 'created' ? 'Nenhum codex criado ainda' : 'Nenhum codex recebido ainda'}
       description={activeTab === 'created'
-        ? 'Seu primeiro slot de criacao ja esta livre. Use a forja para montar seu manuscrito.'
+        ? 'Seus slots base de criacao ja estao livres. Use a forja para montar seus manuscritos.'
         : 'Presentes de amigos e compras da loja vao aparecer aqui sem gastar slots.'}
     />
   ) : (

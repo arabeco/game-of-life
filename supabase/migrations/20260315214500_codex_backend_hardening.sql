@@ -202,7 +202,7 @@ begin
     return new;
   end if;
 
-  select 1 + coalesce(codex_creation_slots_purchased, 0)
+  select 5 + coalesce(codex_creation_slots_purchased, 0)
   into v_allowed_slots
   from public.user_profiles
   where id = new.owner_id;

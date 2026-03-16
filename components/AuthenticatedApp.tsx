@@ -1,4 +1,4 @@
-﻿import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+﻿import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { GlobalHeader } from './GlobalHeader';
 import { AssetIcon, ArenaIcon, ConfigIcon, PlannerIcon, SocialIcon } from './Icons';
@@ -45,18 +45,39 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
+const GAME_NAV_VIEWS: View[] = ['assets', 'arenas', 'planner', 'social', 'settings'];
+const BASIC_NAV_VIEWS: View[] = ['arenas', 'planner', 'social', 'settings'];
+
+const getAvailableViews = (canUseAssetsView: boolean, isBuilderMode: boolean): View[] => {
+    if (isBuilderMode) return ['arenas'];
+    return canUseAssetsView ? GAME_NAV_VIEWS : BASIC_NAV_VIEWS;
+};
+
+const getDefaultView = (canUseAssetsView: boolean, isBuilderMode: boolean): View => {
+    if (isBuilderMode) return 'arenas';
+    return canUseAssetsView ? 'assets' : 'arenas';
+};
+
+const sanitizeView = (view: View | null | undefined, canUseAssetsView: boolean, isBuilderMode: boolean): View => {
+    const availableViews = getAvailableViews(canUseAssetsView, isBuilderMode);
+    if (view && availableViews.includes(view)) return view;
+    return getDefaultView(canUseAssetsView, isBuilderMode);
+};
+
 const TutorialBridge: React.FC = () => null;
 
 const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaultRestScreenOpen = true }) => {
-    const [currentView, setCurrentView] = useState<View>('assets');
-    const [isProfileVisible, setProfileVisible] = useState(false);
-    const [isReportsVisible, setReportsVisible] = useState(false);
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile, appMode, activeTheme, notifications } = useGame();
     const { didForceGameMode } = useTutorial();
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
+    const canUseAssetsView = activeUIMode === 'GAME' || didForceGameMode;
+    const availableViews = useMemo(() => getAvailableViews(canUseAssetsView, isBuilderMode), [canUseAssetsView, isBuilderMode]);
+    const [currentView, setCurrentView] = useState<View>(() => getDefaultView(canUseAssetsView, isBuilderMode));
+    const [isProfileVisible, setProfileVisible] = useState(false);
+    const [isReportsVisible, setReportsVisible] = useState(false);
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
 
     useEffect(() => {
@@ -65,7 +86,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
 
     useEffect(() => {
         const handleNavigateToStore = () => {
-            setCurrentView('social');
+            setCurrentView((prev) => {
+                const nextView = sanitizeView('social', canUseAssetsView, isBuilderMode);
+                return prev === nextView ?prev : nextView;
+            });
             window.setTimeout(() => {
                 const storeBtn = Array.from(document.querySelectorAll('button')).find((b) => b.innerText.includes('LOJA'));
                 if (storeBtn) storeBtn.click();
@@ -73,7 +97,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         };
         window.addEventListener('navigate-to-store', handleNavigateToStore);
         return () => window.removeEventListener('navigate-to-store', handleNavigateToStore);
-    }, []);
+    }, [canUseAssetsView, isBuilderMode]);
 
     const navContainerRef = useRef<HTMLDivElement>(null);
     const navItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -114,10 +138,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         indicatorRef.current.style.transform = `translateX(${-diff}px)`;
     };
 
-    const handleSetView = (view: View) => {
-        if (isBuilderMode && view !== 'arenas') return;
-        setCurrentView(view);
-    };
+    const handleSetView = useCallback((view: View) => {
+        setCurrentView((prev) => {
+            const nextView = sanitizeView(view, canUseAssetsView, isBuilderMode);
+            return prev === nextView ?prev : nextView;
+        });
+    }, [canUseAssetsView, isBuilderMode]);
 
     const handleNavTouchEnd = () => {
         if (touchStartRef.current === null) return;
@@ -131,15 +157,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         }
 
         if (Math.abs(diff) > threshold) {
-            const views: View[] = activeUIMode === 'BASIC'
-                ?['arenas', 'planner', 'social', 'settings']
-                : ['assets', 'arenas', 'planner', 'social', 'settings'];
-            const currentIndex = views.indexOf(currentView);
+            const currentIndex = availableViews.indexOf(currentView);
 
             if (diff > 0 && currentIndex > 0) {
-                handleSetView(views[currentIndex - 1]);
-            } else if (diff < 0 && currentIndex < views.length - 1) {
-                handleSetView(views[currentIndex + 1]);
+                handleSetView(availableViews[currentIndex - 1]);
+            } else if (diff < 0 && currentIndex < availableViews.length - 1) {
+                handleSetView(availableViews[currentIndex + 1]);
             }
         }
         touchStartRef.current = null;
@@ -150,11 +173,11 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!e.altKey) return;
             switch (e.key) {
-                case '1': setCurrentView('assets'); break;
-                case '2': setCurrentView('arenas'); break;
-                case '3': setCurrentView('planner'); break;
-                case '4': setCurrentView('social'); break;
-                case '5': setCurrentView('settings'); break;
+                case '1': handleSetView('assets'); break;
+                case '2': handleSetView('arenas'); break;
+                case '3': handleSetView('planner'); break;
+                case '4': handleSetView('social'); break;
+                case '5': handleSetView('settings'); break;
                 case 'r':
                 case 'R': setReportsVisible((prev) => !prev); break;
                 case 'p':
@@ -167,7 +190,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [handleSetView]);
 
     useEffect(() => {
         const handleNavigate = (e: CustomEvent<{
@@ -210,7 +233,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
             }
 
             if (e.detail.view) {
-                setCurrentView(e.detail.view);
+                handleSetView(e.detail.view);
             }
 
             if (e.detail.tab) {
@@ -222,18 +245,23 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
 
         window.addEventListener('tutorialNavigate', handleNavigate as EventListener);
         return () => window.removeEventListener('tutorialNavigate', handleNavigate as EventListener);
-    }, []);
+    }, [handleSetView]);
 
     useEffect(() => {
-        if (isBuilderMode) setCurrentView('arenas');
-    }, [isBuilderMode]);
+        setCurrentView((prev) => {
+            const nextView = sanitizeView(prev, canUseAssetsView, isBuilderMode);
+            return prev === nextView ?prev : nextView;
+        });
+    }, [canUseAssetsView, isBuilderMode]);
 
     useEffect(() => {
         const state = window.history.state as { view?: View } | null;
-        if (state?.view) {
-            setCurrentView(state.view);
-        } else {
-            window.history.replaceState({ view: currentView }, '');
+        const initialView = sanitizeView(state?.view ?? currentView, canUseAssetsView, isBuilderMode);
+        if (initialView !== currentView) {
+            setCurrentView(initialView);
+        }
+        if (state?.view !== initialView) {
+            window.history.replaceState({ ...(state ?? {}), view: initialView }, '');
         }
         historyReady.current = true;
     }, []);
@@ -250,17 +278,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         const handlePopState = (event: PopStateEvent) => {
             const nextView = (event.state as { view?: View } | null)?.view;
             if (!nextView) return;
-            if (isBuilderMode && nextView !== 'arenas') {
-                setCurrentView('arenas');
-                window.history.pushState({ view: 'arenas' }, '');
-                return;
-            }
-            setCurrentView(nextView);
+            handleSetView(nextView);
         };
 
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [isBuilderMode]);
+    }, [handleSetView]);
 
     const handlePackDraft = async () => {
         const json = packDraftToJson();
@@ -312,7 +335,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                 case 'planner': return <PlannerView onReportsClick={() => setReportsVisible(true)} />;
                 case 'social': return <MundoView />;
                 case 'settings': return <SettingsView />;
-                default: return <AssetsView />;
+                default: return canUseAssetsView ?<AssetsView /> : <ArenasView />;
             }
         })();
 
@@ -355,12 +378,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         ?'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
     const themeClass = activeUIMode === 'BASIC' ?`mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
-
-    useEffect(() => {
-        if (appMode === 'BASIC' && currentView === 'assets' && !didForceGameMode) {
-            setCurrentView('arenas');
-        }
-    }, [appMode, currentView, didForceGameMode]);
 
     useEffect(() => {
         const skin = activeUIMode === 'BASIC' ?'default' : userProfile.skin;

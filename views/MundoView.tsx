@@ -87,14 +87,27 @@ const SocialSearch: React.FC<{
         }
 
         const normalizedQuery = newQuery.trim().toLowerCase();
-        const filteredFriends = friends.filter((friend) => {
+        
+        // Local filtering for quick response
+        const localFilteredFriends = friends.filter((friend) => {
             const nickname = String(friend.nickname || '').toLowerCase();
             const profileEmail = String(friend.email || '').toLowerCase();
             return nickname.includes(normalizedQuery) || profileEmail.includes(normalizedQuery);
         });
 
+        // Global player search
+        const globalPlayers = await searchPlayers(newQuery);
+        
+        // Merge results: exact friends already in list, plus new players found
+        const mergedPlayers = [...localFilteredFriends];
+        globalPlayers.forEach(p => {
+            if (!mergedPlayers.some(existing => existing.id === p.id)) {
+                mergedPlayers.push(p);
+            }
+        });
+
         const foundClans = await searchClans(newQuery);
-        onSearchResults({ players: filteredFriends, clans: foundClans });
+        onSearchResults({ players: mergedPlayers, clans: foundClans });
     };
 
     const handleAdd = async () => {

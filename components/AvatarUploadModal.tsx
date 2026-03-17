@@ -113,7 +113,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
 
   if (imageToCrop) {
     return (
-      <Suspense fallback={<div className="fixed inset-0 z-[10001] bg-black/70 backdrop-blur-sm" />}>
+      <Suspense fallback={<div className="fixed inset-0 z-[10020] bg-black/70 backdrop-blur-sm" />}>
         <ImageCropper
           imageSrc={imageToCrop}
           cropShape="round"

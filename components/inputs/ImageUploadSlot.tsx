@@ -100,7 +100,7 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
 
     if (imageToCrop) {
         return (
-            <Suspense fallback={<div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm" />}>
+            <Suspense fallback={<div className="fixed inset-0 z-[10020] bg-black/70 backdrop-blur-sm" />}>
                 <ImageCropper
                     imageSrc={imageToCrop}
                     cropShape="rect"

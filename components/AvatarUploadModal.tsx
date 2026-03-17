@@ -2,6 +2,9 @@ import React, { Suspense, lazy, useRef, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { UploadIcon } from './Icons';
 import { Portal } from './Portal';
+import { useGame } from '../contexts/GameContext';
+import { supabase } from '../supabaseClient';
+import { compressDataUrlToWebP } from '../utils/imageUtils';
 
 const ImageCropper = lazy(() =>
   import('./ImageCropper').then((module) => ({ default: module.ImageCropper }))
@@ -20,6 +23,10 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userProfile } = useGame();
+  const maxUploadBytes = 2 * 1024 * 1024;
+  const bucketName = 'user-images';
+  const userFolder = userProfile.id && userProfile.id !== 'placeholder_user' ? userProfile.id : 'guest';
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -39,6 +46,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
     reader.onloadend = () => {
       const dataUrl = reader.result as string;
       setImageToCrop(dataUrl);
+      setPreparedImageDataUrl(null);
       setError(null);
     };
     reader.onerror = () => setError('Failed to read image');
@@ -56,17 +64,49 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
     if (!preparedImageDataUrl) return;
 
     setIsUploading(true);
+    setError(null);
     try {
-      const { compressDataUrlToWebP } = await import('../utils/imageUtils');
       const webpDataUrl = await compressDataUrlToWebP(preparedImageDataUrl, {
         maxWidth: 400,
         maxHeight: 400,
         quality: 0.8,
       });
-      onSave(webpDataUrl);
-      onClose();
+
+      let blobToUpload: Blob;
+      let extension = 'webp';
+
+      try {
+        const response = await fetch(webpDataUrl);
+        blobToUpload = await response.blob();
+      } catch {
+        const response = await fetch(preparedImageDataUrl);
+        blobToUpload = await response.blob();
+        extension = blobToUpload.type.split('/')[1] || 'jpg';
+      }
+
+      if (blobToUpload.size > maxUploadBytes) {
+        setError('Imagem muito grande. Tente uma foto menor.');
+        return;
+      }
+
+      const filePath = `avatars/${userFolder}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, blobToUpload, {
+        contentType: `image/${extension}`,
+        cacheControl: '31536000',
+        upsert: true,
+      });
+
+      if (uploadError) {
+        setError('Nao consegui enviar a imagem agora.');
+        return;
+      }
+
+      const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+      const nextAvatarUrl = data.publicUrl || webpDataUrl;
+      onSave(nextAvatarUrl);
     } catch {
-      setError('Failed to process image');
+      setError('Nao consegui processar a imagem.');
+    } finally {
       setIsUploading(false);
     }
   };

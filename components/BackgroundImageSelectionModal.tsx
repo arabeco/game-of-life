@@ -1,6 +1,6 @@
 import React from 'react';
 import { GlassCard } from './GlassCard';
-import { UploadIcon } from './Icons';
+import { LockIcon, UploadIcon } from './Icons';
 import { Portal } from './Portal';
 import { ProfileBackgroundSurface } from './ProfileBackgroundSurface';
 import { useGame } from '../contexts/GameContext';
@@ -72,7 +72,7 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                                         />
                                         {bg.isPremiumOnly && !isPremiumUser && (
                                             <div className="absolute top-1 right-1 bg-black/80 rounded-full w-5 h-5 flex items-center justify-center border border-yellow-500/50 shadow-lg">
-                                                <span className="text-[10px]">L</span>
+                                                <LockIcon className="w-2.5 h-2.5 text-yellow-300" />
                                             </div>
                                         )}
                                     </button>
@@ -89,7 +89,7 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                                     <UploadIcon className="w-8 h-8" />
                                     {!isPremiumUser && (
                                         <div className="absolute top-1 right-1 bg-black/80 rounded-full w-5 h-5 flex items-center justify-center border border-yellow-500/50 shadow-lg">
-                                            <span className="text-[10px]">L</span>
+                                            <LockIcon className="w-2.5 h-2.5 text-yellow-300" />
                                         </div>
                                     )}
                                 </button>

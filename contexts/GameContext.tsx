@@ -293,7 +293,7 @@ export interface GameContextType {
     updateAssetSlotValue: (assetId: string, slotId: string, value: SlotValue) => void;
     getArenas: () => Arena[];
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
-    updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived'>>) => void;
+    updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
     deleteArena: (arenaId: string) => void;
     createArenaFolder: (name: string, icon: string, assetId?: string) => Promise<ArenaFolder | null>;
     updateArenaFolder: (folderId: string, data: Partial<ArenaFolder>) => Promise<void>;
@@ -5715,11 +5715,46 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => {
-        setAssets(prevAssets => prevAssets.map(asset => ({
-            ...asset,
-            arenas: asset.arenas.map(arena => arena.id === arenaId ?{ ...arena, ...arenaData } : arena)
-        })));
+    const updateArena = (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => {
+        setAssets(prevAssets => {
+            const sourceAsset = prevAssets.find(asset => asset.arenas.some(arena => arena.id === arenaId));
+            if (!sourceAsset) return prevAssets;
+
+            const targetAssetId = arenaData.assetId || sourceAsset.id;
+            const sourceArena = sourceAsset.arenas.find(arena => arena.id === arenaId);
+            if (!sourceArena) return prevAssets;
+
+            if (targetAssetId === sourceAsset.id) {
+                return prevAssets.map(asset => ({
+                    ...asset,
+                    arenas: asset.arenas.map(arena => arena.id === arenaId ?{ ...arena, ...arenaData } : arena)
+                }));
+            }
+
+            const targetAssetExists = prevAssets.some(asset => asset.id === targetAssetId);
+            if (!targetAssetExists) {
+                return prevAssets;
+            }
+
+            const movedArena = { ...sourceArena, ...arenaData, assetId: targetAssetId };
+            return prevAssets.map(asset => {
+                if (asset.id === sourceAsset.id) {
+                    return {
+                        ...asset,
+                        arenas: asset.arenas.filter(arena => arena.id !== arenaId),
+                    };
+                }
+
+                if (asset.id === targetAssetId) {
+                    return {
+                        ...asset,
+                        arenas: [...asset.arenas, movedArena],
+                    };
+                }
+
+                return asset;
+            });
+        });
         const userId = getSupabaseUserId();
         if (userId) {
             const snakeCaseData = mapToSnakeCase(arenaData);

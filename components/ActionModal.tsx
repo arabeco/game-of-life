@@ -272,7 +272,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         }
     };
 
-    const handleStartMission = () => {
+    const handleStartMission = (event?: React.MouseEvent | React.TouchEvent) => {
+        if (event && 'touches' in event && event.cancelable) {
+            event.preventDefault();
+        }
         if (!action || !startNowTask || startNowHoldIntervalRef.current) return;
 
         setStartNowTriggered(false);
@@ -974,8 +977,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     onMouseLeave={clearStartNowHold}
                                     onTouchStart={handleStartMission}
                                     onTouchEnd={clearStartNowHold}
+                                    onContextMenu={(e) => e.preventDefault()}
                                     className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06] active:scale-[0.99] relative overflow-hidden"
-                                    style={{ touchAction: 'none' }}
+                                    style={{
+                                        touchAction: 'none',
+                                        userSelect: 'none',
+                                        WebkitUserSelect: 'none',
+                                        WebkitTouchCallout: 'none',
+                                    } as React.CSSProperties}
                                 >
                                     <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/5">
                                         <div

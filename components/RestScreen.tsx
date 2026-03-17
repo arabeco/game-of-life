@@ -618,7 +618,10 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         return date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     };
 
-    const handleStartHold = () => {
+    const handleStartHold = (event?: React.MouseEvent | React.TouchEvent) => {
+        if (event && 'touches' in event && event.cancelable) {
+            event.preventDefault();
+        }
         if (holdAnimationFrameRef.current) return;
         clearUnlockHintTimeout();
         setShowUnlockHint(false);
@@ -1108,8 +1111,15 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleEndHold}
                             onTouchStart={handleStartHold}
                             onTouchEnd={handleEndHold}
+                            onContextMenu={(e) => e.preventDefault()}
                             className="relative group active:scale-95 transition-transform duration-200"
-                            style={{ WebkitTapHighlightColor: 'transparent' }}
+                            style={{
+                                WebkitTapHighlightColor: 'transparent',
+                                touchAction: 'none',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                WebkitTouchCallout: 'none',
+                            } as React.CSSProperties}
                         >
                             <div className="absolute inset-[-14px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,rgba(212,175,55,0.18)_28%,transparent_72%)] opacity-90 blur-md" />
 

@@ -662,14 +662,24 @@ export const LoginView: React.FC = () => {
                         </button>
 
                         {!showManualFields && (
-                            <button
-                                id="login-show-manual-button"
-                                type="button"
-                                onClick={() => openManualMode('signup')}
-                                className="login-bridge-link"
-                            >
-                                Criar conta com e-mail
-                            </button>
+                            <div className="login-manual-entry-row">
+                                <button
+                                    id="login-show-manual-login-button"
+                                    type="button"
+                                    onClick={() => openManualMode('login')}
+                                    className="login-manual-entry-button"
+                                >
+                                    Entrar com e-mail
+                                </button>
+                                <button
+                                    id="login-show-manual-signup-button"
+                                    type="button"
+                                    onClick={() => openManualMode('signup')}
+                                    className="login-manual-entry-button login-manual-entry-button--accent"
+                                >
+                                    Criar conta com e-mail
+                                </button>
+                            </div>
                         )}
 
                         {showManualFields && (

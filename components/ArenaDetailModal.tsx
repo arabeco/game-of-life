@@ -134,7 +134,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editableArena, setEditableArena] = useState({ name: arena.name, description: arena.description, icon: arena.icon });
+    const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [isLinkingObserver, setIsLinkingObserver] = useState(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -142,6 +142,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const newActionRef = useRef<HTMLButtonElement>(null);
     const [currentLinkType, setCurrentLinkType] = useState<string | null>(null);
     const [selectionType, setSelectionType] = useState<'mentoria' | 'competicao' | 'parceria'>('mentoria');
+
+    useEffect(() => {
+        setEditableArena({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
+        setIsEditing(false);
+    }, [arena.id, arena.assetId, arena.name, arena.description, arena.icon]);
 
     useEffect(() => {
         const fetchLinkType = async () => {
@@ -163,7 +168,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         fetchLinkType();
     }, [arena.id]);
 
-    const parentAsset = assets.find(a => a.id === arena.assetId);
+    const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
+    const parentAsset = assets.find(a => a.id === activeAssetId);
+    const formatAssetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
     const normalizedArena = arena.name ?arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
 
     const allActions = useMemo(() => {
@@ -245,7 +252,12 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const handleEditToggle = () => {
         if (isSpecialArena) return; // Disable editing for special arenas
         if (isEditing) {
-            updateArena(arena.id, { name: editableArena.name, description: editableArena.description, icon: editableArena.icon });
+            updateArena(arena.id, {
+                assetId: editableArena.assetId,
+                name: editableArena.name,
+                description: editableArena.description,
+                icon: editableArena.icon,
+            });
             showToast('Arena atualizada.', 'success');
         }
         setIsEditing(!isEditing);
@@ -392,7 +404,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     {isEditing ?"EDITAR ARENA" : arena.name}
                                 </h2>
                                 {parentAsset?.name && (
-                                    <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-300">{parentAsset.name}</p>
+                                    <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-300">{formatAssetLabel(parentAsset.id, parentAsset.name)}</p>
                                 )}
                                 {currentLinkType === 'competicao' && (
                                     <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
@@ -476,6 +488,22 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                         rows={2}
                                         className="w-full text-center bg-transparent text-sm text-gray-500 pt-1 focus:outline-none"
                                     />
+                                    <div className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-2 text-left">
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400 mb-2">
+                                            Ativo pai
+                                        </label>
+                                        <select
+                                            value={editableArena.assetId}
+                                            onChange={(e) => setEditableArena(prev => ({ ...prev, assetId: e.target.value }))}
+                                            className="w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-[var(--skin-accent-color)]/45"
+                                        >
+                                            {assets.map(asset => (
+                                                <option key={asset.id} value={asset.id}>
+                                                    {formatAssetLabel(asset.id, asset.name)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </>
                             ) : (
                                 <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descrição.'}</p>

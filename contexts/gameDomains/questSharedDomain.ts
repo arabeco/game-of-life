@@ -20,7 +20,7 @@ interface UseQuestSharedDomainParams {
     getArenas: () => Arena[];
     getActionsForArena: (arenaId: string) => Action[];
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
-    updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'name' | 'description' | 'icon' | 'folderId' | 'isArchived'>>) => void;
+    updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
     showToast: (message: string, tone: ToastTone) => void;
 }
 

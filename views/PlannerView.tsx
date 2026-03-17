@@ -1102,14 +1102,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const bayGridRows = isSingleRow ?'grid-rows-1' : 'grid-rows-2';
 
     return (
-        <div id="planner-container" className="flex flex-col h-full min-h-0 bg-[#0d0d0e] overflow-hidden">
+        <div id="planner-container" className="relative flex flex-col h-full min-h-0 bg-[#0d0d0e] overflow-visible">
             {dragState.isDragging && (
                 <div style={{ position: 'fixed', top: dragState.currentPosition.y, left: dragState.currentPosition.x, transform: `translate(-${dragState.pointerOffset.x}px, -${dragState.pointerOffset.y}px)`, pointerEvents: 'none', zIndex: 1000 }}>
                     {dragState.ghostElement}
                 </div>
             )}
 
-            <div className="flex-shrink-0 z-0 bg-[#0f0f10]/95 backdrop-blur-sm border-b border-white/6 transition-all duration-300 relative -mt-4 pt-4">
+            <div className="sticky top-0 z-30 flex-shrink-0 bg-[#0f0f10]/95 backdrop-blur-md border-b border-white/6 transition-all duration-300 relative pt-2 shadow-[0_10px_24px_rgba(0,0,0,0.28)]">
                 <div className="bg-transparent">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 text-lg font-bold h-11 mt-1">
                         <div className="flex items-center space-x-1 min-w-0" id="planner-tools">

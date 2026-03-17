@@ -98,6 +98,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
             }
         },
         delay: holdDurationMs,
+        preventDefaultOnTouch: true,
     });
 
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -106,6 +107,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {
+        if (e.cancelable) e.preventDefault();
         if (isLast) setIsHolding(true);
         longPressEvents.onTouchStart?.(e);
     };
@@ -169,7 +171,12 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
                                     onMouseDown={handleMouseDown}
                                     onTouchStart={handleTouchStart}
                                     onContextMenu={longPressEvents.onContextMenu}
-                                    style={{ touchAction: 'none' }}
+                                    style={{
+                                        touchAction: 'none',
+                                        userSelect: 'none',
+                                        WebkitUserSelect: 'none',
+                                        WebkitTouchCallout: 'none',
+                                    } as React.CSSProperties}
                                 >
                                     <span
                                         className={`luxe-title-shadow font-black uppercase text-[var(--gold)] ${

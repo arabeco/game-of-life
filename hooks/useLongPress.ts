@@ -10,6 +10,7 @@ interface LongPressOptions {
     onDragStart?: (event: MouseEvent | TouchEvent) => void;
     delay?: number;
     dragThreshold?: number;
+    preventDefaultOnTouch?: boolean;
 }
 
 const isTouchEvent = (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent): e is TouchEvent | React.TouchEvent => 'touches' in e;
@@ -46,7 +47,10 @@ export const useLongPress = (options: LongPressOptions) => {
         // Allow move handler to run in 'longpress' state to detect a drag-after-longpress-trigger.
         if (state.current !== 'pending' && state.current !== 'longpress') return;
 
-        const { dragThreshold = 10, onDragStart, onLongPressCancel } = optionsRef.current;
+        const { dragThreshold = 10, onDragStart, onLongPressCancel, preventDefaultOnTouch } = optionsRef.current;
+        if (preventDefaultOnTouch && isTouchEvent(e) && e.cancelable) {
+            e.preventDefault();
+        }
         const currentPos = getCoords(e);
         const dx = currentPos.x - startPos.current.x;
         const dy = currentPos.y - startPos.current.y;
@@ -84,6 +88,9 @@ export const useLongPress = (options: LongPressOptions) => {
         
         state.current = 'pending';
         startPos.current = getCoords(e);
+        if (optionsRef.current.preventDefaultOnTouch && isTouchEvent(e) && e.cancelable) {
+            e.preventDefault();
+        }
         e.persist();
 
         const { delay = 300, onLongPress } = optionsRef.current;
@@ -116,7 +123,7 @@ export const useLongPress = (options: LongPressOptions) => {
         onTouchStart: handleDown,
         onContextMenu: (e: React.MouseEvent) => {
             // Prevent context menu on mobile long press if it's a game action
-            if (state.current === 'longpress' || state.current === 'drag') {
+            if (optionsRef.current.preventDefaultOnTouch || state.current === 'longpress' || state.current === 'drag') {
                 e.preventDefault();
             }
         }

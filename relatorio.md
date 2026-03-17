@@ -1,5 +1,5 @@
 ============================================================
-           GLYPH: MASTER SYSTEM STATE (16/03/26)
+           GLYPH: MASTER SYSTEM STATE (17/03/26)
 ============================================================
 STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
 FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
@@ -33,6 +33,7 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [v] Limpar mocks e fallbacks visiveis do alpha, removendo perfis fake, placeholders externos e paineis de debug que ainda piscavam antes da hidratacao real. - Responsavel: PROTOCOLO
 [v] Refinar onboarding guiado, Planner, Rest Screen e perfil publico no mobile: passos reais de ciclo/arena/acao, bay global, duracao coerente no drop, drag mais proximo do dedo, boot menos ruidoso e ativos/maestria mais privados. - Responsavel: PROTOCOLO
 [v] Fazer uma adaptacao sutil para iPhone/PWA e navegacao manual: holds sem selecao acidental, `Entrar com e-mail`, troca de ativo pai da arena e header do Planner fixo na rolagem. - Responsavel: PROTOCOLO
+[x] Blindar o retorno do OAuth Google para nao cair de volta na LoginView: memoria curta de auth pendente, retry de sessao e boot mais estavel no primeiro retorno do provedor. - Responsavel: PROTOCOLO
 
 ## 4. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
 ### COMANDO (METAS IMEDIATAS & DONO)
@@ -87,7 +88,7 @@ Monitor complementar:
 ## 7. RESUMO ATUALIZADO
 - Data: 17/03/2026
 - Atualizado por: GPT-5.4
-- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e a atualizacao basica de hoje consolidou mais um bloco de acabamento real: criativos de aquisicao mais coerentes, tracking do beta e GM Panel mais confiaveis, limpeza de mocks/fallbacks do alpha, adaptacoes sutis de iPhone/PWA e um fluxo manual mais claro em login/planner/arena. A matriz de execucao segue enxuta e agora tambem inclui a vistoria do site/landing como frente de Dominio. O foco imediato continua sendo publicar esse pacote, fechar o ramo manual/e-mail com Termos explicitos, rodar smoke real de Loja/Codex/Mentoria/Planner e validar o comportamento no celular sem ruido.
+- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e a atualizacao basica de hoje consolidou mais um bloco de acabamento real: criativos de aquisicao mais coerentes, tracking do beta e GM Panel mais confiaveis, limpeza de mocks/fallbacks do alpha, adaptacoes sutis de iPhone/PWA, um fluxo manual mais claro em login/planner/arena e o retorno do Google mais blindado para nao pedir um segundo clique apos o OAuth. A matriz de execucao segue enxuta e agora tambem inclui a vistoria do site/landing como frente de Dominio. O foco imediato continua sendo publicar esse pacote, fechar o ramo manual/e-mail com Termos explicitos, rodar smoke real de Loja/Codex/Mentoria/Planner e validar o comportamento no celular sem ruido.
 - Texto do relatorio: atualizado a cada fechamento.
 
 ## 8. MODO DE USO DO RELATORIO

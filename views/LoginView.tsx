@@ -787,15 +787,26 @@ export const LoginView: React.FC = () => {
                                     )}
 
                                     {isSigningUp && (
-                                        <label className="login-consent">
-                                            <input
+                                        <div className="login-consent">
+                                            <button
                                                 id="login-terms-checkbox"
-                                                type="checkbox"
-                                                checked={manualLegalAccepted}
-                                                onChange={(e) => setManualLegalAccepted(e.target.checked)}
-                                            />
-                                            <span>Li e aceito os <a href={LEGAL_TERMS_URL_PLACEHOLDER} target="_blank" rel="noopener noreferrer">Termos</a> e a <a href={LEGAL_PRIVACY_URL_PLACEHOLDER} target="_blank" rel="noopener noreferrer">Politica de Privacidade</a>.</span>
-                                        </label>
+                                                type="button"
+                                                aria-pressed={manualLegalAccepted}
+                                                onClick={() => setManualLegalAccepted((prev) => !prev)}
+                                                className={`login-consent-toggle ${manualLegalAccepted ? 'is-checked' : ''}`}
+                                            >
+                                                <span className="login-consent-toggle__box" aria-hidden="true">
+                                                    {manualLegalAccepted ? '✓' : ''}
+                                                </span>
+                                                <span className="login-consent-toggle__text">
+                                                    Li e aceito os Termos e a Politica de Privacidade.
+                                                </span>
+                                            </button>
+                                            <div className="login-consent-links">
+                                                <a href={LEGAL_TERMS_URL_PLACEHOLDER} target="_blank" rel="noopener noreferrer">Ler Termos</a>
+                                                <a href={LEGAL_PRIVACY_URL_PLACEHOLDER} target="_blank" rel="noopener noreferrer">Ler Privacidade</a>
+                                            </div>
+                                        </div>
                                     )}
 
                                     {isSigningUp && (

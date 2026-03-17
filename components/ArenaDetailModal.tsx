@@ -413,7 +413,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                                     const quest = seasonQuests?.find(q => q.type === 'clan' && (
                                                         q.title === arena.name ||
                                                         q.actionTemplate?.name === arena.name ||
-                                                        allActions?.some(a => a.name === q.actionTemplate?.name || (q.id === 'quest-clan-unity' && (a.name.includes('Socializar') || a.name.includes('socializar'))))
+                                                        allActions?.some(a => a.name === q.actionTemplate?.name)
                                                     ));
                                                     return quest ?(clanQuestParticipants?.[quest.id] || 0) : 0;
                                                 })()}

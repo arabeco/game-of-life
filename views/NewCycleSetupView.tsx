@@ -7,8 +7,8 @@ import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { DatePickerModal } from '../components/DatePickerModal';
 import { Portal } from '../components/Portal';
-import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
+import { resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
 
 type ArenaStatus = 'renew' | 'archive' | 'delete';
 
@@ -58,14 +58,14 @@ interface NewCycleSetupViewProps {
 }
 
 export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, onComplete }) => {
-    const { getArenas, startNewCycle } = useGame();
+    const { getArenas, startNewCycle, seasons } = useGame();
     const [arenas] = useState<Arena[]>(() => getArenas());
     const [arenaChanges, setArenaChanges] = useState<Map<string, ArenaStatus>>(new Map());
     const [editingArena, setEditingArena] = useState<Arena | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [cycleName, setCycleName] = useState(`Ciclo de ${new Date().toLocaleString('default', { month: 'long' })}`);
-    const activeSeason = SEASONS[ACTIVE_SEASON_ID];
-    const [cycleEndDate, setCycleEndDate] = useState(activeSeason ? activeSeason.endDate : getLocalDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)));
+    const activeSeason = resolveRuntimeActiveSeason(seasons);
+    const [cycleEndDate, setCycleEndDate] = useState(activeSeason ? activeSeason.end_date : getLocalDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)));
     const [isDatePickerOpen, setDatePickerOpen] = useState(false);
     const today = getLocalDateString();
 
@@ -112,7 +112,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[10px] text-gray-400 uppercase">Termina em</p>
-                                        <p className="text-sm font-bold text-[var(--skin-accent-color)] opacity-80">{new Date(activeSeason.endDate).toLocaleDateString('pt-BR')}</p>
+                                        <p className="text-sm font-bold text-[var(--skin-accent-color)] opacity-80">{new Date(activeSeason.end_date).toLocaleDateString('pt-BR')}</p>
                                     </div>
                                 </div>
                             </GlassCard>

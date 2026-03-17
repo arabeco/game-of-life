@@ -23,6 +23,7 @@ import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { emitArenaAttention } from '../utils/arenaAttention';
+import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -1882,14 +1883,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return [];
     });
     const [seasonMissions, setSeasonMissions] = useState<SeasonMission[]>([]);
+    const activeRuntimeSeason = useMemo(() => resolveRuntimeActiveSeason(seasons), [seasons]);
+    const activeRuntimeSeasonId = activeRuntimeSeason?.id || ACTIVE_SEASON_ID;
+    const activeRuntimeSeasonConfig = SEASONS[activeRuntimeSeasonId] || null;
 
     const seasonQuests = useMemo(() => {
-        const activeSeason = seasons.find(s => s.is_active);
-
         // Default quests from constant
         let quests: SeasonQuest[] = [];
-        if (activeSeason && SEASONS[activeSeason.id]) {
-            quests = SEASONS[activeSeason.id].quests.map(q => ({
+        if (activeRuntimeSeasonConfig) {
+            quests = activeRuntimeSeasonConfig.quests.map(q => ({
                 id: q.id,
                 title: q.title,
                 description: q.description,
@@ -1899,11 +1901,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 requirements: q.requirements,
                 rewards: q.rewards
             })) as SeasonQuest[];
-        } else if (!activeSeason) {
-            quests = SEASONS[ACTIVE_SEASON_ID].quests.map(q => ({ ...q })) as SeasonQuest[];
         }
 
-        const targetSeasonId = activeSeason?.id || ACTIVE_SEASON_ID;
+        const targetSeasonId = activeRuntimeSeasonId;
         const dbMissions = seasonMissions.filter(m => m.season_id === targetSeasonId);
 
         // If we have DB missions for this season, prioritize them (override static config)
@@ -1938,7 +1938,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }));
 
         return [...quests, ...mappedMissions];
-    }, [seasons, seasonMissions]);
+    }, [activeRuntimeSeasonConfig, activeRuntimeSeasonId, seasonMissions]);
 
     const findSeasonQuestById = useCallback((questId: string) => {
         const dbQuest = seasonQuests.find(q => q.id === questId);
@@ -1969,10 +1969,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             && normalizeDomainLabel(q.title) === normalized
         );
         if (byTitle) return byTitle;
-
-        if (normalized.includes('socializar')) {
-            return seasonQuests.find(q => q.type === 'clan') || null;
-        }
 
         return null;
     }, [seasonQuests]);
@@ -2005,6 +2001,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const suspendPersistenceRef = useRef(false);
     const pendingProfilePatchRef = useRef<Partial<UserProfile> | null>(null);
     const profileUpdateInFlightRef = useRef<Record<string, boolean>>({});
+    const seasonLaunchRewardInFlightRef = useRef<Record<string, boolean>>({});
     const [hasHydratedFromSupabase, setHasHydratedFromSupabase] = useState(false);
 
     const isClanQuestProgressMissing = (error: unknown) => {
@@ -4624,10 +4621,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const grantInventoryItem = async (itemId: string, silent: boolean = false) => {
         const itemDef = resolveItemDef(itemId);
         if (itemId !== 'none' && itemDef?.category !== 'insignia' && !isItemCatalogVisible(itemDef || itemId)) {
-            return;
+            return { item: null, granted: false };
         }
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) return { item: null, granted: false };
+
+        const localExisting = inventory.find((inventoryItem) => inventoryItem.id === itemId);
+        if (localExisting) {
+            return { item: localExisting, granted: false };
+        }
+
+        const { data: existingRows, error: existingLookupError } = await supabase
+            .from('user_inventory')
+            .select('id, item_id, created_at')
+            .eq('user_id', userId)
+            .eq('item_id', itemId)
+            .limit(1);
+
+        if (existingLookupError) {
+            console.error('Error checking existing inventory item:', existingLookupError);
+        } else if (existingRows && existingRows.length > 0) {
+            const existingRow = existingRows[0];
+            const existingItem: InventoryItem = {
+                id: existingRow.item_id,
+                instanceId: existingRow.id,
+                acquiredAt: existingRow.created_at || new Date().toISOString(),
+                isEquipped: false,
+            };
+
+            setInventory((prev) => prev.some((inventoryItem) => inventoryItem.instanceId === existingItem.instanceId) ? prev : [...prev, existingItem]);
+            return { item: existingItem, granted: false };
+        }
 
         const { data, error } = await supabase
             .from('user_inventory')
@@ -4640,7 +4664,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error granting inventory item:", error);
-            return;
+            return { item: null, granted: false };
         }
 
         if (data) {
@@ -4670,7 +4694,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                 showToast(toastMsg);
             }
+
+            return { item: newItem, granted: true };
         }
+
+        return { item: null, granted: false };
     };
 
     // === Premium Genesis Pack ===
@@ -4771,6 +4799,67 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
     };
 
+    useEffect(() => {
+        const activeSeason = activeRuntimeSeasonConfig;
+        const rewardItemIds = activeSeason?.launchRewardItemIds || [];
+        if (!activeSeason || rewardItemIds.length === 0) return;
+        if (!isProfileLoaded || !hasHydratedFromSupabase) return;
+
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        const rewardFlag = getSeasonLaunchRewardFlag(activeSeason.id);
+        if ((userProfile.completedSeasonMissions || []).includes(rewardFlag)) return;
+        if (seasonLaunchRewardInFlightRef.current[activeSeason.id]) return;
+
+        seasonLaunchRewardInFlightRef.current[activeSeason.id] = true;
+        let cancelled = false;
+
+        (async () => {
+            let grantedAny = false;
+
+            for (const itemId of rewardItemIds) {
+                const itemDef = resolveItemDef(itemId);
+                if (itemDef?.category === 'insignia' || itemDef?.category === 'insignias') {
+                    grantUserUnlock('insignias', itemId);
+                }
+
+                const grantResult = await grantInventoryItem(itemId, true);
+                if (grantResult?.granted) {
+                    grantedAny = true;
+                }
+            }
+
+            if (cancelled) return;
+
+            const completedFlags = userProfile.completedSeasonMissions || [];
+            if (!completedFlags.includes(rewardFlag)) {
+                updateUserProfile({
+                    completedSeasonMissions: [...completedFlags, rewardFlag],
+                });
+            }
+
+            if (grantedAny && activeSeason.launchRewardToast && typeof window !== 'undefined') {
+                window.localStorage.setItem(
+                    getSeasonLaunchToastStorageKey(activeSeason.id),
+                    activeSeason.launchRewardToast,
+                );
+            }
+        })().finally(() => {
+            delete seasonLaunchRewardInFlightRef.current[activeSeason.id];
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        activeRuntimeSeasonConfig,
+        getSupabaseUserId,
+        hasHydratedFromSupabase,
+        isProfileLoaded,
+        userProfile.completedSeasonMissions,
+    ]);
+
     const updateAllAssetLevels = (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>): boolean => {
         const lastUpdate = userProfile.lastLevelUpdate || 0;
         const threeDays = 72 * 60 * 60 * 1000;
@@ -4839,7 +4928,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             endDate: endDate,
             userId: userId,
             arenaIds: arenaIds || assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id)),
-            seasonId: ACTIVE_SEASON_ID
+            seasonId: activeRuntimeSeasonId
         };
         setCycleExpBonus(0);
         setActiveCycle(newCycle);
@@ -4852,7 +4941,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             start_date: newCycle.startDate,
             end_date: newCycle.endDate,
             arena_ids: newCycle.arenaIds,
-            season_id: ACTIVE_SEASON_ID
+            season_id: activeRuntimeSeasonId
         };
         supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
             if (error) console.error("Supabase start cycle error:", error.message);
@@ -4864,7 +4953,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const startDate = cycle?.startDate || '2000-01-01'; // Fallback para o primeiro ciclo sem data
         const endDate = getLocalDateString();
         const plannedEndDate = cycle?.endDate;
-        const cycleSeasonId = cycle?.seasonId || ACTIVE_SEASON_ID; // Use stored season or default to current
+        const cycleSeasonId = cycle?.seasonId || activeRuntimeSeasonId; // Use stored season or default to current
 
         // 1. Filter Tasks
         const cycleTasks = filterCycleTasksByScope(tasks, currentActions, cycle, startDate, endDate);

@@ -254,7 +254,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }).length;
 
     const bayLine = bayAreaVisibleCount > 0
-      ? ` ação em espera`
+      ? bayAreaVisibleCount + ' ação' + (bayAreaVisibleCount === 1 ? '' : 'es') + ' em espera'
       : 'estoque de ações limpo';
 
     const pendingLine = pendingToday > 0

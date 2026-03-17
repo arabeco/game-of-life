@@ -3,9 +3,8 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { ChevronRightIcon, UsersIcon, CheckIcon, XIcon } from '../components/Icons';
 import { ConfigSeasonQuest, ChestType, SeasonMission } from '../types';
-import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
-import { QuestDetailModal, SeasonDetailModal } from '../components/SeasonDetailModal';
-import { isGenesisSeason, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
+import { QuestDetailModal, SeasonDetailModal, SeasonTransitionModal } from '../components/SeasonDetailModal';
+import { getNextSeasonConfig, getSeasonLaunchToastStorageKey, isGenesisSeason, resolveRuntimeActiveSeason, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
 
 const SeasonQuestCard: React.FC<{ 
     quest: ConfigSeasonQuest; 
@@ -130,9 +129,9 @@ export const SeasonView: React.FC = () => {
     } = useGame();
     const [selectedQuest, setSelectedQuest] = useState<ConfigSeasonQuest | null>(null);
     const [isSeasonDetailOpen, setSeasonDetailOpen] = useState(false);
+    const [isSeasonTransitionOpen, setSeasonTransitionOpen] = useState(false);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const activeSeason = seasons.find(s => s.is_active) || (SEASONS[ACTIVE_SEASON_ID] as any);
+    const activeSeason = resolveRuntimeActiveSeason(seasons);
     const quests = useMemo(
         () => seasonQuests.filter(quest => !activeSeason || !quest.season_id || quest.season_id === activeSeason.id),
         [seasonQuests, activeSeason?.id]
@@ -289,6 +288,32 @@ export const SeasonView: React.FC = () => {
     const isGenesis = isGenesisSeason(activeSeason);
     const activeSeasonBackground = resolveSeasonBackgroundUrl(activeSeason);
     const activeSeasonLore = resolveSeasonLoreText(activeSeason);
+    const nextSeason = getNextSeasonConfig(activeSeason?.id);
+
+    useEffect(() => {
+        if (!activeSeason || !nextSeason) return;
+
+        const seasonEnd = new Date(`${activeSeason.end_date}T23:59:59`);
+        if (Number.isNaN(seasonEnd.getTime()) || Date.now() < seasonEnd.getTime()) return;
+
+        const storageKey = `glyph:season-transition:${activeSeason.id}:${nextSeason.id}`;
+        if (window.localStorage.getItem(storageKey) === 'seen') return;
+
+        window.localStorage.setItem(storageKey, 'seen');
+        setSeasonTransitionOpen(true);
+    }, [activeSeason, nextSeason]);
+
+    const handleCloseSeasonTransition = () => {
+        setSeasonTransitionOpen(false);
+        if (!activeSeason || typeof window === 'undefined') return;
+
+        const toastKey = getSeasonLaunchToastStorageKey(activeSeason.id);
+        const pendingToast = window.localStorage.getItem(toastKey);
+        if (!pendingToast) return;
+
+        window.localStorage.removeItem(toastKey);
+        showToast(pendingToast, 'success');
+    };
 
     const handleClaimSpecial = (questId: string) => {
         if (questId === 'meta-quest-3') {
@@ -514,7 +539,20 @@ export const SeasonView: React.FC = () => {
                     }}
                 />
             )}
-            {isSeasonDetailOpen && activeSeason && <SeasonDetailModal season={activeSeason} onClose={() => setSeasonDetailOpen(false)} />}
+            {isSeasonDetailOpen && activeSeason && (
+                <SeasonDetailModal
+                    season={activeSeason}
+                    onClose={() => setSeasonDetailOpen(false)}
+                    onOpenTransition={() => setSeasonTransitionOpen(true)}
+                />
+            )}
+            {isSeasonTransitionOpen && activeSeason && nextSeason && (
+                <SeasonTransitionModal
+                    fromSeason={activeSeason}
+                    toSeason={nextSeason}
+                    onClose={handleCloseSeasonTransition}
+                />
+            )}
         </div>
     );
 };

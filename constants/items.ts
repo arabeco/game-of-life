@@ -216,6 +216,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🐲', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png` },
     // Novos T5
     { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 5, rarity: 'legendary', icon: '🌋', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
+    { id: 'item_border_aurora_1_2026', name: 'Aurora I', category: 'border', tier: 4, rarity: 'epic', icon: '🌅', imageUrl: `${INTERFACE_BASE_URL}/borda_auroraI.png`, isSeasonExclusive: true },
 
     // --- BANNERS ---
     // T1
@@ -241,6 +242,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🐲', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png` },
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 5, rarity: 'legendary', icon: '🌋', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
+    { id: 'item_banner_aurora_1_2026', name: 'Aurora I', category: 'banner', tier: 4, rarity: 'epic', icon: '🌅', imageUrl: `${INTERFACE_BASE_URL}/banner_auroraI.png`, isSeasonExclusive: true },
 
     // --- GLIFOS ---
     // T1
@@ -335,6 +337,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'insignia_report_comum', name: 'Bronze: Relatorio de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '🥉', description: "Relatorio de Bronze: Concedida por concluir um ciclo e selar o relatorio final." },
     { id: 'insignia_quest_incomum', name: 'Prata: Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🥈', description: "Missão de Prata: Concedida ao concluir uma missão da temporada." },
     { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '🥇', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência." },
+    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 4, rarity: 'epic', icon: '🟣', description: "Marca roxa da primeira Season oficial da Primeira Era.", isSeasonExclusive: true },
 ];
 
 const LEGACY_ITEM_ID_ALIASES: Record<string, string> = {

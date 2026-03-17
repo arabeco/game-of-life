@@ -59,10 +59,6 @@ export const useQuestSharedDomain = ({
         const byTitle = seasonQuests.find(quest => quest.type === 'clan' && normalizeQuestLabel(quest.title) === normalized);
         if (byTitle) return byTitle;
 
-        if (normalized.includes('socializar')) {
-            return seasonQuests.find(quest => quest.id === 'quest-clan-unity') || null;
-        }
-
         return null;
     };
 

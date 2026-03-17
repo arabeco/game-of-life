@@ -21,6 +21,7 @@ import { signOutAndClearSupabaseSession } from '../utils/authSession';
 import './login-ui.css';
 
 const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
+const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 
 type ManualSignupDraft = {
     email: string;
@@ -258,7 +259,7 @@ export const LoginView: React.FC = () => {
                         insignias: {},
                         ui_skins: { 'BASIC': true },
                     },
-                    completedSeasonMissions: [PROFILE_FLAG_TERMS_ACCEPTED],
+                    completedSeasonMissions: [PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING],
                     termsVersion: LEGAL_TERMS_VERSION,
                     termsAcceptedAt: acceptedAt,
                     termsAcceptSource: LEGAL_ACCEPT_SOURCE_INITIAL,
@@ -382,31 +383,44 @@ export const LoginView: React.FC = () => {
 
         try {
             const identifier = email.trim();
+            if (!identifier) {
+                setError('Digite seu e-mail ou nickname.');
+                setLoading(false);
+                return;
+            }
 
-            if (await isDeletedAccountBlocked(identifier)) {
+            let resolvedEmail = identifier;
+            if (!identifier.includes('@')) {
+                const matchedProfile = await findProfileAccess(identifier);
+                if (!matchedProfile?.email) {
+                    setError('Nao encontrei esse nickname. Confira o nome ou entre com e-mail.');
+                    setLoading(false);
+                    return;
+                }
+                resolvedEmail = matchedProfile.email;
+            }
+
+            if (await isDeletedAccountBlocked(resolvedEmail)) {
                 setError('Essa conta foi excluida e nao pode entrar novamente com este e-mail.');
                 setLoading(false);
                 return;
             }
 
-            const matchedProfile = await findProfileAccess(identifier);
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: resolvedEmail,
+                password,
+            });
 
-            if (!matchedProfile?.email) {
-                setIsSigningUp(true);
-                setManualEntryExpanded(true);
-                setPassword('');
-                setError('Essa conta ainda não existe. Crie sua conta e informe o Convite Dourado primeiro.');
-                setGoldenInviteGuide({
-                    title: 'Primeiro acesso ao beta',
-                    text: 'Voce pode criar a conta com Convite Dourado ou, se preferir, ignorar os campos abaixo e tocar em Entrar com Google. Nesse caso, o Bilhete Dourado sera pedido depois da autenticacao.',
-                });
-                setLoading(false);
-                return;
+            if (error) {
+                const normalizedMessage = String(error.message || '').toLowerCase();
+                if (normalizedMessage.includes('invalid login credentials')) {
+                    throw new Error('Nao consegui entrar com essas credenciais. Confira o e-mail ou nickname e a senha.');
+                }
+                if (normalizedMessage.includes('email not confirmed') || normalizedMessage.includes('email not confirmed')) {
+                    throw new Error('O Supabase ainda esta exigindo confirmacao de e-mail para essa conta. Se quiser, eu te digo exatamente o que desligar no Auth para isso parar agora.');
+                }
+                throw error;
             }
-
-            const { data, error } = await supabase.auth.signInWithPassword({ email: matchedProfile.email, password });
-
-            if (error) throw error;
 
             if (data.user) {
                 // Buscar perfil do usuário

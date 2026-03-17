@@ -176,6 +176,12 @@ const CodexCard: React.FC<{
   const levels = Array.isArray(codex.template?.levels) ? codex.template.levels : [];
   const shareable = isShareableCodex(codex);
   const sourceLabel = kind === 'created' ? 'Criado' : codex.source_type === 'catalog' ? 'Loja' : 'Recebido';
+  const actionCount = levels.reduce((total, level) => total + (Array.isArray(level.actions) ? level.actions.length : 0), 0);
+  const sourceDescription = kind === 'created'
+    ? 'Manuscrito autoral da sua forja.'
+    : codex.source_type === 'catalog'
+      ? 'Comprado na Loja. Pode ser adaptado na sua execucao.'
+      : 'Recebido de outro soberano. Mantido em modo protegido.';
 
   return (
     <GlassCard variant="neutral" className="p-4 rounded-3xl h-full flex flex-col gap-4">
@@ -191,6 +197,7 @@ const CodexCard: React.FC<{
             </div>
             <h3 className="mt-2 text-lg font-bold text-white truncate">{codex.name}</h3>
             <p className="mt-1 text-sm text-gray-400 line-clamp-2">{codex.description || 'Sem descricao registrada.'}</p>
+            <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/40 line-clamp-2">{sourceDescription}</p>
           </div>
         </div>
       </div>
@@ -201,8 +208,8 @@ const CodexCard: React.FC<{
           <div className="mt-1 text-base font-bold text-white">{levels.length}</div>
         </div>
         <div className="rounded-2xl bg-black/25 border border-white/10 px-3 py-2">
-          <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Autor</div>
-          <div className="mt-1 text-xs font-bold text-white truncate">{codex.author || 'Autor desconhecido'}</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Acoes</div>
+          <div className="mt-1 text-xs font-bold text-white truncate">{actionCount}</div>
         </div>
         <div className="rounded-2xl bg-black/25 border border-white/10 px-3 py-2">
           <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Origem</div>
@@ -336,7 +343,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
   const body = (
     <div className="space-y-4">
       <div className="grid grid-cols-1 xl:grid-cols-[1.25fr_0.75fr] gap-4">
-        <GlassCard variant="neutral" className="p-4 rounded-3xl">
+        <GlassCard variant="neutral" className="rounded-[1.8rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_42%),linear-gradient(160deg,rgba(34,28,24,0.94),rgba(8,8,11,0.98))] p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">A Forja e a Biblioteca</div>
@@ -350,7 +357,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
             </div>
           </div>
 
-          <div className="mt-4 h-2 rounded-full bg-black/30 overflow-hidden">
+          <div className="mt-4 h-2 rounded-full bg-black/40 overflow-hidden">
             <div className="h-full bg-[var(--skin-accent-color)]" style={{ width: `${Math.min(100, (usedSlots / Math.max(totalSlots, 1)) * 100)}%` }} />
           </div>
 
@@ -364,7 +371,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
           </div>
         </GlassCard>
 
-        <GlassCard variant="neutral" className="p-4 rounded-3xl">
+        <GlassCard variant="neutral" className="rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.18))] p-5">
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Leitura rapida</div>
           <div className="mt-3 space-y-2">
             <div className="rounded-2xl bg-black/25 border border-white/10 px-3 py-3 flex items-center justify-between">
@@ -379,7 +386,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
         </GlassCard>
       </div>
 
-      <div className="flex gap-2 rounded-2xl bg-black/20 border border-white/10 p-1.5">
+      <div className="flex gap-2 rounded-[1.4rem] bg-black/30 border border-white/10 p-1.5">
         <button
           onClick={() => setActiveTab('created')}
           className={`flex-1 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-[0.16em] transition-colors ${activeTab === 'created' ? 'bg-white text-black' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
@@ -394,14 +401,14 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
         </button>
       </div>
 
-      <GlassCard variant="neutral" className="rounded-3xl border border-white/10 px-4 py-3">
+      <GlassCard variant="neutral" className="rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.18))] px-4 py-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
           {activeTab === 'created' ? 'Regra da forja' : 'Regra da biblioteca'}
         </p>
         <p className="mt-2 text-sm text-gray-300">
           {activeTab === 'created'
             ? 'So manuscritos autorais podem ser compartilhados. Codex comprado ou recebido nao entra na forja como produto revendavel.'
-            : 'Instalar um Codex cria arenas e acoes editaveis na sua conta. O Codex original continua intacto e nao pode ser revendido como manuscrito seu.'}
+            : 'Codex comprado pode ser adaptado na sua execucao. Codex recebido entra como biblioteca protegida e nao abre edicao.'}
         </p>
       </GlassCard>
 

@@ -523,9 +523,10 @@ const MainApp: React.FC = () => {
 
     const completed = userProfile.completedSeasonMissions || [];
     const acceptedTerms = completed.includes(PROFILE_FLAG_TERMS_ACCEPTED);
-    const requiresTermsAcceptance = !acceptedTerms && isProfileLoaded && userProfile.id !== 'placeholder_user';
+    const hasPendingTermsCeremony = completed.includes(PROFILE_FLAG_TERMS_PENDING);
+    const requiresTermsAcceptance = (hasPendingTermsCeremony || !acceptedTerms) && isProfileLoaded && userProfile.id !== 'placeholder_user';
     const showTerms = forceShowTerms || requiresTermsAcceptance;
-    const needsModeSelection = acceptedTerms && !userProfile.appMode;
+    const needsModeSelection = !showTerms && acceptedTerms && !userProfile.appMode;
     const needsFirstUseOnboarding = shouldAutoStartOnboarding(userProfile);
     const [isFirstUseOnboardingActive, setFirstUseOnboardingActive] = useState(false);
     const [onboardingShownInSession, setOnboardingShownInSession] = useState(false);

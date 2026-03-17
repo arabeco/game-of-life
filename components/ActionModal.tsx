@@ -13,6 +13,7 @@ import { DatePickerModal } from './DatePickerModal';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { REST_SCREEN_ACTION_SESSION_EVENT, createRestScreenActionSession } from '../utils/restScreenActionSession';
+import { getArenaDomainFlags } from '../utils/taskDomain';
 
 import { Portal } from './Portal';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -76,10 +77,14 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
 );
 
 export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskId, initialMode, onClose, isPreview, customThemeColor }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask, clan, enrichedClanMembers, showToast } = useGame();
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes } = useGame();
 
     const isNew = !action;
     const isInstalledCodexAction = Boolean(action?.originCodexId && !action.originCodexId.startsWith('assign:'));
+    const installedCodex = React.useMemo(
+        () => (action?.originCodexId ? userCodexes.find(codex => codex.id === action.originCodexId) ?? null : null),
+        [action?.originCodexId, userCodexes]
+    );
 
     const [mode, setMode] = useState(isNew && !isPreview ?'edit' : initialMode);
     const [hasConfirmedInstalledCodexEdit, setHasConfirmedInstalledCodexEdit] = useState(false);
@@ -164,6 +169,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     const arenas = typeof getArenas === 'function' ?getArenas() : [];
     const currentArena = arenas.find(a => a.id === editableAction.arenaId);
+    const arenaFlags = React.useMemo(() => getArenaDomainFlags(currentArena), [currentArena]);
+    const isReceivedInstalledCodexAction = installedCodex?.source_type === 'gift_link' || installedCodex?.source_type === 'gift_in_app';
+    const isLockedFromSource = arenaFlags.isSeasonQuest || isReceivedInstalledCodexAction;
+    const lockedEditMessage = arenaFlags.isSeasonQuest
+        ? 'Missoes de temporada sao fixas e nao podem ser editadas.'
+        : isReceivedInstalledCodexAction
+            ? 'Codex recebido fica protegido. So Codex comprado ou autoral pode ser adaptado.'
+            : null;
 
     // Office Mode specific
     const isOfficeMode = clan?.clanType === 'Office';
@@ -366,12 +379,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     };
 
     useEffect(() => {
-        const shouldBlockInitialEdit = !isNew && initialMode === 'edit' && isInstalledCodexAction;
+        const shouldBlockInitialEdit = !isNew && initialMode === 'edit' && (isInstalledCodexAction || isLockedFromSource);
         setMode(isNew ?'edit' : (shouldBlockInitialEdit ?'view' : initialMode));
         setHasConfirmedInstalledCodexEdit(false);
-        setShowInstalledCodexEditConfirmation(shouldBlockInitialEdit);
+        setShowInstalledCodexEditConfirmation(shouldBlockInitialEdit && !isLockedFromSource && isInstalledCodexAction);
         resetFromAction(action);
-    }, [action?.id, arenaId, initialMode, isInstalledCodexAction]);
+    }, [action?.id, arenaId, initialMode, isInstalledCodexAction, isLockedFromSource]);
 
     const displayAction = mode === 'view' ?action : editableAction;
 
@@ -409,6 +422,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     };
 
     const requestEditMode = () => {
+        if (isLockedFromSource) {
+            showToast(lockedEditMessage || 'Essa acao nao pode ser editada.', 'warning');
+            return;
+        }
         if (isInstalledCodexAction && !hasConfirmedInstalledCodexEdit) {
             setShowInstalledCodexEditConfirmation(true);
             return;
@@ -443,7 +460,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     {/* Header Fixed */}
                     <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md flex justify-between items-start z-30 relative border-b border-white/10">
                         <div className="flex items-center gap-3 pt-1">
-                            {!isPreview && (
+                            {!isPreview && (!isLockedFromSource || mode === 'edit') && (
                                 <button
                                     onClick={mode === 'view' ?requestEditMode : handleCancel}
                                     className={`p-2 rounded-full border transition-all ${mode === 'edit' ?'bg-red-500/18 text-red-300 border-red-500/30 hover:bg-red-500/26' : 'bg-black/16 border-white/14 text-white/65 hover:text-white hover:bg-white/12'}`}

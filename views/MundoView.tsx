@@ -68,25 +68,33 @@ const ClanInfoBox: React.FC<{ onClick: () => void }> = ({ onClick }) => {
     );
 };
 
-const SocialSearch: React.FC<{ onSearchResults: (results: { players: UserProfile[], clans: Clan[] }) => void }> = ({ onSearchResults }) => {
+const SocialSearch: React.FC<{
+    friends: UserProfile[];
+    onSearchResults: (results: { players: UserProfile[], clans: Clan[] }) => void;
+    onQueryChange: (query: string) => void;
+}> = ({ friends, onSearchResults, onQueryChange }) => {
     const { searchClans, searchPlayers, sendFriendRequest } = useGame();
     const [query, setQuery] = useState('');
 
     const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const newQuery = e.target.value;
         setQuery(newQuery);
+        onQueryChange(newQuery);
 
         if (newQuery.trim() === '') {
             onSearchResults({ players: [], clans: [] });
             return;
         }
 
-        const [foundClans, foundPlayers] = await Promise.all([
-            searchClans(newQuery),
-            searchPlayers(newQuery),
-        ]);
+        const normalizedQuery = newQuery.trim().toLowerCase();
+        const filteredFriends = friends.filter((friend) => {
+            const nickname = String(friend.nickname || '').toLowerCase();
+            const profileEmail = String(friend.email || '').toLowerCase();
+            return nickname.includes(normalizedQuery) || profileEmail.includes(normalizedQuery);
+        });
 
-        onSearchResults({ players: foundPlayers, clans: foundClans });
+        const foundClans = await searchClans(newQuery);
+        onSearchResults({ players: filteredFriends, clans: foundClans });
     };
 
     const handleAdd = async () => {
@@ -95,6 +103,7 @@ const SocialSearch: React.FC<{ onSearchResults: (results: { players: UserProfile
         const exact = matches.find(player => player.nickname.toLowerCase() === query.trim().toLowerCase()) || matches[0];
         if (exact) await sendFriendRequest(exact.id);
         setQuery('');
+        onQueryChange('');
         onSearchResults({ players: [], clans: [] });
     };
 
@@ -128,12 +137,13 @@ const SocialTab: React.FC = () => {
     const [modal, setModal] = useState<'create' | 'sanctuary' | null>(null);
     const [activeTab, setActiveTab] = useState<'aliados' | 'solicitacoes'>('aliados');
     const [searchResults, setSearchResults] = useState<{ players: UserProfile[], clans: Clan[] }>({ players: [], clans: [] });
+    const [searchQuery, setSearchQuery] = useState('');
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
 
     useEffect(() => {
-        setShowSearchResults(searchResults.players.length > 0 || searchResults.clans.length > 0);
-    }, [searchResults]);
+        setShowSearchResults(searchQuery.trim().length > 0);
+    }, [searchQuery]);
 
     // Simple profile builder for fallback
     const buildFallbackProfile = (id: string): UserProfile => ({
@@ -153,7 +163,7 @@ const SocialTab: React.FC = () => {
 
             <div className="space-y-4">
                 <h3 className="text-center font-bold uppercase tracking-wider text-sm text-gray-400">Aliados e Clãs</h3>
-                <SocialSearch onSearchResults={setSearchResults} />
+                <SocialSearch friends={friends} onSearchResults={setSearchResults} onQueryChange={setSearchQuery} />
 
                 <div className="flex gap-2">
                     <button
@@ -205,6 +215,11 @@ const SocialTab: React.FC = () => {
                                         />
                                     );
                                 })}
+                            </div>
+                        )}
+                        {searchResults.players.length === 0 && searchResults.clans.length === 0 && (
+                            <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-xs text-gray-500">
+                                Nenhum aliado ou cla encontrado para esse filtro.
                             </div>
                         )}
                     </div>

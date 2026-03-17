@@ -131,7 +131,7 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
@@ -189,6 +189,19 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
 
     const isSeasonQuestArena = useMemo(() => normalizedArena.includes('quests - season'), [normalizedArena]);
     const isSpecialArena = isClanQuestArena || isSeasonQuestArena;
+    const sourceCodex = useMemo(
+        () => (arena.originCodexId ? userCodexes.find(codex => codex.id === arena.originCodexId) ?? null : null),
+        [arena.originCodexId, userCodexes]
+    );
+    const isReceivedCodexArena = sourceCodex?.source_type === 'gift_link' || sourceCodex?.source_type === 'gift_in_app';
+    const isArenaEditLocked = isSpecialArena || isReceivedCodexArena;
+    const arenaEditLockMessage = isSeasonQuestArena
+        ? 'Missoes de temporada sao travadas e nao podem ser editadas.'
+        : isSpecialArena
+            ? 'Essa arena especial nao pode ser editada por aqui.'
+            : isReceivedCodexArena
+                ? 'Codex recebido fica protegido. So Codex comprado ou autoral pode ser adaptado.'
+                : null;
     const resolvedAssetAccent =
         ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]
         || ASSET_ACCENT_COLORS[normalizeAssetKey(parentAsset?.name) as keyof typeof ASSET_ACCENT_COLORS]
@@ -250,7 +263,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             : Math.min(100, clanQuestTotals.totalProgress))
         : (allActionInstances > 0 ?(allCompletedInstances / allActionInstances) * 100 : 0);
     const handleEditToggle = () => {
-        if (isSpecialArena) return; // Disable editing for special arenas
+        if (isArenaEditLocked) {
+            showToast(arenaEditLockMessage || 'Essa arena nao pode ser editada.', 'warning');
+            return;
+        }
         if (isEditing) {
             updateArena(arena.id, {
                 assetId: editableArena.assetId,
@@ -278,8 +294,13 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     };
 
     const openNewAction = () => {
-        if (isSpecialArena) {
-            showToast('Essa arena especial recebe missões pelo menu de Missões.', 'warning');
+        if (isArenaEditLocked) {
+            showToast(
+                isReceivedCodexArena
+                    ? 'Codex recebido fica protegido. So Codex comprado ou autoral pode ser adaptado.'
+                    : 'Essa arena especial recebe missoes pelo menu de Missoes.',
+                'warning'
+            );
             return;
         }
         window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.actionModalOpened));
@@ -361,9 +382,9 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     <div className="relative z-10 flex flex-col space-y-3">
                         <div className="arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1">
-                                {/* Allow editing for all arenas, EXCEPT special ones (unless Office/Shared) */}
-                                {(!isSpecialArena || isSharedPool) && (
-                                    <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
+                                {/* Allow editing for flexible arenas only */}
+                                {(!isArenaEditLocked || isEditing) && (
+                                    <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
                                         <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>
                                 )}
@@ -641,4 +662,5 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         </Portal>
     );
 };
+
 

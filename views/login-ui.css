@@ -334,6 +334,29 @@
   line-height: 1.5;
 }
 
+.login-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+
+.login-consent input {
+  margin-top: 0.15rem;
+  accent-color: var(--skin-accent-color);
+}
+
+.login-consent a {
+  color: color-mix(in srgb, var(--skin-accent-color) 78%, white);
+  text-decoration: none;
+}
+
+.login-consent a:hover {
+  text-decoration: underline;
+}
+
 .login-email-actions {
   display: flex;
   flex-direction: column;

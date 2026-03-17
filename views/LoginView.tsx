@@ -2,15 +2,20 @@
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
-import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
+import {
+    LEGAL_ACCEPT_SOURCE_INITIAL,
+    LEGAL_PRIVACY_URL_PLACEHOLDER,
+    LEGAL_PRIVACY_VERSION,
+    LEGAL_TERMS_URL_PLACEHOLDER,
+    LEGAL_TERMS_VERSION,
+} from '../constants/legal';
 import { clearClosedBetaGoogleRedirect, consumeClosedBetaGoogleRedirect } from '../utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { signOutAndClearSupabaseSession } from '../utils/authSession';
-import { ClosedBetaInviteModal } from '../components/ClosedBetaInviteModal';
 import './login-ui.css';
 
-const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
+const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
 
 type ManualSignupDraft = {
     email: string;
@@ -26,8 +31,8 @@ export const LoginView: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [nickname, setNickname] = useState('');
-    const [isInviteModalOpen, setInviteModalOpen] = useState(false);
-    const [pendingManualSignup, setPendingManualSignup] = useState<ManualSignupDraft | null>(null);
+    const [manualInviteCode, setManualInviteCode] = useState('');
+    const [manualLegalAccepted, setManualLegalAccepted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
@@ -54,8 +59,8 @@ export const LoginView: React.FC = () => {
         setEmail(isSignupRedirect ? (redirectState.email || '') : '');
         setPassword('');
         setNickname('');
-        setInviteModalOpen(false);
-        setPendingManualSignup(null);
+        setManualInviteCode('');
+        setManualLegalAccepted(false);
         setMessage(null);
         setError(redirectState.message);
         if (isSignupRedirect) {
@@ -128,9 +133,17 @@ export const LoginView: React.FC = () => {
             return 'Essa conta foi excluida e nao pode criar um novo acesso com este e-mail.';
         }
 
+        if (isGoldenInviteGateEnabled && !manualInviteCode.trim()) {
+            return 'Informe seu Bilhete Dourado.';
+        }
+
         const strength = getPasswordStrength(draft.password);
         if (strength.score < 3) {
             return 'A senha deve ter pelo menos 8 caracteres e incluir um numero ou caractere especial.';
+        }
+
+        if (!manualLegalAccepted) {
+            return 'Aceite os Termos e a Privacidade para criar a conta.';
         }
 
         return null;
@@ -139,9 +152,9 @@ export const LoginView: React.FC = () => {
     const handleSignUp = async (
         draft: ManualSignupDraft,
         inviteCode?: string,
-        options?: { deferSuccessUi?: boolean }
     ) => {
         const normalizedInvite = inviteCode?.trim() || '';
+        const acceptedAt = new Date().toISOString();
         let inviteRecord: GoldenInvite | null = null;
 
         if (isGoldenInviteGateEnabled && !normalizedInvite) {
@@ -222,7 +235,13 @@ export const LoginView: React.FC = () => {
                         insignias: {},
                         ui_skins: { 'BASIC': true },
                     },
-                    completedSeasonMissions: [PROFILE_FLAG_TERMS_PENDING],
+                    completedSeasonMissions: [PROFILE_FLAG_TERMS_ACCEPTED],
+                    termsVersion: LEGAL_TERMS_VERSION,
+                    termsAcceptedAt: acceptedAt,
+                    termsAcceptSource: LEGAL_ACCEPT_SOURCE_INITIAL,
+                    privacyVersion: LEGAL_PRIVACY_VERSION,
+                    privacyAcceptedAt: acceptedAt,
+                    privacyAcceptSource: LEGAL_ACCEPT_SOURCE_INITIAL,
                     nobility: { exp: 0, rankId: 'vagante' },
                     wallet: { gold: 0, fragments: 0 },
                     mood: 50,
@@ -256,6 +275,12 @@ export const LoginView: React.FC = () => {
                         email: newProfile.email,
                         nickname: newProfile.nickname,
                         app_mode: null,
+                        terms_version: newProfile.termsVersion,
+                        terms_accepted_at: newProfile.termsAcceptedAt,
+                        terms_accept_source: newProfile.termsAcceptSource,
+                        privacy_version: newProfile.privacyVersion,
+                        privacy_accepted_at: newProfile.privacyAcceptedAt,
+                        privacy_accept_source: newProfile.privacyAcceptSource,
                         avatar_url: newProfile.avatarUrl,
                         border: newProfile.border,
                         level: newProfile.level,
@@ -281,22 +306,37 @@ export const LoginView: React.FC = () => {
 
                 if (profileError) throw profileError;
 
+                let sessionReady = Boolean(data.session);
+
+                if (!sessionReady) {
+                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                        email: draft.email,
+                        password: draft.password,
+                    });
+
+                    if (!signInError && signInData.session) {
+                        sessionReady = true;
+                    } else if (signInError && /email.*confirm|confirm.*email|not confirmed/i.test(signInError.message || '')) {
+                        setError('A conta foi criada, mas o Supabase ainda esta exigindo confirmacao de e-mail para login manual. Se quiser, eu te digo exatamente o que desligar no painel Auth para isso parar agora.');
+                        setLoading(false);
+                        return {
+                            success: false,
+                            error: signInError.message,
+                        };
+                    }
+                }
+
                 const finalizeSuccess = () => {
-                    setMessage('Cadastro realizado. Verifique seu e-mail para confirmar a conta.');
+                    setMessage(sessionReady
+                        ? 'Conta criada. Seu acesso ao beta foi liberado.'
+                        : 'Conta criada. O bilhete foi aceito e o acesso ficou registrado.'
+                    );
                     setIsSigningUp(false);
                     setManualEntryExpanded(false);
-                    setPendingManualSignup(null);
-                    setInviteModalOpen(false);
+                    setManualInviteCode('');
+                    setManualLegalAccepted(false);
+                    setPassword('');
                 };
-
-                if (options?.deferSuccessUi) {
-                    setLoading(false);
-                    return {
-                        success: true,
-                        successMessage: 'Bilhete aceito! Conta liberada.',
-                        onSuccess: finalizeSuccess,
-                    };
-                }
 
                 finalizeSuccess();
             }
@@ -451,15 +491,7 @@ export const LoginView: React.FC = () => {
                 return;
             }
 
-            if (isGoldenInviteGateEnabled) {
-                setPendingManualSignup(draft);
-                setInviteModalOpen(true);
-                setError(null);
-                setMessage(null);
-                return;
-            }
-
-            await handleSignUp(draft);
+            await handleSignUp(draft, manualInviteCode.trim());
             return;
         }
 
@@ -484,8 +516,8 @@ export const LoginView: React.FC = () => {
         setGoogleResumeMode(false);
         setGoogleResumeEmail('');
         setManualEntryExpanded(false);
-        setInviteModalOpen(false);
-        setPendingManualSignup(null);
+        setManualInviteCode('');
+        setManualLegalAccepted(false);
     };
 
     const showManualFields = !googleResumeMode && manualEntryExpanded;
@@ -497,8 +529,8 @@ export const LoginView: React.FC = () => {
         setMessage(null);
         setGoldenInviteGuide(null);
         setManualEntryExpanded(true);
-        setInviteModalOpen(false);
-        setPendingManualSignup(null);
+        setManualInviteCode('');
+        setManualLegalAccepted(false);
         setIsSigningUp(nextMode === 'signup');
     };
 
@@ -521,27 +553,6 @@ export const LoginView: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleManualInviteClose = async () => {
-        setInviteModalOpen(false);
-    };
-
-    const handleValidateManualInvite = async (normalizedInvite: string) => {
-        if (!pendingManualSignup) {
-            return {
-                success: false,
-                error: 'Nao achei os dados do cadastro manual para continuar.',
-            };
-        }
-
-        const result = await handleSignUp(pendingManualSignup, normalizedInvite, { deferSuccessUi: true });
-        return {
-            success: !!result?.success,
-            error: result?.error,
-            successMessage: result?.successMessage,
-            onSuccess: result?.onSuccess,
-        };
     };
 
     const compactGuideTitle = googleResumeMode ? 'Google conectado' : goldenInviteGuide?.title;
@@ -590,7 +601,7 @@ export const LoginView: React.FC = () => {
                             GLYPH
                         </h1>
                         <p className="login-subtitle">
-                            Entre com Google para começar.
+                            Google e o caminho mais rapido. Se preferir, crie sua conta com e-mail e bilhete.
                         </p>
                     </div>
 
@@ -636,10 +647,10 @@ export const LoginView: React.FC = () => {
                             <button
                                 id="login-show-manual-button"
                                 type="button"
-                                onClick={() => openManualMode('login')}
+                                onClick={() => openManualMode('signup')}
                                 className="login-bridge-link"
                             >
-                                Entrar com e-mail
+                                Criar conta com e-mail
                             </button>
                         )}
 
@@ -729,8 +740,32 @@ export const LoginView: React.FC = () => {
                                     )}
 
                                     {isSigningUp && isGoldenInviteGateEnabled && (
+                                        <input
+                                            id="login-invite-input"
+                                            type="text"
+                                            autoComplete="off"
+                                            placeholder="Bilhete Dourado"
+                                            value={manualInviteCode}
+                                            onChange={(e) => setManualInviteCode(e.target.value)}
+                                            className="login-field"
+                                        />
+                                    )}
+
+                                    {isSigningUp && (
+                                        <label className="login-consent">
+                                            <input
+                                                id="login-terms-checkbox"
+                                                type="checkbox"
+                                                checked={manualLegalAccepted}
+                                                onChange={(e) => setManualLegalAccepted(e.target.checked)}
+                                            />
+                                            <span>Li e aceito os <a href={LEGAL_TERMS_URL_PLACEHOLDER} target="_blank" rel="noopener noreferrer">Termos</a> e a <a href={LEGAL_PRIVACY_URL_PLACEHOLDER} target="_blank" rel="noopener noreferrer">Politica de Privacidade</a>.</span>
+                                        </label>
+                                    )}
+
+                                    {isSigningUp && (
                                         <p className="login-manual-hint">
-                                            O Bilhete Dourado aparece em seguida, em um modal separado.
+                                            Cadastro manual do beta: e-mail, nickname, senha, bilhete e aceite na mesma etapa.
                                         </p>
                                     )}
                                 </div>
@@ -745,7 +780,7 @@ export const LoginView: React.FC = () => {
                                         {loading ? (
                                             <div className="w-5 h-5 border-4 border-black/30 border-t-black rounded-full animate-spin" />
                                         ) : (
-                                            isSigningUp ? 'Criar conta manual' : 'Entrar com e-mail'
+                                            isSigningUp ? 'Criar conta' : 'Entrar com e-mail'
                                         )}
                                     </button>
                                     <button
@@ -782,14 +817,6 @@ export const LoginView: React.FC = () => {
                     </form>
                 </div>
             </div>
-            <ClosedBetaInviteModal
-                open={isInviteModalOpen}
-                title="Valide seu Bilhete"
-                description="Antes de criar sua conta manual no beta, valide o Bilhete Dourado. Depois disso o perfil sera criado e liberado."
-                emailLabel={pendingManualSignup?.email || email}
-                onCancel={handleManualInviteClose}
-                onValidateInvite={handleValidateManualInvite}
-            />
         </div>
     );
 };

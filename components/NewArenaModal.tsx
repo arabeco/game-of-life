@@ -113,6 +113,22 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                 if (error) {
                     showToast(`Arena criada, mas o convite falhou: ${error.message}`, 'error');
                 } else {
+                    // Create Notification for the recipient
+                    const notificationType = initialRelationship.type === 'competition' ? 'arena_access' : 'friend_response';
+                    const label = initialRelationship.type === 'competition' ? 'DESAFIO' : (initialRelationship.type === 'mentorship' ? 'MENTORIA' : 'PARCERIA');
+                    
+                    await supabase.from('notifications').insert({
+                        user_id: initialRelationship.friendId,
+                        type: notificationType,
+                        content: `[${label}] Convite de ${sessionData.session?.user.user_metadata?.nickname || 'um aliado'} para a arena "${name}".`,
+                        metadata: {
+                            inviteType: initialRelationship.type,
+                            arenaId: newArena.id,
+                            arenaName: name,
+                            senderId: senderId
+                        }
+                    });
+
                     showToast(`Convite enviado para ${initialRelationship.friendName}.`, 'success');
                 }
             }

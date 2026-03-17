@@ -294,6 +294,8 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [isMentorCreatorOpen, setMentorCreatorOpen] = useState(false);
     const [showMentorshipModal, setShowMentorshipModal] = useState(false);
     const [selectedFriendForMentorship, setSelectedFriendForMentorship] = useState<UserProfile | null>(null);
+    const [showPartnershipModal, setShowPartnershipModal] = useState(false);
+    const [selectedFriendForPartnership, setSelectedFriendForPartnership] = useState<UserProfile | null>(null);
     const canActAsMentor = hasPremiumAccess(userProfile);
 
     const sessionReady = useMemo(() => !!sessionUid && isUuid(sessionUid), [sessionUid]);
@@ -445,8 +447,8 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
 
         const { error: insertError } = await supabase.from('relationship_links').insert({
-            mentor_id: uid,
-            pupil_id: invite.senderId,
+            mentor_id: invite.linkType === 'mentoria' ? invite.senderId : uid,
+            pupil_id: invite.linkType === 'mentoria' ? uid : invite.senderId,
             link_type: invite.linkType,
             arena_id: invite.arenaId,
             arena_snapshot: invite.arenaSnapshot,
@@ -544,6 +546,15 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setShowMentorshipModal(true);
     };
 
+    const handleCreatePartnership = (friend: UserProfile) => {
+        setSelectedFriendForPartnership(friend);
+        setShowPartnershipModal(false);
+    };
+
+    const handleOpenPartnershipModal = () => {
+        setShowPartnershipModal(true);
+    };
+
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
@@ -602,7 +613,17 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             )}
 
                                             <div className="space-y-2">
-                                                <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS PUPILOS</div>
+                                                <div className="flex justify-between items-center px-1">
+                                                    <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS PUPILOS</div>
+                                                    {canActAsMentor && (
+                                                        <button
+                                                            onClick={handleOpenMentorshipModal}
+                                                            className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
+                                                        >
+                                                            <span>+</span> ADICIONAR
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 {!canActAsMentor && (
                                                     <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-3 py-3 text-[11px] leading-relaxed text-amber-200">
                                                         Mentoria ativa como mentor e envio de Codex para pupilos sao recursos Premium.
@@ -706,7 +727,15 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                                     {activeTab === 'parcerias' && (
                                         <div className="space-y-4">
-                                            <div className="text-[10px] font-black tracking-widest text-gray-400">VÍNCULOS DE SANGUE</div>
+                                            <div className="flex justify-between items-center px-1">
+                                                <div className="text-[10px] font-black tracking-widest text-gray-400">VÍNCULOS DE SANGUE</div>
+                                                <button
+                                                    onClick={handleOpenPartnershipModal}
+                                                    className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
+                                                >
+                                                    <span>+</span> ADICIONAR
+                                                </button>
+                                            </div>
                                             {myPartners.length === 0 ? (
                                                 <div className="text-center text-sm text-gray-500 py-4">Nenhuma parceria ativa.</div>
                                             ) : (
@@ -746,12 +775,29 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     );
                                                 })
                                             )}
+                                            <div className="pt-2 border-t border-white/10">
+                                                <button
+                                                    onClick={handleOpenPartnershipModal}
+                                                    className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <span>🤝</span>
+                                                    NOVA PARCERIA
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
                                     {activeTab === 'desafios' && (
                                         <div className="space-y-4">
-                                            <div className="text-[10px] font-black tracking-widest text-gray-400">EVENTOS PVP</div>
+                                            <div className="flex justify-between items-center px-1">
+                                                <div className="text-[10px] font-black tracking-widest text-gray-400">EVENTOS PVP</div>
+                                                <button
+                                                    onClick={handleOpenChallengeModal}
+                                                    className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
+                                                >
+                                                    <span>+</span> ADICIONAR
+                                                </button>
+                                            </div>
                                             {myCompetitions.length === 0 ? (
                                                 <div className="text-center text-sm text-gray-500 py-4">Nenhum desafio ativo.</div>
                                             ) : (
@@ -835,11 +881,22 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     />
                 )}
 
+                {showPartnershipModal && (
+                    <ChallengeSelectionModal
+                        title="Nova Parceria"
+                        onClose={() => setShowPartnershipModal(false)}
+                        onSelectFriend={handleCreatePartnership}
+                    />
+                )}
+
                 {selectedFriendForChallenge && (
                     <Suspense fallback={<div className="fixed inset-0 z-[210] bg-black/40 backdrop-blur-sm" />}>
                         <NewArenaModal
                             isOpen={true}
-                            onClose={() => setSelectedFriendForChallenge(null)}
+                            onClose={() => {
+                                setSelectedFriendForChallenge(null);
+                                refresh(); // Refresh list after sharing arena
+                            }}
                             initialRelationship={{
                                 type: 'competition',
                                 friendId: selectedFriendForChallenge.id,
@@ -853,11 +910,31 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <Suspense fallback={<div className="fixed inset-0 z-[210] bg-black/40 backdrop-blur-sm" />}>
                         <NewArenaModal
                             isOpen={true}
-                            onClose={() => setSelectedFriendForMentorship(null)}
+                            onClose={() => {
+                                setSelectedFriendForMentorship(null);
+                                refresh();
+                            }}
                             initialRelationship={{
                                 type: 'mentorship',
                                 friendId: selectedFriendForMentorship.id,
                                 friendName: selectedFriendForMentorship.nickname
+                            }}
+                        />
+                    </Suspense>
+                )}
+
+                {selectedFriendForPartnership && (
+                    <Suspense fallback={<div className="fixed inset-0 z-[210] bg-black/40 backdrop-blur-sm" />}>
+                        <NewArenaModal
+                            isOpen={true}
+                            onClose={() => {
+                                setSelectedFriendForPartnership(null);
+                                refresh();
+                            }}
+                            initialRelationship={{
+                                type: 'partnership',
+                                friendId: selectedFriendForPartnership.id,
+                                friendName: selectedFriendForPartnership.nickname
                             }}
                         />
                     </Suspense>
@@ -1646,12 +1723,12 @@ const PremiumTab: React.FC = () => {
                     <div id="premium-features-grid" className="grid grid-cols-2 gap-3">
                         <button
                             id="links-button"
-                            onClick={() => { if (isPremium) setLinksOpen(true); }}
-                            disabled={!isPremium}
-                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                            onClick={() => setLinksOpen(true)}
+                            className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center`}
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">🔗</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
+                            {!isPremium && <span className="text-[8px] text-[var(--skin-accent-color)] opacity-70">Convites</span>}
                         </button>
                         <button
                             id="codex-button"

@@ -21,7 +21,7 @@ export const SocialCard: React.FC<{
             </div>
 
             <div className="relative z-10 flex h-full items-center space-x-3 px-3 py-0.5">
-                <UserAvatar avatarUrl={profile.avatarUrl} nickname={profile.nickname} className="w-12 h-12" isOnline={false} level={profile.level} />
+                <UserAvatar avatarUrl={profile.avatarUrl} nickname={profile.nickname} className="w-12 h-12" isOnline={false} level={profile.level} borderId={profile.border} />
 
                 <div className="flex-1 min-w-0 flex flex-col justify-center -space-y-0.5">
                     <h3 className="font-bold text-lg text-white leading-tight truncate">{profile.nickname}</h3>

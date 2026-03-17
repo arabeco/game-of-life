@@ -135,7 +135,7 @@ const SocialSearch: React.FC<{
             <button
                 onClick={handleAdd}
                 disabled={!query.trim()}
-                className="p-3 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] rounded-xl border border-[var(--skin-accent-color)]/30 hover:bg-[var(--skin-accent-color)]/30 disabled:opacity-50 transition-colors"
+                className="p-3 bg-[var(--skin-accent-color)] text-white rounded-xl shadow-lg shadow-[var(--skin-accent-color)]/20 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
             >
                 <PlusIcon className="w-5 h-5" />
             </button>
@@ -207,9 +207,11 @@ const SocialTab: React.FC = () => {
                                 {searchResults.players.map(player => {
                                     const isFriend = friends.some(friend => friend.id === player.id);
                                     const isOutgoing = friendRequestsOutgoing.some(request => request.recipientId === player.id);
-                                    const isIncoming = friendRequestsIncoming.some(request => request.senderId === player.id);
-                                    const isDisabled = isFriend || isOutgoing || isIncoming;
-                                    const label = isFriend ? 'Aliado' : isOutgoing ? 'Enviado' : isIncoming ? 'Convite' : 'Adicionar';
+                                    const incomingRequest = friendRequestsIncoming.find(request => request.senderId === player.id);
+                                    const isIncoming = !!incomingRequest;
+                                    
+                                    const isDisabled = isFriend || isOutgoing; 
+                                    const label = isFriend ? 'Aliado' : isOutgoing ? 'Enviado' : isIncoming ? 'Aceitar' : 'Adicionar';
 
                                     return (
                                         <SocialCard
@@ -218,9 +220,13 @@ const SocialTab: React.FC = () => {
                                             onClick={() => setSelectedProfile(player)}
                                             actions={
                                                 <button
-                                                    onClick={() => sendFriendRequest(player.id)}
+                                                    onClick={() => isIncoming ? acceptFriendRequest(incomingRequest.id) : sendFriendRequest(player.id)}
                                                     disabled={isDisabled}
-                                                    className="px-3 py-2 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 disabled:bg-black/20 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                                    className={`px-3 py-2 text-xs font-bold rounded-xl transition-all ${
+                                                        isIncoming 
+                                                            ? 'bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/20' 
+                                                            : 'bg-white/20 text-white hover:bg-white/30 disabled:bg-white/5 disabled:text-gray-500 disabled:cursor-not-allowed'
+                                                    }`}
                                                 >
                                                     {label}
                                                 </button>
@@ -232,7 +238,7 @@ const SocialTab: React.FC = () => {
                         )}
                         {searchResults.players.length === 0 && searchResults.clans.length === 0 && (
                             <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-xs text-gray-500">
-                                Nenhum aliado ou cla encontrado para esse filtro.
+                                Nenhum aliado ou clã encontrado para esse filtro.
                             </div>
                         )}
                     </div>
@@ -272,12 +278,7 @@ const SocialTab: React.FC = () => {
                                     <div className="space-y-2">
                                         <div className="text-[10px] font-bold text-gray-500">ENVIADAS</div>
                                         {friendRequestsOutgoing.map(request => {
-                                            // We might not have recipient profile if it's just an ID in the request object and not hydrated
-                                            // Assuming request has recipientProfile or we fallback
-                                            // The hook returns requests. We need to check the type.
-                                            // Assuming type has recipientProfile for outgoing
-                                            const recipientProfile = (request as any).recipientProfile || buildFallbackProfile(request.recipientId);
-
+                                            const recipientProfile = request.recipientProfile || buildFallbackProfile(request.recipientId);
                                             return (
                                                 <SocialCard
                                                     key={request.id}

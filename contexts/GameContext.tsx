@@ -1,4 +1,4 @@
-﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
@@ -2107,16 +2107,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ...outgoingRequests.map(r => r.recipientId),
             ].filter((id, index, arr) => id && arr.indexOf(id) === index);
 
-            setFriendRequestsIncoming(incomingRequests);
-            setFriendRequestsOutgoing(outgoingRequests);
-
             if (profileIdsToHydrate.length > 0) {
                 const profiles = await hydrateProfilesByIds(profileIdsToHydrate);
+                
+                // Hydrate requests with profiles
+                setFriendRequestsIncoming(incomingRequests.map(req => ({
+                    ...req,
+                    senderProfile: profiles[req.senderId]
+                })));
+                setFriendRequestsOutgoing(outgoingRequests.map(req => ({
+                    ...req,
+                    recipientProfile: profiles[req.recipientId]
+                })));
+
                 // Criar array de perfis de amigos a partir dos IDs
                 const friendProfiles = friendIds.map(id => profiles[id]).filter(Boolean);
                 setFriends(friendProfiles);
             } else {
                 setFriends([]);
+                setFriendRequestsIncoming(incomingRequests);
+                setFriendRequestsOutgoing(outgoingRequests);
             }
         } catch (error) {
             console.error('Error in loadFriendsAndRequests:', error);

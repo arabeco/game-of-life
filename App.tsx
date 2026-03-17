@@ -5,7 +5,9 @@ import { SplashScreen } from './components/SplashScreen';
 import { ClosedBetaGoogleInviteModal } from './components/ClosedBetaGoogleInviteModal';
 import { SupabaseService } from './services/SupabaseService';
 import {
+    clearClosedBetaGoogleAuthPending,
     clearRememberedClosedBetaGoogleAccess,
+    hasClosedBetaGoogleAuthPending,
     hasRememberedClosedBetaGoogleAccess,
     rememberClosedBetaGoogleAccess,
     saveClosedBetaGoogleRedirect,
@@ -61,6 +63,7 @@ const App: React.FC = () => {
     const [pendingGoogleInviteSession, setPendingGoogleInviteSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [authGuardLoading, setAuthGuardLoading] = useState(false);
+    const [googleAuthPending, setGoogleAuthPending] = useState(() => hasClosedBetaGoogleAuthPending());
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [isSplashComplete, setIsSplashComplete] = useState(() => sessionStorage.getItem('hasSeenSplash') === 'true');
     const authResolutionRef = useRef(0);
@@ -72,7 +75,7 @@ const App: React.FC = () => {
     const renderMode = useMemo(() => new URLSearchParams(window.location.search).get('render'), []);
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
     const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
-    const showFullScreenBoot = loading || (!session && authGuardLoading);
+    const showFullScreenBoot = loading || googleAuthPending || (!session && authGuardLoading);
 
     const handleSplashComplete = () => {
         sessionStorage.setItem('hasSeenSplash', 'true');
@@ -83,6 +86,34 @@ const App: React.FC = () => {
         startInstallPromptCapture();
         void import('./views/LoginView');
         void import('./components/AuthenticatedApp');
+
+        const clearPendingGoogleAuthState = () => {
+            clearClosedBetaGoogleAuthPending();
+            setGoogleAuthPending(false);
+        };
+
+        const retryPendingGoogleAuthSession = async (): Promise<Session | null> => {
+            if (!hasClosedBetaGoogleAuthPending()) return null;
+
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+                await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
+                const {
+                    data: { session: retriedSession },
+                    error: retryError,
+                } = await supabase.auth.getSession();
+
+                if (retryError) {
+                    console.warn('Retry session restore error after Google OAuth:', retryError.message);
+                    return null;
+                }
+
+                if (retriedSession) {
+                    return retriedSession;
+                }
+            }
+
+            return null;
+        };
 
         const preloadBootVisuals = (currentUserId?: string | null) => {
             if (!currentUserId) return;
@@ -144,6 +175,7 @@ const App: React.FC = () => {
         const resolveClosedBetaSession = async (candidate: Session | null, resolutionId: number): Promise<Session | null> => {
             if (!candidate) return null;
 
+            clearPendingGoogleAuthState();
             preloadBootVisuals(candidate.user?.id);
 
             if (!isGoldenInviteGateEnabled) {
@@ -250,39 +282,52 @@ const App: React.FC = () => {
                 } = await supabase.auth.getSession();
                 if (error) {
                     console.warn('Session restore error (silent):', error.message);
+                    clearPendingGoogleAuthState();
                     setSession(null);
                 } else {
-                    await applyResolvedSession(restoredSession);
+                    const recoveredSession = restoredSession || await retryPendingGoogleAuthSession();
+                    if (!recoveredSession) {
+                        clearPendingGoogleAuthState();
+                    }
+                    await applyResolvedSession(recoveredSession);
                 }
             } catch (e) {
                 console.error('Critical auth check error:', e);
+                clearPendingGoogleAuthState();
                 setSession(null);
             } finally {
                 setLoading(false);
             }
         };
 
-        void checkSession();
-
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((event, nextSession) => {
             void (async () => {
                 if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_ERROR') {
+                    clearPendingGoogleAuthState();
                     authResolutionRef.current += 1;
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                     if ((event as string) === 'TOKEN_REFRESH_ERROR') {
                         await signOutAndClearSupabaseSession('global');
                     }
+                } else if (event === 'INITIAL_SESSION' && !nextSession && hasClosedBetaGoogleAuthPending()) {
+                    return;
                 } else if (event === 'PASSWORD_RECOVERY') {
+                    if (nextSession) clearPendingGoogleAuthState();
                     setShowResetPassword(true);
                     await applyResolvedSession(nextSession);
                 } else {
+                    if (nextSession || !hasClosedBetaGoogleAuthPending()) {
+                        clearPendingGoogleAuthState();
+                    }
                     await applyResolvedSession(nextSession);
                 }
             })();
         });
+
+        void checkSession();
 
         return () => subscription.unsubscribe();
     }, [isGoldenInviteGateEnabled]);

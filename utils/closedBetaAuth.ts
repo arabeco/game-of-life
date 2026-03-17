@@ -1,5 +1,6 @@
 export const CLOSED_BETA_GOOGLE_REDIRECT_KEY = '__closed_beta_google_redirect_v1';
 export const CLOSED_BETA_GOOGLE_SIGNUP_INTENT_KEY = '__closed_beta_google_signup_intent_v1';
+export const CLOSED_BETA_GOOGLE_AUTH_PENDING_KEY = '__closed_beta_google_auth_pending_v1';
 const CLOSED_BETA_GOOGLE_GRANTED_PREFIX = '__closed_beta_google_granted_v1__';
 
 export type ClosedBetaGoogleRedirectMode = 'login' | 'signup';
@@ -88,6 +89,31 @@ export const clearClosedBetaGoogleSignupIntent = () => {
         sessionStorage.removeItem(CLOSED_BETA_GOOGLE_SIGNUP_INTENT_KEY);
     } catch (error) {
         console.warn('Failed to clear closed beta google signup intent:', error);
+    }
+};
+
+export const markClosedBetaGoogleAuthPending = () => {
+    try {
+        sessionStorage.setItem(CLOSED_BETA_GOOGLE_AUTH_PENDING_KEY, '1');
+    } catch (error) {
+        console.warn('Failed to persist closed beta google auth pending state:', error);
+    }
+};
+
+export const hasClosedBetaGoogleAuthPending = (): boolean => {
+    try {
+        return sessionStorage.getItem(CLOSED_BETA_GOOGLE_AUTH_PENDING_KEY) === '1';
+    } catch (error) {
+        console.warn('Failed to read closed beta google auth pending state:', error);
+        return false;
+    }
+};
+
+export const clearClosedBetaGoogleAuthPending = () => {
+    try {
+        sessionStorage.removeItem(CLOSED_BETA_GOOGLE_AUTH_PENDING_KEY);
+    } catch (error) {
+        console.warn('Failed to clear closed beta google auth pending state:', error);
     }
 };
 

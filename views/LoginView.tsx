@@ -9,7 +9,12 @@ import {
     LEGAL_TERMS_URL_PLACEHOLDER,
     LEGAL_TERMS_VERSION,
 } from '../constants/legal';
-import { clearClosedBetaGoogleRedirect, consumeClosedBetaGoogleRedirect } from '../utils/closedBetaAuth';
+import {
+    clearClosedBetaGoogleAuthPending,
+    clearClosedBetaGoogleRedirect,
+    consumeClosedBetaGoogleRedirect,
+    markClosedBetaGoogleAuthPending,
+} from '../utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { signOutAndClearSupabaseSession } from '../utils/authSession';
@@ -470,6 +475,7 @@ export const LoginView: React.FC = () => {
 
     const handleGoogleLogin = async () => {
         clearClosedBetaGoogleRedirect();
+        markClosedBetaGoogleAuthPending();
         setLoading(true);
         setError(null);
         setMessage(null);
@@ -487,6 +493,7 @@ export const LoginView: React.FC = () => {
             });
             if (error) throw error;
         } catch (error: any) {
+            clearClosedBetaGoogleAuthPending();
             setError(error.message || 'Erro no login com Google');
         } finally {
             setLoading(false);

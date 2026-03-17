@@ -23,6 +23,23 @@ type ManualSignupDraft = {
     nickname: string;
 };
 
+const FALLBACK_PUBLIC_APP_ORIGIN = 'https://app.glyph.life';
+
+const getCanonicalAppOrigin = () => {
+    const configuredOrigin = String(import.meta.env.VITE_PUBLIC_APP_URL || '').trim().replace(/\/+$/, '');
+    if (configuredOrigin) return configuredOrigin;
+
+    const { origin, hostname } = window.location;
+    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isGlyphHost = hostname === 'app.glyph.life' || hostname.endsWith('.glyph.life');
+
+    if (isLocalHost || isGlyphHost) {
+        return origin.replace(/\/+$/, '');
+    }
+
+    return FALLBACK_PUBLIC_APP_ORIGIN;
+};
+
 export const LoginView: React.FC = () => {
     const [isSigningUp, setIsSigningUp] = useState(false);
     const [manualEntryExpanded, setManualEntryExpanded] = useState(false);
@@ -40,6 +57,7 @@ export const LoginView: React.FC = () => {
     const [installPromptAvailable, setInstallPromptAvailable] = useState(() => Boolean(getInstallPrompt()));
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
     const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
+    const canonicalAppOrigin = React.useMemo(() => getCanonicalAppOrigin(), []);
 
     React.useEffect(() => {
         startInstallPromptCapture();
@@ -464,7 +482,7 @@ export const LoginView: React.FC = () => {
                         access_type: 'offline',
                         prompt: 'consent',
                     },
-                    redirectTo: window.location.href
+                    redirectTo: `${canonicalAppOrigin}/`
                 }
             });
             if (error) throw error;
@@ -544,7 +562,7 @@ export const LoginView: React.FC = () => {
         setMessage(null);
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/auth/callback`,
+                redirectTo: `${canonicalAppOrigin}/auth/callback`,
             });
             if (error) throw error;
             setMessage('E-mail de recuperação enviado. Verifique sua caixa de entrada.');

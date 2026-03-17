@@ -152,6 +152,22 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'C',
     label: 'Codex',
   },
+  partnership_invite: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'P',
+    label: 'Parceria',
+  },
+  arena_access: {
+    lane: 'progress',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'A',
+    label: 'Arena',
+  },
   system: {
     lane: 'essential',
     badge: true,
@@ -219,6 +235,10 @@ export const getNotificationTitle = (notification: Notification): string => {
       return 'O Oraculo chamou sua atencao.';
     case 'codex_gift':
       return 'Um Codex chegou para voce.';
+    case 'partnership_invite':
+      return 'Voce recebeu um convite de parceria.';
+    case 'arena_access':
+      return 'Uma nova arena foi compartilhada.';
     case 'system':
     default:
       return 'Aviso do sistema.';
@@ -257,7 +277,9 @@ export const getNotificationBody = (
       notification.type === 'cycle_finalized' ||
       notification.type === 'system' ||
       notification.type === 'oracle_prompt' ||
-      notification.type === 'codex_gift'
+      notification.type === 'codex_gift' ||
+      notification.type === 'partnership_invite' ||
+      notification.type === 'arena_access'
     ) {
       return notification.content;
     }

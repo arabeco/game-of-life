@@ -12,10 +12,14 @@ import {
   Users,
   X,
   Zap,
+  Bell,
+  Loader2,
   type LucideIcon,
 } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { supabase } from '../supabaseClient';
+import { SupabaseService } from '../services/SupabaseService';
+import { useGame } from '../contexts/GameContext';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
 
@@ -369,6 +373,70 @@ const PlayerInsightModal: React.FC<{
   );
 };
 
+const NotificationTestButton: React.FC = () => {
+    const { session, fetchNotifications, showToast } = useGame();
+    const [isPending, setIsPending] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(0);
+
+    const handleTest = async () => {
+        if (!session?.user.id || isPending) return;
+
+        setIsPending(true);
+        setTimeLeft(15);
+
+        const timer = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        setTimeout(async () => {
+            try {
+                await SupabaseService.createNotification(
+                    session.user.id,
+                    'system',
+                    'Teste de Push (15s): O sinal do Oráculo está operante. Esta é uma notificação de teste agendada pelo Painel Soberano.'
+                );
+                await fetchNotifications();
+                showToast("Notificação de teste enviada com sucesso!", "success");
+            } catch (err) {
+                console.error("Erro ao enviar notificação de teste:", err);
+                showToast("Erro ao enviar notificação de teste.", "error");
+            } finally {
+                setIsPending(false);
+            }
+        }, 15000);
+    };
+
+    return (
+        <button
+            onClick={handleTest}
+            disabled={isPending}
+            className={`flex items-center gap-2 rounded-xl border px-6 py-3 text-xs font-black uppercase tracking-[0.2em] transition-all ${
+                isPending 
+                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400 cursor-wait' 
+                    : 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:scale-[1.02]'
+            }`}
+        >
+            {isPending ? (
+                <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Agendado ({timeLeft}s)
+                </>
+            ) : (
+                <>
+                    <Bell className="h-4 w-4" />
+                    Testar Push (15s)
+                </>
+            )}
+        </button>
+    );
+};
+
 export const SovereignPanelView: React.FC = () => {
   const [rows, setRows] = useState<Marco1BetaScoreboardRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -637,6 +705,19 @@ export const SovereignPanelView: React.FC = () => {
               </table>
             </div>
           )}
+        </GlassCard>
+      </section>
+
+      <section>
+        <GlassCard variant="neutral" className="p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Laboratório de Notificações</p>
+              <h2 className="text-lg font-black text-white">Teste de Push In-App</h2>
+              <p className="text-xs text-zinc-400">Gera uma notificação de sistema para você mesmo após 15 segundos.</p>
+            </div>
+            <NotificationTestButton />
+          </div>
         </GlassCard>
       </section>
 

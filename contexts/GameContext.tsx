@@ -1229,6 +1229,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     await addChest('Comum');
                     await addChest('Skin Comum');
 
+                    // Welcome Notification
+                    void SupabaseService.createNotification(
+                        userId,
+                        'system',
+                        'Bem-vindo ao Oráculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para começar sua jornada.'
+                    ).then(() => fetchNotifications());
+
                     // Set initial rank and exp if needed (Vagante Level 1)
                     // O level do usuário é a soma dos níveis dos assets.
                     // Vamos garantir que o perfil comece com os dados corretos.

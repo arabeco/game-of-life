@@ -1,4 +1,4 @@
-﻿export interface CodexLevel {
+export interface CodexLevel {
   level: number;
   title: string;
   description: string;
@@ -975,6 +975,8 @@ export type NotificationType =
   | 'title_unlocked'
   | 'oracle_prompt'
   | 'codex_gift'
+  | 'partnership_invite'
+  | 'arena_access'
   | 'system';
 export interface NotificationMetadata {
   shareId?: string;

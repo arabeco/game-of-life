@@ -3,6 +3,8 @@ import type { Action, Arena, Clan, DailyCommitment, DayOfWeek, FeedEvent, FeedEv
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
+import { calculateArenaProgress } from '../../utils/progressUtils';
+import { emitArenaAttention } from '../../utils/arenaAttention';
 
 type ToastTone = 'success' | 'error' | 'info';
 type AchievementState = { type: FeedEventType; data: any } | null;
@@ -87,6 +89,54 @@ export const createTaskDomain = ({
             ...prev,
             taskIds: reconcileTaskInCommitment(prev.taskIds, snapshot.id, snapshot, prev.date, isClanQuestActionId)
         }));
+    };
+
+    const maybeTriggerArenaCompletionAttention = (
+        action: Action | undefined,
+        previousTasks: ScheduledTask[],
+        nextTasks: ScheduledTask[],
+    ) => {
+        if (!action) return;
+
+        const arena = getArenas().find(item => item.id === action.arenaId);
+        if (!arena) return;
+
+        const normalizedArenaName = (arena.name || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+
+        if (normalizedArenaName.includes('quests - cla') || normalizedArenaName.includes('quests - season')) {
+            return;
+        }
+
+        if (getClanQuestForAction(action)) return;
+
+        const arenaActions = getActionsForArena(arena.id);
+        if (arenaActions.length === 0) return;
+
+        const previousProgress = calculateArenaProgress({
+            arena,
+            actions: arenaActions,
+            tasks: previousTasks,
+        });
+
+        const nextProgress = calculateArenaProgress({
+            arena,
+            actions: arenaActions,
+            tasks: nextTasks,
+        });
+
+        if (previousProgress.progressPercent >= 100 || nextProgress.progressPercent < 100 || !nextProgress.isCleared) {
+            return;
+        }
+
+        emitArenaAttention({
+            arenaIds: [arena.id],
+            focusArenaId: arena.id,
+            phase: 'celebrate',
+            navigateToArenas: true,
+        });
     };
 
     const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
@@ -323,6 +373,7 @@ export const createTaskDomain = ({
             return;
         }
 
+        maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
         runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
     };
 
@@ -394,6 +445,8 @@ export const createTaskDomain = ({
                 void syncSharedCompletionForTask(action, arena, userId, true);
             }
         }
+
+        maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
     };
 
     const scheduleAndCompleteMilestoneNow = async (actionId: string) => {
@@ -454,6 +507,7 @@ export const createTaskDomain = ({
             void updateCustomClanMissionProgress(questId, 1);
         }
 
+        maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
         setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
         addFeedEvent({
             type: 'MILESTONE_COMPLETED',

@@ -22,6 +22,7 @@ import {
     buildOnboardingStartPatch,
     shouldAutoStartOnboarding,
 } from '../utils/firstUseOnboarding';
+import { APP_NAVIGATE_EVENT, AppNavigatePayload } from '../utils/arenaAttention';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -245,6 +246,17 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
 
         window.addEventListener('tutorialNavigate', handleNavigate as EventListener);
         return () => window.removeEventListener('tutorialNavigate', handleNavigate as EventListener);
+    }, [handleSetView]);
+
+    useEffect(() => {
+        const handleAppNavigate = (event: Event) => {
+            const customEvent = event as CustomEvent<AppNavigatePayload>;
+            if (!customEvent.detail?.view) return;
+            handleSetView(customEvent.detail.view);
+        };
+
+        window.addEventListener(APP_NAVIGATE_EVENT, handleAppNavigate);
+        return () => window.removeEventListener(APP_NAVIGATE_EVENT, handleAppNavigate);
     }, [handleSetView]);
 
     useEffect(() => {

@@ -16,6 +16,7 @@ import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { CampaignArenaStack } from '../components/CampaignArenaStack';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 import { calculateCampaignProgress } from '../utils/progressUtils';
+import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
 
 type PendingAction = {
     id: string;
@@ -26,6 +27,14 @@ type PendingAction = {
     repetitions: number;
     actionType: ActionType;
     difficulty?: number;
+};
+
+type ArenaAttentionState = {
+    arenaIds: string[];
+    campaignId?: string | null;
+    focusArenaId?: string | null;
+    phase: ArenaAttentionPhase;
+    token: number;
 };
 
 export const ArenasView: React.FC = () => {
@@ -62,10 +71,82 @@ export const ArenasView: React.FC = () => {
     const [dragOverSide, setDragOverSide] = useState<'left' | 'right' | null>(null);
     const [draggedId, setDraggedId] = useState<string | null>(null);
     const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+    const [arenaAttention, setArenaAttention] = useState<ArenaAttentionState | null>(null);
+    const arenaAttentionTimeoutRef = useRef<number | null>(null);
+    const arenaCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+    const campaignCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
     const toggleSection = (id: string) => {
         setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
     };
+
+    const registerArenaCardRef = (arenaId: string, node: HTMLDivElement | null) => {
+        if (node) {
+            arenaCardRefs.current.set(arenaId, node);
+            return;
+        }
+        arenaCardRefs.current.delete(arenaId);
+    };
+
+    const registerCampaignCardRef = (campaignId: string, node: HTMLDivElement | null) => {
+        if (node) {
+            campaignCardRefs.current.set(campaignId, node);
+            return;
+        }
+        campaignCardRefs.current.delete(campaignId);
+    };
+
+    const applyArenaAttention = React.useCallback((payload: ArenaAttentionPayload) => {
+        const nextState: ArenaAttentionState = {
+            arenaIds: payload.arenaIds,
+            campaignId: payload.campaignId ?? null,
+            focusArenaId: payload.focusArenaId ?? payload.arenaIds[0] ?? null,
+            phase: payload.phase,
+            token: payload.timestamp,
+        };
+
+        setArenaAttention(nextState);
+
+        if (arenaAttentionTimeoutRef.current) {
+            window.clearTimeout(arenaAttentionTimeoutRef.current);
+        }
+
+        arenaAttentionTimeoutRef.current = window.setTimeout(() => {
+            setArenaAttention(current => current?.token === nextState.token ? null : current);
+        }, payload.phase === 'celebrate' ? 2600 : 1900);
+
+        window.setTimeout(() => {
+            const targetId = payload.campaignId || payload.focusArenaId || payload.arenaIds[0];
+            if (!targetId) return;
+
+            const targetNode = payload.campaignId
+                ? campaignCardRefs.current.get(payload.campaignId)
+                : arenaCardRefs.current.get(targetId);
+
+            targetNode?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }, 140);
+    }, []);
+
+    useEffect(() => {
+        const pendingAttention = consumeArenaAttention();
+        if (pendingAttention) {
+            applyArenaAttention(pendingAttention);
+        }
+
+        const handleArenaAttention = (event: Event) => {
+            const customEvent = event as CustomEvent<ArenaAttentionPayload>;
+            if (!customEvent.detail) return;
+            applyArenaAttention(customEvent.detail);
+        };
+
+        window.addEventListener(ARENA_ATTENTION_EVENT, handleArenaAttention);
+        return () => {
+            window.removeEventListener(ARENA_ATTENTION_EVENT, handleArenaAttention);
+            if (arenaAttentionTimeoutRef.current) {
+                window.clearTimeout(arenaAttentionTimeoutRef.current);
+            }
+        };
+    }, [applyArenaAttention]);
 
     // Campaign Creation Mode
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -546,15 +627,25 @@ export const ArenasView: React.FC = () => {
         const campaignArenas = getArenas().filter(a => campaign.arenaIds.includes(a.id));
         const isDragOver = dragOverId === campaign.id;
         const isDragged = draggedId === campaign.id;
+        const isAttentionTarget = arenaAttention?.campaignId === campaign.id;
+        const campaignAttentionClass = isAttentionTarget
+            ? arenaAttention?.phase === 'celebrate'
+                ? 'arena-card-highlight arena-card-highlight--celebrate'
+                : 'arena-card-highlight arena-card-highlight--populate'
+            : '';
+        const progressFillClass = isAttentionTarget && arenaAttention?.phase === 'celebrate' && progress >= 100
+            ? 'arena-plate-progress-fill arena-plate-progress-fill--celebrate'
+            : 'arena-plate-progress-fill';
 
         return (
             <div
                 key={campaign.id}
+                ref={(node) => registerCampaignCardRef(campaign.id, node)}
                 data-drop-id={campaign.id}
                 onMouseDown={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
                 onTouchStart={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
                 onClick={() => setSelectedCampaignId(campaign.id)}
-                className={`relative col-span-2 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''}`}
+                className={`relative col-span-2 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
                 style={{ borderColor: userProfile.skinColor || 'var(--skin-accent-color)' }}
             >
                 {/* Folder Stack Effect */}
@@ -568,8 +659,8 @@ export const ArenasView: React.FC = () => {
                     </div>
                     <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden shrink-0 ml-1">
                             <div 
-                                className="h-full bg-[var(--skin-accent-color)] transition-all duration-500"
-                                style={{ width: `${progress}%` }}
+                                className={progressFillClass}
+                                style={{ width: `${progress}%`, background: 'var(--skin-accent-color)' }}
                             />
                         </div>
                 </div>
@@ -796,10 +887,12 @@ export const ArenasView: React.FC = () => {
         const isBlocked = isSelectionMode && alreadyInCampaign;
         const isDragOver = dragOverId === arena.id;
         const isDragged = draggedId === arena.id;
+        const arenaHighlightPhase = arenaAttention?.arenaIds.includes(arena.id) ? arenaAttention.phase : null;
 
         return (
             <div
                 key={arena.id}
+                ref={(node) => registerArenaCardRef(arena.id, node)}
                 data-drop-id={arena.id}
                 onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
                 onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
@@ -824,6 +917,7 @@ export const ArenasView: React.FC = () => {
                         actions={getActionsForArena(arena.id)}
                         onClick={() => {}}
                         variant="overview"
+                        highlightPhase={arenaHighlightPhase}
                     />
                     {isBlocked && (
                         <div className="absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center border-gray-400 bg-black/50">

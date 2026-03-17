@@ -81,6 +81,52 @@
   transition: width 180ms ease, background 180ms ease;
 }
 
+.arena-card-highlight {
+  isolation: isolate;
+}
+
+.arena-card-highlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.arena-card-highlight--populate {
+  animation: arenaPopulatePulse 1.2s ease-out;
+}
+
+.arena-card-highlight--populate::after {
+  border: 1px solid rgba(246, 226, 163, 0.8);
+  box-shadow:
+    0 0 0 1px rgba(212, 175, 55, 0.3),
+    0 0 18px rgba(212, 175, 55, 0.42),
+    inset 0 0 14px rgba(255, 255, 255, 0.12);
+  animation: arenaPopulateHalo 1.2s ease-out;
+}
+
+.arena-card-highlight--celebrate {
+  animation: arenaCelebratePulse 1.8s ease-out;
+}
+
+.arena-card-highlight--celebrate::after {
+  border: 1px solid rgba(255, 236, 179, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(255, 236, 179, 0.35),
+    0 0 28px rgba(255, 215, 0, 0.56),
+    inset 0 0 18px rgba(255, 255, 255, 0.18);
+  animation: arenaCelebrateHalo 1.8s ease-out;
+}
+
+.arena-plate-progress-fill--celebrate {
+  background-size: 220% 100% !important;
+  animation:
+    arenaCelebrateProgress 1.6s ease-out,
+    arenaCelebrateShimmer 1.3s linear 2;
+}
+
 .arena-thumb-layout {
   display: flex;
   flex-direction: column;
@@ -209,4 +255,93 @@
   letter-spacing: 0.02em;
   line-height: 0.95;
   margin: 0;
+}
+
+@keyframes arenaPopulatePulse {
+  0% {
+    transform: scale(0.985);
+    filter: saturate(1.15) brightness(1.08);
+  }
+  55% {
+    transform: scale(1.018);
+    filter: saturate(1.28) brightness(1.16);
+  }
+  100% {
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+@keyframes arenaPopulateHalo {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes arenaCelebratePulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  18% {
+    transform: scale(1.03);
+    filter: brightness(1.18) saturate(1.18);
+  }
+  42% {
+    transform: scale(1.012);
+    filter: brightness(1.08) saturate(1.08);
+  }
+  100% {
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+@keyframes arenaCelebrateHalo {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes arenaCelebrateProgress {
+  0% {
+    box-shadow:
+      0 0 0 rgba(255, 215, 0, 0),
+      0 0 0 rgba(255, 255, 255, 0);
+  }
+  35% {
+    box-shadow:
+      0 0 20px rgba(255, 215, 0, 0.82),
+      0 0 10px rgba(255, 255, 255, 0.28);
+  }
+  100% {
+    box-shadow:
+      0 0 12px rgba(255, 215, 0, 0.6),
+      0 0 4px rgba(255, 255, 255, 0.18);
+  }
+}
+
+@keyframes arenaCelebrateShimmer {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
 }

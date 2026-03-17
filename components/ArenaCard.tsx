@@ -210,6 +210,7 @@ interface ArenaCardProps {
     onClick: () => void;
     assetName?: string; // For overview
     variant: 'overview' | 'dossier' | 'compact';
+    highlightPhase?: 'populate' | 'celebrate' | null;
 }
 
 export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ 
@@ -218,6 +219,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     onClick, 
     assetName, 
     variant, 
+    highlightPhase = null,
     tasks: propTasks
 }) => {
     const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, reorderAction } = useGame();
@@ -331,7 +333,12 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
     const skinColor = 'var(--arena-card-border-color, var(--skin-accent-color))';
     const progressFillColor = 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)';
-    const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none pointer-events-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.14rem]' : 'justify-between px-1 py-[0.34rem]'}`;
+    const highlightClass = highlightPhase === 'populate'
+        ? 'arena-card-highlight arena-card-highlight--populate'
+        : highlightPhase === 'celebrate'
+            ? 'arena-card-highlight arena-card-highlight--celebrate'
+            : '';
+    const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none pointer-events-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.14rem]' : 'justify-between px-1 py-[0.34rem]'} ${highlightClass}`;
     const styleClasses = isOverview 
         ? 'h-[6.7rem]' 
         : variant === 'dossier' ? 'h-full w-full' : 'h-[5.5rem]';
@@ -469,7 +476,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 </div>
                 <div className={`arena-plate-progress w-full ${isCompactThumbnail ? 'arena-mini-progress' : 'mt-0.5'}`}>
                     <div
-                        className="arena-plate-progress-fill"
+                        className={`arena-plate-progress-fill ${highlightPhase === 'celebrate' && progress >= 100 ? 'arena-plate-progress-fill--celebrate' : ''}`}
                         style={{
                             width: `${progress}%`,
                             background: progressFillColor,
@@ -480,6 +487,5 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         </div>
     );
 };
-
 
 

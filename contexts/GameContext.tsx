@@ -22,6 +22,7 @@ import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscrib
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { hasPremiumAccess } from '../utils/premiumAccess';
+import { emitArenaAttention } from '../utils/arenaAttention';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -3568,6 +3569,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const baseCampaignPriorityOrder = campaigns.filter(c => (c.priority ?? 'media') === 'media').length;
         const previousCycleArenaIds = activeCycle ?[...activeCycle.arenaIds] : null;
 
+        emitArenaAttention({
+            arenaIds: [],
+            phase: 'populate',
+            navigateToArenas: true,
+        });
+
         const rollbackInstalledCodex = async () => {
             const arenaIdSet = new Set(createdArenaIds);
             const actionIdSet = new Set(createdActionIds);
@@ -3634,6 +3641,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                 createdArenaIds.push(createdArena.id);
                 arenaIds.push(createdArena.id);
+                emitArenaAttention({
+                    arenaIds: [createdArena.id],
+                    focusArenaId: createdArena.id,
+                    phase: 'populate',
+                    navigateToArenas: true,
+                });
                 const previousArenaId = arenaIds[arenaIds.length - 2];
                 arenaConfig[createdArena.id] = {
                     isLocked: level.level > 1,
@@ -3689,6 +3702,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 priorityOrder: baseCampaignPriorityOrder
             });
             createdCampaignId = createdCampaign.id;
+
+            emitArenaAttention({
+                arenaIds,
+                campaignId: createdCampaign.id,
+                focusArenaId: arenaIds[0] ?? null,
+                phase: 'populate',
+                navigateToArenas: true,
+            });
 
             showToast(`Codex "${codex.name}" instalado com sucesso!`);
         } catch (error: any) {

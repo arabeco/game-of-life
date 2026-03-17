@@ -1,4 +1,4 @@
-﻿import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
@@ -292,6 +292,8 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [spectatorData, setSpectatorData] = useState<{ arena: Arena, actions: Action[], tasks: ScheduledTask[], pupilName: string, link: RelationshipLink } | null>(null);
     const [selectedPupilLink, setSelectedPupilLink] = useState<RelationshipLink | null>(null);
     const [isMentorCreatorOpen, setMentorCreatorOpen] = useState(false);
+    const [showMentorshipModal, setShowMentorshipModal] = useState(false);
+    const [selectedFriendForMentorship, setSelectedFriendForMentorship] = useState<UserProfile | null>(null);
     const canActAsMentor = hasPremiumAccess(userProfile);
 
     const sessionReady = useMemo(() => !!sessionUid && isUuid(sessionUid), [sessionUid]);
@@ -529,6 +531,19 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setShowChallengeModal(true);
     };
 
+    const handleCreateMentorship = (friend: UserProfile) => {
+        setSelectedFriendForMentorship(friend);
+        setShowMentorshipModal(false);
+    };
+
+    const handleOpenMentorshipModal = () => {
+        if (!canActAsMentor) {
+            showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
+            return;
+        }
+        setShowMentorshipModal(true);
+    };
+
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
@@ -676,6 +691,16 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     })
                                                 )}
                                             </div>
+                                            <div className="pt-2 border-t border-white/10">
+                                                <button
+                                                    id="links-new-mentorship-button"
+                                                    onClick={handleOpenMentorshipModal}
+                                                    className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <span>💎</span>
+                                                    NOVA MENTORIA
+                                                </button>
+                                            </div>
                                         </>
                                     )}
 
@@ -802,6 +827,14 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     />
                 )}
 
+                {showMentorshipModal && (
+                    <ChallengeSelectionModal
+                        title="Nova Mentoria"
+                        onClose={() => setShowMentorshipModal(false)}
+                        onSelectFriend={handleCreateMentorship}
+                    />
+                )}
+
                 {selectedFriendForChallenge && (
                     <Suspense fallback={<div className="fixed inset-0 z-[210] bg-black/40 backdrop-blur-sm" />}>
                         <NewArenaModal
@@ -811,6 +844,20 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 type: 'competition',
                                 friendId: selectedFriendForChallenge.id,
                                 friendName: selectedFriendForChallenge.nickname
+                            }}
+                        />
+                    </Suspense>
+                )}
+
+                {selectedFriendForMentorship && (
+                    <Suspense fallback={<div className="fixed inset-0 z-[210] bg-black/40 backdrop-blur-sm" />}>
+                        <NewArenaModal
+                            isOpen={true}
+                            onClose={() => setSelectedFriendForMentorship(null)}
+                            initialRelationship={{
+                                type: 'mentorship',
+                                friendId: selectedFriendForMentorship.id,
+                                friendName: selectedFriendForMentorship.nickname
                             }}
                         />
                     </Suspense>
@@ -860,7 +907,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
 };
 
-const ChallengeSelectionModal: React.FC<{ onClose: () => void; onSelectFriend: (friend: UserProfile) => void }> = ({ onClose, onSelectFriend }) => {
+const ChallengeSelectionModal: React.FC<{ title?: string; onClose: () => void; onSelectFriend: (friend: UserProfile) => void }> = ({ title = 'Novo Desafio', onClose, onSelectFriend }) => {
     const { friends } = useGame();
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -871,7 +918,7 @@ const ChallengeSelectionModal: React.FC<{ onClose: () => void; onSelectFriend: (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[210] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
                 <GlassCard variant="neutral" className="w-full max-w-sm max-h-[70vh] flex flex-col rounded-3xl p-4" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-white">Novo Desafio</h3>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white">{title}</h3>
                         <button onClick={onClose}><XIcon className="w-5 h-5 text-gray-400" /></button>
                     </div>
 

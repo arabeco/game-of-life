@@ -29,7 +29,6 @@ interface LegacyProjectionModalProps {
     onOpenEra?: (era: LegacyEraSummary) => void;
     onOpenPlaque?: () => void;
     onExportRecord?: () => Promise<void> | void;
-    showLayoutLab?: boolean;
 }
 
 const LEGACY_PROJECTION_CAPTURE_ID = 'legacy-projection-capture';
@@ -46,7 +45,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     onOpenEra,
     onOpenPlaque,
     onExportRecord,
-    showLayoutLab = false,
 }) => {
     const [projectionActive, setProjectionActive] = useState(false);
     const [showProjectionConfirm, setShowProjectionConfirm] = useState(false);
@@ -61,19 +59,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     const previewPlaqueWidth = getLegacyPlaqueWidthPx('preview', layout);
     const previewPlaqueScale = getLegacyPlaqueScale('preview', layout);
     const selectedBackdropSkin = useMemo(() => getLegacyBackdropSkin(selectedBackdropSkinId), [selectedBackdropSkinId]);
-
-    const updateLayout = <K extends keyof LegacyLayoutConfig>(key: K, value: number) => {
-        setStoredLegacyLayoutConfig({ ...layout, [key]: value });
-    };
-
-    const copyLayoutJson = async () => {
-        try {
-            await navigator.clipboard.writeText(JSON.stringify(layout, null, 2));
-            onToast('JSON do layout copiado.');
-        } catch {
-            onToast('Nao foi possivel copiar o JSON.');
-        }
-    };
 
     const resetLayout = () => {
         resetStoredLegacyLayoutConfig();
@@ -258,56 +243,11 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                     onOpenCycle={onOpenCycle}
                                     onOpenEra={onOpenEra}
                                     onSequenceComplete={handleProjectionSequenceComplete}
-                                    showLayoutLab={showLayoutLab}
                                 />
                             </div>
                         ) : renderPreviewStage()}
                     </div>
 
-                    {showLayoutLab && (
-                        <div className="absolute left-3 top-16 z-40 w-[170px] rounded-2xl border border-cyan-400/20 bg-black/75 p-3 text-white shadow-[0_18px_45px_rgba(0,0,0,0.38)] backdrop-blur-md">
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-cyan-200">Layout lab</p>
-                                <button type="button" onClick={copyLayoutJson} className="text-[9px] font-black uppercase tracking-[0.16em] text-cyan-100/80">JSON</button>
-                            </div>
-                            <div className="space-y-2">
-                                {(projectionActive
-                                    ? [
-                                        ['plaqueOffsetY', 'Placa Y', -120, 120, 1],
-                                        ['plaqueZoom', 'Placa zoom', 0.55, 1.6, 0.01],
-                                        ['plaqueWidth', 'Placa largura', 0.72, 1.28, 0.01],
-                                        ['cyclesOffsetY', 'Ciclos Y', -240, 140, 1],
-                                        ['cyclesZoom', 'Ciclos zoom', 0.55, 1.8, 0.01],
-                                        ['playerOffsetY', 'Info Y', -140, 140, 1],
-                                        ['playerZoom', 'Info zoom', 0.55, 1.35, 0.01],
-                                    ]
-                                    : [
-                                        ['plaqueOffsetY', 'Placa Y', -120, 120, 1],
-                                        ['plaqueZoom', 'Placa zoom', 0.55, 1.6, 0.01],
-                                        ['plaqueWidth', 'Placa largura', 0.72, 1.28, 0.01],
-                                    ]).map(([key, label, min, max, step]) => (
-                                    <label key={String(key)} className="block">
-                                        <div className="mb-1 flex items-center justify-between gap-2">
-                                            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/80">{label}</span>
-                                            <span className="text-[10px] font-black text-cyan-200">{layout[key as keyof LegacyLayoutConfig]}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min={Number(min)}
-                                            max={Number(max)}
-                                            step={Number(step)}
-                                            value={Number(layout[key as keyof LegacyLayoutConfig])}
-                                            onChange={(event) => updateLayout(key as keyof LegacyLayoutConfig, Number(event.target.value))}
-                                            className="w-full accent-cyan-400"
-                                        />
-                                    </label>
-                                ))}
-                            </div>
-                            <div className="mt-2 flex justify-end">
-                                <button type="button" onClick={resetLayout} className="text-[9px] font-black uppercase tracking-[0.16em] text-white/60">Resetar</button>
-                            </div>
-                        </div>
-                    )}
 
                     {isProjectionTransitioning && (
                         <div className="pointer-events-none absolute inset-0 z-20 bg-[radial-gradient(circle_at_center,_rgba(170,220,255,0.08),_rgba(0,0,0,0.9)_64%)] transition-opacity duration-300" />

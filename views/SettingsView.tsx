@@ -541,10 +541,6 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const handleOpenMentorshipModal = () => {
-        if (!canActAsMentor) {
-            showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
-            return;
-        }
         setShowMentorshipModal(true);
     };
 
@@ -617,20 +613,16 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center px-1">
                                                     <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS PUPILOS</div>
-                                                    {canActAsMentor && (
-                                                        <button
-                                                            onClick={handleOpenMentorshipModal}
-                                                            className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
-                                                        >
-                                                            <span>+</span> ADICIONAR
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        onClick={handleOpenMentorshipModal}
+                                                        className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
+                                                    >
+                                                        <span>+</span> ADICIONAR
+                                                    </button>
                                                 </div>
-                                                {!canActAsMentor && (
-                                                    <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-3 py-3 text-[11px] leading-relaxed text-amber-200">
+                                                    <div className="text-[11px] leading-relaxed text-gray-400">
                                                         Mentoria ativa como mentor e envio de Codex para pupilos sao recursos Premium.
                                                     </div>
-                                                )}
                                                 {myPupils.length === 0 ? (
                                                     <div className="text-center text-sm text-gray-500 py-4">Nenhum vínculo ativo.</div>
                                                 ) : (

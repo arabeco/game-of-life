@@ -331,8 +331,8 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             return;
         }
 
-        if (type === 'mentoria' && !hasPremiumAccess(friend)) {
-            setLinkStatus(`${friend.nickname} precisa ser Premium para assumir mentoria.`);
+        if (type === 'mentoria' && !hasPremiumAccess(userProfile) && !hasPremiumAccess(friend)) {
+            setLinkStatus(`Mentoria exige que o Mentor seja Premium.`);
             return;
         }
 

@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
+import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { useGame } from '../contexts/GameContext';
@@ -373,6 +374,114 @@ const PlayerInsightModal: React.FC<{
   );
 };
 
+const LegacyPreviewButton: React.FC = () => {
+    const { session, showToast } = useGame();
+    const [showPreview, setShowPreview] = useState(false);
+
+    const mockEras: any[] = [
+        {
+            key: 'era-1',
+            label: 'Era da Descoberta',
+            startDate: '2025-01-01',
+            endDate: '2025-02-15',
+            avgScore: 82,
+            color: '#4ade80',
+            skinId: '1',
+            description: 'O início da jornada, focada em estabelecer bases sólidas.',
+            cycles: [
+                { id: 'c1', name: 'Alinhamento Inicial', score: 75, startDate: '2025-01-01', endDate: '2025-01-07', focusArena: 'Saúde', signatureAction: 'Treino matinal' },
+                { id: 'c2', name: 'Exploração de Rotina', score: 88, startDate: '2025-01-08', endDate: '2025-01-14', focusArena: 'Trabalho', signatureAction: 'Deep work 4h' },
+            ]
+        },
+        {
+            key: 'era-2',
+            label: 'Era da Expansão',
+            startDate: '2025-02-16',
+            endDate: '2025-04-01',
+            avgScore: 91,
+            color: '#60a5fa',
+            skinId: '2',
+            description: 'Crescimento acelerado e conquista de novos territórios de produtividade.',
+            cycles: [
+                { id: 'c3', name: 'Domínio Técnico', score: 94, startDate: '2025-02-16', endDate: '2025-02-22', focusArena: 'Estudos', signatureAction: 'Leitura técnica' },
+                { id: 'c4', name: 'Escalada de Performance', score: 89, startDate: '2025-02-23', endDate: '2025-03-01', focusArena: 'Finanças', signatureAction: 'Aporte mensal' },
+            ]
+        }
+    ];
+
+    return (
+        <>
+            <button
+                onClick={() => setShowPreview(true)}
+                className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/20 px-6 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-300 transition-all hover:bg-cyan-500/30 hover:scale-[1.02]"
+            >
+                <Zap className="h-4 w-4" />
+                Visualizar Legado (Exemplo)
+            </button>
+
+            {showPreview && (
+                <LegacyProjectionModal
+                    eras={mockEras}
+                    sovereignName={session?.user?.email?.split('@')[0] || 'Soberano'}
+                    isPremium={true}
+                    onClose={() => setShowPreview(false)}
+                    onToast={(msg) => showToast(msg)}
+                />
+            )}
+        </>
+    );
+};
+
+const NotificationTypeButton: React.FC<{ type: string; label: string; color: string }> = ({ type, label, color }) => {
+    const { session, fetchNotifications, showToast } = useGame();
+    const [isPending, setIsPending] = useState(false);
+
+    const colors: Record<string, string> = {
+        blue: 'border-blue-500/30 bg-blue-500/20 text-blue-300 hover:bg-blue-500/40',
+        amber: 'border-amber-500/30 bg-amber-500/20 text-amber-300 hover:bg-amber-500/40',
+        purple: 'border-purple-500/30 bg-purple-500/20 text-purple-300 hover:bg-purple-400/30',
+    };
+
+    const handleTest = async () => {
+        if (!session?.user.id || isPending) return;
+        setIsPending(true);
+
+        let content = '';
+        let metadata = {};
+
+        if (type === 'welcome') {
+            content = 'Bem-vindo ao Oráculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para começar sua jornada.';
+            metadata = { welcome: true };
+        } else if (type === 'oracle') {
+            content = 'Insight do Oráculo: Sua consistência na Arena de Saúde aumentou +15% esta semana. Mantenha o ritmo!';
+        } else if (type === 'insight') {
+            content = 'O Oráculo detectou um padrão: você performa melhor em blocos de 90 min de foco profundo pela manhã.';
+        }
+
+        try {
+            await SupabaseService.createNotification(session.user.id, 'system', content, metadata);
+            await fetchNotifications();
+            showToast(`Notificação "${label}" enviada!`, "success");
+        } catch (err) {
+            console.error("Erro ao enviar notificação:", err);
+            showToast("Erro ao processar teste.", "error");
+        } finally {
+            setIsPending(false);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleTest}
+            disabled={isPending}
+            className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.15em] transition-all disabled:opacity-50 ${colors[color]}`}
+        >
+            {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+            {label}
+        </button>
+    );
+};
+
 const NotificationTestButton: React.FC = () => {
     const { session, fetchNotifications, showToast } = useGame();
     const [isPending, setIsPending] = useState(false);
@@ -712,11 +821,31 @@ export const SovereignPanelView: React.FC = () => {
         <GlassCard variant="neutral" className="p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Laboratório de Notificações</p>
-              <h2 className="text-lg font-black text-white">Teste de Push In-App</h2>
-              <p className="text-xs text-zinc-400">Gera uma notificação de sistema para você mesmo após 15 segundos.</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-500">Laboratório de Legado</p>
+              <h2 className="text-lg font-black text-white">Visualização de Amostra</h2>
+              <p className="text-xs text-zinc-400">Teste o fluxo do legado com 3 eras e 12 ciclos de exemplo.</p>
             </div>
-            <NotificationTestButton />
+            <div className="flex flex-wrap gap-3">
+              <LegacyPreviewButton />
+            </div>
+          </div>
+        </GlassCard>
+      </section>
+
+      <section>
+        <GlassCard variant="neutral" className="p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Laboratório de Notificações</p>
+              <h2 className="text-lg font-black text-white">Fábrica de Eventos</h2>
+              <p className="text-xs text-zinc-400">Gere diferentes tipos de notificações para validar o comportamento do sistema.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <NotificationTypeButton type="welcome" label="Welcome (Email+Oracle)" color="blue" />
+              <NotificationTypeButton type="oracle" label="Oracle (Nativo)" color="amber" />
+              <NotificationTypeButton type="insight" label="Card do Oráculo" color="purple" />
+              <NotificationTestButton />
+            </div>
           </div>
         </GlassCard>
       </section>

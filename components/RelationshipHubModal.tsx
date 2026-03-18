@@ -142,6 +142,40 @@ const EmptyState: React.FC<{ title: string; text: string }> = ({ title, text }) 
     </div>
 );
 
+const MiniStatCard: React.FC<{ label: string; value: string; tone?: string }> = ({ label, value, tone = 'text-white' }) => (
+    <div className="rounded-[18px] border border-white/10 bg-black/24 px-3 py-3">
+        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/40">{label}</div>
+        <div className={`mt-1 text-sm font-black ${tone}`}>{value}</div>
+    </div>
+);
+
+const FlowStrip: React.FC<{
+    title: string;
+    steps: Array<{ label: string; detail: string; tone?: string }>;
+}> = ({ title, steps }) => (
+    <GlassCard className="rounded-[24px] border border-white/10 bg-black/24 p-4">
+        <div className="flex items-center justify-between gap-3">
+            <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">{title}</div>
+                <div className="mt-1 text-sm text-white/58">Leitura rapida do fluxo para o jogador entender custo, slot e destravamento.</div>
+            </div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+            {steps.map((step, index) => (
+                <div key={`${step.label}-${index}`} className="rounded-[18px] border border-white/10 bg-black/22 p-3">
+                    <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/8 text-[10px] font-black text-white/72">
+                            {index + 1}
+                        </div>
+                        <div className={`text-[11px] font-black uppercase tracking-[0.16em] ${step.tone || 'text-white'}`}>{step.label}</div>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-white/56">{step.detail}</p>
+                </div>
+            ))}
+        </div>
+    </GlassCard>
+);
+
 const CapacityRibbon: React.FC<{
     entry?: RelationshipCapacityEntry | null;
     title: string;
@@ -171,10 +205,10 @@ const CapacityRibbon: React.FC<{
 }) => (
     <GlassCard
         variant="neutral"
-        className="relative overflow-hidden rounded-[28px] border border-[rgba(226,233,241,0.24)] bg-[linear-gradient(160deg,rgba(215,220,229,0.92)_0%,rgba(111,119,133,0.78)_18%,rgba(32,38,49,0.92)_46%,rgba(10,12,18,0.98)_100%)] p-5 shadow-[0_26px_70px_rgba(0,0,0,0.34)]"
+        className="relative overflow-hidden rounded-[24px] border border-[rgba(226,233,241,0.22)] bg-[linear-gradient(160deg,rgba(215,220,229,0.92)_0%,rgba(111,119,133,0.78)_18%,rgba(32,38,49,0.92)_46%,rgba(10,12,18,0.98)_100%)] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.30)]"
     >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-14%,rgba(255,255,255,0.72),rgba(255,255,255,0.16)_26%,transparent_58%)] pointer-events-none" />
-        <div className="relative z-10 space-y-4">
+        <div className="relative z-10 space-y-3">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/24 px-3 py-1 text-[10px] font-black uppercase tracking-[0.26em] text-white/58">
@@ -182,25 +216,25 @@ const CapacityRibbon: React.FC<{
                         <span>Central de vinculos</span>
                     </div>
                     <div>
-                        <h2 className="text-lg font-black uppercase tracking-[0.14em] text-white">{title}</h2>
-                        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/60">{subtitle}</p>
+                        <h2 className="text-base font-black uppercase tracking-[0.14em] text-white">{title}</h2>
+                        <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-white/60">{subtitle}</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 md:min-w-[15rem]">
-                    <div className="rounded-2xl border border-white/10 bg-black/24 px-3 py-2 text-center">
+                <div className="grid grid-cols-2 gap-2 md:min-w-[18rem] md:grid-cols-4">
+                    <div className="rounded-[18px] border border-white/10 bg-black/24 px-3 py-2 text-center">
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/42">Custo</div>
                         <div className="mt-1 text-sm font-black text-[var(--skin-accent-color)]">{cost} gold</div>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/24 px-3 py-2 text-center">
+                    <div className="rounded-[18px] border border-white/10 bg-black/24 px-3 py-2 text-center">
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/42">Slots</div>
                         <div className="mt-1 text-sm font-black text-white">{relationshipCounter(entry)}</div>
                     </div>
-                    <div className="rounded-2xl border border-emerald-400/18 bg-emerald-500/8 px-3 py-2 text-center">
+                    <div className="rounded-[18px] border border-emerald-400/18 bg-emerald-500/8 px-3 py-2 text-center">
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-200/52">Gratis</div>
                         <div className="mt-1 text-sm font-black text-emerald-200">{entry?.base ?? 0}</div>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/24 px-3 py-2 text-center">
+                    <div className="rounded-[18px] border border-white/10 bg-black/24 px-3 py-2 text-center">
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/42">Premium</div>
                         <div className="mt-1 text-[11px] font-black uppercase tracking-[0.16em] text-white/78">
                             {entry?.requiresPremium ? 'Obrigatorio' : 'Opcional'}
@@ -209,10 +243,10 @@ const CapacityRibbon: React.FC<{
                 </div>
             </div>
 
-            <div className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-black/24 p-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-2 rounded-[18px] border border-white/10 bg-black/24 p-3 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
                     <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/40">Requisito</div>
-                    <p className="text-sm text-white/64">{requirement}</p>
+                    <p className="text-[13px] text-white/64">{requirement}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     {onBuySlot && (
@@ -579,6 +613,15 @@ export const RelationshipHubModal: React.FC<{
         }
         return counts;
     }, [linkedArenas]);
+    const linkedArenasByLinkId = useMemo(() => {
+        const grouped = new Map<string, LinkedRelationshipArena[]>();
+        for (const linkedArena of linkedArenas) {
+            const current = grouped.get(linkedArena.relationshipLinkId) || [];
+            current.push(linkedArena);
+            grouped.set(linkedArena.relationshipLinkId, current);
+        }
+        return grouped;
+    }, [linkedArenas]);
 
     const filteredInvites = useMemo(() => {
         if (activeTab === 'arenas') return [];
@@ -657,22 +700,89 @@ export const RelationshipHubModal: React.FC<{
     const renderMentoria = () => {
         const mentorEntry = summary?.mentor;
         const pupilEntry = summary?.pupil_mentor;
+        const linkedArenaEntry = summary?.linked_arena;
 
         return (
             <div className="space-y-4">
-                <CapacityRibbon
-                    entry={mentorEntry}
-                    title="Mentoria"
-                    subtitle="Separada da arena: o vinculo nasce primeiro, e as arenas compartilhadas entram depois."
-                    cost={50}
-                    requirement="So o mentor precisa ter Premium. Pupilo pode ser free."
-                    onBuySlot={() => handleBuySlot('mentor')}
-                    canBuySlot={isPremium}
-                    buyLabel="Comprar +1 slot de mentoria"
-                    onOpenStore={openStoreAndClose}
-                    ctaLabel="Convidar pupilo"
-                    onPrimary={() => setInvitePickerType('mentoria')}
-                    primaryDisabled={!isPremium || loading}
+                <GlassCard className="rounded-[26px] border border-[rgba(226,233,241,0.18)] bg-[linear-gradient(160deg,rgba(208,214,223,0.18)_0%,rgba(26,31,42,0.92)_34%,rgba(8,10,15,0.98)_100%)] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.26)]">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="space-y-2">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/24 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/46">
+                                    <CrownIcon className="w-3.5 h-3.5" />
+                                    <span>Mentoria</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-black uppercase tracking-[0.14em] text-white">Mentor primeiro. Arena depois.</h2>
+                                    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/60">
+                                        O vinculo nasce por convite. Depois disso o mentor libera Codex e arenas compartilhadas dentro da mentoria ativa.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[25rem]">
+                                <MiniStatCard label="Mentor" value={relationshipCounter(mentorEntry)} tone="text-[var(--skin-accent-color)]" />
+                                <MiniStatCard label="Pupilo" value={relationshipCounter(pupilEntry)} />
+                                <MiniStatCard label="Arenas" value={relationshipCounter(linkedArenaEntry)} tone="text-emerald-300" />
+                            </div>
+                        </div>
+
+                        <div className="grid gap-2 md:grid-cols-4">
+                            <MiniStatCard label="Custo do convite" value="50 gold" tone="text-[var(--skin-accent-color)]" />
+                            <MiniStatCard label="Arena compartilhada" value="60 gold" tone="text-emerald-300" />
+                            <MiniStatCard label="Codex mentor" value="300 gold" tone="text-cyan-300" />
+                            <MiniStatCard label="Forja ativa" value="Max 2 Codex" tone="text-amber-200" />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                onClick={() => setInvitePickerType('mentoria')}
+                                disabled={!isPremium || loading}
+                                className="luxe-skin-button rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Convidar pupilo
+                            </button>
+                            <button
+                                onClick={() => handleBuySlot('mentor')}
+                                disabled={!isPremium || busyKey === 'buy:mentor'}
+                                className="rounded-xl border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/84 transition-all hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Comprar slot de mentor
+                            </button>
+                            <button
+                                onClick={openStoreAndClose}
+                                className="rounded-xl border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)] transition-all hover:bg-[var(--skin-accent-color)]/16"
+                            >
+                                Ver loja social
+                            </button>
+                        </div>
+                    </div>
+                </GlassCard>
+
+                <FlowStrip
+                    title="Fluxo da mentoria"
+                    steps={[
+                        {
+                            label: 'Convite',
+                            detail: 'O mentor Premium paga 50 gold para abrir o vinculo.',
+                            tone: 'text-[var(--skin-accent-color)]',
+                        },
+                        {
+                            label: 'Aceite',
+                            detail: 'O pupilo aceita sem precisar de Premium e ocupa 1 vaga de mentor recebido.',
+                            tone: 'text-white',
+                        },
+                        {
+                            label: 'Arena',
+                            detail: 'Depois do vinculo ativo, o mentor pode anexar arenas compartilhadas por 60 gold.',
+                            tone: 'text-emerald-300',
+                        },
+                        {
+                            label: 'Codex',
+                            detail: 'O mentor entrega um Codex autoral ou forja um novo por 300 gold, com limite de 2 ativos.',
+                            tone: 'text-cyan-300',
+                        },
+                    ]}
                 />
 
                 {!isPremium && (
@@ -739,6 +849,7 @@ export const RelationshipHubModal: React.FC<{
                                     mentorLinks.map((link) => {
                                         const pupil = profileFor(link.pupilId);
                                         const linkedArenaCount = linkedArenaCountByLinkId.get(link.id) || 0;
+                                        const arenasForLink = linkedArenasByLinkId.get(link.id) || [];
                                         return (
                                             <div key={link.id} className="rounded-[24px] border border-white/12 bg-black/20 p-4">
                                                 <div className="flex items-start gap-3">
@@ -753,6 +864,24 @@ export const RelationshipHubModal: React.FC<{
                                                         <p className="mt-1 text-sm text-white/58">
                                                             Mentoria ativa desde {formatDate(link.createdAt) || 'agora'}.
                                                         </p>
+                                                        <div className="mt-3">
+                                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Arenas compartilhadas</div>
+                                                            {arenasForLink.length === 0 ? (
+                                                                <p className="mt-1 text-xs text-white/42">Nenhuma arena vinculada criada ainda.</p>
+                                                            ) : (
+                                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                                    {arenasForLink.map((linkedArena) => (
+                                                                        <span
+                                                                            key={linkedArena.id}
+                                                                            className="inline-flex items-center gap-2 rounded-full border border-emerald-300/18 bg-emerald-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-200"
+                                                                        >
+                                                                            <span>{linkedArena.arena?.icon || linkedArena.metadata?.icon || '[]'}</span>
+                                                                            <span>{linkedArena.arena?.name || 'Arena vinculada'}</span>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="mt-4 flex flex-wrap gap-2">
@@ -763,13 +892,18 @@ export const RelationshipHubModal: React.FC<{
                                                         Abrir Codex
                                                     </button>
                                                     <button
+                                                        onClick={() => setActiveTab('arenas')}
+                                                        className="rounded-xl border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/84 transition-all hover:bg-white/12"
+                                                    >
+                                                        Ver arenas
+                                                    </button>
+                                                    <button
                                                         onClick={() => {
                                                             setSelectedMentorLinkForArena(link);
-                                                            setActiveTab('arenas');
                                                         }}
                                                         className="rounded-xl border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)] transition-all hover:bg-[var(--skin-accent-color)]/16"
                                                     >
-                                                        Arena vinculada
+                                                        Nova arena
                                                     </button>
                                                 </div>
                                             </div>
@@ -789,14 +923,40 @@ export const RelationshipHubModal: React.FC<{
                                 ) : (
                                     pupilLinks.map((link) => {
                                         const mentor = profileFor(link.mentorId);
+                                        const arenasForLink = linkedArenasByLinkId.get(link.id) || [];
                                         return (
-                                            <LinkCard
-                                                key={link.id}
-                                                title={mentor?.nickname || 'Mentor'}
-                                                subtitle="Esse vinculo te da acesso ao acompanhamento do mentor e a arenas compartilhadas."
-                                                accentClassName="text-[var(--skin-accent-color)]"
-                                                badge="Mentor"
-                                            />
+                                            <div key={link.id} className="rounded-[24px] border border-white/12 bg-black/20 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <div className="text-sm font-black text-[var(--skin-accent-color)]">{mentor?.nickname || 'Mentor'}</div>
+                                                        <p className="mt-1 text-sm leading-relaxed text-white/58">
+                                                            Esse vinculo te da acesso ao acompanhamento do mentor e a arenas compartilhadas.
+                                                        </p>
+                                                    </div>
+                                                    <span className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/56">
+                                                        Mentor
+                                                    </span>
+                                                </div>
+
+                                                <div className="mt-4">
+                                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Arenas que vieram pela mentoria</div>
+                                                    {arenasForLink.length === 0 ? (
+                                                        <p className="mt-1 text-xs text-white/42">Quando o mentor abrir uma arena vinculada, ela aparece aqui.</p>
+                                                    ) : (
+                                                        <div className="mt-2 flex flex-wrap gap-2">
+                                                            {arenasForLink.map((linkedArena) => (
+                                                                <span
+                                                                    key={linkedArena.id}
+                                                                    className="inline-flex items-center gap-2 rounded-full border border-emerald-300/18 bg-emerald-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-200"
+                                                                >
+                                                                    <span>{linkedArena.arena?.icon || linkedArena.metadata?.icon || '[]'}</span>
+                                                                    <span>{linkedArena.arena?.name || 'Arena vinculada'}</span>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         );
                                     })
                                 )}
@@ -813,6 +973,10 @@ export const RelationshipHubModal: React.FC<{
                                 <div className="rounded-[20px] border border-white/10 bg-black/18 px-4 py-3">
                                     <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/38">Pupilo</div>
                                     <div className="mt-1 text-base font-black text-white">{relationshipCounter(pupilEntry)}</div>
+                                </div>
+                                <div className="rounded-[20px] border border-white/10 bg-black/18 px-4 py-3">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/38">Arenas vinculadas</div>
+                                    <div className="mt-1 text-base font-black text-emerald-300">{relationshipCounter(linkedArenaEntry)}</div>
                                 </div>
                                 <button
                                     onClick={openStoreAndClose}

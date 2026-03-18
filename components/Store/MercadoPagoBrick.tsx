@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { XIcon } from '../Icons';
@@ -24,6 +24,9 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     const { userProfile, showToast } = useGame();
     const [loading, setLoading] = useState(true);
     const [paymentResult, setPaymentResult] = useState<any>(null);
+    const brickControllerRef = useRef<any>(null);
+    const initializedKeyRef = useRef<string | null>(null);
+    const latestRefs = useRef({ onClose, showToast });
 
     const pixTransactionData = paymentResult?.point_of_interaction?.transaction_data ?? null;
     const pixQrCode = typeof pixTransactionData?.qr_code === 'string' ? pixTransactionData.qr_code : '';
@@ -31,13 +34,12 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     const pixTicketUrl = typeof pixTransactionData?.ticket_url === 'string' ? pixTransactionData.ticket_url : '';
 
     useEffect(() => {
-        const script = document.createElement('script');
-        script.src = 'https://sdk.mercadopago.com/js/v2';
-        script.async = true;
-        script.onload = () => {
-            void initMP();
-        };
-        document.body.appendChild(script);
+        latestRefs.current = { onClose, showToast };
+    }, [onClose, showToast]);
+
+    useEffect(() => {
+        let isActive = true;
+        const initKey = `${userProfile.id}:${amount}:${goldAmount}`;
 
         const fetchPreferenceId = async () => {
             try {
@@ -62,8 +64,30 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
             }
         };
 
+        const destroyBrick = async () => {
+            const controller = brickControllerRef.current;
+            brickControllerRef.current = null;
+
+            if (controller?.unmount) {
+                try {
+                    await controller.unmount();
+                } catch (error) {
+                    console.warn('Erro ao desmontar Brick do Mercado Pago:', error);
+                }
+            }
+
+            const container = document.getElementById('paymentBrick_container');
+            if (container) container.innerHTML = '';
+        };
+
         const initMP = async () => {
             try {
+                if (!isActive || initializedKeyRef.current === initKey) return;
+
+                initializedKeyRef.current = initKey;
+                setLoading(true);
+                await destroyBrick();
+
                 const mp = new window.MercadoPago(import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY, {
                     locale: 'pt-BR',
                 });
@@ -71,10 +95,13 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                 const preferenceId = await fetchPreferenceId();
 
                 if (!preferenceId) {
-                    showToast('Erro ao gerar preferencia de pagamento.');
-                    onClose();
+                    initializedKeyRef.current = null;
+                    latestRefs.current.showToast('Erro ao gerar preferencia de pagamento.');
+                    latestRefs.current.onClose();
                     return;
                 }
+
+                if (!isActive) return;
 
                 const settings = {
                     initialization: {
@@ -139,30 +166,55 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 throw new Error(result.error || 'Erro no processamento');
                             } catch (error: any) {
                                 console.error('Erro no processamento:', error);
-                                showToast(error.message || 'Falha na comunicacao');
+                                latestRefs.current.showToast(error.message || 'Falha na comunicacao');
                                 throw error;
                             }
                         },
                         onError: (error: any) => {
                             console.error('MP Error:', error);
-                            showToast('Erro no checkout do Mercado Pago.');
+                            latestRefs.current.showToast('Erro no checkout do Mercado Pago.');
                         },
                     },
                 };
 
-                await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+                const controller = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+                brickControllerRef.current = controller;
             } catch (err) {
                 console.error('MP Init Error:', err);
-                showToast('Falha ao carregar o sistema de pagamentos.');
+                initializedKeyRef.current = null;
+                latestRefs.current.showToast('Falha ao carregar o sistema de pagamentos.');
             }
         };
 
-        return () => {
-            const container = document.getElementById('paymentBrick_container');
-            if (container) container.innerHTML = '';
-            document.body.removeChild(script);
+        const ensureScript = () => {
+            const existingScript = document.querySelector<HTMLScriptElement>('script[data-mp-sdk="true"]');
+            if (existingScript) {
+                if (window.MercadoPago) {
+                    void initMP();
+                } else {
+                    existingScript.addEventListener('load', () => void initMP(), { once: true });
+                }
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://sdk.mercadopago.com/js/v2';
+            script.async = true;
+            script.dataset.mpSdk = 'true';
+            script.onload = () => {
+                void initMP();
+            };
+            document.body.appendChild(script);
         };
-    }, [amount, goldAmount, onClose, showToast, userProfile.email, userProfile.id]);
+
+        ensureScript();
+
+        return () => {
+            isActive = false;
+            initializedKeyRef.current = null;
+            void destroyBrick();
+        };
+    }, [amount, goldAmount, userProfile.email, userProfile.id]);
 
     const handleCopyPixCode = async () => {
         if (!pixQrCode) {

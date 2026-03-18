@@ -18,11 +18,12 @@ import {
 } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
+import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { SvgRadarChart } from '../components/SvgRadarChart';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { useGame } from '../contexts/GameContext';
-import type { LegacyRenderCycleDigest, LegacyRenderEraSummary, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
+import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, Report, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
 
@@ -1053,6 +1054,203 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
   ];
 })();
 
+const CYCLE_REPORT_SHOWCASE_CHEST: ChestType = 'Raro';
+
+const CYCLE_REPORT_SHOWCASE: Report = (() => {
+  const cycleId = 'gm-showcase-cycle-s';
+  const startDate = '2026-02-03';
+  const endDate = '2026-03-16';
+  const plannedEndDate = '2026-03-23';
+  const identitySnapshot = buildShowcaseIdentity('Aurelia Vale', 'Arquimandrita', 19, 'Aurora', 'Pilar de Campo');
+  const weeklyAtlas = [
+    buildShowcaseWeek({
+      cycleId,
+      weekIndex: 1,
+      startDate,
+      arenaId: 'produto-arena',
+      arenaName: 'Produto',
+      actionName: 'Janela de comando',
+      actionIcon: 'FX',
+      plannedPattern: [4, 4, 3, 3, 3, 2, 0],
+      completedPattern: [4, 4, 3, 3, 2, 2, 0],
+    }),
+    buildShowcaseWeek({
+      cycleId,
+      weekIndex: 2,
+      startDate: addDaysIso(startDate, 7),
+      arenaId: 'produto-arena',
+      arenaName: 'Produto',
+      actionName: 'Passada de interface',
+      actionIcon: 'UI',
+      plannedPattern: [4, 4, 4, 3, 3, 2, 0],
+      completedPattern: [4, 4, 4, 3, 3, 1, 0],
+    }),
+    buildShowcaseWeek({
+      cycleId,
+      weekIndex: 3,
+      startDate: addDaysIso(startDate, 14),
+      arenaId: 'mentoria-arena',
+      arenaName: 'Mentoria',
+      actionName: 'Rito de pupilo',
+      actionIcon: 'MN',
+      plannedPattern: [4, 3, 4, 3, 3, 2, 0],
+      completedPattern: [4, 3, 4, 3, 2, 2, 0],
+    }),
+    buildShowcaseWeek({
+      cycleId,
+      weekIndex: 4,
+      startDate: addDaysIso(startDate, 21),
+      arenaId: 'saude-arena',
+      arenaName: 'Saude',
+      actionName: 'Treino de alvorada',
+      actionIcon: 'HP',
+      plannedPattern: [3, 4, 3, 3, 4, 2, 0],
+      completedPattern: [3, 4, 3, 3, 3, 2, 0],
+    }),
+    buildShowcaseWeek({
+      cycleId,
+      weekIndex: 5,
+      startDate: addDaysIso(startDate, 28),
+      arenaId: 'legado-arena',
+      arenaName: 'Legado',
+      actionName: 'Revisao de legado',
+      actionIcon: 'LG',
+      plannedPattern: [4, 4, 4, 4, 3, 2, 0],
+      completedPattern: [4, 4, 4, 3, 3, 2, 0],
+    }),
+    buildShowcaseWeek({
+      cycleId,
+      weekIndex: 6,
+      startDate: addDaysIso(startDate, 35),
+      arenaId: 'produto-arena',
+      arenaName: 'Produto',
+      actionName: 'Fecho de release',
+      actionIcon: 'RL',
+      plannedPattern: [4, 4, 4, 3, 4, 2, 0],
+      completedPattern: [4, 4, 3, 3, 4, 1, 0],
+    }),
+  ];
+
+  const allDays = weeklyAtlas.flatMap((week) => week.days);
+  const plannedCount = weeklyAtlas.reduce((sum, week) => sum + week.plannedCount, 0);
+  const completedCount = weeklyAtlas.reduce((sum, week) => sum + week.completedCount, 0);
+  const completedMinutes = weeklyAtlas.reduce((sum, week) => sum + week.completedMinutes, 0);
+  const consistencyDays = allDays.filter((day) => day.completedCount > 0).length;
+  const bestDay = allDays.reduce(
+    (best, day) => (day.completedCount > best.completedCount ? { date: day.date, completedCount: day.completedCount } : best),
+    { date: startDate, completedCount: 0 },
+  );
+
+  const actionCounts = new Map<string, number>();
+  const arenaCounts = new Map<string, { arenaId: string; total: number }>();
+
+  allDays.forEach((day) => {
+    day.arenaBuckets.forEach((bucket) => {
+      const existing = arenaCounts.get(bucket.arenaName);
+      arenaCounts.set(bucket.arenaName, {
+        arenaId: bucket.arenaId,
+        total: (existing?.total || 0) + bucket.total,
+      });
+    });
+
+    [...day.scheduledItems, ...day.unscheduledItems].forEach((item) => {
+      actionCounts.set(item.actionName, (actionCounts.get(item.actionName) || 0) + 1);
+    });
+  });
+
+  const top3Actions = [...actionCounts.entries()]
+    .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))
+    .slice(0, 3)
+    .map(([name, count]) => ({ name, count }));
+
+  const topArenaEntry = [...arenaCounts.entries()]
+    .sort((a, b) => (b[1].total - a[1].total) || a[0].localeCompare(b[0]))[0];
+
+  const totalHours = Math.round((completedMinutes / 60) * 10) / 10;
+  const avgHoursPerDay = Math.round(((completedMinutes / 60) / Math.max(allDays.length, 1)) * 10) / 10;
+  const executionRatePct = Math.round((completedCount / Math.max(plannedCount, 1)) * 100);
+  const timeElapsedPct = 85;
+  const paceDeltaPct = executionRatePct - timeElapsedPct;
+
+  return {
+    id: 'report-showcase-note-s',
+    cycleId,
+    cycleName: 'Cerco de Jade',
+    startDate,
+    endDate,
+    performanceScore: 93,
+    metrics: {
+      actionsCompleted: completedCount,
+      totalPlannedActions: plannedCount,
+      arenasInvolved: new Set(weeklyAtlas.map((week) => week.dominantArenaName)).size,
+      goalsMet: 9,
+      plannedMetas: 10,
+      sealedMetas: 9,
+      totalHours,
+      questsCompleted: 5,
+      consistencyDays,
+      expGained: 2860,
+      plannedEndDate,
+      avgHoursPerDay,
+      maxStreak: 18,
+      bestDay: bestDay.date,
+      bestDayCount: bestDay.completedCount,
+      daysWithoutCompletion: Math.max(allDays.length - consistencyDays, 0),
+      executionRatePct,
+      timeElapsedPct,
+      paceDeltaPct,
+      top3Actions,
+      weeklyAtlas,
+      scoreModelVersion: 'fair_v2_1',
+      fairness: {
+        planLoadUnits: plannedCount,
+        honoredLoadUnits: completedCount,
+        planHonorRate: 0.94,
+        plannedMetas: 10,
+        sealedMetas: 9,
+        metaSealRate: 0.9,
+        baselineLoadUnits: 84,
+        baselineActiveDays: 27,
+        activeDays: consistencyDays,
+        personalCadenceRate: 0.86,
+        planLoadRatio: 0.88,
+        planRealismPts: 10,
+        selfGrowthRate: 0.27,
+        ascensionPts: 5,
+        frictionRate: 0.07,
+        focusRatio: 0.79,
+        measurementStatus: 'scored',
+        historyConfidence: 'stable',
+        scoreBreakdown: {
+          honorPts: 39,
+          metaPts: 24,
+          cadencePts: 15,
+          realismPts: 10,
+          ascensionPts: 5,
+        },
+        legacyPerformanceScore: 91,
+        grade: 'S',
+      },
+    },
+    highlight: {
+      mostFocusedArena: topArenaEntry?.[0] || 'Produto',
+      mostFocusedArenaId: topArenaEntry?.[1].arenaId || 'produto-arena',
+      mostRepeatedAction: top3Actions[0]?.name || 'Janela de comando',
+      mostRepeatedActionCount: top3Actions[0]?.count || 0,
+    },
+    clanPoints: 540,
+    expGained: 2860,
+    identitySnapshot,
+    assetProgress: [
+      { asset: 'Produto', value: 94 },
+      { asset: 'Mentoria', value: 88 },
+      { asset: 'Saude', value: 82 },
+      { asset: 'Planejamento', value: 90 },
+      { asset: 'Legado', value: 91 },
+    ],
+  };
+})();
+
 const LegacyPreviewButton: React.FC = () => {
     const { session, showToast } = useGame();
     const [showPreview, setShowPreview] = useState(false);
@@ -1105,6 +1303,36 @@ const LegacyPreviewButton: React.FC = () => {
                     isPremium={true}
                     onClose={() => setShowPreview(false)}
                     onToast={(msg) => showToast(msg)}
+                />
+            )}
+        </>
+    );
+};
+
+const CycleReportPreviewButton: React.FC = () => {
+    const { showToast } = useGame();
+    const [showPreview, setShowPreview] = useState(false);
+
+    return (
+        <>
+            <button
+                onClick={() => setShowPreview(true)}
+                className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/20 px-6 py-3 text-xs font-black uppercase tracking-[0.2em] text-emerald-300 transition-all hover:bg-emerald-500/30 hover:scale-[1.02]"
+            >
+                <CalendarDays className="h-4 w-4" />
+                Visualizar Relatorio Nota S
+            </button>
+
+            {showPreview && (
+                <ReportResultCarousel
+                    report={CYCLE_REPORT_SHOWCASE}
+                    chest={CYCLE_REPORT_SHOWCASE_CHEST}
+                    expGained={CYCLE_REPORT_SHOWCASE.expGained}
+                    autoPlay={false}
+                    onOk={() => setShowPreview(false)}
+                    onCompare={() => showToast('Preview de vitrine: comparacao desativada.', 'info')}
+                    onShare={() => showToast('Navegue ate o resumo para exportar o card do mock.', 'info')}
+                    onPostToFeed={() => showToast('Preview de vitrine: postagem desativada.', 'info')}
                 />
             )}
         </>
@@ -1509,10 +1737,11 @@ export const SovereignPanelView: React.FC = () => {
             <div className="space-y-1">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-500">Laboratório de Legado</p>
               <h2 className="text-lg font-black text-white">Visualização de Amostra</h2>
-              <p className="text-xs text-zinc-400">Teste o fluxo do legado com 3 eras e 12 ciclos de exemplo.</p>
+              <p className="text-xs text-zinc-400">Abra uma projeÃ§Ã£o premium de legado com 3 eras e 9 ciclos curados, ou um relatÃ³rio de ciclo nota S pronto para print.</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <LegacyPreviewButton />
+              <CycleReportPreviewButton />
             </div>
           </div>
         </GlassCard>

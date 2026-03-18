@@ -1344,14 +1344,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         try {
             await import('../components/LegacyExportDocument');
             const { exportElementAsImage, shouldPreferNativeShare } = await import('../components/Share');
+            const preferNativeShare = shouldPreferNativeShare();
             await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())));
+            if (preferNativeShare) {
+                showToast('Preparando compartilhamento do registro...', 'info');
+            }
             const result = await exportElementAsImage(LEGACY_EXPORT_CAPTURE_ID, {
                 fileName: `glyph-registro-de-soberania-${getLocalDateString()}.png`,
                 title: `Registro de Soberania - ${sovereignName}`,
                 backgroundColor: '#050505',
-                preferShare: shouldPreferNativeShare(),
+                preferShare: preferNativeShare,
             });
-            showToast(result === 'shared' ?'Registro de Soberania compartilhado.' : 'Registro de Soberania exportado.');
+            showToast(
+                result === 'shared'
+                    ? 'Registro de Soberania compartilhado.'
+                    : result === 'cancelled'
+                        ? 'Compartilhamento cancelado.'
+                        : 'Registro de Soberania exportado.'
+            );
         } catch (error) {
             console.error('Erro ao exportar legado completo:', error);
             showToast('Nao foi possivel exportar o Legado Completo.');
@@ -1370,8 +1380,14 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const handleShareReport = async (report: Report) => {
-        const { handleShare } = await import('../components/Share');
-        await handleShare('report-summary-card-capture', `Relatorio de Ciclo ${formatDate(report.startDate)} - Life OS`);
+        const { shareElementWithFeedback } = await import('../components/Share');
+        await shareElementWithFeedback(showToast, 'report-summary-card-capture', {
+            title: `Relatorio de Ciclo ${formatDate(report.startDate)} - Life OS`,
+            preparingMessage: 'Preparando compartilhamento do relatorio...',
+            sharedMessage: 'Relatorio compartilhado.',
+            cancelledMessage: 'Compartilhamento cancelado.',
+            errorMessage: 'Nao foi possivel preparar o relatorio para compartilhar.',
+        });
     };
 
     const handleCancelEraEdit = () => {
@@ -1920,8 +1936,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
-
 
 
 

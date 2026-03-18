@@ -20,31 +20,36 @@ serve(async (req) => {
     const payload = await req.json();
     console.log("Resend Webhook Payload:", payload);
 
-    // Payload structure from Supabase Webhook on 'notifications' table
-    // NEW contains the row data
     const notification = payload.record || payload.new || payload;
-    
-    // We expect the trigger to have identified the recipient email and passed it, 
-    // or we fetch it here. Since the trigger draft didn't pass it in JSON, 
-    // let's assume we might need to fetch it if not provided.
-    // However, to keep it simple and robust, we expect the webhook to be configured 
-    // such that it only triggers for notifications that need email.
+    const metadata = notification?.metadata ?? {};
+    const type = notification?.type ?? "system";
+    const content = notification?.content ?? "";
+    const shouldSendEmail = metadata.sendEmail === true || metadata.welcome === true;
+    const email = typeof metadata.email === "string" ? metadata.email.trim() : "";
+    const subject =
+      typeof metadata.emailSubject === "string" && metadata.emailSubject.trim()
+        ? metadata.emailSubject.trim()
+        : `Novo sinal no Oraculo: ${type}`;
 
-    // If the trigger was configured via Supabase Dashboard UI, it might just send the record.
-    // Let's use a generic subject/body for now based on 'type'.
+    if (!shouldSendEmail) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "notification_not_marked_for_email" }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    const type = notification.type;
-    const content = notification.content;
-    const userId = notification.user_id;
-
-    // Ideally we fetch the email here using service_role if not in payload
-    // For now, let's assume the developer will set up the SQL to include the email 
-    // in metadata or we modify the trigger.
-    
-    const email = notification.metadata?.email || "contato@glyph.life"; // Fallback/Placeholder
-    
-    if (email === "contato@glyph.life") {
-       console.warn("No recipient email found in metadata. using fallback.");
+    if (!email) {
+      console.warn("No recipient email found in notification metadata.");
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "missing_recipient_email" }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const res = await fetch("https://api.resend.com/emails", {
@@ -54,32 +59,38 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Oráculo <no-reply@glyph.life>",
+        from: "Oraculo <no-reply@glyph.life>",
         to: email,
-        subject: `Novo sinal no Oráculo: ${type}`,
+        subject,
         html: `
           <div style="font-family: sans-serif; padding: 20px; color: #333;">
-            <h2 style="color: #6366f1;">Olá!</h2>
-            <p>Você recebeu uma nova notificação do sistema <strong>Glyph</strong>:</p>
+            <h2 style="color: #6366f1;">Ola!</h2>
+            <p>Voce recebeu uma nova notificacao do sistema <strong>Glyph</strong>:</p>
             <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
               ${content}
             </div>
             <p style="font-size: 12px; color: #666;">Acesse o app para responder ou ver mais detalhes.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-            <p style="font-size: 10px; color: #999;">Glyph - Oráculo de Maestria</p>
+            <p style="font-size: 10px; color: #999;">Glyph - Oraculo de Maestria</p>
           </div>
         `,
       }),
     });
 
     const resData = await res.json();
+
+    if (!res.ok) {
+      throw new Error(resData?.message || resData?.error || "Resend API request failed.");
+    }
+
     return new Response(JSON.stringify(resData), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Resend Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : "Unknown resend error.";
+    console.error("Resend Error:", message);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

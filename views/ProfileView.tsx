@@ -12,7 +12,7 @@ import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { Sovereign } from '../components/Avatar';
 import { SovereignCustomizer } from '../components/SovereignCustomizer';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
-import { handleShare } from '../components/Share';
+import { shareElementWithFeedback } from '../components/Share';
 import { Portal } from '../components/Portal';
 import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
 import { ProfileAssetsPreview } from '../components/ProfileAssetsPreview';
@@ -366,7 +366,7 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, friends, updateUserProfile, clan, clanRanks, getUserPublicData, appMode, cycleProgress } = useGame();
+    const { userProfile, assets, friends, updateUserProfile, clan, clanRanks, getUserPublicData, appMode, cycleProgress, showToast } = useGame();
 
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
@@ -596,7 +596,18 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             {isEditing ? <XIcon className="w-5 h-5 text-red-300" /> : <EditIcon className="w-5 h-5 text-gray-300" />}
                                         </button>
                                     )}
-                                    <button onClick={() => handleShare('shareable-profile', `Perfil de ${displayProfile.nickname} - Life OS`)} className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm">
+                                    <button
+                                        onClick={() => {
+                                            void shareElementWithFeedback(showToast, 'shareable-profile', {
+                                                title: `Perfil de ${displayProfile.nickname} - Life OS`,
+                                                preparingMessage: 'Preparando compartilhamento do perfil...',
+                                                sharedMessage: 'Perfil compartilhado.',
+                                                cancelledMessage: 'Compartilhamento cancelado.',
+                                                errorMessage: 'Nao foi possivel preparar o perfil para compartilhar.',
+                                            });
+                                        }}
+                                        className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm"
+                                    >
                                         <ShareIcon className="w-5 h-5 text-gray-300" />
                                     </button>
                                     {isEditing && isOwnProfile && (

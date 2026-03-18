@@ -1023,6 +1023,10 @@ export interface NotificationMetadata {
   codexName?: string;
   senderNickname?: string;
   recipientNickname?: string;
+  email?: string;
+  sendEmail?: boolean;
+  emailSubject?: string;
+  welcome?: boolean;
   [key: string]: any;
 }
 export interface Notification {

@@ -7,7 +7,7 @@ import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { GlassCard } from '../components/GlassCard';
 import { Portal } from '../components/Portal';
 import { ShareIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon } from '../components/Icons';
-import { handleShare } from '../components/Share';
+import { shareElementWithFeedback } from '../components/Share';
 const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
 
 type MasteryMode = 'LEGADO' | 'SOBERANO';
@@ -181,7 +181,15 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                 </button>
 
                 <button
-                    onClick={() => handleShare('mastery-capture-area', 'Minha Maestria - Life OS')}
+                    onClick={() => {
+                        void shareElementWithFeedback(showToast, 'mastery-capture-area', {
+                            title: 'Minha Maestria - Life OS',
+                            preparingMessage: 'Preparando compartilhamento da maestria...',
+                            sharedMessage: 'Maestria compartilhada.',
+                            cancelledMessage: 'Compartilhamento cancelado.',
+                            errorMessage: 'Nao foi possivel preparar a maestria para compartilhar.',
+                        });
+                    }}
                     className="p-3 rounded-xl bg-white/5 border border-white/10 text-white transition-all active:scale-90"
                     data-html2canvas-ignore
                 >

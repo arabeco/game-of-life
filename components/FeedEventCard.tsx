@@ -3,7 +3,7 @@ import { FeedEvent } from '../types';
 import { GlassCard } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
 import { CrownIcon, ShareIcon } from './Icons';
-import { handleShare } from './Share';
+import { shareElementWithFeedback } from './Share';
 
 const getEventMessage = (event: FeedEvent): string => {
     switch (event.type) {
@@ -33,7 +33,7 @@ const getEventIcon = (event: FeedEvent): string => {
 }
 
 export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
-    const { friends, userProfile } = useGame();
+    const { friends, userProfile, showToast } = useGame();
     const allUsers = [userProfile, ...friends];
     const author = allUsers.find(u => u.id === event.userId);
 
@@ -72,8 +72,16 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                             <button className="p-1 text-gray-400 hover:text-[var(--skin-accent-color)] transition-colors" data-html2canvas-ignore>
                                 <CrownIcon className="w-5 h-5" />
                             </button>
-                            <button 
-                                onClick={() => handleShare(`feed-event-${event.id}`, `Conquista de ${author.nickname} - Life OS`)}
+                            <button
+                                onClick={() => {
+                                    void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {
+                                        title: `Conquista de ${author.nickname} - Life OS`,
+                                        preparingMessage: 'Preparando compartilhamento da conquista...',
+                                        sharedMessage: 'Conquista compartilhada.',
+                                        cancelledMessage: 'Compartilhamento cancelado.',
+                                        errorMessage: 'Nao foi possivel preparar a conquista para compartilhar.',
+                                    });
+                                }}
                                 className="p-1 text-gray-400 hover:text-white transition-colors"
                                 data-html2canvas-ignore
                             >

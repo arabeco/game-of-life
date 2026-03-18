@@ -447,11 +447,16 @@ const NotificationTypeButton: React.FC<{ type: string; label: string; color: str
         setIsPending(true);
 
         let content = '';
-        let metadata = {};
+        let metadata: Record<string, unknown> = {};
 
         if (type === 'welcome') {
             content = 'Bem-vindo ao Oráculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para começar sua jornada.';
-            metadata = { welcome: true };
+            metadata = {
+                welcome: true,
+                sendEmail: true,
+                email: session.user.email ?? null,
+                emailSubject: 'Glyph - Bem-vindo ao Oraculo',
+            };
         } else if (type === 'oracle') {
             content = 'Insight do Oráculo: Sua consistência na Arena de Saúde aumentou +15% esta semana. Mantenha o ritmo!';
         } else if (type === 'insight') {

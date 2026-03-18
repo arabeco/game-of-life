@@ -11,6 +11,23 @@ interface ExportSequenceItem extends ExportElementOptions {
     elementId: string;
 }
 
+type ToastTone = 'success' | 'error' | 'warning' | 'info';
+type ToastFn = (message: string, type?: ToastTone) => void;
+type NativeShareResult = 'shared' | 'cancelled' | 'unavailable';
+
+export type ShareResult = 'shared' | 'cancelled';
+export type ShareWithFeedbackResult = ShareResult | 'error';
+export type ExportElementResult = 'shared' | 'downloaded' | 'cancelled';
+
+interface ShareWithFeedbackOptions {
+    title?: string;
+    preparingMessage?: string;
+    sharedMessage?: string;
+    cancelledMessage?: string;
+    unsupportedMessage?: string;
+    errorMessage?: string;
+}
+
 const CAPTURE_DELAY_MS = 800;
 let toPngLoader: null | ((node: HTMLElement, options?: Record<string, unknown>) => Promise<string>) = null;
 
@@ -108,42 +125,93 @@ const downloadBlob = (blob: Blob, fileName: string) => {
     URL.revokeObjectURL(url);
 };
 
+const isShareCancelledError = (error: unknown) => {
+    const name = error instanceof DOMException ? error.name : (error as { name?: string } | null)?.name || '';
+    const message = error instanceof Error ? error.message : String(error || '');
+    const normalized = `${name} ${message}`.toLowerCase();
+
+    return normalized.includes('aborterror')
+        || normalized.includes('cancel')
+        || normalized.includes('canceled')
+        || normalized.includes('cancelled')
+        || normalized.includes('dismiss')
+        || normalized.includes('aborted a request');
+};
+
 const tryShareFile = async (file: File, title: string) => {
-    if (!navigator.share) return false;
+    if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+        return 'unavailable' as NativeShareResult;
+    }
 
     try {
         if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-            return false;
+            return 'unavailable' as NativeShareResult;
         }
         await navigator.share({
             files: [file],
             title,
         });
-        return true;
+        return 'shared' as NativeShareResult;
     } catch (error) {
-        console.info('Share cancelled or unavailable', error);
-        return false;
+        if (isShareCancelledError(error)) {
+            console.info('Share cancelled by user', error);
+            return 'cancelled' as NativeShareResult;
+        }
+        throw error;
     }
 };
 
-export const handleShare = async (elementId: string, title: string = 'Meu Progresso - Life OS') => {
-    if (!navigator.share) {
-        alert('A funcao de compartilhar nao e suportada neste navegador.');
-        return;
+export const handleShare = async (
+    elementId: string,
+    title: string = 'Meu Progresso - Life OS'
+): Promise<ShareResult> => {
+    if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+        throw new Error('A funcao de compartilhar nao e suportada neste navegador.');
     }
 
+    const element = getTargetElement(elementId);
+    const blob = await captureElementBlob(element, '#101010');
+    const file = new File([blob], 'share.png', { type: 'image/png' });
+    const result = await tryShareFile(file, title);
+
+    if (result === 'unavailable') {
+        throw new Error('Compartilhamento indisponivel neste aparelho.');
+    }
+
+    return result;
+};
+
+export const shareElementWithFeedback = async (
+    showToast: ToastFn,
+    elementId: string,
+    {
+        title = 'Meu Progresso - Life OS',
+        preparingMessage = 'Preparando compartilhamento...',
+        sharedMessage = 'Imagem compartilhada.',
+        cancelledMessage = 'Compartilhamento cancelado.',
+        unsupportedMessage = 'O compartilhamento nao esta disponivel neste aparelho.',
+        errorMessage = 'Nao foi possivel preparar a imagem para compartilhar.',
+    }: ShareWithFeedbackOptions = {}
+): Promise<ShareWithFeedbackResult> => {
+    showToast(preparingMessage, 'info');
+
     try {
-        const element = getTargetElement(elementId);
-        const blob = await captureElementBlob(element, '#101010');
-        const file = new File([blob], 'share.png', { type: 'image/png' });
-        const shared = await tryShareFile(file, title);
-        if (!shared) {
-            throw new Error('Compartilhamento indisponivel.');
+        const result = await handleShare(elementId, title);
+        if (result === 'cancelled') {
+            showToast(cancelledMessage, 'info');
+            return result;
         }
-    } catch (error: any) {
-        console.error('Erro ao gerar imagem para compartilhar:', error);
-        const errorMessage = error?.message || 'Desconhecido';
-        alert(`Ocorreu um erro ao gerar a imagem (Erro: ${errorMessage}). Verifique se as imagens do perfil estao carregando corretamente.`);
+
+        showToast(sharedMessage, 'success');
+        return result;
+    } catch (error) {
+        console.error('Erro ao compartilhar imagem:', error);
+        const message = error instanceof Error ? error.message : String(error || '');
+        const isUnavailable = message.toLowerCase().includes('nao e suportada')
+            || message.toLowerCase().includes('indisponivel neste aparelho');
+
+        showToast(isUnavailable ? unsupportedMessage : errorMessage, isUnavailable ? 'warning' : 'error');
+        return 'error';
     }
 };
 
@@ -157,19 +225,20 @@ export const exportElementAsImage = async (
         pixelRatio = 2,
         fontFamily,
     }: ExportElementOptions = {}
-) => {
+): Promise<ExportElementResult> => {
     const element = getTargetElement(elementId);
     const blob = await captureElementBlob(element, backgroundColor, { pixelRatio, fontFamily });
     const normalizedFileName = fileName.toLowerCase().endsWith('.png') ? fileName : `${fileName}.png`;
     const file = new File([blob], normalizedFileName, { type: 'image/png' });
 
     if (preferShare) {
-        const shared = await tryShareFile(file, title);
-        if (shared) return 'shared' as const;
+        const shareResult = await tryShareFile(file, title);
+        if (shareResult === 'shared') return 'shared';
+        if (shareResult === 'cancelled') return 'cancelled';
     }
 
     downloadBlob(blob, normalizedFileName);
-    return 'downloaded' as const;
+    return 'downloaded';
 };
 
 export const exportElementsAsImageSequence = async (items: ExportSequenceItem[]) => {

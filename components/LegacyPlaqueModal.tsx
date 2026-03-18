@@ -1,7 +1,7 @@
 import React from 'react';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
-import { exportElementAsImage, handleShare, shouldPreferNativeShare } from './Share';
+import { exportElementAsImage, shareElementWithFeedback, shouldPreferNativeShare } from './Share';
 import { LegacyPlaqueArtifact } from './LegacyPlaqueArtifact';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 
@@ -20,13 +20,22 @@ export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sove
 
     const handleExport = async () => {
         try {
+            if (preferNativeShare) {
+                onToast('Preparando compartilhamento da placa...');
+            }
             const result = await exportElementAsImage(PLAQUE_CAPTURE_ID, {
                 fileName: `glyph-placa-do-legado-${new Date().toISOString().slice(0, 10)}.png`,
                 title: `Placa do Legado - ${sovereignName}`,
                 backgroundColor: '#0a0907',
                 preferShare: preferNativeShare,
             });
-            onToast(result === 'shared' ? 'Placa do Legado compartilhada.' : 'Placa do Legado exportada.');
+            onToast(
+                result === 'shared'
+                    ? 'Placa do Legado compartilhada.'
+                    : result === 'cancelled'
+                        ? 'Compartilhamento cancelado.'
+                        : 'Placa do Legado exportada.'
+            );
         } catch (error) {
             console.error('Erro ao exportar a Placa do Legado:', error);
             onToast('Nao foi possivel exportar a Placa do Legado.');
@@ -34,11 +43,17 @@ export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sove
     };
 
     const handleSharePlaque = async () => {
-        try {
-            await handleShare(PLAQUE_CAPTURE_ID, `Placa do Legado - ${sovereignName}`);
-        } catch (error) {
-            console.error('Erro ao compartilhar a Placa do Legado:', error);
-        }
+        await shareElementWithFeedback(
+            (message) => onToast(message),
+            PLAQUE_CAPTURE_ID,
+            {
+                title: `Placa do Legado - ${sovereignName}`,
+                preparingMessage: 'Preparando compartilhamento da placa...',
+                sharedMessage: 'Placa do Legado compartilhada.',
+                cancelledMessage: 'Compartilhamento cancelado.',
+                errorMessage: 'Nao foi possivel preparar a Placa do Legado para compartilhar.',
+            }
+        );
     };
 
     return (

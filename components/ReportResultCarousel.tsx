@@ -84,7 +84,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 }) => {
     const REWARD_CARD_CAPTURE_ID = 'report-metal-card-capture';
     const preferNativeShare = shouldPreferNativeShare();
-    const { userProfile } = useGame();
+    const { userProfile, showToast } = useGame();
     const userSkinId = userProfile.skin;
     const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
     const skinColor = userSkin?.color || '#ffffff';
@@ -124,16 +124,29 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const handleExportRewardCard = async (forcePreferShare?: boolean) => {
         if (isExportingRewardCard) return;
         setIsExportingRewardCard(true);
+        const preferShareForThisRun = forcePreferShare ?? preferNativeShare;
         try {
-            await exportElementAsImage(REWARD_CARD_CAPTURE_ID, {
+            if (preferShareForThisRun) {
+                showToast('Preparando compartilhamento do card...', 'info');
+            }
+
+            const result = await exportElementAsImage(REWARD_CARD_CAPTURE_ID, {
                 fileName: `glyph-card-ciclo-${formatDate(report.endDate).replace(/\//g, '-')}-${scoreInfo.grade}.png`,
                 title: 'Card do ciclo - Glyph',
                 backgroundColor: '#050505',
-                preferShare: forcePreferShare ?? preferNativeShare,
+                preferShare: preferShareForThisRun,
             });
+
+            if (result === 'shared') {
+                showToast('Card do ciclo compartilhado.', 'success');
+            } else if (result === 'cancelled') {
+                showToast('Compartilhamento cancelado.', 'info');
+            } else {
+                showToast('Card do ciclo exportado.', 'success');
+            }
         } catch (error) {
             console.error('Erro ao exportar card do relatorio:', error);
-            alert('Nao foi possivel exportar o card do ciclo.');
+            showToast('Nao foi possivel exportar o card do ciclo.', 'error');
         } finally {
             setIsExportingRewardCard(false);
         }

@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon } from './Icons';
 import { ScheduledTask, Action, DailyCommitment } from '../types';
-import { handleShare } from './Share';
+import { shareElementWithFeedback } from './Share';
 import { PoolAction } from './PoolAction';
 import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
 import { isClanQuestAction } from '../utils/taskDomain.js';
@@ -425,7 +425,18 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                     >
                         Descansar
                     </button>
-                    <button onClick={() => handleShare('sitrep-capture-area', 'Meu Painel Diário - Life OS')} className="p-3 rounded-xl luxe-button-secondary">
+                    <button
+                        onClick={() => {
+                            void shareElementWithFeedback(showToast, 'sitrep-capture-area', {
+                                title: 'Meu Painel Diario - Life OS',
+                                preparingMessage: 'Preparando compartilhamento do painel...',
+                                sharedMessage: 'Painel diario compartilhado.',
+                                cancelledMessage: 'Compartilhamento cancelado.',
+                                errorMessage: 'Nao foi possivel preparar o painel para compartilhar.',
+                            });
+                        }}
+                        className="p-3 rounded-xl luxe-button-secondary"
+                    >
                         <ShareIcon className="w-5 h-5" />
                     </button>
                     <button

@@ -1095,7 +1095,16 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return unified;
     }, [availableTaskPool, bayAreaTasks]);
 
-    const poolItemCount = Object.keys(unifiedBayAreaItems).length;
+    const visibleBayAreaEntries = useMemo(
+        () =>
+            (Object.entries(unifiedBayAreaItems) as [string, { count: number; isUnlimited: boolean; taskIds?: string[] }][]).filter(
+                ([_, payload]) => payload.count > 0 || (payload.taskIds && payload.taskIds.length > 0)
+            ),
+        [unifiedBayAreaItems]
+    );
+
+    // Keep bay height in sync with what is actually rendered, not with every hidden pool key.
+    const poolItemCount = visibleBayAreaEntries.length;
     const isSingleRow = poolItemCount <= 8;
     // Reduced heights as requested
     const bayAreaHeight = isSingleRow ?'h-[42px]' : 'h-[84px]';
@@ -1141,13 +1150,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             className={`flex-grow min-w-0 core-surface rounded-2xl p-0.5 ${bayAreaHeight} transition-all duration-300 ${isOverBayArea ?'border-[var(--skin-accent-color)] ring-1 ring-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/5' : ''}`}
                         >
                             <div className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden pr-2 scrollbar-hide items-center`}>
-                                {Object.entries(unifiedBayAreaItems).filter(([_, payload]) => {
-                                     const p = payload as any;
-                                     return p.count > 0 || (p.taskIds && p.taskIds.length > 0);
-                                 }).length > 0 ?
-                                     (Object.entries(unifiedBayAreaItems) as [string, { count: number; isUnlimited: boolean; taskIds?: string[] }][])
-                                     .filter(([_, payload]) => payload.count > 0 || (payload.taskIds && payload.taskIds.length > 0))
-                                     .map(([actionId, payload]) => {
+                                {visibleBayAreaEntries.length > 0 ?
+                                     visibleBayAreaEntries.map(([actionId, payload]) => {
                                          const action = getActionById(actionId);
                                          if (!action) return null;
                                          // Use the first available taskId (FIFO) if any exist in Bay Area

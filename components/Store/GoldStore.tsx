@@ -5,10 +5,35 @@ import { ECONOMY } from '../../constants/economy';
 import { CheckIcon, CrownIcon } from '../Icons';
 import { MercadoPagoBrick } from './MercadoPagoBrick';
 
-export const GoldStore: React.FC = () => {
-    const { buyStoreItem, userProfile } = useGame();
+export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
+    const { buyStoreItem, userProfile, buyRelationshipCapacitySlot, getRelationshipCapacitySummary } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number } | null>(null);
+    const [relationshipSummary, setRelationshipSummary] = useState<any>(null);
+    const socialCapacityRef = React.useRef<HTMLDivElement | null>(null);
+
+    React.useEffect(() => {
+        let active = true;
+
+        const loadSummary = async () => {
+            const summary = await getRelationshipCapacitySummary();
+            if (active) {
+                setRelationshipSummary(summary);
+            }
+        };
+
+        void loadSummary();
+        return () => {
+            active = false;
+        };
+    }, [getRelationshipCapacitySummary]);
+
+    React.useEffect(() => {
+        if (scrollRequest?.section !== 'social-capacity') return;
+        window.setTimeout(() => {
+            socialCapacityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 80);
+    }, [scrollRequest]);
 
     const handleBuyPack = async (packId: string) => {
         const pack = ECONOMY.gold_packs.find(p => p.id === packId);
@@ -28,6 +53,41 @@ export const GoldStore: React.FC = () => {
             setLoading(null);
         }
     };
+
+    const relationshipCards = [
+        {
+            id: 'partnership' as const,
+            name: 'Slot de parceria',
+            subtitle: 'Aumenta sua capacidade de parcerias ativas.',
+            cost: 50,
+            accent: 'text-cyan-300',
+            entry: relationshipSummary?.partnership,
+        },
+        {
+            id: 'competition' as const,
+            name: 'Slot de competicao',
+            subtitle: 'Libera mais um duelo ativo na central.',
+            cost: 50,
+            accent: 'text-rose-300',
+            entry: relationshipSummary?.competition,
+        },
+        {
+            id: 'mentor' as const,
+            name: 'Slot de mentoria',
+            subtitle: 'Expande sua capacidade como mentor Premium.',
+            cost: 100,
+            accent: 'text-[var(--skin-accent-color)]',
+            entry: relationshipSummary?.mentor,
+        },
+        {
+            id: 'linked_arena' as const,
+            name: 'Slot de arena vinculada',
+            subtitle: 'Permite anexar mais arenas em mentorias ativas.',
+            cost: 60,
+            accent: 'text-emerald-300',
+            entry: relationshipSummary?.linked_arena,
+        },
+    ];
 
     return (
         <div className="space-y-8 animate-fade-in">
@@ -104,6 +164,65 @@ export const GoldStore: React.FC = () => {
                     ))}
                 </div>
             </div>
+
+            <GlassCard ref={socialCapacityRef as any} className="relative overflow-hidden p-6 space-y-5 border border-[var(--skin-accent-color)]/20" id="social-capacity-section">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(135deg,rgba(201,178,103,0.10),transparent_52%)] pointer-events-none" />
+                <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.26em] text-[var(--skin-accent-color)]/80">Capacidade Social</div>
+                        <h3 className="mt-1 text-xl font-black uppercase tracking-[0.08em] text-white">Slots permanentes da Central</h3>
+                        <p className="mt-2 max-w-2xl text-sm text-gray-400">
+                            Aqui ficam os upgrades que aumentam sua capacidade de vinculos. O custo da acao continua sendo cobrado na central.
+                        </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-right">
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Saldo atual</div>
+                        <div className="mt-1 text-lg font-black text-[var(--skin-accent-color)]">{Number(userProfile.wallet?.gold || 0).toLocaleString('pt-BR')} gold</div>
+                    </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {relationshipCards.map((card) => (
+                        <div key={card.id} className="rounded-[22px] border border-white/10 bg-black/22 p-4 shadow-[0_16px_34px_rgba(0,0,0,0.18)]">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className={`text-sm font-black ${card.accent}`}>{card.name}</div>
+                                    <p className="mt-1 text-xs leading-relaxed text-gray-400">{card.subtitle}</p>
+                                </div>
+                                <div className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
+                                    {card.entry ? `${card.entry.used}/${card.entry.limit}` : '--'}
+                                </div>
+                            </div>
+
+                            <div className="mt-4 space-y-2">
+                                <div className="rounded-xl border border-white/8 bg-black/24 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/42">
+                                    Gratis {card.entry?.base ?? 0} • Loja +1
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        const key = `relationship-slot:${card.id}`;
+                                        if (loading) return;
+                                        setLoading(key);
+                                        try {
+                                            const success = await buyRelationshipCapacitySlot(card.id);
+                                            if (success) {
+                                                const nextSummary = await getRelationshipCapacitySummary();
+                                                setRelationshipSummary(nextSummary);
+                                            }
+                                        } finally {
+                                            setLoading(null);
+                                        }
+                                    }}
+                                    disabled={!!loading}
+                                    className="luxe-skin-button w-full rounded-xl py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
+                                >
+                                    {loading === `relationship-slot:${card.id}` ? '...' : `${card.cost} gold`}
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </GlassCard>
 
             <GlassCard className="p-6 space-y-4">
                 <div className="flex items-start justify-between gap-4">

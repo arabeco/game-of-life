@@ -4,10 +4,8 @@ import { Arena } from '../types';
 import { CrownIcon, ChevronRightIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
-import { supabase } from '../supabaseClient';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
-import { SupabaseService } from '../services/SupabaseService';
 
 interface NewArenaModalProps {
     assetId?: string;
@@ -64,30 +62,14 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
 
     if (!isOpen) return null;
 
-    const mapRelationshipType = (type: NonNullable<NewArenaModalProps['initialRelationship']>['type']) => {
-        switch (type) {
-            case 'competition':
-                return 'competicao';
-            case 'partnership':
-                return 'parceria';
-            case 'mentorship':
-            default:
-                return 'mentoria';
-        }
-    };
-
     const handleSave = async () => {
         if (!name.trim() || !assetId) {
             showToast('Escolha o ativo e dê um nome para a arena.', 'warning');
             return;
         }
 
-        const defaultIcon = initialRelationship?.type === 'competition'
-            ? '\u2694\uFE0F'
-            : suggestEmojiForLabel(name, 'arena', { assetId, fallback: '\u{1F3DB}\uFE0F' });
-        const finalDescription = initialRelationship
-            ? `${description}\n\n[${initialRelationship.type === 'competition' ? 'DESAFIO' : 'VINCULO'}: ${initialRelationship.friendName}]`
-            : description;
+        const defaultIcon = suggestEmojiForLabel(name, 'arena', { assetId, fallback: '\u{1F3DB}\uFE0F' });
+        const finalDescription = description;
 
         const newArena = await addArena(assetId, {
             name,
@@ -95,47 +77,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             icon: defaultIcon,
         });
 
-        if (initialRelationship) {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const senderId = sessionData.session?.user.id;
-
-            if (!senderId) {
-                showToast('Faca login para enviar o convite do vinculo.', 'warning');
-            } else {
-                const { error } = await supabase.from('relationship_link_invites').insert({
-                    sender_id: senderId,
-                    recipient_id: initialRelationship.friendId,
-                    link_type: mapRelationshipType(initialRelationship.type),
-                    arena_id: newArena.id,
-                    arena_snapshot: { name, icon: defaultIcon },
-                    status: 'pending',
-                });
-
-                if (error) {
-                    showToast(`Arena criada, mas o convite falhou: ${error.message}`, 'error');
-                } else {
-                    // Create Notification for the recipient via Service
-                    const notificationType = initialRelationship.type === 'competition' ? 'arena_access' : (initialRelationship.type === 'mentorship' ? 'mentor_invite' : 'partnership_invite');
-                    const label = initialRelationship.type === 'competition' ? 'DESAFIO' : (initialRelationship.type === 'mentorship' ? 'MENTORIA' : 'PARCERIA');
-                    
-                    void SupabaseService.createNotification(
-                        initialRelationship.friendId,
-                        notificationType,
-                        `[${label}] Convite de ${sessionData.session?.user.user_metadata?.nickname || 'um aliado'} para a arena "${name}".`,
-                        {
-                            inviteType: initialRelationship.type,
-                            arenaId: newArena.id,
-                            arenaName: name,
-                            senderId: senderId
-                        }
-                    );
-
-                    showToast(`Convite enviado para ${initialRelationship.friendName}.`, 'success');
-                }
-            }
-        } else {
-            showToast('Arena criada.', 'success');
-        }
+        showToast('Arena criada.', 'success');
 
         window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, { detail: { arenaId: newArena.id } }));
 
@@ -154,18 +96,9 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             <Portal>
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center animate-fade-in" onClick={onClose}>
                     <GlassCard ref={modalCardRef} variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl relative" onClick={e => e.stopPropagation()}>
-                        {initialRelationship && (
-                            <div className="absolute top-0 left-0 right-0 -mt-8 text-center">
-                                <span className="px-3 py-1 bg-[var(--skin-accent-color)] text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_0_10px_var(--sephirot-glow-color)]">
-                                    {initialRelationship.type === 'competition' ? 'NOVO DESAFIO' : 'NOVO VINCULO'}
-                                </span>
-                            </div>
-                        )}
-
                         <div className="text-center">
                             <CrownIcon className="w-8 h-8 mx-auto text-[var(--skin-accent-color)]" />
                             <h2 className="text-lg font-bold uppercase tracking-wider mt-2">Nova Arena</h2>
-                            {initialRelationship && <p className="text-xs text-gray-400 mt-1">Com: {initialRelationship.friendName}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -199,7 +132,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                                 CANCELAR
                             </button>
                             <button id="new-arena-submit-button" onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
-                                {initialRelationship ? 'CRIAR E CONVIDAR' : 'CRIAR ARENA'}
+                                CRIAR ARENA
                             </button>
                         </div>
                     </GlassCard>

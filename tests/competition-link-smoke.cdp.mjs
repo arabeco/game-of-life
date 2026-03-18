@@ -2,8 +2,9 @@ import { withBrowser } from './_smoke.browser.mjs';
 import {
   DEFAULT_SMOKE_URL,
   setupFriendFixture,
-  getLatestCompetitionInvite,
-  findArenaByName,
+  getLatestRelationshipInvite,
+  getUserProfile,
+  setWallet,
   waitForDb,
 } from './_smoke.supabase.mjs';
 
@@ -13,7 +14,7 @@ const checkpoints = [];
 try {
   const fixture = await setupFriendFixture({ label: 'competition-link' });
   const { leader, friend } = fixture;
-  const challengeName = `Desafio Smoke ${Date.now()}`;
+  await setWallet(leader.client, { userId: leader.userId, gold: 250 });
 
   await withBrowser({ baseUrl, debugPort: 9235 }, async (page) => {
     await page.login(leader.email, leader.password);
@@ -32,40 +33,45 @@ try {
       25000,
     );
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#links-tab-desafios', 15000);
-    await page.clickSelector('#links-tab-desafios');
-    await page.waitForSelector('#links-new-challenge-button', 15000);
-    await page.clickSelector('#links-new-challenge-button');
-    await page.waitForSelector('#challenge-search-input', 15000);
-    await page.setInputValue('#challenge-search-input', friend.nickname);
-    await page.waitForSelector(`#challenge-friend-${friend.userId}`, 15000);
-    await page.clickSelector(`#challenge-friend-${friend.userId}`);
-    await page.waitForSelector('#new-arena-name-input', 15000);
-    await page.setInputValue('#new-arena-name-input', challengeName);
-    await page.setInputValue('#new-arena-description-input', 'Desafio PVP gerado pelo smoke do Codex.');
-    await page.clickSelector('#new-arena-submit-button');
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await page.waitForSelector('#relationship-hub-tab-competicao', 15000);
+    await page.clickSelector('#relationship-hub-tab-competicao');
+    await page.waitFor(
+      'competition cta',
+      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('nova competicao')))()`,
+      20000,
+    );
+    await page.clickText('Nova competicao');
+    await page.waitForSelector('#relationship-friend-search-input', 15000);
+    await page.setInputValue('#relationship-friend-search-input', friend.nickname);
+    await page.waitForSelector(`#relationship-friend-${friend.userId}`, 15000);
+    await page.clickSelector(`#relationship-friend-${friend.userId}`);
+    await new Promise((resolve) => setTimeout(resolve, 1800));
     checkpoints.push('competition-invite-created-from-ui');
   });
 
-  const createdArena = await waitForDb(
-    `competition arena "${challengeName}" creation`,
-    () => findArenaByName(leader.client, { userId: leader.userId, name: challengeName }),
-  );
-
   const invite = await waitForDb(
-    `competition invite "${challengeName}" persistence`,
-    () => getLatestCompetitionInvite(leader.client, {
+    'competition invite persistence',
+    () => getLatestRelationshipInvite(leader.client, {
       senderId: leader.userId,
       recipientId: friend.userId,
-      arenaName: challengeName,
+      linkType: 'competicao',
     }),
   ).catch(() => null);
   if (!invite) {
     throw new Error('Competition invite row was not created in relationship_link_invites.');
   }
 
+  const leaderProfile = await getUserProfile(leader.client, leader.userId);
+  if (Number(leaderProfile.wallet?.gold || 0) !== 225) {
+    throw new Error(`Expected leader gold to be 225 after competition invite, got ${Number(leaderProfile.wallet?.gold || 0)}.`);
+  }
+
+  if (invite.arena_id) {
+    throw new Error('Competition invite should no longer require a linked arena at creation time.');
+  }
+
   checkpoints.push('competition-invite-persisted');
+  checkpoints.push('competition-gold-debited');
 
   console.log(JSON.stringify({
     success: true,
@@ -74,7 +80,7 @@ try {
       leaderEmail: leader.email,
       friendEmail: friend.email,
       inviteId: invite.id,
-      arenaId: createdArena.id,
+      remainingGold: leaderProfile.wallet?.gold || 0,
     },
   }, null, 2));
 } catch (error) {

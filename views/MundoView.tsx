@@ -338,6 +338,29 @@ const MundoView: React.FC = () => {
         return () => window.removeEventListener('tutorialTabChange', handleTabChange);
     }, [tabs]);
 
+    useEffect(() => {
+        const handleMundoTabRequest = (event: Event) => {
+            const detail = (event as CustomEvent<{ tab?: 'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'; storeTab?: string; section?: string | null }>).detail || {};
+            if (!detail.tab || !tabs.some(tab => tab.id === detail.tab)) return;
+
+            setActiveTab(detail.tab);
+
+            if (detail.tab === 'loja') {
+                window.setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('store-view-request', {
+                        detail: {
+                            tab: detail.storeTab || 'store',
+                            section: detail.section || null,
+                        },
+                    }));
+                }, 80);
+            }
+        };
+
+        window.addEventListener('mundo-tab-request', handleMundoTabRequest);
+        return () => window.removeEventListener('mundo-tab-request', handleMundoTabRequest);
+    }, [tabs]);
+
     return (
         <div id="social-container" className="flex flex-col h-full">
             {/* Tab Navigation */}

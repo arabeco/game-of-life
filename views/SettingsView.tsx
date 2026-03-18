@@ -13,6 +13,7 @@ import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { CODEXES } from '../constants/items';
 import { Portal } from '../components/Portal';
 import { SupabaseService } from '../services/SupabaseService';
+import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { hasPremiumAccess } from '../utils/premiumAccess';
@@ -1772,7 +1773,7 @@ const PremiumTab: React.FC = () => {
                 </div>
             )}
 
-            {isLinksOpen && <LinksModal onClose={() => setLinksOpen(false)} />}
+            {isLinksOpen && <RelationshipHubModal onClose={() => setLinksOpen(false)} />}
 
             {isOracleSettingsOpen && (
                 <OracleSettingsModal

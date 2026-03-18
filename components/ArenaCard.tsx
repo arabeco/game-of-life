@@ -244,14 +244,22 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
              const { data: sessionData } = await supabase.auth.getSession();
              const uid = sessionData.session?.user.id;
              if (!uid) return;
-             
+
+             const linkedArenaResult = await supabase
+                 .from('relationship_link_arenas')
+                 .select('relationship_link_id')
+                 .eq('arena_id', arena.id)
+                 .maybeSingle();
+
+             const linkedRelationshipId = linkedArenaResult.data?.relationship_link_id || null;
+
              const { data } = await supabase.from('relationship_links')
                  .select('link_type')
                  .or(`mentor_id.eq.${uid},pupil_id.eq.${uid}`)
-                 .eq('arena_id', arena.id)
+                 .eq(linkedRelationshipId ? 'id' : 'arena_id', linkedRelationshipId || arena.id)
                  .is('ended_at', null)
                  .maybeSingle();
-             
+
              if (data) {
                  setLinkType(data.link_type);
              }
@@ -487,5 +495,4 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         </div>
     );
 };
-
 

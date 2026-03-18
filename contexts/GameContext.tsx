@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
 
@@ -128,6 +128,10 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     inventory: [],
     wallet: { gold: 0, fragments: 0 },
     codexCreationSlotsPurchased: 0,
+    partnershipSlotsPurchased: 0,
+    competitionSlotsPurchased: 0,
+    mentorSlotsPurchased: 0,
+    linkedArenaSlotsPurchased: 0,
     starterRewardsPending: false,
     vanguardWelcomePending: false,
     vanguardWelcomePayload: null,
@@ -418,6 +422,12 @@ export interface GameContextType {
     refreshCodexes: () => Promise<void>;
     buyCodex: (catalogId: string) => Promise<void>;
     buyCodexCreationSlot: () => Promise<boolean>;
+    getRelationshipCapacitySummary: () => Promise<RelationshipCapacitySummary | null>;
+    fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; summary: RelationshipCapacitySummary | null }>;
+    createRelationshipInvite: (recipientId: string, linkType: RelationshipLinkType) => Promise<boolean>;
+    respondToRelationshipInvite: (inviteId: string, action: RelationshipInviteAction) => Promise<boolean>;
+    buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
+    createLinkedRelationshipArena: (relationshipLinkId: string, arenaInput: { assetId: string; name: string; description?: string; icon?: string }) => Promise<Arena | null>;
     createCodexShareLink: (codexId: string) => Promise<{ url: string; token: string; shareId: string } | null>;
     sendCodexToNickname: (codexId: string, nickname: string) => Promise<void>;
     getCodexSharePreview: (input: { token?: string; shareId?: string }) => Promise<CodexSharePreview | null>;
@@ -3174,6 +3184,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             source_type: deriveCodexSourceType(row),
             origin_codex_id: row?.origin_codex_id ?? null,
             created_by_user_id: row?.created_by_user_id ?? null,
+            mentor_relationship_link_id: row?.mentor_relationship_link_id ?? null,
         } as UserCodex;
     }, []);
 
@@ -3310,6 +3321,298 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         showToast('Novo slot de criacao forjado.', 'success');
         return true;
+    };
+
+    const parseRelationshipCapacitySummary = (raw: any): RelationshipCapacitySummary | null => {
+        if (!raw || typeof raw !== 'object') return null;
+
+        const normalizeEntry = (entry: any) => ({
+            used: Number(entry?.used ?? 0),
+            limit: Number(entry?.limit ?? 0),
+            base: Number(entry?.base ?? 0),
+            purchased: Number(entry?.purchased ?? 0),
+            costGold: Number(entry?.costGold ?? 0),
+            requiresPremium: Boolean(entry?.requiresPremium),
+        });
+
+        return {
+            partnership: normalizeEntry(raw.partnership),
+            competition: normalizeEntry(raw.competition),
+            mentor: normalizeEntry(raw.mentor),
+            linked_arena: normalizeEntry(raw.linked_arena),
+            pupil_mentor: normalizeEntry(raw.pupil_mentor),
+        };
+    };
+
+    const syncRelationshipProfileSnapshot = async (userId: string) => {
+        if (!isUuid(userId)) return;
+
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .select('wallet,partnership_slots_purchased,competition_slots_purchased,mentor_slots_purchased,linked_arena_slots_purchased')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (error || !data) return;
+
+        updateUserProfile({
+            wallet: (data as any).wallet ?? userProfile.wallet,
+            partnershipSlotsPurchased: Number((data as any).partnership_slots_purchased ?? userProfile.partnershipSlotsPurchased ?? 0),
+            competitionSlotsPurchased: Number((data as any).competition_slots_purchased ?? userProfile.competitionSlotsPurchased ?? 0),
+            mentorSlotsPurchased: Number((data as any).mentor_slots_purchased ?? userProfile.mentorSlotsPurchased ?? 0),
+            linkedArenaSlotsPurchased: Number((data as any).linked_arena_slots_purchased ?? userProfile.linkedArenaSlotsPurchased ?? 0),
+        });
+    };
+
+    const mapRelationshipInviteRow = (row: any): RelationshipLinkInvite => ({
+        id: row.id,
+        senderId: row.sender_id,
+        recipientId: row.recipient_id,
+        linkType: row.link_type,
+        arenaId: row.arena_id ?? null,
+        arenaSnapshot: row.arena_snapshot ?? null,
+        status: row.status,
+        createdAt: row.created_at,
+        respondedAt: row.responded_at ?? null,
+        costGold: Number(row.cost_gold ?? 0),
+        refundedAt: row.refunded_at ?? null,
+        expiresAt: row.expires_at ?? null,
+    });
+
+    const mapRelationshipLinkRow = (row: any): RelationshipLink => ({
+        id: row.id,
+        mentorId: row.mentor_id,
+        pupilId: row.pupil_id,
+        linkType: row.link_type,
+        arenaId: row.arena_id ?? null,
+        arenaSnapshot: row.arena_snapshot ?? null,
+        satisfactionLevel: typeof row.satisfaction_level === 'number' ? row.satisfaction_level : 50,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        endedAt: row.ended_at ?? null,
+    });
+
+    const mapLinkedRelationshipArenaRow = (row: any, arenasById: Map<string, Arena>): LinkedRelationshipArena => ({
+        id: row.id,
+        relationshipLinkId: row.relationship_link_id,
+        arenaId: row.arena_id,
+        createdByUserId: row.created_by_user_id ?? null,
+        createdAt: row.created_at,
+        metadata: row.metadata ?? null,
+        arena: arenasById.get(row.arena_id) ?? null,
+    });
+
+    const mapRelationshipErrorMessage = (message?: string, fallback = 'Nao foi possivel concluir o vinculo.') => {
+        const raw = String(message || '').trim();
+        if (!raw) return fallback;
+        if (raw.includes('MENTOR_PREMIUM_REQUIRED')) return 'So mentores Premium podem usar este recurso.';
+        if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Seu limite de slots para este vinculo foi atingido.';
+        if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Este pupilo ja atingiu o limite de mentoria recebida.';
+        if (raw.includes('RELATIONSHIP_INVITE_ALREADY_PENDING')) return 'Ja existe um convite pendente com esse aliado.';
+        if (raw.includes('RELATIONSHIP_LINK_ALREADY_ACTIVE')) return 'Esse vinculo ja esta ativo.';
+        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Seu limite de arenas vinculadas foi atingido.';
+        if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
+        if (raw.includes('ARENA_ASSET_REQUIRED')) return 'Escolha o ativo da arena vinculada.';
+        if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'Voce ja tem 2 Codex personalizados de mentoria ativos.';
+        return raw;
+    };
+
+    const getRelationshipCapacitySummary = async (): Promise<RelationshipCapacitySummary | null> => {
+        const { data, error } = await supabase.rpc('get_relationship_capacity_summary');
+        if (error) {
+            console.error('Error fetching relationship capacity summary:', error);
+            return null;
+        }
+
+        return parseRelationshipCapacitySummary(data);
+    };
+
+    const fetchRelationshipHubData = async () => {
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId)) {
+            return { invites: [], links: [], linkedArenas: [], summary: null };
+        }
+
+        try {
+            await supabase.rpc('expire_stale_relationship_link_invites', { p_max_age_hours: 168 });
+        } catch (error: any) {
+            console.warn('Failed to expire stale relationship invites', error?.message || error);
+        }
+
+        const [summary, invitesResult, linksResult] = await Promise.all([
+            getRelationshipCapacitySummary(),
+            supabase
+                .from('relationship_link_invites')
+                .select('*')
+                .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false }),
+            supabase
+                .from('relationship_links')
+                .select('*')
+                .or(`mentor_id.eq.${userId},pupil_id.eq.${userId}`)
+                .is('ended_at', null)
+                .order('created_at', { ascending: false }),
+        ]);
+
+        if (invitesResult.error) {
+            console.error('Error fetching relationship invites:', invitesResult.error);
+        }
+        if (linksResult.error) {
+            console.error('Error fetching relationship links:', linksResult.error);
+        }
+
+        const links = (linksResult.data || []).map(mapRelationshipLinkRow);
+        const linkIds = links.map(link => link.id);
+        let linkedArenaRows: any[] = [];
+        const arenasById = new Map<string, Arena>();
+
+        if (linkIds.length > 0) {
+            const linkedArenasResult = await supabase
+                .from('relationship_link_arenas')
+                .select('*')
+                .in('relationship_link_id', linkIds)
+                .order('created_at', { ascending: false });
+
+            if (linkedArenasResult.error) {
+                console.error('Error fetching linked relationship arenas:', linkedArenasResult.error);
+            } else {
+                linkedArenaRows = linkedArenasResult.data || [];
+            }
+
+            const arenaIds = [...new Set(linkedArenaRows.map(row => row.arena_id).filter(Boolean))];
+            if (arenaIds.length > 0) {
+                const arenasResult = await supabase.from('arenas').select('*').in('id', arenaIds);
+                if (arenasResult.error) {
+                    console.error('Error fetching linked arenas:', arenasResult.error);
+                } else {
+                    for (const row of arenasResult.data || []) {
+                        const mapped = mapToCamelCase(row) as Arena;
+                        arenasById.set(mapped.id, { ...mapped, actionIds: mapped.actionIds || [], isArchived: mapped.isArchived ?? false });
+                    }
+                }
+            }
+        }
+
+        await syncRelationshipProfileSnapshot(userId);
+
+        return {
+            invites: (invitesResult.data || []).map(mapRelationshipInviteRow),
+            links,
+            linkedArenas: linkedArenaRows.map(row => mapLinkedRelationshipArenaRow(row, arenasById)),
+            summary,
+        };
+    };
+
+    const createRelationshipInvite = async (recipientId: string, linkType: RelationshipLinkType): Promise<boolean> => {
+        const { data, error } = await supabase.rpc('create_relationship_link_invite', {
+            p_recipient_id: recipientId,
+            p_link_type: linkType,
+        });
+
+        if (error) {
+            console.error('Error creating relationship invite:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel enviar o convite.'), 'error');
+            return false;
+        }
+
+        const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - 25));
+        updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+        showToast(linkType === 'mentoria' ? 'Convite de mentoria enviado.' : linkType === 'parceria' ? 'Convite de parceria enviado.' : 'Convite de competicao enviado.', 'success');
+        return true;
+    };
+
+    const respondToRelationshipInvite = async (inviteId: string, action: RelationshipInviteAction): Promise<boolean> => {
+        const { data, error } = await supabase.rpc('respond_relationship_link_invite', {
+            p_invite_id: inviteId,
+            p_action: action,
+        });
+
+        if (error) {
+            console.error('Error responding to relationship invite:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel atualizar o convite.'), 'error');
+            return false;
+        }
+
+        if (action === 'revoke') {
+            const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+            updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+            showToast('Convite revogado e ouro devolvido.', 'success');
+        } else if (action === 'decline') {
+            showToast('Convite recusado.', 'success');
+        } else {
+            showToast('Convite aceito.', 'success');
+        }
+
+        return true;
+    };
+
+    const buyRelationshipCapacitySlot = async (slotType: RelationshipCapacitySlotType): Promise<boolean> => {
+        const { data, error } = await supabase.rpc('buy_relationship_capacity_slot', {
+            p_slot_type: slotType,
+        });
+
+        if (error) {
+            console.error('Error buying relationship slot:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel comprar este slot.'), 'error');
+            return false;
+        }
+
+        const summary = parseRelationshipCapacitySummary((data as any)?.summary);
+        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        updateUserProfile({
+            wallet: { ...userProfile.wallet, gold: nextGold },
+            partnershipSlotsPurchased: summary?.partnership.purchased ?? userProfile.partnershipSlotsPurchased ?? 0,
+            competitionSlotsPurchased: summary?.competition.purchased ?? userProfile.competitionSlotsPurchased ?? 0,
+            mentorSlotsPurchased: summary?.mentor.purchased ?? userProfile.mentorSlotsPurchased ?? 0,
+            linkedArenaSlotsPurchased: summary?.linked_arena.purchased ?? userProfile.linkedArenaSlotsPurchased ?? 0,
+        });
+        showToast('Novo slot social comprado na loja.', 'success');
+        return true;
+    };
+
+    const createLinkedRelationshipArena = async (
+        relationshipLinkId: string,
+        arenaInput: { assetId: string; name: string; description?: string; icon?: string }
+    ): Promise<Arena | null> => {
+        const { data, error } = await supabase.rpc('create_linked_relationship_arena', {
+            p_relationship_link_id: relationshipLinkId,
+            p_asset_id: arenaInput.assetId,
+            p_name: arenaInput.name,
+            p_description: arenaInput.description ?? '',
+            p_icon: arenaInput.icon ?? null,
+        });
+
+        if (error) {
+            console.error('Error creating linked relationship arena:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel criar a arena vinculada.'), 'error');
+            return null;
+        }
+
+        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+
+        const arenaRow = (data as any)?.arena;
+        if (!arenaRow) {
+            showToast('Arena vinculada criada.', 'success');
+            return null;
+        }
+
+        const mapped = mapToCamelCase(arenaRow) as Arena;
+        const nextArena: Arena = {
+            ...mapped,
+            actionIds: mapped.actionIds || [],
+            isArchived: mapped.isArchived ?? false,
+        };
+
+        setAssets(prevAssets => prevAssets.map(asset =>
+            asset.id === nextArena.assetId
+                ? { ...asset, arenas: asset.arenas.some(arena => arena.id === nextArena.id) ? asset.arenas : [...asset.arenas, nextArena] }
+                : asset
+        ));
+
+        showToast('Arena vinculada criada para a mentoria.', 'success');
+        return nextArena;
     };
 
     const createCodexShareLink = async (codexId: string): Promise<{ url: string; token: string; shareId: string } | null> => {
@@ -3552,7 +3855,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         if (error) {
             console.error('Error creating mentor codex for recipient:', error);
-            showToast(error.message || 'Erro ao criar Codex para o pupilo.', 'error');
+            const friendlyMessage = String(error.message || '');
+            if (friendlyMessage.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) {
+                showToast('Voce ja tem 2 Codex personalizados de mentoria ativos.', 'error');
+            } else {
+                showToast(error.message || 'Erro ao criar Codex para o pupilo.', 'error');
+            }
             return false;
         }
 
@@ -4543,6 +4851,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'onboardingCompletedAt',
                 'onboardingDismissedAt',
                 'codexCreationSlotsPurchased',
+                'partnershipSlotsPurchased',
+                'competitionSlotsPurchased',
+                'mentorSlotsPurchased',
+                'linkedArenaSlotsPurchased',
                 'tutorialCompletedAt',
                 'sovereign',
                 'avatarUrl',
@@ -7602,7 +7914,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

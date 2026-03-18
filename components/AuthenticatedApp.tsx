@@ -86,14 +86,20 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
     }, [unreadNotificationsCount]);
 
     useEffect(() => {
-        const handleNavigateToStore = () => {
+        const handleNavigateToStore = (event: Event) => {
+            const detail = (event as CustomEvent<{ tab?: string; section?: string }>).detail || {};
             setCurrentView((prev) => {
                 const nextView = sanitizeView('social', canUseAssetsView, isBuilderMode);
                 return prev === nextView ?prev : nextView;
             });
             window.setTimeout(() => {
-                const storeBtn = Array.from(document.querySelectorAll('button')).find((b) => b.innerText.includes('LOJA'));
-                if (storeBtn) storeBtn.click();
+                window.dispatchEvent(new CustomEvent('mundo-tab-request', {
+                    detail: {
+                        tab: 'loja',
+                        storeTab: detail.tab || 'store',
+                        section: detail.section || null,
+                    },
+                }));
             }, 100);
         };
         window.addEventListener('navigate-to-store', handleNavigateToStore);

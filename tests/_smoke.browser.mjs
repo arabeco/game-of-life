@@ -147,6 +147,20 @@ class SmokeBrowserPage {
   }
 
   async login(email, password) {
+    const loginReady = await this.evaluate(`(() => document.querySelector('#login-email-input') instanceof HTMLInputElement)()`);
+    if (!loginReady) {
+      await this.waitFor(
+        'email login entry button',
+        `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').includes('ENTRAR COM E-MAIL')))()`,
+        30000,
+      );
+      await this.evaluate(`(() => {
+        const target = Array.from(document.querySelectorAll('button')).find((node) => (node.innerText || '').includes('ENTRAR COM E-MAIL'));
+        if (!(target instanceof HTMLElement)) return false;
+        target.click();
+        return true;
+      })()`);
+    }
     await this.waitForSelector('#login-email-input', 30000);
     await this.setInputValue('#login-email-input', email);
     await this.setInputValue('#login-password-input', password);

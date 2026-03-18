@@ -40,7 +40,7 @@ export function createAnonClient() {
   });
 }
 
-function buildProfilePayload({ userId, email, nickname, isPremium = true, appMode = 'GAME' }) {
+function buildProfilePayload({ userId, email, nickname, isPremium = true, appMode = 'GAME', gold = 0, fragments = 0 }) {
   return {
     id: userId,
     email,
@@ -75,6 +75,9 @@ function buildProfilePayload({ userId, email, nickname, isPremium = true, appMod
       ui_skins: { BASIC: true },
     },
     completed_season_missions: [PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED],
+    onboarding_completed_at: new Date().toISOString(),
+    onboarding_dismissed_at: new Date().toISOString(),
+    starter_rewards_pending: false,
     nobility: { exp: 0, rankId: 'vagante' },
     mood: 50,
     chests: [],
@@ -83,11 +86,11 @@ function buildProfilePayload({ userId, email, nickname, isPremium = true, appMod
     app_mode: appMode,
     theme_preference: 'dark',
     arenas_view_mode: 'cards',
-    wallet: { gold: 0, fragments: 0 },
+    wallet: { gold, fragments },
   };
 }
 
-export async function createTempUser({ label, isPremium = true, appMode = 'GAME' }) {
+export async function createTempUser({ label, isPremium = true, appMode = 'GAME', gold = 0, fragments = 0 }) {
   const client = createAnonClient();
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const nickname = `${label}-${suffix.slice(-6)}`;
@@ -110,6 +113,8 @@ export async function createTempUser({ label, isPremium = true, appMode = 'GAME'
     nickname,
     isPremium,
     appMode,
+    gold,
+    fragments,
   });
 
   const profileUpsert = await client
@@ -333,21 +338,77 @@ export async function getUserProfile(client, userId) {
   return result.data;
 }
 
-export async function getLatestCompetitionInvite(client, { senderId, recipientId, arenaName }) {
+export async function getLatestRelationshipInvite(client, { senderId, recipientId, linkType, arenaName = null }) {
   const result = await client
     .from('relationship_link_invites')
     .select('*')
     .eq('sender_id', senderId)
     .eq('recipient_id', recipientId)
-    .eq('link_type', 'competicao')
+    .eq('link_type', linkType)
     .order('created_at', { ascending: false })
     .limit(5);
 
   if (result.error) {
-    throw new Error(`competition invite lookup failed: ${result.error.message}`);
+    throw new Error(`relationship invite lookup failed: ${result.error.message}`);
+  }
+
+  if (!arenaName) {
+    return (result.data || [])[0] || null;
   }
 
   return (result.data || []).find((invite) => invite.arena_snapshot?.name === arenaName) || null;
+}
+
+export async function getLatestCompetitionInvite(client, { senderId, recipientId, arenaName }) {
+  return getLatestRelationshipInvite(client, {
+    senderId,
+    recipientId,
+    linkType: 'competicao',
+    arenaName,
+  });
+}
+
+export async function setWallet(client, { userId, gold, fragments = 0 }) {
+  const update = await client
+    .from('user_profiles')
+    .update({ wallet: { gold, fragments } })
+    .eq('id', userId);
+
+  if (update.error) {
+    throw new Error(`wallet update failed: ${update.error.message}`);
+  }
+}
+
+export async function getActiveRelationshipLink(client, { mentorId, pupilId, linkType }) {
+  let query = client
+    .from('relationship_links')
+    .select('*')
+    .eq('link_type', linkType)
+    .is('ended_at', null);
+
+  if (mentorId) query = query.eq('mentor_id', mentorId);
+  if (pupilId) query = query.eq('pupil_id', pupilId);
+
+  const result = await query.order('created_at', { ascending: false }).maybeSingle();
+  if (result.error) {
+    throw new Error(`relationship link lookup failed: ${result.error.message}`);
+  }
+
+  return result.data || null;
+}
+
+export async function getLinkedRelationshipArenas(client, { relationshipLinkId }) {
+  const result = await client
+    .from('relationship_link_arenas')
+    .select('*')
+    .eq('relationship_link_id', relationshipLinkId)
+    .order('created_at', { ascending: false });
+
+  if (result.error) {
+    throw new Error(`relationship linked arenas lookup failed: ${result.error.message}`);
+  }
+
+  return result.data || [];
 }
 
 export async function waitForDb(description, loader, { timeoutMs = 15000, intervalMs = 500 } = {}) {

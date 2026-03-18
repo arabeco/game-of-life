@@ -51,6 +51,7 @@ export interface UserCodex {
   source_type?: CodexSourceType;
   origin_codex_id?: string | null;
   created_by_user_id?: string | null;
+  mentor_relationship_link_id?: string | null;
   raw_template?: any;
 }
 export interface CodexSharePreview {
@@ -356,6 +357,10 @@ export interface UserProfile {
   vanguardWelcomeShownAt?: string;
   vanguardWelcomePayload?: VanguardWelcomePayload | null;
   codexCreationSlotsPurchased?: number;
+  partnershipSlotsPurchased?: number;
+  competitionSlotsPurchased?: number;
+  mentorSlotsPurchased?: number;
+  linkedArenaSlotsPurchased?: number;
   appMode?: AppMode;
 
   themePreference?: ThemePreference;
@@ -856,10 +861,13 @@ export interface RelationshipLinkInvite {
   senderId: string;
   recipientId: string;
   linkType: RelationshipLinkType;
-  arenaId: string;
-  arenaSnapshot: { name: string; icon?: string };
+  arenaId?: string | null;
+  arenaSnapshot?: { name: string; icon?: string } | null;
   status: RelationshipInviteStatus;
   createdAt: string;
+  costGold?: number;
+  refundedAt?: string | null;
+  expiresAt?: string | null;
   respondedAt?: string | null;
 }
 
@@ -868,12 +876,43 @@ export interface RelationshipLink {
   mentorId: string;
   pupilId: string;
   linkType: RelationshipLinkType;
-  arenaId: string;
-  arenaSnapshot: { name: string; icon?: string };
+  arenaId?: string | null;
+  arenaSnapshot?: { name: string; icon?: string } | null;
   satisfactionLevel: number;
   createdAt: string;
   updatedAt: string;
   endedAt?: string | null;
+}
+
+export type RelationshipCapacityBucket = 'partnership' | 'competition' | 'mentor' | 'linked_arena' | 'pupil_mentor';
+export type RelationshipCapacitySlotType = 'partnership' | 'competition' | 'mentor' | 'linked_arena';
+export type RelationshipInviteAction = 'accept' | 'decline' | 'revoke';
+
+export interface RelationshipCapacityEntry {
+  used: number;
+  limit: number;
+  base: number;
+  purchased: number;
+  costGold: number;
+  requiresPremium: boolean;
+}
+
+export interface RelationshipCapacitySummary {
+  partnership: RelationshipCapacityEntry;
+  competition: RelationshipCapacityEntry;
+  mentor: RelationshipCapacityEntry;
+  linked_arena: RelationshipCapacityEntry;
+  pupil_mentor: RelationshipCapacityEntry;
+}
+
+export interface LinkedRelationshipArena {
+  id: string;
+  relationshipLinkId: string;
+  arenaId: string;
+  createdByUserId?: string | null;
+  createdAt: string;
+  metadata?: Record<string, any> | null;
+  arena?: Arena | null;
 }
 
 export type LinkNotificationType = 'praise' | 'support' | 'scold';

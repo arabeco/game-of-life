@@ -3,11 +3,8 @@ import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenInvite, UserProfile } from '../types';
 import {
-    LEGAL_ACCEPT_SOURCE_INITIAL,
     LEGAL_PRIVACY_URL_PLACEHOLDER,
-    LEGAL_PRIVACY_VERSION,
     LEGAL_TERMS_URL_PLACEHOLDER,
-    LEGAL_TERMS_VERSION,
 } from '../constants/legal';
 import {
     clearClosedBetaGoogleAuthPending,
@@ -20,7 +17,6 @@ import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscrib
 import { signOutAndClearSupabaseSession } from '../utils/authSession';
 import './login-ui.css';
 
-const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
 const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 
 type ManualSignupDraft = {
@@ -55,7 +51,6 @@ export const LoginView: React.FC = () => {
     const [password, setPassword] = useState('');
     const [nickname, setNickname] = useState('');
     const [manualInviteCode, setManualInviteCode] = useState('');
-    const [manualLegalAccepted, setManualLegalAccepted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
@@ -84,7 +79,6 @@ export const LoginView: React.FC = () => {
         setPassword('');
         setNickname('');
         setManualInviteCode('');
-        setManualLegalAccepted(false);
         setMessage(null);
         setError(redirectState.message);
         if (isSignupRedirect) {
@@ -166,10 +160,6 @@ export const LoginView: React.FC = () => {
             return 'A senha deve ter pelo menos 8 caracteres e incluir um numero ou caractere especial.';
         }
 
-        if (!manualLegalAccepted) {
-            return 'Aceite os Termos e a Privacidade para criar a conta.';
-        }
-
         return null;
     };
 
@@ -178,7 +168,6 @@ export const LoginView: React.FC = () => {
         inviteCode?: string,
     ) => {
         const normalizedInvite = inviteCode?.trim() || '';
-        const acceptedAt = new Date().toISOString();
         let inviteRecord: GoldenInvite | null = null;
 
         if (isGoldenInviteGateEnabled && !normalizedInvite) {
@@ -259,13 +248,7 @@ export const LoginView: React.FC = () => {
                         insignias: {},
                         ui_skins: { 'BASIC': true },
                     },
-                    completedSeasonMissions: [PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING],
-                    termsVersion: LEGAL_TERMS_VERSION,
-                    termsAcceptedAt: acceptedAt,
-                    termsAcceptSource: LEGAL_ACCEPT_SOURCE_INITIAL,
-                    privacyVersion: LEGAL_PRIVACY_VERSION,
-                    privacyAcceptedAt: acceptedAt,
-                    privacyAcceptSource: LEGAL_ACCEPT_SOURCE_INITIAL,
+                    completedSeasonMissions: [PROFILE_FLAG_TERMS_PENDING],
                     nobility: { exp: 0, rankId: 'vagante' },
                     wallet: { gold: 0, fragments: 0 },
                     mood: 50,
@@ -299,12 +282,6 @@ export const LoginView: React.FC = () => {
                         email: newProfile.email,
                         nickname: newProfile.nickname,
                         app_mode: null,
-                        terms_version: newProfile.termsVersion,
-                        terms_accepted_at: newProfile.termsAcceptedAt,
-                        terms_accept_source: newProfile.termsAcceptSource,
-                        privacy_version: newProfile.privacyVersion,
-                        privacy_accepted_at: newProfile.privacyAcceptedAt,
-                        privacy_accept_source: newProfile.privacyAcceptSource,
                         avatar_url: newProfile.avatarUrl,
                         border: newProfile.border,
                         level: newProfile.level,
@@ -358,7 +335,6 @@ export const LoginView: React.FC = () => {
                     setIsSigningUp(false);
                     setManualEntryExpanded(false);
                     setManualInviteCode('');
-                    setManualLegalAccepted(false);
                     setPassword('');
                 };
 
@@ -556,7 +532,6 @@ export const LoginView: React.FC = () => {
         setGoogleResumeEmail('');
         setManualEntryExpanded(false);
         setManualInviteCode('');
-        setManualLegalAccepted(false);
     };
 
     const showManualFields = !googleResumeMode && manualEntryExpanded;
@@ -569,7 +544,6 @@ export const LoginView: React.FC = () => {
         setGoldenInviteGuide(null);
         setManualEntryExpanded(true);
         setManualInviteCode('');
-        setManualLegalAccepted(false);
         setIsSigningUp(nextMode === 'signup');
     };
 
@@ -802,20 +776,6 @@ export const LoginView: React.FC = () => {
 
                                     {isSigningUp && (
                                         <div className="login-consent">
-                                            <button
-                                                id="login-terms-checkbox"
-                                                type="button"
-                                                aria-pressed={manualLegalAccepted}
-                                                onClick={() => setManualLegalAccepted((prev) => !prev)}
-                                                className={`login-consent-toggle ${manualLegalAccepted ? 'is-checked' : ''}`}
-                                            >
-                                                <span className="login-consent-toggle__box" aria-hidden="true">
-                                                    {manualLegalAccepted ? '✓' : ''}
-                                                </span>
-                                                <span className="login-consent-toggle__text">
-                                                    Li e aceito os Termos e a Politica de Privacidade.
-                                                </span>
-                                            </button>
                                             <div className="login-consent-links">
                                                 <a href={LEGAL_TERMS_URL_PLACEHOLDER} target="_blank" rel="noopener noreferrer">Ler Termos</a>
                                                 <a href={LEGAL_PRIVACY_URL_PLACEHOLDER} target="_blank" rel="noopener noreferrer">Ler Privacidade</a>
@@ -825,7 +785,7 @@ export const LoginView: React.FC = () => {
 
                                     {isSigningUp && (
                                         <p className="login-manual-hint">
-                                            Cadastro manual do beta: e-mail, nickname, senha, bilhete e aceite na mesma etapa.
+                                            Cadastro manual do beta: e-mail, nickname, senha e bilhete agora; o acordo de Termos aparece logo depois do login.
                                         </p>
                                     )}
                                 </div>

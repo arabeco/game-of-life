@@ -7,6 +7,22 @@ import { ItemsStore } from '../components/Store/ItemsStore';
 
 export const StoreView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'store' | 'forge' | 'codexes' | 'items'>('store');
+  const [scrollRequest, setScrollRequest] = useState<{ section: string; nonce: number } | null>(null);
+
+  React.useEffect(() => {
+    const handleStoreViewRequest = (event: Event) => {
+      const detail = (event as CustomEvent<{ tab?: 'store' | 'forge' | 'codexes' | 'items'; section?: string | null }>).detail || {};
+      if (detail.tab) {
+        setActiveTab(detail.tab);
+      }
+      if (detail.section) {
+        setScrollRequest({ section: detail.section, nonce: Date.now() });
+      }
+    };
+
+    window.addEventListener('store-view-request', handleStoreViewRequest);
+    return () => window.removeEventListener('store-view-request', handleStoreViewRequest);
+  }, []);
 
   return (
     <div className="space-y-6 pb-20 animate-fade-in">
@@ -35,7 +51,7 @@ export const StoreView: React.FC = () => {
       </div>
 
       <div className="min-h-[500px]">
-          {activeTab === 'store' && <GoldStore />}
+          {activeTab === 'store' && <GoldStore scrollRequest={scrollRequest} />}
           {activeTab === 'forge' && <TheForge />}
           {activeTab === 'codexes' && <CodexStore />}
           {activeTab === 'items' && <ItemsStore />}

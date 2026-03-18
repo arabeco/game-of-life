@@ -280,10 +280,18 @@ export const createTaskDomain = ({
         let shouldPersistSharedCompletion = isOfficeMode || isSharedArena(arena);
 
         if (!shouldPersistSharedCompletion) {
+            const linkedArenaResult = await supabase
+                .from('relationship_link_arenas')
+                .select('relationship_link_id')
+                .eq('arena_id', arena.id)
+                .maybeSingle();
+
+            const linkedRelationshipId = linkedArenaResult.data?.relationship_link_id || null;
+
             const { data: linkData, error } = await supabase.from('relationship_links')
                 .select('id')
                 .or(`mentor_id.eq.${userId},pupil_id.eq.${userId}`)
-                .eq('arena_id', arena.id)
+                .eq(linkedRelationshipId ? 'id' : 'arena_id', linkedRelationshipId || arena.id)
                 .is('ended_at', null)
                 .maybeSingle();
 

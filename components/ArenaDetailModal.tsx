@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Arena, Action, UserProfile } from '../types';
+import { Arena, Action } from '../types';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
-import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, CloseIcon, SendIcon } from './Icons';
+import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, SendIcon } from './Icons';
 import { ActionModal } from './ActionModal';
 import { IconPickerModal } from './IconPickerModal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -12,9 +12,9 @@ import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
-import { SupabaseService } from '../services/SupabaseService';
 import './arena-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
+import { RelationshipHubModal } from './RelationshipHubModal';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -132,14 +132,14 @@ const ActionSquare: React.FC<{ action: Action, onClick: () => void; skinColor: s
 };
 
 export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, friends, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, tasks, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [isLinkingObserver, setIsLinkingObserver] = useState(false);
+    const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-    const [linkStatus, setLinkStatus] = useState<string | null>(null);
     const newActionRef = useRef<HTMLButtonElement>(null);
     const [currentLinkType, setCurrentLinkType] = useState<string | null>(null);
     const [selectionType, setSelectionType] = useState<'mentoria' | 'competicao' | 'parceria'>('mentoria');
@@ -155,10 +155,18 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             const uid = sessionData.session?.user.id;
             if (!uid) return;
 
+            const linkedArenaResult = await supabase
+                .from('relationship_link_arenas')
+                .select('relationship_link_id')
+                .eq('arena_id', arena.id)
+                .maybeSingle();
+
+            const linkedRelationshipId = linkedArenaResult.data?.relationship_link_id || null;
+
             const { data } = await supabase.from('relationship_links')
                 .select('link_type')
                 .or(`mentor_id.eq.${uid},pupil_id.eq.${uid}`)
-                .eq('arena_id', arena.id)
+                .eq(linkedRelationshipId ? 'id' : 'arena_id', linkedRelationshipId || arena.id)
                 .is('ended_at', null)
                 .maybeSingle();
 
@@ -314,6 +322,21 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         }
     };
 
+    const openRelationshipHub = (tab: 'mentoria' | 'parceria' | 'competicao' | 'arenas') => {
+        if (tab !== 'arenas') {
+            setSelectionType(tab);
+        }
+        setIsLinkingObserver(false);
+        setRelationshipHubOpen(true);
+    };
+
+    const availableFriends: any[] = [];
+    const linkStatus: string | null = null;
+    const sendObserverInvite = async (_friend?: any, _type?: any) => {
+        openRelationshipHub(selectionType);
+    };
+
+    /*
     const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
     const availableFriends = friends.filter(f => isUuid(f.id));
@@ -354,6 +377,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             setLinkStatus(null);
         }, 1200);
     };
+    */
 
     // Removed SharedArenaView block to use standard render as requested
 
@@ -401,7 +425,14 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 )}
                                 {isEditing && (
                                     <button
-                                        onClick={() => setIsLinkingObserver(true)}
+                                        onClick={() => {
+                                            if (currentLinkType === 'competicao' || currentLinkType === 'parceria' || currentLinkType === 'mentoria') {
+                                                setSelectionType(currentLinkType);
+                                            } else {
+                                                setSelectionType('mentoria');
+                                            }
+                                            setRelationshipHubOpen(true);
+                                        }}
                                         className="p-2 rounded-full transition-colors border border-white/15 bg-black/30 hover:bg-black/40"
                                     >
                                         <LinkIcon className="w-4 h-4 accent-text" />
@@ -659,6 +690,12 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                         {linkStatus && <div className="text-xs text-gray-300 bg-black/30 border border-white/10 rounded-xl p-2">{linkStatus}</div>}
                     </div>
                 </div>
+            )}
+            {isRelationshipHubOpen && (
+                <RelationshipHubModal
+                    initialTab={selectionType}
+                    onClose={() => setRelationshipHubOpen(false)}
+                />
             )}
         </Portal>
     );

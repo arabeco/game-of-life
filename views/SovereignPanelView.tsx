@@ -18,9 +18,11 @@ import {
 } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
+import { SvgRadarChart } from '../components/SvgRadarChart';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { useGame } from '../contexts/GameContext';
+import type { LegacyRenderCycleDigest, LegacyRenderEraSummary, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
 
@@ -217,6 +219,284 @@ const KpiSkeletonCard: React.FC = () => (
   </GlassCard>
 );
 
+const GM_SHOWCASE_REPORT = {
+  title: 'Operacao Primeira Linhagem',
+  subtitle: 'Snapshot editorial para vitrine do beta fechado',
+  rangeLabel: '03 fev . 16 mar 2026',
+  windowLabel: '42 dias de campo',
+  commandLabel: 'ALPHA . T1 FUNDACAO',
+  headline:
+    'A cena ja sustenta narrativa publica: onboarding claro, motor de retorno acima da meta e primeiros ciclos fechando com consistencia suficiente para print de campanha.',
+  metrics: {
+    population: 34,
+    populationGoal: 50,
+    activationPct: 74,
+    d2Pct: 39,
+    cyclePct: 28,
+  },
+  radar: {
+    labels: ['ATIVACAO', 'D2', 'CICLO', 'MOTOR', 'CONVITE', 'CLAREZA'],
+    current: [74, 39, 28, 68, 83, 77],
+    target: [60, 30, 20, 45, 70, 70],
+  },
+  signals: [
+    { title: 'Tempo medio ate ativar', value: '17h', helper: 'do bilhete ao primeiro loop fechado' },
+    { title: 'Dias ativos (14d)', value: '8.6', helper: 'media realista para base ainda enxuta' },
+    { title: 'Aceite de convite', value: '83%', helper: 'bilhete ouro, prata e bronze' },
+    { title: 'Sessao util media', value: '18 min', helper: 'janela boa para celular e D0' },
+  ],
+  tiers: [
+    { tier: 'ouro' as const, count: 8, note: 'Alta resposta, mais clareza e feedback rico' },
+    { tier: 'prata' as const, count: 11, note: 'Bom equilibrio entre volume e retencao' },
+    { tier: 'bronze' as const, count: 15, note: 'Base de prova para onboarding e retorno' },
+  ],
+  standouts: [
+    { id: 'showcase-1', name: 'Lyra Vale', tier: 'ouro' as const, stage: 'cycled', activeDays14d: 12, note: 'Fechou ciclo e abriu leitura premium de mentoria' },
+    { id: 'showcase-2', name: 'Caio North', tier: 'prata' as const, stage: 'retained', activeDays14d: 9, note: 'Planner mobile forte e retorno D2 sem ruido' },
+    { id: 'showcase-3', name: 'Mira Sol', tier: 'bronze' as const, stage: 'activated', activeDays14d: 7, note: 'Onboarding bom e boa leitura de valor do Ouro' },
+  ],
+};
+
+const ShowcaseMetricCard: React.FC<{
+  icon: LucideIcon;
+  title: string;
+  value: string;
+  helper: string;
+  progressPct: number;
+  tone: string;
+}> = ({ icon: Icon, title, value, helper, progressPct, tone }) => (
+  <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(0,0,0,0.18))] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+    <div className="flex items-start justify-between gap-3">
+      <div className="space-y-1.5">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">{title}</p>
+        <p className="text-[1.9rem] font-black tracking-tight text-white sm:text-[2.2rem]">{value}</p>
+      </div>
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/72">
+        <Icon className="h-4 w-4" />
+      </div>
+    </div>
+    <p className="mt-1 text-[12px] leading-relaxed text-white/64">{helper}</p>
+    <div className="mt-4">
+      <MetricBar valuePct={progressPct} tone={tone} />
+    </div>
+  </div>
+);
+
+const ShowcaseStatPill: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/72">
+    {label} . <span className="text-white">{value}</span>
+  </div>
+);
+
+const GmShowcaseSection: React.FC = () => {
+  const populationProgress = Math.min(100, (GM_SHOWCASE_REPORT.metrics.population / GM_SHOWCASE_REPORT.metrics.populationGoal) * 100);
+
+  return (
+    <section>
+      <GlassCard
+        variant="neutral"
+        className="overflow-hidden border border-white/12 p-0 shadow-[0_30px_100px_rgba(0,0,0,0.42)]"
+        style={{
+          backgroundImage: [
+            'radial-gradient(circle at top right, rgba(36,168,143,0.20), transparent 28%)',
+            'radial-gradient(circle at 12% 12%, rgba(244,196,48,0.14), transparent 26%)',
+            'linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(16,16,16,0.24) 24%, rgba(7,7,9,0.94) 100%)',
+          ].join(', '),
+        }}
+      >
+        <div className="border-b border-white/8 px-5 py-5 md:px-6 md:py-6">
+          <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr] lg:items-start">
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">
+                  Snapshot de vitrine
+                </span>
+                <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/55">
+                  {GM_SHOWCASE_REPORT.commandLabel}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.26em] text-[rgba(240,200,67,0.82)]">
+                    {GM_SHOWCASE_REPORT.rangeLabel}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black uppercase tracking-[0.08em] text-white sm:text-[2.15rem]">
+                    {GM_SHOWCASE_REPORT.title}
+                  </h2>
+                  <p className="mt-2 text-sm font-medium text-white/62">{GM_SHOWCASE_REPORT.subtitle}</p>
+                </div>
+
+                <p className="max-w-2xl text-sm leading-relaxed text-zinc-300">{GM_SHOWCASE_REPORT.headline}</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <ShowcaseStatPill label="Janela" value={GM_SHOWCASE_REPORT.windowLabel} />
+                <ShowcaseStatPill label="Populacao" value={`${GM_SHOWCASE_REPORT.metrics.population}/${GM_SHOWCASE_REPORT.metrics.populationGoal}`} />
+                <ShowcaseStatPill label="Meta dominante" value="60 / 30 / 20" />
+              </div>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-black/22 p-4 backdrop-blur-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Leitura composta</p>
+                  <h3 className="mt-1 text-base font-black text-white">Radar do comando</h3>
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/52">
+                  6 eixos
+                </span>
+              </div>
+              <div className="mt-4 h-[18rem]">
+                <SvgRadarChart
+                  labels={GM_SHOWCASE_REPORT.radar.labels}
+                  maxValue={100}
+                  levels={5}
+                  className="h-full"
+                  showLegend
+                  legendAccentColor="rgba(255,255,255,0.7)"
+                  series={[
+                    {
+                      id: 'target',
+                      label: 'Meta T1',
+                      values: GM_SHOWCASE_REPORT.radar.target,
+                      stroke: 'rgba(255,255,255,0.45)',
+                      fill: 'rgba(255,255,255,0.12)',
+                      fillOpacity: 0.08,
+                      dashed: true,
+                      strokeWidth: 1.1,
+                    },
+                    {
+                      id: 'current',
+                      label: 'Snapshot',
+                      values: GM_SHOWCASE_REPORT.radar.current,
+                      stroke: '#F0C843',
+                      fill: 'rgba(240,200,67,0.4)',
+                      fillOpacity: 0.22,
+                      strokeWidth: 1.4,
+                      showDots: true,
+                      dotFill: '#0a0a0a',
+                      dotStroke: '#F0C843',
+                    },
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 border-b border-white/8 px-5 py-5 md:grid-cols-2 xl:grid-cols-4 md:px-6">
+          <ShowcaseMetricCard
+            icon={Users}
+            title="Base em campo"
+            value={`${GM_SHOWCASE_REPORT.metrics.population}/${GM_SHOWCASE_REPORT.metrics.populationGoal}`}
+            helper="janela mais longa para mostrar densidade e maturidade"
+            progressPct={populationProgress}
+            tone={getProgressTone(populationProgress, 100)}
+          />
+          <ShowcaseMetricCard
+            icon={Zap}
+            title="Ativacao"
+            value={formatPercent(GM_SHOWCASE_REPORT.metrics.activationPct)}
+            helper="entraram no app e montaram loop inicial"
+            progressPct={GM_SHOWCASE_REPORT.metrics.activationPct}
+            tone={getProgressTone(GM_SHOWCASE_REPORT.metrics.activationPct, KPI_GOALS.activationPct)}
+          />
+          <ShowcaseMetricCard
+            icon={RotateCcw}
+            title="Retorno D2"
+            value={formatPercent(GM_SHOWCASE_REPORT.metrics.d2Pct)}
+            helper="taxa forte o bastante para narrativa publica"
+            progressPct={GM_SHOWCASE_REPORT.metrics.d2Pct}
+            tone={getProgressTone(GM_SHOWCASE_REPORT.metrics.d2Pct, KPI_GOALS.d2Pct)}
+          />
+          <ShowcaseMetricCard
+            icon={Flag}
+            title="Ciclo 1"
+            value={formatPercent(GM_SHOWCASE_REPORT.metrics.cyclePct)}
+            helper="os primeiros fechamentos reais ja aparecem"
+            progressPct={GM_SHOWCASE_REPORT.metrics.cyclePct}
+            tone={getProgressTone(GM_SHOWCASE_REPORT.metrics.cyclePct, KPI_GOALS.cyclePct)}
+          />
+        </div>
+
+        <div className="grid gap-4 px-5 py-5 lg:grid-cols-[0.95fr_0.9fr_1.05fr] md:px-6">
+          <div className="rounded-[24px] border border-white/10 bg-black/22 p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Sinais de campo</p>
+            <div className="mt-4 space-y-3">
+              {GM_SHOWCASE_REPORT.signals.map((signal) => (
+                <div key={signal.title} className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[11px] font-black uppercase tracking-[0.14em] text-white/70">{signal.title}</span>
+                    <span className="text-lg font-black text-white">{signal.value}</span>
+                  </div>
+                  <p className="mt-1 text-[12px] text-zinc-400">{signal.helper}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-white/10 bg-black/22 p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Composicao de pelotao</p>
+            <div className="mt-4 space-y-3">
+              {GM_SHOWCASE_REPORT.tiers.map((entry) => (
+                <div key={entry.tier} className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${getTierClassName(entry.tier)}`}>
+                      {entry.tier}
+                    </span>
+                    <span className="text-lg font-black text-white">{entry.count}</span>
+                  </div>
+                  <p className="mt-2 text-[12px] text-zinc-400">{entry.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-white/10 bg-black/22 p-4">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Nomes quentes</p>
+                <h3 className="mt-1 text-base font-black text-white">Leituras que rendem print</h3>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[rgba(240,200,67,0.72)]">
+                curadoria
+              </span>
+            </div>
+            <div className="mt-4 space-y-3">
+              {GM_SHOWCASE_REPORT.standouts.map((entry) => (
+                <div key={entry.id} className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-black text-white">{entry.name}</p>
+                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] ${getTierClassName(entry.tier)}`}>
+                          {entry.tier}
+                        </span>
+                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] ${getStageClassName(entry.stage)}`}>
+                          {formatStageLabel(entry.stage)}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-[12px] leading-relaxed text-zinc-400">{entry.note}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-black text-white">{entry.activeDays14d}/14</div>
+                      <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/45">motor</div>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <MetricBar valuePct={Math.min(100, (entry.activeDays14d / 14) * 100)} tone={getProgressTone((entry.activeDays14d / 14) * 100, 45)} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+    </section>
+  );
+};
+
 const TableSkeleton: React.FC = () => (
   <div className="animate-pulse divide-y divide-white/6">
     {Array.from({ length: 6 }).map((_, index) => (
@@ -374,11 +654,410 @@ const PlayerInsightModal: React.FC<{
   );
 };
 
+const addDaysIso = (isoDate: string, offset: number) => {
+  const date = new Date(`${isoDate}T12:00:00`);
+  date.setDate(date.getDate() + offset);
+  return date.toISOString().slice(0, 10);
+};
+
+const buildShowcaseIdentity = (
+  nickname: string,
+  title: string,
+  level: number,
+  clanName: string,
+  clanRankName: string,
+): ReportIdentitySnapshot => ({
+  nickname,
+  title,
+  level,
+  clanName,
+  clanRankName,
+  nobilityRankName: title,
+  capturedAt: new Date('2026-03-16T19:30:00Z').toISOString(),
+});
+
+const buildShowcaseWeek = ({
+  cycleId,
+  weekIndex,
+  startDate,
+  arenaId,
+  arenaName,
+  actionName,
+  actionIcon,
+  actionType = 'Ação Recorrente',
+  plannedPattern,
+  completedPattern,
+}: {
+  cycleId: string;
+  weekIndex: number;
+  startDate: string;
+  arenaId: string;
+  arenaName: string;
+  actionName: string;
+  actionIcon: string;
+  actionType?: 'Ação Recorrente' | 'Compromisso' | 'Marco' | 'Livre';
+  plannedPattern: number[];
+  completedPattern: number[];
+}): ReportAtlasWeek => {
+  const startSlots = [330, 480, 630, 780];
+  const days = plannedPattern.map((plannedCount, dayIndex) => {
+    const completedCount = Math.min(plannedCount, completedPattern[dayIndex] ?? plannedCount);
+    const date = addDaysIso(startDate, dayIndex);
+    const scheduledItems = Array.from({ length: Math.min(completedCount, 4) }, (_, taskIndex) => ({
+      taskId: `${cycleId}-w${weekIndex}-d${dayIndex}-s${taskIndex}`,
+      actionId: `${cycleId}-action-${taskIndex}`,
+      actionName,
+      actionIcon,
+      arenaId,
+      arenaName,
+      startTime: startSlots[taskIndex] ?? 840,
+      duration: 45 + (taskIndex * 10),
+      completed: true,
+      actionType,
+    }));
+    const pendingCount = Math.max(plannedCount - completedCount, 0);
+    const unscheduledItems = Array.from({ length: Math.min(pendingCount, 3) }, (_, taskIndex) => ({
+      taskId: `${cycleId}-w${weekIndex}-d${dayIndex}-u${taskIndex}`,
+      actionId: `${cycleId}-pending-${taskIndex}`,
+      actionName,
+      actionIcon,
+      arenaId,
+      arenaName,
+      startTime: -1,
+      duration: 30,
+      completed: false,
+      actionType,
+    }));
+
+    return {
+      date,
+      plannedCount,
+      completedCount,
+      plannedMinutes: plannedCount * 55,
+      completedMinutes: completedCount * 50,
+      arenaBuckets: [
+        {
+          arenaId,
+          arenaName,
+          total: plannedCount,
+          completed: completedCount,
+        },
+      ],
+      scheduledItems,
+      unscheduledItems,
+    };
+  });
+
+  return {
+    weekIndex,
+    startDate,
+    endDate: addDaysIso(startDate, 6),
+    plannedCount: days.reduce((sum, day) => sum + day.plannedCount, 0),
+    completedCount: days.reduce((sum, day) => sum + day.completedCount, 0),
+    plannedMinutes: days.reduce((sum, day) => sum + day.plannedMinutes, 0),
+    completedMinutes: days.reduce((sum, day) => sum + day.completedMinutes, 0),
+    dominantArenaId: arenaId,
+    dominantArenaName: arenaName,
+    days,
+  };
+};
+
+const buildShowcaseCycle = ({
+  id,
+  name,
+  startDate,
+  score,
+  focusArena,
+  signatureAction,
+  plannedMetas,
+  sealedMetas,
+  identitySnapshot,
+  actionIcon,
+  weeks,
+}: {
+  id: string;
+  name: string;
+  startDate: string;
+  score: number;
+  focusArena: string;
+  signatureAction: string;
+  plannedMetas: number;
+  sealedMetas: number;
+  identitySnapshot: ReportIdentitySnapshot;
+  actionIcon: string;
+  weeks: Array<{ plannedPattern: number[]; completedPattern: number[] }>;
+}): LegacyRenderCycleDigest => ({
+  id,
+  name,
+  startDate,
+  endDate: addDaysIso(startDate, 13),
+  score,
+  grade: score >= 90 ? 'S' : score >= 82 ? 'A' : score >= 72 ? 'B' : 'C',
+  focusArena,
+  signatureAction,
+  plannedMetas,
+  sealedMetas,
+  identitySnapshot,
+  weeklyAtlas: weeks.map((week, index) =>
+    buildShowcaseWeek({
+      cycleId: id,
+      weekIndex: index + 1,
+      startDate: addDaysIso(startDate, index * 7),
+      arenaId: `${focusArena.toLowerCase().replace(/\s+/g, '-')}-arena`,
+      arenaName: focusArena,
+      actionName: signatureAction,
+      actionIcon,
+      plannedPattern: week.plannedPattern,
+      completedPattern: week.completedPattern,
+    }),
+  ),
+});
+
+const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
+  const identityA = buildShowcaseIdentity('Aurelia Vale', 'Arquimandrita', 18, 'Aurora', 'Pilar de Campo');
+  const identityB = buildShowcaseIdentity('Caio North', 'Vanguarda', 16, 'Aurora', 'Sentinela');
+  const identityC = buildShowcaseIdentity('Mira Sol', 'Curadora', 14, 'Aurora', 'Tece-rotas');
+
+  const eraOneCycles = [
+    buildShowcaseCycle({
+      id: 'legacy-c1',
+      name: 'Rito de Abertura',
+      startDate: '2025-01-06',
+      score: 78,
+      focusArena: 'Saude',
+      signatureAction: 'Treino de alvorada',
+      plannedMetas: 5,
+      sealedMetas: 4,
+      identitySnapshot: identityA,
+      actionIcon: '⚔️',
+      weeks: [
+        { plannedPattern: [3, 3, 2, 2, 3, 1, 0], completedPattern: [2, 3, 2, 1, 2, 1, 0] },
+        { plannedPattern: [3, 2, 3, 2, 3, 1, 0], completedPattern: [3, 2, 2, 2, 3, 1, 0] },
+      ],
+    }),
+    buildShowcaseCycle({
+      id: 'legacy-c2',
+      name: 'Cadencia de Ferro',
+      startDate: '2025-01-20',
+      score: 84,
+      focusArena: 'Trabalho',
+      signatureAction: 'Bloco de foco 90m',
+      plannedMetas: 6,
+      sealedMetas: 5,
+      identitySnapshot: identityB,
+      actionIcon: '🛡️',
+      weeks: [
+        { plannedPattern: [3, 3, 3, 2, 3, 1, 0], completedPattern: [3, 3, 2, 2, 3, 1, 0] },
+        { plannedPattern: [4, 3, 3, 3, 3, 1, 0], completedPattern: [3, 3, 3, 2, 3, 1, 0] },
+      ],
+    }),
+    buildShowcaseCycle({
+      id: 'legacy-c3',
+      name: 'Primeira Tracao',
+      startDate: '2025-02-03',
+      score: 88,
+      focusArena: 'Estudos',
+      signatureAction: 'Leitura tática',
+      plannedMetas: 7,
+      sealedMetas: 6,
+      identitySnapshot: identityA,
+      actionIcon: '📘',
+      weeks: [
+        { plannedPattern: [4, 3, 3, 3, 3, 1, 0], completedPattern: [3, 3, 3, 2, 3, 1, 0] },
+        { plannedPattern: [4, 4, 3, 3, 3, 1, 0], completedPattern: [4, 3, 3, 3, 3, 1, 0] },
+      ],
+    }),
+  ];
+
+  const eraTwoCycles = [
+    buildShowcaseCycle({
+      id: 'legacy-c4',
+      name: 'Cerco do Planner',
+      startDate: '2025-03-03',
+      score: 90,
+      focusArena: 'Planejamento',
+      signatureAction: 'Janela de comando',
+      plannedMetas: 8,
+      sealedMetas: 7,
+      identitySnapshot: identityB,
+      actionIcon: '🜂',
+      weeks: [
+        { plannedPattern: [4, 4, 3, 3, 4, 1, 0], completedPattern: [4, 3, 3, 3, 4, 1, 0] },
+        { plannedPattern: [4, 4, 4, 3, 4, 2, 0], completedPattern: [4, 4, 4, 3, 3, 1, 0] },
+      ],
+    }),
+    buildShowcaseCycle({
+      id: 'legacy-c5',
+      name: 'Forja da Mentoria',
+      startDate: '2025-03-17',
+      score: 92,
+      focusArena: 'Mentoria',
+      signatureAction: 'Sessao de pupilo',
+      plannedMetas: 8,
+      sealedMetas: 8,
+      identitySnapshot: identityC,
+      actionIcon: '✨',
+      weeks: [
+        { plannedPattern: [3, 4, 3, 3, 3, 2, 0], completedPattern: [3, 4, 3, 3, 3, 1, 0] },
+        { plannedPattern: [4, 4, 3, 4, 3, 1, 0], completedPattern: [4, 4, 3, 3, 3, 1, 0] },
+      ],
+    }),
+    buildShowcaseCycle({
+      id: 'legacy-c6',
+      name: 'Dominio do Mobile',
+      startDate: '2025-03-31',
+      score: 89,
+      focusArena: 'Produto',
+      signatureAction: 'Passada de interface',
+      plannedMetas: 7,
+      sealedMetas: 6,
+      identitySnapshot: identityB,
+      actionIcon: '📱',
+      weeks: [
+        { plannedPattern: [4, 3, 3, 3, 3, 1, 0], completedPattern: [4, 3, 3, 2, 3, 1, 0] },
+        { plannedPattern: [4, 4, 3, 3, 4, 1, 0], completedPattern: [4, 4, 3, 3, 3, 1, 0] },
+      ],
+    }),
+  ];
+
+  const eraThreeCycles = [
+    buildShowcaseCycle({
+      id: 'legacy-c7',
+      name: 'Expansao do Trono',
+      startDate: '2025-05-05',
+      score: 93,
+      focusArena: 'Coroa',
+      signatureAction: 'Leitura de comando',
+      plannedMetas: 9,
+      sealedMetas: 8,
+      identitySnapshot: identityA,
+      actionIcon: '👑',
+      weeks: [
+        { plannedPattern: [4, 4, 4, 3, 4, 2, 0], completedPattern: [4, 4, 4, 3, 4, 1, 0] },
+        { plannedPattern: [4, 4, 4, 4, 4, 2, 0], completedPattern: [4, 4, 4, 4, 3, 1, 0] },
+      ],
+    }),
+    buildShowcaseCycle({
+      id: 'legacy-c8',
+      name: 'Mar de Vidro',
+      startDate: '2025-05-19',
+      score: 95,
+      focusArena: 'Soberania',
+      signatureAction: 'Revisao de legado',
+      plannedMetas: 10,
+      sealedMetas: 9,
+      identitySnapshot: identityC,
+      actionIcon: '🌊',
+      weeks: [
+        { plannedPattern: [4, 4, 4, 4, 4, 1, 0], completedPattern: [4, 4, 4, 4, 3, 1, 0] },
+        { plannedPattern: [4, 4, 4, 4, 4, 2, 0], completedPattern: [4, 4, 4, 4, 4, 1, 0] },
+      ],
+    }),
+    buildShowcaseCycle({
+      id: 'legacy-c9',
+      name: 'Registro de Soberania',
+      startDate: '2025-06-02',
+      score: 97,
+      focusArena: 'Legado',
+      signatureAction: 'Selar a placa',
+      plannedMetas: 10,
+      sealedMetas: 10,
+      identitySnapshot: identityA,
+      actionIcon: '🏛️',
+      weeks: [
+        { plannedPattern: [4, 4, 4, 4, 4, 2, 0], completedPattern: [4, 4, 4, 4, 4, 2, 0] },
+        { plannedPattern: [4, 4, 4, 4, 4, 2, 0], completedPattern: [4, 4, 4, 4, 4, 1, 0] },
+      ],
+    }),
+  ];
+
+  return [
+    {
+      key: 'era-aurora',
+      label: 'Era da Aurora',
+      defaultLabel: 'Era 1',
+      skinId: '1',
+      description: 'Fase de fundacao em que o ritmo aparece, a saude ancora a disciplina e o sistema deixa de ser promessa para virar pratica.',
+      finalSummary: 'A Aurora provou tracao: o ritual matinal e os blocos de foco amarraram saude, trabalho e estudo numa mesma cadencia.',
+      aiSummary: 'Primeiro bloco historico com sinais claros de consistencia e adesao ao loop.',
+      cycles: eraOneCycles,
+      startDate: '2025-01-06',
+      endDate: '2025-02-16',
+      avgScore: 83,
+      totalExp: 1420,
+      totalHours: 126,
+      totalMetas: 15,
+      cycleCount: eraOneCycles.length,
+      dominantArena: 'Trabalho',
+      topActions: [
+        { name: 'Bloco de foco 90m', count: 19 },
+        { name: 'Treino de alvorada', count: 17 },
+        { name: 'Leitura tática', count: 15 },
+      ],
+      bestStreak: 12,
+      grade: 'A',
+      color: '#EAB308',
+    },
+    {
+      key: 'era-cerco',
+      label: 'Era do Cerco',
+      defaultLabel: 'Era 2',
+      skinId: '2',
+      description: 'O sistema entra em guerra de verdade: planner, mentoria e produto comecam a andar juntos e o app vira campo de comando.',
+      finalSummary: 'No Cerco, o Glyph ganha forma de operacao. O comando passa a sustentar mentorias, refinamento visual e leitura de valor.',
+      aiSummary: 'Fase de consolidacao, com score alto e progresso mais denso em produto.',
+      cycles: eraTwoCycles,
+      startDate: '2025-03-03',
+      endDate: '2025-04-13',
+      avgScore: 90,
+      totalExp: 1880,
+      totalHours: 154,
+      totalMetas: 23,
+      cycleCount: eraTwoCycles.length,
+      dominantArena: 'Produto',
+      topActions: [
+        { name: 'Janela de comando', count: 21 },
+        { name: 'Sessao de pupilo', count: 18 },
+        { name: 'Passada de interface', count: 16 },
+      ],
+      bestStreak: 16,
+      grade: 'S',
+      color: '#60A5FA',
+    },
+    {
+      key: 'era-trono',
+      label: 'Era do Trono',
+      defaultLabel: 'Era 3',
+      skinId: '3',
+      description: 'A fase mais cinematografica: o legado deixa de ser apenas historico e vira objeto de exibicao, memoria e prova de sistema vivo.',
+      finalSummary: 'O Trono fecha a narrativa: comando, legado e identidade se condensam em uma leitura premium pronta para vitrine.',
+      aiSummary: 'Momento de maturidade alta, com leitura clara de valor e simbolo.',
+      cycles: eraThreeCycles,
+      startDate: '2025-05-05',
+      endDate: '2025-06-15',
+      avgScore: 95,
+      totalExp: 2440,
+      totalHours: 181,
+      totalMetas: 29,
+      cycleCount: eraThreeCycles.length,
+      dominantArena: 'Legado',
+      topActions: [
+        { name: 'Leitura de comando', count: 22 },
+        { name: 'Revisao de legado', count: 20 },
+        { name: 'Selar a placa', count: 18 },
+      ],
+      bestStreak: 21,
+      grade: 'S+',
+      color: '#34D399',
+    },
+  ];
+})();
+
 const LegacyPreviewButton: React.FC = () => {
     const { session, showToast } = useGame();
     const [showPreview, setShowPreview] = useState(false);
 
-    const mockEras: any[] = [
+    const mockEras: LegacyRenderEraSummary[] = LEGACY_SHOWCASE_ERAS; /*
         {
             key: 'era-1',
             label: 'Era da Descoberta',
@@ -407,7 +1086,7 @@ const LegacyPreviewButton: React.FC = () => {
                 { id: 'c4', name: 'Escalada de Performance', score: 89, startDate: '2025-02-23', endDate: '2025-03-01', focusArena: 'Finanças', signatureAction: 'Aporte mensal' },
             ]
         }
-    ];
+    ]; */
 
     return (
         <>
@@ -416,7 +1095,7 @@ const LegacyPreviewButton: React.FC = () => {
                 className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/20 px-6 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-300 transition-all hover:bg-cyan-500/30 hover:scale-[1.02]"
             >
                 <Zap className="h-4 w-4" />
-                Visualizar Legado (Exemplo)
+                Visualizar Legado Premium
             </button>
 
             {showPreview && (
@@ -631,6 +1310,8 @@ export const SovereignPanelView: React.FC = () => {
           Leitura de campo dos jogadores reais do beta. Ouro, prata e bronze entram aqui; GM e admin continuam fora.
         </p>
       </div>
+
+      <GmShowcaseSection />
 
       <section className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {loading ? (

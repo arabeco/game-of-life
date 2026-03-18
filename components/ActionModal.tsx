@@ -51,6 +51,8 @@ interface ActionModalProps {
     customThemeColor?: string;
 }
 
+type EditScope = 'action' | 'instance';
+
 const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>, containerId?: string }> =
     ({ label, value, min, max, step, unit, onChange, inputRef, containerId }) => (
         <div id={containerId} ref={inputRef} className="p-2.5 core-surface rounded-xl space-y-1.5">
@@ -95,6 +97,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
     // NEW: Task duration override state
     const currentTask = taskId ?tasks.find(t => t.id === taskId) : null;
+    const hasTaskInstanceContext = Boolean(taskId && currentTask);
     const startNowTask = React.useMemo(() => {
         if (!action) return null;
 
@@ -107,6 +110,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     }, [action, currentTask, tasks]);
     const canStartNow = mode === 'view' && !isPreview && Boolean(startNowTask);
     const [editableTaskDuration, setEditableTaskDuration] = useState<number>(currentTask?.duration || action?.duration || 60);
+    const [editScope, setEditScope] = useState<EditScope>(hasTaskInstanceContext ? 'instance' : 'action');
 
     // New View Mode State
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
@@ -119,6 +123,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const startNowHoldIntervalRef = useRef<number | null>(null);
     const [startNowHoldProgress, setStartNowHoldProgress] = useState(0);
     const [startNowTriggered, setStartNowTriggered] = useState(false);
+    const isEditingTaskInstance = mode === 'edit' && hasTaskInstanceContext && editScope === 'instance';
+    const isEditingActionBase = mode === 'edit' && (!hasTaskInstanceContext || editScope === 'action');
 
     // State for checklist inputs in edit mode
     const [newChecklistItem, setNewChecklistItem] = useState('');
@@ -183,7 +189,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const enrichedMembers = enrichedClanMembers;
 
     const handleSave = () => {
-        if (!editableAction.name?.trim()) {
+        if (!isEditingTaskInstance && !editableAction.name?.trim()) {
             showToast('Dê um título para a ação antes de salvar.', 'warning');
             window.setTimeout(() => nameInputRef.current?.focus(), 40);
             return;
@@ -203,8 +209,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         const rawDuration = editableAction.duration;
         const validDuration = (rawDuration && rawDuration >= 5 && rawDuration <= 480) ?rawDuration : 60;
 
+        const resolvedArenaId = editableAction.arenaId || action?.arenaId || arenaId;
+
         const actionData: Omit<Action, 'id'> = {
-            arenaId: editableAction.arenaId || '', // Será tratado no context
+            arenaId: resolvedArenaId,
             name: editableAction.name,
             description: editableAction.description?.trim() || undefined,
             icon: editableAction.icon || '📝',
@@ -239,18 +247,24 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
         const executeSave = async () => {
             try {
-                if (taskId && typeof updateTask === 'function') {
-                    // If we are editing a specific task from the planner
-                    let scheduledStartTime: number | undefined;
+                if (isEditingTaskInstance) {
+                    if (!taskId || !currentTask || typeof updateTask !== 'function') {
+                        showToast('Esta ocorrência não está mais disponível. Reabra o Planner.', 'warning');
+                        return;
+                    }
+
+                    let nextTaskStartTime = -1;
                     if (startTime && startTime !== 'Sem Horário') {
                         const [h, m] = startTime.split(':').map(Number);
-                        scheduledStartTime = h * 60 + m;
+                        nextTaskStartTime = h * 60 + m;
                     }
 
                     updateTask(taskId, {
+                        date: selectedDate ? getLocalDateString(selectedDate) : currentTask.date,
                         duration: editableTaskDuration,
-                        startTime: scheduledStartTime
+                        startTime: nextTaskStartTime
                     });
+                    showToast('Ocorrência atualizada.', 'success');
                 } else if (isNew && typeof addAction === 'function') {
                     // Let the context generate the ID to ensure consistency
                     const newAction = await addAction(actionData);
@@ -326,7 +340,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const handleCancel = () => {
         if (isNew) onClose();
         else {
-            resetFromAction(action);
+            resetFromAction(action, hasTaskInstanceContext ? 'instance' : 'action');
             setMode('view');
             setIsTimePickerOpen(false);
             setIsDatePickerOpen(false);
@@ -357,18 +371,49 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) onClose(); };
 
     const getStartTimeLabel = (value?: number | null) => {
-        if (value === undefined || value === null) return null;
+        if (value === undefined || value === null || value < 0) return null;
         const h = Math.floor(value / 60);
         const m = value % 60;
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     };
 
-    const resetFromAction = (nextAction: Action | null) => {
+    const getTaskDateValue = (dateValue?: string | null) => {
+        if (!dateValue) return null;
+        const [year, month, day] = dateValue.split('-').map(Number);
+        if (!year || !month || !day) return null;
+        return new Date(year, month - 1, day);
+    };
+
+    const syncTemporalStateForScope = (nextScope: EditScope, nextAction: Action | null) => {
+        if (nextScope === 'instance' && currentTask) {
+            setStartTime(getStartTimeLabel(currentTask.startTime) || 'Sem Horário');
+            setSelectedDate(getTaskDateValue(currentTask.date));
+            setEditableTaskDuration(currentTask.duration || nextAction?.duration || 60);
+            setIsTimePickerOpen(false);
+            setIsDatePickerOpen(false);
+            return;
+        }
+
+        setStartTime(getStartTimeLabel(nextAction?.scheduledStartTime) || null);
+        setSelectedDate(null);
+        setIsTimePickerOpen(false);
+        setIsDatePickerOpen(false);
+    };
+
+    const switchEditScope = (nextScope: EditScope) => {
+        setEditScope(nextScope);
+        syncTemporalStateForScope(nextScope, action);
+        if (nextScope === 'instance') {
+            setActiveTab('basic');
+        }
+    };
+
+    const resetFromAction = (nextAction: Action | null, nextScope: EditScope = hasTaskInstanceContext ? 'instance' : 'action') => {
         const baseAction = nextAction || { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 };
         setEditableAction(baseAction);
         setSelectedDays(nextAction?.scheduledDays || []);
-        setStartTime(getStartTimeLabel(nextAction?.scheduledStartTime) || null);
-        setSelectedDate(null);
+        setEditScope(nextScope);
+        syncTemporalStateForScope(nextScope, nextAction);
         const asset = nextAction?.assets?.find(a => a.type === 'image' || a.type === 'video');
         const imageUrl = asset?.url || '';
         const caption = asset?.title || '';
@@ -376,20 +421,28 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         setMediaSlot({ imageUrl, caption });
         setActiveTab('basic');
         setAdvancedSubTab('media');
+        setEditableTaskDuration(currentTask?.duration || nextAction?.duration || 60);
     };
 
     useEffect(() => {
-        const shouldBlockInitialEdit = !isNew && initialMode === 'edit' && (isInstalledCodexAction || isLockedFromSource);
+        const defaultScope: EditScope = hasTaskInstanceContext ? 'instance' : 'action';
+        const shouldBlockInitialEdit = !isNew && initialMode === 'edit' && defaultScope === 'action' && (isInstalledCodexAction || isLockedFromSource);
         setMode(isNew ?'edit' : (shouldBlockInitialEdit ?'view' : initialMode));
         setHasConfirmedInstalledCodexEdit(false);
         setShowInstalledCodexEditConfirmation(shouldBlockInitialEdit && !isLockedFromSource && isInstalledCodexAction);
-        resetFromAction(action);
-    }, [action?.id, arenaId, initialMode, isInstalledCodexAction, isLockedFromSource]);
+        resetFromAction(action, defaultScope);
+    }, [action?.id, arenaId, currentTask?.id, currentTask?.date, currentTask?.duration, currentTask?.startTime, hasTaskInstanceContext, initialMode, isInstalledCodexAction, isLockedFromSource]);
+
+    useEffect(() => {
+        if (isEditingTaskInstance && activeTab === 'advanced') {
+            setActiveTab('basic');
+        }
+    }, [activeTab, isEditingTaskInstance]);
 
     const displayAction = mode === 'view' ?action : editableAction;
 
     // Merge task duration if editing a specific task
-    const effectiveDuration = taskId && currentTask ?currentTask.duration : (displayAction?.duration || 60);
+    const effectiveDuration = hasTaskInstanceContext && (mode === 'view' || isEditingTaskInstance) ?currentTask.duration : (displayAction?.duration || 60);
 
     const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÁCIL', 'EXTREMO'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
@@ -405,10 +458,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const modalStyle = { '--skin-accent-color': customThemeColor || 'var(--skin-accent-color)', '--accent-bronze': accentColor } as React.CSSProperties;
     const headerTitle = mode === 'view'
         ?(displayAction?.name || (isPreview ?'Preview de Ação' : 'Detalhe da Ação'))
-        : (editableAction.name?.trim() || (isNew ?'Nova Ação' : 'Editar Ação'));
+        : (isEditingTaskInstance
+            ?(action?.name?.trim() || 'Editar Ocorrência')
+            : (editableAction.name?.trim() || (isNew ?'Nova Ação' : hasTaskInstanceContext ?'Editar Ação Base' : 'Editar Ação')));
     const headerEyebrow = mode === 'edit'
-        ?(isNew ?'Criação' : 'Edição')
-        : (isPreview ?'Preview' : 'Ação');
+        ?(isEditingTaskInstance
+            ?'Ocorrência'
+            : (isNew ?'Criação' : hasTaskInstanceContext ?'Ação Base' : 'Edição'))
+        : (isPreview ?'Preview' : hasTaskInstanceContext ?'Ocorrência' : 'Ação');
     const handleHeaderOk = () => {
         if (isPreview) {
             onClose();
@@ -421,7 +478,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         onClose();
     };
 
-    const requestEditMode = () => {
+    const requestActionBaseEdit = () => {
         if (isLockedFromSource) {
             showToast(lockedEditMessage || 'Essa acao nao pode ser editada.', 'warning');
             return;
@@ -430,8 +487,22 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             setShowInstalledCodexEditConfirmation(true);
             return;
         }
+        switchEditScope('action');
         setMode('edit');
     };
+
+    const requestEditMode = () => {
+        if (hasTaskInstanceContext) {
+            switchEditScope('instance');
+            setMode('edit');
+            return;
+        }
+        requestActionBaseEdit();
+    };
+
+    const plannerOccurrenceLabel = currentTask?.date
+        ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(getTaskDateValue(currentTask.date) || new Date())
+        : null;
 
     return (
         <Portal>
@@ -460,7 +531,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     {/* Header Fixed */}
                     <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md flex justify-between items-start z-30 relative border-b border-white/10">
                         <div className="flex items-center gap-3 pt-1">
-                            {!isPreview && (!isLockedFromSource || mode === 'edit') && (
+                            {!isPreview && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
                                 <button
                                     onClick={mode === 'view' ?requestEditMode : handleCancel}
                                     className={`p-2 rounded-full border transition-all ${mode === 'edit' ?'bg-red-500/18 text-red-300 border-red-500/30 hover:bg-red-500/26' : 'bg-black/16 border-white/14 text-white/65 hover:text-white hover:bg-white/12'}`}
@@ -475,7 +546,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                 {headerTitle}
                             </h2>
                             <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
-                                {currentArena?.name || 'Arena'}
+                                {hasTaskInstanceContext && plannerOccurrenceLabel ?`${plannerOccurrenceLabel} • ${currentArena?.name || 'Arena'}` : (currentArena?.name || 'Arena')}
                             </p>
                         </div>
                         <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="px-4 py-2 text-sm font-bold rounded-xl luxe-skin-button shrink-0">
@@ -484,7 +555,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     </div>
 
                     {/* Assignment field for Office Mode */}
-                    {isOfficeMode && mode === 'edit' && (
+                    {isOfficeMode && isEditingActionBase && (
                         <div className="px-4 py-2 bg-black/[0.18] border-b border-white/[0.06]">
                             <label className="core-label mb-1 block">Quem vai fazer?(Atribuição)</label>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -521,12 +592,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                             </button>
                             <button
                                 onClick={() => setActiveTab('advanced')}
+                                disabled={isEditingTaskInstance}
                                 className={`flex-1 py-2 text-[11px] font-semibold tracking-[0.08em] rounded-lg transition-all duration-300 ${activeTab === 'advanced'
                                     ?'bg-white/[0.09] text-white shadow-[0_8px_18px_rgba(0,0,0,0.22)] border border-white/[0.08]'
-                                    : 'text-gray-500 hover:text-gray-300'
+                                    : isEditingTaskInstance ?'text-gray-600 opacity-40 cursor-not-allowed' : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                Avançado
+                                {isEditingTaskInstance ?'Avançado (Base)' : 'Avançado'}
                             </button>
                         </div>
                     </div>
@@ -595,6 +667,101 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                 ) : (
                                     // EDIT MODE CONTENT (Form)
                                     <div className="w-full space-y-4">
+                                        {hasTaskInstanceContext && (
+                                            <div className="rounded-[22px] border border-[var(--skin-accent-color)]/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.18))] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => switchEditScope('instance')}
+                                                        className={`flex-1 rounded-xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-all ${isEditingTaskInstance
+                                                            ?'bg-[var(--skin-accent-color)] text-black shadow-[0_8px_18px_rgba(0,0,0,0.28)]'
+                                                            : 'bg-black/20 text-white/70 border border-white/8 hover:bg-white/8'
+                                                            }`}
+                                                    >
+                                                        Esta ocorrência
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={requestActionBaseEdit}
+                                                        disabled={isLockedFromSource}
+                                                        className={`flex-1 rounded-xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-all ${isEditingActionBase
+                                                            ?'bg-[var(--skin-accent-color)] text-black shadow-[0_8px_18px_rgba(0,0,0,0.28)]'
+                                                            : isLockedFromSource
+                                                                ?'bg-black/10 text-white/35 border border-white/5 cursor-not-allowed'
+                                                                : 'bg-black/20 text-white/70 border border-white/8 hover:bg-white/8'
+                                                            }`}
+                                                    >
+                                                        Ação base
+                                                    </button>
+                                                </div>
+                                                <div className="mt-3 rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-left">
+                                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]/90">
+                                                        {isEditingTaskInstance ?'Escopo da edição' : 'Impacto da edição'}
+                                                    </div>
+                                                    <p className="mt-2 text-[12px] leading-relaxed text-white/75">
+                                                        {isEditingTaskInstance
+                                                            ?'Você está mexendo só nesta ocorrência do Planner. Nome, ícone, arena, tipo, repetições e conteúdo avançado continuam na ação base.'
+                                                            : isLockedFromSource
+                                                                ?(lockedEditMessage || 'A ação base está protegida.')
+                                                                :'Você está editando a ação base. Mudanças visuais, estruturais e de conteúdo valem para a ação e para as próximas ocorrências.'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {isEditingTaskInstance ? (
+                                            <>
+                                                <div className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 px-4 py-4">
+                                                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
+                                                        <EmojiGlyph symbol={action?.icon || '📝'} size="action" className="text-white" />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Planner</div>
+                                                        <div className="mt-1 truncate text-sm font-bold text-white">{action?.name || 'Ocorrência'}</div>
+                                                        <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/50">
+                                                            {plannerOccurrenceLabel || 'Sem data'}{startTime ?` • ${startTime}` : ''}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <StyledRangeInput
+                                                    label="Duração desta Ocorrência"
+                                                    value={editableTaskDuration}
+                                                    min={15}
+                                                    max={480}
+                                                    step={15}
+                                                    unit="min"
+                                                    onChange={val => setEditableTaskDuration(val)}
+                                                />
+
+                                                <div className="p-3 bg-black/20 rounded-xl space-y-3 border border-white/5">
+                                                    <div>
+                                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data desta ocorrência</label>
+                                                        <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                            <div className="flex items-center gap-2">
+                                                                <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                                                                <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar Data'}</span>
+                                                            </div>
+                                                            <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                                                        </button>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário desta ocorrência</label>
+                                                        <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                            <span className="text-sm">{startTime || 'Sem Horário'}</span>
+                                                            <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
+                                                        </button>
+                                                        {isTimePickerOpen && (
+                                                            <div className="mt-2 h-32 relative">
+                                                                <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
                                         {/* Icon Picker */}
                                         <div className="flex justify-center">
                                             <button
@@ -654,26 +821,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             </div>
 
                                             {/* Sliders */}
-                                            {taskId ?(
-                                                <StyledRangeInput
-                                                    label="Duração desta Instância"
-                                                    value={editableTaskDuration}
-                                                    min={15} max={480} step={15} unit="min"
-                                                    onChange={val => setEditableTaskDuration(val)}
-                                                />
-                                            ) : (
-                                                <StyledRangeInput
-                                                    containerId="onboarding-action-duration"
-                                                    inputRef={durationInputRef}
-                                                    label="Duração (Base)"
-                                                    value={editableAction.duration || 60}
-                                                    min={15} max={240} step={15} unit="min"
-                                                    onChange={val => {
-                                                        setEditableAction(p => ({ ...p, duration: val }));
-                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, { duration: val });
-                                                    }}
-                                                />
-                                            )}
+                                            <StyledRangeInput
+                                                containerId="onboarding-action-duration"
+                                                inputRef={durationInputRef}
+                                                label="Duração (Base)"
+                                                value={editableAction.duration || 60}
+                                                min={15} max={240} step={15} unit="min"
+                                                onChange={val => {
+                                                    setEditableAction(p => ({ ...p, duration: val }));
+                                                    handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, { duration: val });
+                                                }}
+                                            />
 
                                             {editableAction.actionType === 'Ação Recorrente' && (
                                                 <StyledRangeInput
@@ -740,6 +898,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             <button onClick={handleDelete} className="w-full py-3 rounded-xl bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/30 text-xs font-bold uppercase tracking-wider transition-all mt-4">
                                                 Excluir Ação
                                             </button>
+                                        )}
+                                            </>
                                         )}
                                     </div>
                                 )}
@@ -1086,6 +1246,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     onConfirm={() => {
                         setHasConfirmedInstalledCodexEdit(true);
                         setShowInstalledCodexEditConfirmation(false);
+                        switchEditScope('action');
                         setMode('edit');
                     }}
                     onCancel={() => setShowInstalledCodexEditConfirmation(false)}

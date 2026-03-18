@@ -3,6 +3,17 @@
 Observacao:
 - Este calendario foi normalizado em 18/03/2026.
 - O item de 17/03 foi mantido como kickoff do aquecimento, sem usar a marcacao relativa "Hoje".
+- Todo item de carrossel abaixo deve seguir o sistema oficial descrito em `marketing/roteiro.md`.
+- Toda execucao nova deve sair de `marketing/template-operacional-carrossel.md`.
+
+## Regras de execucao do calendario
+
+- Curadoria usa o formato oficial de 5 slides.
+- Vitrine usa o formato oficial de 4 slides.
+- Filosofia usa `capa + 2 a 4 slides de argumento + fecho`.
+- Tatica usa `capa + 1 ou 2 slides de mecanica + fecho`.
+- Todo carrossel termina com fecho GLYPH.
+- O fechamento padrao usa `Organize seu imperio.` e CTA publico para `glyph.life`.
 
 ## Aquecimento
 
@@ -84,6 +95,7 @@ Observacao:
 
 ## Uso deste calendario
 
-- Antes de criar uma peca nova, conferir o item correspondente em `roteiro.md`.
+- Antes de criar uma peca nova, conferir o item correspondente em `marketing/roteiro.md`.
+- Montar os slides usando `marketing/template-operacional-carrossel.md`.
 - Manter coerencia entre formato, visual, CTA e fase da campanha.
-- Reaproveitar a mesma linha visual premium: preto, dourado, serifas, textura e simbolo do GLYPH.
+- Reaproveitar a mesma linha visual premium: marmore, textura, dourado, serifas e simbolo do GLYPH.

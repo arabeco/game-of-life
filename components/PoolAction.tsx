@@ -119,7 +119,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
             {...longPressEvents}
             style={isFreeAction ?undefined : backgroundStyle}
             className={`
-                h-full aspect-square flex items-center justify-center p-1 flex-shrink-0 relative transition-all duration-300
+                h-full aspect-square flex items-center justify-center p-1 flex-shrink-0 relative transition-all duration-300 select-none
                 ${isFreeAction ?'free-action-shell free-action-outline rounded-2xl' : 'border border-[var(--accent-bronze)]/50 rounded-xl'}
                 ${isDisabled ?'border-gray-700' : isFreeAction ?'cursor-grab active:cursor-grabbing hover:border-white/35 hover:scale-[1.03] active:scale-95' : 'cursor-grab active:cursor-grabbing hover:border-[var(--skin-accent-color)]/50 hover:scale-105 active:scale-95'}
             `}

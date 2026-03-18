@@ -1,7 +1,14 @@
 # Roteiro Mestre de Conteudo GLYPH
 
-Este documento e o padrao oficial para criacao de posts de Instagram do GLYPH.
-Ele define os 4 formatos principais de postagem, a linguagem, a direcao visual e o banco de ideias ja aprovadas.
+Este documento e a fonte de verdade para o sistema de Instagram do GLYPH.
+Ele define a identidade editorial, o sistema semi-fixo de carrosseis, as regras de marca e o banco de ideias ja aprovado.
+
+Quando houver conflito entre um roteiro antigo e as regras deste documento, vale este documento.
+
+Documentos complementares:
+- `marketing/calendario.md` organiza a cadencia e a ordem de publicacao.
+- `marketing/template-operacional-carrossel.md` industrializa a execucao de qualquer peca nova.
+- `marketing/banco-frases-radar.md` guarda as 100 frases oficiais de leitura de nivel.
 
 ## Missao da marca
 
@@ -16,6 +23,20 @@ Toda peca deve reforcar pelo menos um destes pilares:
 - estetica premium e ritualistica
 - progresso visivel, compartilhavel e memoravel
 
+## Sistema oficial de carrosseis
+
+O sistema do GLYPH e `semi-fixo`.
+Isso significa que os posts tem espinha dorsal reconhecivel, mas ainda podem variar dentro da mesma familia.
+
+Regras centrais:
+
+- os 4 formatos tem estrutura clara, mas nao completamente engessada
+- todo carrossel termina com `slide final de marca`
+- o slogan oficial de fechamento e `Organize seu imperio.`
+- o CTA publico oficial aponta para `glyph.life`
+- `app.glyph.life` nao entra em criativo publico enquanto o beta estiver fechado
+- o feed precisa ser identificavel em 1 segundo como GLYPH
+
 ## Os 4 formatos fixos de postagem
 
 ### 1. Curadoria
@@ -26,23 +47,25 @@ Objetivo:
 Estilo:
 - Curadoria / Estudo de Caso
 
-Visual:
-- Carrossel limpo
-- Fundo escuro texturizado
-- Foto principal em preto e branco ou dessaturada
-- Acentos em dourado
-- Radar, graficos, recortes de performance e leitura simbolica do personagem
+Padrao principal:
+- 5 slides
 
-Estrutura base:
-- Slide 1: "Como o GLYPH leria..."
-- Slide 2: area de maior destaque
-- Slide 3: segunda area de destaque ou risco
-- Slide 4: tese final forte, curta e memoravel
+Estrutura oficial:
+- Slide 1: capa chamativa com foto, busto, estatua ou retrato; pode usar o radar ou o decagono borrado ao fundo
+- Slide 2: texto curto explicando quem e a figura e pelo que ela e conhecida
+- Slide 3: destacar os 2 ativos mais altos segundo a leitura do GLYPH
+- Slide 4: radar completo, leitura geral e nivel de maestria
+- Slide 5: fechamento universal com marca GLYPH
+
+Regra de radar:
+- toda Curadoria deve preencher as 10 areas oficiais
+- toda nota deve usar `marketing/banco-frases-radar.md` como base
+- o `Nivel de Maestria Geral` e a soma das 10 areas, com maximo de `100`
 
 Funcao no funil:
 - autoridade
 - aspiracao
-- identificacao com alta performance
+- leitura simbolica da alta performance
 
 ### 2. Vitrine
 
@@ -52,16 +75,19 @@ Objetivo:
 Estilo:
 - Vitrine / Produto
 
-Visual:
-- Imagem unica, loop curto ou carrossel curto
-- Tela do app em evidenca
-- UI clara, brilhante, valiosa
-- Destaque em ouro, bordas, baus, cards, planner, forja e elementos do sistema
+Padrao principal:
+- 4 slides
 
-Estrutura base:
-- Mostrar o produto em uso
-- Destacar uma vantagem visivel
-- Fechar com promessa direta ou CTA
+Estrutura oficial:
+- Slide 1: capa bonita com a feature em foco
+- Slide 2: mostrar a funcao com tela real do app
+- Slide 3: prova de valor, resultado ou beneficio visivel
+- Slide 4: fechamento universal com marca GLYPH
+
+Regra de ativo:
+- o produto precisa dominar
+- a peca usa prova real do app, nunca mockup inventado como prova principal
+- a fonte de material e hibrida: prints enviados + capturas locais futuras do app rodando
 
 Funcao no funil:
 - desejo
@@ -76,17 +102,19 @@ Objetivo:
 Estilo:
 - Filosofia / Hard Truth
 
-Visual:
-- Carrossel curto de 2 ou 3 slides
-- Fundo escuro, marmore, ardosia, textura nobre ou campo minimalista
-- Tipografia serifada, forte e limpa
-- Muito espaco negativo
-- Pouco texto por slide
+Padrao principal:
+- capa + 2 a 4 slides de argumento + fecho
 
-Estrutura base:
-- Slide 1: tese ou confronto
-- Slide 2: dor, erro, desperdicio ou diagnostico
-- Slide 3: principio da Vanguarda ou solucao
+Estrutura oficial:
+- Slide 1: tese forte
+- Slides centrais: desenvolvimento, dor, erro, confronto ou principio
+- Ultimo slide: fechamento com logo maior, slogan e assinatura GLYPH
+
+Regra de copy:
+- estrutura quase fixa
+- abrir forte
+- explicar mais no meio
+- fechar com marca
 
 Funcao no funil:
 - posicionamento
@@ -101,16 +129,18 @@ Objetivo:
 Estilo:
 - Tatica / Produtividade
 
-Visual:
-- Imagem unica, esquema simples, radar, grafico, setas, bateria, planner ou infografico minimalista
-- Leitura rapida
-- Contraste alto
-- Foco na ideia central
+Padrao principal:
+- capa + 1 ou 2 slides explicando a mecanica + fecho
 
-Estrutura base:
-- Um insight central
-- Uma regra pratica
-- Uma conexao clara com o uso do app
+Estrutura oficial:
+- Slide 1: chamada forte
+- Slides centrais: mostrar a logica, o metodo ou a mecanica da execucao
+- Ultimo slide: marca GLYPH com CTA publico
+
+Regra de copy:
+- quase fixa como Filosofia
+- mais didatica visual
+- foco em salvamento
 
 Funcao no funil:
 - autoridade
@@ -119,31 +149,61 @@ Funcao no funil:
 
 ## Padrao visual aprovado
 
-Estas referencias ja definem a linha visual que devemos seguir:
+A identidade do GLYPH deixou de ser apenas `preto + dourado`.
+Agora ela opera como `luxo com familias de marmore e textura`, sempre com dourado como costura visual.
 
-- fundo escuro texturizado
-- paleta preto, dourado, off-white e cinza metalico
-- serifas elegantes para headlines
-- logo ou simbolo do GLYPH em destaque ou como selo
-- rodape com `GLYPH.LIFE`
-- molduras, halos, marmore, ouro, pedra, couro, brilho contido
-- nada com cara de app generico, startup colorida ou produtividade de escritorio
+Familias principais:
+
+- `Obsidiana`: preto, chumbo, off-white e dourado
+- `Marfim`: branco, cinza mineral e dourado
+- `Safira`: azul profundo, gelo, chumbo e dourado
+- `Rubi`: vinho ou vermelho profundo com dourado, reservado principalmente para Curadoria
+
+Regras visuais:
+
+- o dourado e assinatura, nao ruido
+- a tipografia precisa ser luxuosa, elegante e firme
+- o simbolo do GLYPH e flexivel: normalmente selo, mas pode crescer e virar protagonista
+- o rodape ou fecho deve manter consistencia entre marca, slogan e `glyph.life`
+- nada pode parecer template barato, startup colorida ou produtividade de escritorio
+
+### Mapa visual por formato
+
+Curadoria:
+- base editorial premium
+- normalmente `Obsidiana`
+- `Rubi` pode entrar quando o tema pedir mais intensidade
+
+Vitrine:
+- produto real em primeiro plano
+- apoio de `Obsidiana`, `Marfim` e `Safira`
+- o app e a prova principal; a atmosfera vem como moldura
+
+Filosofia:
+- mais textual
+- pode usar `Obsidiana` ou `Marfim`
+- muito espaco negativo e pouco ruido visual
+
+Tatica:
+- mais funcional
+- pode usar `Obsidiana`, `Safira` ou `Marfim`
+- radar, planner, esquema, setas e UI simplificada entram como reforco didatico
 
 ### Elementos recorrentes
 
-- moldura dourada fina
-- textura escura com brilho sutil
+- moldura dourada fina quando a composicao pedir
+- textura escura ou marmore com brilho sutil
 - simbolo do GLYPH no centro ou no canto inferior direito
-- pouco texto por slide
 - headlines fortes, secas e compartilhaveis
+- slide final com marca sempre mais limpo e solene
 
 ### O que evitar
 
 - memes genericos
-- cores neon sem controle
 - linguagem corporativa
-- visual de template pronto barato
 - excesso de texto no mesmo slide
+- mockup fake de produto
+- CTA publico para area fechada do app
 
 ## Linguagem da marca
 
@@ -171,15 +231,24 @@ Evitar:
 - autoajuda generica
 - linguagem de escritorio tradicional
 
-## Regras de ouro para Instagram
+## Regras de producao e aceitacao
 
-- Zero memes genericos.
-- Se for reel, mostrar o app em uso com musica ambiente densa, synthwave sombrio ou trilhas epicas calmas.
-- Tratar a rotina como RPG de alto nivel, nao como trabalho de escritorio.
-- Inserir prova social silenciosa com prints de ciclo fechado, arena concluida ou legado exportado.
-- Manter coerencia premium: fundo escuro, serifas fortes, dourado com moderacao e logo visivel.
+Checklist obrigatorio:
+
+- da para identificar em ate 1 segundo se a peca e Curadoria, Filosofia, Tatica ou Vitrine
+- o slide 1 segura atencao sozinho
+- o miolo entrega exatamente o trabalho daquele formato
+- o slide final reforca marca sem parecer repeticao vazia
+- a peca funciona mesmo sem abrir a legenda
+- o CTA publico aponta para `glyph.life`
+- o slogan padrao do fecho e `Organize seu imperio.`
 
 ## Biblioteca de posts aprovados
+
+Observacao:
+- Os roteiros abaixo sao banco de tema, copy e angulo.
+- A estrutura de slides deles agora deve obedecer o sistema oficial acima.
+- Quando um roteiro abaixo parecer mais curto do que o sistema atual, ele deve ser expandido usando `marketing/template-operacional-carrossel.md`.
 
 ### Curadoria 1: O Radar de Cristiano Ronaldo
 
@@ -192,10 +261,11 @@ Visual:
 - Fundo escuro texturizado com fotos editadas em preto e branco e tons de dourado do astro
 
 Texto na imagem:
-- Slide 1: Como o GLYPH leria o Cristiano Ronaldo?
-- Slide 2: Forca Fisica: Nivel 10. Maquina biologica perfeita, foco inegociavel.
-- Slide 3: Abundancia e Trabalho: Nivel 9. O imperio que transcende o futebol.
-- Slide 4: O nivel do CR7 nao e motivacao, e sistema de execucao.
+- Capa: Como o GLYPH leria o Cristiano Ronaldo?
+- Miolo: Forca Fisica: Nivel 10. Maquina biologica perfeita, foco inegociavel.
+- Miolo: Abundancia e Trabalho: Nivel 9. O imperio que transcende o futebol.
+- Radar: o nivel do CR7 nao e motivacao, e sistema de execucao.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Motivacao acaba no segundo dia. Um imperio se sustenta com medicao e disciplina. Qual e o desenho do seu Radar hoje? Descubra no GLYPH. Link na bio.
@@ -206,7 +276,7 @@ Missao:
 - Vender o diferencial cosmetico e de identidade que nenhum concorrente tem.
 
 Visual:
-- Imagem unica ou video em loop infinito
+- Carrossel de produto ou video em loop
 - Estilo: Vitrine / Produto
 - Tela do app super iluminada destacando as bordas e baus roxos
 
@@ -215,7 +285,7 @@ Captura sugerida:
 - Ouro brilhando na carteira
 
 Texto na imagem:
-- A sua identidade evolui com a sua execucao.
+- Capa: A sua identidade evolui com a sua execucao.
 
 Legenda:
 - Em apps comuns, voce e apenas um usuario. No GLYPH, o seu esforco destrava baus, ouro e cosmeticos que mostram a sua patente para a comunidade. Seu perfil, suas regras. Fila de espera na bio.
@@ -226,14 +296,15 @@ Missao:
 - Atrair pelo intelecto e pela estetica da marca.
 
 Visual:
-- Carrossel curto de 3 slides
+- Carrossel curto
 - Estilo: Filosofia / Hard Truth
 - Fundo de marmore escuro, texto direto, serifado e minimalista
 
 Texto na imagem:
-- Slide 1: A diferenca entre reagir a vida e construir um Imperio.
-- Slide 2: Reagir: acordar, olhar o feed, apagar incendios e chegar ao fim do dia exausto e sem progresso.
-- Slide 3: Construir: ter o mapa antes de entrar no campo. Agir de forma intencional. Dominar o SITREP.
+- Capa: A diferenca entre reagir a vida e construir um Imperio.
+- Miolo: Reagir: acordar, olhar o feed, apagar incendios e chegar ao fim do dia exausto e sem progresso.
+- Miolo: Construir: ter o mapa antes de entrar no campo. Agir de forma intencional. Dominar o SITREP.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Voce nao esta cansado por trabalhar muito. Voce esta cansado por trabalhar sem intencao. A Vanguarda usa o GLYPH para separar o ruido do alvo. Entre para o Beta Fechado no link da bio.
@@ -244,12 +315,15 @@ Missao:
 - Dar uma dica pratica que so funciona perfeitamente se a pessoa usar o GLYPH.
 
 Visual:
-- Imagem unica ou grafico limpo
+- Carrossel tatico
 - Estilo: Tatica / Produtividade
 - Desenho esquematico de setas ou da teia de aranha do app
 
 Texto na imagem:
-- Nao tente subir 10 degraus de uma vez.
+- Capa: Nao tente subir 10 degraus de uma vez.
+- Miolo: identifique as 3 areas mais fracas
+- Miolo: crie 1 Arena focada para cada uma
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - O maior erro de quem tenta mudar a vida e tentar consertar tudo no mesmo dia. No GLYPH, a tatica e simples: olhe para o seu Radar, identifique as 3 areas mais fracas, crie 1 Arena focada para cada uma e ignore o resto ate estabilizar. Foco e sacrificio. Comece a medir o seu hoje. Link na bio.
@@ -266,10 +340,11 @@ Visual:
 - Fotos editadas de estatuas classicas em tons de dourado e sombras
 
 Texto na imagem:
-- Slide 1: Como o GLYPH leria o Imperador Marco Aurelio?
-- Slide 2: Espaco Mental e Proposito: Nivel 10. A mente blindada contra o caos do maior imperio do mundo.
-- Slide 3: Trabalho e Conexoes: Nivel 9. O dever acima do ego. A gestao de generais e inimigos.
-- Slide 4: O estoicismo nao e teoria. E um sistema de execucao diaria.
+- Capa: Como o GLYPH leria o Imperador Marco Aurelio?
+- Miolo: Espaco Mental e Proposito: Nivel 10. A mente blindada contra o caos do maior imperio do mundo.
+- Miolo: Trabalho e Conexoes: Nivel 9. O dever acima do ego. A gestao de generais e inimigos.
+- Radar: O estoicismo nao e teoria. E um sistema de execucao diaria.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Governar Roma exigia mais do que vontade; exigia governar a si mesmo primeiro. O GLYPH traduz a filosofia milenar em dados, rotinas e execucao. Qual e o desenho do seu imperio hoje? Mapeie o seu Radar. Link na bio.
@@ -280,13 +355,13 @@ Missao:
 - Exibir a engenharia do produto e provar que o GLYPH e pratico para o dia a dia.
 
 Visual:
-- Imagem unica ou gravacao de tela curta em loop
+- Carrossel de produto ou gravacao de tela curta em loop
 - Estilo: Vitrine / Produto
 - Tela do Planner em uso
 - Evidenciar o momento exato em que uma tarefa e arrastada e encaixada na timeline de horarios
 
 Texto na imagem:
-- O dia roda aqui. O sistema aprende com isso.
+- Capa: O dia roda aqui. O sistema aprende com isso.
 
 Legenda:
 - O Planner do GLYPH nao e um deposito de tarefas esquecidas. Voce puxa da sua Arena, joga no horario e fecha o dia com o SITREP. O que nao entra no Planner, nao existe. Pare de acumular listas infinitas e comece a executar. Vagas abertas na bio.
@@ -297,15 +372,16 @@ Missao:
 - Bater na cultura da autoajuda barata e focar na constancia mecanica.
 
 Visual:
-- Carrossel curto de 3 slides
+- Carrossel curto
 - Estilo: Filosofia / Hard Truth
 - Fundo escuro total
 - Texto serifado direto, branco e imponente
 
 Texto na imagem:
-- Slide 1: A motivacao e uma armadilha para amadores.
-- Slide 2: Ela te faz comecar grandes projetos num domingo a noite e desistir na quarta-feira de manha.
-- Slide 3: A Vanguarda nao depende de vontade. Depende de Sistema.
+- Capa: A motivacao e uma armadilha para amadores.
+- Miolo: Ela te faz comecar grandes projetos num domingo a noite e desistir na quarta-feira de manha.
+- Miolo: A Vanguarda nao depende de vontade. Depende de Sistema.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Voce nao precisa de mais videos motivacionais. Voce precisa de metricas claras, punicao para o fracasso e recompensas reais para a constancia. A Soberania se constroi quando ninguem esta olhando. Entre para o Beta Fechado e instale o seu sistema. Link na bio.
@@ -316,12 +392,15 @@ Missao:
 - Dar uma dica pratica de alto valor que pode ser implementada com ou sem o app, gerando reciprocidade e autoridade.
 
 Visual:
-- Imagem unica ou infografico minimalista
+- Carrossel tatico ou infografico minimalista
 - Estilo: Tatica / Produtividade
 - Linha do tempo visual mostrando um corte de sinal exatas 2 horas antes de dormir
 
 Texto na imagem:
-- O seu amanha e destruido hoje a noite.
+- Capa: O seu amanha e destruido hoje a noite.
+- Miolo: ative o modo aviao
+- Miolo: abra o GLYPH e faca o SITREP
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Rolar o feed deitado na cama sangra o seu Espaco Mental e a sua energia fisica pro dia seguinte. A tatica da Vanguarda: ative o modo aviao, abra o GLYPH, faca o fechamento do seu ciclo diario com o SITREP e desconecte a mente. O sono e a forja do seu imperio. Lista de espera na bio.
@@ -338,10 +417,11 @@ Visual:
 - Fotos em preto e branco com detalhes em dourado focado no olhar do atleta
 
 Texto na imagem:
-- Slide 1: Como o GLYPH leria a Mamba Mentality?
-- Slide 2: Trabalho e Fisico: Nivel 10. Treinar as 4 da manha nao era sacrificio, era o padrao basico.
-- Slide 3: Espaco Mental: Nivel 10. Bloqueio absoluto de ruidos externos e foco obsessivo no presente.
-- Slide 4: A grandeza nao e um dom. E a repeticao violenta dos fundamentos.
+- Capa: Como o GLYPH leria a Mamba Mentality?
+- Miolo: Trabalho e Fisico: Nivel 10. Treinar as 4 da manha nao era sacrificio, era o padrao basico.
+- Miolo: Espaco Mental: Nivel 10. Bloqueio absoluto de ruidos externos e foco obsessivo no presente.
+- Radar: A grandeza nao e um dom. E a repeticao violenta dos fundamentos.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Kobe Bryant nao dependia de estar motivado para amassar a concorrencia. Ele dependia de rotina, metricas e execucao incansavel. O GLYPH foi forjado para mentes que operam nesse nivel de exigencia. Mapeie seu imperio. Link na bio.
@@ -352,12 +432,12 @@ Missao:
 - Mostrar que o aplicativo e serio, fala verdades e cria responsabilidade real.
 
 Visual:
-- Imagem dividida ou carrossel de 2 slides
+- Carrossel de produto
 - Estilo: Vitrine / Produto
 - Foco no icone do cadeado e na tela de relatorio exigindo as respostas do dia
 
 Texto na imagem:
-- Nao existe imperio sem consequencias.
+- Capa: Nao existe imperio sem consequencias.
 
 Legenda:
 - A maioria dos aplicativos passa a mao na sua cabeca se voce procrastina o dia inteiro. O GLYPH nao. A Trava de Compromisso do SITREP exige que voce encare a realidade do seu dia. Voce nao engana o sistema, e o sistema nao deixa voce se enganar. Teste a sua disciplina. Fila de espera na bio.
@@ -368,14 +448,15 @@ Missao:
 - Gerar senso de urgencia e a percepcao de que a vida esta passando.
 
 Visual:
-- Carrossel de 3 slides
+- Carrossel
 - Estilo: Filosofia / Hard Truth
 - Fundo escuro com textura em desgaste, areia, relogio ou desfoque de movimento
 
 Texto na imagem:
-- Slide 1: O custo invisivel de viver no piloto automatico.
-- Slide 2: Voce pisca e ja e sexta-feira. Voce pisca de novo e o ano acabou. Zero progresso real.
-- Slide 3: O tempo nao para. Mas voce pode forcar a consciencia de cada dia.
+- Capa: O custo invisivel de viver no piloto automatico.
+- Miolo: Voce pisca e ja e sexta-feira. Voce pisca de novo e o ano acabou. Zero progresso real.
+- Miolo: O tempo nao para. Mas voce pode forcar a consciencia de cada dia.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Deixar os dias passarem sem registro e o maior vazamento do seu capital vital. O ritual do GLYPH, Planejar, Agir e SITREP, te arranca do automatico, freia o tempo e te devolve o leme da sua propria rotina. A Vanguarda te aguarda. Link na bio.
@@ -386,12 +467,15 @@ Missao:
 - Dar um tapa na cara de quem monta cronogramas perfeitos e nunca cumpre porque esta exausto.
 
 Visual:
-- Imagem unica
+- Carrossel tatico
 - Estilo: Tatica / Produtividade
 - Grafico mostrando a bateria cheia no inicio do dia se esgotando, alinhada com blocos de trabalho no Planner do GLYPH
 
 Texto na imagem:
-- Voce nao tem falta de tempo. Voce tem falta de energia.
+- Capa: Voce nao tem falta de tempo. Voce tem falta de energia.
+- Miolo: use o Deep Focus nas horas de pico
+- Miolo: deixe o burocratico para o resto da bateria
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Agendar a tarefa mais dificil para as 16h da tarde e assinar um atestado de fracasso. A Vanguarda mapeia seus picos de energia. No GLYPH, voce puxa as acoes vitais da sua Arena para as suas horas de Deep Focus matinal, e deixa o trabalho burocratico para quando a bateria estiver acabando. Jogue o jogo de forma inteligente. Link na bio.
@@ -408,10 +492,11 @@ Visual:
 - Tons de chumbo e dourado
 
 Texto na imagem:
-- Slide 1: Como o GLYPH leria o arquiteto do futuro?
-- Slide 2: Proposito e Trabalho: Nivel 10. Capacidade de ignorar o impossivel e focar na execucao brutal.
-- Slide 3: Espaco Mental: risco constante de sobrecarga, alerta vermelho. A linha tenue entre a genialidade e o burnout.
-- Slide 4: O limite do seu imperio e o limite do que voce consegue gerenciar.
+- Capa: Como o GLYPH leria o arquiteto do futuro?
+- Miolo: Proposito e Trabalho: Nivel 10. Capacidade de ignorar o impossivel e focar na execucao brutal.
+- Miolo: Espaco Mental: risco constante de sobrecarga. A linha tenue entre a genialidade e o burnout.
+- Radar: O limite do seu imperio e o limite do que voce consegue gerenciar.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Construir foguetes e empresas bilionarias exige fatiar missoes impossiveis em tarefas diarias. Elon Musk domina a execucao, mas o custo mental e alto. O Radar do GLYPH te ajuda a avancar no Trabalho sem destruir suas outras 9 Areas da Vida. Descubra seu equilibrio. Link na bio.
@@ -422,12 +507,12 @@ Missao:
 - Apresentar o sistema de economia interna, provando que o app gamifica a vida real.
 
 Visual:
-- Gravacao de tela curta ou carrossel
+- Carrossel de produto ou gravacao de tela curta
 - Estilo: Vitrine / Produto
 - Mostrar o usuario completando tarefas no SITREP, ganhando Ouro e trocando por um Codex na Loja
 
 Texto na imagem:
-- O seu esforco paga a sua evolucao.
+- Capa: O seu esforco paga a sua evolucao.
 
 Legenda:
 - Chega de dar check em tarefas e nao sentir nada. No ecossistema do GLYPH, a execucao da sua rotina gera Ouro. Use sua recompensa na Forja para comprar novos Codexes, bordas de prestigio e expandir seu imperio. Produtividade que paga dividendos. Entre na fila de espera. Link na bio.
@@ -438,15 +523,16 @@ Missao:
 - Destruir um conceito corporativo antigo e posicionar o app como ferramenta de foco profundo.
 
 Visual:
-- Carrossel curto de 3 slides
+- Carrossel curto
 - Estilo: Filosofia / Hard Truth
 - Visual minimalista
 - Um slide caotico e cheio de setas versus um slide com uma unica linha reta dourada
 
 Texto na imagem:
-- Slide 1: A multitarefa e uma mentira que te contaram para voce trabalhar pior.
-- Slide 2: Fazer 3 coisas ao mesmo tempo significa fazer as 3 de forma mediocre. O cerebro nao divide atencao, ele alterna rapidamente e perde bateria nisso.
-- Slide 3: A Vanguarda escolhe 1 alvo. Entra no Coliseu. E so sai quando ele cai.
+- Capa: A multitarefa e uma mentira que te contaram para voce trabalhar pior.
+- Miolo: Fazer 3 coisas ao mesmo tempo significa fazer as 3 de forma mediocre.
+- Miolo: A Vanguarda escolhe 1 alvo. Entra no Coliseu. E so sai quando ele cai.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - O Painel Diario do GLYPH e o Modo Deep Focus foram criados com um unico proposito: obliterar as distracoes e forcar a sua atencao para a unica tarefa que importa agora. Pare de tentar fazer tudo. Faca o necessario. Link na bio.
@@ -457,12 +543,15 @@ Missao:
 - Ensinar uma pratica de alta performance que incentiva o usuario a abrir o Planner no fim de semana.
 
 Visual:
-- Imagem unica
+- Carrossel tatico
 - Estilo: Tatica / Produtividade
 - Xicara de cafe preta ao lado de um celular com a tela do Planner do GLYPH aberta mostrando a semana inteira preenchida
 
 Texto na imagem:
-- A guerra da semana e ganha no domingo a noite.
+- Capa: A guerra da semana e ganha no domingo a noite.
+- Miolo: abra suas Arenas
+- Miolo: puxe as pedras grandes para o Planner semanal
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Quem acorda na segunda-feira sem saber o que fazer ja perdeu a semana. O Ritual da Vanguarda: tire 20 minutos no domingo, abra suas Arenas no GLYPH, puxe as pedras grandes para o seu Planner semanal e tranque as prioridades. Quando a segunda chegar, voce nao pensa. Voce apenas executa. Lista de espera na bio.
@@ -478,10 +567,11 @@ Visual:
 - Fundo escuro texturizado misturando ardosia ou couro negro com esbocos originais do Homem Vitruviano e anotacoes invertidas brilhando em dourado
 
 Texto na imagem:
-- Slide 1: Como o GLYPH leria a mente do maior polimata da historia? Subtitulo: Nivel de Maestria 96.
-- Slide 2: Trabalho e Proposito: Nivel 10. A recusa em ser apenas uma coisa. Pintor, engenheiro de guerra, anatomista e arquiteto.
-- Slide 3: Espaco Mental: Nivel 10. O habito implacavel de registrar tudo. Os milhares de diarios de Da Vinci foram o primeiro SITREP da humanidade.
-- Slide 4: A genialidade nao e um dom isolado. E a obsessao por expandir o seu Radar em 360 graus.
+- Capa: Como o GLYPH leria a mente do maior polimata da historia?
+- Miolo: Trabalho e Proposito: Nivel 10. A recusa em ser apenas uma coisa.
+- Miolo: Espaco Mental: Nivel 10. O habito implacavel de registrar tudo.
+- Radar: A genialidade nao e um dom isolado. E a obsessao por expandir o seu Radar em 360 graus.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Da Vinci nao separava o trabalho da vida, a ciencia da arte. Ele mapeou todas as areas do proprio intelecto e documentou cada passo de sua evolucao. A verdadeira maestria, Nivel 96, vem da curiosidade brutal de nao aceitar a mediocridade em nenhuma area. A Vanguarda nao joga em uma so Arena, ela domina o imperio inteiro. Qual e a sua proxima fronteira? Mapeie no GLYPH. Link na bio.
@@ -492,12 +582,12 @@ Missao:
 - Mostrar o trofeu do usuario e o diferencial de gerar um historico bonito para compartilhar.
 
 Visual:
-- Imagem de alta qualidade
+- Carrossel de produto
 - Estilo: Vitrine / Produto
 - Card metalico de ciclo encerrado gerado pelo aplicativo, com stats do usuario, flutuando num fundo escuro
 
 Texto na imagem:
-- O seu passado deixa de sumir. Ele vira Legado.
+- Capa: O seu passado deixa de sumir. Ele vira Legado.
 
 Legenda:
 - Todo app reseta o seu progresso no fim do dia ou quebra a sua ofensiva. No GLYPH, os ciclos que voce fecha viram Cards Metalicos exportaveis. Voce constroi um historico vertical permanente da sua evolucao. Mostre ao mundo quem voce se tornou. Vagas limitadas no link da bio.
@@ -508,14 +598,16 @@ Missao:
 - Acionar urgencia e autoresponsabilidade.
 
 Visual:
-- Carrossel de 2 slides
+- Carrossel
 - Estilo: Filosofia / Hard Truth
 - Imagem dividida
 - Dois caminhos escuros, sendo um iluminado por ouro
 
 Texto na imagem:
-- Slide 1: Voce sempre vai ter que escolher qual dor quer carregar.
-- Slide 2: A dor da disciplina pesa oncas. A dor do arrependimento pesa toneladas. O sacrificio e inevitavel; o alvo e opcional.
+- Capa: Voce sempre vai ter que escolher qual dor quer carregar.
+- Miolo: A dor da disciplina pesa oncas.
+- Miolo: A dor do arrependimento pesa toneladas.
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - Cumprir o que voce agendou no SITREP hoje vai doer. Vai exigir energia. Mas chegar ao final do ano exatamente no mesmo lugar que voce esta agora vai doer infinitamente mais. Escolha a sua dor. O Beta do GLYPH esta aberto. Link na bio.
@@ -526,12 +618,15 @@ Missao:
 - Ensinar a simplificar o planejamento diario para combater a ansiedade de listas longas.
 
 Visual:
-- Imagem unica
+- Carrossel tatico
 - Estilo: Tatica / Produtividade
 - Interface do SITREP destacando apenas 3 tarefas marcadas com estrela ou icone dourado
 
 Texto na imagem:
-- Se voce tem 10 prioridades, voce nao tem nenhuma.
+- Capa: Se voce tem 10 prioridades, voce nao tem nenhuma.
+- Miolo: defina no maximo 3 Missoes Criticas
+- Miolo: se essas 3 acontecerem, o dia venceu
+- Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
 - A ansiedade nasce de listas infinitas que voce sabe que nunca vai terminar. A tatica da Vanguarda: todo dia, defina no maximo 3 Missoes Criticas no seu GLYPH. Se o mundo acabar e voce so fizer essas tres coisas, o seu dia foi um sucesso. O resto e bonus. Simplifique a execucao. Link na bio.

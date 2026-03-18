@@ -136,7 +136,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
         <div 
             key={task.id} 
             ref={taskRef}
-            className="absolute w-full px-1 cursor-pointer" 
+            className="absolute w-full px-1 cursor-pointer select-none" 
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
             {...longPressEvents}
         >

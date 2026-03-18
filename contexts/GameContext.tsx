@@ -6880,11 +6880,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const updateAction = (actionId: string, actionData: Partial<Action>) => {
-        setActions(prev => prev.map(a => a.id === actionId ?{ ...a, ...actionData } : a));
+        setActions(prev => prev.map(a => {
+            if (a.id !== actionId) return a;
+
+            const nextArenaId = typeof actionData.arenaId === 'string' && actionData.arenaId.trim()
+                ?actionData.arenaId
+                : a.arenaId;
+
+            return { ...a, ...actionData, arenaId: nextArenaId };
+        }));
         const userId = getSupabaseUserId();
         if (userId) {
             // Explicit payload construction for updates
             const updatePayload: any = {};
+            if (actionData.arenaId !== undefined && typeof actionData.arenaId === 'string' && actionData.arenaId.trim()) {
+                updatePayload.arena_id = actionData.arenaId;
+            }
             if (actionData.name !== undefined) updatePayload.name = actionData.name;
             if (actionData.description !== undefined) updatePayload.description = actionData.description;
             if (actionData.icon !== undefined) updatePayload.icon = actionData.icon;

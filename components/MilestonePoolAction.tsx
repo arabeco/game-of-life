@@ -88,7 +88,7 @@ export const MilestonePoolAction: React.FC<MilestonePoolActionProps> = ({ action
         <div
             ref={milestoneRef}
             {...longPressEvents}
-            className="flex items-center space-x-2 p-1 rounded-lg hover:bg-white/10 cursor-grab relative"
+            className="flex items-center space-x-2 p-1 rounded-lg hover:bg-white/10 cursor-grab relative select-none"
         >
             <div
                 style={backgroundStyle}

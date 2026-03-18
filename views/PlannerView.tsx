@@ -169,7 +169,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             <div
                 ref={taskRef}
                 {...longPressEvents}
-                className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer flex items-center justify-center"
+                className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer select-none flex items-center justify-center"
                 style={{ top: `${top}px`, height: `${height}px`, touchAction: 'none' }}
             >
                 <div className="relative w-full h-full">
@@ -194,7 +194,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         <div
             ref={taskRef}
             {...longPressEvents}
-            className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer"
+            className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer select-none"
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div

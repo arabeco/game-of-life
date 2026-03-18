@@ -430,7 +430,9 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const uid = sessionData.session?.user.id;
         if (!uid || !isUuid(uid)) return;
 
-        if (invite.linkType === 'mentoria' && !canActAsMentor) {
+        // Em um convite de mentoria, o remetente (sender) é o Mentor e o destinatário (recipient/uid) é o Pupilo.
+        // O Pupilo não precisa ser Premium para aceitar a mentoria.
+        if (invite.linkType === 'mentoria' && invite.senderId === uid && !canActAsMentor) {
             setError('Mentoria ativa como mentor e exclusiva para Premium.');
             showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
             return;

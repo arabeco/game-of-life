@@ -7,6 +7,7 @@ import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
+import { SupabaseService } from '../services/SupabaseService';
 
 interface NewArenaModalProps {
     assetId?: string;
@@ -113,21 +114,21 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                 if (error) {
                     showToast(`Arena criada, mas o convite falhou: ${error.message}`, 'error');
                 } else {
-                    // Create Notification for the recipient
-                    const notificationType = initialRelationship.type === 'competition' ? 'arena_access' : 'friend_response';
+                    // Create Notification for the recipient via Service
+                    const notificationType = initialRelationship.type === 'competition' ? 'arena_access' : (initialRelationship.type === 'mentorship' ? 'mentor_invite' : 'partnership_invite');
                     const label = initialRelationship.type === 'competition' ? 'DESAFIO' : (initialRelationship.type === 'mentorship' ? 'MENTORIA' : 'PARCERIA');
                     
-                    await supabase.from('notifications').insert({
-                        user_id: initialRelationship.friendId,
-                        type: notificationType,
-                        content: `[${label}] Convite de ${sessionData.session?.user.user_metadata?.nickname || 'um aliado'} para a arena "${name}".`,
-                        metadata: {
+                    void SupabaseService.createNotification(
+                        initialRelationship.friendId,
+                        notificationType,
+                        `[${label}] Convite de ${sessionData.session?.user.user_metadata?.nickname || 'um aliado'} para a arena "${name}".`,
+                        {
                             inviteType: initialRelationship.type,
                             arenaId: newArena.id,
                             arenaName: name,
                             senderId: senderId
                         }
-                    });
+                    );
 
                     showToast(`Convite enviado para ${initialRelationship.friendName}.`, 'success');
                 }

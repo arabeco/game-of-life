@@ -12,6 +12,7 @@ import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
+import { SupabaseService } from '../services/SupabaseService';
 import './arena-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 
@@ -382,8 +383,8 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     <div className="relative z-10 flex flex-col space-y-3">
                         <div className="arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1">
-                                {/* Allow editing for flexible arenas only */}
-                                {(!isArenaEditLocked || isEditing) && (
+                                {/* Allow editing for flexible arenas or if user is the Mentor */}
+                                {(!isArenaEditLocked || isEditing || currentLinkType === 'mentoria') && (
                                     <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
                                         <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>

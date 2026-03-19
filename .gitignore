@@ -29,3 +29,6 @@ pnpm-debug.log*
 *_BACKUP.txt
 *.bak
 temp/
+
+# Local marketing assets
+/marketing/

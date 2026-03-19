@@ -97,8 +97,17 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
             setOracleOpen(true);
         };
 
+        const handleOpenOracleChat = () => {
+            setOracleInitialTab('chat');
+            setOracleOpen(true);
+        };
+
         window.addEventListener('openOracleNotifications', handleOpenOracleNotifications);
-        return () => window.removeEventListener('openOracleNotifications', handleOpenOracleNotifications);
+        window.addEventListener('openOracleChat', handleOpenOracleChat);
+        return () => {
+            window.removeEventListener('openOracleNotifications', handleOpenOracleNotifications);
+            window.removeEventListener('openOracleChat', handleOpenOracleChat);
+        };
     }, []);
 
     useEffect(() => {

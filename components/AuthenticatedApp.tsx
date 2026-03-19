@@ -66,15 +66,11 @@ const sanitizeView = (view: View | null | undefined, canUseAssetsView: boolean, 
 };
 
 const TutorialBridge: React.FC = () => null;
-const ORACLE_APP_OPEN_COOLDOWN_MS = 15000;
-
 const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaultRestScreenOpen = true }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme, notifications, oraclePreferences, triggerOracle } = useGame();
+    const { userProfile, appMode, activeTheme, notifications } = useGame();
     const { didForceGameMode } = useTutorial();
     const historyReady = useRef(false);
-    const oracleAutoTriggerUserRef = useRef<string | null>(null);
-    const lastOracleAutoTriggerAtRef = useRef(0);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
     const canUseAssetsView = activeUIMode === 'GAME' || didForceGameMode;
@@ -87,60 +83,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
     }, [unreadNotificationsCount]);
-
-    useEffect(() => {
-        const userId = userProfile?.id;
-        if (!userId || !oraclePreferences) {
-            if (!userId) {
-                oracleAutoTriggerUserRef.current = null;
-                lastOracleAutoTriggerAtRef.current = 0;
-            }
-            return;
-        }
-
-        if (oracleAutoTriggerUserRef.current === userId) return;
-        oracleAutoTriggerUserRef.current = userId;
-
-        const timer = window.setTimeout(() => {
-            lastOracleAutoTriggerAtRef.current = Date.now();
-            void triggerOracle('app_open');
-        }, 1800);
-
-        return () => window.clearTimeout(timer);
-    }, [userProfile?.id, oraclePreferences, triggerOracle]);
-
-    useEffect(() => {
-        const userId = userProfile?.id;
-        if (!userId || !oraclePreferences) return;
-
-        const maybeTriggerOracleOnResume = () => {
-            if (document.visibilityState === 'hidden') return;
-
-            const now = Date.now();
-            if (now - lastOracleAutoTriggerAtRef.current < ORACLE_APP_OPEN_COOLDOWN_MS) return;
-
-            lastOracleAutoTriggerAtRef.current = now;
-            window.setTimeout(() => {
-                void triggerOracle('app_open');
-            }, 450);
-        };
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                maybeTriggerOracleOnResume();
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('focus', maybeTriggerOracleOnResume, { passive: true });
-        window.addEventListener('pageshow', maybeTriggerOracleOnResume, { passive: true });
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('focus', maybeTriggerOracleOnResume);
-            window.removeEventListener('pageshow', maybeTriggerOracleOnResume);
-        };
-    }, [userProfile?.id, oraclePreferences, triggerOracle]);
 
     useEffect(() => {
         const handleNavigateToStore = (event: Event) => {

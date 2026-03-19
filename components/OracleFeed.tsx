@@ -29,7 +29,17 @@ interface OracleFeedProps {
 type Tab = 'chat' | 'notifications' | 'clan' | 'dms';
 
 export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'chat' }) => {
-    const { notifications, markNotificationRead, deleteNotification, oracleMessages, clan, dmConversations, appMode, oraclePreferences } = useGame();
+    const {
+        notifications,
+        markNotificationRead,
+        deleteNotification,
+        oracleMessages,
+        markOracleMessageAsRead,
+        clan,
+        dmConversations,
+        appMode,
+        oraclePreferences,
+    } = useGame();
     const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
     useEffect(() => {
@@ -41,6 +51,24 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'c
     const unreadNotifications = visibleNotifications.filter((notification) => !notification.read).length;
     const unreadDMs = dmConversations.reduce((acc, conv) => acc + conv.unreadCount, 0);
     const unreadChat = oracleMessages.some(m => !m.read);
+
+    useEffect(() => {
+        if (activeTab !== 'chat') return;
+
+        const unreadMessageIds = oracleMessages.filter(message => !message.read).map(message => message.id);
+        if (unreadMessageIds.length === 0) return;
+
+        void Promise.all(unreadMessageIds.map(messageId => markOracleMessageAsRead(messageId)));
+    }, [activeTab, oracleMessages, markOracleMessageAsRead]);
+
+    useEffect(() => {
+        if (activeTab !== 'notifications') return;
+
+        const unreadNotificationIds = visibleNotifications.filter(notification => !notification.read).map(notification => notification.id);
+        if (unreadNotificationIds.length === 0) return;
+
+        void Promise.all(unreadNotificationIds.map(notificationId => markNotificationRead(notificationId)));
+    }, [activeTab, visibleNotifications, markNotificationRead]);
 
     return (
         <Portal>

@@ -243,6 +243,7 @@ export interface UserCodex {
 }
 
 export interface GameContextType {
+    session: Session | null;
     isNewUser: boolean;
     assets: Asset[];
     arenaFolders: ArenaFolder[];
@@ -8021,6 +8022,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     return (
         <GameContext.Provider value={{
+            session,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
             abortSeasonQuest,
             claimSeasonQuest,

@@ -422,9 +422,9 @@ $titleHugeFont = [System.Drawing.Font]::new($headlineFamily, 72, [System.Drawing
 $titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 58, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 44, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $cardTitleFont = [System.Drawing.Font]::new($headlineFamily, 36, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleSmallFont = [System.Drawing.Font]::new($headlineFamily, 34, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$bodyFont = [System.Drawing.Font]::new($bodyFamily, 35, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 26, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$titleSmallFont = [System.Drawing.Font]::new($headlineFamily, 40, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$bodyFont = [System.Drawing.Font]::new($bodyFamily, 42, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 32, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $watermarkFont = [System.Drawing.Font]::new($headlineFamily, 132, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -445,6 +445,7 @@ $Eacute = [char]0x00C9
 $Iacute = [char]0x00CD
 $Oacute = [char]0x00D3
 $aacute = [char]0x00E1
+$acirc = [char]0x00E2
 $atilde = [char]0x00E3
 $ccedilla = [char]0x00E7
 $eacute = [char]0x00E9
@@ -556,18 +557,18 @@ $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height -Tone "safira"
 Draw-CenterText -Graphics $graphics -Text "Ouro" -Font $watermarkFont -Brush $goldWashBrush -X 86 -Y 118 -Width 908 -Height 180
 
-Draw-EditorialTextPanel -Graphics $graphics -X 184 -Y 282 -Width 712 -Height 644
+Draw-EditorialTextPanel -Graphics $graphics -X 160 -Y 256 -Width 760 -Height 704
 
 $logo3 = [System.Drawing.Image]::FromFile($logoPath)
 try {
-    $graphics.DrawImage($logo3, 472, 324, 136, 136)
+    $graphics.DrawImage($logo3, 472, 308, 148, 148)
 } finally {
     $logo3.Dispose()
 }
 
-Draw-CenterText -Graphics $graphics -Text "Aqui progresso gera`nmoeda. E moeda`ncria poder." -Font $titleLargeFont -Brush $goldBrushSlide -X 222 -Y 398 -Width 636 -Height 236
-Draw-CenterText -Graphics $graphics -Text "Const${acirc}ncia alimenta uma economia vis${iacute}vel.`nOuro, fragmentos e itens transformam rotina`nem recompensa dentro do jogo." -Font $bodyFont -Brush $offWhiteBrush -X 212 -Y 670 -Width 656 -Height 188
-Draw-CenterText -Graphics $graphics -Text "Executar rende." -Font $titleSmallFont -Brush $whiteBrush -X 246 -Y 900 -Width 588 -Height 80
+Draw-CenterText -Graphics $graphics -Text "Aqui progresso gera`nmoeda. E moeda`ncria poder." -Font $titleLargeFont -Brush $goldBrushSlide -X 202 -Y 380 -Width 676 -Height 246
+Draw-CenterText -Graphics $graphics -Text "Const${acirc}ncia alimenta uma economia vis${iacute}vel.`nOuro, fragmentos e itens transformam rotina`nem recompensa dentro do jogo." -Font $bodyFont -Brush $offWhiteBrush -X 190 -Y 686 -Width 700 -Height 212
+Draw-CenterText -Graphics $graphics -Text "Executar rende." -Font $titleSmallFont -Brush $whiteBrush -X 234 -Y 934 -Width 612 -Height 80
 
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir ("slide-{0:d2}-sobre-app.png" -f $slideNumber)

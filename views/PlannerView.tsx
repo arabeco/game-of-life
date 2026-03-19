@@ -13,6 +13,7 @@ import { ActionModal } from '../components/ActionModal';
 import { GlassCard } from '../components/GlassCard';
 import { useTutorial } from '../contexts/TutorialContext';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
+import { OPERATIONAL_DAY_END_HOUR, OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getTaskDisplayStartTime } from '../utils/operationalDay.js';
 import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
 import '../components/core-ui.css';
@@ -44,7 +45,7 @@ const Sparkles: React.FC = () => (
     </div>
 );
 
-const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, onTaskClick: (task: ScheduledTask) => void }> = ({ task, action, scaleFactor, onCustomDragStart, onTaskClick }) => {
+const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: number, operationalDate: string, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, onTaskClick: (task: ScheduledTask) => void }> = ({ task, action, scaleFactor, operationalDate, onCustomDragStart, onTaskClick }) => {
     const { getActionBackgroundStyle, toggleTaskCompletion, deleteTask } = useGame();
     const [isHolding, setIsHolding] = useState(false);
     const [showSparkles, setShowSparkles] = useState(false);
@@ -71,7 +72,8 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isMilestone = action?.actionType === 'Marco';
     const isFreeAction = action?.actionType === 'Livre';
-    const top = (task.startTime - (4 * 60)) * scaleFactor;
+    const displayStartTime = getTaskDisplayStartTime(task, operationalDate);
+    const top = (displayStartTime - OPERATIONAL_DAY_START_MINUTE) * scaleFactor;
 
     // Handle corrupted tasks (missing action)
     if (!action) {
@@ -230,15 +232,15 @@ const CurrentTimeIndicator = React.forwardRef<HTMLDivElement, { top: number }>((
 });
 CurrentTimeIndicator.displayName = 'CurrentTimeIndicator';
 
-const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFactor: number, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, dropIndicator: { top: number, height: number } | null, isToday: boolean, currentTime: Date, timeIndicatorRef: React.Ref<HTMLDivElement> }> = ({ tasks, actions, scaleFactor, onCustomDragStart, dropIndicator, isToday, currentTime, timeIndicatorRef }) => {
-    const hours = Array.from({ length: 21 }, (_, i) => i + 4);
+const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFactor: number, operationalDate: string, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, dropIndicator: { top: number, height: number } | null, isToday: boolean, currentTime: Date, timeIndicatorRef: React.Ref<HTMLDivElement> }> = ({ tasks, actions, scaleFactor, operationalDate, onCustomDragStart, dropIndicator, isToday, currentTime, timeIndicatorRef }) => {
+    const hours = Array.from({ length: (OPERATIONAL_DAY_END_HOUR - 4) + 1 }, (_, i) => i + 4);
     const getActionById = (id: string) => actions.find(a => a.id === id);
     const [modalData, setModalData] = useState<{ action: Action, taskId?: string } | null>(null);
 
     let timeIndicatorTop = -1;
     if (isToday) {
-        const currentTotalMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-        timeIndicatorTop = (currentTotalMinutes - (4 * 60)) * scaleFactor;
+        const currentTotalMinutes = getOperationalDisplayMinutes(currentTime);
+        timeIndicatorTop = (currentTotalMinutes - OPERATIONAL_DAY_START_MINUTE) * scaleFactor;
     }
 
     const handleTaskClick = (task: ScheduledTask) => {
@@ -256,7 +258,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
                 </div>
                 <div className="flex-grow relative border-l border-white/10 h-full">
                     {hours.slice(0).map((hour, i) => (<div key={hour} className={`relative ${i > 0 ?'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}><div className="absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
-                    {tasks.map((task) => <TaskSlot key={task.id} task={task} action={getActionById(task.actionId)} scaleFactor={scaleFactor} onCustomDragStart={onCustomDragStart} onTaskClick={handleTaskClick} />)}
+                    {tasks.map((task) => <TaskSlot key={task.id} task={task} action={getActionById(task.actionId)} scaleFactor={scaleFactor} operationalDate={operationalDate} onCustomDragStart={onCustomDragStart} onTaskClick={handleTaskClick} />)}
                     {dropIndicator && <DropIndicator top={dropIndicator.top} height={dropIndicator.height} className="w-[calc(100%-0.5rem)] right-2" />}
                     {isToday && timeIndicatorTop >= 0 && <CurrentTimeIndicator ref={timeIndicatorRef} top={timeIndicatorTop} />}
                 </div>
@@ -343,7 +345,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         getActionBackgroundStyle
     } = useGame();
     const { isTutorialActive, currentStep, nextStep } = useTutorial();
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentDate, setCurrentDate] = useState(() => buildLocalDateFromString(getOperationalDateString()));
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
     const [isChecklistVisible, setChecklistVisible] = useState(false);
     const [isSitrepVisible, setIsSitrepVisible] = useState(false);
@@ -355,6 +357,21 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         window.addEventListener('openSitrep', handleOpenSitrep);
         return () => window.removeEventListener('openSitrep', handleOpenSitrep);
     }, []);
+
+    useEffect(() => {
+        const handlePlannerFocusDate = (event: Event) => {
+            const customEvent = event as CustomEvent<{ dateString?: string; viewMode?: 'day' | 'week' }>;
+            const dateString = customEvent.detail?.dateString;
+            if (!dateString) return;
+            setCurrentDate(buildLocalDateFromString(dateString));
+            if (customEvent.detail?.viewMode) {
+                setViewMode(customEvent.detail.viewMode);
+            }
+        };
+
+        window.addEventListener('planner:focus-date', handlePlannerFocusDate as EventListener);
+        return () => window.removeEventListener('planner:focus-date', handlePlannerFocusDate as EventListener);
+    }, []);
     const [showOracleInput, setShowOracleInput] = useState(false);
     const [oracleInput, setOracleInput] = useState('');
     const oracleInputRef = useRef<HTMLInputElement>(null);
@@ -365,8 +382,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         }
     }, [showOracleInput]);
 
-    const toDateString = (value: Date) => getLocalDateString(value);
-    const today = new Date();
+    const toDateString = (value: Date) => formatLocalDateString(value);
+    const today = buildLocalDateFromString(getOperationalDateString());
     const startOfWeek = new Date(today);
     const dayOfWeek = startOfWeek.getDay();
     const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ?-6 : 1);
@@ -667,8 +684,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             });
 
             if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
-                const dateString = getLocalDateString(currentDate);
-                await scheduleTask(created, dateString, startTimeInMinutes);
+                const operationalDateString = formatLocalDateString(currentDate);
+                const displayMinutes = startTimeInMinutes < OPERATIONAL_DAY_START_MINUTE
+                    ? startTimeInMinutes + (24 * 60)
+                    : startTimeInMinutes;
+                const dateString = getActualDateStringForOperationalMinutes(operationalDateString, displayMinutes);
+                const actualStartTime = getActualStartTimeForOperationalMinutes(displayMinutes);
+                await scheduleTask(created, dateString, actualStartTime);
             }
 
             if (actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTimeInMinutes !== null) {
@@ -764,7 +786,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     };
 
     const buildClampedDropIndicator = useCallback((dropY: number, durationMinutes: number) => {
-        const totalMinutesInView = 21 * 60;
+        const totalMinutesInView = OPERATIONAL_DAY_TOTAL_MINUTES;
         const maxTopMinutes = Math.max(0, totalMinutesInView - durationMinutes);
         const rawMinutes = Math.max(0, dropY / scaleFactor);
         const snappedMinutes = Math.round(rawMinutes / 15) * 15;
@@ -772,6 +794,15 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return {
             top: clampedMinutes * scaleFactor,
             height: durationMinutes * scaleFactor,
+        };
+    }, [scaleFactor]);
+
+    const resolveOperationalDropSlot = useCallback((operationalDateString: string, indicatorTop: number) => {
+        const minutesFromViewStart = indicatorTop / scaleFactor;
+        const displayMinutes = minutesFromViewStart + OPERATIONAL_DAY_START_MINUTE;
+        return {
+            dateString: getActualDateStringForOperationalMinutes(operationalDateString, displayMinutes),
+            startTimeInMinutes: getActualStartTimeForOperationalMinutes(displayMinutes),
         };
     }, [scaleFactor]);
 
@@ -982,9 +1013,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     }
                 }
             } else if (isOver(dailyTimelineRect, 150) && viewMode === 'day' && dailyDropIndicator) {
-                const dateString = getLocalDateString(currentDate);
-                const minutesFromViewStart = dailyDropIndicator.top / scaleFactor;
-                const startTimeInMinutes = minutesFromViewStart + (4 * 60);
+                const operationalDateString = formatLocalDateString(currentDate);
+                const { dateString, startTimeInMinutes } = resolveOperationalDropSlot(operationalDateString, dailyDropIndicator.top);
                 const { type, payload } = dragState.item;
                 const scheduledTask = type === 'new_action' ?scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
                 if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
@@ -996,9 +1026,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 startOfWeek.setDate(diff);
                 const dropDate = new Date(startOfWeek);
                 dropDate.setDate(dropDate.getDate() + dayIndex);
-                const dateString = getLocalDateString(dropDate);
-                const minutesFromViewStart = weeklyDropIndicator.top / scaleFactor;
-                const startTimeInMinutes = minutesFromViewStart + (4 * 60);
+                const operationalDateString = formatLocalDateString(dropDate);
+                const { dateString, startTimeInMinutes } = resolveOperationalDropSlot(operationalDateString, weeklyDropIndicator.top);
                 const { type, payload } = dragState.item;
                 const scheduledTask = type === 'new_action' ?scheduleTask(payload.actionId, dateString, startTimeInMinutes) : rescheduleTask(payload, dateString, startTimeInMinutes);
                 if (scheduledTask && isTutorialActive && currentStep === 7) nextStep();
@@ -1038,7 +1067,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 (el as HTMLElement).style.pointerEvents = '';
             });
         };
-    }, [buildClampedDropIndicator, dragState.isDragging, currentDate, scaleFactor, viewMode, dailyDropIndicator, weeklyDropIndicator]);
+    }, [buildClampedDropIndicator, currentDate, dailyDropIndicator, dragState.isDragging, resolveOperationalDropSlot, scaleFactor, viewMode, weeklyDropIndicator]);
 
     useEffect(() => {
         const timerId = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -1046,8 +1075,34 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, []);
 
     // Auto-scroll useEffects
-    useEffect(() => { if (viewMode === 'day' && scrollContainerRef.current) { const isToday = currentDate.toDateString() === new Date().toDateString(); if (isToday) { const now = new Date(); const currentHour = now.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { dailyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
-    useEffect(() => { if (viewMode === 'week' && scrollContainerRef.current) { const startOfWeek = new Date(currentDate); const day = startOfWeek.getDay(); const diff = startOfWeek.getDate() - day + (day === 0 ?-6 : 1); startOfWeek.setDate(diff); startOfWeek.setHours(0, 0, 0, 0); const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6); endOfWeek.setHours(23, 59, 59, 999); const today = new Date(); if (today >= startOfWeek && today <= endOfWeek) { const currentHour = today.getHours(); if (currentHour < 4) { setTimeout(() => { scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 200); } else { setTimeout(() => { weeklyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200); } } } }, [viewMode, currentDate, zoomLevel, currentTime]);
+    useEffect(() => {
+        if (viewMode === 'day' && scrollContainerRef.current) {
+            const isOperationalToday = formatLocalDateString(currentDate) === getOperationalDateString();
+            if (isOperationalToday) {
+                setTimeout(() => {
+                    dailyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 200);
+            }
+        }
+    }, [viewMode, currentDate, zoomLevel, currentTime]);
+    useEffect(() => {
+        if (viewMode === 'week' && scrollContainerRef.current) {
+            const startOfWeek = new Date(currentDate);
+            const day = startOfWeek.getDay();
+            const diff = startOfWeek.getDate() - day + (day === 0 ?-6 : 1);
+            startOfWeek.setDate(diff);
+            startOfWeek.setHours(0, 0, 0, 0);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+            const operationalToday = buildLocalDateFromString(getOperationalDateString());
+            if (operationalToday >= startOfWeek && operationalToday <= endOfWeek) {
+                setTimeout(() => {
+                    weeklyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 200);
+            }
+        }
+    }, [viewMode, currentDate, zoomLevel, currentTime]);
 
     // Define milestoneActions before usage
     const milestoneActions = actions.filter(a => a.actionType === 'Marco' && !tasks.some(task => task.actionId === a.id));
@@ -1063,7 +1118,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const scheduledTasks = dailyTasks.filter(hasScheduledTime); // For DailyView
     
     const allTasksCompleted = checklistItems.every(item => item.completed);
-    const isToday = currentDate.toDateString() === new Date().toDateString();
+    const isToday = formatLocalDateString(currentDate) === getOperationalDateString();
 
     // UNIFY POOL AND BAY AREA TASKS FOR DISPLAY
     // "Estoque e Espera é a mesma coisa"
@@ -1178,7 +1233,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 <div className={dragState.isDragging ?'pointer-events-auto' : ''}>
                     {viewMode === 'day' ?(
                         <div>
-                            <DailyView tasks={scheduledTasks} actions={actions} scaleFactor={scaleFactor} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
+                            <DailyView tasks={scheduledTasks} actions={actions} scaleFactor={scaleFactor} operationalDate={formatLocalDateString(currentDate)} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
                         </div>
                     ) : (
                         <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} onTaskClick={handleTaskClick} scaleFactor={scaleFactor} stickyHeaderOffset={'0rem'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />

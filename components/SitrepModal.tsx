@@ -6,10 +6,11 @@ import { XIcon, LightbulbIcon } from './Icons';
 import { ScheduledTask, DailyCommitment } from '../types';
 import { Portal } from './Portal';
 import { SitrepContent } from './SitrepContent';
+import { taskMatchesOperationalDate } from '../utils/operationalDay.js';
 
 const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, actions: { id: string; actionType?: string }[]) => {
     const actionTypeById = new Map(actions.map(action => [action.id, action.actionType]));
-    const committedTasks = tasks.filter(t => t.date === dailyCommitment.date && dailyCommitment.taskIds.includes(t.id));
+    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && taskMatchesOperationalDate(t, dailyCommitment.date));
 
     const tasksWithStatus = committedTasks.map(task => {
         return {
@@ -57,4 +58,3 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </Portal>
     );
 };
-

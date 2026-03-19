@@ -714,9 +714,9 @@ $titleHugeFont = [System.Drawing.Font]::new($headlineFamily, 68, [System.Drawing
 $titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 58, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titlePanelFont = [System.Drawing.Font]::new($headlineFamily, 50, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 44, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleCardFont = [System.Drawing.Font]::new($headlineFamily, 34, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$bodyFont = [System.Drawing.Font]::new($bodyFamily, 31, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 26, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$titleCardFont = [System.Drawing.Font]::new($headlineFamily, 38, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$bodyFont = [System.Drawing.Font]::new($bodyFamily, 35, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 30, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 25, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $monoTitleFont = [System.Drawing.Font]::new($headlineFamily, 150, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -746,6 +746,7 @@ $Iacute = [char]0x00CD
 $Oacute = [char]0x00D3
 $Otilde = [char]0x00D5
 $aacute = [char]0x00E1
+$agrave = [char]0x00E0
 $atilde = [char]0x00E3
 $ccedilla = [char]0x00E7
 $eacute = [char]0x00E9
@@ -754,7 +755,7 @@ $iacute = [char]0x00ED
 $oacute = [char]0x00F3
 $otilde = [char]0x00F5
 
-# Boxes editoriais padronizados para Curadoria.
+# Boxes editoriais padronizados para Mestria.
 $curadoriaPortraitFrameWidth = 214
 $curadoriaPortraitFrameHeight = 620
 $curadoriaEditorialPanelWidth = 432
@@ -765,16 +766,16 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
-$slide1FrameHeight = 560
+$slide1FrameHeight = 612
 $slide1FrameWidth = Get-FeatureFrameWidth -ImagePath $cr7CoverPath -FrameHeight $slide1FrameHeight -InnerHorizontalPadding 26 -InnerVerticalPadding 18 -MinWidth 240 -MaxWidth 320
-$slide1FrameBottom = 988
+$slide1FrameBottom = 980
 $slide1FrameX = [float](948 - $slide1FrameWidth)
 $slide1FrameY = [float]($slide1FrameBottom - $slide1FrameHeight)
 Draw-CenterText -Graphics $graphics -Text "Bruce Lee" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
-Draw-FeatureFrame -Graphics $graphics -X $slide1FrameX -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0 -ContentPaddingX 8 -ContentPaddingTop 8 -ContentPaddingBottom 6 -AccentWidth 10
+Draw-FeatureFrame -Graphics $graphics -X $slide1FrameX -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0 -ContentPaddingX 10 -ContentPaddingTop 16 -ContentPaddingBottom 16 -AccentWidth 10
 Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Bruce`nLee?" -Font $titleHugeFont -Brush $goldBrushSlide -X 104 -Y 402 -Width 560 -Height 430
-Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 90" -Font $bodyBoldFont -X 118 -Y 924 -Width 428 -Height 58
-Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} mito.`n${Eacute} disciplina com inten${ccedilla}${atilde}o." -Font $titleMediumFont -Brush $offWhiteBrush -X 104 -Y 996 -Width 620 -Height 136
+Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 90" -Font $bodyBoldFont -X 138 -Y 898 -Width 392 -Height 56
+Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} mito.`n${Eacute} disciplina com inten${ccedilla}${atilde}o." -Font $titleMediumFont -Brush $offWhiteBrush -X 104 -Y 980 -Width 620 -Height 142
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -788,16 +789,16 @@ Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -H
 Draw-CenterText -Graphics $graphics -Text "Bruce Lee" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 90 -Y 128 -Width 900 -Height 120
 $slide2PanelX = 118
 $slide2PanelY = 334
-$slide2PanelWidth = 512
-$slide2PanelHeight = 496
+$slide2PanelWidth = 548
+$slide2PanelHeight = 534
 $slide2FrameY = 284
 $slide2FrameHeight = 660
 $slide2FrameWidth = Get-FeatureFrameWidth -ImagePath $cr7PanelPath -FrameHeight $slide2FrameHeight -InnerHorizontalPadding 42 -InnerVerticalPadding 18 -MinWidth 240 -MaxWidth 286
 $slide2FrameX = [float](958 - $slide2FrameWidth)
 Draw-EditorialTextPanel -Graphics $graphics -X $slide2PanelX -Y $slide2PanelY -Width $slide2PanelWidth -Height $slide2PanelHeight
-Draw-CenterText -Graphics $graphics -Text "Bruce n${Atilde}o treinava`ns${oacute} o corpo." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 32) -Width ($slide2PanelWidth - 48) -Height 120
-Draw-CenterText -Graphics $graphics -Text "Treinava rea${ccedilla}${atilde}o, clareza, linguagem`ne filosofia at${eacute} a disciplina`nvirar identidade." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 34) -Y ($slide2PanelY + 182) -Width ($slide2PanelWidth - 68) -Height 154
-Draw-CenterText -Graphics $graphics -Text "Pot${ecirc}ncia sem consci${ecirc}ncia`n${eacute} s${oacute} ru${iacute}do." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 36) -Y ($slide2PanelY + 360) -Width ($slide2PanelWidth - 72) -Height 92
+Draw-CenterText -Graphics $graphics -Text "Bruce n${Atilde}o treinava`ns${oacute} o corpo." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 28) -Width ($slide2PanelWidth - 48) -Height 128
+Draw-CenterText -Graphics $graphics -Text "Treinava rea${ccedilla}${atilde}o, clareza, linguagem`ne filosofia at${eacute} a disciplina`nvirar identidade." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 30) -Y ($slide2PanelY + 188) -Width ($slide2PanelWidth - 60) -Height 176
+Draw-CenterText -Graphics $graphics -Text "Pot${ecirc}ncia sem consci${ecirc}ncia`n${eacute} s${oacute} ru${iacute}do." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 30) -Y ($slide2PanelY + 390) -Width ($slide2PanelWidth - 60) -Height 104
 Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -CoverImage -ContentPaddingX 14 -ContentPaddingTop 12 -ContentPaddingBottom 10
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-quem-e.png"
@@ -810,12 +811,12 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
 Draw-CenterText -Graphics $graphics -Text "Bruce Lee" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
-Draw-CenterText -Graphics $graphics -Text "Corpo, mente`ne prop${oacute}sito." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 184 -Width 626 -Height 176
-Draw-ClippedImageBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 738 -Y 154 -Width 214 -Height 254 -Opacity 0.98 -AlignBottom
-Draw-StatCard -Graphics $graphics -X 118 -Y 434 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "O corpo virou`npadr${atilde}o alto`nde execu${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 410 -Y 434 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "Presen${ccedilla}a total.`nRea${ccedilla}${atilde}o limpa`nsem ru${iacute}do." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 702 -Y 434 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "A arte virou`nmensagem, m${eacute}todo`ne dire${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-CenterText -Graphics $graphics -Text "F${iacute}sico, Espa${ccedilla}o mental e Prop${oacute}sito.`nA forma obedecia ${agrave} filosofia." -Font $bodyFont -Brush $mutedBrush -X 150 -Y 924 -Width 780 -Height 118
+Draw-CenterText -Graphics $graphics -Text "Corpo, mente`ne prop${oacute}sito." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 214 -Width 626 -Height 176
+Draw-ClippedImageBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 738 -Y 184 -Width 214 -Height 254 -Opacity 0.98 -AlignBottom
+Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "O corpo virou`npadr${atilde}o alto`nde execu${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "Presen${ccedilla}a total.`nRea${ccedilla}${atilde}o limpa`nsem ru${iacute}do." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "A arte virou`nmensagem, m${eacute}todo`ne dire${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-CenterText -Graphics $graphics -Text "F${iacute}sico, Espa${ccedilla}o mental e Prop${oacute}sito.`nA forma obedecia ${agrave} filosofia." -Font $bodyFont -Brush $mutedBrush -X 150 -Y 964 -Width 780 -Height 104
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-ativos.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -826,7 +827,6 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
-Draw-CenterText -Graphics $graphics -Text "Bruce Lee" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 126 -Width 896 -Height 120
 New-BodyPanel -Graphics $graphics -X 126 -Y 326 -Width 828 -Height 792
 Draw-InnerContour -Graphics $graphics -X 146 -Y 346 -Width 788 -Height 752
 Draw-CenterText -Graphics $graphics -Text "N${Iacute}vel de maestria" -Font $titleMediumFont -Brush $goldBrushSlide -X 200 -Y 128 -Width 680 -Height 60
@@ -845,6 +845,7 @@ $labels = @(
 )
 $values = @(9,10,8,10,9,7,7,10,10,10)
 Draw-RadarChart -Graphics $graphics -CenterX 540 -CenterY 678 -Radius 250 -Values $values -Labels $labels -LabelFont $radarLabelFont -ValueFont $radarValueFont
+Draw-CenterText -Graphics $graphics -Text "Mestria" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 920 -Width 896 -Height 92
 Draw-CenterText -Graphics $graphics -Text "Bruce Lee n${Atilde}o era s${oacute} t${eacute}cnica.`nEra sistema inteiro em movimento." -Font $bodySmallFont -Brush $offWhiteBrush -X 190 -Y 1012 -Width 700 -Height 96
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide4 = Join-Path $OutputDir "slide-04-radar.png"
@@ -863,7 +864,7 @@ $strongInnerPen = [System.Drawing.Pen]::new((New-Color 166 255 236 196), 1.2)
 try {
     $graphics.DrawRectangle($strongBorderPen, 82, 82, 916, 1186)
     $graphics.DrawRectangle($strongInnerPen, 96, 96, 888, 1158)
-    Draw-CenterText -Graphics $graphics -Text "Curadoria" -Font $watermarkFont -Brush $watermarkBrush -X 70 -Y 454 -Width 940 -Height 150
+    Draw-CenterText -Graphics $graphics -Text "Mestria" -Font $watermarkFont -Brush $watermarkBrush -X 70 -Y 454 -Width 940 -Height 150
 } finally {
     $watermarkFont.Dispose()
     $watermarkBrush.Dispose()
@@ -879,7 +880,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Curadoria 04  |  Bruce Lee" -Font $eyebrowFont -Brush $eyebrowBrush -X 220 -Y 1060 -Width 640 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Mestria 04  |  Bruce Lee" -Font $eyebrowFont -Brush $eyebrowBrush -X 220 -Y 1060 -Width 640 -Height 28
 $slide5 = Join-Path $OutputDir "slide-05-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide5
 $created.Add($slide5)
@@ -891,7 +892,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "CURADORIA 04  |  BRUCE LEE" -Font ([System.Drawing.Font]::new($headlineFamily, 46, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "MESTRIA 04  |  BRUCE LEE" -Font ([System.Drawing.Font]::new($headlineFamily, 46, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 5 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560
@@ -951,6 +952,8 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+
 
 
 

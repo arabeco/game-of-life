@@ -9,7 +9,7 @@ Regra de uso:
 - cada nota deve ser justificada por uma frase correspondente desta biblioteca
 - o `Nivel de Maestria Geral` e a soma das 10 areas
 - o total maximo e `100`
-- Curadoria e qualquer leitura de radar devem usar esta base como referencia oficial
+- Mestria e qualquer leitura de radar devem usar esta base como referencia oficial
 
 ## Areas oficiais do radar
 

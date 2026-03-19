@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Action, Arena, Clan, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, ScheduledTask, SeasonQuest } from '../../types';
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
+import { getOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
 import { calculateArenaProgress } from '../../utils/progressUtils';
@@ -175,8 +176,8 @@ export const createTaskDomain = ({
         setTasks(prevTasks => [...prevTasks, ...newTasks]);
 
         if (!isClanQuestActionId(actionId)) {
-            const todayStr = getLocalDateString();
-            const todayTasks = newTasks.filter(task => task.date === todayStr);
+            const todayStr = getOperationalDateString();
+            const todayTasks = newTasks.filter(task => taskMatchesOperationalDate(task, todayStr));
             if (todayTasks.length > 0) {
                 setDailyCommitmentState(prev => ({
                     ...prev,
@@ -216,8 +217,8 @@ export const createTaskDomain = ({
 
         setTasks(prevTasks => [...prevTasks, newTask]);
 
-        const todayStr = getLocalDateString();
-        if (newTask.date === todayStr && !isClanQuestActionId(actionId)) {
+        const todayStr = getOperationalDateString();
+        if (taskMatchesOperationalDate(newTask, todayStr) && !isClanQuestActionId(actionId)) {
             setDailyCommitmentState(prev => ({
                 ...prev,
                 taskIds: mergeTasksIntoCommitment(prev.taskIds, [newTask], prev.date, isClanQuestActionId)
@@ -248,6 +249,7 @@ export const createTaskDomain = ({
 
         const { error } = await supabase.from('scheduled_tasks')
             .update({
+                date: task.date,
                 completed: task.completed,
                 start_time: task.startTime,
             })
@@ -364,7 +366,17 @@ export const createTaskDomain = ({
         const action = getActionById(taskToCheck.actionId);
         const now = new Date();
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-        const updatedTask = buildToggledTaskSnapshot(taskToCheck, action?.duration || 15, nowInMinutes);
+        const operationalToday = getOperationalDateString(now);
+        const localToday = getLocalDateString(now);
+        let updatedTask = buildToggledTaskSnapshot(taskToCheck, action?.duration || 15, nowInMinutes);
+
+        if (!taskToCheck.completed && taskToCheck.startTime < 0 && now.getHours() < 4 && taskMatchesOperationalDate(taskToCheck, operationalToday)) {
+            updatedTask = {
+                ...updatedTask,
+                date: localToday,
+            };
+        }
+
         const optimisticTasks = restoreTaskSnapshot(tasks, updatedTask);
 
         setTasks(prevTasks => restoreTaskSnapshot(prevTasks, updatedTask));
@@ -395,8 +407,13 @@ export const createTaskDomain = ({
         if (!action || action.actionType === 'Marco') return;
 
         const now = new Date();
+        const operationalDate = getOperationalDateString(now);
         const date = getLocalDateString(now);
-        const existingTaskForToday = tasks.find(task => task.actionId === actionId && task.date === date && !task.completed);
+        const existingTaskForToday = tasks.find(task =>
+            task.actionId === actionId &&
+            taskMatchesOperationalDate(task, operationalDate) &&
+            !task.completed
+        );
 
         if (existingTaskForToday) {
             await toggleTaskCompletion(existingTaskForToday.id);
@@ -417,7 +434,7 @@ export const createTaskDomain = ({
         };
 
         setTasks(prev => [...prev, newTask]);
-        if (date === dailyCommitment.date && !isClanQuestActionId(actionId)) {
+        if (taskMatchesOperationalDate(newTask, dailyCommitment.date) && !isClanQuestActionId(actionId)) {
             setDailyCommitmentState(prev => ({
                 ...prev,
                 taskIds: [...prev.taskIds, newTask.id]
@@ -484,7 +501,7 @@ export const createTaskDomain = ({
         };
 
         setTasks(prevTasks => [...prevTasks, newTask]);
-        if (date === dailyCommitment.date) {
+        if (taskMatchesOperationalDate(newTask, dailyCommitment.date)) {
             setDailyCommitmentState(prev => ({
                 ...prev,
                 taskIds: [...prev.taskIds, newTask.id]
@@ -611,7 +628,7 @@ export const createTaskDomain = ({
 
     const getTasksForDate = (date: Date) => {
         const dateString = getLocalDateString(date);
-        return tasks.filter(task => task.date === dateString);
+        return tasks.filter(task => taskMatchesOperationalDate(task, dateString));
     };
 
     const completeTutorialMission = () => {

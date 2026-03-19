@@ -8,10 +8,10 @@ Observacao:
 
 ## Regras de execucao do calendario
 
-- Curadoria usa o formato oficial de 5 slides.
+- Mestria usa o formato oficial de 5 slides.
 - Vitrine usa o formato oficial de 4 slides.
 - Filosofia usa `capa + 2 a 4 slides de argumento + fecho`.
-- Tatica usa `capa + 1 ou 2 slides de mecanica + fecho`.
+- Mentalidade usa `capa + 2 slides de logica + fecho`.
 - Todo carrossel termina com fecho GLYPH.
 - O fechamento padrao usa `Organize seu imperio.` e CTA publico para `glyph.life`.
 
@@ -33,65 +33,63 @@ Observacao:
 
 ## Artilharia Pesada
 
-- 24/03/2026: Pausa / respiro
-- 25/03/2026: Reel 1 - O Gymbro Viciado, recompensa e XP
-- 26/03/2026: Pausa
-- 27/03/2026: Reel 2 - O Cavalo de Troia, modo Office vs Game
-- 28/03/2026: Pausa
-- 29/03/2026: Reel 3 - A Culpa Social, rivalidade e push notification
-- 30/03/2026: Pausa
-- 31/03/2026: Reel 4 - O Atalho do Sucesso, importando Codex na Loja
-- 01/04/2026: Pausa
-- 02/04/2026: Reel 5 - O Rei no Coliseu, Deep Focus e caos
+- 24/03/2026: Reel 1 - O Gymbro Viciado, recompensa e XP
+- 25/03/2026: Reel 2 - O Cavalo de Troia, modo Office vs Game
+- 26/03/2026: Reel 3 - A Culpa Social, rivalidade e push notification
+- 27/03/2026: Reel 4 - O Atalho do Sucesso, importando Codex na Loja
+- 28/03/2026: Reel 5 - O Rei no Coliseu, Deep Focus e caos
 
 ## Soberania Continua
 
-- 03/04/2026: Pausa
-- 04/04/2026: Curadoria 1 - O Radar de Cristiano Ronaldo, Forca Fisica e Abundancia
-- 05/04/2026: Vitrine 1 - Skins, customizacao de perfil e identidade visual
-- 06/04/2026: Pausa
-- 07/04/2026: Filosofia 1 - A diferenca entre reagir a vida e construir um Imperio
-- 08/04/2026: Pausa
-- 09/04/2026: Tatica 1 - Como nivelar as 10 Areas da Vida sem perder o foco
-- 10/04/2026: Pausa
-- 11/04/2026: Curadoria 2 - O Radar de Marco Aurelio, mente blindada e dever
-- 12/04/2026: Vitrine 2 - Core Loop Fullscreen, o fluxo perfeito do Planner
-- 13/04/2026: Pausa
-- 14/04/2026: Filosofia 2 - A armadilha da motivacao vs a soberania do sistema
-- 15/04/2026: Pausa
-- 16/04/2026: Tatica 2 - Como blindar sua rotina noturna contra a dopamina barata
-- 17/04/2026: Pausa
-- 18/04/2026: Curadoria 3 - O Radar de Kobe Bryant, a Mentalidade Mamba
-- 19/04/2026: Vitrine 3 - O Sistema de Punicao, SITREP e a Trava de Compromisso
-- 20/04/2026: Pausa
-- 21/04/2026: Filosofia 3 - O custo invisivel de viver a semana no piloto automatico
-- 22/04/2026: Pausa
-- 23/04/2026: Tatica 3 - Gestao de Energia vs Gestao de Tempo
-- 24/04/2026: Pausa
-- 25/04/2026: Curadoria 4 - O Radar de Elon Musk, o Arquiteto do Futuro
-- 26/04/2026: Vitrine 4 - A Forja, a Economia de Ouro e cosmeticos
+- 29/03/2026: Mestria 1 - O Radar de Cristiano Ronaldo, Forca Fisica e Abundancia
+- 30/03/2026: Vitrine 1 - Skins, customizacao de perfil e identidade visual
+- 31/03/2026: Filosofia 1 - A diferenca entre reagir a vida e construir um Imperio
+- 01/04/2026: Mentalidade 1 - Foco seletivo
+- 02/04/2026: Mestria 2 - O Radar de Marco Aurelio, mente blindada e dever
+- 03/04/2026: Vitrine 2 - O Planner e o fluxo diario
+- 04/04/2026: Filosofia 2 - A motivacao e uma armadilha
+- 05/04/2026: Mentalidade 2 - Proteja a mente
+- 06/04/2026: Mestria 3 - O Radar de Kobe Bryant, a Mentalidade Mamba
+- 07/04/2026: Vitrine 3 - O relatorio e o card de ciclo
+- 08/04/2026: Filosofia 3 - O custo invisivel do piloto automatico
+- 09/04/2026: Mentalidade 3 - Fundamentos
+- 10/04/2026: Mestria 4 - O Radar de Bruce Lee
+- 11/04/2026: Vitrine 4 - A Forja e a Economia de Ouro
+- 12/04/2026: Filosofia 4 - O mito da multitarefa
+- 13/04/2026: Mentalidade 4 - Cortar mais do que adicionar
 
 ## A Expansao
 
-- 27/04/2026: Pausa
-- 28/04/2026: Filosofia 4 - O mito da multitarefa
-- 29/04/2026: Pausa
-- 30/04/2026: Tatica 4 - O Ritual de Domingo, o planejamento da guerra
-- 01/05/2026: Pausa
-- 02/05/2026: Curadoria 5 - O Radar de Leonardo da Vinci, o Polimata Supremo
-- 03/05/2026: Vitrine 5 - O Legado, historico exportavel e cards metalicos
-- 04/05/2026: Pausa
-- 05/05/2026: Filosofia 5 - A dor da disciplina vs a dor do arrependimento
-- 06/05/2026: Pausa
-- 07/05/2026: Tatica 5 - A regra das 3 Missoes Criticas
+- 14/04/2026: Mestria 5 - O Radar de Leonardo da Vinci, o Polimata Supremo
+- 15/04/2026: Vitrine 5 - O Legado, historico exportavel e cards metalicos
+- 16/04/2026: Filosofia 5 - A dor da disciplina vs a dor do arrependimento
+- 17/04/2026: Mentalidade 5 - O preco da grandeza
+- 18/04/2026: Mestria 6 - O Radar de Ayrton Senna
+- 19/04/2026: Vitrine 6 - Deep Focus, o Coliseu da execucao
+- 20/04/2026: Filosofia 6 - Conforto demais te deixa fraco
+- 21/04/2026: Mentalidade 6 - Os melhores decidem antes de se sentir prontos
+- 22/04/2026: Mestria 7 - O Radar de Michael Jordan
+- 23/04/2026: Vitrine 7 - Ciclos e Eras
+- 24/04/2026: Filosofia 7 - Quem nao mede fantasia a propria vida
+- 25/04/2026: Mentalidade 7 - Gente de nivel mundial nao pede permissao para agir
+- 26/04/2026: Mestria 8 - O Radar de Arnold Schwarzenegger
+- 27/04/2026: Vitrine 8 - Patentes, rank e insignias
+- 28/04/2026: Filosofia 8 - Seu ambiente vence sua vontade
+- 29/04/2026: Mentalidade 8 - Os grandes tratam critica como materia-prima
+- 30/04/2026: Mestria 9 - O Radar de Muhammad Ali
+- 01/05/2026: Vitrine 9 - O Oraculo, conselhos, analise e feed
+- 02/05/2026: Filosofia 9 - Informacao sem execucao e so entretenimento
+- 03/05/2026: Mentalidade 9 - Os melhores nao tentam parecer ocupados. Tentam vencer.
+- 04/05/2026: Mestria 10 - O Radar de Marie Curie
+- 05/05/2026: Vitrine 10 - Clas, quests e operacao coletiva
+- 06/05/2026: Filosofia 10 - Progresso sem registro vira ilusao
+- 07/05/2026: Mentalidade 10 - Gente world class pensa em decadas, nao em humores
 
 ## Cadencia operacional
 
-- Curadoria entra preferencialmente aos sabados.
-- Vitrine entra preferencialmente aos domingos.
-- Filosofia entra preferencialmente as tercas.
-- Tatica entra preferencialmente as quintas.
-- Pausas existem para respiracao do feed, comentarios, stories e reaproveitamento.
+- O feed entra em cadencia continua, sem dias vazios entre as pecas principais.
+- A sequencia-base do bloco editorial agora e: Mestria -> Vitrine -> Filosofia -> Mentalidade.
+- Stories, comentarios e reaproveitamento acontecem em paralelo, sem interromper a linha principal.
 
 ## Uso deste calendario
 

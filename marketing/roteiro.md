@@ -36,16 +36,18 @@ Regras centrais:
 - o CTA publico oficial aponta para `glyph.life`
 - `app.glyph.life` nao entra em criativo publico enquanto o beta estiver fechado
 - o feed precisa ser identificavel em 1 segundo como GLYPH
+- o texto de apoio dos slides centrais deve ser maior e mais legivel do que o padrao comum de Instagram, usando o espaco livre com mais presenca
+- quando houver respiro visual sobrando, a caixa de texto do miolo deve crescer para comportar a maior fonte util em leitura mobile
 
 ## Os 4 formatos fixos de postagem
 
-### 1. Curadoria
+### 1. Mestria
 
 Objetivo:
 - Associar o GLYPH a figuras reais de alta performance, disciplina, filosofia ou execucao.
 
 Estilo:
-- Curadoria / Estudo de Caso
+- Mestria / Estudo de Caso
 
 Padrao principal:
 - 5 slides
@@ -58,7 +60,7 @@ Estrutura oficial:
 - Slide 5: fechamento universal com marca GLYPH
 
 Regra de radar:
-- toda Curadoria deve preencher as 10 areas oficiais
+- toda Mestria deve preencher as 10 areas oficiais
 - toda nota deve usar `marketing/banco-frases-radar.md` como base
 - o `Nivel de Maestria Geral` e a soma das 10 areas, com maximo de `100`
 
@@ -121,31 +123,35 @@ Funcao no funil:
 - identidade
 - compartilhamento
 
-### 4. Tatica
+### 4. Mentalidade
 
 Objetivo:
-- Entregar ouro pratico e aplicavel, com valor real, de um jeito que naturalmente puxe o usuario para o GLYPH.
+- Entregar principios mentais de elite, conselhos de alta performance e regras de pensamento que soam como leitura de gente world class.
 
 Estilo:
-- Tatica / Produtividade
+- Mentalidade / Elite Focus
 
 Padrao principal:
-- capa + 1 ou 2 slides explicando a mecanica + fecho
+- capa + 2 slides dividindo a logica + fecho
 
 Estrutura oficial:
 - Slide 1: chamada forte
-- Slides centrais: mostrar a logica, o metodo ou a mecanica da execucao
+- Slides centrais: mostrar a logica mental, o principio ou o conselho em 2 partes
 - Ultimo slide: marca GLYPH com CTA publico
 
 Regra de copy:
 - quase fixa como Filosofia
-- mais didatica visual
-- foco em salvamento
+- menos app, mais leitura de elite
+- inspiracao editorial em livros e materiais de performance de alto nivel, no territorio de obras como `177 Secrets of the World Class`
+- traduzir o principio para linguagem GLYPH, sem parecer resumo escolar de livro
+- a tese precisa mostrar uma diferenca real entre gente comum e gente de nivel mundial
+- evitar conselho fofo, autoajuda rasa ou produtividade generica
+- o leitor precisa sentir: `isso e como alguem muito acima pensa`
 
 Funcao no funil:
 - autoridade
 - salvamentos
-- prova de utilidade
+- formacao de linguagem
 
 ## Padrao visual aprovado
 
@@ -157,7 +163,7 @@ Familias principais:
 - `Obsidiana`: preto, chumbo, off-white e dourado
 - `Marfim`: branco, cinza mineral e dourado
 - `Safira`: azul profundo, gelo, chumbo e dourado
-- `Rubi`: vinho ou vermelho profundo com dourado, reservado principalmente para Curadoria
+- `Rubi`: vinho ou vermelho profundo com dourado, reservado principalmente para Mestria
 
 Regras visuais:
 
@@ -169,7 +175,7 @@ Regras visuais:
 
 ### Mapa visual por formato
 
-Curadoria:
+Mestria:
 - base editorial premium
 - familia oficial: `Rubi`
 
@@ -183,10 +189,10 @@ Filosofia:
 - familia oficial: `Marfim`
 - muito espaco negativo e pouco ruido visual
 
-Tatica:
+Mentalidade:
 - mais funcional
 - familia oficial: `Obsidiana`
-- radar, planner, esquema, setas e UI simplificada entram como reforco didatico
+- texto dominante, principio forte, pouco ruido e atmosfera de elite
 
 ### Elementos recorrentes
 
@@ -234,7 +240,7 @@ Evitar:
 
 Checklist obrigatorio:
 
-- da para identificar em ate 1 segundo se a peca e Curadoria, Filosofia, Tatica ou Vitrine
+- da para identificar em ate 1 segundo se a peca e Mestria, Filosofia, Mentalidade ou Vitrine
 - o slide 1 segura atencao sozinho
 - o miolo entrega exatamente o trabalho daquele formato
 - o slide final reforca marca sem parecer repeticao vazia
@@ -249,14 +255,14 @@ Observacao:
 - A estrutura de slides deles agora deve obedecer o sistema oficial acima.
 - Quando um roteiro abaixo parecer mais curto do que o sistema atual, ele deve ser expandido usando `marketing/template-operacional-carrossel.md`.
 
-### Curadoria 1: O Radar de Cristiano Ronaldo
+### Mestria 1: O Radar de Cristiano Ronaldo
 
 Missao:
 - Associar a leitura visual do app com figuras reais de alta performance.
 
 Visual:
 - Carrossel limpo
-- Estilo: Curadoria / Estudo de Caso
+- Estilo: Mestria / Estudo de Caso
 - Fundo escuro texturizado com fotos editadas em preto e branco e tons de dourado do astro
 
 Texto na imagem:
@@ -327,14 +333,14 @@ Texto na imagem:
 Legenda:
 - O maior erro de quem tenta mudar a vida e tentar consertar tudo no mesmo dia. No GLYPH, a tatica e simples: olhe para o seu Radar, identifique as 3 areas mais fracas, crie 1 Arena focada para cada uma e ignore o resto ate estabilizar. Foco e sacrificio. Comece a medir o seu hoje. Link na bio.
 
-### Curadoria 2: O Radar de Marco Aurelio
+### Mestria 2: O Radar de Marco Aurelio
 
 Missao:
 - Associar a leitura visual do app a disciplina milenar, atraindo quem busca foco e filosofia de vida real.
 
 Visual:
 - Carrossel limpo
-- Estilo: Curadoria / Estudo de Caso
+- Estilo: Mestria / Estudo de Caso
 - Fundo escuro texturizado de pedra bruta, marmore ou ardosia
 - Fotos editadas de estatuas classicas em tons de dourado e sombras
 
@@ -404,14 +410,14 @@ Texto na imagem:
 Legenda:
 - Rolar o feed deitado na cama sangra o seu Espaco Mental e a sua energia fisica pro dia seguinte. A tatica da Vanguarda: ative o modo aviao, abra o GLYPH, faca o fechamento do seu ciclo diario com o SITREP e desconecte a mente. O sono e a forja do seu imperio. Lista de espera na bio.
 
-### Curadoria 3: O Radar de Kobe Bryant
+### Mestria 3: O Radar de Kobe Bryant
 
 Missao:
 - Usar o maior simbolo global de etica de trabalho e disciplina obsessiva para explicar o sistema do app.
 
 Visual:
 - Carrossel limpo
-- Estilo: Curadoria / Estudo de Caso
+- Estilo: Mestria / Estudo de Caso
 - Fundo escuro texturizado
 - Fotos em preto e branco com detalhes em dourado focado no olhar do atleta
 
@@ -479,14 +485,14 @@ Texto na imagem:
 Legenda:
 - Agendar a tarefa mais dificil para as 16h da tarde e assinar um atestado de fracasso. A Vanguarda mapeia seus picos de energia. No GLYPH, voce puxa as acoes vitais da sua Arena para as suas horas de Deep Focus matinal, e deixa o trabalho burocratico para quando a bateria estiver acabando. Jogue o jogo de forma inteligente. Link na bio.
 
-### Curadoria 4: O Radar de Elon Musk
+### Mestria 4: O Radar de Elon Musk
 
 Missao:
 - Atrair o publico focado em empreendedorismo, inovacao e visao de longo prazo.
 
 Visual:
 - Carrossel limpo
-- Estilo: Curadoria / Estudo de Caso
+- Estilo: Mestria / Estudo de Caso
 - Fundo escuro, estetica industrial ou espacial
 - Tons de chumbo e dourado
 
@@ -555,14 +561,14 @@ Texto na imagem:
 Legenda:
 - Quem acorda na segunda-feira sem saber o que fazer ja perdeu a semana. O Ritual da Vanguarda: tire 20 minutos no domingo, abra suas Arenas no GLYPH, puxe as pedras grandes para o seu Planner semanal e tranque as prioridades. Quando a segunda chegar, voce nao pensa. Voce apenas executa. Lista de espera na bio.
 
-### Curadoria 5: O Radar de Leonardo da Vinci
+### Mestria 5: O Radar de Leonardo da Vinci
 
 Missao:
 - Associar a filosofia do aplicativo de nivelar as 10 areas da vida com o homem que dominou arte, engenharia, ciencia e anatomia ao mesmo tempo.
 
 Visual:
 - Carrossel limpo
-- Estilo: Curadoria / Estudo de Caso
+- Estilo: Mestria / Estudo de Caso
 - Fundo escuro texturizado misturando ardosia ou couro negro com esbocos originais do Homem Vitruviano e anotacoes invertidas brilhando em dourado
 
 Texto na imagem:
@@ -573,7 +579,7 @@ Texto na imagem:
 - Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
-- Da Vinci nao separava o trabalho da vida, a ciencia da arte. Ele mapeou todas as areas do proprio intelecto e documentou cada passo de sua evolucao. A verdadeira maestria, Nivel 96, vem da curiosidade brutal de nao aceitar a mediocridade em nenhuma area. A Vanguarda nao joga em uma so Arena, ela domina o imperio inteiro. Qual e a sua proxima fronteira? Mapeie no GLYPH. Link na bio.
+- Da Vinci nao separava o trabalho da vida, a ciencia da arte. Ele mapeou todas as areas do proprio intelecto e documentou cada passo de sua evolucao. A verdadeira maestria, Nivel 91, vem da curiosidade brutal de nao aceitar a mediocridade em nenhuma area. A Vanguarda nao joga em uma so Arena, ela domina o imperio inteiro. Qual e a sua proxima fronteira? Mapeie no GLYPH. Link na bio.
 
 ### Vitrine 5: O Legado
 
@@ -611,24 +617,61 @@ Texto na imagem:
 Legenda:
 - Cumprir o que voce agendou no SITREP hoje vai doer. Vai exigir energia. Mas chegar ao final do ano exatamente no mesmo lugar que voce esta agora vai doer infinitamente mais. Escolha a sua dor. O Beta do GLYPH esta aberto. Link na bio.
 
-### Tatica 5: A regra das 3 missoes criticas
+### Mentalidade 5: O preco da grandeza
 
 Missao:
-- Ensinar a simplificar o planejamento diario para combater a ansiedade de listas longas.
+- Mostrar que gente de nivel mundial aceita sofrimento, pressao e desconforto como parte do preco da grandeza.
 
 Visual:
-- Carrossel tatico
-- Estilo: Tatica / Produtividade
-- Interface do SITREP destacando apenas 3 tarefas marcadas com estrela ou icone dourado
+- Carrossel mentalidade
+- Estilo: Mentalidade / Elite Focus
+- Fundo preto ou obsidiana, texto dominante e composicao limpa
 
 Texto na imagem:
-- Capa: Se voce tem 10 prioridades, voce nao tem nenhuma.
-- Miolo: defina no maximo 3 Missoes Criticas
-- Miolo: se essas 3 acontecerem, o dia venceu
+- Capa: Os grandes nao tem medo de sofrer.
+- Miolo: Amadores sentem dor e recuam.
+- Miolo: Os melhores aceitam o preco antes de tocar no premio.
 - Fecho: GLYPH. Organize seu imperio.
 
 Legenda:
-- A ansiedade nasce de listas infinitas que voce sabe que nunca vai terminar. A tatica da Vanguarda: todo dia, defina no maximo 3 Missoes Criticas no seu GLYPH. Se o mundo acabar e voce so fizer essas tres coisas, o seu dia foi um sucesso. O resto e bonus. Simplifique a execucao. Link na bio.
+- Gente comum quer a recompensa sem o atrito. Gente de nivel mundial entende que repeticao, dor, pressao e desconforto fazem parte do pedagio da grandeza. O problema nao e sofrer. O problema e querer um nivel raro sem aceitar o custo dele. Link na bio.
+
+## Blocos 6 a 10 aprovados
+
+### Round 6
+
+- `Mestria 6`: O Radar de Ayrton Senna
+- `Vitrine 6`: Deep Focus, o Coliseu da execucao
+- `Filosofia 6`: Conforto demais te deixa fraco
+- `Mentalidade 6`: Os melhores decidem antes de se sentir prontos
+
+### Round 7
+
+- `Mestria 7`: O Radar de Michael Jordan
+- `Vitrine 7`: Ciclos e Eras
+- `Filosofia 7`: Quem nao mede fantasia a propria vida
+- `Mentalidade 7`: Gente de nivel mundial nao pede permissao para agir
+
+### Round 8
+
+- `Mestria 8`: O Radar de Arnold Schwarzenegger
+- `Vitrine 8`: Patentes, rank e insignias
+- `Filosofia 8`: Seu ambiente vence sua vontade
+- `Mentalidade 8`: Os grandes tratam critica como materia-prima
+
+### Round 9
+
+- `Mestria 9`: O Radar de Muhammad Ali
+- `Vitrine 9`: O Oraculo, conselhos, analise e feed
+- `Filosofia 9`: Informacao sem execucao e so entretenimento
+- `Mentalidade 9`: Os melhores nao tentam parecer ocupados. Tentam vencer.
+
+### Round 10
+
+- `Mestria 10`: O Radar de Marie Curie
+- `Vitrine 10`: Clas, quests e operacao coletiva
+- `Filosofia 10`: Progresso sem registro vira ilusao
+- `Mentalidade 10`: Gente world class pensa em decadas, nao em humores
 
 ## Stories
 

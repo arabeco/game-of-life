@@ -1,4 +1,5 @@
 export interface LegacyLayoutConfig {
+  plaqueOffsetX: number;
   plaqueOffsetY: number;
   plaqueZoom: number;
   plaqueWidth: number;
@@ -16,6 +17,7 @@ export const LEGACY_PREVIEW_PLAQUE_SCALE = 1.65;
 export const LEGACY_SCENE_PLAQUE_SCALE = 1;
 
 export const DEFAULT_LEGACY_LAYOUT: LegacyLayoutConfig = {
+  plaqueOffsetX: 0,
   plaqueOffsetY: 15,
   plaqueZoom: 0.97,
   plaqueWidth: 0.81,
@@ -34,6 +36,7 @@ const sanitizeNumber = (value: unknown, fallback: number, min: number, max: numb
 };
 
 export const sanitizeLegacyLayoutConfig = (value: Partial<LegacyLayoutConfig> | null | undefined): LegacyLayoutConfig => ({
+  plaqueOffsetX: sanitizeNumber(value?.plaqueOffsetX, DEFAULT_LEGACY_LAYOUT.plaqueOffsetX, -220, 220),
   plaqueOffsetY: sanitizeNumber(value?.plaqueOffsetY, DEFAULT_LEGACY_LAYOUT.plaqueOffsetY, -120, 120),
   plaqueZoom: sanitizeNumber(value?.plaqueZoom, DEFAULT_LEGACY_LAYOUT.plaqueZoom, 0.55, 1.6),
   plaqueWidth: sanitizeNumber(value?.plaqueWidth, DEFAULT_LEGACY_LAYOUT.plaqueWidth, 0.72, 1.28),

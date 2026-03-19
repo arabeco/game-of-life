@@ -13,6 +13,7 @@ import { DatePickerModal } from './DatePickerModal';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { REST_SCREEN_ACTION_SESSION_EVENT, createRestScreenActionSession } from '../utils/restScreenActionSession';
+import { OPERATIONAL_DAY_START_MINUTE, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes } from '../utils/operationalDay.js';
 import { getArenaDomainFlags } from '../utils/taskDomain';
 
 import { Portal } from './Portal';
@@ -228,6 +229,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             context: editableAction.context || {}
         };
 
+        const resolveOperationalDateTime = (dateValue: Date, startTimeInMinutes: number) => {
+            const operationalDateString = getLocalDateString(dateValue);
+            const displayMinutes = startTimeInMinutes < OPERATIONAL_DAY_START_MINUTE
+                ? startTimeInMinutes + (24 * 60)
+                : startTimeInMinutes;
+            return {
+                date: getActualDateStringForOperationalMinutes(operationalDateString, displayMinutes),
+                startTime: getActualStartTimeForOperationalMinutes(displayMinutes),
+            };
+        };
+
         const scheduleTasks = async (actionIdToSchedule: string) => {
             // Para Ação Recorrente: usa dias da semana
             if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Horário') {
@@ -240,8 +252,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             if (editableAction.actionType === 'Compromisso' && selectedDate && startTime !== null && startTime !== 'Sem Horário') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
-                const dateString = getLocalDateString(selectedDate);
-                await scheduleTask(actionIdToSchedule, dateString, startTimeInMinutes);
+                const resolvedSchedule = resolveOperationalDateTime(selectedDate, startTimeInMinutes);
+                await scheduleTask(actionIdToSchedule, resolvedSchedule.date, resolvedSchedule.startTime);
             }
         }
 
@@ -259,10 +271,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                         nextTaskStartTime = h * 60 + m;
                     }
 
+                    const resolvedOccurrence = selectedDate && nextTaskStartTime >= 0
+                        ? resolveOperationalDateTime(selectedDate, nextTaskStartTime)
+                        : null;
+
                     updateTask(taskId, {
-                        date: selectedDate ? getLocalDateString(selectedDate) : currentTask.date,
+                        date: resolvedOccurrence?.date || (selectedDate ? getLocalDateString(selectedDate) : currentTask.date),
                         duration: editableTaskDuration,
-                        startTime: nextTaskStartTime
+                        startTime: resolvedOccurrence?.startTime ?? nextTaskStartTime
                     });
                     showToast('Ocorrência atualizada.', 'success');
                 } else if (isNew && typeof addAction === 'function') {

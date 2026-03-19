@@ -12,9 +12,6 @@ import { useLegacyLayoutConfig } from '../hooks/useLegacyLayoutConfig';
 import {
     getLegacyPlaqueScale,
     getLegacyPlaqueWidthPx,
-    resetStoredLegacyLayoutConfig,
-    setStoredLegacyLayoutConfig,
-    type LegacyLayoutConfig,
 } from '../utils/legacyLayoutLab';
 import './legacy-ui.css';
 
@@ -59,11 +56,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     const previewPlaqueWidth = getLegacyPlaqueWidthPx('preview', layout);
     const previewPlaqueScale = getLegacyPlaqueScale('preview', layout);
     const selectedBackdropSkin = useMemo(() => getLegacyBackdropSkin(selectedBackdropSkinId), [selectedBackdropSkinId]);
-
-    const resetLayout = () => {
-        resetStoredLegacyLayoutConfig();
-        onToast('Layout do legado resetado.');
-    };
 
     const handlePromptProjection = () => {
         if (!isPremium) {
@@ -127,7 +119,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                     marginTop: '13vh',
                     width: `${previewPlaqueWidth}px`,
                     maxWidth: 'calc(100vw - 3rem)',
-                    transform: `translateY(${layout.plaqueOffsetY}px) scale(${previewPlaqueScale})`,
+                    transform: `translate(${layout.plaqueOffsetX}px, ${layout.plaqueOffsetY}px) scale(${previewPlaqueScale})`,
                     transformOrigin: 'top center',
                 }}
             >
@@ -170,7 +162,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                     style={{
                         width: `${previewPlaqueWidth}px`,
                         maxWidth: '100%',
-                        transform: `translateY(${layout.plaqueOffsetY}px) scale(${previewPlaqueScale})`,
+                        transform: `translate(${layout.plaqueOffsetX}px, ${layout.plaqueOffsetY}px) scale(${previewPlaqueScale})`,
                         transformOrigin: 'top center',
                     }}
                 >
@@ -235,10 +227,11 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                     sovereignName={sovereignName}
                                     projectionActive
                                     interactive
-                                    autoAdvance={projectionActive}
+                                    autoAdvance={false}
                                     enteringProjection={isProjectionTransitioning}
                                     fallbackIdentity={fallbackIdentity}
                                     backdropSkinId={selectedBackdropSkinId}
+                                    showLayoutLab
                                     onActivatePlaque={onOpenPlaque}
                                     onOpenCycle={onOpenCycle}
                                     onOpenEra={onOpenEra}

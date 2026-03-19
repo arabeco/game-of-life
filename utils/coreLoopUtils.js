@@ -1,4 +1,5 @@
 ﻿import { doesTaskConsumePoolCapacity, hasScheduledTime } from './taskDomain.js';
+import { taskMatchesOperationalDate } from './operationalDay.js';
 
 /**
  * @typedef {import('../types').Action} Action
@@ -32,7 +33,7 @@ export const dedupeIds = (ids) => Array.from(new Set(ids));
  */
 export const mergeTasksIntoCommitment = (taskIds, tasks, commitmentDate, isQuestActionId) => {
     const trackedTaskIds = tasks
-        .filter(task => task.date === commitmentDate && !isQuestActionId(task.actionId))
+        .filter(task => taskMatchesOperationalDate(task, commitmentDate) && !isQuestActionId(task.actionId))
         .map(task => task.id);
 
     return dedupeIds([...taskIds, ...trackedTaskIds]);
@@ -46,7 +47,7 @@ export const mergeTasksIntoCommitment = (taskIds, tasks, commitmentDate, isQuest
  */
 export const getInitialDailyCommitmentTaskIds = (tasks, commitmentDate, isQuestActionId) => {
     const scheduledToday = tasks.filter(task =>
-        task.date === commitmentDate &&
+        taskMatchesOperationalDate(task, commitmentDate) &&
         !isQuestActionId(task.actionId) &&
         (hasScheduledTime(task) || task.completed)
     );
@@ -63,7 +64,7 @@ export const getInitialDailyCommitmentTaskIds = (tasks, commitmentDate, isQuestA
  * @returns {string[]}
  */
 export const reconcileTaskInCommitment = (taskIds, taskId, nextTask, commitmentDate, isQuestActionId) => {
-    const shouldTrack = nextTask.date === commitmentDate && !isQuestActionId(nextTask.actionId);
+    const shouldTrack = taskMatchesOperationalDate(nextTask, commitmentDate) && !isQuestActionId(nextTask.actionId);
     const isTracked = taskIds.includes(taskId);
 
     if (shouldTrack && !isTracked) {
@@ -126,7 +127,7 @@ export const buildActionPoolByDate = (actions, taskPool, tasks, date, trackedTas
         const isUnlimited = taskPool.some(item => item.actionId === action.id && item.unlimited);
         const tasksForAction = tasks.filter(task =>
             task.actionId === action.id &&
-            (!date || task.date === date)
+            (!date || taskMatchesOperationalDate(task, date))
         );
         const consumedCount = tasksForAction.filter(task => doesTaskConsumePoolCapacity(task, trackedTaskIds)).length;
         const remaining = isUnlimited ? 99 : Math.max(0, maxRepetitions - consumedCount);

@@ -6,6 +6,7 @@ import { EmojiGlyph } from './EmojiGlyph';
 import { useGame } from '../contexts/GameContext';
 import { DropIndicator } from './DropIndicator';
 import { useLongPress } from '../hooks/useLongPress';
+import { OPERATIONAL_DAY_END_HOUR, OPERATIONAL_DAY_START_MINUTE, formatLocalDateString, getOperationalDateString, getOperationalDisplayMinutes, getTaskDisplayStartTime, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 
 interface WeeklyPlannerGridProps {
     currentDate: Date;
@@ -20,7 +21,7 @@ interface WeeklyPlannerGridProps {
     dropIndicator: { dayIndex: number, top: number, height: number } | null;
 }
 
-const hours = Array.from({ length: 21 }, (_, i) => i + 4);
+const hours = Array.from({ length: (OPERATIONAL_DAY_END_HOUR - 4) + 1 }, (_, i) => i + 4);
 
 const Sparkles: React.FC = () => (
     <div className="absolute inset-0 pointer-events-none">
@@ -49,7 +50,7 @@ const CurrentTimeIndicator = React.forwardRef<HTMLDivElement, { top: number }>((
 ));
 CurrentTimeIndicator.displayName = 'CurrentTimeIndicator';
 
-const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: number; onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void; onTaskClick: (task: ScheduledTask) => void; }> = ({ task, action, scaleFactor, onCustomDragStart, onTaskClick }) => {
+const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: number; operationalDate: string; onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void; onTaskClick: (task: ScheduledTask) => void; }> = ({ task, action, scaleFactor, operationalDate, onCustomDragStart, onTaskClick }) => {
     const { getAssetForAction, toggleTaskCompletion } = useGame();
     const [isHolding, setIsHolding] = React.useState(false);
     const [showSparkles, setShowSparkles] = React.useState(false);
@@ -128,8 +129,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
         dragThreshold: 20,
     });
 
-
-    const top = (task.startTime - (4 * 60)) * scaleFactor; 
+    const top = (getTaskDisplayStartTime(task, operationalDate) - OPERATIONAL_DAY_START_MINUTE) * scaleFactor; 
     const height = task.duration * scaleFactor;
 
     return (
@@ -189,11 +189,11 @@ export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDat
     const getActionById = (id: string) => actions.find(a => a.id === id);
 
     const getTasksForDay = (day: Date) => {
-        const dateString = day.toISOString().split('T')[0];
-        return tasks.filter(t => t.date === dateString);
+        const operationalDateString = formatLocalDateString(day);
+        return tasks.filter(t => taskMatchesOperationalDate(t, operationalDateString));
     };
     
-    const todayForCheck = new Date();
+    const todayForCheck = getOperationalDateString();
 
     return (
         <div className="flex dark-card-bg rounded-3xl p-1 depth-grid" ref={gridRef} data-testid="weekly-grid">
@@ -206,11 +206,12 @@ export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDat
             </div>
             <div className="flex-grow grid grid-cols-7">
                 {days.map((day, dayIndex) => {
-                    const isToday = day.toDateString() === todayForCheck.toDateString();
+                    const operationalDateString = formatLocalDateString(day);
+                    const isToday = operationalDateString === todayForCheck;
                     let timeIndicatorTop = -1;
                     if (isToday) {
-                        const currentTotalMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-                        timeIndicatorTop = (currentTotalMinutes - (4 * 60)) * scaleFactor;
+                        const currentTotalMinutes = getOperationalDisplayMinutes(currentTime);
+                        timeIndicatorTop = (currentTotalMinutes - OPERATIONAL_DAY_START_MINUTE) * scaleFactor;
                     }
                     
                     return (
@@ -239,6 +240,7 @@ export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDat
                                             task={task}
                                             action={action}
                                             scaleFactor={scaleFactor}
+                                            operationalDate={operationalDateString}
                                             onCustomDragStart={onCustomDragStart}
                                             onTaskClick={onTaskClick}
                                         />

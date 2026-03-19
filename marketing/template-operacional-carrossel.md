@@ -13,22 +13,24 @@ Referencia obrigatoria para leituras de radar:
 - slogan oficial do fecho: `Organize seu imperio.`
 - CTA publico oficial: `glyph.life`
 - `app.glyph.life` nao deve aparecer em criativos publicos enquanto o beta estiver fechado
-- a peca precisa ser identificavel em 1 segundo como Curadoria, Vitrine, Filosofia ou Tatica
+- a peca precisa ser identificavel em 1 segundo como Mestria, Vitrine, Filosofia ou Mentalidade
 - o simbolo do GLYPH pode ser selo ou protagonista, dependendo do formato
+- o texto menor dos slides centrais deve entrar um pouco maior do que o padrao comum de post social, ocupando melhor o vazio e ficando legivel sem parecer miudo
+- nos slides centrais, a caixa de texto deve crescer quando necessario para permitir a maior fonte harmonica possivel sem colar nos elementos
 
 ## Familias visuais oficiais
 
 - `Obsidiana`: preto, chumbo, off-white e dourado
 - `Marfim`: branco, cinza mineral e dourado
 - `Safira`: azul profundo, gelo, chumbo e dourado
-- `Rubi`: vinho ou vermelho profundo com dourado; usar principalmente em Curadoria
+- `Rubi`: vinho ou vermelho profundo com dourado; usar principalmente em Mestria
 
 Mapa rapido:
 
-- Curadoria: `Rubi`
+- Mestria: `Rubi`
 - Vitrine: `Safira`
 - Filosofia: `Marfim`
-- Tatica: `Obsidiana`
+- Mentalidade: `Obsidiana`
 
 ## Template universal do slide final
 
@@ -46,7 +48,7 @@ Variacoes aceitas:
 - simbolo grande com tipografia menor
 - fecho com textura luxuosa e pouco texto
 
-## Template 1: Curadoria
+## Template 1: Mestria
 
 Uso:
 - alta performance
@@ -82,7 +84,7 @@ Grid de pontuacao:
 - Fisico:
 
 Regra de pontuacao:
-- toda Curadoria precisa preencher as 10 areas
+- toda Mestria precisa preencher as 10 areas
 - toda nota deve ser sustentada por uma frase do `banco-frases-radar.md`
 - o total final e a soma das 10 areas, com maximo de `100`
 
@@ -118,6 +120,9 @@ Checklist:
 - o fecho precisa parecer parte do carrossel, nao repeticao vazia
 
 ## Template 2: Vitrine
+
+Referencia de features:
+- `marketing/vitrine-funcionalidades.md`
 
 Uso:
 - feature
@@ -219,6 +224,7 @@ Slide 1:
 Slides centrais:
 - Funcao: desenvolver argumento
 - Visual: texto maior que nas outras categorias, com respiro
+- Regra de tipografia: o texto de apoio do miolo deve vir em tamanho generoso, sempre priorizando impacto e leitura rapida
 - Copy 1:
 - Copy 2:
 - Copy 3 opcional:
@@ -235,30 +241,41 @@ Checklist:
 - o miolo precisa aprofundar, nao repetir a capa
 - a ultima tela precisa deixar a pessoa com sensacao de tese fechada
 
-## Template 4: Tatica
+## Template 4: Mentalidade
 
 Uso:
-- metodo
-- regra pratica
-- dica de execucao
-- produtividade aplicada
+- principio mental
+- conselho de elite
+- regra de pensamento
+- performance world class
 
 Numero oficial de slides:
 - 3 ou 4
 
 Padrao:
 - 1 capa
-- 1 ou 2 slides de mecanica
+- 2 slides de logica
 - 1 fecho
 
 Formulario de producao:
 
 - Titulo interno:
-- Problema pratico atacado:
-- Regra ou metodo:
-- Elemento visual central:
+- Principio mental:
+- Leitura world class:
+- Ideia-forca do slide 2:
+- Ideia-forca do slide 3:
 - Familia visual:
 - Legenda final:
+- Fonte de inspiracao editorial:
+
+Regra editorial:
+- Mentalidade nasce de conselhos, principios e leituras de elite
+- a linha pode se inspirar em livros e materiais no territorio de `177 Secrets of the World Class`
+- nao resumir o livro literalmente; filtrar a ideia e reescrever na voz do GLYPH
+- nao citar o app no miolo; o foco e a mente de alto nivel
+- a ideia central precisa expor uma diferenca nitida entre amadores e gente de nivel mundial
+- a headline deve parecer um principio duro, nao uma dica simpatiquinha
+- se a frase puder ser postada por qualquer perfil de produtividade, ela ainda nao serve
 
 Slide 1:
 - Funcao: chamada forte
@@ -266,8 +283,8 @@ Slide 1:
 - Copy:
 
 Slides centrais:
-- Funcao: explicar a mecanica
-- Visual: radar, planner, esquema, setas, blocos, bateria ou UI simplificada
+- Funcao: abrir a logica em duas camadas
+- Visual: texto dominante, watermark conceitual, composicao limpa e severa
 - Copy 1:
 - Copy 2 opcional:
 
@@ -278,8 +295,8 @@ Ultimo slide:
 
 Checklist:
 
-- a tatica precisa ser entendida sem depender da legenda
-- o slide central precisa ensinar alguma coisa concreta
+- a mentalidade precisa ser entendida sem depender da legenda
+- o slide central precisa soar como conselho de gente de nivel mundial
 - o usuario precisa sentir vontade de salvar a peca
 
 ## Checklist final antes de publicar

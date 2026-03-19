@@ -21,6 +21,7 @@ import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, i
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
+import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
@@ -55,11 +56,8 @@ const mapToSnakeCase = (obj: any): any => {
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-export const getLocalDateString = (date: Date = new Date()) => {
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-    return localDate.toISOString().split('T')[0];
-};
+export const getLocalDateString = (date: Date = new Date()) => formatLocalDateString(date);
+export const getOperationalDateString = (date: Date = new Date()) => getOperationalDateStringValue(date);
 
 
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
@@ -172,7 +170,7 @@ export type ArenaSetupChange = {
 };
 
 
-const getTodayString = () => getLocalDateString();
+const getTodayString = () => getOperationalDateString();
 const SITREP_BONUS_A = 60;
 const SITREP_BONUS_S = 120;
 const MAX_VILLAGE_BONUS_PERCENT = 0.10; // 10% max bonus from Sanctuary Order
@@ -4336,11 +4334,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 console.log(`[RETROACTIVE] Found ${pendingDays.length} unclosed days. Processing...`);
                 // For each unclosed day, we'll try to find its tasks and close it
                 for (const day of pendingDays) {
-                    const { data: dayTasks } = await supabase
-                        .from('scheduled_tasks')
-                        .select('duration, completed, action_id')
-                        .eq('user_id', userId)
-                        .eq('date', day.date);
+                    const trackedTaskIds = Array.isArray(day.task_ids) ? day.task_ids.filter((id): id is string => typeof id === 'string') : [];
+                    let dayTasks: { duration: number | null; completed: boolean | null; action_id: string | null }[] | null = null;
+
+                    if (trackedTaskIds.length > 0) {
+                        const result = await supabase
+                            .from('scheduled_tasks')
+                            .select('duration, completed, action_id')
+                            .eq('user_id', userId)
+                            .in('id', trackedTaskIds);
+                        dayTasks = result.data;
+                    } else {
+                        const result = await supabase
+                            .from('scheduled_tasks')
+                            .select('duration, completed, action_id')
+                            .eq('user_id', userId)
+                            .eq('date', day.date);
+                        dayTasks = result.data;
+                    }
 
                     if (dayTasks && dayTasks.length > 0) {
                         const freeActionIds = new Set(actions.filter(action => action.actionType === 'Livre').map(action => action.id));
@@ -4379,15 +4390,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const endDailyBattle = () => {
         // Anti-exploit: do not close battles from the future
         const now = new Date();
-        const todayString = getLocalDateString(now);
+        const todayString = getTodayString();
         if (dailyCommitment.date > todayString) {
-            showToast("Você não pode fechar o dia em datas futuras.", "error");
+            showToast("Amanhã ainda não pode ser julgado. Hoje você só pode travar as metas.", "error");
             return;
         }
 
         // Modified to include all completed time, but only scored actions count toward meta score
         const freeActionIds = new Set(actions.filter(action => action.actionType === 'Livre').map(action => action.id));
-        const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && t.date === dailyCommitment.date);
+        const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && taskMatchesOperationalDate(t, dailyCommitment.date));
         const scoredCommittedTasks = committedTasks.filter(t => !freeActionIds.has(t.actionId));
         const completedCount = scoredCommittedTasks.filter(t => t.completed).length;
         const totalCount = scoredCommittedTasks.length;

@@ -1,5 +1,5 @@
 param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mentalidade-03-fundamentos\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mentalidade-04-cortar-mais\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -253,8 +253,8 @@ $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontS
 $heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 66, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 60, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 48, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$bodyFont = [System.Drawing.Font]::new($bodyFamily, 37, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 28, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodyFont = [System.Drawing.Font]::new($bodyFamily, 44, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 33, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $watermarkFont = [System.Drawing.Font]::new($headlineFamily, 116, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -283,6 +283,7 @@ $eacute = [char]0x00E9
 $ecirc = [char]0x00EA
 $iacute = [char]0x00ED
 $oacute = [char]0x00F3
+$otilde = [char]0x00F5
 $uacute = [char]0x00FA
 
 $created = New-Object System.Collections.Generic.List[string]
@@ -293,9 +294,9 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Mentalidade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
-Draw-CenterText -Graphics $graphics -Text "Os melhores`nrepetem o b${aacute}sico`npor mais tempo." -Font $heroTitleFont -Brush $goldBrushSlide -X 156 -Y 300 -Width 768 -Height 350
-Draw-CenterText -Graphics $graphics -Text "O raro nasce de fundamentos comuns`nexecutados sem vaidade." -Font $bodyFont -Brush $offWhiteBrush -X 192 -Y 700 -Width 696 -Height 108
-Draw-Pill -Graphics $graphics -Text "Mentalidade 03" -Font $bodyBoldFont -X 392 -Y 822 -Width 296 -Height 54
+Draw-CenterText -Graphics $graphics -Text "Os melhores`ncortam mais do que`nadicionam." -Font $heroTitleFont -Brush $goldBrushSlide -X 146 -Y 294 -Width 788 -Height 360
+Draw-CenterText -Graphics $graphics -Text "Alta performance cresce quando o excesso morre." -Font $bodyFont -Brush $offWhiteBrush -X 188 -Y 712 -Width 704 -Height 100
+Draw-Pill -Graphics $graphics -Text "Mentalidade 04" -Font $bodyBoldFont -X 382 -Y 826 -Width 316 -Height 54
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -306,12 +307,12 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Base" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
-Draw-EditorialPanel -Graphics $graphics -X 136 -Y 252 -Width 808 -Height 682
-Draw-CenterText -Graphics $graphics -Text "Amadores trocam o`nsimples cedo demais." -Font $titleLargeFont -Brush $goldBrushSlide -X 184 -Y 308 -Width 712 -Height 178
-Draw-CenterText -Graphics $graphics -Text "Abandonam o que funciona porque o b${aacute}sico parece sem glamour`nantes de gerar resultado composto." -Font $bodyFont -Brush $offWhiteBrush -X 190 -Y 552 -Width 700 -Height 160
-Draw-CenterText -Graphics $graphics -Text "Quem muda demais nunca`nacumula for${ccedilla}a." -Font $bodySmallFont -Brush $mutedBrush -X 188 -Y 746 -Width 704 -Height 92
-Draw-CenterText -Graphics $graphics -Text "Novidade n${atilde}o substitui`nfundamento." -Font $titleMediumFont -Brush $whiteBrush -X 188 -Y 826 -Width 704 -Height 112
+Draw-CenterText -Graphics $graphics -Text "Corte" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
+Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 724
+Draw-CenterText -Graphics $graphics -Text "Elite n${atilde}o diz sim`npara tudo." -Font $titleLargeFont -Brush $goldBrushSlide -X 176 -Y 286 -Width 728 -Height 186
+Draw-CenterText -Graphics $graphics -Text "Protege agenda, aten${ccedilla}${atilde}o e energia como capital finito.`nToda entrada errada cobra sa${iacute}da cara." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 550 -Width 728 -Height 192
+Draw-CenterText -Graphics $graphics -Text "Ac${uacute}mulo n${atilde}o ${eacute} estrat${eacute}gia." -Font $bodySmallFont -Brush $mutedBrush -X 180 -Y 786 -Width 720 -Height 96
+Draw-CenterText -Graphics $graphics -Text "O corte cria`npot${ecirc}ncia." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 858 -Width 728 -Height 108
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-logica-01.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -322,11 +323,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Repeti${ccedilla}${atilde}o" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
-Draw-EditorialPanel -Graphics $graphics -X 132 -Y 252 -Width 816 -Height 694
-Draw-CenterText -Graphics $graphics -Text "Elite domina o que`nparece ${oacute}bvio." -Font $titleLargeFont -Brush $goldBrushSlide -X 180 -Y 302 -Width 720 -Height 178
-Draw-CenterText -Graphics $graphics -Text "Repete fundamentos sob t${eacute}dio, refina detalhe e sustenta padr${atilde}o`nat${eacute} o simples virar raro." -Font $bodyFont -Brush $offWhiteBrush -X 188 -Y 546 -Width 704 -Height 172
-Draw-CenterText -Graphics $graphics -Text "Maestria ${eacute} fundamento`nsustentado." -Font $titleMediumFont -Brush $whiteBrush -X 182 -Y 830 -Width 716 -Height 116
+Draw-CenterText -Graphics $graphics -Text "Prioridade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
+Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 730
+Draw-CenterText -Graphics $graphics -Text "Prioridade real`nsempre exclui`nalguma coisa." -Font $titleLargeFont -Brush $goldBrushSlide -X 170 -Y 282 -Width 740 -Height 214
+Draw-CenterText -Graphics $graphics -Text "Clareza nasce quando voc${ecirc} aceita perder op${ccedilla}${otilde}es`npara sustentar dire${ccedilla}${atilde}o." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 562 -Width 728 -Height 182
+Draw-CenterText -Graphics $graphics -Text "Quem corta melhor avan${ccedilla}a`nmais limpo." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 858 -Width 728 -Height 112
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-logica-02.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -354,7 +355,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Mentalidade 03  |  Fundamentos" -Font $eyebrowFont -Brush $eyebrowBrush -X 220 -Y 1060 -Width 640 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Mentalidade 04  |  Cortar mais do que adicionar" -Font $eyebrowFont -Brush $eyebrowBrush -X 148 -Y 1060 -Width 784 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -366,7 +367,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "MENTALIDADE 03  |  FUNDAMENTOS" -Font ([System.Drawing.Font]::new($headlineFamily, 42, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "MENTALIDADE 04  |  CORTAR MAIS DO QUE ADICIONAR" -Font ([System.Drawing.Font]::new($headlineFamily, 40, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 4 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

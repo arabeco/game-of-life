@@ -1,11 +1,12 @@
 
 import React, { useState, useMemo } from 'react';
-import { useGame, getLocalDateString } from '../contexts/GameContext';
+import { useGame } from '../contexts/GameContext';
 import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon } from './Icons';
 import { ScheduledTask, Action, DailyCommitment } from '../types';
 import { shareElementWithFeedback } from './Share';
 import { PoolAction } from './PoolAction';
 import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
+import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { isClanQuestAction } from '../utils/taskDomain.js';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -19,7 +20,7 @@ const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - star
 
 const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, actions: Action[]) => {
     const actionTypeById = new Map(actions.map(action => [action.id, action.actionType]));
-    const committedTasks = tasks.filter(t => t.date === dailyCommitment.date && dailyCommitment.taskIds.includes(t.id));
+    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && taskMatchesOperationalDate(t, dailyCommitment.date));
 
     const tasksWithStatus = committedTasks.map(task => {
         return {
@@ -148,7 +149,12 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const today = dailyCommitment.date;
 
         // Prioridade 1: Tarefa planejada NÃO completada que ainda não está no compromisso
-        const pendingTask = tasks.find(t => t.actionId === actionId && t.date === today && !t.completed && !dailyCommitment.taskIds.includes(t.id));
+        const pendingTask = tasks.find(t =>
+            t.actionId === actionId &&
+            taskMatchesOperationalDate(t, today) &&
+            !t.completed &&
+            !dailyCommitment.taskIds.includes(t.id)
+        );
 
         if (pendingTask) {
             setDailyCommitment([...dailyCommitment.taskIds, pendingTask.id]);
@@ -156,7 +162,12 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         }
 
         // Prioridade 2: Tarefa que JÁ FOI completada hoje (ex: via Planner ou Quick Complete anterior) mas não está no compromisso
-        const completedTask = tasks.find(t => t.actionId === actionId && t.date === today && t.completed && !dailyCommitment.taskIds.includes(t.id));
+        const completedTask = tasks.find(t =>
+            t.actionId === actionId &&
+            taskMatchesOperationalDate(t, today) &&
+            t.completed &&
+            !dailyCommitment.taskIds.includes(t.id)
+        );
         if (completedTask) {
             setDailyCommitment([...dailyCommitment.taskIds, completedTask.id]);
             return;
@@ -177,8 +188,18 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     const handleQuickComplete = async (actionId: string) => {
         const today = dailyCommitment.date;
 
-        const existingTask = tasks.find(t => t.actionId === actionId && t.date === today && !t.completed && dailyCommitment.taskIds.includes(t.id));
-        const completedTask = tasks.find(t => t.actionId === actionId && t.date === today && t.completed && dailyCommitment.taskIds.includes(t.id));
+        const existingTask = tasks.find(t =>
+            t.actionId === actionId &&
+            taskMatchesOperationalDate(t, today) &&
+            !t.completed &&
+            dailyCommitment.taskIds.includes(t.id)
+        );
+        const completedTask = tasks.find(t =>
+            t.actionId === actionId &&
+            taskMatchesOperationalDate(t, today) &&
+            t.completed &&
+            dailyCommitment.taskIds.includes(t.id)
+        );
 
         if (existingTask) {
             // toggleTaskCompletion agora cuida de mover para o horário atual (ativação) e persistir
@@ -249,6 +270,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
     const renderBattle = () => {
         const progress = commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 100;
+        const isFutureBattle = dailyCommitment.date > getOperationalDateString();
 
         const [y, m, d] = dailyCommitment.date.split('-').map(Number);
         const monthNames = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
@@ -337,7 +359,24 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
                 <div className="py-2"></div>
 
-                <button onClick={endDailyBattle} className="w-full py-2 rounded-xl luxe-skin-button">Gerar score final</button>
+                {isFutureBattle && (
+                    <p className="text-center text-[11px] text-amber-300/85 px-3">
+                        Amanhã já pode ficar travado, mas o julgamento só abre quando o dia chegar.
+                    </p>
+                )}
+
+                <button
+                    onClick={() => {
+                        if (isFutureBattle) {
+                            showToast('Amanhã ainda não pode ser julgado. Hoje você só pode travar as metas.', 'error');
+                            return;
+                        }
+                        endDailyBattle();
+                    }}
+                    className={`w-full py-2 rounded-xl ${isFutureBattle ? 'luxe-button-secondary text-amber-200 border border-amber-400/20' : 'luxe-skin-button'}`}
+                >
+                    {isFutureBattle ? 'Fechamento bloqueado até amanhã' : 'Gerar score final'}
+                </button>
             </>
         );
     }
@@ -346,6 +385,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const score = dailyCommitment.score || 0;
         const expDeposited = dailyCommitment.expDeposited ?? 0;
         const sitrepBonus = dailyCommitment.sitrepBonus ?? 0;
+        const nextOperationalDate = shiftLocalDateString(dailyCommitment.date, 1);
 
         const getRankLetter = (s: number) => {
             if (s === 100) return 'S';
@@ -442,11 +482,18 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                     <button
                         onClick={() => {
                             if (expDeposited > 0) showToast(`+${expDeposited} XP foram adicionados ao seu ciclo`);
-                            resetDailyCommitment();
+                            window.dispatchEvent(new CustomEvent('planner:focus-date', {
+                                detail: {
+                                    dateString: nextOperationalDate,
+                                    viewMode: 'day',
+                                }
+                            }));
+                            showToast(`Planner aberto em ${nextOperationalDate}.`);
+                            if (onClose) onClose();
                         }}
                         className="w-full py-2 rounded-xl luxe-skin-button text-sm"
                     >
-                        Novo plano
+                        Planejar amanha
                     </button>
                 </div>
             </>
@@ -454,8 +501,8 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     }
 
     const renderNoCycle = () => {
-        const today = getLocalDateString();
-        const todaysTasks = tasks.filter(t => t.date === today);
+        const today = getOperationalDateString();
+        const todaysTasks = tasks.filter(t => taskMatchesOperationalDate(t, today));
         const completedTasks = todaysTasks.filter(t => t.completed);
 
         const checklistCompleted = checklistItems.filter(i => i.completed).length;

@@ -8,7 +8,13 @@ import { MiniCyclePlannerSnapshot } from './MiniCyclePlannerSnapshot';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { getLegacyBackdropSkin, type LegacyBackdropSkinId } from '../constants/legacyBackdropSkins';
 import { useLegacyLayoutConfig } from '../hooks/useLegacyLayoutConfig';
-import { getLegacyPlaqueScale, getLegacyPlaqueWidthPx } from '../utils/legacyLayoutLab';
+import {
+    getLegacyPlaqueScale,
+    getLegacyPlaqueWidthPx,
+    resetStoredLegacyLayoutConfig,
+    setStoredLegacyLayoutConfig,
+    type LegacyLayoutConfig,
+} from '../utils/legacyLayoutLab';
 import './legacy-ui.css';
 
 interface LegacyProjectionSceneProps {
@@ -51,6 +57,11 @@ const identityKey = (identity: ReportIdentitySnapshot) => [
     identity.clanRankName || '',
 ].join('|');
 
+const getChronologyValue = (value?: string | null) => {
+    const parsed = value ? new Date(value).getTime() : Number.NaN;
+    return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+};
+
 const buildLegacyCycleMetrics = (cycle: LegacyEraSummary['cycles'][number]) => {
     const days = (cycle.weeklyAtlas || []).flatMap((week) => week.days || []);
     const totalPlanned = days.reduce((sum, day) => sum + (day.plannedCount || 0), 0);
@@ -89,6 +100,31 @@ const buildLegacyCycleMetrics = (cycle: LegacyEraSummary['cycles'][number]) => {
     };
 };
 
+const LayoutSlider: React.FC<{
+    label: string;
+    value: number;
+    min: number;
+    max: number;
+    step: number;
+    onChange: (value: number) => void;
+}> = ({ label, value, min, max, step, onChange }) => (
+    <label className="space-y-1">
+        <div className="flex items-center justify-between gap-3">
+            <span className="text-[9px] font-black uppercase tracking-[0.22em] text-amber-100/82">{label}</span>
+            <span className="text-[10px] font-bold text-white/72">{value.toFixed(step < 1 ? 2 : 0)}</span>
+        </div>
+        <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(event) => onChange(Number(event.target.value))}
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/12 accent-[var(--skin-accent-color)]"
+        />
+    </label>
+);
+
 export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     id,
     eras,
@@ -105,19 +141,32 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     onOpenEra,
     showLayoutLab = false,
 }) => {
-    const cycleEntries = useMemo(
-        () => eras.flatMap((era, eraIndex) => (era.cycles || []).map((cycle, cycleIndex) => ({ era, eraIndex, cycle, cycleIndex }))),
+    const orderedEras = useMemo(
+        () => [...eras]
+            .map((era) => ({
+                ...era,
+                cycles: [...(era.cycles || [])].sort((left, right) => getChronologyValue(left.startDate || left.endDate) - getChronologyValue(right.startDate || right.endDate)),
+            }))
+            .sort((left, right) => getChronologyValue(left.startDate || left.endDate || left.cycles?.[0]?.startDate) - getChronologyValue(right.startDate || right.endDate || right.cycles?.[0]?.startDate)),
         [eras]
+    );
+    const cycleEntries = useMemo(
+        () => orderedEras.flatMap((era, eraIndex) => (era.cycles || []).map((cycle, cycleIndex) => ({ era, eraIndex, cycle, cycleIndex }))),
+        [orderedEras]
     );
     const backdropSkin = getLegacyBackdropSkin(backdropSkinId);
     const layout = useLegacyLayoutConfig();
     const scenePlaqueWidth = getLegacyPlaqueWidthPx('scene', layout);
     const scenePlaqueScale = getLegacyPlaqueScale('scene', layout);
 
-    const [activeCycleId, setActiveCycleId] = useState<string>(() => cycleEntries[0]?.cycle.id || '');
+    const [activeCycleId, setActiveCycleId] = useState<string>(() => {
+        if (!cycleEntries.length) return '';
+        return cycleEntries[0]?.cycle.id || '';
+    });
     const [identityPulse, setIdentityPulse] = useState(false);
     const [eraTransitionPulse, setEraTransitionPulse] = useState<string | null>(null);
     const [sequenceCompleted, setSequenceCompleted] = useState(false);
+    const [layoutLabOpen, setLayoutLabOpen] = useState(showLayoutLab);
     const previousIdentityKeyRef = useRef<string>('');
     const didCompleteRef = useRef(false);
     const timelineScrollRef = useRef<HTMLDivElement | null>(null);
@@ -138,6 +187,23 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     const activeEntry = cycleEntries.find((entry) => entry.cycle.id === activeCycleId) || cycleEntries[0];
     const activeIdentity = activeEntry?.cycle.identitySnapshot || buildFallbackIdentity(sovereignName, fallbackIdentity);
     const activeIndex = cycleEntries.findIndex((entry) => entry.cycle.id === activeCycleId);
+
+    const applyLayoutPatch = (patch: Partial<LegacyLayoutConfig>) => {
+        setStoredLegacyLayoutConfig({ ...layout, ...patch });
+    };
+
+    const jumpToCycle = (nextIndex: number) => {
+        const clampedIndex = Math.max(0, Math.min(cycleEntries.length - 1, nextIndex));
+        const nextEntry = cycleEntries[clampedIndex];
+        if (!nextEntry) return;
+
+        if (activeEntry && nextEntry.era.key !== activeEntry.era.key && nextEntry.era.color) {
+            setEraTransitionPulse(nextEntry.era.color);
+            window.setTimeout(() => setEraTransitionPulse(null), 720);
+        }
+
+        setActiveCycleId(nextEntry.cycle.id);
+    };
 
     useEffect(() => {
         if (!autoAdvance || !projectionActive || cycleEntries.length <= 1 || sequenceCompleted) return;
@@ -191,10 +257,19 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         const scroller = timelineScrollRef.current;
         if (!card || !scroller) return;
 
-        const cardRect = card.getBoundingClientRect();
-        const scrollRect = scroller.getBoundingClientRect();
-        const offset = (cardRect.left - scrollRect.left) - (scrollRect.width / 2) + (cardRect.width / 2);
-        scroller.scrollTo({ left: scroller.scrollLeft + offset, behavior: 'smooth' });
+        const frame = window.requestAnimationFrame(() => {
+            if ('scrollIntoView' in card) {
+                card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                return;
+            }
+
+            const cardRect = card.getBoundingClientRect();
+            const scrollRect = scroller.getBoundingClientRect();
+            const offset = (cardRect.left - scrollRect.left) - (scrollRect.width / 2) + (cardRect.width / 2);
+            scroller.scrollTo({ left: scroller.scrollLeft + offset, behavior: 'smooth' });
+        });
+
+        return () => window.cancelAnimationFrame(frame);
     }, [activeCycleId, activeIndex, interactive]);
 
     if (!eras.length) return null;
@@ -231,6 +306,67 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
             />
 
             <div className={`relative z-10 flex min-h-full flex-col ${interactive ? 'px-4 pb-3 pt-5 sm:px-5 sm:pb-4 sm:pt-5' : ''}`}>
+                {interactive && (
+                    <>
+                        <div className="pointer-events-none absolute inset-x-4 top-2 z-20 flex items-start justify-between gap-3 sm:top-3 sm:inset-x-5">
+                            <div className="pointer-events-auto rounded-[20px] border border-white/12 bg-black/55 px-3 py-2 shadow-[0_18px_38px_rgba(0,0,0,0.34)] backdrop-blur-md">
+                                <p className="text-[9px] font-black uppercase tracking-[0.26em] text-amber-100/70">Navegacao manual</p>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => jumpToCycle(activeIndex - 1)}
+                                        disabled={activeIndex <= 0}
+                                        className={`rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition ${activeIndex <= 0 ? 'cursor-not-allowed border border-white/8 bg-white/5 text-white/30' : 'border border-white/12 bg-white/8 text-white hover:bg-white/12'}`}
+                                    >
+                                        Anterior
+                                    </button>
+                                    <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/82">
+                                        {Math.max(activeIndex + 1, 1)} / {cycleEntries.length}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => jumpToCycle(activeIndex + 1)}
+                                        disabled={activeIndex >= cycleEntries.length - 1}
+                                        className={`rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition ${activeIndex >= cycleEntries.length - 1 ? 'cursor-not-allowed border border-white/8 bg-white/5 text-white/30' : 'luxe-skin-button'}`}
+                                    >
+                                        Proximo
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="pointer-events-auto flex flex-col items-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setLayoutLabOpen((current) => !current)}
+                                    className="rounded-full border border-white/12 bg-black/55 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white shadow-[0_18px_38px_rgba(0,0,0,0.34)] backdrop-blur-md transition hover:bg-black/65"
+                                >
+                                    {layoutLabOpen ? 'Ocultar editor' : 'Editar cena'}
+                                </button>
+                                {layoutLabOpen && (
+                                    <div className="w-[280px] rounded-[24px] border border-white/12 bg-[linear-gradient(180deg,rgba(11,13,19,0.92),rgba(6,7,12,0.88))] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.42)] backdrop-blur-lg">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.28em] text-amber-100/70">Editor da projecao</p>
+                                        <div className="mt-3 space-y-3">
+                                            <LayoutSlider label="Placa X" value={layout.plaqueOffsetX} min={-220} max={220} step={1} onChange={(value) => applyLayoutPatch({ plaqueOffsetX: value })} />
+                                            <LayoutSlider label="Placa Y" value={layout.plaqueOffsetY} min={-120} max={120} step={1} onChange={(value) => applyLayoutPatch({ plaqueOffsetY: value })} />
+                                            <LayoutSlider label="Placa Zoom" value={layout.plaqueZoom} min={0.55} max={1.6} step={0.01} onChange={(value) => applyLayoutPatch({ plaqueZoom: value })} />
+                                            <LayoutSlider label="Grid Y" value={layout.cyclesOffsetY} min={-240} max={140} step={1} onChange={(value) => applyLayoutPatch({ cyclesOffsetY: value })} />
+                                            <LayoutSlider label="Grid Zoom" value={layout.cyclesZoom} min={0.55} max={1.8} step={0.01} onChange={(value) => applyLayoutPatch({ cyclesZoom: value })} />
+                                        </div>
+                                        <div className="mt-4 flex items-center justify-end gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => resetStoredLegacyLayoutConfig()}
+                                                className="rounded-full border border-white/12 bg-white/6 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/78 transition hover:bg-white/10"
+                                            >
+                                                Resetar
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
                 <div
                     className={`mx-auto transition-all duration-700 ${timelineVisible ? 'opacity-100' : 'pointer-events-none opacity-40'} ${interactive ? 'cursor-pointer' : ''}`}
                     onClick={interactive ? onActivatePlaque : undefined}
@@ -238,7 +374,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                         marginTop: interactive ? '6vh' : undefined,
                         width: interactive ? `${scenePlaqueWidth}px` : undefined,
                         maxWidth: interactive ? 'calc(100vw - 2.5rem)' : undefined,
-                        transform: `translateY(${(timelineVisible ? 0 : -16) + layout.plaqueOffsetY}px) scale(${(enteringProjection ? 0.985 : 1) * scenePlaqueScale})`,
+                        transform: `translate(${layout.plaqueOffsetX}px, ${(timelineVisible ? 0 : -16) + layout.plaqueOffsetY}px) scale(${(enteringProjection ? 0.985 : 1) * scenePlaqueScale})`,
                         transformOrigin: 'top center',
                         boxShadow: eraTransitionPulse
                             ? `0 -10px 60px ${eraTransitionPulse}22, inset 0 0 70px ${eraTransitionPulse}11`
@@ -253,7 +389,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                                 : undefined,
                         }}
                     >
-                        <LegacyGrandPlaque eras={eras} sovereignName={sovereignName} compact />
+                        <LegacyGrandPlaque eras={orderedEras} sovereignName={sovereignName} compact />
                     </div>
                 </div>
 
@@ -265,7 +401,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                             style={{ transform: `translateY(${layout.cyclesOffsetY}px) scale(${layout.cyclesZoom})`, transformOrigin: 'top center' }}
                         >
                             <div className="relative inline-flex min-w-full items-start gap-1 pt-2">
-                                {eras.map((era, eraIndex) => {
+                                {orderedEras.map((era, eraIndex) => {
                                     const skin = getEraRibbonSkin(era.skinId);
                                     return (
                                         <div key={era.key || era.label} className="relative flex shrink-0 gap-1">

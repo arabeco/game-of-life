@@ -280,8 +280,8 @@ $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontS
 $heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 68, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 60, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 48, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$bodyFont = [System.Drawing.Font]::new($bodyFamily, 36, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 28, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodyFont = [System.Drawing.Font]::new($bodyFamily, 43, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 32, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $watermarkFont = [System.Drawing.Font]::new($headlineFamily, 118, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -335,12 +335,12 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
 Draw-CenterText -Graphics $graphics -Text "Ru${iacute}do" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
-Draw-EditorialPanel -Graphics $graphics -X 150 -Y 276 -Width 780 -Height 636 -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "Quando voc${ecirc} divide aten${ccedilla}${atilde}o,`ndivide pot${ecirc}ncia." -Font $titleLargeFont -Brush $marfimTitleBrush -X 196 -Y 324 -Width 688 -Height 184
-Draw-CenterText -Graphics $graphics -Text "O c${eacute}rebro n${atilde}o sustenta profundidade em tr${ecirc}s frentes.`nEle alterna, perde contexto e sangra energia." -Font $bodyFont -Brush $offWhiteBrush -X 208 -Y 560 -Width 664 -Height 176
-Draw-CenterText -Graphics $graphics -Text "Troca constante parece`navan${ccedilla}o." -Font $titleMediumFont -Brush $whiteBrush -X 208 -Y 804 -Width 664 -Height 104
+Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 700 -Tone "marfim"
+Draw-CenterText -Graphics $graphics -Text "Quando voc${ecirc} divide aten${ccedilla}${atilde}o,`ndivide pot${ecirc}ncia." -Font $titleLargeFont -Brush $marfimTitleBrush -X 184 -Y 300 -Width 712 -Height 196
+Draw-CenterText -Graphics $graphics -Text "O c${eacute}rebro n${atilde}o sustenta profundidade em tr${ecirc}s frentes.`nEle alterna, perde contexto e sangra energia." -Font $bodyFont -Brush $offWhiteBrush -X 186 -Y 566 -Width 708 -Height 196
+Draw-CenterText -Graphics $graphics -Text "Troca constante parece`navan${ccedilla}o." -Font $titleMediumFont -Brush $whiteBrush -X 188 -Y 834 -Width 704 -Height 108
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide2 = Join-Path $OutputDir "slide-02-reagir.png"
+$slide2 = Join-Path $OutputDir "slide-02-ruido.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
 $created.Add($slide2)
 
@@ -350,10 +350,10 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
 Draw-CenterText -Graphics $graphics -Text "Alvo" -Font $watermarkFont -Brush $goldWashBrush -X 80 -Y 118 -Width 920 -Height 176
-Draw-EditorialPanel -Graphics $graphics -X 146 -Y 272 -Width 788 -Height 652 -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "Quem escolhe um alvo`nrecupera profundidade." -Font $titleLargeFont -Brush $marfimTitleBrush -X 196 -Y 324 -Width 688 -Height 182
-Draw-CenterText -Graphics $graphics -Text "Foco n${atilde}o ${eacute} rigidez.`n${Eacute} respeito pela tarefa que importa agora." -Font $bodyFont -Brush $offWhiteBrush -X 214 -Y 566 -Width 652 -Height 152
-Draw-CenterText -Graphics $graphics -Text "Uma coisa inteira vence`ntr${ecirc}s pela metade." -Font $titleMediumFont -Brush $whiteBrush -X 204 -Y 806 -Width 672 -Height 112
+Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 708 -Tone "marfim"
+Draw-CenterText -Graphics $graphics -Text "Quem escolhe um alvo`nrecupera profundidade." -Font $titleLargeFont -Brush $marfimTitleBrush -X 184 -Y 298 -Width 712 -Height 190
+Draw-CenterText -Graphics $graphics -Text "Foco n${atilde}o ${eacute} rigidez.`n${Eacute} respeito pela tarefa que importa agora." -Font $bodyFont -Brush $offWhiteBrush -X 194 -Y 576 -Width 692 -Height 174
+Draw-CenterText -Graphics $graphics -Text "Uma coisa inteira vence`ntr${ecirc}s pela metade." -Font $titleMediumFont -Brush $whiteBrush -X 186 -Y 834 -Width 708 -Height 116
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-alvo.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3

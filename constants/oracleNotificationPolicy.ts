@@ -138,7 +138,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'feed',
     badge: false,
     basicVisible: false,
-    gameVisible: false,
+    gameVisible: true,
     coachVisible: true,
     tacticalVisible: true,
     icon: 'O',

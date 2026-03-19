@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\curadoria-01-cristiano-ronaldo\slides"
 )
 
@@ -151,6 +151,27 @@ function Draw-ImageInBox {
     }
 }
 
+function Get-FeatureFrameHeight {
+    param(
+        [string]$ImagePath,
+        [float]$FrameWidth,
+        [float]$InnerHorizontalPadding = 44,
+        [float]$InnerVerticalPadding = 36,
+        [float]$MinHeight = 360,
+        [float]$MaxHeight = 760
+    )
+
+    $image = [System.Drawing.Image]::FromFile($ImagePath)
+    try {
+        $contentWidth = [Math]::Max(80, $FrameWidth - $InnerHorizontalPadding)
+        $scale = $contentWidth / $image.Width
+        $height = ($image.Height * $scale) + $InnerVerticalPadding
+        return [float][Math]::Max($MinHeight, [Math]::Min($MaxHeight, $height))
+    } finally {
+        $image.Dispose()
+    }
+}
+
 function Draw-ShadowEllipse {
     param(
         [System.Drawing.Graphics]$Graphics,
@@ -175,6 +196,26 @@ function Draw-ShadowEllipse {
         } finally {
             $brush.Dispose()
         }
+    }
+}
+
+function Draw-InnerContour {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [float]$X,
+        [float]$Y,
+        [float]$Width,
+        [float]$Height
+    )
+
+    $outerPen = [System.Drawing.Pen]::new((New-Color 214 237 205 114), 2.6)
+    $innerPen = [System.Drawing.Pen]::new((New-Color 138 255 236 196), 1.0)
+    try {
+        $Graphics.DrawRectangle($outerPen, $X, $Y, $Width, $Height)
+        $Graphics.DrawRectangle($innerPen, $X + 10, $Y + 10, $Width - 20, $Height - 20)
+    } finally {
+        $outerPen.Dispose()
+        $innerPen.Dispose()
     }
 }
 
@@ -252,16 +293,25 @@ function Draw-BackgroundBase {
         [System.Drawing.Graphics]$Graphics,
         [string]$BackgroundPath,
         [int]$Width,
-        [int]$Height
+        [int]$Height,
+        [string]$Tone = "obsidian"
     )
 
     Draw-FittedImage -Graphics $Graphics -ImagePath $BackgroundPath -Width $Width -Height $Height
 
+    $topColor = switch ($Tone) {
+        "rubi" { New-Color 182 32 5 10 }
+        default { New-Color 175 2 3 6 }
+    }
+    $bottomColor = switch ($Tone) {
+        "rubi" { New-Color 156 58 9 18 }
+        default { New-Color 145 7 8 11 }
+    }
     $overlayBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
         [System.Drawing.Point]::new(0, 0),
         [System.Drawing.Point]::new($Width, $Height),
-        (New-Color 175 2 3 6),
-        (New-Color 145 7 8 11)
+        $topColor,
+        $bottomColor
     )
     $Graphics.FillRectangle($overlayBrush, 0, 0, $Width, $Height)
     $overlayBrush.Dispose()
@@ -271,7 +321,11 @@ function Draw-BackgroundBase {
     $panelWidth = $Width - 164
     $panelHeight = $Height - 164
 
-    $panelBrush = [System.Drawing.SolidBrush]::new((New-Color 162 5 6 9))
+    $panelColor = switch ($Tone) {
+        "rubi" { New-Color 168 20 6 10 }
+        default { New-Color 162 5 6 9 }
+    }
+    $panelBrush = [System.Drawing.SolidBrush]::new($panelColor)
     $Graphics.FillRectangle($panelBrush, $panelX, $panelY, $panelWidth, $panelHeight)
     $panelBrush.Dispose()
 
@@ -306,7 +360,7 @@ function Draw-SmallBrand {
 
     $logo = [System.Drawing.Image]::FromFile($LogoPath)
     try {
-        $Graphics.DrawImage($logo, 875, 1168, 110, 110)
+        $Graphics.DrawImage($logo, 848, 1142, 98, 98)
     } finally {
         $logo.Dispose()
     }
@@ -510,6 +564,19 @@ function New-BodyPanel {
     }
 }
 
+function Draw-EditorialTextPanel {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [int]$X,
+        [int]$Y,
+        [int]$Width,
+        [int]$Height
+    )
+
+    New-BodyPanel -Graphics $Graphics -X $X -Y $Y -Width $Width -Height $Height
+    Draw-InnerContour -Graphics $Graphics -X ($X + 12) -Y ($Y + 12) -Width ($Width - 24) -Height ($Height - 24)
+}
+
 $root = Split-Path -Parent $OutputDir
 if (-not (Test-Path $root)) {
     New-Item -ItemType Directory -Path $root -Force | Out-Null
@@ -523,8 +590,9 @@ $width = 1080
 $height = 1350
 
 $logoPath = "C:\Users\Afonso\Downloads\GOL1.006\public\logo-diamond.png"
-$bgObsidian = "C:\Users\Afonso\Downloads\GOL1.006\public\legacy-skins\1.jpg"
-$bgSapphire = "C:\Users\Afonso\Downloads\GOL1.006\public\legacy-skins\5.jpg"
+$bgObsidian = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\blackback.jpg"
+$bgRubi = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\rubiback.jpg"
+$bgSapphire = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\darkblueback.jpg"
 $cr7CoverPath = "C:\Users\Afonso\Downloads\GOL1.006\marketing\curadoria-01-cristiano-ronaldo\image-removebg-preview - 2026-03-18T130119.312.png"
 $cr7PanelPath = "C:\Users\Afonso\Downloads\GOL1.006\marketing\curadoria-01-cristiano-ronaldo\image-removebg-preview - 2026-03-18T130333.899.png"
 $cr7Slide3Path = "C:\Users\Afonso\Downloads\GOL1.006\marketing\curadoria-01-cristiano-ronaldo\image-removebg-preview - 2026-03-18T131858.753.png"
@@ -543,6 +611,7 @@ $bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 22, [System.Drawing.Fon
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $monoTitleFont = [System.Drawing.Font]::new($headlineFamily, 150, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$curadoriaWatermarkFont = [System.Drawing.Font]::new($headlineFamily, 68, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $radarLabelFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $radarValueFont = [System.Drawing.Font]::new($bodyFamily, 16, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 
@@ -553,23 +622,49 @@ $eyebrowBrush = [System.Drawing.SolidBrush]::new((New-Color 165 255 236 196))
 $goldTextBrush = [System.Drawing.SolidBrush]::new((New-Color 255 244 216 118))
 $goldSoftBrush = [System.Drawing.SolidBrush]::new((New-Color 220 234 206 110))
 $ghostBrush = [System.Drawing.SolidBrush]::new((New-Color 28 255 255 255))
+$curadoriaWatermarkBrush = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
 
 $goldBrushSlide = Get-GoldBrush -Width $width -Height $height
 
 $created = New-Object System.Collections.Generic.List[string]
 
+$Aacute = [char]0x00C1
+$Atilde = [char]0x00C3
+$Ccedilla = [char]0x00C7
+$Eacute = [char]0x00C9
+$Ecirc = [char]0x00CA
+$Iacute = [char]0x00CD
+$Oacute = [char]0x00D3
+$Otilde = [char]0x00D5
+$aacute = [char]0x00E1
+$atilde = [char]0x00E3
+$ccedilla = [char]0x00E7
+$eacute = [char]0x00E9
+$ecirc = [char]0x00EA
+$iacute = [char]0x00ED
+$oacute = [char]0x00F3
+$otilde = [char]0x00F5
+
+# Boxes editoriais padronizados para Curadoria.
+$curadoriaPortraitFrameWidth = 214
+$curadoriaPortraitFrameHeight = 620
+$curadoriaEditorialPanelWidth = 432
+$curadoriaEditorialPanelHeight = 404
+
 # Slide 1
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-Label -Graphics $graphics -Text "CURADORIA 01" -Font $eyebrowFont -Brush $eyebrowBrush -X 124 -Y 116 -Width 240 -Height 24
-Draw-Label -Graphics $graphics -Text "RADAR DE MAESTRIA" -Font $eyebrowFont -Brush $eyebrowBrush -X 124 -Y 156 -Width 260 -Height 24
-Draw-CenterText -Graphics $graphics -Text "CR7" -Font $monoTitleFont -Brush $ghostBrush -X 150 -Y 158 -Width 520 -Height 190
-Draw-FeatureFrame -Graphics $graphics -X 648 -Y 244 -Width 214 -Height 712 -ImagePath $cr7CoverPath -Opacity 1.0
-Draw-CenterText -Graphics $graphics -Text "COMO O GLYPH`nLERIA O`nCRISTIANO`nRONALDO?" -Font $titleHugeFont -Brush $goldBrushSlide -X 104 -Y 402 -Width 560 -Height 430
-Draw-Pill -Graphics $graphics -Text "NIVEL DE MAESTRIA 89" -Font $bodyBoldFont -X 118 -Y 924 -Width 428 -Height 58
-Draw-CenterText -Graphics $graphics -Text "NAO E FAN PAGE.`nE LEITURA DE SISTEMA." -Font $titleMediumFont -Brush $offWhiteBrush -X 110 -Y 1002 -Width 600 -Height 120
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+$slide1FrameWidth = 214
+$slide1FrameHeight = Get-FeatureFrameHeight -ImagePath $cr7CoverPath -FrameWidth $slide1FrameWidth -MinHeight 480 -MaxHeight 620
+$slide1FrameBottom = 956
+$slide1FrameY = [float]($slide1FrameBottom - $slide1FrameHeight)
+Draw-CenterText -Graphics $graphics -Text "Cristiano Ronaldo" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
+Draw-FeatureFrame -Graphics $graphics -X 648 -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0
+Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria o`nCristiano`nRonaldo?" -Font $titleHugeFont -Brush $goldBrushSlide -X 104 -Y 402 -Width 560 -Height 430
+Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 89" -Font $bodyBoldFont -X 118 -Y 924 -Width 428 -Height 58
+Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} fan page.`n${Eacute} leitura de sistema." -Font $titleMediumFont -Brush $offWhiteBrush -X 110 -Y 1002 -Width 600 -Height 120
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -579,14 +674,21 @@ $created.Add($slide1)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height
-Draw-Label -Graphics $graphics -Text "QUEM E" -Font $eyebrowFont -Brush $eyebrowBrush -X 124 -Y 116 -Width 200 -Height 24
-Draw-CenterText -Graphics $graphics -Text "CR7" -Font $monoTitleFont -Brush $ghostBrush -X 520 -Y 114 -Width 430 -Height 180
-New-BodyPanel -Graphics $graphics -X 370 -Y 314 -Width 550 -Height 610
-Draw-FeatureFrame -Graphics $graphics -X 82 -Y 300 -Width 260 -Height 640 -ImagePath $cr7PanelPath -Opacity 0.98 -CoverImage
-Draw-CenterText -Graphics $graphics -Text "CR7 NAO VIROU`nICONE`nPOR IMPULSO." -Font $titlePanelFont -Brush $goldBrushSlide -X 412 -Y 374 -Width 456 -Height 220
-Draw-CenterText -Graphics $graphics -Text "Virou porque transformou treino,`nimagem, carreira e ambicao`nem padrao diario." -Font $bodyFont -Brush $offWhiteBrush -X 430 -Y 612 -Width 420 -Height 136
-Draw-CenterText -Graphics $graphics -Text "NAO E HYPE.`nE SISTEMA." -Font $titleMediumFont -Brush $whiteBrush -X 430 -Y 784 -Width 420 -Height 94
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-CenterText -Graphics $graphics -Text "Cristiano Ronaldo" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 90 -Y 128 -Width 900 -Height 120
+$slide2PanelX = 150
+$slide2PanelY = 362
+$slide2PanelWidth = 486
+$slide2PanelHeight = 424
+$slide2FrameX = 704
+$slide2FrameY = 302
+$slide2FrameWidth = 174
+$slide2FrameHeight = 642
+Draw-EditorialTextPanel -Graphics $graphics -X $slide2PanelX -Y $slide2PanelY -Width $slide2PanelWidth -Height $slide2PanelHeight
+Draw-CenterText -Graphics $graphics -Text "CR7 n${Atilde}o virou`n${iacute}cone por impulso." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 34) -Y ($slide2PanelY + 48) -Width ($slide2PanelWidth - 68) -Height 110
+Draw-CenterText -Graphics $graphics -Text "Virou porque transformou treino,`nimagem, carreira e ambi${ccedilla}${atilde}o`nem padr${atilde}o di${aacute}rio." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 44) -Y ($slide2PanelY + 182) -Width ($slide2PanelWidth - 88) -Height 130
+Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} hype.`n${Eacute} sistema." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 48) -Y ($slide2PanelY + 320) -Width ($slide2PanelWidth - 96) -Height 74
+Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -CoverImage
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-quem-e.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -596,14 +698,14 @@ $created.Add($slide2)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-Label -Graphics $graphics -Text "ATIVOS MAIS ALTOS" -Font $eyebrowFont -Brush $eyebrowBrush -X 124 -Y 116 -Width 260 -Height 24
-Draw-CenterText -Graphics $graphics -Text "O TOPO NAO`nNASCEU DO ACASO." -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 194 -Width 610 -Height 160
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-CenterText -Graphics $graphics -Text "Cristiano Ronaldo" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
+Draw-CenterText -Graphics $graphics -Text "O topo n${Atilde}o`nnasceu do acaso." -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 194 -Width 610 -Height 160
 Draw-ImageInBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 692 -Y 194 -Width 280 -Height 210 -Opacity 0.98 -AlignBottom -AlignRight
-Draw-StatCard -Graphics $graphics -X 118 -Y 434 -Width 260 -Height 420 -Title "FISICO`n10" -Body "O corpo virou`nmaquina de`nexecucao." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 410 -Y 434 -Width 260 -Height 420 -Title "TRABALHO`n10" -Body "A rotina virou`nvantagem`ncompetitiva." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 702 -Y 434 -Width 260 -Height 420 -Title "PROPOSITO`n10" -Body "A carreira ganhou`ndirecao total`ne ambicao longa." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-CenterText -Graphics $graphics -Text "Fisico, Trabalho e Proposito.`nA execucao virou identidade." -Font $bodyFont -Brush $mutedBrush -X 168 -Y 930 -Width 744 -Height 96
+Draw-StatCard -Graphics $graphics -X 118 -Y 434 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "O corpo virou`nm${aacute}quina de`nexecu${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 410 -Y 434 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "A rotina virou`nvantagem`ncompetitiva." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 702 -Y 434 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "A carreira ganhou`ndire${ccedilla}${atilde}o total`ne ambi${ccedilla}${atilde}o longa." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-CenterText -Graphics $graphics -Text "F${iacute}sico, Trabalho e Prop${oacute}sito.`nA execu${ccedilla}${atilde}o virou identidade." -Font $bodyFont -Brush $mutedBrush -X 168 -Y 930 -Width 744 -Height 96
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-ativos.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -613,14 +715,27 @@ $created.Add($slide3)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height
-Draw-Label -Graphics $graphics -Text "RADAR COMPLETO" -Font $eyebrowFont -Brush $eyebrowBrush -X 124 -Y 116 -Width 240 -Height 24
-Draw-CenterText -Graphics $graphics -Text "NIVEL DE MAESTRIA" -Font $titleMediumFont -Brush $goldBrushSlide -X 200 -Y 128 -Width 680 -Height 60
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-CenterText -Graphics $graphics -Text "Cristiano Ronaldo" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 126 -Width 896 -Height 120
+New-BodyPanel -Graphics $graphics -X 126 -Y 326 -Width 828 -Height 792
+Draw-InnerContour -Graphics $graphics -X 146 -Y 346 -Width 788 -Height 752
+Draw-CenterText -Graphics $graphics -Text "N${Iacute}vel de maestria" -Font $titleMediumFont -Brush $goldBrushSlide -X 200 -Y 128 -Width 680 -Height 60
 Draw-CenterText -Graphics $graphics -Text "89" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
-$labels = @("CONSCIENCIA","ESPACO MENTAL","ESPIRITUAL","PROPOSITO","PROJETOS","CONEXOES","FINANCAS","TRABALHO","HOBBIES","FISICO")
+$labels = @(
+    "Consci${ecirc}ncia",
+    "Espa${ccedilla}o mental",
+    "ESPIRITUAL",
+    "Prop${oacute}sito",
+    "Projetos",
+    "Conex${otilde}es",
+    "Finan${ccedilla}as",
+    "Trabalho",
+    "Hobbies",
+    "F${iacute}sico"
+)
 $values = @(8,10,7,10,9,8,10,10,7,10)
-Draw-RadarChart -Graphics $graphics -CenterX 540 -CenterY 705 -Radius 250 -Values $values -Labels $labels -LabelFont $radarLabelFont -ValueFont $radarValueFont
-Draw-CenterText -Graphics $graphics -Text "O nivel do CR7 nao e motivacao.`nE sistema de execucao sustentado por anos." -Font $bodyFont -Brush $offWhiteBrush -X 186 -Y 1016 -Width 708 -Height 120
+Draw-RadarChart -Graphics $graphics -CenterX 540 -CenterY 678 -Radius 250 -Values $values -Labels $labels -LabelFont $radarLabelFont -ValueFont $radarValueFont
+Draw-CenterText -Graphics $graphics -Text "O n${iacute}vel do CR7 n${atilde}o ${eacute} motiva${ccedilla}${atilde}o.`n${Eacute} sistema de execu${ccedilla}${atilde}o sustentado por anos." -Font $bodySmallFont -Brush $offWhiteBrush -X 204 -Y 1022 -Width 672 -Height 78
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide4 = Join-Path $OutputDir "slide-04-radar.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
@@ -630,7 +745,21 @@ $created.Add($slide4)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+$watermarkFont = [System.Drawing.Font]::new($headlineFamily, 118, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$watermarkBrush = [System.Drawing.SolidBrush]::new((New-Color 16 244 216 118))
+$strongBorderPen = [System.Drawing.Pen]::new((New-Color 255 242 210 110), 3.6)
+$strongInnerPen = [System.Drawing.Pen]::new((New-Color 166 255 236 196), 1.2)
+try {
+    $graphics.DrawRectangle($strongBorderPen, 82, 82, 916, 1186)
+    $graphics.DrawRectangle($strongInnerPen, 96, 96, 888, 1158)
+    Draw-CenterText -Graphics $graphics -Text "Curadoria" -Font $watermarkFont -Brush $watermarkBrush -X 70 -Y 454 -Width 940 -Height 150
+} finally {
+    $watermarkFont.Dispose()
+    $watermarkBrush.Dispose()
+    $strongBorderPen.Dispose()
+    $strongInnerPen.Dispose()
+}
 $logo = [System.Drawing.Image]::FromFile($logoPath)
 try {
     $graphics.DrawImage($logo, 296, 220, 488, 488)
@@ -638,7 +767,7 @@ try {
     $logo.Dispose()
 }
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
-Draw-CenterText -Graphics $graphics -Text "Organize seu imperio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
+Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
 Draw-CenterText -Graphics $graphics -Text "CURADORIA 01  |  CRISTIANO RONALDO" -Font $eyebrowFont -Brush $eyebrowBrush -X 220 -Y 1060 -Width 640 -Height 28
 $slide5 = Join-Path $OutputDir "slide-05-fecho.png"
@@ -653,7 +782,7 @@ $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
 Draw-CenterText -Graphics $contactGraphics -Text "CURADORIA 01  |  CRISTIANO RONALDO" -Font ([System.Drawing.Font]::new($headlineFamily, 46, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
-Draw-CenterText -Graphics $contactGraphics -Text "Review board - 5 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
+Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 5 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560
 $thumbHeight = 700
@@ -694,6 +823,7 @@ $bodySmallFont.Dispose()
 $bodyBoldFont.Dispose()
 $ctaFont.Dispose()
 $monoTitleFont.Dispose()
+$curadoriaWatermarkFont.Dispose()
 $radarLabelFont.Dispose()
 $radarValueFont.Dispose()
 $whiteBrush.Dispose()
@@ -703,6 +833,7 @@ $eyebrowBrush.Dispose()
 $goldTextBrush.Dispose()
 $goldSoftBrush.Dispose()
 $ghostBrush.Dispose()
+$curadoriaWatermarkBrush.Dispose()
 $goldBrushSlide.Dispose()
 $sheetBrush.Dispose()
 $sheetGold.Dispose()
@@ -710,3 +841,4 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+

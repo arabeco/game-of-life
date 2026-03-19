@@ -377,6 +377,7 @@ export interface GameContextType {
     updateOraclePreferences: (prefs: Partial<OraclePreferences>) => Promise<void>;
     oracleMessages: OracleMessage[];
     markOracleMessageAsRead: (messageId: string) => Promise<void>;
+    refreshOracleMessages: () => Promise<void>;
     triggerOracle: (triggerType?: 'app_open' | 'cron' | 'manual') => Promise<void>;
 
     // Notifications
@@ -1148,6 +1149,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     }, [session?.user.id]);
 
+    const refreshOracleMessages = useCallback(async () => {
+        const userId = session?.user.id;
+        if (userId && isUuid(userId)) {
+            await fetchOracleMessages(userId);
+        }
+    }, [session?.user.id, fetchOracleMessages]);
+
     const markNotificationRead = async (id: string) => {
         setNotifications(prev => prev.map(n => n.id === id ?{ ...n, read: true } : n));
         await SupabaseService.markNotificationRead(id);
@@ -1170,6 +1178,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setNotifications([]);
         }
     }, [session?.user.id, fetchOraclePreferences, fetchOracleMessages, fetchNotifications]);
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId)) return;
+
+        const notificationsChannel = supabase
+            .channel(`notifications-realtime-${userId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'notifications',
+                filter: `user_id=eq.${userId}`,
+            }, () => {
+                void fetchNotifications();
+            })
+            .subscribe();
+
+        const oracleMessagesChannel = supabase
+            .channel(`oracle-messages-realtime-${userId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'oracle_messages',
+                filter: `user_id=eq.${userId}`,
+            }, () => {
+                void refreshOracleMessages();
+            })
+            .subscribe();
+
+        return () => {
+            notificationsChannel.unsubscribe();
+            oracleMessagesChannel.unsubscribe();
+        };
+    }, [session?.user.id, fetchNotifications, refreshOracleMessages]);
 
     // --- FORGE SYSTEM ---
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -7925,7 +7967,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

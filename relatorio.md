@@ -19,35 +19,35 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 - **AQUISICAO: --** (Aguardando Videos)
 
 ## 3. STATUS DE ENTREGA (CONCLUIDO NESTE CICLO)
+[x] Publicar e validar em `app.glyph.life` o pacote atual de Login/Codex/Mentoria/Planner/Vinculos e fechar o smoke real consolidado no celular. - Responsavel: PROTOCOLO
+[x] Fortalecer o `marco1_beta_tracking`/GM Panel em uso real e transformar o painel em vitrine: snapshot editorial, legado premium preenchido e preview de relatorio de ciclo nota `S` pronto para print. - Responsavel: PROTOCOLO
+[x] Empurrar Termos/Privacidade do cadastro manual para o ritual pos-login, alinhando o fluxo manual ao retorno autenticado do Google. - Responsavel: PROTOCOLO
+[x] Blindar o compartilhamento e os atritos mais visiveis do mobile/planner: cancelamento de imagem sem erro falso, hold sem selecao, bay area recuando de altura e edicao de acao mais segura. - Responsavel: PROTOCOLO
 [x] Entregar a primeira passagem da `Central de Vinculos` no padrao luxe, separando vinculo de arena vinculada e conectando custos, slots e Loja para Parceria, Competicao e Mentoria. - Responsavel: PROTOCOLO
 [x] Estruturar o backend do novo pacote social: `relationship_link_arenas`, RPCs monetizadas com refund, limite de `2` Codex de mentoria e migration compatibilizada com banco legado. - Responsavel: PROTOCOLO
 [x] Blindar o retorno do OAuth Google para nao cair de volta na LoginView: memoria curta de auth pendente, retry de sessao e boot mais estavel no primeiro retorno do provedor. - Responsavel: PROTOCOLO
 
 ## 4. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
 ### COMANDO (METAS IMEDIATAS & DONO)
-[-] Fechar a validacao de conta nova real restante: e-mail/Convite, aceite explicito de Termos no cadastro manual e primeiro retorno D2. - Responsavel: TRONO
-[-] Publicar e validar em `app.glyph.life` o pacote atual de Login/Codex/Mentoria/Planner/Vinculos antes de abrir os primeiros Bilhetes. - Responsavel: PROTOCOLO
-[ ] Rodar 3 contas reais de ensaio e registrar tempo, travas e duvidas do D0 ao primeiro retorno. - Responsavel: SENTINELA
-[-] Rodar smoke real consolidado do pacote Loja/Codex/Mentoria/Vinculos/Planner/Rest no celular: compra, slots, parceria/competicao, envio mentor -> pupilo, forja por `300 ouro`, arena vinculada, bay global, duracao apos drop, drag noturno, retorno de background e fluxo de desbloqueio. - Responsavel: SENTINELA
-[-] Fechar QA de campo/mobile do pacote Login -> Perfil -> Loja -> Codex -> Planner -> Customizacao e congelar o padrao visual. - Responsavel: SENTINELA
+[ ] Fechar a validacao de conta nova real restante: e-mail/Convite e primeiro retorno D2. - Responsavel: TRONO
+[-] Rodar 3 contas reais de ensaio e registrar tempo, travas e duvidas do D0 ao primeiro retorno. - Responsavel: SENTINELA
+[-] Fechar QA de campo/mobile do pacote Login -> Perfil -> Loja -> Codex -> Planner -> Customizacao e congelar o padrao visual. Card de Season, leitura de Genesis/Aurora e hierarquia da vitrine ainda pedem passada final. - Responsavel: SENTINELA
 
 ### TRONO (Governanca & Decisao)
 [ ] Disparar os 5 primeiros Bilhetes Dourados.
 [ ] Analisar dados reais de Ativacao, D2 e % de Ciclos para validar a entrada da Primeira Linhagem.
 
 ### PROTOCOLO (Integridade & Codigo)
-[-] Validar em uso real se o novo `marco1_beta_tracking`/GM Panel esta lendo bem `ouro`, `prata`, `bronze` e o funil `60/30/20`.
-[-] Revisar o cadastro manual para explicitar Termos/Privacidade antes da criacao da conta e concluir a ultima passada de pt-BR residual.
-[-] Consertar a exibicao do PIX QR Code no fluxo de compra real da Loja. - Responsavel: PROTOCOLO
-[-] Checar Notificacoes e e-mail ponta a ponta, incluindo convites e sinais do pacote social. - Responsavel: PROTOCOLO
-[-] Ajustar o compartilhar imagem para nao tratar cancelamento como erro: toast de carregamento, cancelamento limpo e feedback correto ao usuario. - Responsavel: PROTOCOLO
+[-] Concluir a ultima passada de pt-BR residual e acabamento fino do cadastro manual apos o novo ritual de Termos pos-login. - Responsavel: PROTOCOLO
+[-] Consertar a exibicao do PIX QR Code no fluxo de compra real da Loja; o Brick ainda duplica a etapa de e-mail/metodo em alguns cenarios do Mercado Pago. - Responsavel: PROTOCOLO
+[-] Fechar o teste real de Notificacoes/e-mail ponta a ponta via GM Panel; codigo e deploy da `resend` subiram, mas a prova em conta real ainda falta. - Responsavel: PROTOCOLO
 
 ### DOMINIO (Marketing & Presenca)
 [ ] Criar e publicar videos curtos/Reels dos fluxos principais, usando isso para apresentar os 5 primeiros acessos e abrir a narrativa publica do GLYPH.
 [ ] Fazer uma vistoria do site/landing para alinhar copy, fluxo e apresentacao publica antes de empurrar mais trafego.
 
 ### TESOURO (Produto & Economia)
-[-] Fechar a segunda passada do pacote social: custos, permissoes e telas de Mentoria, Parceria e Competicao, com leitura clara do que e gratis, premium, pago e vinculado a arenas compartilhadas. - Responsavel: TESOURO
+[-] Fechar a segunda passada do pacote social: custos, permissoes e telas de Mentoria, Parceria e Competicao ainda precisam ficar mais claras, mais compactas e mais fieis ao padrao luxe, com slots e arenas compartilhadas visiveis dentro da mentoria. - Responsavel: TESOURO
 [ ] Validar com uso real se mentor Premium + forja de `300 ouro` sustenta bem a economia da mentoria e a leitura de valor de Ouro, Slots, Codex, cosmeticos e Vanguarda.
 
 ## 5. MARCO 1: PROVA (DEZ/2026)
@@ -80,7 +80,7 @@ Monitor complementar:
 ## 7. RESUMO ATUALIZADO
 - Data: 18/03/2026
 - Atualizado por: GPT-5 Codex
-- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e o fechamento de hoje abriu um novo bloco concreto no pacote social: primeira passagem da Central de Vinculos no padrao luxe, separacao formal entre vinculo e arena vinculada, slots/custos na Loja e base de backend com RPCs, refunds, linked arenas e limite de `2` Codex de mentoria. O retorno do Google segue na vitrine de entrega e a matriz de execucao foi atualizada para refletir o que entrou no radar de QA de hoje: smoke real do pacote social no celular, PIX QR Code, notificacoes/e-mail e o cancelamento correto do compartilhamento de imagem. O foco imediato continua sendo publicar e validar esse pacote em uso real sem ruido.
+- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e o fechamento de hoje consolidou um bloco pesado de acabamento real: pacote atual publicado em `app.glyph.life`, smoke mobile consolidado rodado, ritual de Termos puxado para depois do login manual, compartilhamento/planner/mobile mais blindados e o GM Panel transformado em vitrine com snapshot editorial, legado premium e relatorio de ciclo nota `S` pronto para print. Ao mesmo tempo, o QA reabriu a segunda passada do pacote social e o fluxo real de PIX/Notificacoes: a Central de Vinculos ainda pede uma leitura mais clara e mais compacta para mentoria/arenas compartilhadas, e o Mercado Pago ainda precisa fechar o comportamento do QR sem duplicar a etapa do pagador. O foco imediato agora e lapidar esses dois eixos sem perder o embalo do beta real.
 - Texto do relatorio: atualizado a cada fechamento.
 
 ## 8. MODO DE USO DO RELATORIO
@@ -105,12 +105,11 @@ Monitor complementar:
 12. So converter `[x]` em `[v]` e mover `[v]` para `progresso.md` quando eu pedir claramente para `fechar o dia`, `fechar ciclo` ou equivalente.
 
 ## 9. BLOQUEIOS ATUAIS (ABERTOS)
-[ ] Conta nova real: ainda falta fechar sem ruido o ramo e-mail/Convite, o aceite de Termos no cadastro manual e o primeiro retorno D2.
-[ ] Pacote de hoje ainda pede publicacao e smoke real em `app.glyph.life` para Login/Codex/Mentoria/Planner/Vinculos.
+[ ] Conta nova real: ainda falta fechar sem ruido o ramo e-mail/Convite e o primeiro retorno D2.
+[ ] Pacote publicado e smoke base rodado, mas PIX QR, notificacoes/e-mail reais e a segunda passada da Central de Vinculos ainda pedem acabamento.
 [ ] Operacao solo: execucao, QA e revisao ainda concentrados em 1 pessoa.
-[ ] Acabamento final: mobile, pt-BR residual, PIX QR, notificacoes/e-mail e o comportamento de retorno/background ainda pedem ultima passada.
-[ ] Atritos de UX: compartilhamento de imagem ainda precisa diferenciar cancelamento do erro real.
-[ ] Tese de valor: Loja, Codex, Mentoria e Vanguarda ainda sem validacao forte em beta real.
+[ ] Acabamento final: mobile, pt-BR residual, card de Season e a leitura de Genesis/Aurora ainda pedem ultima passada.
+[ ] Tese de valor: Loja, Codex, Mentoria, Vinculos e Vanguarda ainda sem validacao forte em beta real.
 
 Legenda rapida:
 - `[ ]` = pendente

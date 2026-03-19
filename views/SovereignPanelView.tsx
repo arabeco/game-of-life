@@ -23,7 +23,7 @@ import { SvgRadarChart } from '../components/SvgRadarChart';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { useGame } from '../contexts/GameContext';
-import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, Report, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
+import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, NotificationType, Report, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
 
@@ -1339,8 +1339,10 @@ const CycleReportPreviewButton: React.FC = () => {
     );
 };
 
-const NotificationTypeButton: React.FC<{ type: string; label: string; color: string }> = ({ type, label, color }) => {
-    const { session, fetchNotifications, showToast } = useGame();
+type NotificationLabType = 'welcome' | 'oracle' | 'insight';
+
+const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: string; color: string }> = ({ type, label, color }) => {
+    const { session, fetchNotifications, refreshOracleMessages, showToast } = useGame();
     const [isPending, setIsPending] = useState(false);
 
     const colors: Record<string, string> = {
@@ -1353,8 +1355,37 @@ const NotificationTypeButton: React.FC<{ type: string; label: string; color: str
         if (!session?.user.id || isPending) return;
         setIsPending(true);
 
+        if (type === 'oracle') {
+            try {
+                const { error } = await supabase.from('oracle_messages').insert({
+                    id: crypto.randomUUID(),
+                    user_id: session.user.id,
+                    category: 'analise_padroes',
+                    content: 'O Oraculo detectou um sinal forte na sua cadencia: suas melhores entregas apareceram nos primeiros blocos da manha. Proteja esse intervalo como territorio sagrado.',
+                    mode: 'estrategico',
+                    delivery_type: 'feed',
+                    read: false,
+                    created_at: new Date().toISOString(),
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                await refreshOracleMessages();
+                showToast('Card nativo do Oraculo gerado no feed.', "success");
+            } catch (err) {
+                console.error("Erro ao gerar card nativo do Oraculo:", err);
+                showToast("Erro ao processar teste.", "error");
+            } finally {
+                setIsPending(false);
+            }
+            return;
+        }
+
         let content = '';
         let metadata: Record<string, unknown> = {};
+        let notificationType: NotificationType = 'system';
 
         if (type === 'welcome') {
             content = 'Bem-vindo ao Oráculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para começar sua jornada.';
@@ -1370,9 +1401,22 @@ const NotificationTypeButton: React.FC<{ type: string; label: string; color: str
             content = 'O Oráculo detectou um padrão: você performa melhor em blocos de 90 min de foco profundo pela manhã.';
         }
 
+        if (type === 'insight') {
+            metadata = {
+                source: 'gm_panel',
+                emphasis: 'oracle_card',
+            };
+            notificationType = 'oracle_prompt';
+        }
+
         try {
-            await SupabaseService.createNotification(session.user.id, 'system', content, metadata);
+            const created = await SupabaseService.createNotification(session.user.id, notificationType, content, metadata);
+            if (!created) {
+                throw new Error('NOTIFICATION_INSERT_FAILED');
+            }
             await fetchNotifications();
+            showToast(type === 'welcome' ? 'Welcome enviado com notificacao e e-mail.' : 'Card do Oraculo enviado para os avisos.', "success");
+            return;
             showToast(`Notificação "${label}" enviada!`, "success");
         } catch (err) {
             console.error("Erro ao enviar notificação:", err);
@@ -1417,11 +1461,14 @@ const NotificationTestButton: React.FC = () => {
 
         setTimeout(async () => {
             try {
-                await SupabaseService.createNotification(
+                const created = await SupabaseService.createNotification(
                     session.user.id,
                     'system',
                     'Teste de Push (15s): O sinal do Oráculo está operante. Esta é uma notificação de teste agendada pelo Painel Soberano.'
                 );
+                if (!created) {
+                    throw new Error('NOTIFICATION_INSERT_FAILED');
+                }
                 await fetchNotifications();
                 showToast("Notificação de teste enviada com sucesso!", "success");
             } catch (err) {

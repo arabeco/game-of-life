@@ -171,22 +171,21 @@ Regras visuais:
 
 Curadoria:
 - base editorial premium
-- normalmente `Obsidiana`
-- `Rubi` pode entrar quando o tema pedir mais intensidade
+- familia oficial: `Rubi`
 
 Vitrine:
 - produto real em primeiro plano
-- apoio de `Obsidiana`, `Marfim` e `Safira`
+- familia oficial: `Safira`
 - o app e a prova principal; a atmosfera vem como moldura
 
 Filosofia:
 - mais textual
-- pode usar `Obsidiana` ou `Marfim`
+- familia oficial: `Marfim`
 - muito espaco negativo e pouco ruido visual
 
 Tatica:
 - mais funcional
-- pode usar `Obsidiana`, `Safira` ou `Marfim`
+- familia oficial: `Obsidiana`
 - radar, planner, esquema, setas e UI simplificada entram como reforco didatico
 
 ### Elementos recorrentes

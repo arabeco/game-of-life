@@ -15,6 +15,7 @@ import { FocusAudioPlayer } from './FocusAudioPlayer';
 import { RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
 import { showLocalNotification } from '../utils/localNotification';
 import { EmojiGlyph } from './EmojiGlyph';
+import { SKINS_DATA, BORDERS_DATA } from '../constants';
 
 interface RestScreenProps {
     onClose: () => void;
@@ -139,6 +140,10 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const [deepWorkActive, setDeepWorkActive] = useState(false);
     const [deepWorkTimeLeft, setDeepWorkTimeLeft] = useState(0);
     const [actionSessionTimeLeft, setActionSessionTimeLeft] = useState(0);
+    const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
+    const avatarInsetStyle = selectedBorder?.imageUrl
+        ? { width: '75%', height: '75%' }
+        : { width: 'calc(100% - 6px)', height: 'calc(100% - 6px)' };
     const [actionSessionCompleteProgress, setActionSessionCompleteProgress] = useState(0);
     const [isActionSessionCompleting, setIsActionSessionCompleting] = useState(false);
     const actionSessionCompleteIntervalRef = useRef<number | null>(null);
@@ -823,17 +828,14 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     <div className="flex flex-col items-center gap-1 animate-fade-in-down">
                         <div className="relative w-16 h-16 flex items-center justify-center">
                             {/* Avatar Container */}
-                            <div
-                                className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-black/40"
-                                style={{
-                                    width: 'calc(100% - 6px)',
-                                    height: 'calc(100% - 6px)',
-                                }}
-                            >
+                            <div className="w-full h-full flex items-center justify-center">
                                 {userProfile.avatarUrl ? (
-                                    <img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                    <img src={userProfile.avatarUrl} alt="Avatar" className="rounded-full object-cover" style={avatarInsetStyle} />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center text-xl font-black text-gray-500">
+                                    <div
+                                        className="rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center text-xl font-black text-gray-500"
+                                        style={avatarInsetStyle}
+                                    >
                                         {userProfile.nickname?.[0]?.toUpperCase()}
                                     </div>
                                 )}
@@ -841,10 +843,20 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                             {/* Border Overlay */}
                             <div
-                                className="absolute inset-0 w-full h-full pointer-events-none z-40 border-2 rounded-full"
-                                style={{
-                                    borderColor: 'var(--skin-accent-color)',
-                                }}
+                                className="absolute inset-0 w-full h-full pointer-events-none z-40"
+                                style={
+                                    selectedBorder?.imageUrl
+                                        ? {
+                                            backgroundImage: `url(${selectedBorder.imageUrl})`,
+                                            backgroundSize: 'contain',
+                                            backgroundPosition: 'center',
+                                            backgroundRepeat: 'no-repeat',
+                                        }
+                                        : {
+                                            border: '2px solid var(--skin-accent-color)',
+                                            borderRadius: '50%',
+                                        }
+                                }
                             />
 
                             {/* Level Badge - Bolinha Estilo Header */}

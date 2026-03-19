@@ -25,10 +25,10 @@ Referencia obrigatoria para leituras de radar:
 
 Mapa rapido:
 
-- Curadoria: `Obsidiana` por padrao; `Rubi` quando o tema pedir intensidade
-- Vitrine: `Obsidiana`, `Marfim` ou `Safira`, com o app real no centro da prova
-- Filosofia: `Obsidiana` ou `Marfim`, com texto forte e mais espaco negativo
-- Tatica: `Obsidiana`, `Safira` ou `Marfim`, com radar, esquema ou UI simplificada
+- Curadoria: `Rubi`
+- Vitrine: `Safira`
+- Filosofia: `Marfim`
+- Tatica: `Obsidiana`
 
 ## Template universal do slide final
 
@@ -161,12 +161,14 @@ Slide 1:
 
 Slide 2:
 - Funcao: mostrar a funcao
-- Visual: tela real do app, detalhe ou fluxo real
+- Visual: `1 slot de celular` + `1 box editorial de texto`
+- Regra visual: o slot de celular precisa ser reutilizavel, com proporcao fixa, para receber print real depois
 - Copy:
 
 Slide 3:
 - Funcao: prova de valor
-- Visual: antes e depois, recompensa, resultado, beneficio visivel ou gesto claro de uso
+- Visual: `1 ou 2 slots de celular`, dependendo do ativo recebido
+- Regra visual: se houver 1 print, usar composicao central forte; se houver 2 prints, usar comparativo lado a lado
 - Copy:
 
 Slide 4:
@@ -179,6 +181,8 @@ Checklist:
 - quem olhar precisa acreditar que o produto existe de verdade
 - o slide 2 ou 3 precisa conter a prova mais forte
 - a ambientacao premium nunca pode esconder a funcao real
+- os slots de celular precisam parecer parte do sistema, nao gambiarra temporaria
+- box de texto e box de print precisam ter margens replicaveis entre diferentes Vitrines
 
 ## Template 3: Filosofia
 

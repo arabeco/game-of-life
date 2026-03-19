@@ -69,9 +69,10 @@ const TutorialBridge: React.FC = () => null;
 
 const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaultRestScreenOpen = true }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme, notifications } = useGame();
+    const { userProfile, appMode, activeTheme, notifications, oraclePreferences, triggerOracle } = useGame();
     const { didForceGameMode } = useTutorial();
     const historyReady = useRef(false);
+    const oracleAutoTriggerUserRef = useRef<string | null>(null);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
     const canUseAssetsView = activeUIMode === 'GAME' || didForceGameMode;
@@ -84,6 +85,25 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
     }, [unreadNotificationsCount]);
+
+    useEffect(() => {
+        const userId = userProfile?.id;
+        if (!userId || !oraclePreferences) {
+            if (!userId) {
+                oracleAutoTriggerUserRef.current = null;
+            }
+            return;
+        }
+
+        if (oracleAutoTriggerUserRef.current === userId) return;
+        oracleAutoTriggerUserRef.current = userId;
+
+        const timer = window.setTimeout(() => {
+            void triggerOracle('app_open');
+        }, 1800);
+
+        return () => window.clearTimeout(timer);
+    }, [userProfile?.id, oraclePreferences, triggerOracle]);
 
     useEffect(() => {
         const handleNavigateToStore = (event: Event) => {

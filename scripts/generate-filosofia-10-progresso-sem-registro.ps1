@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mentalidade-09-vencer-nao-parecer-ocupado\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\filosofia-10-progresso-sem-registro\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -39,6 +39,7 @@ function New-Canvas {
     $bitmap = [System.Drawing.Bitmap]::new($Width, $Height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
     Initialize-Graphics -Graphics $graphics
+
     @{
         Bitmap = $bitmap
         Graphics = $graphics
@@ -111,16 +112,27 @@ function Draw-BackgroundBase {
         [System.Drawing.Graphics]$Graphics,
         [string]$BackgroundPath,
         [int]$Width,
-        [int]$Height
+        [int]$Height,
+        [string]$Tone = "obsidian"
     )
 
     Draw-FittedImage -Graphics $Graphics -ImagePath $BackgroundPath -Width $Width -Height $Height
 
+    $topColor = switch ($Tone) {
+        "marfim" { New-Color 112 255 251 245 }
+        "safira" { New-Color 176 4 12 26 }
+        default { New-Color 186 2 3 6 }
+    }
+    $bottomColor = switch ($Tone) {
+        "marfim" { New-Color 92 234 226 212 }
+        "safira" { New-Color 160 7 11 22 }
+        default { New-Color 156 7 8 11 }
+    }
     $overlayBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
         [System.Drawing.Point]::new(0, 0),
         [System.Drawing.Point]::new($Width, $Height),
-        (New-Color 226 1 2 4),
-        (New-Color 214 3 4 7)
+        $topColor,
+        $bottomColor
     )
     $Graphics.FillRectangle($overlayBrush, 0, 0, $Width, $Height)
     $overlayBrush.Dispose()
@@ -130,7 +142,11 @@ function Draw-BackgroundBase {
     $panelWidth = $Width - 164
     $panelHeight = $Height - 164
 
-    $panelBrush = [System.Drawing.SolidBrush]::new((New-Color 198 4 4 6))
+    $panelColor = switch ($Tone) {
+        "marfim" { New-Color 160 248 243 235 }
+        default { New-Color 164 5 6 9 }
+    }
+    $panelBrush = [System.Drawing.SolidBrush]::new($panelColor)
     $Graphics.FillRectangle($panelBrush, $panelX, $panelY, $panelWidth, $panelHeight)
     $panelBrush.Dispose()
 
@@ -166,7 +182,7 @@ function Draw-Pill {
         [int]$Height
     )
 
-    $fill = [System.Drawing.SolidBrush]::new((New-Color 72 13 14 18))
+    $fill = [System.Drawing.SolidBrush]::new((New-Color 62 13 14 18))
     $pen = [System.Drawing.Pen]::new((New-Color 220 212 175 55), 1.6)
     $textBrush = [System.Drawing.SolidBrush]::new((New-Color 245 247 230 194))
     try {
@@ -186,12 +202,21 @@ function Draw-EditorialPanel {
         [float]$X,
         [float]$Y,
         [float]$Width,
-        [float]$Height
+        [float]$Height,
+        [string]$Tone = "obsidian"
     )
 
-    $panelBrush = [System.Drawing.SolidBrush]::new((New-Color 92 8 10 14))
+    $panelColor = switch ($Tone) {
+        "marfim" { New-Color 132 255 250 243 }
+        default { New-Color 76 8 10 14 }
+    }
+    $panelBrush = [System.Drawing.SolidBrush]::new($panelColor)
     $outerPen = [System.Drawing.Pen]::new((New-Color 180 212 175 55), 1.6)
-    $innerPen = [System.Drawing.Pen]::new((New-Color 120 255 236 196), 1.0)
+    $innerPenColor = switch ($Tone) {
+        "marfim" { New-Color 110 130 116 88 }
+        default { New-Color 120 255 236 196 }
+    }
+    $innerPen = [System.Drawing.Pen]::new($innerPenColor, 1.0)
     try {
         $Graphics.FillRectangle($panelBrush, $X, $Y, $Width, $Height)
         $Graphics.DrawRectangle($outerPen, $X, $Y, $Width, $Height)
@@ -245,33 +270,35 @@ $height = 1350
 
 $logoPath = "C:\Users\Afonso\Downloads\GOL1.006\public\logo-diamond.png"
 $bgObsidian = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\blackback.jpg"
+$bgMarfim = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\whiteback.jpg"
+$bgSapphire = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\darkblueback.jpg"
 
 $headlineFamily = Get-FontFamily -Candidates @("Palatino Linotype", "Georgia", "Times New Roman")
 $bodyFamily = Get-FontFamily -Candidates @("Segoe UI", "Arial", "Tahoma")
 
 $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 66, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 68, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 60, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 48, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$bodyFont = [System.Drawing.Font]::new($bodyFamily, 44, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 33, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodyFont = [System.Drawing.Font]::new($bodyFamily, 43, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 32, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$watermarkFont = [System.Drawing.Font]::new($headlineFamily, 116, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$watermarkFont = [System.Drawing.Font]::new($headlineFamily, 118, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 
-$whiteBrush = [System.Drawing.SolidBrush]::new((New-Color 240 245 242 237))
-$offWhiteBrush = [System.Drawing.SolidBrush]::new((New-Color 220 236 233 227))
-$mutedBrush = [System.Drawing.SolidBrush]::new((New-Color 186 210 206 199))
-$eyebrowBrush = [System.Drawing.SolidBrush]::new((New-Color 165 255 236 196))
-$goldSoftBrush = [System.Drawing.SolidBrush]::new((New-Color 220 234 206 110))
-$goldWashBrush = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
+$whiteBrush = [System.Drawing.SolidBrush]::new((New-Color 240 49 42 32))
+$offWhiteBrush = [System.Drawing.SolidBrush]::new((New-Color 240 73 63 50))
+$mutedBrush = [System.Drawing.SolidBrush]::new((New-Color 186 124 116 103))
+$eyebrowBrush = [System.Drawing.SolidBrush]::new((New-Color 190 108 93 58))
+$goldSoftBrush = [System.Drawing.SolidBrush]::new((New-Color 240 168 132 54))
+$goldWashBrush = [System.Drawing.SolidBrush]::new((New-Color 34 164 136 62))
+$marfimTitleBrush = [System.Drawing.SolidBrush]::new((New-Color 255 145 112 42))
 $goldBrushSlide = Get-GoldBrush -Width $width -Height $height
 
 $Aacute = [char]0x00C1
 $Atilde = [char]0x00C3
 $Ccedilla = [char]0x00C7
 $Eacute = [char]0x00C9
-$Ecirc = [char]0x00CA
 $Iacute = [char]0x00CD
 $Oacute = [char]0x00D3
 $Uacute = [char]0x00DA
@@ -293,11 +320,11 @@ $created = New-Object System.Collections.Generic.List[string]
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Mentalidade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
-Draw-CenterText -Graphics $graphics -Text "Os melhores n${atilde}o`ntentam parecer`nocupados." -Font $heroTitleFont -Brush $goldBrushSlide -X 138 -Y 286 -Width 804 -Height 388
-Draw-CenterText -Graphics $graphics -Text "Tentam vencer.`nMovimento demais tamb${eacute}m pode ser teatro." -Font $bodyFont -Brush $offWhiteBrush -X 170 -Y 720 -Width 740 -Height 116
-Draw-Pill -Graphics $graphics -Text "Mentalidade 09" -Font $bodyBoldFont -X 382 -Y 836 -Width 316 -Height 54
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-CenterText -Graphics $graphics -Text "Filosofia" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 120 -Width 912 -Height 170
+Draw-CenterText -Graphics $graphics -Text "Progresso sem`nregistro vira`nilus${atilde}o." -Font $heroTitleFont -Brush $marfimTitleBrush -X 140 -Y 302 -Width 800 -Height 314
+Draw-CenterText -Graphics $graphics -Text "Sem marca, mem${oacute}ria e confronto com a realidade,`nat${eacute} estagna${ccedilla}${atilde}o pode parecer evolu${ccedilla}${atilde}o." -Font $bodyFont -Brush $offWhiteBrush -X 158 -Y 670 -Width 764 -Height 132
+Draw-Pill -Graphics $graphics -Text "Filosofia 10" -Font $bodyBoldFont -X 404 -Y 824 -Width 272 -Height 54
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -307,14 +334,14 @@ $created.Add($slide1)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Ru${iacute}do" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
-Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 724
-Draw-CenterText -Graphics $graphics -Text "Muita atividade`npode esconder medo." -Font $titleLargeFont -Brush $goldBrushSlide -X 162 -Y 278 -Width 756 -Height 196
-Draw-CenterText -Graphics $graphics -Text "Quem quer parecer importante enche o dia`nde movimento, resposta e tarefa lateral.`nQuase sempre para evitar a jogada decisiva." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 520 -Width 756 -Height 228
-Draw-CenterText -Graphics $graphics -Text "Ocupacao falsa protege o ego." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 844 -Width 728 -Height 110
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-CenterText -Graphics $graphics -Text "Mem${oacute}ria" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
+Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 700 -Tone "marfim"
+Draw-CenterText -Graphics $graphics -Text "Sem registro, a mente`nmente bonito." -Font $titleLargeFont -Brush $marfimTitleBrush -X 184 -Y 300 -Width 712 -Height 196
+Draw-CenterText -Graphics $graphics -Text "Ela suaviza fracasso, infla inten${ccedilla}${otilde}es`ne fabrica narrativa confort${aacute}vel.`nO que n${atilde}o fica marcado vira nevoa." -Font $bodyFont -Brush $offWhiteBrush -X 180 -Y 540 -Width 720 -Height 248
+Draw-CenterText -Graphics $graphics -Text "Sem prova, voce negocia com ficcao." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 838 -Width 728 -Height 120
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide2 = Join-Path $OutputDir "slide-02-logica-01.png"
+$slide2 = Join-Path $OutputDir "slide-02-memoria.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
 $created.Add($slide2)
 
@@ -322,14 +349,14 @@ $created.Add($slide2)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Vit${oacute}ria" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
-Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 730
-Draw-CenterText -Graphics $graphics -Text "A elite mede impacto,`nn${atilde}o volume." -Font $titleLargeFont -Brush $goldBrushSlide -X 154 -Y 256 -Width 772 -Height 246
-Draw-CenterText -Graphics $graphics -Text "Menos movimentos, mais resultado.`nQuem opera em alto n${iacute}vel concentra for${ccedilla}a`nonde a vit${oacute}ria realmente acontece." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 558 -Width 756 -Height 210
-Draw-CenterText -Graphics $graphics -Text "Nao parecer cheio. Vencer." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 856 -Width 728 -Height 112
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-CenterText -Graphics $graphics -Text "Evid${ecirc}ncia" -Font $watermarkFont -Brush $goldWashBrush -X 80 -Y 118 -Width 920 -Height 176
+Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 708 -Tone "marfim"
+Draw-CenterText -Graphics $graphics -Text "Quem quer evoluir`nprecisa de rastro." -Font $titleLargeFont -Brush $marfimTitleBrush -X 176 -Y 294 -Width 728 -Height 198
+Draw-CenterText -Graphics $graphics -Text "Progresso real deixa marca, numero, memoria e confronto.`nO que fica visivel pode ser corrigido, ampliado`ne transformado em padrao." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 560 -Width 728 -Height 222
+Draw-CenterText -Graphics $graphics -Text "O que deixa rastro pode evoluir." -Font $titleMediumFont -Brush $whiteBrush -X 186 -Y 848 -Width 708 -Height 112
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide3 = Join-Path $OutputDir "slide-03-logica-02.png"
+$slide3 = Join-Path $OutputDir "slide-03-evidencia.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
 $created.Add($slide3)
 
@@ -337,25 +364,25 @@ $created.Add($slide3)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
 $watermarkBrush2 = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
 try {
-    Draw-CenterText -Graphics $graphics -Text "Mentalidade" -Font $watermarkFont -Brush $watermarkBrush2 -X 84 -Y 456 -Width 912 -Height 150
+    Draw-CenterText -Graphics $graphics -Text "Filosofia" -Font $watermarkFont -Brush $watermarkBrush2 -X 84 -Y 458 -Width 912 -Height 150
 } finally {
     $watermarkBrush2.Dispose()
 }
 
-$logo = [System.Drawing.Image]::FromFile($logoPath)
+$logo2 = [System.Drawing.Image]::FromFile($logoPath)
 try {
-    $graphics.DrawImage($logo, 296, 220, 488, 488)
+    $graphics.DrawImage($logo2, 316, 212, 448, 448)
 } finally {
-    $logo.Dispose()
+    $logo2.Dispose()
 }
 
-Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
+Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $marfimTitleBrush -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Mentalidade 09  |  Os melhores nao tentam parecer ocupados. Tentam vencer." -Font $eyebrowFont -Brush $eyebrowBrush -X 64 -Y 1060 -Width 952 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Filosofia 10  |  Progresso sem registro vira ilusao" -Font $eyebrowFont -Brush $eyebrowBrush -X 132 -Y 1060 -Width 816 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -367,7 +394,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "MENTALIDADE 09  |  OS MELHORES NAO TENTAM PARECER OCUPADOS. TENTAM VENCER." -Font ([System.Drawing.Font]::new($headlineFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "FILOSOFIA 10  |  PROGRESSO SEM REGISTRO VIRA ILUSAO" -Font ([System.Drawing.Font]::new($headlineFamily, 34, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 4 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560
@@ -412,6 +439,7 @@ $mutedBrush.Dispose()
 $eyebrowBrush.Dispose()
 $goldSoftBrush.Dispose()
 $goldWashBrush.Dispose()
+$marfimTitleBrush.Dispose()
 $goldBrushSlide.Dispose()
 $sheetBrush.Dispose()
 $sheetGold.Dispose()
@@ -419,5 +447,4 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
-
 

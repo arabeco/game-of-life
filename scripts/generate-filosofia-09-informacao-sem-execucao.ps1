@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\filosofia-08-ambiente-vence-vontade\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\filosofia-09-informacao-sem-execucao\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -321,9 +321,9 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
 Draw-CenterText -Graphics $graphics -Text "Filosofia" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 120 -Width 912 -Height 170
-Draw-CenterText -Graphics $graphics -Text "Seu ambiente`nvence sua`nvontade." -Font $heroTitleFont -Brush $marfimTitleBrush -X 140 -Y 302 -Width 800 -Height 314
-Draw-CenterText -Graphics $graphics -Text "Quem vive cercado por ru${iacute}do passa o dia inteiro`nnegociando consigo mesmo." -Font $bodyFont -Brush $offWhiteBrush -X 158 -Y 670 -Width 764 -Height 132
-Draw-Pill -Graphics $graphics -Text "Filosofia 08" -Font $bodyBoldFont -X 404 -Y 824 -Width 272 -Height 54
+Draw-CenterText -Graphics $graphics -Text "Informa${ccedilla}${atilde}o sem`nexecu${ccedilla}${atilde}o ${eacute} s${oacute}`nentretenimento." -Font $heroTitleFont -Brush $marfimTitleBrush -X 140 -Y 302 -Width 800 -Height 314
+Draw-CenterText -Graphics $graphics -Text "Consumir mais n${atilde}o significa mover a vida.`nSem ato, at${eacute} insight vira distra${ccedilla}${atilde}o elegante." -Font $bodyFont -Brush $offWhiteBrush -X 158 -Y 670 -Width 764 -Height 132
+Draw-Pill -Graphics $graphics -Text "Filosofia 09" -Font $bodyBoldFont -X 404 -Y 824 -Width 272 -Height 54
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -334,13 +334,13 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "Ambiente" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
+Draw-CenterText -Graphics $graphics -Text "Ac${uacute}mulo" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
 Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 700 -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "Contexto ruim`nconsome for${ccedilla}a." -Font $titleLargeFont -Brush $marfimTitleBrush -X 184 -Y 300 -Width 712 -Height 196
-Draw-CenterText -Graphics $graphics -Text "Celular aberto, fric${ccedilla}${atilde}o errada e caos visual`nfazem a vontade gastar energia demais.`nO erro nem sempre ${eacute} falta de desejo. ${Eacute} terreno ruim." -Font $bodyFont -Brush $offWhiteBrush -X 180 -Y 540 -Width 720 -Height 248
-Draw-CenterText -Graphics $graphics -Text "Ambiente ruim drena disciplina." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 838 -Width 728 -Height 120
+Draw-CenterText -Graphics $graphics -Text "Saber muito`nn${atilde}o muda nada." -Font $titleLargeFont -Brush $marfimTitleBrush -X 184 -Y 300 -Width 712 -Height 196
+Draw-CenterText -Graphics $graphics -Text "Colecionar video, livro, podcast e teoria`npode dar sensa${ccedilla}${atilde}o de evolu${ccedilla}${atilde}o.`nMas conhecimento parado s${oacute} decora o ego." -Font $bodyFont -Brush $offWhiteBrush -X 180 -Y 540 -Width 720 -Height 248
+Draw-CenterText -Graphics $graphics -Text "Conhecimento parado vira anestesia." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 838 -Width 728 -Height 120
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide2 = Join-Path $OutputDir "slide-02-ambiente.png"
+$slide2 = Join-Path $OutputDir "slide-02-acumulo.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
 $created.Add($slide2)
 
@@ -349,13 +349,13 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "Arquitetura" -Font $watermarkFont -Brush $goldWashBrush -X 80 -Y 118 -Width 920 -Height 176
+Draw-CenterText -Graphics $graphics -Text "Movimento" -Font $watermarkFont -Brush $goldWashBrush -X 80 -Y 118 -Width 920 -Height 176
 Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 708 -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "Quem quer const${acirc}ncia`ndesenha o campo." -Font $titleLargeFont -Brush $marfimTitleBrush -X 176 -Y 294 -Width 728 -Height 198
-Draw-CenterText -Graphics $graphics -Text "Os melhores reduzem tenta${ccedilla}${atilde}o, limpam ru${iacute}do`ne deixam a estrutura puxar o comportamento.`nVontade ajuda. Ambiente manda." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 560 -Width 728 -Height 222
-Draw-CenterText -Graphics $graphics -Text "Primeiro o campo. Depois o esfor${ccedilla}o." -Font $titleMediumFont -Brush $whiteBrush -X 186 -Y 848 -Width 708 -Height 112
+Draw-CenterText -Graphics $graphics -Text "Valor real nasce`nquando vira ato." -Font $titleLargeFont -Brush $marfimTitleBrush -X 176 -Y 294 -Width 728 -Height 198
+Draw-CenterText -Graphics $graphics -Text "Ideia boa que n${atilde}o entra no corpo, no dia e no risco`nevapora como qualquer entretenimento.`nO que n${atilde}o desce para execu${ccedilla}${atilde}o desaparece." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 560 -Width 728 -Height 222
+Draw-CenterText -Graphics $graphics -Text "O que n${atilde}o vira ato evapora." -Font $titleMediumFont -Brush $whiteBrush -X 186 -Y 848 -Width 708 -Height 112
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide3 = Join-Path $OutputDir "slide-03-arquitetura.png"
+$slide3 = Join-Path $OutputDir "slide-03-movimento.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
 $created.Add($slide3)
 
@@ -381,7 +381,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $marfimTitleBrush -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Filosofia 08  |  Seu ambiente vence sua vontade" -Font $eyebrowFont -Brush $eyebrowBrush -X 152 -Y 1060 -Width 776 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Filosofia 09  |  Informacao sem execucao e so entretenimento" -Font $eyebrowFont -Brush $eyebrowBrush -X 110 -Y 1060 -Width 860 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -393,7 +393,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "FILOSOFIA 08  |  SEU AMBIENTE VENCE SUA VONTADE" -Font ([System.Drawing.Font]::new($headlineFamily, 38, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "FILOSOFIA 09  |  INFORMACAO SEM EXECUCAO E SO ENTRETENIMENTO" -Font ([System.Drawing.Font]::new($headlineFamily, 32, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 4 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

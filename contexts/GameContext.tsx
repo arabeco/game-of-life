@@ -442,7 +442,7 @@ export interface GameContextType {
     // Campaigns
     campaigns: Campaign[];
     addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>) => Promise<Campaign>;
-    updateCampaign: (id: string, updates: Partial<Campaign>) => Promise<void>;
+    updateCampaign: (id: string, updates: Partial<Campaign>) => Promise<boolean>;
     deleteCampaign: (id: string) => Promise<void>;
 
     // App Mode & Theme
@@ -632,11 +632,60 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
-        setCampaigns(prev => prev.map(c => c.id === id ?{ ...c, ...updates } : c));
+    const updateCampaign = async (id: string, updates: Partial<Campaign>): Promise<boolean> => {
+        const userId = session?.user.id;
+        if (!userId) {
+            showToast("Voce precisa estar autenticado para salvar a campanha.", 'error');
+            return false;
+        }
 
-        const { error } = await supabase.from('campaigns').update(mapToSnakeCase(updates)).eq('id', id);
-        if (error) console.error("Error updating campaign:", error);
+        const currentCampaign = campaigns.find(c => c.id === id);
+        if (!currentCampaign) {
+            showToast("Campanha nao encontrada para salvar.", 'error');
+            return false;
+        }
+
+        const normalizedUpdates: Partial<Campaign> = { ...updates };
+
+        if (typeof normalizedUpdates.title === 'string') {
+            const nextTitle = normalizedUpdates.title.trim();
+            if (!nextTitle) {
+                showToast("A campanha precisa de um nome.", 'error');
+                return false;
+            }
+            normalizedUpdates.title = nextTitle;
+        }
+
+        if (typeof normalizedUpdates.description === 'string') {
+            normalizedUpdates.description = normalizedUpdates.description.trim();
+        }
+
+        const optimisticCampaign = { ...currentCampaign, ...normalizedUpdates };
+        setCampaigns(prev => prev.map(c => c.id === id ? optimisticCampaign : c));
+
+        const payload = {
+            ...mapToSnakeCase(normalizedUpdates),
+            updated_at: new Date().toISOString(),
+        };
+
+        const { data, error } = await supabase
+            .from('campaigns')
+            .update(payload)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select('*')
+            .single();
+
+        if (error) {
+            console.error("Error updating campaign:", error);
+            setCampaigns(prev => prev.map(c => c.id === id ? currentCampaign : c));
+            showToast("Nao foi possivel salvar o novo nome da campanha.", 'error');
+            return false;
+        }
+
+        const persistedCampaign = mapToCamelCase(data) as Campaign;
+        setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...persistedCampaign } : c));
+        return true;
     };
 
     const deleteCampaign = async (id: string) => {

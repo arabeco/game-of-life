@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mentalidade-09-vencer-nao-parecer-ocupado\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mentalidade-10-decadas-nao-humores\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -295,9 +295,9 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Mentalidade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
-Draw-CenterText -Graphics $graphics -Text "Os melhores n${atilde}o`ntentam parecer`nocupados." -Font $heroTitleFont -Brush $goldBrushSlide -X 138 -Y 286 -Width 804 -Height 388
-Draw-CenterText -Graphics $graphics -Text "Tentam vencer.`nMovimento demais tamb${eacute}m pode ser teatro." -Font $bodyFont -Brush $offWhiteBrush -X 170 -Y 720 -Width 740 -Height 116
-Draw-Pill -Graphics $graphics -Text "Mentalidade 09" -Font $bodyBoldFont -X 382 -Y 836 -Width 316 -Height 54
+Draw-CenterText -Graphics $graphics -Text "Gente world class`npensa em decadas,`nnao em humores." -Font $heroTitleFont -Brush $goldBrushSlide -X 138 -Y 286 -Width 804 -Height 388
+Draw-CenterText -Graphics $graphics -Text "O mediano reage ao dia.`nA elite constr${oacute}i trajetoria." -Font $bodyFont -Brush $offWhiteBrush -X 170 -Y 720 -Width 740 -Height 116
+Draw-Pill -Graphics $graphics -Text "Mentalidade 10" -Font $bodyBoldFont -X 382 -Y 836 -Width 316 -Height 54
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -308,11 +308,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Ru${iacute}do" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
+Draw-CenterText -Graphics $graphics -Text "Impulso" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
 Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 724
-Draw-CenterText -Graphics $graphics -Text "Muita atividade`npode esconder medo." -Font $titleLargeFont -Brush $goldBrushSlide -X 162 -Y 278 -Width 756 -Height 196
-Draw-CenterText -Graphics $graphics -Text "Quem quer parecer importante enche o dia`nde movimento, resposta e tarefa lateral.`nQuase sempre para evitar a jogada decisiva." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 520 -Width 756 -Height 228
-Draw-CenterText -Graphics $graphics -Text "Ocupacao falsa protege o ego." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 844 -Width 728 -Height 110
+Draw-CenterText -Graphics $graphics -Text "Amadores obedecem`nao humor do momento." -Font $titleLargeFont -Brush $goldBrushSlide -X 162 -Y 278 -Width 756 -Height 196
+Draw-CenterText -Graphics $graphics -Text "Se est${aacute}o inspirados, avan${ccedilla}am.`nSe est${atilde}o cansados, recuam.`nA vida inteira fica na m${atilde}o do estado interno." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 520 -Width 756 -Height 228
+Draw-CenterText -Graphics $graphics -Text "Humor instavel gera destino fraco." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 844 -Width 728 -Height 110
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-logica-01.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -323,11 +323,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Vit${oacute}ria" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
+Draw-CenterText -Graphics $graphics -Text "Horizonte" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
 Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 730
-Draw-CenterText -Graphics $graphics -Text "A elite mede impacto,`nn${atilde}o volume." -Font $titleLargeFont -Brush $goldBrushSlide -X 154 -Y 256 -Width 772 -Height 246
-Draw-CenterText -Graphics $graphics -Text "Menos movimentos, mais resultado.`nQuem opera em alto n${iacute}vel concentra for${ccedilla}a`nonde a vit${oacute}ria realmente acontece." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 558 -Width 756 -Height 210
-Draw-CenterText -Graphics $graphics -Text "Nao parecer cheio. Vencer." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 856 -Width 728 -Height 112
+Draw-CenterText -Graphics $graphics -Text "Os melhores jogam`no jogo longo." -Font $titleLargeFont -Brush $goldBrushSlide -X 154 -Y 256 -Width 772 -Height 246
+Draw-CenterText -Graphics $graphics -Text "Aceitam oscila${ccedilla}${otilde}es, protegem dire${ccedilla}${atilde}o`ne continuam plantando mesmo sem aplauso imediato.`nDecada boa nasce de repeticao fria." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 558 -Width 756 -Height 210
+Draw-CenterText -Graphics $graphics -Text "Pensa longo. Age hoje." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 856 -Width 728 -Height 112
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-logica-02.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -355,7 +355,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Mentalidade 09  |  Os melhores nao tentam parecer ocupados. Tentam vencer." -Font $eyebrowFont -Brush $eyebrowBrush -X 64 -Y 1060 -Width 952 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Mentalidade 10  |  Gente world class pensa em decadas, nao em humores" -Font $eyebrowFont -Brush $eyebrowBrush -X 58 -Y 1060 -Width 964 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -367,7 +367,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "MENTALIDADE 09  |  OS MELHORES NAO TENTAM PARECER OCUPADOS. TENTAM VENCER." -Font ([System.Drawing.Font]::new($headlineFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "MENTALIDADE 10  |  GENTE WORLD CLASS PENSA EM DECADAS, NAO EM HUMORES" -Font ([System.Drawing.Font]::new($headlineFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 4 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

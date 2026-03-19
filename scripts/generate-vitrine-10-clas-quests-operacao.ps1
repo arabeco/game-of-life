@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\vitrine-09-oraculo\slides",
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\vitrine-10-clas-quests-operacao\slides",
     [string]$Screen1Path = "",
     [string]$Screen2Path = ""
 )
@@ -463,8 +463,8 @@ $proofPhoneSlotHeight = 660
 
 $created = New-Object System.Collections.Generic.List[string]
 
-$proofRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round9\vitrine"
-$proofFallbackRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round9"
+$proofRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round10\vitrine"
+$proofFallbackRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round10"
 $proofSourceRoot = if ((Get-ChildItem -LiteralPath $proofRoot -File -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) {
     $proofRoot
 } else {
@@ -497,14 +497,14 @@ function Get-PrintLabel {
         "coliseu" { return "Coliseu" }
         "relatorioatlas" { return "Atlas" }
         "relatorioresumo" { return "Resumo" }
-        "oraculo" { return "Or${aacute}culo" }
-        "oracle" { return "Or${aacute}culo" }
-        "modosoraculo" { return "Modos" }
-        "feed" { return "Feed" }
-        "conselhos" { return "Conselhos" }
-        "conselho" { return "Conselho" }
-        "analise" { return "An${aacute}lise" }
-        "análise" { return "An${aacute}lise" }
+        "clas" { return "Cl${atilde}s" }
+        "clans" { return "Cl${atilde}s" }
+        "clan" { return "Cl${atilde}" }
+        "quests" { return "Quests" }
+        "missao" { return "Miss${atilde}o" }
+        "missoes" { return "Miss${otilde}es" }
+        "aliados" { return "Aliados" }
+        "campanha" { return "Campanha" }
         "sessao" { return "Sess${atilde}o" }
         "ambiente" { return "Ambiente" }
         "inventario" { return "Invent${aacute}rio" }
@@ -567,11 +567,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height -Tone "safira"
-Draw-CenterText -Graphics $graphics -Text "Or${aacute}culo" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 132 -Width 912 -Height 180
-Draw-CenterText -Graphics $graphics -Text "O sistema`nque te responde." -Font $heroTitleFont -Brush $goldBrushSlide -X 134 -Y 362 -Width 812 -Height 206
-Draw-CenterText -Graphics $graphics -Text "No GLYPH, progresso tamb${eacute}m fala.`nO Or${aacute}culo transforma sinais em leitura." -Font $bodyFont -Brush $offWhiteBrush -X 142 -Y 642 -Width 796 -Height 196
-Draw-Pill -Graphics $graphics -Text "Vitrine 09" -Font $bodyBoldFont -X 292 -Y 858 -Width 224 -Height 52
-Draw-Pill -Graphics $graphics -Text "Or${aacute}culo" -Font $bodyBoldFont -X 536 -Y 858 -Width 248 -Height 52
+Draw-CenterText -Graphics $graphics -Text "Cl${atilde}s" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 132 -Width 912 -Height 180
+Draw-CenterText -Graphics $graphics -Text "Ninguem constr${oacute}i`num imp${eacute}rio`nsozinho." -Font $heroTitleFont -Brush $goldBrushSlide -X 134 -Y 332 -Width 812 -Height 246
+Draw-CenterText -Graphics $graphics -Text "No GLYPH, alian${ccedilla}a tamb${eacute}m vira sistema.`nCl${atilde}s, quests e opera${ccedilla}${atilde}o coletiva." -Font $bodyFont -Brush $offWhiteBrush -X 142 -Y 652 -Width 796 -Height 196
+Draw-Pill -Graphics $graphics -Text "Vitrine 10" -Font $bodyBoldFont -X 292 -Y 858 -Width 224 -Height 52
+Draw-Pill -Graphics $graphics -Text "Cl${atilde}s" -Font $bodyBoldFont -X 536 -Y 858 -Width 248 -Height 52
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir ("slide-{0:d2}-capa.png" -f $slideNumber)
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -583,7 +583,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height -Tone "safira"
-Draw-CenterText -Graphics $graphics -Text "Or${aacute}culo" -Font $watermarkFont -Brush $goldWashBrush -X 86 -Y 118 -Width 908 -Height 180
+Draw-CenterText -Graphics $graphics -Text "Quests" -Font $watermarkFont -Brush $goldWashBrush -X 86 -Y 118 -Width 908 -Height 180
 
 Draw-EditorialTextPanel -Graphics $graphics -X 160 -Y 256 -Width 760 -Height 704
 
@@ -594,9 +594,9 @@ try {
     $logo3.Dispose()
 }
 
-Draw-CenterText -Graphics $graphics -Text "Feed, leitura`ne conselho." -Font $titleLargeFont -Brush $goldBrushSlide -X 196 -Y 384 -Width 688 -Height 236
-Draw-CenterText -Graphics $graphics -Text "O Or${aacute}culo cruza o momento, os padr${otilde}es`ne o contexto do ciclo para devolver dire${ccedilla}${atilde}o.`nN${atilde}o ${eacute} s${oacute} dado. ${Eacute} interpreta${ccedilla}${atilde}o." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 676 -Width 728 -Height 236
-Draw-CenterText -Graphics $graphics -Text "Leitura boa vira decis${atilde}o melhor." -Font $titleSmallFont -Brush $whiteBrush -X 174 -Y 936 -Width 732 -Height 84
+Draw-CenterText -Graphics $graphics -Text "Miss${atilde}o, vinculo`ne coordena${ccedilla}${atilde}o." -Font $titleLargeFont -Brush $goldBrushSlide -X 196 -Y 384 -Width 688 -Height 236
+Draw-CenterText -Graphics $graphics -Text "Entrar em cl${atilde}, operar com aliados e subir`nem quests de temporada transforma esfor${ccedilla}o`nem campanha coletiva com identidade propria." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 676 -Width 728 -Height 236
+Draw-CenterText -Graphics $graphics -Text "Comunidade forte aumenta tracao." -Font $titleSmallFont -Brush $whiteBrush -X 174 -Y 936 -Width 732 -Height 84
 
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir ("slide-{0:d2}-sobre-app.png" -f $slideNumber)
@@ -621,7 +621,7 @@ for ($proofPage = 0; $proofPage -lt $proofPageCount; $proofPage++) {
     $bitmap = $canvas.Bitmap
     $graphics = $canvas.Graphics
     Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height -Tone "safira"
-    Draw-CenterText -Graphics $graphics -Text "Telas reais do`nOr${aacute}culo." -Font $titleLargeFont -Brush $goldBrushSlide -X 124 -Y 150 -Width 832 -Height 110
+    Draw-CenterText -Graphics $graphics -Text "Telas reais de`nCl${atilde}s e Quests." -Font $titleLargeFont -Brush $goldBrushSlide -X 124 -Y 150 -Width 832 -Height 110
 
     if ($currentPair.Count -ge 2) {
         $leftPath = $currentPair[0]
@@ -674,7 +674,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Vitrine 09  |  O Oraculo, conselhos, analise e feed" -Font $eyebrowFont -Brush $eyebrowBrush -X 108 -Y 1060 -Width 864 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Vitrine 10  |  Clas, quests e operacao coletiva" -Font $eyebrowFont -Brush $eyebrowBrush -X 148 -Y 1060 -Width 784 -Height 28
 $slideFinal = Join-Path $OutputDir ("slide-{0:d2}-fecho.png" -f $slideNumber)
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slideFinal
 $created.Add($slideFinal)
@@ -692,7 +692,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "VITRINE 09  |  ORACULO, CONSELHOS, ANALISE E FEED" -Font ([System.Drawing.Font]::new($headlineFamily, 38, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "VITRINE 10  |  CLAS, QUESTS E OPERACAO COLETIVA" -Font ([System.Drawing.Font]::new($headlineFamily, 38, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - $slideCount slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 for ($i = 0; $i -lt $created.Count; $i++) {

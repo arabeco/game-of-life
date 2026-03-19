@@ -167,13 +167,15 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         setIsEditing(true);
     };
 
-    const handleSaveCampaign = () => {
+    const handleSaveCampaign = async () => {
         if (!selectedCampaign || isPreviewCampaign) return;
-        updateCampaign(selectedCampaign.id, {
+        const saved = await updateCampaign(selectedCampaign.id, {
             title: editTitle,
             description: editDescription
         });
-        setIsEditing(false);
+        if (saved) {
+            setIsEditing(false);
+        }
     };
 
     const handleDeleteCampaign = () => {

@@ -1380,7 +1380,9 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
                 }
 
                 await refreshOracleMessages();
-                window.dispatchEvent(new CustomEvent('openOracleChat'));
+                window.setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('openOracleChat'));
+                }, 80);
                 showToast('TESTE GM plantado no feed do Oraculo.', 'success');
                 return;
             }
@@ -1412,7 +1414,9 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
             }
 
             await fetchNotifications();
-            window.dispatchEvent(new CustomEvent('openOracleNotifications'));
+            window.setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('openOracleNotifications'));
+            }, 80);
 
             if (type === 'welcome') {
                 showToast(
@@ -1478,7 +1482,9 @@ const NotificationTestButton: React.FC = () => {
                     throw new Error('NOTIFICATION_INSERT_FAILED');
                 }
                 await fetchNotifications();
-                window.dispatchEvent(new CustomEvent('openOracleNotifications'));
+                window.setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('openOracleNotifications'));
+                }, 80);
                 let pushDelivered = false;
                 const permission = await requestLocalNotificationPermission();
                 if (permission === 'granted') {

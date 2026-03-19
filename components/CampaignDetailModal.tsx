@@ -22,12 +22,14 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({ campai
     const campaignArenas = allArenas.filter(a => campaign.arenaIds.includes(a.id));
     const selectedArena = allArenas.find(a => a.id === selectedArenaId);
 
-    const handleSave = () => {
-        updateCampaign(campaign.id, {
+    const handleSave = async () => {
+        const saved = await updateCampaign(campaign.id, {
             title,
             description
         });
-        setIsEditing(false);
+        if (saved) {
+            setIsEditing(false);
+        }
     };
 
     const handleDelete = () => {

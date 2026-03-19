@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mestria-09-muhammad-ali\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mestria-10-marie-curie\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -703,8 +703,8 @@ $logoPath = "C:\Users\Afonso\Downloads\GOL1.006\public\logo-diamond.png"
 $bgObsidian = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\blackback.jpg"
 $bgRubi = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\rubiback.jpg"
 $bgSapphire = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\darkblueback.jpg"
-$round6MestriaRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round9\mestria"
-$round6FallbackRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round9"
+$round6MestriaRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round10\mestria"
+$round6FallbackRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round10"
 $round6MestriaSourceRoot = if ((Get-ChildItem -LiteralPath $round6MestriaRoot -File -ErrorAction SilentlyContinue | Measure-Object).Count -ge 3) {
     $round6MestriaRoot
 } else {
@@ -736,7 +736,7 @@ $round6MestriaAssets = @(Get-ChildItem -LiteralPath $round6MestriaSourceRoot -Fi
     })
 
 if ($round6MestriaAssets.Count -lt 3) {
-    throw "Mestria 09 precisa de 3 imagens em marketing\\round9\\mestria ou marketing\\round9."
+    throw "Mestria 10 precisa de 3 imagens em marketing\\round10\\mestria ou marketing\\round10."
 }
 
 $slide3Asset = $round6MestriaAssets | Sort-Object SquareDistance | Select-Object -First 1
@@ -812,11 +812,11 @@ $slide1FrameWidth = Get-FeatureFrameWidth -ImagePath $cr7CoverPath -FrameHeight 
 $slide1FrameBottom = 980
 $slide1FrameX = [float](948 - $slide1FrameWidth)
 $slide1FrameY = [float]($slide1FrameBottom - $slide1FrameHeight)
-Draw-CenterText -Graphics $graphics -Text "Muhammad Ali" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
+Draw-CenterText -Graphics $graphics -Text "Marie Curie" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
 Draw-FeatureFrame -Graphics $graphics -X $slide1FrameX -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0 -ContentPaddingX 10 -ContentPaddingTop 16 -ContentPaddingBottom 16 -AccentWidth 10
-Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Muhammad`nAli?" -Font $titleHugeFont -Brush $goldBrushSlide -X 94 -Y 392 -Width 592 -Height 448
-Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 88" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
-Draw-CenterText -Graphics $graphics -Text "N${Atilde}o era s${oacute} luta.`nEra presen${ccedilla}a, voz e destino." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
+Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Marie`nCurie?" -Font $titleHugeFont -Brush $goldBrushSlide -X 94 -Y 392 -Width 592 -Height 448
+Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 90" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
+Draw-CenterText -Graphics $graphics -Text "N${Atilde}o era s${oacute} genialidade.`nEra rigor, sacrif${iacute}cio e foco." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -827,7 +827,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
-Draw-CenterText -Graphics $graphics -Text "Muhammad Ali" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 90 -Y 128 -Width 900 -Height 120
+Draw-CenterText -Graphics $graphics -Text "Marie Curie" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 90 -Y 128 -Width 900 -Height 120
 $slide2PanelX = 118
 $slide2PanelY = 334
 $slide2PanelWidth = 548
@@ -837,9 +837,9 @@ $slide2FrameHeight = 660
 $slide2FrameWidth = Get-FeatureFrameWidth -ImagePath $cr7PanelPath -FrameHeight $slide2FrameHeight -InnerHorizontalPadding 42 -InnerVerticalPadding 18 -MinWidth 240 -MaxWidth 286
 $slide2FrameX = [float](958 - $slide2FrameWidth)
 Draw-EditorialTextPanel -Graphics $graphics -X $slide2PanelX -Y $slide2PanelY -Width $slide2PanelWidth -Height $slide2PanelHeight
-Draw-CenterText -Graphics $graphics -Text "Ali n${Atilde}o venceu`ns${oacute} no ringue." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 28) -Width ($slide2PanelWidth - 48) -Height 128
-Draw-CenterText -Graphics $graphics -Text "Transformou t${eacute}cnica, coragem e voz`np${uacute}blica em uma for${ccedilla}a`nimposs${iacute}vel de ignorar." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 26) -Y ($slide2PanelY + 176) -Width ($slide2PanelWidth - 52) -Height 194
-Draw-CenterText -Graphics $graphics -Text "Talento chamava aten${ccedilla}${atilde}o.`nIdentidade sustentava impacto." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 28) -Y ($slide2PanelY + 404) -Width ($slide2PanelWidth - 56) -Height 110
+Draw-CenterText -Graphics $graphics -Text "Curie n${Atilde}o descobriu`ns${oacute} ciencia." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 28) -Width ($slide2PanelWidth - 48) -Height 128
+Draw-CenterText -Graphics $graphics -Text "Transformou estudo, risco e resist${ecirc}ncia`nem descoberta real e legado`nimposs${iacute}vel de apagar." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 26) -Y ($slide2PanelY + 176) -Width ($slide2PanelWidth - 52) -Height 194
+Draw-CenterText -Graphics $graphics -Text "Metodo virou for${ccedilla}a.`nSacrificio virou fronteira." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 28) -Y ($slide2PanelY + 404) -Width ($slide2PanelWidth - 56) -Height 110
 Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -ContentPaddingX 14 -ContentPaddingTop 12 -ContentPaddingBottom 10
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-quem-e.png"
@@ -851,13 +851,13 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
-Draw-CenterText -Graphics $graphics -Text "Muhammad Ali" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
-Draw-CenterText -Graphics $graphics -Text "F${iacute}sico, trabalho`ne prop${oacute}sito." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 232 -Width 626 -Height 176
+Draw-CenterText -Graphics $graphics -Text "Marie Curie" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
+Draw-CenterText -Graphics $graphics -Text "Mente, trabalho`ne prop${oacute}sito." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 232 -Width 626 -Height 176
 Draw-ClippedImageBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 738 -Y 184 -Width 214 -Height 254 -Opacity 0.98 -AlignBottom
-Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "O corpo virou`narma de presen${ccedilla}a,`nritmo e press${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "Treino, repeti${ccedilla}${atilde}o`ne preparo at${eacute}`na confianca virar lei." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "Lutava com voz,`nconvic${ccedilla}${atilde}o e uma`nidentidade imposs${iacute}vel`nde dobrar." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-CenterText -Graphics $graphics -Text "F${iacute}sico, Trabalho e Prop${oacute}sito.`nAli lutava como quem j${aacute} tinha decidido quem era." -Font $bodyFont -Brush $mutedBrush -X 150 -Y 964 -Width 780 -Height 104
+Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "Espa${ccedilla}o mental`n10" -Body "Clareza fria para`ncontinuar pensando`nonde quase todos`nparariam." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "Metodo, repeticao`ne rigor at${eacute}`na descoberta virar fato." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "Ci${ecirc}ncia como miss${atilde}o,`nnao como vaidade`nou ornamento." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-CenterText -Graphics $graphics -Text "Espa${ccedilla}o Mental, Trabalho e Prop${oacute}sito.`nCurie viveu como quem aceitava pagar o pre${ccedilla}o da descoberta." -Font $bodyFont -Brush $mutedBrush -X 150 -Y 964 -Width 780 -Height 104
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-ativos.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -871,7 +871,7 @@ Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -H
 New-BodyPanel -Graphics $graphics -X 126 -Y 326 -Width 828 -Height 792
 Draw-InnerContour -Graphics $graphics -X 146 -Y 346 -Width 788 -Height 752
 Draw-CenterText -Graphics $graphics -Text "N${Iacute}vel de maestria" -Font $titleMediumFont -Brush $goldBrushSlide -X 200 -Y 128 -Width 680 -Height 60
-Draw-CenterText -Graphics $graphics -Text "88" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
+Draw-CenterText -Graphics $graphics -Text "90" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
 $labels = @(
     "Consci${ecirc}ncia",
     "Espa${ccedilla}o mental",
@@ -884,10 +884,10 @@ $labels = @(
     "Hobbies",
     "F${iacute}sico"
 )
-$values = @(8,10,7,10,8,9,7,10,9,10)
+$values = @(10,10,8,10,10,8,8,10,8,8)
 Draw-RadarChart -Graphics $graphics -CenterX 540 -CenterY 678 -Radius 250 -Values $values -Labels $labels -LabelFont $radarLabelFont -ValueFont $radarValueFont
 Draw-CenterText -Graphics $graphics -Text "Mestria" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 920 -Width 896 -Height 92
-Draw-CenterText -Graphics $graphics -Text "Muhammad Ali operava em voz, coragem,`npresen${ccedilla}a e convic${ccedilla}${atilde}o inegoci${aacute}vel." -Font $bodySmallFont -Brush $offWhiteBrush -X 170 -Y 1012 -Width 740 -Height 96
+Draw-CenterText -Graphics $graphics -Text "Marie Curie operava em foco, m${eacute}todo,`ndescoberta e prop${oacute}sito implac${aacute}vel." -Font $bodySmallFont -Brush $offWhiteBrush -X 170 -Y 1012 -Width 740 -Height 96
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide4 = Join-Path $OutputDir "slide-04-radar.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
@@ -921,7 +921,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Mestria 09  |  Muhammad Ali" -Font $eyebrowFont -Brush $eyebrowBrush -X 148 -Y 1060 -Width 784 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Mestria 10  |  Marie Curie" -Font $eyebrowFont -Brush $eyebrowBrush -X 148 -Y 1060 -Width 784 -Height 28
 $slide5 = Join-Path $OutputDir "slide-05-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide5
 $created.Add($slide5)
@@ -933,7 +933,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "MESTRIA 09  |  MUHAMMAD ALI" -Font ([System.Drawing.Font]::new($headlineFamily, 40, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "MESTRIA 10  |  MARIE CURIE" -Font ([System.Drawing.Font]::new($headlineFamily, 40, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 5 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

@@ -9,6 +9,7 @@ Documentos complementares:
 - `marketing/calendario.md` organiza a cadencia e a ordem de publicacao.
 - `marketing/template-operacional-carrossel.md` industrializa a execucao de qualquer peca nova.
 - `marketing/banco-frases-radar.md` guarda as 100 frases oficiais de leitura de nivel.
+- `marketing/infos-boas-rounds.md` guarda os aprendizados operacionais que aceleram a producao dos rounds.
 
 ## Missao da marca
 
@@ -647,7 +648,7 @@ Legenda:
 
 ### Round 7
 
-- `Mestria 7`: O Radar de Michael Jordan
+- `Mestria 7`: O Radar de Beyonce
 - `Vitrine 7`: Ciclos e Eras
 - `Filosofia 7`: Quem nao mede fantasia a propria vida
 - `Mentalidade 7`: Gente de nivel mundial nao pede permissao para agir

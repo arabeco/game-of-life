@@ -23,6 +23,7 @@ import { SvgRadarChart } from '../components/SvgRadarChart';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { useGame } from '../contexts/GameContext';
+import { requestLocalNotificationPermission, showLocalNotification } from '../utils/localNotification';
 import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, NotificationType, Report, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
@@ -1339,7 +1340,7 @@ const CycleReportPreviewButton: React.FC = () => {
     );
 };
 
-type NotificationLabType = 'welcome' | 'oracle' | 'insight';
+type NotificationLabType = 'welcome' | 'oracle_native' | 'oracle_card';
 
 const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: string; color: string }> = ({ type, label, color }) => {
     const { session, fetchNotifications, refreshOracleMessages, showToast } = useGame();
@@ -1355,7 +1356,7 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
         if (!session?.user.id || isPending) return;
         setIsPending(true);
 
-        if (type === 'oracle') {
+        if (type === 'oracle_native') {
             try {
                 const { error } = await supabase.from('oracle_messages').insert({
                     id: crypto.randomUUID(),
@@ -1373,36 +1374,53 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
                 }
 
                 await refreshOracleMessages();
-                showToast('Card nativo do Oraculo gerado no feed.', "success");
+                showToast('Card nativo do Oraculo gerado no feed.', 'success');
             } catch (err) {
-                console.error("Erro ao gerar card nativo do Oraculo:", err);
-                showToast("Erro ao processar teste.", "error");
+                const message = err instanceof Error ? err.message : 'PROCESSING_ERROR';
+                console.error('Erro ao gerar card nativo do Oraculo:', err);
+                showToast(`Erro no teste "${label}": ${message}`, 'error');
             } finally {
                 setIsPending(false);
             }
+        }
+
+        if (type === 'oracle_native') {
             return;
         }
 
         let content = '';
-        let metadata: Record<string, unknown> = {};
+        let metadata: Record<string, unknown> = {
+            source: 'gm_panel',
+            trigger: type,
+        };
         let notificationType: NotificationType = 'system';
 
         if (type === 'welcome') {
             content = 'Bem-vindo ao Oráculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para começar sua jornada.';
             metadata = {
+                ...metadata,
                 welcome: true,
                 sendEmail: true,
                 email: session.user.email ?? null,
                 emailSubject: 'Glyph - Bem-vindo ao Oraculo',
             };
-        } else if (type === 'oracle') {
+        } else if (type === 'oracle_card') {
             content = 'Insight do Oráculo: Sua consistência na Arena de Saúde aumentou +15% esta semana. Mantenha o ritmo!';
-        } else if (type === 'insight') {
+        } else if (type === 'oracle_card') {
             content = 'O Oráculo detectou um padrão: você performa melhor em blocos de 90 min de foco profundo pela manhã.';
         }
 
-        if (type === 'insight') {
+        if (type === 'welcome') {
+            content = 'Bem-vindo ao Oraculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para comecar sua jornada.';
+        }
+
+        if (type === 'oracle_card') {
+            content = 'O Oraculo detectou um padrao: voce performa melhor em blocos de 90 min de foco profundo pela manha.';
+        }
+
+        if (type === 'oracle_card') {
             metadata = {
+                ...metadata,
                 source: 'gm_panel',
                 emphasis: 'oracle_card',
             };
@@ -1415,10 +1433,23 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
                 throw new Error('NOTIFICATION_INSERT_FAILED');
             }
             await fetchNotifications();
-            showToast(type === 'welcome' ? 'Welcome enviado com notificacao e e-mail.' : 'Card do Oraculo enviado para os avisos.', "success");
+            if (type === 'welcome') {
+                showToast(
+                    session.user.email
+                        ? 'Welcome enviado para os avisos e encaminhado para o fluxo de email.'
+                        : 'Welcome enviado para os avisos. Este usuario nao tem email disponivel para o disparo.',
+                    session.user.email ? 'success' : 'warning',
+                );
+                return;
+            }
+            showToast('Card do Oraculo enviado para os avisos.', 'success');
             return;
             showToast(`Notificação "${label}" enviada!`, "success");
         } catch (err) {
+            const message = err instanceof Error ? err.message : 'PROCESSING_ERROR';
+            console.error(`Erro ao processar botao "${label}":`, err);
+            showToast(`Erro no teste "${label}": ${message}`, 'error');
+            return;
             console.error("Erro ao enviar notificação:", err);
             showToast("Erro ao processar teste.", "error");
         } finally {
@@ -1449,17 +1480,17 @@ const NotificationTestButton: React.FC = () => {
         setIsPending(true);
         setTimeLeft(15);
 
-        const timer = setInterval(() => {
+        const timer = window.setInterval(() => {
             setTimeLeft(prev => {
                 if (prev <= 1) {
-                    clearInterval(timer);
+                    window.clearInterval(timer);
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
 
-        setTimeout(async () => {
+        window.setTimeout(async () => {
             try {
                 const created = await SupabaseService.createNotification(
                     session.user.id,
@@ -1470,11 +1501,32 @@ const NotificationTestButton: React.FC = () => {
                     throw new Error('NOTIFICATION_INSERT_FAILED');
                 }
                 await fetchNotifications();
+                let pushDelivered = false;
+                const permission = await requestLocalNotificationPermission();
+                if (permission === 'granted') {
+                    pushDelivered = await showLocalNotification({
+                        title: 'Teste do Oraculo',
+                        body: 'O push local do aparelho respondeu ao sinal de 15 segundos.',
+                        tag: 'gm-panel-push-test',
+                        url: '/',
+                        requireInteraction: true,
+                    });
+                }
+
+                if (pushDelivered) {
+                    showToast('Push local e aviso interno entregues.', 'success');
+                } else if (permission === 'denied') {
+                    showToast('Aviso interno entregue, mas o navegador bloqueou o push local.', 'warning');
+                } else {
+                    showToast('Aviso interno entregue. O push local nao foi exibido neste aparelho.', 'warning');
+                }
+                return;
                 showToast("Notificação de teste enviada com sucesso!", "success");
             } catch (err) {
                 console.error("Erro ao enviar notificação de teste:", err);
                 showToast("Erro ao enviar notificação de teste.", "error");
             } finally {
+                window.clearInterval(timer);
                 setIsPending(false);
             }
         }, 15000);
@@ -1804,8 +1856,8 @@ export const SovereignPanelView: React.FC = () => {
             </div>
             <div className="flex flex-wrap gap-3">
               <NotificationTypeButton type="welcome" label="Welcome (Email+Oracle)" color="blue" />
-              <NotificationTypeButton type="oracle" label="Oracle (Nativo)" color="amber" />
-              <NotificationTypeButton type="insight" label="Card do Oráculo" color="purple" />
+              <NotificationTypeButton type="oracle_native" label="Oracle (Nativo)" color="amber" />
+              <NotificationTypeButton type="oracle_card" label="Card do Oráculo" color="purple" />
               <NotificationTestButton />
             </div>
           </div>

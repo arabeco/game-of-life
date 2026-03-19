@@ -531,7 +531,7 @@ function Draw-Pill {
     try {
         $Graphics.FillRectangle($fill, $X, $Y, $Width, $Height)
         $Graphics.DrawRectangle($pen, $X, $Y, $Width, $Height)
-        Draw-CenterText -Graphics $Graphics -Text $Text -Font $Font -Brush $textBrush -X $X -Y $Y -Width $Width -Height $Height
+        Draw-CenterText -Graphics $Graphics -Text $Text -Font $Font -Brush $textBrush -X ($X + 10) -Y ($Y + 4) -Width ($Width - 20) -Height ($Height - 10)
     } finally {
         $fill.Dispose()
         $pen.Dispose()
@@ -775,7 +775,7 @@ $slide1FrameY = [float]($slide1FrameBottom - $slide1FrameHeight)
 Draw-CenterText -Graphics $graphics -Text "Leonardo da Vinci" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
 Draw-FeatureFrame -Graphics $graphics -X $slide1FrameX -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0 -ContentPaddingX 10 -ContentPaddingTop 16 -ContentPaddingBottom 16 -AccentWidth 10
 Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Leonardo`nda Vinci?" -Font $titleHugeFont -Brush $goldBrushSlide -X 94 -Y 392 -Width 592 -Height 448
-Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 91" -Font $bodyBoldFont -X 138 -Y 898 -Width 392 -Height 56
+Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 91" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
 Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} talento isolado.`n${Eacute} curiosidade brutal com registro constante." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"

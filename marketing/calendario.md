@@ -68,7 +68,7 @@ Observacao:
 - 19/04/2026: Vitrine 6 - Deep Focus, o Coliseu da execucao
 - 20/04/2026: Filosofia 6 - Conforto demais te deixa fraco
 - 21/04/2026: Mentalidade 6 - Os melhores decidem antes de se sentir prontos
-- 22/04/2026: Mestria 7 - O Radar de Michael Jordan
+- 22/04/2026: Mestria 7 - O Radar de Beyonce
 - 23/04/2026: Vitrine 7 - Ciclos e Eras
 - 24/04/2026: Filosofia 7 - Quem nao mede fantasia a propria vida
 - 25/04/2026: Mentalidade 7 - Gente de nivel mundial nao pede permissao para agir

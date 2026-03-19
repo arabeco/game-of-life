@@ -6,6 +6,9 @@ Ele existe para que qualquer agente, designer ou editor consiga montar uma peca 
 Referencia obrigatoria para leituras de radar:
 - `marketing/banco-frases-radar.md`
 
+Referencia obrigatoria para aceleracao de rounds:
+- `marketing/infos-boas-rounds.md`
+
 ## Regras globais
 
 - formato base: 1080 x 1350 por slide
@@ -17,6 +20,17 @@ Referencia obrigatoria para leituras de radar:
 - o simbolo do GLYPH pode ser selo ou protagonista, dependendo do formato
 - o texto menor dos slides centrais deve entrar um pouco maior do que o padrao comum de post social, ocupando melhor o vazio e ficando legivel sem parecer miudo
 - nos slides centrais, a caixa de texto deve crescer quando necessario para permitir a maior fonte harmonica possivel sem colar nos elementos
+
+## Aprendizados operacionais ja validados
+
+- rounds seguem a ordem `Mestria -> Vitrine -> Filosofia -> Mentalidade`
+- Mestria usa o nome da figura como watermark discreto nos slides 1 a 4
+- o slide 5 de Mestria usa watermark `Mestria`, nao o nome da figura
+- o pill `Nivel de maestria` da capa deve ficar mais alto e um pouco mais a direita do que a primeira versao de base
+- na capa de Mestria, o pill nao pode ficar colado no texto de baixo
+- a moldura da imagem de Mestria deve respeitar a area visivel do PNG, sem sobras de transparencia
+- em Vitrine, os prints entram so do slide 3 em diante
+- em Filosofia e Mentalidade, o miolo precisa ser sempre pensado para leitura em celular antes de qualquer purismo de layout
 
 ## Familias visuais oficiais
 

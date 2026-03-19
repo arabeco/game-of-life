@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mentalidade-06-decidir-pronto\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mentalidade-07-sem-permissao\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -295,9 +295,9 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Mentalidade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
-Draw-CenterText -Graphics $graphics -Text "Os melhores decidem`nantes de se`nsentir prontos." -Font $heroTitleFont -Brush $goldBrushSlide -X 138 -Y 286 -Width 804 -Height 388
-Draw-CenterText -Graphics $graphics -Text "Clareza raramente chega antes da a${ccedilla}${atilde}o.`nEla aparece no movimento." -Font $bodyFont -Brush $offWhiteBrush -X 170 -Y 720 -Width 740 -Height 116
-Draw-Pill -Graphics $graphics -Text "Mentalidade 06" -Font $bodyBoldFont -X 382 -Y 836 -Width 316 -Height 54
+Draw-CenterText -Graphics $graphics -Text "Gente de n${iacute}vel mundial`nnao pede permiss${atilde}o`npara agir." -Font $heroTitleFont -Brush $goldBrushSlide -X 138 -Y 286 -Width 804 -Height 388
+Draw-CenterText -Graphics $graphics -Text "Amadores esperam aval.`nOs melhores ocupam o campo." -Font $bodyFont -Brush $offWhiteBrush -X 170 -Y 720 -Width 740 -Height 116
+Draw-Pill -Graphics $graphics -Text "Mentalidade 07" -Font $bodyBoldFont -X 382 -Y 836 -Width 316 -Height 54
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -308,11 +308,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Certeza" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
+Draw-CenterText -Graphics $graphics -Text "Permiss${atilde}o" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
 Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 724
-Draw-CenterText -Graphics $graphics -Text "Amadores esperam`ncerteza total." -Font $titleLargeFont -Brush $goldBrushSlide -X 162 -Y 278 -Width 756 -Height 196
-Draw-CenterText -Graphics $graphics -Text "Confundem hesita${ccedilla}${atilde}o com prud${ecirc}ncia.`nTentam eliminar a n${eacute}voa antes de agir`ne transformam medo em m${eacute}todo." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 520 -Width 756 -Height 228
-Draw-CenterText -Graphics $graphics -Text "Enquanto esperam, o tempo decide." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 844 -Width 728 -Height 110
+Draw-CenterText -Graphics $graphics -Text "Amadores esperam`naval externo." -Font $titleLargeFont -Brush $goldBrushSlide -X 162 -Y 278 -Width 756 -Height 196
+Draw-CenterText -Graphics $graphics -Text "Pedem consenso, ambiente ideal e ben${ccedilla}${atilde}o coletiva.`nTransformam depend${ecirc}ncia em prud${ecirc}ncia`ne terceirizam o pr${oacute}prio eixo." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 520 -Width 756 -Height 228
+Draw-CenterText -Graphics $graphics -Text "Quem espera demais j${aacute} entregou o comando." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 844 -Width 728 -Height 110
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-logica-01.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -323,11 +323,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Movimento" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
+Draw-CenterText -Graphics $graphics -Text "Autoridade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
 Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 730
-Draw-CenterText -Graphics $graphics -Text "Os melhores usam`na a${ccedilla}${atilde}o para pensar melhor." -Font $titleLargeFont -Brush $goldBrushSlide -X 154 -Y 256 -Width 772 -Height 246
-Draw-CenterText -Graphics $graphics -Text "Decide com informa${ccedilla}${atilde}o suficiente, entra em movimento`ne refina a rota no percurso.`nA clareza vem durante, n${atilde}o antes." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 558 -Width 756 -Height 210
-Draw-CenterText -Graphics $graphics -Text "Clareza ${eacute} fruto do avan${ccedilla}o." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 856 -Width 728 -Height 112
+Draw-CenterText -Graphics $graphics -Text "Os melhores se`nautorizam por dentro." -Font $titleLargeFont -Brush $goldBrushSlide -X 154 -Y 256 -Width 772 -Height 246
+Draw-CenterText -Graphics $graphics -Text "Nao confundem respeito com submiss${atilde}o.`nEntram em movimento antes do aplauso`ne deixam o resultado falar depois." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 558 -Width 756 -Height 210
+Draw-CenterText -Graphics $graphics -Text "Movimento vem antes da aprova${ccedilla}${atilde}o." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 856 -Width 728 -Height 112
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-logica-02.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -355,7 +355,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Mentalidade 06  |  Decidir antes de se sentir pronto" -Font $eyebrowFont -Brush $eyebrowBrush -X 124 -Y 1060 -Width 832 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Mentalidade 07  |  Gente de nivel mundial nao pede permissao para agir" -Font $eyebrowFont -Brush $eyebrowBrush -X 108 -Y 1060 -Width 864 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -367,7 +367,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "MENTALIDADE 06  |  DECIDIR ANTES DE SE SENTIR PRONTO" -Font ([System.Drawing.Font]::new($headlineFamily, 36, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "MENTALIDADE 07  |  GENTE DE NIVEL MUNDIAL NAO PEDE PERMISSAO PARA AGIR" -Font ([System.Drawing.Font]::new($headlineFamily, 28, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 4 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

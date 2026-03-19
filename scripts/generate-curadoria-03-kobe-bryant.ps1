@@ -559,8 +559,8 @@ function Draw-StatCard {
     try {
         $Graphics.FillRectangle($cardBrush, $X, $Y, $Width, $Height)
         $Graphics.DrawRectangle($cardPen, $X, $Y, $Width, $Height)
-        Draw-CenterText -Graphics $Graphics -Text $Title -Font $TitleFont -Brush $GoldBrush -X ($X + 10) -Y ($Y + 18) -Width ($Width - 20) -Height 72
-        Draw-CenterText -Graphics $Graphics -Text $Body -Font $BodyFont -Brush $BodyBrush -X ($X + 18) -Y ($Y + 92) -Width ($Width - 36) -Height ($Height - 108)
+        Draw-CenterText -Graphics $Graphics -Text $Title -Font $TitleFont -Brush $GoldBrush -X ($X + 12) -Y ($Y + 28) -Width ($Width - 24) -Height 92
+        Draw-CenterText -Graphics $Graphics -Text $Body -Font $BodyFont -Brush $BodyBrush -X ($X + 18) -Y ($Y + 122) -Width ($Width - 36) -Height ($Height - 138)
     } finally {
         $cardBrush.Dispose()
         $cardPen.Dispose()
@@ -618,6 +618,7 @@ function Draw-RadarChart {
             $labelRadius = $Radius + 84
             $labelX = [float]($CenterX + [Math]::Cos($angle) * $labelRadius - 80)
             $labelY = [float]($CenterY + [Math]::Sin($angle) * $labelRadius - 18)
+            if ($i -eq 0) { $labelY += 16 }
             Draw-CenterText -Graphics $Graphics -Text $Labels[$i] -Font $LabelFont -Brush $labelBrush -X $labelX -Y $labelY -Width 160 -Height 36
 
             $valueX = [float]($CenterX + [Math]::Cos($angle) * ($shapeRadius + 32) - 18)
@@ -798,7 +799,7 @@ Draw-EditorialTextPanel -Graphics $graphics -X $slide2PanelX -Y $slide2PanelY -W
 Draw-CenterText -Graphics $graphics -Text "Kobe n${Atilde}o virou lenda`npor talento solto." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 32) -Width ($slide2PanelWidth - 48) -Height 120
 Draw-CenterText -Graphics $graphics -Text "Virou porque transformou treino, dor,`nrepeti${ccedilla}${atilde}o e press${atilde}o`nem padr${atilde}o di${aacute}rio." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 34) -Y ($slide2PanelY + 182) -Width ($slide2PanelWidth - 68) -Height 154
 Draw-CenterText -Graphics $graphics -Text "Mamba n${Atilde}o ${eacute} pose.`n${Eacute} execu${ccedilla}${atilde}o." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 36) -Y ($slide2PanelY + 360) -Width ($slide2PanelWidth - 72) -Height 92
-Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -CoverImage -ContentPaddingX 12 -ContentPaddingTop 12 -ContentPaddingBottom 10
+Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -ContentPaddingX 12 -ContentPaddingTop 12 -ContentPaddingBottom 10
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-quem-e.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -810,7 +811,7 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
 Draw-CenterText -Graphics $graphics -Text "Kobe Bryant" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
-Draw-CenterText -Graphics $graphics -Text "A grandeza`nrepete o b${aacute}sico." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 214 -Width 626 -Height 176
+Draw-CenterText -Graphics $graphics -Text "A grandeza`nrepete o b${aacute}sico." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 232 -Width 626 -Height 176
 Draw-ClippedImageBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 738 -Y 184 -Width 214 -Height 254 -Opacity 0.98 -AlignBottom
 Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "O corpo virou`npadr${atilde}o alto`nde execu${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
 Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "Treino cedo,`nfundamento repetido`ne padr${atilde}o brutal." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush

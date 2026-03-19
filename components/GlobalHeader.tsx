@@ -2,7 +2,7 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
-import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
+import { getUnreadBadgeCount, getVisibleNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { SparklesIcon, LockIcon } from './Icons';
 import './global-header.css';
 import { REST_SCREEN_ACTION_SESSION_EVENT, RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
@@ -13,7 +13,7 @@ const ClanDetailModal = React.lazy(() => import('./ClanDetailModal').then(m => (
 const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default: m.RestScreen })));
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number; defaultRestScreenOpen?: boolean }> = ({ onProfileClick, topOffsetPx = 0, defaultRestScreenOpen = true }) => {
-    const { userProfile, oracleMessages, notifications, appMode, clan } = useGame();
+    const { userProfile, oracleMessages, notifications, appMode, clan, oraclePreferences } = useGame();
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
     const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'notifications' | 'clan' | 'dms'>('chat');
@@ -24,9 +24,15 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const hiddenAtRef = useRef<number | null>(null);
     const isBasicMode = appMode === 'BASIC';
     
-    const unreadNotificationsCount = getUnreadBadgeCount(notifications);
+    const visibleNotifications = getVisibleNotificationsForProfile(
+        notifications,
+        appMode,
+        oraclePreferences?.activeMode || 'neutro',
+    );
+    const unreadNotificationsCount = getUnreadBadgeCount(visibleNotifications);
+    const unreadVisibleNotificationsCount = visibleNotifications.filter(notification => !notification.read).length;
     const hasUnreadMessages = oracleMessages.some(m => !m.read);
-    const hasUnread = hasUnreadMessages || unreadNotificationsCount > 0;
+    const hasUnread = hasUnreadMessages || unreadVisibleNotificationsCount > 0;
     
     // Time state
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -144,7 +150,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     };
 
     const handleOracleClick = () => {
-        setOracleInitialTab('chat');
+        setOracleInitialTab(unreadVisibleNotificationsCount > 0 ? 'notifications' : 'chat');
         setOracleOpen(true);
     };
 
@@ -238,6 +244,12 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border border-black">
                                             <span className="text-[9px] font-bold text-white">{unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}</span>
                                         </div>
+                                    )}
+                                    {unreadNotificationsCount === 0 && hasUnread && (
+                                        <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70"></span>
+                                            <span className="relative inline-flex h-3 w-3 rounded-full border border-black bg-amber-400"></span>
+                                        </span>
                                     )}
                                 </button>
                             </div>

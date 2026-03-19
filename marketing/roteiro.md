@@ -656,7 +656,7 @@ Legenda:
 ### Round 8
 
 - `Mestria 8`: O Radar de Arnold Schwarzenegger
-- `Vitrine 8`: Patentes, rank e insignias
+- `Vitrine 8`: 10 patentes, de Vagante a Soberano
 - `Filosofia 8`: Seu ambiente vence sua vontade
 - `Mentalidade 8`: Os grandes tratam critica como materia-prima
 

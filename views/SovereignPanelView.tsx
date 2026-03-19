@@ -1342,6 +1342,12 @@ const CycleReportPreviewButton: React.FC = () => {
 
 type NotificationLabType = 'welcome' | 'oracle_native' | 'oracle_card';
 
+const GM_NOTIFICATION_TEST_CONTENT: Record<NotificationLabType, string> = {
+    welcome: 'TESTE GM: Bem-vindo ao Oraculo. Este aviso deve aparecer em Avisos e, se houver e-mail no perfil, seguir para o fluxo de boas-vindas.',
+    oracle_native: 'TESTE GM: Mensagem nativa do Oraculo. Ao abrir o Oraculo, esta entrada deve aparecer no feed principal.',
+    oracle_card: 'TESTE GM: Card do Oraculo plantado em Avisos. O icone do Oraculo deve ficar destacado ate a leitura.',
+};
+
 const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: string; color: string }> = ({ type, label, color }) => {
     const { session, fetchNotifications, refreshOracleMessages, showToast } = useGame();
     const [isPending, setIsPending] = useState(false);
@@ -1356,13 +1362,13 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
         if (!session?.user.id || isPending) return;
         setIsPending(true);
 
-        if (type === 'oracle_native') {
-            try {
+        try {
+            if (type === 'oracle_native') {
                 const { error } = await supabase.from('oracle_messages').insert({
                     id: crypto.randomUUID(),
                     user_id: session.user.id,
                     category: 'analise_padroes',
-                    content: 'O Oraculo detectou um sinal forte na sua cadencia: suas melhores entregas apareceram nos primeiros blocos da manha. Proteja esse intervalo como territorio sagrado.',
+                    content: GM_NOTIFICATION_TEST_CONTENT.oracle_native,
                     mode: 'estrategico',
                     delivery_type: 'feed',
                     read: false,
@@ -1374,84 +1380,53 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
                 }
 
                 await refreshOracleMessages();
-                showToast('Card nativo do Oraculo gerado no feed.', 'success');
-            } catch (err) {
-                const message = err instanceof Error ? err.message : 'PROCESSING_ERROR';
-                console.error('Erro ao gerar card nativo do Oraculo:', err);
-                showToast(`Erro no teste "${label}": ${message}`, 'error');
-            } finally {
-                setIsPending(false);
+                showToast('TESTE GM plantado no feed do Oraculo.', 'success');
+                return;
             }
-        }
 
-        if (type === 'oracle_native') {
-            return;
-        }
-
-        let content = '';
-        let metadata: Record<string, unknown> = {
-            source: 'gm_panel',
-            trigger: type,
-        };
-        let notificationType: NotificationType = 'system';
-
-        if (type === 'welcome') {
-            content = 'Bem-vindo ao Oráculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para começar sua jornada.';
-            metadata = {
-                ...metadata,
-                welcome: true,
-                sendEmail: true,
-                email: session.user.email ?? null,
-                emailSubject: 'Glyph - Bem-vindo ao Oraculo',
-            };
-        } else if (type === 'oracle_card') {
-            content = 'Insight do Oráculo: Sua consistência na Arena de Saúde aumentou +15% esta semana. Mantenha o ritmo!';
-        } else if (type === 'oracle_card') {
-            content = 'O Oráculo detectou um padrão: você performa melhor em blocos de 90 min de foco profundo pela manhã.';
-        }
-
-        if (type === 'welcome') {
-            content = 'Bem-vindo ao Oraculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para comecar sua jornada.';
-        }
-
-        if (type === 'oracle_card') {
-            content = 'O Oraculo detectou um padrao: voce performa melhor em blocos de 90 min de foco profundo pela manha.';
-        }
-
-        if (type === 'oracle_card') {
-            metadata = {
-                ...metadata,
+            const notificationType: NotificationType = type === 'oracle_card' ? 'oracle_prompt' : 'system';
+            const metadata: Record<string, unknown> = {
                 source: 'gm_panel',
-                emphasis: 'oracle_card',
+                trigger: type,
+                label,
+                test: true,
             };
-            notificationType = 'oracle_prompt';
-        }
 
-        try {
+            let content = GM_NOTIFICATION_TEST_CONTENT.welcome;
+            if (type === 'welcome') {
+                metadata.welcome = true;
+                metadata.sendEmail = true;
+                metadata.email = session.user.email ?? null;
+                metadata.emailSubject = 'Glyph - TESTE GM de boas-vindas';
+            }
+
+            if (type === 'oracle_card') {
+                metadata.emphasis = 'oracle_card';
+                content = GM_NOTIFICATION_TEST_CONTENT.oracle_card;
+            }
+
             const created = await SupabaseService.createNotification(session.user.id, notificationType, content, metadata);
             if (!created) {
                 throw new Error('NOTIFICATION_INSERT_FAILED');
             }
+
             await fetchNotifications();
+
             if (type === 'welcome') {
                 showToast(
                     session.user.email
-                        ? 'Welcome enviado para os avisos e encaminhado para o fluxo de email.'
-                        : 'Welcome enviado para os avisos. Este usuario nao tem email disponivel para o disparo.',
+                        ? 'TESTE GM enviado para Avisos e e-mail.'
+                        : 'TESTE GM enviado para Avisos. Este usuario nao tem e-mail disponivel.',
                     session.user.email ? 'success' : 'warning',
                 );
                 return;
             }
-            showToast('Card do Oraculo enviado para os avisos.', 'success');
-            return;
-            showToast(`Notificação "${label}" enviada!`, "success");
+
+            showToast('TESTE GM do card do Oraculo enviado para Avisos.', 'success');
         } catch (err) {
             const message = err instanceof Error ? err.message : 'PROCESSING_ERROR';
             console.error(`Erro ao processar botao "${label}":`, err);
             showToast(`Erro no teste "${label}": ${message}`, 'error');
-            return;
-            console.error("Erro ao enviar notificação:", err);
-            showToast("Erro ao processar teste.", "error");
         } finally {
             setIsPending(false);
         }
@@ -1868,3 +1843,4 @@ export const SovereignPanelView: React.FC = () => {
     </div>
   );
 };
+

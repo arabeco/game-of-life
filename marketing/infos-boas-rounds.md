@@ -53,6 +53,8 @@ Backgrounds oficiais:
 Regras visuais validadas:
 - o nome da pessoa entra como watermark discreto nos slides 1, 2, 3 e 4
 - o slide 5 nao usa o nome da pessoa como watermark; usa `Mestria`
+- no slide 2, a imagem entra em modo `fit`, nao em `cover`
+- no slide 2, a cabeca nunca pode ser cortada; preservar a figura inteira vale mais do que preencher toda a moldura
 - o pill `Nivel de maestria` na capa deve ficar mais alto e um pouco mais a direita
 - referencia pratica de capa boa: X `186`, Y `860`, Width `392`, Height `56`
 - o pill nao pode ficar colado no texto de baixo nem muito jogado para a esquerda
@@ -61,9 +63,12 @@ Regras visuais validadas:
 - cortar transparencia sobrando antes de decidir largura e altura da moldura
 - se a imagem for mais fina, ela pode crescer mais em altura
 - slide 3 deve ficar um pouco mais baixo para nao encostar na marca dagua superior
+- o titulo do slide 3 precisa ter margem superior real; nunca pode rocar ou cortar no topo
 - a imagem do slide 3 nao pode invadir o terceiro card
+- o titulo dentro dos cards do slide 3 precisa de respiro interno maior; nao pode cortar na primeira linha
 - slide 4 deve evitar texto empilhado no topo
 - no slide 4, a marca dagua `Mestria` entra mais embaixo, no espaco livre sob o radar
+- o rotulo superior do radar (`Consciencia`) precisa descer um pouco para nao cortar na borda
 
 Regras de escolha automatica de imagens:
 - usar as 2 imagens mais verticais nos slides 1 e 2

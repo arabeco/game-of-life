@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\filosofia-06-conforto-demais\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\filosofia-07-quem-nao-mede\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -321,9 +321,9 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
 Draw-CenterText -Graphics $graphics -Text "Filosofia" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 120 -Width 912 -Height 170
-Draw-CenterText -Graphics $graphics -Text "Conforto demais`nte deixa fraco." -Font $heroTitleFont -Brush $marfimTitleBrush -X 140 -Y 326 -Width 800 -Height 270
-Draw-CenterText -Graphics $graphics -Text "Tudo que alivia demais agora`ncobra for${ccedilla}a, eixo e presen${ccedilla}a depois." -Font $bodyFont -Brush $offWhiteBrush -X 158 -Y 654 -Width 764 -Height 132
-Draw-Pill -Graphics $graphics -Text "Filosofia 06" -Font $bodyBoldFont -X 404 -Y 824 -Width 272 -Height 54
+Draw-CenterText -Graphics $graphics -Text "Quem n${atilde}o mede`nfantasia a`npr${oacute}pria vida." -Font $heroTitleFont -Brush $marfimTitleBrush -X 140 -Y 302 -Width 800 -Height 314
+Draw-CenterText -Graphics $graphics -Text "Sem registro, a mente inventa progresso`nque nunca aconteceu." -Font $bodyFont -Brush $offWhiteBrush -X 158 -Y 670 -Width 764 -Height 132
+Draw-Pill -Graphics $graphics -Text "Filosofia 07" -Font $bodyBoldFont -X 404 -Y 824 -Width 272 -Height 54
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -334,13 +334,13 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "Conforto" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
+Draw-CenterText -Graphics $graphics -Text "Fantasia" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
 Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 700 -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "Facilidade demais`nenfraquece." -Font $titleLargeFont -Brush $marfimTitleBrush -X 184 -Y 300 -Width 712 -Height 196
-Draw-CenterText -Graphics $graphics -Text "Uma vida obcecada por al${iacute}vio`ndesaprende fric${ccedilla}${atilde}o, profundidade e resist${ecirc}ncia.`nTudo fica mais leve, mas voc${ecirc} tamb${eacute}m." -Font $bodyFont -Brush $offWhiteBrush -X 180 -Y 540 -Width 720 -Height 248
-Draw-CenterText -Graphics $graphics -Text "Al${iacute}vio constante custa for${ccedilla}a." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 838 -Width 728 -Height 120
+Draw-CenterText -Graphics $graphics -Text "O que n${atilde}o ${eacute}`nmedido vira narrativa." -Font $titleLargeFont -Brush $marfimTitleBrush -X 184 -Y 300 -Width 712 -Height 196
+Draw-CenterText -Graphics $graphics -Text "Sem confronto com n${uacute}mero, tempo ou registro,`no ego chama repeti${ccedilla}${atilde}o de evolu${ccedilla}${atilde}o`ne conforto de progresso." -Font $bodyFont -Brush $offWhiteBrush -X 180 -Y 540 -Width 720 -Height 248
+Draw-CenterText -Graphics $graphics -Text "A mente protege o ego com fic${ccedilla}${atilde}o." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 838 -Width 728 -Height 120
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide2 = Join-Path $OutputDir "slide-02-conforto.png"
+$slide2 = Join-Path $OutputDir "slide-02-fantasia.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
 $created.Add($slide2)
 
@@ -349,13 +349,13 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "For${ccedilla}a" -Font $watermarkFont -Brush $goldWashBrush -X 80 -Y 118 -Width 920 -Height 176
+Draw-CenterText -Graphics $graphics -Text "Medi${ccedilla}${atilde}o" -Font $watermarkFont -Brush $goldWashBrush -X 80 -Y 118 -Width 920 -Height 176
 Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 708 -Tone "marfim"
-Draw-CenterText -Graphics $graphics -Text "O desconforto certo`nforja densidade." -Font $titleLargeFont -Brush $marfimTitleBrush -X 176 -Y 294 -Width 728 -Height 198
-Draw-CenterText -Graphics $graphics -Text "Treino, espera, ren${uacute}ncia e atrito consciente`nreconstroem presen${ccedilla}a e comando.`nSem tens${atilde}o real, n${atilde}o nasce estrutura." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 560 -Width 728 -Height 222
-Draw-CenterText -Graphics $graphics -Text "Sem atrito, sem densidade." -Font $titleMediumFont -Brush $whiteBrush -X 186 -Y 848 -Width 708 -Height 112
+Draw-CenterText -Graphics $graphics -Text "Medir devolve`nrealidade." -Font $titleLargeFont -Brush $marfimTitleBrush -X 176 -Y 294 -Width 728 -Height 198
+Draw-CenterText -Graphics $graphics -Text "Quando o dia, o ciclo e o resultado aparecem,`na fantasia perde for${ccedilla}a.`nMedir tira o ego da dire${ccedilla}${atilde}o." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 560 -Width 728 -Height 222
+Draw-CenterText -Graphics $graphics -Text "Sem medida, sobra ilus${atilde}o." -Font $titleMediumFont -Brush $whiteBrush -X 186 -Y 848 -Width 708 -Height 112
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide3 = Join-Path $OutputDir "slide-03-forca.png"
+$slide3 = Join-Path $OutputDir "slide-03-medicao.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
 $created.Add($slide3)
 
@@ -381,7 +381,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $marfimTitleBrush -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Filosofia 06  |  Conforto demais te deixa fraco" -Font $eyebrowFont -Brush $eyebrowBrush -X 120 -Y 1060 -Width 840 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Filosofia 07  |  Quem nao mede fantasia a propria vida" -Font $eyebrowFont -Brush $eyebrowBrush -X 132 -Y 1060 -Width 816 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -393,7 +393,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "FILOSOFIA 06  |  CONFORTO DEMAIS TE DEIXA FRACO" -Font ([System.Drawing.Font]::new($headlineFamily, 38, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "FILOSOFIA 07  |  QUEM NAO MEDE FANTASIA A PROPRIA VIDA" -Font ([System.Drawing.Font]::new($headlineFamily, 34, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 4 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

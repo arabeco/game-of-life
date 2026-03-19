@@ -14,7 +14,6 @@ import {
     getNotificationLane,
     getNotificationLaneLabel,
     getNotificationTitle,
-    getUnreadBadgeCount,
     getVisibleNotificationsForProfile,
 } from '../constants/oracleNotificationPolicy';
 
@@ -39,11 +38,8 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'c
 
     const activeOracleMode = oraclePreferences?.activeMode || 'neutro';
     const visibleNotifications = getVisibleNotificationsForProfile(notifications, appMode, activeOracleMode);
-    const unreadNotifications = getUnreadBadgeCount(visibleNotifications);
+    const unreadNotifications = visibleNotifications.filter((notification) => !notification.read).length;
     const unreadDMs = dmConversations.reduce((acc, conv) => acc + conv.unreadCount, 0);
-    // For chat, we might want to check if there's a new planted message or just use the general unread
-    // But per instructions, the badge on the header is for notifications. 
-    // Inside the modal, we can show a dot for unread chat messages too.
     const unreadChat = oracleMessages.some(m => !m.read);
 
     return (

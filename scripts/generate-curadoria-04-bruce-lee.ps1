@@ -559,8 +559,8 @@ function Draw-StatCard {
     try {
         $Graphics.FillRectangle($cardBrush, $X, $Y, $Width, $Height)
         $Graphics.DrawRectangle($cardPen, $X, $Y, $Width, $Height)
-        Draw-CenterText -Graphics $Graphics -Text $Title -Font $TitleFont -Brush $GoldBrush -X ($X + 10) -Y ($Y + 18) -Width ($Width - 20) -Height 72
-        Draw-CenterText -Graphics $Graphics -Text $Body -Font $BodyFont -Brush $BodyBrush -X ($X + 18) -Y ($Y + 92) -Width ($Width - 36) -Height ($Height - 108)
+        Draw-CenterText -Graphics $Graphics -Text $Title -Font $TitleFont -Brush $GoldBrush -X ($X + 12) -Y ($Y + 28) -Width ($Width - 24) -Height 92
+        Draw-CenterText -Graphics $Graphics -Text $Body -Font $BodyFont -Brush $BodyBrush -X ($X + 18) -Y ($Y + 122) -Width ($Width - 36) -Height ($Height - 138)
     } finally {
         $cardBrush.Dispose()
         $cardPen.Dispose()
@@ -618,6 +618,7 @@ function Draw-RadarChart {
             $labelRadius = $Radius + 84
             $labelX = [float]($CenterX + [Math]::Cos($angle) * $labelRadius - 80)
             $labelY = [float]($CenterY + [Math]::Sin($angle) * $labelRadius - 18)
+            if ($i -eq 0) { $labelY += 16 }
             Draw-CenterText -Graphics $Graphics -Text $Labels[$i] -Font $LabelFont -Brush $labelBrush -X $labelX -Y $labelY -Width 160 -Height 36
 
             $valueX = [float]($CenterX + [Math]::Cos($angle) * ($shapeRadius + 32) - 18)
@@ -799,7 +800,7 @@ Draw-EditorialTextPanel -Graphics $graphics -X $slide2PanelX -Y $slide2PanelY -W
 Draw-CenterText -Graphics $graphics -Text "Bruce n${Atilde}o treinava`ns${oacute} o corpo." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 28) -Width ($slide2PanelWidth - 48) -Height 128
 Draw-CenterText -Graphics $graphics -Text "Treinava rea${ccedilla}${atilde}o, clareza, linguagem`ne filosofia at${eacute} a disciplina`nvirar identidade." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 30) -Y ($slide2PanelY + 188) -Width ($slide2PanelWidth - 60) -Height 176
 Draw-CenterText -Graphics $graphics -Text "Pot${ecirc}ncia sem consci${ecirc}ncia`n${eacute} s${oacute} ru${iacute}do." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 30) -Y ($slide2PanelY + 390) -Width ($slide2PanelWidth - 60) -Height 104
-Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -CoverImage -ContentPaddingX 14 -ContentPaddingTop 12 -ContentPaddingBottom 10
+Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -ContentPaddingX 14 -ContentPaddingTop 12 -ContentPaddingBottom 10
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-quem-e.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -811,7 +812,7 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
 Draw-CenterText -Graphics $graphics -Text "Bruce Lee" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
-Draw-CenterText -Graphics $graphics -Text "Corpo, mente`ne prop${oacute}sito." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 214 -Width 626 -Height 176
+Draw-CenterText -Graphics $graphics -Text "Corpo, mente`ne prop${oacute}sito." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 232 -Width 626 -Height 176
 Draw-ClippedImageBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 738 -Y 184 -Width 214 -Height 254 -Opacity 0.98 -AlignBottom
 Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "O corpo virou`npadr${atilde}o alto`nde execu${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
 Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "Presen${ccedilla}a total.`nRea${ccedilla}${atilde}o limpa`nsem ru${iacute}do." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush

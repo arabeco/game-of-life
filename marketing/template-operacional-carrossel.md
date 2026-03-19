@@ -106,21 +106,25 @@ Slide 1:
 - Funcao: capa chamativa
 - Visual: rosto, busto, estatua ou retrato; radar ou decagono borrado ao fundo
 - Copy curta:
+- Regra de naming: usar o nome publico completo da figura na headline da capa; evitar versoes abreviadas quando o nome completo for reconhecivel
 
 Slide 2:
 - Funcao: contextualizar a figura
 - Visual: retrato com apoio editorial
 - Copy: quem e e pelo que e conhecido
+- Regra visual: a imagem deve priorizar a figura inteira, em modo `fit`, sem crop agressivo na cabeca
 
 Slide 3:
 - Funcao: destacar os 2 ativos mais altos
 - Visual: recortes, selos, chamadas ou mini-graficos
 - Copy:
+- Regra visual: o titulo precisa manter margem superior clara; nunca pode encostar ou cortar no topo
 
 Slide 4:
 - Funcao: mostrar radar, nivel geral e leitura completa do GLYPH
 - Visual: radar dominante, foto secundando
 - Copy:
+- Regra visual: o rotulo superior do radar precisa ter respiro da borda; se necessario, descer o label do topo
 
 Slide 5:
 - Funcao: fecho universal GLYPH

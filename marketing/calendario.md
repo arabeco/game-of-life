@@ -73,7 +73,7 @@ Observacao:
 - 24/04/2026: Filosofia 7 - Quem nao mede fantasia a propria vida
 - 25/04/2026: Mentalidade 7 - Gente de nivel mundial nao pede permissao para agir
 - 26/04/2026: Mestria 8 - O Radar de Arnold Schwarzenegger
-- 27/04/2026: Vitrine 8 - Patentes, rank e insignias
+- 27/04/2026: Vitrine 8 - 10 patentes, de Vagante a Soberano
 - 28/04/2026: Filosofia 8 - Seu ambiente vence sua vontade
 - 29/04/2026: Mentalidade 8 - Os grandes tratam critica como materia-prima
 - 30/04/2026: Mestria 9 - O Radar de Muhammad Ali

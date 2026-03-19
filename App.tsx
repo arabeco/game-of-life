@@ -22,6 +22,7 @@ const LegacyRenderView = React.lazy(() => import('./views/LegacyRenderView').the
 const AuthenticatedApp = React.lazy(() => import('./components/AuthenticatedApp'));
 const ResetPasswordOverlay = React.lazy(() => import('./components/AppRuntimeOverlays').then((m) => ({ default: m.ResetPasswordOverlay })));
 const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
+const GOOGLE_OAUTH_RECOVERY_DELAYS_MS = [250, 350, 500, 700, 900, 1200, 1500, 1800, 2200, 2600] as const;
 
 const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; theme?: 'LIGHT' | 'DARK' | null }> = ({
     accentColor = '#d4af37',
@@ -99,18 +100,18 @@ const App: React.FC = () => {
             setGoogleAuthPending(false);
         };
 
-        const retryPendingGoogleAuthSession = async (): Promise<Session | null> => {
+        const retryPendingGoogleAuthSession = async (reason = 'pending-google-oauth'): Promise<Session | null> => {
             if (!hasClosedBetaGoogleAuthPending()) return null;
 
-            for (let attempt = 0; attempt < 3; attempt += 1) {
-                await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
+            for (let attempt = 0; attempt < GOOGLE_OAUTH_RECOVERY_DELAYS_MS.length; attempt += 1) {
+                await new Promise((resolve) => window.setTimeout(resolve, GOOGLE_OAUTH_RECOVERY_DELAYS_MS[attempt]));
                 const {
                     data: { session: retriedSession },
                     error: retryError,
                 } = await supabase.auth.getSession();
 
                 if (retryError) {
-                    console.warn('Retry session restore error after Google OAuth:', retryError.message);
+                    console.warn(`Retry session restore error after Google OAuth (${reason}):`, retryError.message);
                     return null;
                 }
 
@@ -374,8 +375,12 @@ const App: React.FC = () => {
                 } = await supabase.auth.getSession();
                 if (error) {
                     console.warn('Session restore error (silent):', error.message);
-                    const recoveredSession = await recoverSessionGracefully('initial-check-error');
-                    clearPendingGoogleAuthState();
+                    const recoveredSession =
+                        await recoverSessionGracefully('initial-check-error') ||
+                        await retryPendingGoogleAuthSession('initial-check-error');
+                    if (!recoveredSession) {
+                        clearPendingGoogleAuthState();
+                    }
                     await applyResolvedSession(recoveredSession);
                 } else {
                     const recoveredSession = restoredSession || await retryPendingGoogleAuthSession();
@@ -415,12 +420,37 @@ const App: React.FC = () => {
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                     await signOutAndClearSupabaseSession('local');
+                } else if (event === 'SIGNED_OUT' && hasClosedBetaGoogleAuthPending()) {
+                    const recoveredSession =
+                        await recoverSessionGracefully('signed-out-during-google-oauth', sessionRef.current) ||
+                        await retryPendingGoogleAuthSession('signed-out-during-google-oauth');
+
+                    if (recoveredSession) {
+                        clearPendingGoogleAuthState();
+                        await applyResolvedSession(recoveredSession);
+                        return;
+                    }
+
+                    clearPendingGoogleAuthState();
+                    authResolutionRef.current += 1;
+                    setSession(null);
+                    setPendingGoogleInviteSession(null);
                 } else if (event === 'SIGNED_OUT') {
                     clearPendingGoogleAuthState();
                     authResolutionRef.current += 1;
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                 } else if (event === 'INITIAL_SESSION' && !nextSession && hasClosedBetaGoogleAuthPending()) {
+                    return;
+                } else if (!nextSession && hasClosedBetaGoogleAuthPending()) {
+                    const recoveredSession =
+                        await recoverSessionGracefully(`pending-google-event:${event}`, sessionRef.current) ||
+                        await retryPendingGoogleAuthSession(`pending-google-event:${event}`);
+
+                    if (recoveredSession) {
+                        clearPendingGoogleAuthState();
+                        await applyResolvedSession(recoveredSession);
+                    }
                     return;
                 } else if (event === 'PASSWORD_RECOVERY') {
                     if (nextSession) clearPendingGoogleAuthState();

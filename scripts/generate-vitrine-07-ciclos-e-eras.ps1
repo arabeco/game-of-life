@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\vitrine-06-deep-focus\slides",
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\vitrine-07-ciclos-e-eras\slides",
     [string]$Screen1Path = "",
     [string]$Screen2Path = ""
 )
@@ -463,8 +463,8 @@ $proofPhoneSlotHeight = 660
 
 $created = New-Object System.Collections.Generic.List[string]
 
-$proofRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round6\vitrine"
-$proofFallbackRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round6"
+$proofRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round7\vitrine"
+$proofFallbackRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round7"
 $proofSourceRoot = if ((Get-ChildItem -LiteralPath $proofRoot -File -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) {
     $proofRoot
 } else {
@@ -495,6 +495,8 @@ function Get-PrintLabel {
     switch ($base) {
         "deepfocus" { return "Deep Focus" }
         "coliseu" { return "Coliseu" }
+        "relatorioatlas" { return "Atlas" }
+        "relatorioresumo" { return "Resumo" }
         "sessao" { return "Sess${atilde}o" }
         "ambiente" { return "Ambiente" }
         "inventario" { return "Invent${aacute}rio" }
@@ -557,11 +559,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height -Tone "safira"
-Draw-CenterText -Graphics $graphics -Text "Deep Focus" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 132 -Width 912 -Height 180
-Draw-CenterText -Graphics $graphics -Text "Seu foco precisa`nde um Coliseu." -Font $heroTitleFont -Brush $goldBrushSlide -X 134 -Y 362 -Width 812 -Height 206
-Draw-CenterText -Graphics $graphics -Text "Quando chega a hora de executar,`no ambiente precisa expulsar ru${iacute}do`ne proteger uma s${oacute} miss${atilde}o." -Font $bodyFont -Brush $offWhiteBrush -X 142 -Y 642 -Width 796 -Height 196
-Draw-Pill -Graphics $graphics -Text "Vitrine 06" -Font $bodyBoldFont -X 292 -Y 858 -Width 224 -Height 52
-Draw-Pill -Graphics $graphics -Text "Deep Focus" -Font $bodyBoldFont -X 536 -Y 858 -Width 252 -Height 52
+Draw-CenterText -Graphics $graphics -Text "Ciclos e Eras" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 132 -Width 912 -Height 180
+Draw-CenterText -Graphics $graphics -Text "Seu progresso precisa`nde fases reais." -Font $heroTitleFont -Brush $goldBrushSlide -X 134 -Y 362 -Width 812 -Height 206
+Draw-CenterText -Graphics $graphics -Text "No GLYPH, o tempo n${atilde}o fica borrado.`nEle fecha, pontua, consagra e vira passagem real de fase." -Font $bodyFont -Brush $offWhiteBrush -X 142 -Y 642 -Width 796 -Height 196
+Draw-Pill -Graphics $graphics -Text "Vitrine 07" -Font $bodyBoldFont -X 292 -Y 858 -Width 224 -Height 52
+Draw-Pill -Graphics $graphics -Text "Ciclos e Eras" -Font $bodyBoldFont -X 536 -Y 858 -Width 248 -Height 52
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir ("slide-{0:d2}-capa.png" -f $slideNumber)
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -573,7 +575,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height -Tone "safira"
-Draw-CenterText -Graphics $graphics -Text "Coliseu" -Font $watermarkFont -Brush $goldWashBrush -X 86 -Y 118 -Width 908 -Height 180
+Draw-CenterText -Graphics $graphics -Text "Tempo" -Font $watermarkFont -Brush $goldWashBrush -X 86 -Y 118 -Width 908 -Height 180
 
 Draw-EditorialTextPanel -Graphics $graphics -X 160 -Y 256 -Width 760 -Height 704
 
@@ -584,9 +586,9 @@ try {
     $logo3.Dispose()
 }
 
-Draw-CenterText -Graphics $graphics -Text "N${atilde}o ${eacute} lista.`n${Eacute} campo de execu${ccedilla}${atilde}o." -Font $titleLargeFont -Brush $goldBrushSlide -X 196 -Y 384 -Width 688 -Height 236
-Draw-CenterText -Graphics $graphics -Text "O Deep Focus transforma inten${ccedilla}${atilde}o em presen${ccedilla}a.`nMenos ru${iacute}do visual, mais press${atilde}o elegante`npara ficar onde realmente importa." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 676 -Width 728 -Height 236
-Draw-CenterText -Graphics $graphics -Text "Entrar ${eacute} ritual. Sair ${eacute} conquista." -Font $titleSmallFont -Brush $whiteBrush -X 174 -Y 936 -Width 732 -Height 84
+Draw-CenterText -Graphics $graphics -Text "Sem ciclo, tudo`nparece borr${atilde}o." -Font $titleLargeFont -Brush $goldBrushSlide -X 196 -Y 384 -Width 688 -Height 236
+Draw-CenterText -Graphics $graphics -Text "Ciclos organizam ofensiva.`nEras consolidam identidade.`nO que antes era semana solta vira hist${oacute}ria com passagem real." -Font $bodyFont -Brush $offWhiteBrush -X 176 -Y 676 -Width 728 -Height 236
+Draw-CenterText -Graphics $graphics -Text "Tempo ganha forma." -Font $titleSmallFont -Brush $whiteBrush -X 174 -Y 936 -Width 732 -Height 84
 
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir ("slide-{0:d2}-sobre-app.png" -f $slideNumber)
@@ -611,21 +613,21 @@ for ($proofPage = 0; $proofPage -lt $proofPageCount; $proofPage++) {
     $bitmap = $canvas.Bitmap
     $graphics = $canvas.Graphics
     Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height -Tone "safira"
-    Draw-CenterText -Graphics $graphics -Text "Telas reais do`nDeep Focus." -Font $titleLargeFont -Brush $goldBrushSlide -X 124 -Y 150 -Width 832 -Height 110
+    Draw-CenterText -Graphics $graphics -Text "Telas reais de`nCiclos e Eras." -Font $titleLargeFont -Brush $goldBrushSlide -X 124 -Y 150 -Width 832 -Height 110
 
     if ($currentPair.Count -ge 2) {
         $leftPath = $currentPair[0]
         $rightPath = $currentPair[1]
         $leftLabel = if ([string]::IsNullOrWhiteSpace($leftPath)) { "Print 01" } else { Get-PrintLabel -Path $leftPath }
         $rightLabel = if ([string]::IsNullOrWhiteSpace($rightPath)) { "Print 02" } else { Get-PrintLabel -Path $rightPath }
-        Draw-PhoneSlot -Graphics $graphics -X 164 -Y 318 -Width $proofPhoneSlotWidth -Height 560 -ImagePath $leftPath -Title $leftLabel -Subtitle "Tela real do modo" -TitleFont $titleSmallFont -SubtitleFont $bodySmallFont -TitleBrush $goldBrushSlide -SubtitleBrush $mutedBrush -LogoPath $logoPath
-        Draw-PhoneSlot -Graphics $graphics -X 656 -Y 318 -Width $proofPhoneSlotWidth -Height 560 -ImagePath $rightPath -Title $rightLabel -Subtitle "Tela real do modo" -TitleFont $titleSmallFont -SubtitleFont $bodySmallFont -TitleBrush $goldBrushSlide -SubtitleBrush $mutedBrush -LogoPath $logoPath
+        Draw-PhoneSlot -Graphics $graphics -X 164 -Y 318 -Width $proofPhoneSlotWidth -Height 560 -ImagePath $leftPath -Title $leftLabel -Subtitle "Tela real do sistema" -TitleFont $titleSmallFont -SubtitleFont $bodySmallFont -TitleBrush $goldBrushSlide -SubtitleBrush $mutedBrush -LogoPath $logoPath
+        Draw-PhoneSlot -Graphics $graphics -X 656 -Y 318 -Width $proofPhoneSlotWidth -Height 560 -ImagePath $rightPath -Title $rightLabel -Subtitle "Tela real do sistema" -TitleFont $titleSmallFont -SubtitleFont $bodySmallFont -TitleBrush $goldBrushSlide -SubtitleBrush $mutedBrush -LogoPath $logoPath
         Draw-Pill -Graphics $graphics -Text $leftLabel -Font $bodyBoldFont -X 198 -Y 904 -Width 194 -Height 46
         Draw-Pill -Graphics $graphics -Text $rightLabel -Font $bodyBoldFont -X 690 -Y 904 -Width 194 -Height 46
     } elseif ($currentPair.Count -eq 1) {
         $singlePath = $currentPair[0]
         $singleLabel = if ([string]::IsNullOrWhiteSpace($singlePath)) { "Print real" } else { Get-PrintLabel -Path $singlePath }
-        Draw-PhoneSlot -Graphics $graphics -X 393 -Y 290 -Width 294 -Height 640 -ImagePath $singlePath -Title $singleLabel -Subtitle "Tela real do modo" -TitleFont $titleSmallFont -SubtitleFont $bodySmallFont -TitleBrush $goldBrushSlide -SubtitleBrush $mutedBrush -LogoPath $logoPath
+        Draw-PhoneSlot -Graphics $graphics -X 393 -Y 290 -Width 294 -Height 640 -ImagePath $singlePath -Title $singleLabel -Subtitle "Tela real do sistema" -TitleFont $titleSmallFont -SubtitleFont $bodySmallFont -TitleBrush $goldBrushSlide -SubtitleBrush $mutedBrush -LogoPath $logoPath
         Draw-Pill -Graphics $graphics -Text $singleLabel -Font $bodyBoldFont -X 422 -Y 968 -Width 236 -Height 46
     }
 
@@ -664,7 +666,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Vitrine 06  |  Deep Focus" -Font $eyebrowFont -Brush $eyebrowBrush -X 244 -Y 1060 -Width 592 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Vitrine 07  |  Ciclos e Eras" -Font $eyebrowFont -Brush $eyebrowBrush -X 214 -Y 1060 -Width 652 -Height 28
 $slideFinal = Join-Path $OutputDir ("slide-{0:d2}-fecho.png" -f $slideNumber)
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slideFinal
 $created.Add($slideFinal)
@@ -682,7 +684,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "VITRINE 06  |  DEEP FOCUS" -Font ([System.Drawing.Font]::new($headlineFamily, 44, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "VITRINE 07  |  CICLOS E ERAS" -Font ([System.Drawing.Font]::new($headlineFamily, 44, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - $slideCount slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 for ($i = 0; $i -lt $created.Count; $i++) {

@@ -687,6 +687,134 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
     const cycleProgress = getCycleProgress();
     const daysLeft = activeCycle ? Math.ceil((new Date(activeCycle.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+    const actionSessionTotalSeconds = actionSession ? Math.max(1, Math.round(actionSession.durationMinutes * 60)) : 1;
+    const actionSessionElapsedSeconds = actionSession
+        ? Math.min(actionSessionTotalSeconds, Math.max(0, actionSessionTotalSeconds - Math.max(actionSessionTimeLeft, 0)))
+        : 0;
+    const actionSessionProgressPercent = actionSession
+        ? Math.min(100, Math.max(0, (actionSessionElapsedSeconds / actionSessionTotalSeconds) * 100))
+        : 0;
+
+    if (actionSession) {
+        return (
+            <Portal>
+                <div className="fixed inset-0 z-[20000] bg-black flex flex-col items-center justify-start pt-20 overflow-hidden">
+                    <div className="absolute inset-0 opacity-40 pointer-events-none">
+                        <SephirotFog
+                            mode="deepwork"
+                            color={actionSessionTimeLeft < 0 ? '#fbbf24' : '#22d3ee'}
+                            points={[{ x: 50, y: 50, level: 1 }]}
+                        />
+                    </div>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_30%)] pointer-events-none" />
+                    <div className="absolute top-5 left-5 right-5 z-20 flex items-center justify-between gap-3">
+                        <button
+                            onClick={onClose}
+                            className="rounded-full border border-white/10 bg-black/45 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/78 backdrop-blur-md transition-colors hover:border-white/20 hover:text-white"
+                        >
+                            Voltar ao app
+                        </button>
+                        <button
+                            onClick={() => onClearActionSession?.()}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/45 text-gray-300 backdrop-blur-md transition-colors hover:border-white/20 hover:text-white"
+                            aria-label="Encerrar sessao de foco"
+                        >
+                            <XIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="relative z-10" onClick={e => e.stopPropagation()}>
+                        <FocusAudioPlayer />
+                    </div>
+
+                    <div className="relative z-10 flex flex-1 w-full max-w-md flex-col items-center justify-between px-6 pb-14 pt-8">
+                        <div className="flex flex-col items-center text-center">
+                            <div className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full border backdrop-blur-md ${actionSessionTimeLeft < 0 ? 'border-amber-400/30 bg-amber-400/12 text-amber-200' : 'border-cyan-400/25 bg-cyan-400/10 text-cyan-200'}`}>
+                                <EmojiGlyph symbol={actionSession.actionIcon || '📝'} size="action" className="text-3xl" />
+                            </div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.34em] text-white/45">
+                                {actionSessionTimeLeft < 0 ? 'Tempo excedido' : 'Acao ativa'}
+                            </div>
+                            <h2 className="mt-3 max-w-[16rem] text-2xl font-black uppercase tracking-[0.08em] text-white">
+                                {actionSession.actionName}
+                            </h2>
+                            <div className={`mt-2 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${actionSessionTimeLeft < 0 ? 'border-amber-400/20 bg-amber-400/10 text-amber-200' : 'border-cyan-400/18 bg-cyan-400/10 text-cyan-200'}`}>
+                                {actionSession.durationMinutes} min de foco
+                            </div>
+                        </div>
+
+                        <div className="relative flex flex-col items-center">
+                            <div className={`absolute inset-[-28px] rounded-full blur-3xl ${actionSessionTimeLeft < 0 ? 'bg-amber-400/18' : 'bg-cyan-400/18'}`} />
+                            <div className="relative flex h-56 w-56 items-center justify-center rounded-full border border-white/10 bg-black/30 shadow-[0_0_50px_rgba(0,0,0,0.35)] backdrop-blur-md">
+                                <svg className="absolute inset-0 -rotate-90" viewBox="0 0 240 240" aria-hidden="true">
+                                    <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+                                    <circle
+                                        cx="120"
+                                        cy="120"
+                                        r="108"
+                                        fill="none"
+                                        stroke={actionSessionTimeLeft < 0 ? '#fbbf24' : '#22d3ee'}
+                                        strokeWidth="8"
+                                        strokeDasharray="678.58"
+                                        strokeDashoffset={678.58 - (678.58 * actionSessionProgressPercent) / 100}
+                                        strokeLinecap="round"
+                                        className="transition-all duration-300 ease-out"
+                                        style={{ filter: 'drop-shadow(0 0 14px rgba(34,211,238,0.26))' }}
+                                    />
+                                </svg>
+                                <div className="relative z-10 flex flex-col items-center gap-3 text-center">
+                                    <div className={`text-4xl font-light tracking-widest tabular-nums font-mono ${actionSessionTimeLeft < 0 ? 'text-amber-200 drop-shadow-[0_0_14px_rgba(251,191,36,0.32)]' : 'text-cyan-200 drop-shadow-[0_0_14px_rgba(34,211,238,0.32)]'}`}>
+                                        {formatActionSessionTime(actionSessionTimeLeft)}
+                                    </div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.34em] text-white/40">
+                                        Deep Work
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex w-full flex-col items-center gap-4">
+                            <button
+                                onMouseDown={handleActionSessionComplete}
+                                onMouseUp={clearActionSessionCompleteHold}
+                                onMouseLeave={clearActionSessionCompleteHold}
+                                onTouchStart={handleActionSessionComplete}
+                                onTouchEnd={clearActionSessionCompleteHold}
+                                onTouchCancel={clearActionSessionCompleteHold}
+                                disabled={isActionSessionCompleted}
+                                className={`relative w-full max-w-sm overflow-hidden rounded-[1.6rem] border px-5 py-4 text-left transition-all ${isActionSessionCompleted ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-black/42 text-white hover:border-[var(--skin-accent-color)]/35 hover:bg-black/50'}`}
+                                style={{ touchAction: 'none' }}
+                            >
+                                <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/5">
+                                    <div
+                                        className="h-full bg-[var(--skin-accent-color)] transition-all duration-75"
+                                        style={{ width: `${actionSessionCompleteProgress}%` }}
+                                    />
+                                </div>
+                                <div className="relative z-10 flex items-center gap-4">
+                                    <div className={`flex h-11 w-11 items-center justify-center rounded-full border ${isActionSessionCompleted ? 'border-emerald-400/30 bg-emerald-400/12' : 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12'}`}>
+                                        <CheckCircleIcon className="w-5 h-5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-sm font-semibold leading-none">
+                                            {isActionSessionCompleted ? 'Acao concluida' : 'Completar agora'}
+                                        </div>
+                                        <div className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/55">
+                                            {isActionSessionCompleting ? 'Concluindo' : 'Segure 1s para concluir'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <div className="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
+                                O cronometro continua se voce voltar ao app.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Portal>
+        );
+    }
 
     // If Deep Work is Active, show immersive screen
     if (deepWorkActive) {

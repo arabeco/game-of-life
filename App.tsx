@@ -67,6 +67,9 @@ const App: React.FC = () => {
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [isSplashComplete, setIsSplashComplete] = useState(() => sessionStorage.getItem('hasSeenSplash') === 'true');
     const authResolutionRef = useRef(0);
+    const sessionRef = useRef<Session | null>(null);
+    const sessionRecoveryInFlightRef = useRef<Promise<Session | null> | null>(null);
+    const lastSessionRecoveryAttemptRef = useRef(0);
     const [bootVisuals, setBootVisuals] = useState<{ skin: string; mode: 'GAME' | 'BASIC'; theme: 'LIGHT' | 'DARK' | null }>({
         skin: 'BASIC',
         mode: 'GAME',
@@ -81,6 +84,10 @@ const App: React.FC = () => {
         sessionStorage.setItem('hasSeenSplash', 'true');
         setIsSplashComplete(true);
     };
+
+    useEffect(() => {
+        sessionRef.current = session;
+    }, [session]);
 
     useEffect(() => {
         startInstallPromptCapture();
@@ -113,6 +120,71 @@ const App: React.FC = () => {
             }
 
             return null;
+        };
+
+        const waitForSessionRetry = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+        const getStoredSession = async (reason: string): Promise<Session | null> => {
+            const {
+                data: { session: storedSession },
+                error: sessionError,
+            } = await supabase.auth.getSession();
+
+            if (sessionError) {
+                console.warn(`Session lookup failed during ${reason}:`, sessionError.message);
+                return null;
+            }
+
+            return storedSession;
+        };
+
+        const refreshSessionFromCandidate = async (candidate: Session | null, reason: string): Promise<Session | null> => {
+            if (!candidate?.refresh_token) return null;
+
+            const {
+                data: refreshData,
+                error: refreshError,
+            } = await supabase.auth.refreshSession(candidate);
+
+            if (refreshError) {
+                console.warn(`Session refresh failed during ${reason}:`, refreshError.message);
+                return null;
+            }
+
+            return refreshData.session ?? null;
+        };
+
+        const recoverSessionGracefully = async (reason: string, preferredSession: Session | null = null): Promise<Session | null> => {
+            if (sessionRecoveryInFlightRef.current) {
+                return sessionRecoveryInFlightRef.current;
+            }
+
+            lastSessionRecoveryAttemptRef.current = Date.now();
+            const recoveryPromise = (async () => {
+                const seedSession = preferredSession || sessionRef.current;
+                const immediateStoredSession = await getStoredSession(`${reason}:stored`);
+                if (immediateStoredSession) return immediateStoredSession;
+
+                const immediateRefreshedSession = await refreshSessionFromCandidate(seedSession, `${reason}:refresh`);
+                if (immediateRefreshedSession) return immediateRefreshedSession;
+
+                for (let attempt = 0; attempt < 3; attempt += 1) {
+                    await waitForSessionRetry(300 * (attempt + 1));
+
+                    const retriedStoredSession = await getStoredSession(`${reason}:retry-stored:${attempt + 1}`);
+                    if (retriedStoredSession) return retriedStoredSession;
+
+                    const retriedRefreshedSession = await refreshSessionFromCandidate(sessionRef.current || seedSession, `${reason}:retry-refresh:${attempt + 1}`);
+                    if (retriedRefreshedSession) return retriedRefreshedSession;
+                }
+
+                return null;
+            })().finally(() => {
+                sessionRecoveryInFlightRef.current = null;
+            });
+
+            sessionRecoveryInFlightRef.current = recoveryPromise;
+            return recoveryPromise;
         };
 
         const preloadBootVisuals = (currentUserId?: string | null) => {
@@ -274,6 +346,26 @@ const App: React.FC = () => {
             }
         };
 
+        const recoverSessionOnResume = async (trigger: 'visibilitychange' | 'focus' | 'pageshow') => {
+            if (document.visibilityState === 'hidden') return;
+            if (sessionRecoveryInFlightRef.current) return;
+            if (Date.now() - lastSessionRecoveryAttemptRef.current < 1200) return;
+
+            const recoveredSession = await recoverSessionGracefully(`resume:${trigger}`);
+            if (!recoveredSession) return;
+
+            const currentSession = sessionRef.current;
+            const sessionChanged =
+                !currentSession ||
+                currentSession.user?.id !== recoveredSession.user?.id ||
+                currentSession.access_token !== recoveredSession.access_token ||
+                currentSession.refresh_token !== recoveredSession.refresh_token;
+
+            if (sessionChanged) {
+                await applyResolvedSession(recoveredSession);
+            }
+        };
+
         const checkSession = async () => {
             try {
                 const {
@@ -282,8 +374,9 @@ const App: React.FC = () => {
                 } = await supabase.auth.getSession();
                 if (error) {
                     console.warn('Session restore error (silent):', error.message);
+                    const recoveredSession = await recoverSessionGracefully('initial-check-error');
                     clearPendingGoogleAuthState();
-                    setSession(null);
+                    await applyResolvedSession(recoveredSession);
                 } else {
                     const recoveredSession = restoredSession || await retryPendingGoogleAuthSession();
                     if (!recoveredSession) {
@@ -304,14 +397,29 @@ const App: React.FC = () => {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((event, nextSession) => {
             void (async () => {
-                if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_ERROR') {
+                if ((event as string) === 'TOKEN_REFRESH_ERROR') {
+                    const recoveredSession = await recoverSessionGracefully('token-refresh-error', nextSession || sessionRef.current);
+                    if (recoveredSession) {
+                        clearPendingGoogleAuthState();
+                        await applyResolvedSession(recoveredSession);
+                        return;
+                    }
+
+                    if (sessionRef.current) {
+                        console.warn('Token refresh failed, but an in-memory session still exists. Preserving current session and retrying on the next app resume.');
+                        return;
+                    }
+
                     clearPendingGoogleAuthState();
                     authResolutionRef.current += 1;
                     setSession(null);
                     setPendingGoogleInviteSession(null);
-                    if ((event as string) === 'TOKEN_REFRESH_ERROR') {
-                        await signOutAndClearSupabaseSession('global');
-                    }
+                    await signOutAndClearSupabaseSession('local');
+                } else if (event === 'SIGNED_OUT') {
+                    clearPendingGoogleAuthState();
+                    authResolutionRef.current += 1;
+                    setSession(null);
+                    setPendingGoogleInviteSession(null);
                 } else if (event === 'INITIAL_SESSION' && !nextSession && hasClosedBetaGoogleAuthPending()) {
                     return;
                 } else if (event === 'PASSWORD_RECOVERY') {
@@ -327,9 +435,32 @@ const App: React.FC = () => {
             })();
         });
 
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                void recoverSessionOnResume('visibilitychange');
+            }
+        };
+
+        const handleFocus = () => {
+            void recoverSessionOnResume('focus');
+        };
+
+        const handlePageShow = () => {
+            void recoverSessionOnResume('pageshow');
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus, { passive: true });
+        window.addEventListener('pageshow', handlePageShow, { passive: true });
+
         void checkSession();
 
-        return () => subscription.unsubscribe();
+        return () => {
+            subscription.unsubscribe();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('pageshow', handlePageShow);
+        };
     }, [isGoldenInviteGateEnabled]);
 
     useEffect(() => {

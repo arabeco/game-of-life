@@ -112,6 +112,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const canStartNow = mode === 'view' && !isPreview && Boolean(startNowTask);
     const [editableTaskDuration, setEditableTaskDuration] = useState<number>(currentTask?.duration || action?.duration || 60);
     const [editScope, setEditScope] = useState<EditScope>(hasTaskInstanceContext ? 'instance' : 'action');
+    const startNowDurationMinutes = startNowTask?.duration || currentTask?.duration || action?.duration || 60;
 
     // New View Mode State
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
@@ -124,6 +125,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const startNowHoldIntervalRef = useRef<number | null>(null);
     const [startNowHoldProgress, setStartNowHoldProgress] = useState(0);
     const [startNowTriggered, setStartNowTriggered] = useState(false);
+    const [isStartNowHolding, setIsStartNowHolding] = useState(false);
     const isEditingTaskInstance = mode === 'edit' && hasTaskInstanceContext && editScope === 'instance';
     const isEditingActionBase = mode === 'edit' && (!hasTaskInstanceContext || editScope === 'action');
 
@@ -310,6 +312,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             startNowHoldIntervalRef.current = null;
         }
 
+        setIsStartNowHolding(false);
         if (!startNowTriggered) {
             setStartNowHoldProgress(0);
         }
@@ -322,6 +325,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         if (!action || !startNowTask || startNowHoldIntervalRef.current) return;
 
         setStartNowTriggered(false);
+        setIsStartNowHolding(true);
         const startedAt = Date.now();
         const holdDuration = 1000;
 
@@ -341,7 +345,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     taskId: startNowTask?.id,
                     actionName: action.name,
                     actionIcon: action.icon,
-                    durationMinutes: startNowTask?.duration || currentTask?.duration || action.duration || 60,
+                    durationMinutes: startNowDurationMinutes,
                     actionType: action.actionType,
                 }),
             }));
@@ -1170,8 +1174,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     onMouseLeave={clearStartNowHold}
                                     onTouchStart={handleStartMission}
                                     onTouchEnd={clearStartNowHold}
+                                    onTouchCancel={clearStartNowHold}
                                     onContextMenu={(e) => e.preventDefault()}
-                                    className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06] active:scale-[0.99] relative overflow-hidden"
+                                    className={`flex-1 rounded-2xl border px-4 py-3 text-white transition-all active:scale-[0.99] relative overflow-hidden ${startNowTriggered
+                                        ? 'border-[var(--skin-accent-color)]/55 bg-[var(--skin-accent-color)]/14 shadow-[0_0_28px_rgba(212,175,55,0.16)]'
+                                        : isStartNowHolding
+                                            ? 'border-[var(--skin-accent-color)]/40 bg-[var(--skin-accent-color)]/10 shadow-[0_0_18px_rgba(212,175,55,0.12)]'
+                                            : 'border-white/10 bg-white/[0.04] hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06]'
+                                        }`}
                                     style={{
                                         touchAction: 'none',
                                         userSelect: 'none',
@@ -1179,6 +1189,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                         WebkitTouchCallout: 'none',
                                     } as React.CSSProperties}
                                 >
+                                    <div
+                                        className="absolute inset-y-0 left-0 bg-[linear-gradient(90deg,rgba(212,175,55,0.22),rgba(212,175,55,0.08),transparent)] transition-[width] duration-75"
+                                        style={{ width: `${startNowHoldProgress}%` }}
+                                    />
                                     <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/5">
                                         <div
                                             className="h-full bg-[var(--skin-accent-color)] transition-all duration-75"
@@ -1187,7 +1201,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     </div>
                                     <div className="relative z-10 flex items-center justify-between gap-3">
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 shrink-0">
+                                            <div className={`inline-flex h-9 w-9 items-center justify-center rounded-full border shrink-0 ${isStartNowHolding || startNowTriggered ? 'border-[var(--skin-accent-color)]/45 bg-[var(--skin-accent-color)]/14' : 'border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10'}`}>
                                                 <div className="inline-flex items-center gap-0.5 text-[var(--skin-accent-color)]">
                                                     <ClockIcon className="w-3.5 h-3.5" />
                                                     <PlayIcon className="w-3 h-3" />
@@ -1195,9 +1209,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             </div>
                                             <div className="min-w-0 text-left">
                                                 <div className="text-xs font-semibold leading-none">Começar agora</div>
-                                                <div className="mt-1 text-[9px] uppercase tracking-[0.18em] text-gray-500 font-black">
-                                                    {startNowTriggered ?'Abrindo descanso' : 'Segure 1s'}
+                                                <div className={`mt-1 text-[9px] uppercase tracking-[0.18em] font-black ${isStartNowHolding || startNowTriggered ? 'text-[var(--skin-accent-color)]' : 'text-gray-500'}`}>
+                                                    {startNowTriggered ? 'Abrindo foco' : isStartNowHolding ? `Segurando... ${Math.round(startNowHoldProgress)}%` : 'Segure 1s'}
                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div className="shrink-0 text-right">
+                                            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">{startNowDurationMinutes} min</div>
+                                            <div className={`mt-1 text-[9px] uppercase tracking-[0.16em] font-black ${isStartNowHolding ? 'text-white/65' : 'text-gray-500'}`}>
+                                                {isStartNowHolding ? 'Solte para cancelar' : 'Modo foco'}
                                             </div>
                                         </div>
                                     </div>

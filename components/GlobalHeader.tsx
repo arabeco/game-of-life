@@ -258,14 +258,16 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                     <RestScreen 
                         onClose={() => {
                             setRestScreenOpen(false);
-                            setRestScreenActionSession(null);
                         }} 
                         onOpenMood={() => setMoodModalOpen(true)}
                         onOpenOracle={() => setOracleOpen(true)}
                         onOpenClan={() => setClanOpen(true)}
                         onOpenDeepWork={() => setDeepWorkOpen(true)}
                         actionSession={restScreenActionSession}
-                        onClearActionSession={() => setRestScreenActionSession(null)}
+                        onClearActionSession={() => {
+                            setRestScreenActionSession(null);
+                            setRestScreenOpen(false);
+                        }}
                     />
                 )}
             </Suspense>

@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\curadoria-05-leonardo-da-vinci\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\mestria-06-ayrton-senna\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -702,9 +702,34 @@ $logoPath = "C:\Users\Afonso\Downloads\GOL1.006\public\logo-diamond.png"
 $bgObsidian = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\blackback.jpg"
 $bgRubi = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\rubiback.jpg"
 $bgSapphire = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\darkblueback.jpg"
-$cr7CoverPath = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round5\image-removebg-preview - 2026-03-18T213340.047.png"
-$cr7PanelPath = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round5\image-removebg-preview - 2026-03-18T213438.344.png"
-$cr7Slide3Path = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round5\image-removebg-preview - 2026-03-18T213447.434.png"
+$round6MestriaRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round6\mestria"
+$round6MestriaAssets = Get-ChildItem -LiteralPath $round6MestriaRoot -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Extension -match '^\.(png|jpg|jpeg|webp)$' } |
+    ForEach-Object {
+        $image = [System.Drawing.Image]::FromFile($_.FullName)
+        try {
+            $visible = Get-VisibleImageBounds -Image $image
+            [PSCustomObject]@{
+                Path = $_.FullName
+                Width = $visible.Width
+                Height = $visible.Height
+                VerticalScore = [double]$visible.Height / [Math]::Max(1, $visible.Width)
+                SquareDistance = [Math]::Abs(1.0 - ([double]$visible.Width / [Math]::Max(1, $visible.Height)))
+            }
+        } finally {
+            $image.Dispose()
+        }
+    }
+
+if ($round6MestriaAssets.Count -lt 3) {
+    throw "Mestria 06 precisa de 3 imagens em marketing\\round6\\mestria."
+}
+
+$slide3Asset = $round6MestriaAssets | Sort-Object SquareDistance | Select-Object -First 1
+$coverAssets = $round6MestriaAssets | Where-Object { $_.Path -ne $slide3Asset.Path } | Sort-Object VerticalScore -Descending | Select-Object -First 2
+$cr7CoverPath = $coverAssets[0].Path
+$cr7PanelPath = $coverAssets[1].Path
+$cr7Slide3Path = $slide3Asset.Path
 
 $headlineFamily = Get-FontFamily -Candidates @("Palatino Linotype", "Georgia", "Times New Roman")
 $bodyFamily = Get-FontFamily -Candidates @("Segoe UI", "Arial", "Tahoma")
@@ -772,11 +797,11 @@ $slide1FrameWidth = Get-FeatureFrameWidth -ImagePath $cr7CoverPath -FrameHeight 
 $slide1FrameBottom = 980
 $slide1FrameX = [float](948 - $slide1FrameWidth)
 $slide1FrameY = [float]($slide1FrameBottom - $slide1FrameHeight)
-Draw-CenterText -Graphics $graphics -Text "Leonardo da Vinci" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
+Draw-CenterText -Graphics $graphics -Text "Ayrton Senna" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
 Draw-FeatureFrame -Graphics $graphics -X $slide1FrameX -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0 -ContentPaddingX 10 -ContentPaddingTop 16 -ContentPaddingBottom 16 -AccentWidth 10
-Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Leonardo`nda Vinci?" -Font $titleHugeFont -Brush $goldBrushSlide -X 94 -Y 392 -Width 592 -Height 448
-Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 91" -Font $bodyBoldFont -X 138 -Y 898 -Width 392 -Height 56
-Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} talento isolado.`n${Eacute} curiosidade brutal com registro constante." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
+Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Ayrton`nSenna?" -Font $titleHugeFont -Brush $goldBrushSlide -X 94 -Y 392 -Width 592 -Height 448
+Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 89" -Font $bodyBoldFont -X 138 -Y 898 -Width 392 -Height 56
+Draw-CenterText -Graphics $graphics -Text "N${Atilde}o era s${oacute} velocidade.`nEra presen${ccedilla}a, prop${oacute}sito e press${atilde}o limpa." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -787,7 +812,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
-Draw-CenterText -Graphics $graphics -Text "Leonardo da Vinci" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 90 -Y 128 -Width 900 -Height 120
+Draw-CenterText -Graphics $graphics -Text "Ayrton Senna" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 90 -Y 128 -Width 900 -Height 120
 $slide2PanelX = 118
 $slide2PanelY = 334
 $slide2PanelWidth = 548
@@ -797,9 +822,9 @@ $slide2FrameHeight = 660
 $slide2FrameWidth = Get-FeatureFrameWidth -ImagePath $cr7PanelPath -FrameHeight $slide2FrameHeight -InnerHorizontalPadding 42 -InnerVerticalPadding 18 -MinWidth 240 -MaxWidth 286
 $slide2FrameX = [float](958 - $slide2FrameWidth)
 Draw-EditorialTextPanel -Graphics $graphics -X $slide2PanelX -Y $slide2PanelY -Width $slide2PanelWidth -Height $slide2PanelHeight
-Draw-CenterText -Graphics $graphics -Text "Ele n${Atilde}o abriu`numa s${oacute} arena." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 28) -Width ($slide2PanelWidth - 48) -Height 128
-Draw-CenterText -Graphics $graphics -Text "Arte, ci${ecirc}ncia, engenharia`ne anatomia viraram campos`nsimult${acirc}neos de execu${ccedilla}${atilde}o consciente." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 26) -Y ($slide2PanelY + 176) -Width ($slide2PanelWidth - 52) -Height 194
-Draw-CenterText -Graphics $graphics -Text "Curiosidade virou m${eacute}todo.`nRegistro virou poder." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 28) -Y ($slide2PanelY + 404) -Width ($slide2PanelWidth - 56) -Height 110
+Draw-CenterText -Graphics $graphics -Text "Ele n${Atilde}o guiava`ns${oacute} com t${eacute}cnica." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 28) -Width ($slide2PanelWidth - 48) -Height 128
+Draw-CenterText -Graphics $graphics -Text "Corria com presen${ccedilla}a, leitura de risco`ne uma intensidade moral rara.`nA press${atilde}o n${atilde}o quebrava seu eixo." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 26) -Y ($slide2PanelY + 176) -Width ($slide2PanelWidth - 52) -Height 194
+Draw-CenterText -Graphics $graphics -Text "Competi${ccedilla}${atilde}o virou devo${ccedilla}${atilde}o.`nPress${atilde}o virou nitidez." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 28) -Y ($slide2PanelY + 404) -Width ($slide2PanelWidth - 56) -Height 110
 Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -CoverImage -ContentPaddingX 14 -ContentPaddingTop 12 -ContentPaddingBottom 10
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-quem-e.png"
@@ -811,13 +836,13 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
-Draw-CenterText -Graphics $graphics -Text "Leonardo da Vinci" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
-Draw-CenterText -Graphics $graphics -Text "Radar de um`npol${iacute}mata raro." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 214 -Width 626 -Height 176
+Draw-CenterText -Graphics $graphics -Text "Ayrton Senna" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
+Draw-CenterText -Graphics $graphics -Text "Radar de um`ncompetidor raro." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 214 -Width 626 -Height 176
 Draw-ClippedImageBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 738 -Y 184 -Width 214 -Height 254 -Opacity 0.98 -AlignBottom
-Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "A recusa em ser`napenas uma coisa." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Espa${ccedilla}o mental`n10" -Body "Milhares de notas.`nA mente virou`narquivo vivo." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "Curiosidade brutal`norientando obra,`nexperimento e vis${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-CenterText -Graphics $graphics -Text "Trabalho, Espa${ccedilla}o mental e Prop${oacute}sito.`nO radar inteiro queria expans${atilde}o." -Font $bodyFont -Brush $mutedBrush -X 150 -Y 964 -Width 780 -Height 104
+Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "Espa${ccedilla}o mental`n10" -Body "Clareza brutal`nem alta press${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "Correr tamb${eacute}m era`nexpress${atilde}o de f${eacute}`ne dever interno." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "Refino corporal`npara competir no`nlimite da tens${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-CenterText -Graphics $graphics -Text "Espa${ccedilla}o mental, Prop${oacute}sito e F${iacute}sico.`nVelocidade era s${oacute} a superf${iacute}cie." -Font $bodyFont -Brush $mutedBrush -X 150 -Y 964 -Width 780 -Height 104
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-ativos.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -831,7 +856,7 @@ Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -H
 New-BodyPanel -Graphics $graphics -X 126 -Y 326 -Width 828 -Height 792
 Draw-InnerContour -Graphics $graphics -X 146 -Y 346 -Width 788 -Height 752
 Draw-CenterText -Graphics $graphics -Text "N${Iacute}vel de maestria" -Font $titleMediumFont -Brush $goldBrushSlide -X 200 -Y 128 -Width 680 -Height 60
-Draw-CenterText -Graphics $graphics -Text "91" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
+Draw-CenterText -Graphics $graphics -Text "89" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
 $labels = @(
     "Consci${ecirc}ncia",
     "Espa${ccedilla}o mental",
@@ -844,10 +869,10 @@ $labels = @(
     "Hobbies",
     "F${iacute}sico"
 )
-$values = @(10,10,7,10,10,8,8,10,9,9)
+$values = @(9,10,10,10,8,8,8,9,7,10)
 Draw-RadarChart -Graphics $graphics -CenterX 540 -CenterY 678 -Radius 250 -Values $values -Labels $labels -LabelFont $radarLabelFont -ValueFont $radarValueFont
 Draw-CenterText -Graphics $graphics -Text "Mestria" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 920 -Width 896 -Height 92
-Draw-CenterText -Graphics $graphics -Text "Da Vinci n${Atilde}o separava arte de ci${ecirc}ncia.`nExpandia o radar em 360 graus." -Font $bodySmallFont -Brush $offWhiteBrush -X 170 -Y 1012 -Width 740 -Height 96
+Draw-CenterText -Graphics $graphics -Text "A precis${atilde}o de Senna vinha de dentro.`nVelocidade era s${oacute} a superf${iacute}cie." -Font $bodySmallFont -Brush $offWhiteBrush -X 170 -Y 1012 -Width 740 -Height 96
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide4 = Join-Path $OutputDir "slide-04-radar.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
@@ -881,7 +906,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Mestria 05  |  Leonardo da Vinci" -Font $eyebrowFont -Brush $eyebrowBrush -X 170 -Y 1060 -Width 740 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Mestria 06  |  Ayrton Senna" -Font $eyebrowFont -Brush $eyebrowBrush -X 186 -Y 1060 -Width 708 -Height 28
 $slide5 = Join-Path $OutputDir "slide-05-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide5
 $created.Add($slide5)
@@ -893,7 +918,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "MESTRIA 05  |  LEONARDO DA VINCI" -Font ([System.Drawing.Font]::new($headlineFamily, 46, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "MESTRIA 06  |  AYRTON SENNA" -Font ([System.Drawing.Font]::new($headlineFamily, 46, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - 5 slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

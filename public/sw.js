@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'glyph-app-v5';
+const CACHE_VERSION = 'glyph-app-v6';
 const SUPABASE_CACHE = 'glyph-supabase-assets-v1';
 const ASSETS = [
   '/',

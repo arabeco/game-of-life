@@ -138,6 +138,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const [isDeepWorkOpen, setIsDeepWorkOpen] = useState(false);
     const [selectedDeepWorkTime, setSelectedDeepWorkTime] = useState('25');
     const [deepWorkActive, setDeepWorkActive] = useState(false);
+    const [isDeepWorkImmersive, setIsDeepWorkImmersive] = useState(false);
     const [deepWorkTimeLeft, setDeepWorkTimeLeft] = useState(0);
     const [actionSessionTimeLeft, setActionSessionTimeLeft] = useState(0);
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
@@ -401,6 +402,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         const minutes = parseInt(selectedDeepWorkTime);
         setDeepWorkTimeLeft(minutes * 60);
         setDeepWorkActive(true);
+        setIsDeepWorkImmersive(true);
         setIsDeepWorkOpen(false);
     };
 
@@ -417,6 +419,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             cancelAnimationFrameRef.current = null;
             setCancelProgress(0);
             setDeepWorkActive(false);
+            setIsDeepWorkImmersive(false);
             setShowCancelButton(false);
         } else {
             cancelAnimationFrameRef.current = requestAnimationFrame(updateCancelProgress);
@@ -457,6 +460,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             }, 1000);
         } else if (deepWorkTimeLeft === 0) {
             setDeepWorkActive(false);
+            setIsDeepWorkImmersive(false);
             // Optionally notify completion
         }
         return () => clearInterval(interval);
@@ -817,13 +821,25 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     }
 
     // If Deep Work is Active, show immersive screen
-    if (deepWorkActive) {
+    if (deepWorkActive && isDeepWorkImmersive) {
         return (
             <Portal>
                 <div
                     className="fixed inset-0 z-[20000] bg-black flex flex-col items-center justify-start pt-32 cursor-pointer overflow-hidden"
                     onClick={toggleCancelVisibility}
                 >
+                    <div className="absolute top-5 left-5 right-5 z-20 flex items-center justify-between gap-3">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsDeepWorkImmersive(false);
+                                setShowCancelButton(false);
+                            }}
+                            className="rounded-full border border-white/10 bg-black/45 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/78 backdrop-blur-md transition-colors hover:border-white/20 hover:text-white"
+                        >
+                            Voltar ao descanso
+                        </button>
+                    </div>
                     <div onClick={e => e.stopPropagation()}>
                         <FocusAudioPlayer />
                     </div>

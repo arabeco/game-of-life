@@ -2,6 +2,7 @@
   position: relative;
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   flex-direction: column;
   overflow: hidden;
   background: #000;
@@ -11,6 +12,7 @@
 
 .auth-app-root {
   height: 100vh;
+  height: 100dvh;
   min-height: 0;
   overflow: hidden;
   color: #e5e7eb;

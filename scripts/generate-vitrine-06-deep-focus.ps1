@@ -464,6 +464,12 @@ $proofPhoneSlotHeight = 660
 $created = New-Object System.Collections.Generic.List[string]
 
 $proofRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round6\vitrine"
+$proofFallbackRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round6"
+$proofSourceRoot = if ((Get-ChildItem -LiteralPath $proofRoot -File -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) {
+    $proofRoot
+} else {
+    $proofFallbackRoot
+}
 $proofFiles = New-Object System.Collections.Generic.List[string]
 
 function Add-ProofImagePath {
@@ -517,11 +523,12 @@ function Get-PrintLabel {
 Add-ProofImagePath -List $proofFiles -Path $Screen1Path
 Add-ProofImagePath -List $proofFiles -Path $Screen2Path
 
-Get-ChildItem -LiteralPath $proofRoot -File -ErrorAction SilentlyContinue |
+Get-ChildItem -LiteralPath $proofSourceRoot -File -ErrorAction SilentlyContinue |
     Where-Object {
         $_.Extension -match '^\.(png|jpg|jpeg)$' -and
         $_.Name -notlike 'slide-*' -and
-        $_.Name -notlike 'contact-sheet*'
+        $_.Name -notlike 'contact-sheet*' -and
+        $_.Name -notlike 'image-removebg*'
     } |
     Sort-Object Name |
     ForEach-Object {

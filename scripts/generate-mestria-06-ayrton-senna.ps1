@@ -703,8 +703,21 @@ $bgObsidian = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\blackback
 $bgRubi = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\rubiback.jpg"
 $bgSapphire = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\darkblueback.jpg"
 $round6MestriaRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round6\mestria"
-$round6MestriaAssets = Get-ChildItem -LiteralPath $round6MestriaRoot -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Extension -match '^\.(png|jpg|jpeg|webp)$' } |
+$round6FallbackRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round6"
+$round6MestriaSourceRoot = if ((Get-ChildItem -LiteralPath $round6MestriaRoot -File -ErrorAction SilentlyContinue | Measure-Object).Count -ge 3) {
+    $round6MestriaRoot
+} else {
+    $round6FallbackRoot
+}
+
+$round6MestriaAssets = @(Get-ChildItem -LiteralPath $round6MestriaSourceRoot -File -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.Extension -match '^\.(png|jpg|jpeg|webp)$' -and (
+            $round6MestriaSourceRoot -eq $round6MestriaRoot -or
+            $_.Name -like 'image-removebg*' -or
+            $_.Extension -match '^\.(png|webp)$'
+        )
+    } |
     ForEach-Object {
         $image = [System.Drawing.Image]::FromFile($_.FullName)
         try {
@@ -719,10 +732,10 @@ $round6MestriaAssets = Get-ChildItem -LiteralPath $round6MestriaRoot -File -Erro
         } finally {
             $image.Dispose()
         }
-    }
+    })
 
 if ($round6MestriaAssets.Count -lt 3) {
-    throw "Mestria 06 precisa de 3 imagens em marketing\\round6\\mestria."
+    throw "Mestria 06 precisa de 3 imagens em marketing\\round6\\mestria ou marketing\\round6."
 }
 
 $slide3Asset = $round6MestriaAssets | Sort-Object SquareDistance | Select-Object -First 1
@@ -800,7 +813,7 @@ $slide1FrameY = [float]($slide1FrameBottom - $slide1FrameHeight)
 Draw-CenterText -Graphics $graphics -Text "Ayrton Senna" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
 Draw-FeatureFrame -Graphics $graphics -X $slide1FrameX -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0 -ContentPaddingX 10 -ContentPaddingTop 16 -ContentPaddingBottom 16 -AccentWidth 10
 Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Ayrton`nSenna?" -Font $titleHugeFont -Brush $goldBrushSlide -X 94 -Y 392 -Width 592 -Height 448
-Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 89" -Font $bodyBoldFont -X 138 -Y 898 -Width 392 -Height 56
+Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 89" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
 Draw-CenterText -Graphics $graphics -Text "N${Atilde}o era s${oacute} velocidade.`nEra presen${ccedilla}a, prop${oacute}sito e press${atilde}o limpa." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"

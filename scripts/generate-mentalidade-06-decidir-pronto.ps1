@@ -325,7 +325,7 @@ $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Movimento" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
 Draw-EditorialPanel -Graphics $graphics -X 122 -Y 236 -Width 836 -Height 730
-Draw-CenterText -Graphics $graphics -Text "Gente world class usa`na a${ccedilla}${atilde}o para pensar melhor." -Font $titleLargeFont -Brush $goldBrushSlide -X 154 -Y 256 -Width 772 -Height 246
+Draw-CenterText -Graphics $graphics -Text "Os melhores usam`na a${ccedilla}${atilde}o para pensar melhor." -Font $titleLargeFont -Brush $goldBrushSlide -X 154 -Y 256 -Width 772 -Height 246
 Draw-CenterText -Graphics $graphics -Text "Decide com informa${ccedilla}${atilde}o suficiente, entra em movimento`ne refina a rota no percurso.`nA clareza vem durante, n${atilde}o antes." -Font $bodyFont -Brush $offWhiteBrush -X 162 -Y 558 -Width 756 -Height 210
 Draw-CenterText -Graphics $graphics -Text "Clareza ${eacute} fruto do avan${ccedilla}o." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 856 -Width 728 -Height 112
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush

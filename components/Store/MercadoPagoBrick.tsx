@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
+import { supabase } from '../../supabaseClient';
 import { GlassCard } from '../GlassCard';
 import { XIcon } from '../Icons';
 import { Portal } from '../Portal';
@@ -20,22 +21,59 @@ const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.s
 const EDGE_FUNCTION_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/mercadopago`;
 const FALLBACK_TEST_EMAIL = 'comprador_teste_glyph@test.com';
 
+const MERCADO_PAGO_STATUS_LABELS: Record<string, string> = {
+    pending: 'aguardando pagamento',
+    pending_waiting_transfer: 'aguardando pagamento via Pix',
+    in_process: 'validando pagamento',
+    approved: 'pagamento aprovado',
+    authorized: 'pagamento autorizado',
+    rejected: 'pagamento rejeitado',
+    cancelled: 'pagamento cancelado',
+    charged_back: 'pagamento estornado',
+    refunded: 'pagamento devolvido',
+};
+
+const getMercadoPagoStatusLabel = (paymentResult: any, creditDetected: boolean) => {
+    if (creditDetected) return 'ouro adicionado a sua conta';
+
+    const statusDetail = String(paymentResult?.status_detail || '').trim().toLowerCase();
+    const status = String(paymentResult?.status || '').trim().toLowerCase();
+
+    if (statusDetail && MERCADO_PAGO_STATUS_LABELS[statusDetail]) {
+        return MERCADO_PAGO_STATUS_LABELS[statusDetail];
+    }
+
+    if (status && MERCADO_PAGO_STATUS_LABELS[status]) {
+        return MERCADO_PAGO_STATUS_LABELS[status];
+    }
+
+    return 'aguardando confirmacao';
+};
+
 export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, goldAmount, onClose }) => {
-    const { userProfile, showToast } = useGame();
+    const { userProfile, showToast, updateUserProfile } = useGame();
     const [loading, setLoading] = useState(true);
     const [paymentResult, setPaymentResult] = useState<any>(null);
+    const [creditDetected, setCreditDetected] = useState(false);
     const brickControllerRef = useRef<any>(null);
     const initializedKeyRef = useRef<string | null>(null);
     const latestRefs = useRef({ onClose, showToast });
+    const baselineGoldRef = useRef<number>(Number(userProfile.wallet?.gold || 0));
+    const creditToastShownRef = useRef(false);
 
     const pixTransactionData = paymentResult?.point_of_interaction?.transaction_data ?? null;
     const pixQrCode = typeof pixTransactionData?.qr_code === 'string' ? pixTransactionData.qr_code : '';
     const pixQrCodeBase64 = typeof pixTransactionData?.qr_code_base64 === 'string' ? pixTransactionData.qr_code_base64 : '';
     const pixTicketUrl = typeof pixTransactionData?.ticket_url === 'string' ? pixTransactionData.ticket_url : '';
+    const paymentStatusLabel = getMercadoPagoStatusLabel(paymentResult, creditDetected);
 
     useEffect(() => {
         latestRefs.current = { onClose, showToast };
     }, [onClose, showToast]);
+
+    useEffect(() => {
+        baselineGoldRef.current = Number(userProfile.wallet?.gold || 0);
+    }, []);
 
     useEffect(() => {
         let isActive = true;
@@ -216,6 +254,71 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
         };
     }, [amount, goldAmount, userProfile.email, userProfile.id]);
 
+    useEffect(() => {
+        if (!paymentResult?.id || creditDetected) return;
+
+        let cancelled = false;
+        let attempts = 0;
+        const maxAttempts = 45;
+
+        const pollWallet = async () => {
+            attempts += 1;
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('wallet')
+                .eq('id', userProfile.id)
+                .maybeSingle();
+
+            if (cancelled) return;
+
+            if (error) {
+                console.warn('Erro ao verificar credito do Mercado Pago:', error.message);
+                return;
+            }
+
+            const detectedGold = Number((data as any)?.wallet?.gold || 0);
+            if (detectedGold > baselineGoldRef.current) {
+                const gainedGold = detectedGold - baselineGoldRef.current;
+                updateUserProfile({
+                    wallet: {
+                        ...(userProfile.wallet || { fragments: 0 }),
+                        gold: detectedGold,
+                        fragments: Number(userProfile.wallet?.fragments || 0),
+                    },
+                });
+                setCreditDetected(true);
+                if (!creditToastShownRef.current) {
+                    creditToastShownRef.current = true;
+                    showToast(`${gainedGold} de Ouro foram adicionados a sua conta.`, 'success');
+                }
+            }
+        };
+
+        void pollWallet();
+        const interval = window.setInterval(() => {
+            if (attempts >= maxAttempts || cancelled) {
+                window.clearInterval(interval);
+                return;
+            }
+            void pollWallet();
+        }, 4000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(interval);
+        };
+    }, [paymentResult?.id, creditDetected, showToast, updateUserProfile, userProfile.id, userProfile.wallet]);
+
+    useEffect(() => {
+        if (!creditDetected) return;
+
+        const closeTimer = window.setTimeout(() => {
+            onClose();
+        }, 1600);
+
+        return () => window.clearTimeout(closeTimer);
+    }, [creditDetected, onClose]);
+
     const handleCopyPixCode = async () => {
         if (!pixQrCode) {
             showToast('O codigo Pix ainda nao foi retornado pelo Mercado Pago.', 'warning');
@@ -251,7 +354,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     <div className="flex items-center justify-between border-b border-white/10 bg-black/40 p-3 backdrop-blur-md">
                         <div>
                             <h2 className="text-lg font-black uppercase tracking-tight text-white">
-                                {paymentResult ? 'Aguardando Pagamento' : 'Pagamento Seguro'}
+                                {paymentResult ? (creditDetected ? 'Pagamento Confirmado' : 'Aguardando Pagamento') : 'Pagamento Seguro'}
                             </h2>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--skin-accent-color)]">
                                 {goldAmount} ouro - R$ {amount.toFixed(2)}
@@ -338,21 +441,26 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 <div className="w-full space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
                                     <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
                                         <span className="text-gray-500">Status</span>
-                                        <span className="animate-pulse text-yellow-500">
-                                            {paymentResult.status_detail || paymentResult.status || 'pendente'}
+                                        <span className={creditDetected ? 'text-emerald-400' : 'animate-pulse text-yellow-500'}>
+                                            {paymentStatusLabel}
                                         </span>
                                     </div>
                                     <div className="flex justify-between gap-3 text-[10px] font-bold uppercase tracking-wider">
                                         <span className="text-gray-500">ID da Transacao</span>
                                         <span className="break-all text-right text-gray-300">{paymentResult.id}</span>
                                     </div>
+                                    {creditDetected && (
+                                        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                                            O ouro ja foi adicionado a sua conta.
+                                        </div>
+                                    )}
                                 </div>
 
                                 <button
                                     onClick={onClose}
                                     className="luxe-skin-button w-full rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-all"
                                 >
-                                    Fechar e Aguardar Ouro
+                                    {creditDetected ? 'Fechando...' : 'Fechar e Aguardar Ouro'}
                                 </button>
                             </div>
                         ) : (

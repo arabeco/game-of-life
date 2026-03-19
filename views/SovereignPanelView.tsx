@@ -21,7 +21,6 @@ import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { SvgRadarChart } from '../components/SvgRadarChart';
 import { supabase } from '../supabaseClient';
-import { SupabaseService } from '../services/SupabaseService';
 import { useGame } from '../contexts/GameContext';
 import { requestLocalNotificationPermission, showLocalNotification } from '../utils/localNotification';
 import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, NotificationType, Report, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
@@ -1340,53 +1339,129 @@ const CycleReportPreviewButton: React.FC = () => {
     );
 };
 
-type NotificationLabType = 'welcome' | 'oracle_native' | 'oracle_card';
+type NotificationLabType = 'system' | 'oracle_card';
 
 const GM_NOTIFICATION_TEST_CONTENT: Record<NotificationLabType, string> = {
-    welcome: 'TESTE GM: Bem-vindo ao Oraculo. Este aviso deve aparecer em Avisos e, se houver e-mail no perfil, seguir para o fluxo de boas-vindas.',
-    oracle_native: 'TESTE GM: Mensagem nativa do Oraculo. Ao abrir o Oraculo, esta entrada deve aparecer no feed principal.',
-    oracle_card: 'TESTE GM: Card do Oraculo plantado em Avisos. O icone do Oraculo deve ficar destacado ate a leitura.',
+    system: 'TESTE GM: Aviso de sistema entregue em Avisos. Este item deve aparecer imediatamente na aba de notificacoes.',
+    oracle_card: 'TESTE GM: Card do Oraculo entregue em Avisos. O icone do Oraculo deve destacar ate voce abrir a aba.',
+};
+
+const NOTIFICATION_LAB_DEBUG_PREFIX = '[GM Notification Lab]';
+
+const pushNotificationLabDebug = (entry: Record<string, unknown>) => {
+    try {
+        const nextEntry = {
+            at: new Date().toISOString(),
+            ...entry,
+        };
+        const buffer = Array.isArray((window as any).__glyphNotificationLabLogs)
+            ? (window as any).__glyphNotificationLabLogs
+            : [];
+        buffer.push(nextEntry);
+        (window as any).__glyphNotificationLabLogs = buffer.slice(-80);
+    } catch {}
+};
+
+const logNotificationLabStep = (scope: string, step: string, details?: Record<string, unknown>) => {
+    const payload = {
+        scope,
+        step,
+        ...(details || {}),
+    };
+    console.log(`${NOTIFICATION_LAB_DEBUG_PREFIX} ${scope} :: ${step}`, payload);
+    pushNotificationLabDebug(payload);
+};
+
+const logNotificationLabError = (scope: string, step: string, error: unknown, details?: Record<string, unknown>) => {
+    const payload = {
+        scope,
+        step,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        error,
+        ...(details || {}),
+    };
+    console.error(`${NOTIFICATION_LAB_DEBUG_PREFIX} ${scope} :: ${step}`, payload);
+    pushNotificationLabDebug(payload);
+};
+
+const openOracleNotificationsLab = () => {
+    logNotificationLabStep('openOracleNotificationsLab', 'schedule-dispatch');
+    window.setTimeout(() => {
+        logNotificationLabStep('openOracleNotificationsLab', 'dispatch');
+        window.dispatchEvent(new CustomEvent('openOracleNotifications'));
+    }, 80);
+};
+
+const insertNotificationLabRecord = async (
+    userId: string,
+    type: NotificationType,
+    content: string,
+    metadata: Record<string, unknown> = {},
+) => {
+    logNotificationLabStep('insertNotificationLabRecord', 'start', {
+        userId,
+        type,
+        content,
+        metadata,
+    });
+
+    const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+            user_id: userId,
+            type,
+            content,
+            read: false,
+            metadata,
+            created_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+    if (error) {
+        logNotificationLabError('insertNotificationLabRecord', 'supabase-error', error, {
+            userId,
+            type,
+            content,
+            metadata,
+        });
+        throw new Error(error.message || error.code || 'NOTIFICATION_INSERT_FAILED');
+    }
+
+    logNotificationLabStep('insertNotificationLabRecord', 'success', {
+        userId,
+        type,
+        notificationId: data?.id || null,
+    });
+    return data;
 };
 
 const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: string; color: string }> = ({ type, label, color }) => {
-    const { session, fetchNotifications, refreshOracleMessages, showToast } = useGame();
+    const { session, fetchNotifications, showToast } = useGame();
     const [isPending, setIsPending] = useState(false);
 
     const colors: Record<string, string> = {
         blue: 'border-blue-500/30 bg-blue-500/20 text-blue-300 hover:bg-blue-500/40',
-        amber: 'border-amber-500/30 bg-amber-500/20 text-amber-300 hover:bg-amber-500/40',
         purple: 'border-purple-500/30 bg-purple-500/20 text-purple-300 hover:bg-purple-400/30',
     };
 
     const handleTest = async () => {
-        if (!session?.user.id || isPending) return;
+        if (!session?.user.id) {
+            logNotificationLabStep(label, 'blocked-no-session');
+            return;
+        }
+        if (isPending) {
+            logNotificationLabStep(label, 'blocked-pending');
+            return;
+        }
+
+        logNotificationLabStep(label, 'click', {
+            sessionUserId: session.user.id,
+            requestedType: type,
+        });
         setIsPending(true);
 
         try {
-            if (type === 'oracle_native') {
-                const { error } = await supabase.from('oracle_messages').insert({
-                    id: crypto.randomUUID(),
-                    user_id: session.user.id,
-                    category: 'analise_padroes',
-                    content: GM_NOTIFICATION_TEST_CONTENT.oracle_native,
-                    mode: 'estrategico',
-                    delivery_type: 'feed',
-                    read: false,
-                    created_at: new Date().toISOString(),
-                });
-
-                if (error) {
-                    throw error;
-                }
-
-                await refreshOracleMessages();
-                window.setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('openOracleChat'));
-                }, 80);
-                showToast('TESTE GM plantado no feed do Oraculo.', 'success');
-                return;
-            }
-
             const notificationType: NotificationType = type === 'oracle_card' ? 'oracle_prompt' : 'system';
             const metadata: Record<string, unknown> = {
                 source: 'gm_panel',
@@ -1395,45 +1470,45 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
                 test: true,
             };
 
-            let content = GM_NOTIFICATION_TEST_CONTENT.welcome;
-            if (type === 'welcome') {
-                metadata.welcome = true;
-                metadata.sendEmail = true;
-                metadata.email = session.user.email ?? null;
-                metadata.emailSubject = 'Glyph - TESTE GM de boas-vindas';
-            }
-
             if (type === 'oracle_card') {
                 metadata.emphasis = 'oracle_card';
-                content = GM_NOTIFICATION_TEST_CONTENT.oracle_card;
             }
 
-            const created = await SupabaseService.createNotification(session.user.id, notificationType, content, metadata);
-            if (!created) {
-                throw new Error('NOTIFICATION_INSERT_FAILED');
-            }
+            logNotificationLabStep(label, 'payload-ready', {
+                sessionUserId: session.user.id,
+                notificationType,
+                metadata,
+                content: GM_NOTIFICATION_TEST_CONTENT[type],
+            });
 
+            await insertNotificationLabRecord(
+                session.user.id,
+                notificationType,
+                GM_NOTIFICATION_TEST_CONTENT[type],
+                metadata,
+            );
+
+            logNotificationLabStep(label, 'insert-finished');
             await fetchNotifications();
-            window.setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('openOracleNotifications'));
-            }, 80);
+            logNotificationLabStep(label, 'fetchNotifications-finished');
+            openOracleNotificationsLab();
+            logNotificationLabStep(label, 'oracle-open-requested');
 
-            if (type === 'welcome') {
-                showToast(
-                    session.user.email
-                        ? 'TESTE GM enviado para Avisos e e-mail.'
-                        : 'TESTE GM enviado para Avisos. Este usuario nao tem e-mail disponivel.',
-                    session.user.email ? 'success' : 'warning',
-                );
-                return;
-            }
-
-            showToast('TESTE GM do card do Oraculo enviado para Avisos.', 'success');
+            showToast(
+                type === 'oracle_card'
+                    ? 'Card do Oraculo criado em Avisos.'
+                    : 'Notificacao de sistema criada em Avisos.',
+                'success',
+            );
+            logNotificationLabStep(label, 'toast-success');
         } catch (err) {
             const message = err instanceof Error ? err.message : 'PROCESSING_ERROR';
-            console.error(`Erro ao processar botao "${label}":`, err);
+            logNotificationLabError(label, 'failed', err, {
+                sessionUserId: session?.user.id || null,
+            });
             showToast(`Erro no teste "${label}": ${message}`, 'error');
         } finally {
+            logNotificationLabStep(label, 'finish');
             setIsPending(false);
         }
     };
@@ -1456,8 +1531,18 @@ const NotificationTestButton: React.FC = () => {
     const [timeLeft, setTimeLeft] = useState(0);
 
     const handleTest = async () => {
-        if (!session?.user.id || isPending) return;
+        if (!session?.user.id) {
+            logNotificationLabStep('Sistema + Push (15s)', 'blocked-no-session');
+            return;
+        }
+        if (isPending) {
+            logNotificationLabStep('Sistema + Push (15s)', 'blocked-pending');
+            return;
+        }
 
+        logNotificationLabStep('Sistema + Push (15s)', 'click', {
+            sessionUserId: session.user.id,
+        });
         setIsPending(true);
         setTimeLeft(15);
 
@@ -1471,46 +1556,67 @@ const NotificationTestButton: React.FC = () => {
             });
         }, 1000);
 
+        logNotificationLabStep('Sistema + Push (15s)', 'timer-scheduled', {
+            seconds: 15,
+        });
+
         window.setTimeout(async () => {
             try {
-                const created = await SupabaseService.createNotification(
+                logNotificationLabStep('Sistema + Push (15s)', 'delayed-trigger-fired');
+                await insertNotificationLabRecord(
                     session.user.id,
                     'system',
-                    'Teste de Push (15s): O sinal do Oráculo está operante. Esta é uma notificação de teste agendada pelo Painel Soberano.'
+                    'TESTE GM: Notificacao de sistema agendada para 15 segundos. Ela deve aparecer em Avisos e, se permitido, disparar o push local.',
+                    {
+                        source: 'gm_panel',
+                        trigger: 'system_push_15s',
+                        test: true,
+                        delayed: true,
+                    }
                 );
-                if (!created) {
-                    throw new Error('NOTIFICATION_INSERT_FAILED');
-                }
+                logNotificationLabStep('Sistema + Push (15s)', 'insert-finished');
                 await fetchNotifications();
-                window.setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('openOracleNotifications'));
-                }, 80);
+                logNotificationLabStep('Sistema + Push (15s)', 'fetchNotifications-finished');
+                openOracleNotificationsLab();
+                logNotificationLabStep('Sistema + Push (15s)', 'oracle-open-requested');
+
                 let pushDelivered = false;
                 const permission = await requestLocalNotificationPermission();
+                logNotificationLabStep('Sistema + Push (15s)', 'push-permission-result', {
+                    permission,
+                });
                 if (permission === 'granted') {
                     pushDelivered = await showLocalNotification({
-                        title: 'Teste do Oraculo',
-                        body: 'O push local do aparelho respondeu ao sinal de 15 segundos.',
+                        title: 'TESTE GM - Sistema',
+                        body: 'O push local respondeu ao disparo de 15 segundos.',
                         tag: 'gm-panel-push-test',
                         url: '/',
                         requireInteraction: true,
                     });
+                    logNotificationLabStep('Sistema + Push (15s)', 'push-delivery-result', {
+                        pushDelivered,
+                    });
                 }
 
                 if (pushDelivered) {
-                    showToast('Push local e aviso interno entregues.', 'success');
+                    showToast('Notificacao interna e push local entregues.', 'success');
+                    logNotificationLabStep('Sistema + Push (15s)', 'toast-success-push');
                 } else if (permission === 'denied') {
-                    showToast('Aviso interno entregue, mas o navegador bloqueou o push local.', 'warning');
+                    showToast('Notificacao interna entregue, mas o navegador bloqueou o push local.', 'warning');
+                    logNotificationLabStep('Sistema + Push (15s)', 'toast-warning-denied');
                 } else {
-                    showToast('Aviso interno entregue. O push local nao foi exibido neste aparelho.', 'warning');
+                    showToast('Notificacao interna entregue. O push local nao apareceu neste aparelho.', 'warning');
+                    logNotificationLabStep('Sistema + Push (15s)', 'toast-warning-no-push');
                 }
-                return;
-                showToast("Notificação de teste enviada com sucesso!", "success");
             } catch (err) {
-                console.error("Erro ao enviar notificação de teste:", err);
-                showToast("Erro ao enviar notificação de teste.", "error");
+                const message = err instanceof Error ? err.message : 'PROCESSING_ERROR';
+                logNotificationLabError('Sistema + Push (15s)', 'failed', err, {
+                    sessionUserId: session?.user.id || null,
+                });
+                showToast(`Erro ao enviar notificacao de teste: ${message}`, 'error');
             } finally {
                 window.clearInterval(timer);
+                logNotificationLabStep('Sistema + Push (15s)', 'finish');
                 setIsPending(false);
             }
         }, 15000);
@@ -1521,8 +1627,8 @@ const NotificationTestButton: React.FC = () => {
             onClick={handleTest}
             disabled={isPending}
             className={`flex items-center gap-2 rounded-xl border px-6 py-3 text-xs font-black uppercase tracking-[0.2em] transition-all ${
-                isPending 
-                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400 cursor-wait' 
+                isPending
+                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400 cursor-wait'
                     : 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:scale-[1.02]'
             }`}
         >
@@ -1534,13 +1640,12 @@ const NotificationTestButton: React.FC = () => {
             ) : (
                 <>
                     <Bell className="h-4 w-4" />
-                    Testar Push (15s)
+                    Sistema + Push (15s)
                 </>
             )}
         </button>
     );
 };
-
 export const SovereignPanelView: React.FC = () => {
   const [rows, setRows] = useState<Marco1BetaScoreboardRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1834,14 +1939,13 @@ export const SovereignPanelView: React.FC = () => {
         <GlassCard variant="neutral" className="p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Laboratório de Notificações</p>
-              <h2 className="text-lg font-black text-white">Fábrica de Eventos</h2>
-              <p className="text-xs text-zinc-400">Gere diferentes tipos de notificações para validar o comportamento do sistema.</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Laboratorio de Notificacoes</p>
+              <h2 className="text-lg font-black text-white">Fabrica de Eventos</h2>
+              <p className="text-xs text-zinc-400">Tres testes objetivos: sistema, card do Oraculo e sistema com push local em 15 segundos.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <NotificationTypeButton type="welcome" label="Welcome (Email+Oracle)" color="blue" />
-              <NotificationTypeButton type="oracle_native" label="Oracle (Nativo)" color="amber" />
-              <NotificationTypeButton type="oracle_card" label="Card do Oráculo" color="purple" />
+              <NotificationTypeButton type="system" label="Sistema Agora" color="blue" />
+              <NotificationTypeButton type="oracle_card" label="Card do Oraculo" color="purple" />
               <NotificationTestButton />
             </div>
           </div>

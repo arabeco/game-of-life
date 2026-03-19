@@ -97,7 +97,7 @@ export const AssetsView: React.FC = () => {
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
 
     const baseAspect = 9 / 16;
-    const viewportBaseHeight = '100dvh - 80px - var(--safe-area-top) - 64px - var(--safe-area-bottom)';
+    const viewportBaseHeight = '100dvh - 76px - var(--safe-area-top) - 64px - var(--safe-area-bottom)';
     const shellVerticalBleed = isBasicMode ? 0 : ASSETS_VIEW_VERTICAL_BLEED_PX;
     const assetsShellStyle: React.CSSProperties = {
         height: `calc(${viewportBaseHeight} + ${shellVerticalBleed * 2}px)`,

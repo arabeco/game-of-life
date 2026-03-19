@@ -388,7 +388,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         </button>
     );
 
-    const baseTopPadding = isBuilderMode ?128 : 80;
+    const baseTopPadding = isBuilderMode ?124 : 76;
     const baseBottomPadding = 64;
     const mainPaddingTop = `calc(${baseTopPadding}px + var(--safe-area-top))`;
     const mainPaddingBottom = currentView === 'assets'

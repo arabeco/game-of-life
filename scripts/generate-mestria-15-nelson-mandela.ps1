@@ -863,7 +863,7 @@ $slide1FrameY = [float]($slide1FrameBottom - $slide1FrameHeight)
 Draw-CenterText -Graphics $graphics -Text "Nelson Mandela" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
 Draw-FeatureFrame -Graphics $graphics -X $slide1FrameX -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0 -ContentPaddingX 10 -ContentPaddingTop 16 -ContentPaddingBottom 16 -AccentWidth 10
 Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Nelson`nMandela?" -Font $titleHugeFont -Brush $goldBrushSlide -X 94 -Y 392 -Width 592 -Height 448
-Draw-Pill -Graphics $graphics -Text "Nível de maestria 86" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
+Draw-Pill -Graphics $graphics -Text "Nível de maestria 84" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
 Draw-CenterText -Graphics $graphics -Text "Não era só resistência.`nEra visão, disciplina e altura moral." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
@@ -919,7 +919,7 @@ Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -H
 New-BodyPanel -Graphics $graphics -X 126 -Y 326 -Width 828 -Height 792
 Draw-InnerContour -Graphics $graphics -X 146 -Y 346 -Width 788 -Height 752
 Draw-CenterText -Graphics $graphics -Text "N${Iacute}vel de maestria" -Font $titleMediumFont -Brush $goldBrushSlide -X 200 -Y 128 -Width 680 -Height 60
-Draw-CenterText -Graphics $graphics -Text "86" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
+Draw-CenterText -Graphics $graphics -Text "84" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
 $labels = @(
     "Consci${ecirc}ncia",
     "Espa${ccedilla}o mental",
@@ -932,7 +932,7 @@ $labels = @(
     "Hobbies",
     "F${iacute}sico"
 )
-$values = @(10,10,9,10,8,10,6,8,4,6)
+$values = @(10,10,9,10,9,10,6,9,5,6)
 Draw-RadarChart -Graphics $graphics -CenterX 540 -CenterY 678 -Radius 250 -Values $values -Labels $labels -LabelFont $radarLabelFont -ValueFont $radarValueFont
 Draw-CenterText -Graphics $graphics -Text "Mestria" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 920 -Width 896 -Height 92
 Draw-CenterText -Graphics $graphics -Text "Nelson Mandela operava em princ${iacute}pio, foco,`nsacrif${iacute}cio e constru${ccedilla}${atilde}o hist${oacute}rica." -Font $bodySmallFont -Brush $offWhiteBrush -X 170 -Y 1012 -Width 740 -Height 96

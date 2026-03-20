@@ -824,8 +824,8 @@ $slide1FrameY = [float]($slide1FrameBottom - $slide1FrameHeight)
 Draw-CenterText -Graphics $graphics -Text "Leonardo da Vinci" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
 Draw-FeatureFrame -Graphics $graphics -X $slide1FrameX -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0 -ContentPaddingX 10 -ContentPaddingTop 16 -ContentPaddingBottom 16 -AccentWidth 10
 Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria Leonardo`nda Vinci?" -Font $titleHugeFont -Brush $goldBrushSlide -X 94 -Y 392 -Width 592 -Height 448
-Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 91" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
-Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} talento isolado.`n${Eacute} curiosidade brutal com registro constante." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
+Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 88" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
+Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} talento isolado.`n${Eacute} curiosidade brutal sem freio." -Font $titleMediumFont -Brush $offWhiteBrush -X 94 -Y 980 -Width 642 -Height 142
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -863,10 +863,10 @@ Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -H
 Draw-CenterText -Graphics $graphics -Text "Leonardo da Vinci" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
 Draw-CenterText -Graphics $graphics -Text "Radar de um`npol${iacute}mata raro." -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 232 -Width 626 -Height 176
 Draw-ClippedImageBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 738 -Y 184 -Width 214 -Height 254 -Opacity 0.98 -AlignBottom
-Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "A recusa em ser`napenas uma coisa." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Espa${ccedilla}o mental`n10" -Body "Milhares de notas.`nA mente virou`narquivo vivo." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "Curiosidade brutal`norientando obra,`nexperimento e vis${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-CenterText -Graphics $graphics -Text "Trabalho, Espa${ccedilla}o mental e Prop${oacute}sito.`nO radar inteiro queria expans${atilde}o." -Font $bodyFont -Brush $mutedBrush -X 150 -Y 964 -Width 780 -Height 104
+Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "Consci${ecirc}ncia`n10" -Body "Mente capaz de`nligar arte, ci${ecirc}ncia`ne observação`nem um só mapa." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Projetos`n10" -Body "Vis${otilde}es em todas`nas direções, abrindo`nfrentes muito acima`ndo próprio século." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "Ofício incansável`nentre estudo, esboço,`nexperimento e obra." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-CenterText -Graphics $graphics -Text "Consci${ecirc}ncia, Projetos e Trabalho.`nA genialidade dele queria expandir tudo ao mesmo tempo." -Font $bodyFont -Brush $mutedBrush -X 150 -Y 964 -Width 780 -Height 104
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-ativos.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -880,7 +880,7 @@ Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -H
 New-BodyPanel -Graphics $graphics -X 126 -Y 326 -Width 828 -Height 792
 Draw-InnerContour -Graphics $graphics -X 146 -Y 346 -Width 788 -Height 752
 Draw-CenterText -Graphics $graphics -Text "N${Iacute}vel de maestria" -Font $titleMediumFont -Brush $goldBrushSlide -X 200 -Y 128 -Width 680 -Height 60
-Draw-CenterText -Graphics $graphics -Text "91" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
+Draw-CenterText -Graphics $graphics -Text "88" -Font $monoTitleFont -Brush $whiteBrush -X 350 -Y 174 -Width 380 -Height 180
 $labels = @(
     "Consci${ecirc}ncia",
     "Espa${ccedilla}o mental",
@@ -893,10 +893,10 @@ $labels = @(
     "Hobbies",
     "F${iacute}sico"
 )
-$values = @(10,10,7,10,10,8,8,10,9,9)
+$values = @(10,10,8,10,10,6,7,10,10,7)
 Draw-RadarChart -Graphics $graphics -CenterX 540 -CenterY 678 -Radius 250 -Values $values -Labels $labels -LabelFont $radarLabelFont -ValueFont $radarValueFont
 Draw-CenterText -Graphics $graphics -Text "Mestria" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 920 -Width 896 -Height 92
-Draw-CenterText -Graphics $graphics -Text "Da Vinci n${Atilde}o separava arte de ci${ecirc}ncia.`nExpandia o radar em 360 graus." -Font $bodySmallFont -Brush $offWhiteBrush -X 170 -Y 1012 -Width 740 -Height 96
+Draw-CenterText -Graphics $graphics -Text "Da Vinci expandia o radar em 360 graus,`nmas nem sempre fechava o c${iacute}rculo." -Font $bodySmallFont -Brush $offWhiteBrush -X 170 -Y 1012 -Width 740 -Height 96
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide4 = Join-Path $OutputDir "slide-04-radar.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4

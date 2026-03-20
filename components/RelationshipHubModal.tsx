@@ -1,7 +1,6 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import {
-    RelationshipCapacityEntry,
     RelationshipCapacitySummary,
     RelationshipInviteAction,
     RelationshipLink,
@@ -106,9 +105,6 @@ const formatDate = (value?: string | null) => {
     if (Number.isNaN(parsed.getTime())) return null;
     return parsed.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 };
-
-const relationshipCounter = (entry?: RelationshipCapacityEntry | null) =>
-    entry ? `${entry.used}/${entry.limit}` : '--';
 
 const AvatarPill: React.FC<{ profile?: RelationshipProfileLite | null; fallback?: string }> = ({ profile, fallback = '?' }) => (
     <div className="w-11 h-11 rounded-full border border-white/12 bg-black/35 overflow-hidden flex items-center justify-center shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
@@ -685,13 +681,6 @@ export const RelationshipHubModal: React.FC<{
         }
     };
 
-    const currentTabEntry =
-        activeTab === 'mentoria'
-            ? summary?.mentor
-            : activeTab === 'parceria'
-                ? summary?.partnership
-                : summary?.competition;
-
     const currentTabLinks =
         activeTab === 'mentoria'
             ? [...mentorLinks, ...pupilLinks]
@@ -768,10 +757,11 @@ export const RelationshipHubModal: React.FC<{
     const renderTabBoard = () => {
         const tabLabel = activeTab === 'mentoria' ? 'Mentoria' : activeTab === 'parceria' ? 'Parceria' : 'Competicao';
         const tabCopy = activeTab === 'mentoria'
-            ? 'Mentoria basica, campanhas e arenas da relacao.'
+            ? `Entrada por ${COIN_GLYPH} 100. Cada nova arena compartilhada custa ${COIN_GLYPH} 50.`
             : activeTab === 'parceria'
-                ? 'Observacao e leitura do outro lado.'
-                : 'Confronto ativo com arenas ligadas.';
+                ? `Entrada por ${COIN_GLYPH} 50. Observacao e leitura do outro lado.`
+                : `Entrada por ${COIN_GLYPH} 50. Confronto ativo com arenas ligadas.`;
+        const activeCount = String(currentTabLinks.length).padStart(2, '0');
 
         if (activeTab === 'mentoria') {
             return (
@@ -785,7 +775,7 @@ export const RelationshipHubModal: React.FC<{
                             <p className="mt-2 text-[12px] leading-relaxed text-white/56">{tabCopy}</p>
                         </div>
                         <div className="text-[28px] font-black leading-none text-white/14">
-                            {relationshipCounter(summary?.mentor)}
+                            {activeCount}
                         </div>
                     </div>
                 </GlassCard>
@@ -795,18 +785,18 @@ export const RelationshipHubModal: React.FC<{
         return (
             <GlassCard className="rounded-[24px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
                 <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/24 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.20em] text-white/46">
-                            {activeTab === 'parceria' ? <UsersIcon className="w-3 h-3" /> : <TrophyIcon className="w-3 h-3" />}
-                            <span>{tabLabel}</span>
+                        <div className="min-w-0">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/24 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.20em] text-white/46">
+                                {activeTab === 'parceria' ? <UsersIcon className="w-3 h-3" /> : <TrophyIcon className="w-3 h-3" />}
+                                <span>{tabLabel}</span>
+                            </div>
+                            <p className="mt-2 text-[12px] leading-relaxed text-white/56">{tabCopy}</p>
                         </div>
-                        <p className="mt-2 text-[12px] leading-relaxed text-white/56">{tabCopy}</p>
+                        <div className={`text-[28px] font-black leading-none ${activeTab === 'parceria' ? 'text-cyan-200/16' : 'text-rose-200/16'}`}>
+                            {activeCount}
+                        </div>
                     </div>
-                    <div className={`text-[28px] font-black leading-none ${activeTab === 'parceria' ? 'text-cyan-200/16' : 'text-rose-200/16'}`}>
-                        {relationshipCounter(currentTabEntry)}
-                    </div>
-                </div>
-            </GlassCard>
+                </GlassCard>
         );
     };
 
@@ -939,7 +929,7 @@ export const RelationshipHubModal: React.FC<{
                             <div className="rounded-[18px] border border-emerald-300/16 bg-emerald-400/10 px-4 py-3">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100/80">Basica</div>
                                 <p className="mt-1 text-[12px] leading-relaxed text-emerald-50/78">
-                                    Entrada por {COIN_GLYPH} 100 no envio. Se recusar, revogar ou expirar, o ouro volta automaticamente.
+                                    Entrada por {COIN_GLYPH} 100 no envio. Cada nova arena compartilhada custa {COIN_GLYPH} 50. Se recusar, revogar ou expirar, o ouro volta automaticamente.
                                 </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     <CompactPill label="arenas" value={String(arenasForLink.length)} tone="text-emerald-200" />
@@ -952,13 +942,13 @@ export const RelationshipHubModal: React.FC<{
 
                     <div className="grid gap-3 md:grid-cols-2">
                     <GlassCard className="rounded-[22px] border border-white/10 bg-black/22 p-3">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Arenas</div>
-                                <div className="mt-1 text-[12px] text-white/56">Miniaturas clicaveis dessa relacao.</div>
-                            </div>
-                            {isMentorSide && (
-                                <button
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Arenas</div>
+                                        <div className="mt-1 text-[12px] text-white/56">Miniaturas clicaveis dessa relacao. Nova arena por {COIN_GLYPH} 50.</div>
+                                    </div>
+                                    {isMentorSide && (
+                                        <button
                                     onClick={() => setSelectedMentorLinkForArena(link)}
                                     className="luxe-skin-button rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
                                 >

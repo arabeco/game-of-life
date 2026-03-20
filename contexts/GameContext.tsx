@@ -3685,13 +3685,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const raw = String(message || '').trim();
         if (!raw) return fallback;
         if (raw.includes('arena_snapshot')) return 'Seu banco ainda esta com o schema antigo da mentoria. Rode o SQL que libera arena_snapshot como opcional.';
-        if (raw.includes('MENTOR_PREMIUM_REQUIRED')) return 'So mentores Premium podem usar este recurso.';
-        if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Seu limite de slots para este vinculo foi atingido.';
-        if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Este pupilo ja atingiu o limite de mentoria recebida.';
+        if (raw.includes('MENTOR_PREMIUM_REQUIRED')) return 'A mentoria basica nao usa mais Premium. Se isso apareceu, o banco ainda esta com regra antiga.';
+        if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Nao foi possivel abrir outro vinculo desse tipo agora.';
+        if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Esse pupilo ja esta em outra mentoria ativa.';
         if (raw.includes('RELATIONSHIP_INVITE_ALREADY_PENDING')) return 'Ja existe um convite pendente com esse aliado.';
         if (raw.includes('RELATIONSHIP_LINK_ALREADY_ACTIVE')) return 'Esse vinculo ja esta ativo.';
-        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Arena extra de mentoria agora e paga por unidade. Se isso apareceu, o SQL novo ainda nao foi aplicado.';
-        if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Arena extra de mentoria nao usa mais slot. Cada nova arena custa 50 de ouro.';
+        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Cada arena extra da mentoria custa 50 de ouro. Se isso apareceu, o SQL novo ainda nao foi aplicado.';
+        if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Arena extra da mentoria e paga por unidade: 50 de ouro cada.';
         if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
         if (raw.includes('ARENA_ASSET_REQUIRED')) return 'Escolha o ativo da arena vinculada.';
         if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'Voce ja tem 2 Codex personalizados de mentoria ativos.';

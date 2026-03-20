@@ -10,7 +10,6 @@ import { PlasmaCanvas } from './PlasmaCanvas';
 import { supabase } from '../supabaseClient';
 import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
-import { hasPremiumAccess } from '../utils/premiumAccess';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import './arena-ui.css';
@@ -698,7 +697,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                         </div>
                         {selectionType === 'mentoria' && (
                             <div className="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-400/20 rounded-xl px-3 py-2">
-                                Mentoria ativa exige que o mentor convidado tenha acesso Premium.
+                                Mentoria basica entra por 🪙 100. Depois, cada nova arena compartilhada custa 🪙 50.
                             </div>
                         )}
 
@@ -707,13 +706,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                         ) : (
                             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                 {availableFriends.map(friend => {
-                                    const mentorLocked = selectionType === 'mentoria' && !hasPremiumAccess(friend);
                                     return (
                                     <button
                                         key={friend.id}
-                                        disabled={mentorLocked}
                                         onClick={() => sendObserverInvite(friend, selectionType)}
-                                        className={`w-full p-3 rounded-xl text-left border flex items-center gap-3 ${mentorLocked ? 'bg-black/10 border-white/5 opacity-60 cursor-not-allowed' : 'bg-black/20 hover:bg-black/30 border-white/10'}`}
+                                        className="w-full p-3 rounded-xl text-left border flex items-center gap-3 bg-black/20 hover:bg-black/30 border-white/10"
                                     >
                                         <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
                                             {friend.avatarUrl ?<img src={friend.avatarUrl} alt={friend.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">ðŸ‘¤</span>}
@@ -721,7 +718,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                         <div className="flex-1">
                                             <div className="text-sm font-bold text-white">{friend.nickname}</div>
                                             <div className="text-[10px] text-gray-500">
-                                                {mentorLocked ? 'MENTOR PREMIUM NECESSARIO' : (friend.isOnline ?'ONLINE' : 'OFFLINE')}
+                                                {friend.isOnline ?'ONLINE' : 'OFFLINE'}
                                             </div>
                                         </div>
                                         <div className="p-2 bg-white/5 rounded-full">

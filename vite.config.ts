@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react(), tailwindcss()],
     build: {
+      cssCodeSplit: false,
       rollupOptions: {
         output: {
           manualChunks(id) {

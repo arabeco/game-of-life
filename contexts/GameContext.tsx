@@ -17,6 +17,7 @@ import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
 import { buildCyclePaceMetrics, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
+import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
@@ -243,6 +244,25 @@ export interface UserCodex {
     raw_template?: any;
 }
 
+type OracleTriggerStatus =
+    | 'generated'
+    | 'disabled'
+    | 'quiet_hours'
+    | 'cooldown'
+    | 'daily_limit'
+    | 'premium_required'
+    | 'skipped'
+    | 'error';
+
+type OracleTriggerResult = {
+    status: OracleTriggerStatus;
+    message?: OracleMessage;
+    dailyTarget?: number;
+    sentToday?: number;
+    remainingToday?: number;
+    cooldownMs?: number;
+};
+
 export interface GameContextType {
     session: Session | null;
     isNewUser: boolean;
@@ -299,7 +319,7 @@ export interface GameContextType {
     getArenas: () => Arena[];
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
-    deleteArena: (arenaId: string) => void;
+    deleteArena: (arenaId: string, options?: { force?: boolean }) => void;
     createArenaFolder: (name: string, icon: string, assetId?: string) => Promise<ArenaFolder | null>;
     updateArenaFolder: (folderId: string, data: Partial<ArenaFolder>) => Promise<void>;
     deleteArenaFolder: (folderId: string) => Promise<void>;
@@ -379,7 +399,7 @@ export interface GameContextType {
     oracleMessages: OracleMessage[];
     markOracleMessageAsRead: (messageId: string) => Promise<void>;
     refreshOracleMessages: () => Promise<void>;
-    triggerOracle: (triggerType?: 'app_open' | 'cron' | 'manual') => Promise<void>;
+    triggerOracle: (triggerType?: 'app_open' | 'cron' | 'manual') => Promise<OracleTriggerResult | null>;
 
     // Notifications
     notifications: Notification[];
@@ -562,6 +582,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [oraclePreferences, setOraclePreferences] = useState<OraclePreferences | null>(null);
     const [oracleMessages, setOracleMessages] = useState<OracleMessage[]>([]);
+    const [oracleMessagesReady, setOracleMessagesReady] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
     const [dmConversations, setDMConversations] = useState<DMConversation[]>([]);
@@ -581,6 +602,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Campaigns State
     const [campaigns, setCampaigns] = useState<Campaign[]>(() => []);
+    const oracleBootKeyRef = useRef<string | null>(null);
+    const triggerOracleRef = useRef<GameContextType['triggerOracle'] | null>(null);
 
     // Fetch campaigns from Supabase on load
     useEffect(() => {
@@ -948,12 +971,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error fetching oracle messages:", error);
+            setOracleMessagesReady(true);
             return;
         }
 
         if (data) {
             setOracleMessages(mapToCamelCase(data));
         }
+        setOracleMessagesReady(true);
     }, []);
 
     const markOracleMessageAsRead = async (messageId: string) => {
@@ -969,29 +994,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const triggerOracle = async (triggerType: 'app_open' | 'cron' | 'manual' = 'app_open') => {
+    const triggerOracle = async (triggerType: 'app_open' | 'cron' | 'manual' = 'app_open'): Promise<OracleTriggerResult | null> => {
         const userId = getSupabaseUserId();
-        if (!userId || !oraclePreferences) return;
+        if (!userId || !oraclePreferences) return null;
+
+        const now = new Date();
+        const quota = getOracleFeedQuotaStatus(oracleMessages, oraclePreferences, now);
+        const isPremiumUser = hasPremiumAccess(userProfile);
         const sentinelMode = oraclePreferences.sentinelMode ?? getSentinelMode(userId);
-        // Requirement: show village duty bonus hint at app open when village order is active.
+
         if (triggerType === 'app_open') {
             maybeNotifyVillageDuty(userId);
         }
-        if (triggerType !== 'manual' && !oraclePreferences.notificationsEnabled) return;
-        if (sentinelMode === 'apenas_necessarias' && triggerType !== 'manual' && !isOracleCriticalTrigger(userId)) {
-            return;
+
+        if (triggerType === 'manual' && !isPremiumUser) {
+            showToast('Gerar card manual e premium.', 'info');
+            return { status: 'premium_required', ...quota };
         }
-        if (sentinelMode === 'nao_ia') {
+
+        if (triggerType !== 'manual' && !oraclePreferences.notificationsEnabled) {
+            return { status: 'disabled', ...quota };
+        }
+
+        if (sentinelMode === 'apenas_necessarias' && triggerType !== 'manual' && !isOracleCriticalTrigger(userId)) {
+            return { status: 'skipped', ...quota };
+        }
+
+        if (sentinelMode === 'nao_ia' && triggerType !== 'manual') {
             const content = isOracleCriticalTrigger(userId)
-                ?'Alerta do Sistema: prioridade critica detectada. Revise pendencias de ciclo ou missao Office.'
+                ? 'Alerta do Sistema: prioridade critica detectada. Revise pendencias de ciclo ou missao Office.'
                 : 'Mensagem do Sistema: status estavel. Sem intervencao do Oraculo.';
             await pushSystemOracleMessage(userId, content);
-            return;
+            return { status: 'skipped', ...quota };
         }
-        if (!oraclePreferences.iaEnabled) return;
-        // 1. Check Quiet Hours (if not manual)
+
+        if (!oraclePreferences.iaEnabled) {
+            if (triggerType === 'manual') {
+                showToast('Ative a IA do Oraculo para gerar cards.', 'info');
+            }
+            return { status: 'disabled', ...quota };
+        }
+
         if (triggerType !== 'manual') {
-            const now = new Date();
             const currentTime = now.getHours() * 60 + now.getMinutes();
             const [startH, startM] = (oraclePreferences.quietHoursStart || '22:00').split(':').map(Number);
             const [endH, endM] = (oraclePreferences.quietHoursEnd || '07:00').split(':').map(Number);
@@ -1000,43 +1044,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const end = endH * 60 + endM;
 
             let isQuiet = false;
-            if (start > end) { // Spans midnight (e.g. 22:00 to 07:00)
+            if (start > end) {
                 isQuiet = currentTime >= start || currentTime < end;
             } else {
                 isQuiet = currentTime >= start && currentTime < end;
             }
 
             if (isQuiet) {
-                console.log("Oracle is in quiet hours.");
-                return;
+                return { status: 'quiet_hours', ...quota };
             }
         }
 
-        // 2. Check Daily Limits
-        const today = getLocalDateString();
-        const todayMessages = oracleMessages.filter(m => m.createdAt.startsWith(today) && m.deliveryType === 'feed');
-        const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
-        const limit = isPremium ?6 : 3;
-
-        if (todayMessages.length >= limit && triggerType !== 'manual') {
-            console.log("Oracle daily limit reached.");
-            return;
+        if (quota.remainingToday <= 0) {
+            if (triggerType === 'manual') {
+                showToast(`Limite diario do Oraculo atingido (${quota.dailyTarget}/${quota.dailyTarget}).`, 'info');
+            }
+            return { status: 'daily_limit', ...quota };
         }
 
-        // 3. Minimum Time Between Messages (2 hours)
-        if (todayMessages.length > 0 && triggerType !== 'manual') {
-            const lastMsg = new Date(todayMessages[0].createdAt).getTime();
-            const now = new Date().getTime();
-            const hoursSinceLast = (now - lastMsg) / (1000 * 60 * 60);
-            if (hoursSinceLast < 2) {
-                console.log("Oracle resting (min 2h).");
-                return;
-            }
+        if (triggerType === 'manual' && quota.manualCooldownRemainingMs > 0) {
+            const remainingMinutes = Math.max(1, Math.ceil(quota.manualCooldownRemainingMs / 60000));
+            showToast(`Novo card manual em ${remainingMinutes} min.`, 'info');
+            return { status: 'cooldown', cooldownMs: quota.manualCooldownRemainingMs, ...quota };
+        }
+
+        if (triggerType !== 'manual' && quota.sentToday > 0 && quota.nextAutoInMs > 0) {
+            return { status: 'cooldown', cooldownMs: quota.nextAutoInMs, ...quota };
         }
 
         // 4. Select Category (Greeting Logic)
         let category: string = 'frases_inspiradoras';
-        const now = new Date();
         const hour = now.getHours();
 
         const totalChests = userProfile.chests?.reduce((acc: any, c: any) => acc + c.count, 0) || 0;
@@ -1184,11 +1221,60 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await supabase.from('oracle_messages').insert(mapToSnakeCase(newMessage));
 
             console.log('Oracle generated message:', text);
+            if (triggerType === 'manual') {
+                const sentAfterGeneration = quota.sentToday + 1;
+                showToast(`Card do Oraculo gerado (${sentAfterGeneration}/${quota.dailyTarget}).`, 'success');
+            }
+            return {
+                status: 'generated',
+                message: newMessage,
+                dailyTarget: quota.dailyTarget,
+                sentToday: quota.sentToday + 1,
+                remainingToday: Math.max(0, quota.remainingToday - 1),
+            };
 
         } catch (error) {
             console.error('Oracle AI generation failed:', error);
+            if (triggerType === 'manual') {
+                showToast('Falha ao gerar card do Oraculo.', 'error');
+            }
+            return { status: 'error', ...quota };
         }
     };
+
+    useEffect(() => {
+        triggerOracleRef.current = triggerOracle;
+    }, [triggerOracle]);
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId) || !oraclePreferences || !oracleMessagesReady) return;
+
+        const bootKey = `${userId}:${getOperationalDateString()}`;
+        if (oracleBootKeyRef.current !== bootKey) {
+            oracleBootKeyRef.current = bootKey;
+            void triggerOracleRef.current?.('app_open');
+        }
+
+        const intervalId = window.setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                void triggerOracleRef.current?.('cron');
+            }
+        }, 10 * 60 * 1000);
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                void triggerOracleRef.current?.('cron');
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [session?.user.id, oraclePreferences, oracleMessagesReady]);
 
     // --- Notifications Implementation ---
     const fetchNotifications = useCallback(async () => {
@@ -1219,12 +1305,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     useEffect(() => {
         const userId = session?.user.id;
         if (userId && isUuid(userId)) {
+            setOracleMessagesReady(false);
             fetchOraclePreferences(userId);
             fetchOracleMessages(userId);
             fetchNotifications();
         } else {
             setOraclePreferences(null);
             setOracleMessages([]);
+            setOracleMessagesReady(false);
+            oracleBootKeyRef.current = null;
             setNotifications([]);
         }
     }, [session?.user.id, fetchOraclePreferences, fetchOracleMessages, fetchNotifications]);
@@ -3502,7 +3591,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Este pupilo ja atingiu o limite de mentoria recebida.';
         if (raw.includes('RELATIONSHIP_INVITE_ALREADY_PENDING')) return 'Ja existe um convite pendente com esse aliado.';
         if (raw.includes('RELATIONSHIP_LINK_ALREADY_ACTIVE')) return 'Esse vinculo ja esta ativo.';
-        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Seu limite de arenas vinculadas foi atingido.';
+        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Arena extra de mentoria agora e paga por unidade. Se isso apareceu, o SQL novo ainda nao foi aplicado.';
+        if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Arena extra de mentoria nao usa mais slot. Cada nova arena custa 50 de ouro.';
         if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
         if (raw.includes('ARENA_ASSET_REQUIRED')) return 'Escolha o ativo da arena vinculada.';
         if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'Voce ja tem 2 Codex personalizados de mentoria ativos.';
@@ -6655,217 +6745,140 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
     };
 
-    const deleteArena = async (arenaId: string) => {
+    const deleteArena = async (arenaId: string, _options?: { force?: boolean }) => {
         const userId = getSupabaseUserId();
         const arena = getArenas().find(a => a.id === arenaId);
-        const folderId = arena?.folderId;
+        if (!arena) return;
+        const folderId = arena.folderId;
         const arenaFlags = getArenaDomainFlags(arena);
         const isQuestArenaType = arenaFlags.isQuest;
 
-        // Check if the arena contains any clan mission actions and remove participation
-        // We iterate ALL actions in the arena to see if they correspond to a clan quest
-        // This handles cases where the arena name is wrong (e.g. "1") or customized
         const arenaActions = getActionsForArena(arenaId);
+        const arenaActionIds = arenaActions.map(action => action.id);
         let clanQuestFound = false;
 
         for (const action of arenaActions) {
             const quest = findClanQuestByActionName(action.name);
 
-            if (quest && clan) {
+            if (quest && clan && userId) {
                 clanQuestFound = true;
-                if (userId) {
-                    // Remove from clan_mission_participants
-                    const { error } = await supabase.from('clan_mission_participants')
-                        .delete()
-                        .eq('clan_id', clan.id)
-                        .eq('mission_id', quest.id)
-                        .eq('user_id', userId);
+                const { error } = await supabase.from('clan_mission_participants')
+                    .delete()
+                    .eq('clan_id', clan.id)
+                    .eq('mission_id', quest.id)
+                    .eq('user_id', userId);
 
-                    if (error) {
-                        console.error("Error deleting clan mission participation:", error.message);
-                        // If RLS prevents delete, it must be fixed in Supabase policies.
-                        // Using migrations/20260219_fix_clan_mission_rls_v2.sql should resolve this.
-                    } else {
-                        console.log("Successfully deleted clan mission participation");
-                    }
+                if (error) {
+                    console.error("Error deleting clan mission participation:", error.message);
+                }
 
-                    // Update local state regardless of server success (optimistic leave) to unblock UI
-                    setUserMissionParticipations(prev => {
-                        const newState = { ...prev };
-                        delete newState[quest.id];
-                        return newState;
+                setUserMissionParticipations(prev => {
+                    const next = { ...prev };
+                    delete next[quest.id];
+                    return next;
+                });
+
+                setClanQuestParticipants(prev => ({
+                    ...prev,
+                    [quest.id]: Math.max(0, (prev[quest.id] || 1) - 1)
+                }));
+            }
+        }
+
+        if (!clanQuestFound && clan && looksLikeClanQuestArena(arena)) {
+            const defaultClanQuest = seasonQuests.find(q => q.type === 'clan')
+                || Object.values(SEASONS).flatMap(season => season.quests).find(q => q.type === 'clan');
+
+            if (defaultClanQuest && userId) {
+                setUserMissionParticipations(prev => {
+                    const next = { ...prev };
+                    delete next[defaultClanQuest.id];
+                    return next;
+                });
+                setClanQuestParticipants(prev => ({
+                    ...prev,
+                    [defaultClanQuest.id]: Math.max(0, (prev[defaultClanQuest.id] || 1) - 1)
+                }));
+
+                await supabase.from('clan_mission_participants')
+                    .delete()
+                    .eq('clan_id', clan.id)
+                    .eq('mission_id', defaultClanQuest.id)
+                    .eq('user_id', userId);
+            }
+        }
+
+        if (isQuestArenaType && userId && arenaActions.length > 0) {
+            for (const action of arenaActions) {
+                if (!clan || !arenaFlags.isClanQuest) continue;
+                const quest = findClanQuestByActionName(action.name);
+                if (!quest) continue;
+
+                setUserMissionParticipations(prev => {
+                    const next = { ...prev };
+                    delete next[quest.id];
+                    return next;
+                });
+                setClanQuestParticipants(prev => ({
+                    ...prev,
+                    [quest.id]: Math.max(0, (prev[quest.id] || 1) - 1)
+                }));
+
+                supabase.from('clan_mission_participants')
+                    .delete()
+                    .eq('clan_id', clan.id)
+                    .eq('mission_id', quest.id)
+                    .eq('user_id', userId)
+                    .then(({ error }) => {
+                        if (error) console.error("Error deleting clan mission participation:", error.message);
                     });
-
-                    // Update participants count locally (optimistic)
-                    setClanQuestParticipants(prev => ({
-                        ...prev,
-                        [quest.id]: Math.max(0, (prev[quest.id] || 1) - 1)
-                    }));
-                }
             }
         }
 
-        // If no quest was found via action matching, but the arena name is "1" or "Quests - Clã", 
-        // and the user has a participation, maybe we should just remove them from the active clan quest?
-        if (!clanQuestFound && clan) {
-            if (looksLikeClanQuestArena(arena)) {
-                const defaultClanQuest = seasonQuests.find(q => q.type === 'clan')
-                    || Object.values(SEASONS).flatMap(season => season.quests).find(q => q.type === 'clan');
-                if (defaultClanQuest) {
-                    // Try to leave this one as a last resort
-                    console.log("Attempting to leave default clan quest due to suspicious arena deletion (fallback)");
-                    const userId = getSupabaseUserId();
-                    if (userId) {
-                        // Optimistic update first
-                        setUserMissionParticipations(prev => {
-                            const newState = { ...prev };
-                            delete newState[defaultClanQuest.id];
-                            return newState;
-                        });
-                        setClanQuestParticipants(prev => ({
-                            ...prev,
-                            [defaultClanQuest.id]: Math.max(0, (prev[defaultClanQuest.id] || 1) - 1)
-                        }));
+        const removeTaskIdsFromDailyCommitment = (taskIdsToRemove: string[]) => {
+            if (taskIdsToRemove.length === 0) return;
+            setDailyCommitmentState(prev => {
+                const nextTaskIds = prev.taskIds.filter(id => !taskIdsToRemove.includes(id));
+                return nextTaskIds.length === prev.taskIds.length ? prev : { ...prev, taskIds: nextTaskIds };
+            });
+        };
 
-                        await supabase.from('clan_mission_participants')
-                            .delete()
-                            .eq('clan_id', clan.id)
-                            .eq('mission_id', defaultClanQuest.id)
-                            .eq('user_id', userId);
-                    }
-                }
-            }
-        }
+        const purgeLocalTasksByActionIds = (actionIds: string[]) => {
+            if (actionIds.length === 0) return;
+            setTasks(prevTasks => {
+                const removedTaskIds = prevTasks
+                    .filter(task => actionIds.includes(task.actionId))
+                    .map(task => task.id);
+                removeTaskIdsFromDailyCommitment(removedTaskIds);
+                return prevTasks.filter(task => !actionIds.includes(task.actionId));
+            });
+        };
 
-        if (isQuestArenaType) {
-            // If it's a season/clan quest arena, deleting it implies leaving/abandoning all quests within it
-            if (userId && arenaActions.length > 0) {
-                for (const action of arenaActions) {
-                    // Check for clan mission participation
-                    if (clan && arenaFlags.isClanQuest) {
-                        const quest = findClanQuestByActionName(action.name);
-
-                        if (quest) {
-                            console.log("Leaving clan mission via Arena Delete:", quest.title);
-                            // Optimistic update
-                            setUserMissionParticipations(prev => {
-                                const newState = { ...prev };
-                                delete newState[quest.id];
-                                return newState;
-                            });
-                            setClanQuestParticipants(prev => ({
-                                ...prev,
-                                [quest.id]: Math.max(0, (prev[quest.id] || 1) - 1)
-                            }));
-
-                            // DB Update
-                            supabase.from('clan_mission_participants')
-                                .delete()
-                                .eq('clan_id', clan.id)
-                                .eq('mission_id', quest.id)
-                                .eq('user_id', userId)
-                                .then(({ error }) => {
-                                    if (error) console.error("Error deleting clan mission participation:", error.message);
-                                });
-                        }
-                    }
-                }
-            }
-
-            if (arenaActions.length === 0) {
-                updateArena(arenaId, { isArchived: true });
-            } else {
-                // If not empty, we proceed to delete the arena and its actions below, 
-                // effectively "quitting" the quests.
-            }
-            // return; // REMOVED RETURN to allow deletion logic below to proceed
-        }
-
-        // CHECK FOR HISTORY: If any action has completed tasks, we must ARCHIVE instead of DELETE
-        // This preserves the "color" (mastery/heatmap) of the user's history
-        // We check BOTH local state (for speed/offline) and Supabase (for full history > 3 months)
-        let actionsWithHistoryIds = new Set<string>();
-
-        // 1. Local Check
-        arenaActions.forEach(action => {
-            if (tasks.some(t => t.actionId === action.id && t.completed)) {
-                actionsWithHistoryIds.add(action.id);
-            }
-        });
-
-        // 2. Remote Check (if user is online)
-        if (userId && arenaActions.length > 0) {
-            const actionIds = arenaActions.map(a => a.id);
-            const { data: remoteHistory } = await supabase
-                .from('scheduled_tasks')
-                .select('action_id')
-                .in('action_id', actionIds)
-                .eq('completed', true)
-                .limit(1000); // Limit to avoid massive payload, we just need existence
-
-            remoteHistory?.forEach((h: any) => actionsWithHistoryIds.add(h.action_id));
-        }
-
-        const actionsWithHistory = arenaActions.filter(action => actionsWithHistoryIds.has(action.id));
-
-        // MODIFICACAO DE LIMPEZA: Se o usuario quer deletar, e a arena tem historico,
-        // nos ainda a arquivamos para preservar o historico.
-        // MAS, precisamos garantir que as acoes fiquem "ocultas" ou "arquivadas" tambem.
-        // No modelo atual, se a arena e arquivada, suas acoes nao aparecem no `activeActions` (pois activeArenas filtra arquivadas).
-        // ENTRETANTO, se o usuario disse "deletei as arenas e as acoes ficaram", isso pode ser porque o filtro de `activeActions` falhou ou o cache local nao atualizou.
-
-        if (actionsWithHistory.length > 0) {
-            console.log(`Arena ${arenaId} has history (${actionsWithHistory.length} actions). Archiving instead of deleting.`);
-
-            // 1. Archive the Arena (updates Supabase via updateArena)
-            updateArena(arenaId, { isArchived: true });
-
-            // 2. Delete ONLY the actions that have NO history
-            // Isso limpa o "lixo" que nunca foi usado.
-            const actionsToDelete = arenaActions.filter(a => !actionsWithHistoryIds.has(a.id));
-
-            if (actionsToDelete.length > 0) {
-                setActions(prev => prev.filter(a => !actionsToDelete.some(del => del.id === a.id)));
-
-                if (userId) {
-                    const idsToDelete = actionsToDelete.map(a => a.id);
-                    supabase.from('actions').delete().in('id', idsToDelete).then(({ error }) => {
-                        if (error) console.error("Supabase delete unused actions error:", error.message);
-                    });
-                }
-            }
-
-            return; // Exit, do not fully delete the arena
-        }
-
-        // Se não tem histórico, DELETA TUDO SEM DOR.
-        // Remove do estado de assets (arenas)
+        purgeLocalTasksByActionIds(arenaActionIds);
         setAssets(prevAssets => prevAssets.map(asset => ({
             ...asset,
-            arenas: asset.arenas.filter(arena => arena.id !== arenaId)
+            arenas: asset.arenas.filter(existingArena => existingArena.id !== arenaId)
         })));
-
-        // Remove TODAS as ações dessa arena do estado global
         setActions(prevActions => prevActions.filter(action => action.arenaId !== arenaId));
 
-        // Cleanup empty folder if needed
         if (folderId) {
-            // We need to check if folder is empty AFTER deletion. 
-            // Since state update is async, we check against current state minus the deleted one.
-            const arenasInFolder = getArenas().filter(a => a.folderId === folderId && a.id !== arenaId);
+            const arenasInFolder = getArenas().filter(existingArena => existingArena.folderId === folderId && existingArena.id !== arenaId);
             if (arenasInFolder.length === 0) {
                 deleteArenaFolder(folderId);
             }
         }
 
         if (userId) {
-            // Delete actions first to avoid orphans if no CASCADE is set
+            if (arenaActionIds.length > 0) {
+                await supabase.from('scheduled_tasks').delete().in('action_id', arenaActionIds);
+            }
             await supabase.from('actions').delete().eq('arena_id', arenaId);
-
             supabase.from('arenas').delete().eq('id', arenaId).then(({ error }) => {
                 if (error) console.error("Supabase delete arena error:", error.message);
             });
         }
+
+        showToast('Arena excluida definitivamente.', 'success');
     };
     const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
     const getAssetForAction = (actionId: string): Asset | undefined => {

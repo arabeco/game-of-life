@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Action, Arena, Clan, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, ScheduledTask, SeasonQuest } from '../../types';
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
-import { getOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
+import { getOperationalDateString, getTaskOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
 import { calculateArenaProgress } from '../../utils/progressUtils';
@@ -76,6 +76,20 @@ export const createTaskDomain = ({
     tutorialActionId,
     tutorialCompletedFlag,
 }: CreateTaskDomainParams): TaskDomainApi => {
+    const isTaskLockedByClosedDay = (task: ScheduledTask) => {
+        const taskOperationalDate = getTaskOperationalDateString(task);
+        if (!taskOperationalDate) return false;
+
+        const currentOperationalDate = getOperationalDateString(new Date());
+        if (taskOperationalDate < currentOperationalDate) return true;
+
+        return taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment';
+    };
+
+    const showClosedDayMutationBlockedToast = () => {
+        showToast('Este dia ja foi julgado e nao pode mais ser alterado.', 'error');
+    };
+
     const rollbackOptimisticTaskCreation = (taskIdsToRollback: string[]) => {
         setTasks(prevTasks => removeEntitiesById(prevTasks, taskIdsToRollback));
         setDailyCommitmentState(prev => ({
@@ -362,6 +376,10 @@ export const createTaskDomain = ({
     const toggleTaskCompletion = async (taskId: string) => {
         const taskToCheck = tasks.find(task => task.id === taskId);
         if (!taskToCheck) return;
+        if (isTaskLockedByClosedDay(taskToCheck)) {
+            showClosedDayMutationBlockedToast();
+            return;
+        }
 
         const action = getActionById(taskToCheck.actionId);
         const now = new Date();
@@ -541,6 +559,12 @@ export const createTaskDomain = ({
     };
 
     const deleteTask = (taskId: string) => {
+        const currentTask = tasks.find(task => task.id === taskId);
+        if (currentTask && isTaskLockedByClosedDay(currentTask)) {
+            showClosedDayMutationBlockedToast();
+            return;
+        }
+
         setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
         setDailyCommitmentState(prev => (
             prev.taskIds.includes(taskId)
@@ -559,6 +583,10 @@ export const createTaskDomain = ({
     const updateTask = (taskId: string, updates: Partial<ScheduledTask>) => {
         const currentTask = tasks.find(task => task.id === taskId);
         if (!currentTask) return;
+        if (isTaskLockedByClosedDay(currentTask)) {
+            showClosedDayMutationBlockedToast();
+            return;
+        }
 
         const nextTask = { ...currentTask, ...updates };
         const shouldReconcileDailyCommitment = updates.date !== undefined || updates.actionId !== undefined;
@@ -612,6 +640,12 @@ export const createTaskDomain = ({
     };
 
     const returnTaskToPool = (taskId: string) => {
+        const currentTask = tasks.find(task => task.id === taskId);
+        if (currentTask && isTaskLockedByClosedDay(currentTask)) {
+            showClosedDayMutationBlockedToast();
+            return;
+        }
+
         const isCommitted = dailyCommitment.taskIds.includes(taskId);
         if (isCommitted) {
             setDailyCommitmentState(prev => (

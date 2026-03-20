@@ -44,6 +44,18 @@ const getTargetElement = (selector?: string) => {
   return document.querySelector(selector) as HTMLElement | null;
 };
 
+const AUTO_TRIGGER_TARGET_STEP_IDS = new Set([
+  'cycle-entry',
+  'arena-entry',
+  'action-entry',
+  'rest-entry',
+]);
+
+const shouldTriggerTargetOnNext = (step: StepDef | undefined) => {
+  if (!step) return false;
+  return AUTO_TRIGGER_TARGET_STEP_IDS.has(step.id);
+};
+
 const canAdvanceFromStep = (step: StepDef | undefined) => {
   if (!step) return false;
   if (!['cycle-name', 'arena-name', 'action-name'].includes(step.id)) return true;
@@ -544,6 +556,13 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }
 
     if (!canAdvanceFromStep(step)) return;
+
+    if (shouldTriggerTargetOnNext(step)) {
+      const target = getTargetElement(step.targetSelector);
+      target?.click();
+      return;
+    }
+
     advanceStep();
   }, [advanceStep, isTyping, onComplete, step]);
 
@@ -569,6 +588,11 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const canAdvance = canAdvanceFromStep(step);
   const padding = step.padding ?? 12;
   const progress = `${currentStepIndex + 1} / ${steps.length}`;
+  const nextLabel = step.final
+    ? 'Concluir'
+    : shouldTriggerTargetOnNext(step)
+      ? 'Abrir'
+      : 'Proximo';
   const helperText = step.hideNext
     ? step.id === 'arena-save'
       ? 'Crie a arena e eu ja sigo para a proxima etapa.'
@@ -578,9 +602,13 @@ export const FirstUseOnboardingOverlay: React.FC<{
           ? 'Toque no destaque e eu pulo junto para o proximo passo.'
           : 'Salve no app para eu seguir sozinho.'
     : step.id === 'arena-entry'
-      ? 'Procure o botao + no canto inferior direito.'
+      ? 'Se tocar em Abrir, eu aciono o botao + por voce.'
       : step.id === 'action-entry'
-        ? 'Abra a arena e toque em Nova acao para eu continuar com voce.'
+        ? 'Se tocar em Abrir, eu aciono Nova acao por voce.'
+        : step.id === 'cycle-entry'
+          ? 'Se tocar em Abrir, eu levo voce direto para o setup do ciclo.'
+          : step.id === 'rest-entry'
+            ? 'Se tocar em Abrir, eu abro a tela de descanso por voce.'
         : step.id === 'action-name' && !canAdvance
           ? 'Preencha o titulo para liberar o proximo passo.'
           : 'Se voce adiantar alguma etapa, eu acompanho.';
@@ -671,7 +699,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
                         disabled={!canAdvance}
                         className="shrink-0 rounded-full border border-[#f3d48a]/35 bg-[#f3d48a]/12 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#f6dfab] transition hover:bg-[#f3d48a]/20 disabled:opacity-40 disabled:hover:bg-[#f3d48a]/12 md:text-[11px]"
                       >
-                        {step.final ? 'Concluir' : 'Proximo'}
+                        {nextLabel}
                       </button>
                     )}
                   </div>

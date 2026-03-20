@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+Ôªøimport React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
@@ -7,12 +7,15 @@ import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import { isTaskInPool } from '../utils/taskDomain.js';
+import { hasPremiumAccess } from '../utils/premiumAccess';
+import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
   mode?: OracleMode;
+  feedId?: string;
 }
 const readResponseBody = async (response: Response): Promise<unknown> => {
   try {
@@ -100,17 +103,20 @@ const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>,
 };
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, taskPool, reports, activeCycle, cycleProgress, oraclePreferences, oracleMessages, addArena, addAction } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, reports, activeCycle, cycleProgress, oraclePreferences, oracleMessages, addArena, addAction, triggerOracle } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);
-  const firstConversationNotice = 'Aviso: o Or·culo usa IA externa. Evite compartilhar dados sensÌveis nas conversas.';
+  const firstConversationNotice = 'Aviso: o Or√°culo usa IA externa. Evite compartilhar dados sens√≠veis nas conversas.';
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [currentMode, setCurrentMode] = useState<OracleMode>(oraclePreferences?.activeMode || 'neutro');
+  const isPremiumUser = useMemo(() => hasPremiumAccess(userProfile), [userProfile]);
+  const oracleFeedStatus = useMemo(() => getOracleFeedQuotaStatus(oracleMessages, oraclePreferences), [oracleMessages, oraclePreferences]);
 
   const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, null), [actions, taskPool, tasks]);
   const bayAreaTasks = useMemo(() => tasks.filter(isTaskInPool), [tasks]);
@@ -141,25 +147,43 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Load initial messages from history and set mode based on last message
   useEffect(() => {
-    if (isInitialLoadRef.current && oracleMessages && oracleMessages.length > 0) {
-        const history: Message[] = oracleMessages
-            .filter(m => m.deliveryType === 'feed') // Show feed messages
-            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-            .map(m => ({
-                role: 'assistant',
-                content: m.content,
-                timestamp: new Date(m.createdAt),
-                mode: m.mode // Store mode for display
-            }));
-        setMessages(history);
+    const history: Message[] = (oracleMessages || [])
+      .filter((message) => message.deliveryType === 'feed')
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .map((message) => ({
+        role: 'assistant',
+        content: message.content,
+        timestamp: new Date(message.createdAt),
+        mode: message.mode,
+        feedId: message.id,
+      }));
 
-        // Set current chat mode to the last message's mode if available
-        const lastMsg = history[history.length - 1];
-        if (lastMsg && lastMsg.mode) {
-            setCurrentMode(lastMsg.mode);
-        }
+    if (history.length === 0) {
+      if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
+      }
+      return;
     }
+
+    setMessages((previous) => {
+      if (isInitialLoadRef.current) {
+        return history;
+      }
+
+      const knownFeedIds = new Set(previous.map((message) => message.feedId).filter(Boolean));
+      const incomingMessages = history.filter((message) => message.feedId && !knownFeedIds.has(message.feedId));
+      if (incomingMessages.length === 0) {
+        return previous;
+      }
+
+      return [...previous, ...incomingMessages];
+    });
+
+    const lastMsg = history[history.length - 1];
+    if (lastMsg?.mode) {
+      setCurrentMode(lastMsg.mode);
+    }
+    isInitialLoadRef.current = false;
   }, [oracleMessages]);
 
   // Auto-scroll to bottom
@@ -228,7 +252,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       .toLowerCase()
       .trim();
 
-    const soundsExhausted = /exaust|esgotad|sobrecarregad|cansad|sem energia|no limite|destru[iÌ]d/.test(normalized);
+    const soundsExhausted = /exaust|esgotad|sobrecarregad|cansad|sem energia|no limite|destru[i√≠]d/.test(normalized);
     const mentionsTomorrow = /amanh/.test(normalized);
 
     if (!soundsExhausted || !mentionsTomorrow) {
@@ -246,7 +270,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         .toLowerCase();
 
       return assetLabel.includes('espaco mental') || assetLabel.includes('mental');
-    })?.name || 'EspaÁo Mental';
+    })?.name || 'Espa√ßo Mental';
 
     const pendingToday = tasks.filter((task) => {
       if (!task.date || task.completed) return false;
@@ -254,22 +278,22 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }).length;
 
     const bayLine = bayAreaVisibleCount > 0
-      ? bayAreaVisibleCount + ' aÁ„o' + (bayAreaVisibleCount === 1 ? '' : 'es') + ' em espera'
-      : 'estoque de aÁıes limpo';
+      ? bayAreaVisibleCount + ' a√ß√£o' + (bayAreaVisibleCount === 1 ? '' : 'es') + ' em espera'
+      : 'estoque de a√ß√µes limpo';
 
     const pendingLine = pendingToday > 0
-      ? `${pendingToday} pendÍncia${pendingToday === 1 ? '' : 's'} hoje`
-      : 'nenhuma pendÍncia hoje';
+      ? `${pendingToday} pend√™ncia${pendingToday === 1 ? '' : 's'} hoje`
+      : 'nenhuma pend√™ncia hoje';
 
     const cycleLine = !activeCycle
       ? 'Sem ciclo ativo no momento.'
       : cycleProgress >= 70
-        ? `Seu ciclo est· em bom ritmo (${cycleProgress}%).`
+        ? `Seu ciclo est√° em bom ritmo (${cycleProgress}%).`
         : cycleProgress >= 40
-          ? `Seu ciclo est· em ritmo mÈdio (${cycleProgress}%).`
-          : `Seu ciclo pede contenÁ„o (${cycleProgress}%).`;
+          ? `Seu ciclo est√° em ritmo m√©dio (${cycleProgress}%).`
+          : `Seu ciclo pede conten√ß√£o (${cycleProgress}%).`;
 
-    return `${mentalAssetName} pedindo contenÁ„o ‡s ${hourLabel}. Vejo ${bayLine} e ${pendingLine}. ${cycleLine} Amanh„, preserve sÛ 1 miss„o crÌtica e encaixe 30 min de Tela de Descanso antes de reacelerar.`;
+    return `${mentalAssetName} pedindo conten√ß√£o √†s ${hourLabel}. Vejo ${bayLine} e ${pendingLine}. ${cycleLine} Amanh√£, preserve s√≥ 1 miss√£o cr√≠tica e encaixe 30 min de Tela de Descanso antes de reacelerar.`;
   }, [activeCycle, assets, bayAreaVisibleCount, cycleProgress, tasks]);
 
   const handleCommand = async (cmd: string): Promise<string | null> => {
@@ -277,32 +301,32 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     
     // Help Command
     if (lowerCmd === '?ajuda' || lowerCmd === '?help') {
-        return "?? **Comandos do Or·culo**\n\nUse **?** para saber o que È algo.\nUse **!** para ver seus dados ou criar novos elementos.\n\nExemplos:\nï **?arenas** - O que s„o Arenas?\nï **!arenas** - Ver minhas Arenas\nï **!assets** - Ver Categorias (Assets)\nï **!criar-arena <nome> <id_categoria>** - Criar nova Arena\nï **!criar-acao <nome> <id_arena>** - Criar nova AÁ„o\n\nExperimente tambÈm conversar naturalmente comigo!";
+        return "?? **Comandos do Or√°culo**\n\nUse **?** para saber o que √© algo.\nUse **!** para ver seus dados ou criar novos elementos.\n\nExemplos:\n‚Ä¢ **?arenas** - O que s√£o Arenas?\n‚Ä¢ **!arenas** - Ver minhas Arenas\n‚Ä¢ **!assets** - Ver Categorias (Assets)\n‚Ä¢ **!criar-arena <nome> <id_categoria>** - Criar nova Arena\n‚Ä¢ **!criar-acao <nome> <id_arena>** - Criar nova A√ß√£o\n\nExperimente tamb√©m conversar naturalmente comigo!";
     }
 
     // Explanation Commands (?)
     if (lowerCmd === '?arenas') {
-        return "??? **Sobre as Arenas**\n\nAs Arenas s„o os domÌnios da sua vida onde vocÍ busca maestria (ex: Sa˙de, Trabalho, FinanÁas). Cada Arena contÈm suas AÁıes e Missıes.\n\nElas representam as ·reas que vocÍ deseja evoluir no GLYPH. VocÍ pode criar novas Arenas no Invent·rio.";
+        return "??? **Sobre as Arenas**\n\nAs Arenas s√£o os dom√≠nios da sua vida onde voc√™ busca maestria (ex: Sa√∫de, Trabalho, Finan√ßas). Cada Arena cont√©m suas A√ß√µes e Miss√µes.\n\nElas representam as √°reas que voc√™ deseja evoluir no GLYPH. Voc√™ pode criar novas Arenas no Invent√°rio.";
     }
 
     // List Commands (!)
     if (lowerCmd === '!arenas') {
         const arenaList = assets.flatMap(a => a.arenas.map(ar => ({ name: ar.name, id: ar.id, asset: a.name })));
         if (arenaList.length === 0) {
-            return "?? **Suas Arenas**\n\nVocÍ ainda n„o possui Arenas ativas. V· atÈ o Invent·rio para criar sua primeira Arena.";
+            return "?? **Suas Arenas**\n\nVoc√™ ainda n√£o possui Arenas ativas. V√° at√© o Invent√°rio para criar sua primeira Arena.";
         }
-        return `?? **Suas Arenas Ativas**\n\n${arenaList.map(a => `ï **${a.name}** (ID: \`${a.id.slice(0,8)}\`) - Categoria: ${a.asset}`).join('\n')}`;
+        return `?? **Suas Arenas Ativas**\n\n${arenaList.map(a => `‚Ä¢ **${a.name}** (ID: \`${a.id.slice(0,8)}\`) - Categoria: ${a.asset}`).join('\n')}`;
     }
 
     if (lowerCmd === '!assets') {
-        if (assets.length === 0) return "Categorias n„o encontradas.";
-        return `?? **Categorias DisponÌveis (Assets)**\n\n${assets.map(a => `ï **${a.name}** (ID: \`${a.id}\`)`).join('\n')}`;
+        if (assets.length === 0) return "Categorias n√£o encontradas.";
+        return `?? **Categorias Dispon√≠veis (Assets)**\n\n${assets.map(a => `‚Ä¢ **${a.name}** (ID: \`${a.id}\`)`).join('\n')}`;
     }
 
     // Creation Commands
     if (lowerCmd.startsWith('!criar-arena')) {
         const parts = cmd.split(' ');
-        if (parts.length < 3) return "? Formato inv·lido. Use: `!criar-arena <nome> <id_categoria>`\nEx: `!criar-arena Corrida saude`";
+        if (parts.length < 3) return "? Formato inv√°lido. Use: `!criar-arena <nome> <id_categoria>`\nEx: `!criar-arena Corrida saude`";
         
         const name = parts[1];
         const assetId = parts[2].toLowerCase();
@@ -310,12 +334,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         // Find asset by ID or Name
         const targetAsset = assets.find(a => a.id.toLowerCase() === assetId || a.name.toLowerCase() === assetId);
         
-        if (!targetAsset) return `? Categoria \`${assetId}\` n„o encontrada. Use \`!assets\` para ver as disponÌveis.`;
+        if (!targetAsset) return `? Categoria \`${assetId}\` n√£o encontrada. Use \`!assets\` para ver as dispon√≠veis.`;
         
         try {
             const newArena = await addArena(targetAsset.id, {
                 name,
-                description: "Criada via Or·culo",
+                description: "Criada via Or√°culo",
                 icon: "Sparkles",
             });
             return `? **Arena Criada!**\n\nNome: ${newArena.name}\nCategoria: ${targetAsset.name}\nID: \`${newArena.id.slice(0,8)}\``;
@@ -326,7 +350,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     if (lowerCmd.startsWith('!criar-acao')) {
         const parts = cmd.split(' ');
-        if (parts.length < 3) return "? Formato inv·lido. Use: `!criar-acao <nome> <id_arena>`\nEx: `!criar-acao Meditar <id_da_arena>`";
+        if (parts.length < 3) return "? Formato inv√°lido. Use: `!criar-acao <nome> <id_arena>`\nEx: `!criar-acao Meditar <id_da_arena>`";
         
         const name = parts[1];
         const arenaIdPart = parts[2].toLowerCase();
@@ -338,22 +362,22 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             a.name.toLowerCase() === arenaIdPart
         );
         
-        if (!targetArena) return `? Arena \`${arenaIdPart}\` n„o encontrada. Use \`!arenas\` para ver as disponÌveis.`;
+        if (!targetArena) return `? Arena \`${arenaIdPart}\` n√£o encontrada. Use \`!arenas\` para ver as dispon√≠veis.`;
         
         try {
             const newAction = await addAction({
                 arenaId: targetArena.id,
                 name,
-                description: "Criada via Or·culo",
+                description: "Criada via Or√°culo",
                 icon: "Activity",
                 duration: 30,
                 repetitions: 1,
-                actionType: 'AÁ„o',
-                difficulty: 'MÈdia'
+                actionType: 'A√ß√£o',
+                difficulty: 'M√©dia'
             });
-            return `? **AÁ„o Criada!**\n\nNome: ${newAction.name}\nArena: ${targetArena.name}\nID: \`${newAction.id.slice(0,8)}\``;
+            return `? **A√ß√£o Criada!**\n\nNome: ${newAction.name}\nArena: ${targetArena.name}\nID: \`${newAction.id.slice(0,8)}\``;
         } catch (e) {
-            return "? Erro ao criar aÁ„o. Verifique os logs.";
+            return "? Erro ao criar a√ß√£o. Verifique os logs.";
         }
     }
 
@@ -441,6 +465,71 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   };
 
+  const formatCooldownLabel = (milliseconds: number): string => {
+    if (milliseconds <= 0) return 'agora';
+
+    const totalMinutes = Math.max(1, Math.ceil(milliseconds / 60000));
+    if (totalMinutes < 60) {
+      return `${totalMinutes} min`;
+    }
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
+  };
+
+  const handleGenerateCard = async () => {
+    if (isGeneratingCard || isLoading) return;
+
+    setIsGeneratingCard(true);
+    try {
+      const result = await triggerOracle('manual');
+      if (result?.status === 'generated' && result.message) {
+        setMessages((previous) => {
+          if (previous.some((message) => message.feedId === result.message?.id)) {
+            return previous;
+          }
+
+          return [
+            ...previous,
+            {
+              role: 'assistant',
+              content: result.message.content,
+              timestamp: new Date(result.message.createdAt),
+              mode: result.message.mode,
+              feedId: result.message.id,
+            },
+          ];
+        });
+
+        if (result.message.mode) {
+          setCurrentMode(result.message.mode);
+        }
+      }
+    } finally {
+      setIsGeneratingCard(false);
+    }
+  };
+
+  const manualGenerateDisabled = (
+    !isPremiumUser ||
+    !oraclePreferences?.iaEnabled ||
+    oracleFeedStatus.remainingToday <= 0 ||
+    oracleFeedStatus.manualCooldownRemainingMs > 0 ||
+    isGeneratingCard ||
+    isLoading
+  );
+
+  const manualGenerateLabel = !isPremiumUser
+    ? 'Premium'
+    : oracleFeedStatus.remainingToday <= 0
+      ? 'Limite hoje'
+      : oracleFeedStatus.manualCooldownRemainingMs > 0
+        ? formatCooldownLabel(oracleFeedStatus.manualCooldownRemainingMs)
+        : (isGeneratingCard ? 'Gerando...' : 'Gerar card');
+
+  const oracleQuotaLabel = `${oracleFeedStatus.sentToday}/${oracleFeedStatus.dailyTarget} hoje`;
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -464,7 +553,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                <HeaderIcon className={`w-6 h-6 ${MODE_VISUALS[currentMode].color}`} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[var(--skin-accent-color)] tracking-wider">OR¡CULO</h3>
+              <h3 className="text-sm font-bold text-[var(--skin-accent-color)] tracking-wider">OR√ÅCULO</h3>
               <div className="flex flex-col">
                   <span className={`text-[10px] uppercase tracking-widest text-gray-400`}>{ORACLE_MODES[currentMode].name}</span>
                   <div className="flex items-center gap-1.5">
@@ -513,7 +602,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
               </div>
               <div className="opacity-50">
               <HeaderIcon className={`w-16 h-16 mb-4 ${MODE_VISUALS[currentMode].color} drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]`} />
-              <p className="text-sm text-gray-400 font-bold">O Or·culo aguarda sua consulta, Soberano.</p>
+              <p className="text-sm text-gray-400 font-bold">O Or√°culo aguarda sua consulta, Soberano.</p>
               <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[currentMode].description}</p>
               </div>
             </div>
@@ -561,7 +650,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                     <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
                   </div>
                   <span className="text-xs text-gray-500 animate-pulse ml-1">
-                    {["Consultando os astros...", "Ouvindo os sussurros...", "Decifrando o destino...", "Conectando ao Èter..."][Math.floor(Math.random() * 4)]}
+                    {["Consultando os astros...", "Ouvindo os sussurros...", "Decifrando o destino...", "Conectando ao √©ter..."][Math.floor(Math.random() * 4)]}
                   </span>
                 </div>
             </div>
@@ -571,6 +660,29 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
         {/* Input */}
         <div className="p-4 border-t border-white/10 bg-black/40 flex-shrink-0">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">Coach feed</div>
+              <div className="text-[11px] text-gray-400">
+                {oracleQuotaLabel}
+                {oracleFeedStatus.manualCooldownRemainingMs > 0 && (
+                  <span className="ml-2 text-gray-500">manual em {formatCooldownLabel(oracleFeedStatus.manualCooldownRemainingMs)}</span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={handleGenerateCard}
+              disabled={manualGenerateDisabled}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
+                manualGenerateDisabled
+                  ? 'cursor-not-allowed border-white/10 bg-white/5 text-gray-500'
+                  : 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/18'
+              }`}
+            >
+              {!isPremiumUser ? <CrownIcon className="h-3.5 w-3.5" /> : <SparklesIcon className="h-3.5 w-3.5" />}
+              <span>{manualGenerateLabel}</span>
+            </button>
+          </div>
           <div className="relative flex items-center">
             <input
               ref={inputRef}
@@ -578,7 +690,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Consulte o Or·culo..."
+              placeholder="Consulte o Or√°culo..."
               disabled={isLoading}
               className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[var(--skin-accent-color)]/50 focus:ring-1 focus:ring-[var(--skin-accent-color)]/20 transition-all"
             />
@@ -611,6 +723,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     </Portal>
   );
 };
+
 
 
 

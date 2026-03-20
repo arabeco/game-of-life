@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$OutputPath = "C:\Users\Afonso\Downloads\GOL1.006\marketing\glyph-instagram-post-01.png"
 )
 
@@ -171,8 +171,8 @@ $goldBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
     18
 )
 
-$headlineFamily = Get-FontFamily -Candidates @("Palatino Linotype", "Georgia", "Times New Roman")
-$subFamily = Get-FontFamily -Candidates @("Segoe UI", "Arial", "Tahoma")
+$headlineFamily = Get-FontFamily -Candidates @("Cormorant Garamond", "Garamond", "Book Antiqua", "Palatino Linotype", "Georgia", "Times New Roman")
+$subFamily = Get-FontFamily -Candidates @("Book Antiqua", "Palatino Linotype", "Georgia", "Cambria", "Times New Roman")
 
 $headlineFont = [System.Drawing.Font]::new($headlineFamily, 43, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $brandFont = [System.Drawing.Font]::new($headlineFamily, 78, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -230,3 +230,4 @@ $graphics.Dispose()
 $bitmap.Dispose()
 
 Write-Output "CREATED=$OutputPath"
+

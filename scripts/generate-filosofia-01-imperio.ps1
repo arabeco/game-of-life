@@ -59,11 +59,59 @@ function Draw-CenterText {
     )
 
     $format = [System.Drawing.StringFormat]::new()
+    $createdFont = $null
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $Graphics.DrawString($Text, $Font, $Brush, [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height), $format)
+        $format.Trimming = [System.Drawing.StringTrimming]::Word
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::LineLimit
+
+        $paddingX = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.16))
+        $paddingY = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.24))
+        $safeRect = [System.Drawing.RectangleF]::new(
+            [float]($X + $paddingX),
+            [float]($Y + $paddingY),
+            [float][Math]::Max(12, $Width - ($paddingX * 2)),
+            [float][Math]::Max(12, $Height - ($paddingY * 2))
+        )
+
+        $drawFont = $Font
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.72))
+
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.5) {
+            if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
+                $candidate = $Font
+            } else {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+            }
+
+            $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+            if ($measured.Width -le ($safeRect.Width + 2) -and $measured.Height -le ($safeRect.Height + 2)) {
+                if ($candidate -ne $Font) { $createdFont = $candidate }
+                $drawFont = $candidate
+                break
+            }
+
+            if ($candidate -ne $Font) { $candidate.Dispose() }
+        }
+
+        if ($drawFont -eq $Font -and $Font.Size -gt $minSize) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, $minSize, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+            $drawFont = $createdFont
+        }
+
+        $drawRect = [System.Drawing.RectangleF]::new(
+            $safeRect.X,
+            [float]($safeRect.Y + 2),
+            $safeRect.Width,
+            [float][Math]::Max(12, $safeRect.Height - 4)
+        )
+
+        $Graphics.DrawString($Text, $drawFont, $Brush, $drawRect, $format)
     } finally {
+        if ($null -ne $createdFont) {
+            $createdFont.Dispose()
+        }
         $format.Dispose()
     }
 }
@@ -273,8 +321,8 @@ $bgObsidian = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\blackback
 $bgMarfim = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\whiteback.jpg"
 $bgSapphire = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\darkblueback.jpg"
 
-$headlineFamily = Get-FontFamily -Candidates @("Palatino Linotype", "Georgia", "Times New Roman")
-$bodyFamily = Get-FontFamily -Candidates @("Segoe UI", "Arial", "Tahoma")
+$headlineFamily = Get-FontFamily -Candidates @("Cormorant Garamond", "Garamond", "Book Antiqua", "Palatino Linotype", "Georgia", "Times New Roman")
+$bodyFamily = Get-FontFamily -Candidates @("Book Antiqua", "Palatino Linotype", "Georgia", "Cambria", "Times New Roman")
 
 $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 64, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -445,4 +493,5 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
 

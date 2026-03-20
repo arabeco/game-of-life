@@ -1,4 +1,4 @@
-﻿import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { GlobalHeader } from './GlobalHeader';
 import { AssetIcon, ArenaIcon, ConfigIcon, PlannerIcon, SocialIcon } from './Icons';
@@ -396,7 +396,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
     const themeClass = activeUIMode === 'BASIC' ?`mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const skin = activeUIMode === 'BASIC' ?'default' : userProfile.skin;
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);
@@ -676,6 +676,17 @@ const MainApp: React.FC = () => {
         if (toast.type === 'warning') trigger('warning');
         if (toast.type === 'error') trigger('error');
     }, [toast.message, toast.type, toast.visible, trigger]);
+
+    if (!isProfileLoaded) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-black text-white" data-skin={userProfile.skin || 'default'}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--skin-accent-color)] border-t-transparent" />
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-white/60">Carregando</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

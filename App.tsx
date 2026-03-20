@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
@@ -493,7 +493,7 @@ const App: React.FC = () => {
         };
     }, [isGoldenInviteGateEnabled]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const skin = bootVisuals.mode === 'BASIC' ? 'default' : bootVisuals.skin;
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);

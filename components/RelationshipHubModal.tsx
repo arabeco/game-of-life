@@ -169,6 +169,36 @@ const LinkedArenaMiniCard: React.FC<{
     </button>
 );
 
+const RelationshipArenaBoardCard: React.FC<{
+    arena: LinkedRelationshipArena;
+    assetName?: string;
+    onClick: () => void;
+}> = ({ arena, assetName, onClick }) => (
+    <button
+        onClick={onClick}
+        className="w-[8.6rem] shrink-0 rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,33,44,0.88),rgba(8,10,15,0.96))] p-2 text-left shadow-[0_10px_20px_rgba(0,0,0,0.18)] transition-all hover:border-[var(--skin-accent-color)]/24 hover:bg-[linear-gradient(180deg,rgba(38,44,58,0.92),rgba(8,10,15,0.98))]"
+    >
+        <div className="rounded-[14px] border border-white/10 bg-black/26 px-2 py-3">
+            <div className="flex items-center justify-center">
+                <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] border border-white/10 bg-white/6 text-white shadow-[0_8px_16px_rgba(0,0,0,0.16)]">
+                    <EmojiGlyph symbol={arena.arena?.icon || arena.metadata?.icon || '🏛️'} size="action" className="text-white" />
+                </div>
+            </div>
+            <div className="mt-3 line-clamp-2 min-h-[2rem] text-center text-[11px] font-black uppercase leading-tight text-white">
+                {arena.arena?.name || 'Arena compartilhada'}
+            </div>
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-2">
+            <span className="truncate rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/44">
+                {assetName || 'Ativo'}
+            </span>
+            <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/34">
+                Abrir
+            </span>
+        </div>
+    </button>
+);
+
 const InviteCard: React.FC<{
     invite: RelationshipLinkInvite;
     profile?: RelationshipProfileLite | null;
@@ -943,7 +973,7 @@ export const RelationshipHubModal: React.FC<{
                             ) : (
                                 <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
                                     {arenasForLink.map((linkedArena) => (
-                                        <LinkedArenaMiniCard
+                                        <RelationshipArenaBoardCard
                                             key={linkedArena.id}
                                             arena={linkedArena}
                                             assetName={assetNameForArena(linkedArena.arena?.id)}
@@ -964,9 +994,9 @@ export const RelationshipHubModal: React.FC<{
                             {isMentorSide ? (
                                 <button
                                     onClick={() => setSelectedPupilLink(link)}
-                                    className="rounded-xl border border-cyan-300/18 bg-cyan-400/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-200 transition-all hover:bg-cyan-400/16"
+                                    className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-200 transition-all hover:bg-cyan-400/16"
                                 >
-                                    Abrir
+                                    Gerir
                                 </button>
                             ) : (
                                 <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
@@ -975,21 +1005,20 @@ export const RelationshipHubModal: React.FC<{
                             )}
                         </div>
 
-                        <div className="mt-3 grid gap-3">
-                            <div className="rounded-[18px] border border-white/12 bg-black/20 p-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Campanha pronta</div>
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                    <CompactPill label="modo" value="entregar" tone="text-emerald-200" />
-                                    <CompactPill label="origem" value="autoral" tone="text-white" />
-                                </div>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                            <div className="rounded-[18px] border border-white/12 bg-black/20 px-3 py-2.5">
+                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Prontas</div>
+                                <div className="mt-1 text-[12px] text-white/58">Entregue algo autoral que ja esteja finalizado.</div>
                             </div>
 
-                            <div className="rounded-[18px] border border-white/12 bg-black/20 p-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Exclusiva nova</div>
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                    <CompactPill label="modo" value="forjar" tone="text-cyan-200" />
-                                    <CompactPill label="custo" value={`${COIN_GLYPH} 300`} tone="text-white" />
+                            <div className="rounded-[18px] border border-white/12 bg-black/20 px-3 py-2.5">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Exclusiva</div>
+                                    <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
+                                        {COIN_GLYPH} 300
+                                    </span>
                                 </div>
+                                <div className="mt-1 text-[12px] text-white/58">Forja uma campanha nova so para essa mentoria.</div>
                             </div>
                         </div>
                     </GlassCard>
@@ -1038,7 +1067,7 @@ export const RelationshipHubModal: React.FC<{
                         ) : (
                             <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
                                 {arenasForLink.map((linkedArena) => (
-                                    <LinkedArenaMiniCard
+                                    <RelationshipArenaBoardCard
                                         key={linkedArena.id}
                                         arena={linkedArena}
                                         assetName={assetNameForArena(linkedArena.arena?.id)}
@@ -1238,14 +1267,18 @@ export const RelationshipHubModal: React.FC<{
                             </div>
 
                             <div className="mt-4 rounded-[20px] border border-white/10 bg-black/22 px-4 py-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Campanha exclusiva</div>
-                                <p className="mt-1 text-sm text-white/58">Cria algo novo so para {profileFor(selectedPupilLink.pupilId)?.nickname || 'o pupilo'}.</p>
-                                <button
-                                    onClick={() => setIsMentorCreatorOpen(true)}
-                                    className="mt-3 luxe-skin-button rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em]"
-                                >
-                                    {COIN_GLYPH} 300
-                                </button>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Campanha exclusiva</div>
+                                        <p className="mt-1 text-sm text-white/58">Cria algo novo so para {profileFor(selectedPupilLink.pupilId)?.nickname || 'o pupilo'}.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsMentorCreatorOpen(true)}
+                                        className="shrink-0 luxe-skin-button rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
+                                    >
+                                        Nova · {COIN_GLYPH} 300
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="mt-4">
@@ -1255,8 +1288,8 @@ export const RelationshipHubModal: React.FC<{
                                         <EmptyState title="Sem campanha" text="Finalize uma campanha autoral para entregar aqui." />
                                     ) : (
                                         authoredCodexes.map((codex: any) => (
-                                            <div key={codex.id} className="rounded-[20px] border border-white/10 bg-black/22 p-3">
-                                                <div className="flex items-start justify-between gap-3">
+                                            <div key={codex.id} className="rounded-[18px] border border-white/10 bg-black/22 px-3 py-2.5">
+                                                <div className="flex items-center justify-between gap-3">
                                                     <div className="min-w-0">
                                                         <div className="truncate text-sm font-black text-white">{codex.name}</div>
                                                         <div className="mt-1 text-[11px] text-white/50">
@@ -1278,9 +1311,9 @@ export const RelationshipHubModal: React.FC<{
                                                             }
                                                         }}
                                                         disabled={busyKey === `duplicate:${codex.id}`}
-                                                        className="rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
+                                                        className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
                                                     >
-                                                        Entregar
+                                                        Enviar
                                                     </button>
                                                 </div>
                                             </div>
@@ -1368,11 +1401,6 @@ export const RelationshipHubModal: React.FC<{
                                     className="w-full rounded-2xl border border-white/10 bg-black/24 px-4 py-3 text-sm text-white outline-none placeholder:text-white/28 focus:border-[var(--skin-accent-color)]/46"
                                 />
 
-                                <div className="rounded-[20px] border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-4 py-3">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Custo</div>
-                                    <p className="mt-1 text-sm text-white/66">Arena extra por {COIN_GLYPH} 50.</p>
-                                </div>
-
                                 <div className="flex gap-2 pt-1">
                                     <button
                                         onClick={() => setSelectedMentorLinkForArena(null)}
@@ -1380,14 +1408,19 @@ export const RelationshipHubModal: React.FC<{
                                     >
                                         Cancelar
                                     </button>
-                                    <button
-                                        id="relationship-linked-arena-submit-button"
-                                        onClick={handleCreateLinkedArena}
-                                        disabled={busyKey === `linked-arena:${selectedMentorLinkForArena.id}`}
-                                        className="luxe-skin-button w-full rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
-                                    >
-                                        Criar arena
-                                    </button>
+                                    <div className="flex w-full items-center justify-end gap-2">
+                                        <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">
+                                            {COIN_GLYPH} 50
+                                        </span>
+                                        <button
+                                            id="relationship-linked-arena-submit-button"
+                                            onClick={handleCreateLinkedArena}
+                                            disabled={busyKey === `linked-arena:${selectedMentorLinkForArena.id}`}
+                                            className="luxe-skin-button rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
+                                        >
+                                            Criar arena
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </GlassCard>

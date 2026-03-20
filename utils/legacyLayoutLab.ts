@@ -3,6 +3,7 @@ export interface LegacyLayoutConfig {
   plaqueOffsetY: number;
   plaqueZoom: number;
   plaqueWidth: number;
+  cyclesOffsetX: number;
   cyclesOffsetY: number;
   cyclesZoom: number;
   playerOffsetX: number;
@@ -22,6 +23,7 @@ export const DEFAULT_LEGACY_LAYOUT: LegacyLayoutConfig = {
   plaqueOffsetY: 9,
   plaqueZoom: 1.06,
   plaqueWidth: 0.81,
+  cyclesOffsetX: 0,
   cyclesOffsetY: -169,
   cyclesZoom: 1.43,
   playerOffsetX: 1,
@@ -42,6 +44,7 @@ export const sanitizeLegacyLayoutConfig = (value: Partial<LegacyLayoutConfig> | 
   plaqueOffsetY: sanitizeNumber(value?.plaqueOffsetY, DEFAULT_LEGACY_LAYOUT.plaqueOffsetY, -120, 120),
   plaqueZoom: sanitizeNumber(value?.plaqueZoom, DEFAULT_LEGACY_LAYOUT.plaqueZoom, 0.55, 1.6),
   plaqueWidth: sanitizeNumber(value?.plaqueWidth, DEFAULT_LEGACY_LAYOUT.plaqueWidth, 0.72, 1.28),
+  cyclesOffsetX: sanitizeNumber(value?.cyclesOffsetX, DEFAULT_LEGACY_LAYOUT.cyclesOffsetX, -220, 220),
   cyclesOffsetY: sanitizeNumber(value?.cyclesOffsetY, DEFAULT_LEGACY_LAYOUT.cyclesOffsetY, -240, 140),
   cyclesZoom: sanitizeNumber(value?.cyclesZoom, DEFAULT_LEGACY_LAYOUT.cyclesZoom, 0.55, 1.8),
   playerOffsetX: sanitizeNumber(value?.playerOffsetX, DEFAULT_LEGACY_LAYOUT.playerOffsetX, -220, 220),

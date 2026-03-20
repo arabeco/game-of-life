@@ -52,13 +52,13 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
         });
     }, [asset.arenas]);
 
-    const completedOrArchivedArenas = useMemo(
-        () => sortedArenas.filter((arena) => arena.isCleared || arena.isArchived),
+    const archivedArenas = useMemo(
+        () => sortedArenas.filter((arena) => arena.isArchived),
         [sortedArenas],
     );
 
     const activeArenas = useMemo(
-        () => sortedArenas.filter((arena) => !arena.isCleared && !arena.isArchived),
+        () => sortedArenas.filter((arena) => !arena.isArchived),
         [sortedArenas],
     );
 
@@ -68,12 +68,12 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
         <>
             <div className="flex flex-col gap-2.5">
                 <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3" style={sectionStyle}>
-                    <p className={sectionTitleClass}>Concluidas</p>
+                    <p className={sectionTitleClass}>Arquivadas</p>
 
-                    {completedOrArchivedArenas.length > 0 ? (
+                    {archivedArenas.length > 0 ? (
                         <div className="mt-2.5 overflow-x-auto pb-1.5">
                             <div className="flex min-w-max items-end px-1.5">
-                                {completedOrArchivedArenas.map((arena, index) => (
+                                {archivedArenas.map((arena, index) => (
                                     <button
                                         key={arena.id}
                                         type="button"
@@ -95,7 +95,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
                         </div>
                     ) : (
                         <div className="mt-2.5">
-                            <div className={emptyClass}>Nenhuma arena ainda.</div>
+                            <div className={emptyClass}>Nenhuma arena arquivada ainda.</div>
                         </div>
                     )}
                 </section>

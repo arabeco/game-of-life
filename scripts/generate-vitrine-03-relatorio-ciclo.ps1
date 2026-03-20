@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\vitrine-03-relatorio-ciclo\slides",
     [string]$Screen1Path = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round3\relatorioresumo.jpeg",
     [string]$Screen2Path = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round3\relatoriocard.jpeg"
@@ -60,11 +60,59 @@ function Draw-CenterText {
     )
 
     $format = [System.Drawing.StringFormat]::new()
+    $createdFont = $null
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $Graphics.DrawString($Text, $Font, $Brush, [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height), $format)
+        $format.Trimming = [System.Drawing.StringTrimming]::Word
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::LineLimit
+
+        $paddingX = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.16))
+        $paddingY = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.24))
+        $safeRect = [System.Drawing.RectangleF]::new(
+            [float]($X + $paddingX),
+            [float]($Y + $paddingY),
+            [float][Math]::Max(12, $Width - ($paddingX * 2)),
+            [float][Math]::Max(12, $Height - ($paddingY * 2))
+        )
+
+        $drawFont = $Font
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.72))
+
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.5) {
+            if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
+                $candidate = $Font
+            } else {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+            }
+
+            $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+            if ($measured.Width -le ($safeRect.Width + 2) -and $measured.Height -le ($safeRect.Height + 2)) {
+                if ($candidate -ne $Font) { $createdFont = $candidate }
+                $drawFont = $candidate
+                break
+            }
+
+            if ($candidate -ne $Font) { $candidate.Dispose() }
+        }
+
+        if ($drawFont -eq $Font -and $Font.Size -gt $minSize) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, $minSize, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+            $drawFont = $createdFont
+        }
+
+        $drawRect = [System.Drawing.RectangleF]::new(
+            $safeRect.X,
+            [float]($safeRect.Y + 2),
+            $safeRect.Width,
+            [float][Math]::Max(12, $safeRect.Height - 4)
+        )
+
+        $Graphics.DrawString($Text, $drawFont, $Brush, $drawRect, $format)
     } finally {
+        if ($null -ne $createdFont) {
+            $createdFont.Dispose()
+        }
         $format.Dispose()
     }
 }
@@ -413,8 +461,8 @@ $logoPath = "C:\Users\Afonso\Downloads\GOL1.006\public\logo-diamond.png"
 $bgObsidian = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\blackback.jpg"
 $bgSapphire = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\darkblueback.jpg"
 
-$headlineFamily = Get-FontFamily -Candidates @("Palatino Linotype", "Georgia", "Times New Roman")
-$bodyFamily = Get-FontFamily -Candidates @("Segoe UI", "Arial", "Tahoma")
+$headlineFamily = Get-FontFamily -Candidates @("Cormorant Garamond", "Garamond", "Book Antiqua", "Palatino Linotype", "Georgia", "Times New Roman")
+$bodyFamily = Get-FontFamily -Candidates @("Book Antiqua", "Palatino Linotype", "Georgia", "Cambria", "Times New Roman")
 
 $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 64, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -518,7 +566,7 @@ Get-ChildItem -LiteralPath $proofRoot -File -ErrorAction SilentlyContinue |
 
 $proofImages = @($proofFiles.ToArray())
 
-# Padrão-base da Vitrine: uma coluna editorial e uma coluna de destaque
+# Padrão-base da Produto: uma coluna editorial e uma coluna de destaque
 $vitrineFeatureCardX = 624
 $vitrineFeatureCardY = 278
 $vitrineFeatureCardWidth = 286
@@ -541,7 +589,7 @@ Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $widt
 Draw-CenterText -Graphics $graphics -Text "Relat${oacute}rio" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 132 -Width 912 -Height 180
 Draw-CenterText -Graphics $graphics -Text "Seu progresso`ndeixa prova." -Font $heroTitleFont -Brush $goldBrushSlide -X 152 -Y 378 -Width 776 -Height 192
 Draw-CenterText -Graphics $graphics -Text "No GLYPH, o ciclo n${atilde}o desaparece.`nA execu${ccedilla}${atilde}o fecha em leitura vis${iacute}vel,`ncom saldo, ritmo e hist${oacute}rico." -Font $bodyFont -Brush $offWhiteBrush -X 180 -Y 624 -Width 720 -Height 152
-Draw-Pill -Graphics $graphics -Text "Vitrine 03" -Font $bodyBoldFont -X 296 -Y 824 -Width 208 -Height 52
+Draw-Pill -Graphics $graphics -Text "Produto 03" -Font $bodyBoldFont -X 296 -Y 824 -Width 208 -Height 52
 Draw-Pill -Graphics $graphics -Text "Relat${oacute}rio" -Font $bodyBoldFont -X 524 -Y 824 -Width 232 -Height 52
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir ("slide-{0:d2}-capa.png" -f $slideNumber)
@@ -628,7 +676,7 @@ $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgSapphire -Width $width -Height $height -Tone "safira"
 $watermarkBrush2 = [System.Drawing.SolidBrush]::new((New-Color 16 244 216 118))
 try {
-    Draw-CenterText -Graphics $graphics -Text "Vitrine" -Font $watermarkFont -Brush $watermarkBrush2 -X 78 -Y 448 -Width 924 -Height 150
+    Draw-CenterText -Graphics $graphics -Text "Produto" -Font $watermarkFont -Brush $watermarkBrush2 -X 78 -Y 448 -Width 924 -Height 150
 } finally {
     $watermarkBrush2.Dispose()
 }
@@ -642,7 +690,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text "Organize seu imp${eacute}rio." -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Vitrine 03  |  Relat${oacute}rio e card de ciclo" -Font $eyebrowFont -Brush $eyebrowBrush -X 210 -Y 1060 -Width 660 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Produto 03  |  Relat${oacute}rio e card de ciclo" -Font $eyebrowFont -Brush $eyebrowBrush -X 210 -Y 1060 -Width 660 -Height 28
 $slideFinal = Join-Path $OutputDir ("slide-{0:d2}-fecho.png" -f $slideNumber)
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slideFinal
 $created.Add($slideFinal)
@@ -660,7 +708,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "VITRINE 03  |  RELAT${Oacute}RIO E CARD DE CICLO" -Font ([System.Drawing.Font]::new($headlineFamily, 44, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "PRODUTO 03  |  RELAT${Oacute}RIO E CARD DE CICLO" -Font ([System.Drawing.Font]::new($headlineFamily, 44, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text "Prancha de revis${atilde}o - $slideCount slides prontos" -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 for ($i = 0; $i -lt $created.Count; $i++) {
@@ -709,3 +757,4 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+

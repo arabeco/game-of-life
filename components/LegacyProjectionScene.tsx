@@ -13,6 +13,8 @@ import { useLegacyLayoutConfig } from '../hooks/useLegacyLayoutConfig';
 import {
     getLegacyPlaqueScale,
     getLegacyPlaqueWidthPx,
+    setStoredLegacyLayoutConfig,
+    type LegacyLayoutConfig,
 } from '../utils/legacyLayoutLab';
 import './legacy-ui.css';
 
@@ -164,6 +166,8 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     const [eraTransitionPulse, setEraTransitionPulse] = useState<string | null>(null);
     const [sequenceCompleted, setSequenceCompleted] = useState(false);
     const [timelineEdgePadding, setTimelineEdgePadding] = useState({ left: 24, right: 24 });
+    const [layoutEditorOpen, setLayoutEditorOpen] = useState(false);
+    const [layoutCopyState, setLayoutCopyState] = useState<'idle' | 'copied' | 'prompt'>('idle');
     const previousIdentityKeyRef = useRef<string>('');
     const didCompleteRef = useRef(false);
     const timelineScrollRef = useRef<HTMLDivElement | null>(null);
@@ -171,6 +175,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     const cycleCardRefs = useRef<Record<string, HTMLButtonElement | HTMLDivElement | null>>({});
     const scrollSyncFrameRef = useRef<number | null>(null);
     const manualScrollTimeoutRef = useRef<number | null>(null);
+    const layoutCopyTimeoutRef = useRef<number | null>(null);
     const userIsDraggingTimelineRef = useRef(false);
 
     useEffect(() => {
@@ -243,6 +248,35 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
             behavior,
         });
     }, [layout.cyclesZoom]);
+
+    const updateLayout = useCallback((patch: Partial<LegacyLayoutConfig>) => {
+        setStoredLegacyLayoutConfig({ ...layout, ...patch });
+    }, [layout]);
+
+    const snapTimelineToClosestCycle = useCallback((behavior: ScrollBehavior = 'smooth') => {
+        const closestCycleId = getClosestCycleToViewportCenter();
+        if (!closestCycleId) return;
+        setActiveCycleId((current) => (current === closestCycleId ? current : closestCycleId));
+        alignCycleToViewportCenter(closestCycleId, behavior);
+    }, [alignCycleToViewportCenter, getClosestCycleToViewportCenter]);
+
+    const handleCopyLayoutJson = useCallback(async () => {
+        const json = JSON.stringify(layout, null, 2);
+        let usedPromptFallback = false;
+
+        try {
+            await navigator.clipboard.writeText(json);
+        } catch {
+            usedPromptFallback = true;
+            window.prompt('Copie o JSON do layout', json);
+        }
+
+        if (layoutCopyTimeoutRef.current !== null) {
+            window.clearTimeout(layoutCopyTimeoutRef.current);
+        }
+        setLayoutCopyState(usedPromptFallback ? 'prompt' : 'copied');
+        layoutCopyTimeoutRef.current = window.setTimeout(() => setLayoutCopyState('idle'), 1400);
+    }, [layout]);
 
     useEffect(() => {
         if (!autoAdvance || !projectionActive || cycleEntries.length <= 1 || sequenceCompleted) return;
@@ -337,6 +371,9 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         if (manualScrollTimeoutRef.current !== null) {
             window.clearTimeout(manualScrollTimeoutRef.current);
         }
+        if (layoutCopyTimeoutRef.current !== null) {
+            window.clearTimeout(layoutCopyTimeoutRef.current);
+        }
     }, []);
 
     if (!eras.length) return null;
@@ -344,6 +381,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     const activePatent = activeIdentity.nobilityRankName || activeIdentity.title || 'Vagante';
     const activeClan = activeIdentity.clanName || 'Sem cla';
     const timelineVisible = !interactive || projectionActive;
+    const sceneCyclesTranslateX = layout.cyclesOffsetX;
     const sceneCyclesTranslateY = layout.cyclesOffsetY + 22;
     const sceneClass = interactive
         ? 'relative min-h-full overflow-hidden px-0 py-0 text-white'
@@ -370,6 +408,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
 
         manualScrollTimeoutRef.current = window.setTimeout(() => {
             userIsDraggingTimelineRef.current = false;
+            snapTimelineToClosestCycle('smooth');
         }, 140);
     };
 
@@ -496,6 +535,32 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                             </div>
 
                             <div className="pointer-events-auto flex flex-col items-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setLayoutEditorOpen((current) => !current)}
+                                    className={`rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_10px_24px_rgba(0,0,0,0.22)] backdrop-blur-xl transition ${layoutEditorOpen ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]' : 'border-white/10 bg-black/35 text-white/56 hover:text-white/82'}`}
+                                >
+                                    {layoutEditorOpen ? 'Fechar ajuste' : 'Ajuste'}
+                                </button>
+                                {layoutEditorOpen && (
+                                    <div className="w-[172px] rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,10,14,0.82),rgba(3,6,10,0.7))] px-3 py-3 shadow-[0_16px_30px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl">
+                                        <div className="space-y-2.5">
+                                            <LayoutSlider label="Placa X" value={layout.plaqueOffsetX} min={-120} max={120} step={1} onChange={(value) => updateLayout({ plaqueOffsetX: value })} />
+                                            <LayoutSlider label="Placa Y" value={layout.plaqueOffsetY} min={-120} max={120} step={1} onChange={(value) => updateLayout({ plaqueOffsetY: value })} />
+                                            <LayoutSlider label="Placa zoom" value={layout.plaqueZoom} min={0.65} max={1.45} step={0.01} onChange={(value) => updateLayout({ plaqueZoom: value })} />
+                                            <LayoutSlider label="Faixa X" value={layout.cyclesOffsetX} min={-140} max={140} step={1} onChange={(value) => updateLayout({ cyclesOffsetX: value })} />
+                                            <LayoutSlider label="Faixa Y" value={layout.cyclesOffsetY} min={-240} max={140} step={1} onChange={(value) => updateLayout({ cyclesOffsetY: value })} />
+                                            <LayoutSlider label="Faixa zoom" value={layout.cyclesZoom} min={0.75} max={1.8} step={0.01} onChange={(value) => updateLayout({ cyclesZoom: value })} />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleCopyLayoutJson}
+                                            className="mt-3 w-full rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)] transition hover:bg-[var(--skin-accent-color)]/16"
+                                        >
+                                            {layoutCopyState === 'copied' ? 'JSON copiado' : layoutCopyState === 'prompt' ? 'JSON aberto' : 'Gravar JSON'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </>
@@ -532,7 +597,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                             ref={timelineScrollRef}
                             onScroll={handleTimelineScroll}
                             className={`${interactive ? 'overflow-x-auto pb-1 hide-scrollbar' : 'overflow-visible'}`}
-                            style={{ transform: `translateY(${sceneCyclesTranslateY}px) scale(${layout.cyclesZoom})`, transformOrigin: 'top center' }}
+                            style={{ transform: `translate(${sceneCyclesTranslateX}px, ${sceneCyclesTranslateY}px) scale(${layout.cyclesZoom})`, transformOrigin: 'top center' }}
                         >
                             <div
                                 ref={timelineContentRef}

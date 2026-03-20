@@ -327,7 +327,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         clanQuests,
         getClanQuestProgress,
         getSharedActionPoolProgress,
-        forceSharedPool: !!linkType,
+        forceSharedPool: linkType ? true : undefined,
     }).progressPercent;
 
     const getIcon = () => {
@@ -372,6 +372,14 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             style={{ ...cardStyle, ...tiltStyle }}
         >
             {!isCompactThumbnail && <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: skinColor }} />}
+            {arena.isArchived && (
+                <div
+                    title="Arquivada"
+                    className={`absolute right-1 top-1 z-20 rounded-full border border-amber-200/18 bg-black/68 px-1.5 py-[2px] font-black uppercase tracking-[0.16em] text-amber-100/88 backdrop-blur-sm ${isCompactThumbnail ? 'text-[6px]' : 'text-[7px]'}`}
+                >
+                    {isCompactThumbnail ? 'ARQ' : 'Arquivada'}
+                </div>
+            )}
             <div className="arena-plasma pointer-events-none">
                 <PlasmaCanvas color={accentColor} opacity={0.35} className="arena-plasma-canvas" width={320} height={220} />
             </div>
@@ -495,4 +503,3 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         </div>
     );
 };
-

@@ -20,6 +20,7 @@ declare global {
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0];
 const EDGE_FUNCTION_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/mercadopago`;
 const FALLBACK_TEST_EMAIL = 'comprador_teste_glyph@test.com';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const MERCADO_PAGO_STATUS_LABELS: Record<string, string> = {
     pending: 'aguardando pagamento',
@@ -50,16 +51,23 @@ const getMercadoPagoStatusLabel = (paymentResult: any, creditDetected: boolean) 
     return 'aguardando confirmacao';
 };
 
+const isValidCheckoutEmail = (value: string) => EMAIL_REGEX.test(String(value || '').trim());
+
 export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, goldAmount, onClose }) => {
     const { userProfile, showToast, updateUserProfile } = useGame();
+    const profileEmail = String(userProfile.email || '').trim();
+    const initialCheckoutEmail = isValidCheckoutEmail(profileEmail) ? profileEmail : '';
     const [loading, setLoading] = useState(true);
     const [paymentResult, setPaymentResult] = useState<any>(null);
     const [creditDetected, setCreditDetected] = useState(false);
+    const [emailInput, setEmailInput] = useState(initialCheckoutEmail);
+    const [checkoutEmail, setCheckoutEmail] = useState(initialCheckoutEmail);
     const brickControllerRef = useRef<any>(null);
     const initializedKeyRef = useRef<string | null>(null);
     const latestRefs = useRef({ onClose, showToast });
     const baselineGoldRef = useRef<number>(Number(userProfile.wallet?.gold || 0));
     const creditToastShownRef = useRef(false);
+    const needsEmailStep = !isValidCheckoutEmail(checkoutEmail);
 
     const pixTransactionData = paymentResult?.point_of_interaction?.transaction_data ?? null;
     const pixQrCode = typeof pixTransactionData?.qr_code === 'string' ? pixTransactionData.qr_code : '';
@@ -72,12 +80,19 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     }, [onClose, showToast]);
 
     useEffect(() => {
+        if (checkoutEmail) return;
+        if (!isValidCheckoutEmail(profileEmail)) return;
+        setEmailInput(profileEmail);
+        setCheckoutEmail(profileEmail);
+    }, [checkoutEmail, profileEmail]);
+
+    useEffect(() => {
         baselineGoldRef.current = Number(userProfile.wallet?.gold || 0);
     }, []);
 
     useEffect(() => {
         let isActive = true;
-        const initKey = `${userProfile.id}:${amount}:${goldAmount}`;
+        const initKey = `${userProfile.id}:${amount}:${goldAmount}:${checkoutEmail}`;
 
         const fetchPreferenceId = async () => {
             try {
@@ -145,6 +160,9 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     initialization: {
                         amount,
                         preferenceId,
+                        payer: {
+                            email: checkoutEmail,
+                        },
                     },
                     customization: {
                         visual: {
@@ -170,7 +188,12 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                             try {
                                 const configuredTestEmail = String(import.meta.env.VITE_MERCADO_PAGO_TEST_EMAIL || '').trim();
                                 const fallbackEmail = configuredTestEmail || FALLBACK_TEST_EMAIL;
-                                const payerEmail = String(formData?.payer?.email || userProfile.email || fallbackEmail).trim();
+                                const payerEmail = String(checkoutEmail || formData?.payer?.email || fallbackEmail).trim();
+                                if (!isValidCheckoutEmail(payerEmail)) {
+                                    const error = new Error('Digite um e-mail valido para continuar.');
+                                    latestRefs.current.showToast(error.message, 'warning');
+                                    throw error;
+                                }
                                 const nextFormData = {
                                     ...(formData || {}),
                                     payer: {
@@ -224,6 +247,17 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
             }
         };
 
+        if (!isValidCheckoutEmail(checkoutEmail)) {
+            setLoading(false);
+            initializedKeyRef.current = null;
+            void destroyBrick();
+            return () => {
+                isActive = false;
+                initializedKeyRef.current = null;
+                void destroyBrick();
+            };
+        }
+
         const ensureScript = () => {
             const existingScript = document.querySelector<HTMLScriptElement>('script[data-mp-sdk="true"]');
             if (existingScript) {
@@ -252,7 +286,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
             initializedKeyRef.current = null;
             void destroyBrick();
         };
-    }, [amount, goldAmount, userProfile.email, userProfile.id]);
+    }, [amount, checkoutEmail, goldAmount, userProfile.id]);
 
     useEffect(() => {
         if (!paymentResult?.id || creditDetected) return;
@@ -347,6 +381,16 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
         }
     };
 
+    const handleStartPayment = () => {
+        const nextEmail = String(emailInput || '').trim();
+        if (!isValidCheckoutEmail(nextEmail)) {
+            showToast('Digite um e-mail valido para continuar.', 'warning');
+            return;
+        }
+        setCheckoutEmail(nextEmail);
+        setLoading(true);
+    };
+
     return (
         <Portal>
             <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/80 p-4 animate-fade-in backdrop-blur-md">
@@ -375,7 +419,38 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                             </div>
                         )}
 
-                        {paymentResult ? (
+                        {!paymentResult && needsEmailStep ? (
+                            <div className="flex flex-1 flex-col justify-center gap-5 px-4 py-8">
+                                <div className="space-y-2 text-center">
+                                    <h3 className="text-xl font-bold text-white">Digite o e-mail do pagador</h3>
+                                    <p className="text-sm text-gray-400">
+                                        O Mercado Pago precisa de um e-mail valido para gerar o Pix.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                    <label className="block text-left text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
+                                        E-mail
+                                    </label>
+                                    <input
+                                        type="email"
+                                        inputMode="email"
+                                        autoComplete="email"
+                                        placeholder="voce@exemplo.com"
+                                        value={emailInput}
+                                        onChange={(event) => setEmailInput(event.target.value)}
+                                        className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleStartPayment}
+                                        className="luxe-skin-button w-full rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-all"
+                                    >
+                                        Pagar
+                                    </button>
+                                </div>
+                            </div>
+                        ) : paymentResult ? (
                             <div className="flex flex-1 flex-col items-center justify-center space-y-6 px-6 py-10 text-center animate-fade-in">
                                 <div className="w-full rounded-[28px] border border-[var(--skin-accent-color)]/25 bg-black/35 p-4 shadow-[0_0_30px_rgba(0,0,0,0.24)]">
                                     <div className="mx-auto flex h-56 w-56 items-center justify-center rounded-[24px] border border-white/10 bg-white p-3 shadow-inner">
@@ -464,7 +539,15 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 </button>
                             </div>
                         ) : (
-                            <div id="paymentBrick_container" className="transition-opacity duration-500" />
+                            <div className="space-y-3">
+                                <div className="mx-2 mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                                    <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
+                                        E-mail do pagador
+                                    </div>
+                                    <div className="mt-1 text-sm font-semibold text-white">{checkoutEmail}</div>
+                                </div>
+                                <div id="paymentBrick_container" className="transition-opacity duration-500" />
+                            </div>
                         )}
                     </div>
 

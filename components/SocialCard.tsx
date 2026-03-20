@@ -7,9 +7,10 @@ import { UserAvatar } from './UserAvatar';
 export const SocialCard: React.FC<{
     profile: UserProfile;
     subtitle?: string;
+    badges?: React.ReactNode;
     actions?: React.ReactNode;
     onClick?: () => void;
-}> = ({ profile, subtitle, actions, onClick }) => {
+}> = ({ profile, subtitle, badges, actions, onClick }) => {
     return (
         <div
             className={`h-16 rounded-3xl relative overflow-hidden border border-[var(--glass-border)] group ${onClick ? 'cursor-pointer hover:border-white/30 transition-colors' : ''}`}
@@ -25,6 +26,12 @@ export const SocialCard: React.FC<{
 
                 <div className="flex-1 min-w-0 flex flex-col justify-center -space-y-0.5">
                     <h3 className="font-bold text-lg text-white leading-tight truncate">{profile.nickname}</h3>
+
+                    {badges && (
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                            {badges}
+                        </div>
+                    )}
 
                     {profile.bannerUrl && (
                         <div className="mt-0.5 h-6 self-start">

@@ -6,6 +6,7 @@ import { handleShare } from './Share';
 import { GlassCard } from './GlassCard';
 import { SephirotFog } from './SephirotFog';
 import { MoodModal } from './MoodModal';
+import { ChecklistModal } from './ChecklistModal';
 import { SitrepContent } from './SitrepContent';
 import { ClanDetailModal } from './ClanDetailModal';
 import { OracleFeed } from './OracleFeed';
@@ -107,6 +108,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         activeCycle,
         dailyCommitment,
         tasks,
+        checklistItems,
         userProfile,
         currentMood,
         clan,
@@ -130,6 +132,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const [actionProgress, setActionProgress] = useState<{ id: string, progress: number } | null>(null);
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [showUnlockHint, setShowUnlockHint] = useState(false);
+    const [isChecklistOpen, setIsChecklistOpen] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isMoodOpen, setIsMoodOpen] = useState(false);
     const [isOracleOpen, setIsOracleOpen] = useState(false);
@@ -195,7 +198,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         };
     }, []);
 
-    const handleQuickActionStart = (action: 'mood' | 'oracle' | 'clan' | 'deepwork' | 'real_oracle' | 'new_action') => {
+    const handleQuickActionStart = (action: 'mood' | 'oracle' | 'clan' | 'deepwork' | 'real_oracle' | 'new_action' | 'checklist') => {
         if (actionHoldInterval.current) return;
 
         const startTime = Date.now();
@@ -223,9 +226,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         setActionProgress(null);
     };
 
-    const handleQuickAction = (action: 'mood' | 'oracle' | 'clan' | 'deepwork' | 'real_oracle' | 'new_action') => {
+    const handleQuickAction = (action: 'mood' | 'oracle' | 'clan' | 'deepwork' | 'real_oracle' | 'new_action' | 'checklist') => {
         if (action === 'mood') {
             setIsMoodOpen(true);
+        } else if (action === 'checklist') {
+            setIsChecklistOpen(true);
         } else if (action === 'deepwork') {
             setIsDeepWorkOpen(true);
         } else if (action === 'new_action' || action === 'oracle') { // Handle both just in case
@@ -392,6 +397,9 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             console.error("Error creating action from RestScreen:", error);
         }
     };
+
+    const checklistDoneCount = checklistItems.filter(item => item.completed).length;
+    const checklistTotalCount = checklistItems.length;
 
     const [showCancelButton, setShowCancelButton] = useState(false);
     const cancelAnimationFrameRef = useRef<number | null>(null);
@@ -1135,6 +1143,39 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                     {/* Quick Indicators Row */}
                     <div className="flex items-center justify-center gap-4 animate-fade-in delay-500">
+                        <button
+                            onMouseDown={() => handleQuickActionStart('checklist')}
+                            onMouseUp={handleQuickActionEnd}
+                            onMouseLeave={handleQuickActionEnd}
+                            onTouchStart={() => handleQuickActionStart('checklist')}
+                            onTouchEnd={handleQuickActionEnd}
+                            className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform relative"
+                        >
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'checklist' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
+                                {actionProgress?.id === 'checklist' && (
+                                    <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r="48"
+                                            fill="none"
+                                            stroke="var(--skin-accent-color)"
+                                            strokeWidth="4"
+                                            strokeDasharray="301.6"
+                                            strokeDashoffset={301.6 - (301.6 * actionProgress.progress) / 100}
+                                        />
+                                    </svg>
+                                )}
+                                <CheckCircleIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />
+                                {checklistTotalCount > 0 && (
+                                    <div className="absolute -right-0.5 -top-0.5 min-w-[1rem] rounded-full border border-black/40 bg-black/80 px-1 py-[1px] text-[8px] font-black leading-none text-white">
+                                        {checklistDoneCount}/{checklistTotalCount}
+                                    </div>
+                                )}
+                            </div>
+                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Checklist</span>
+                        </button>
+
                         {/* Mood Indicator */}
                         <button
                             onMouseDown={() => handleQuickActionStart('mood')}
@@ -1316,6 +1357,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 {isMoodOpen && (
                     <div className="fixed inset-0 z-[10001]">
                         <MoodModal onClose={() => setIsMoodOpen(false)} />
+                    </div>
+                )}
+                {isChecklistOpen && (
+                    <div className="fixed inset-0 z-[10001]">
+                        <ChecklistModal onClose={() => setIsChecklistOpen(false)} />
                     </div>
                 )}
                 {isOracleOpen && (

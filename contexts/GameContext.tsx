@@ -182,6 +182,7 @@ const createDefaultDailyCommitment = (): DailyCommitment => ({
     score: null,
     expDeposited: null,
     sitrepBonus: null,
+    operationalScratch: null,
 });
 
 const createDefaultAssets = (newUser: boolean) => {
@@ -264,6 +265,7 @@ export interface GameContextType {
     enrichedClanMembers: EnrichedClanMember[];
     activeCycle: Cycle | null;
     dailyCommitment: DailyCommitment;
+    updateOperationalScratch: (text: string) => void;
     unlockDailyCommitment: () => void;
     achievementUnlocked: { type: FeedEventType; data: any; } | null;
     seasons: Season[];
@@ -2709,8 +2711,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Check for daily reset
         if (dailyCommitment.date !== today) {
             resetDailyCommitment();
-            // Also reset checklist items (uncheck them)
-            setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
+            setChecklistItems([...defaultChecklistItems]);
         }
 
         const userId = getSupabaseUserId();
@@ -3495,6 +3496,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const mapRelationshipErrorMessage = (message?: string, fallback = 'Nao foi possivel concluir o vinculo.') => {
         const raw = String(message || '').trim();
         if (!raw) return fallback;
+        if (raw.includes('arena_snapshot')) return 'Seu banco ainda esta com o schema antigo da mentoria. Rode o SQL que libera arena_snapshot como opcional.';
         if (raw.includes('MENTOR_PREMIUM_REQUIRED')) return 'So mentores Premium podem usar este recurso.';
         if (raw.includes('RELATIONSHIP_SLOT_LIMIT_REACHED')) return 'Seu limite de slots para este vinculo foi atingido.';
         if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Este pupilo ja atingiu o limite de mentoria recebida.';
@@ -3606,7 +3608,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         }
 
-        const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - 25));
+        const inviteCost = linkType === 'mentoria' ? 100 : 50;
+        const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - inviteCost));
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
         showToast(linkType === 'mentoria' ? 'Convite de mentoria enviado.' : linkType === 'parceria' ? 'Convite de parceria enviado.' : 'Convite de competicao enviado.', 'success');
         return true;
@@ -3877,11 +3880,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return false;
 
-        if (!hasPremiumAccess(userProfile)) {
-            showToast('Mentoria ativa como mentor e entrega de Codex autoral sao recursos Premium.', 'warning');
-            return false;
-        }
-
         const sourceCodex = userCodexes.find(c => c.id === codexId && c.owner_id === userId);
         if (!sourceCodex) {
             showToast('Codex n\u00E3o encontrado.');
@@ -3925,11 +3923,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     ): Promise<boolean> => {
         const userId = getSupabaseUserId();
         if (!userId) return false;
-
-        if (!hasPremiumAccess(userProfile)) {
-            showToast('A forja de Codex para pupilos e exclusiva para mentores Premium.', 'warning');
-            return false;
-        }
 
         if (!codex?.template || !Array.isArray(codex.template.levels) || codex.template.levels.length === 0) {
             showToast('Esse Codex ainda n\u00E3o tem fases para enviar.');
@@ -4270,11 +4263,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             stage: 'planning',
             score: null,
             expDeposited: null,
-            sitrepBonus: null
+            sitrepBonus: null,
+            operationalScratch: null,
         });
-        setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
+        setChecklistItems([...defaultChecklistItems]);
     };
     const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds: [...new Set(taskIds)] }));
+    const updateOperationalScratch = (text: string) => setDailyCommitmentState(prev => ({ ...prev, operationalScratch: text }));
     const lockDailyCommitment = () => setDailyCommitmentState(prev => ({ ...prev, stage: 'battle' }));
     const unlockDailyCommitment = () => setDailyCommitmentState(prev => ({ ...prev, stage: 'planning' }));
 
@@ -4292,6 +4287,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 score: dailyCommitment.score,
                 exp_deposited: dailyCommitment.expDeposited,
                 sitrep_bonus: dailyCommitment.sitrepBonus,
+                operational_scratch: dailyCommitment.operationalScratch ?? null,
                 updated_at: new Date().toISOString()
             };
 
@@ -4338,6 +4334,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     score: typeof mapped.score === 'number' ?mapped.score : null,
                     expDeposited: typeof mapped.expDeposited === 'number' ?mapped.expDeposited : null,
                     sitrepBonus: typeof mapped.sitrepBonus === 'number' ?mapped.sitrepBonus : null,
+                    operationalScratch: typeof mapped.operationalScratch === 'string' ?mapped.operationalScratch : null,
                 });
             } else {
                 setDailyCommitmentState({
@@ -4346,7 +4343,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     stage: 'planning',
                     score: null,
                     expDeposited: null,
-                    sitrepBonus: null
+                    sitrepBonus: null,
+                    operationalScratch: null,
                 });
             }
         };
@@ -4361,7 +4359,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const today = getTodayString();
             if (dailyCommitment.date !== today) {
                 resetDailyCommitment();
-                setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
+                setChecklistItems([...defaultChecklistItems]);
             }
         };
 
@@ -5760,7 +5758,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 1. Delete from Supabase
-        const { error } = await supabase.from('cycles').delete().eq('id', cycleId).eq('user_id', userId);
+        const { data: deletedRows, error } = await supabase
+            .from('cycles')
+            .delete()
+            .eq('id', cycleId)
+            .eq('user_id', userId)
+            .select('id');
 
         if (error) {
             console.error("Error deleting cycle:", error);
@@ -5768,7 +5771,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        showToast("Ciclo excluído com sucesso.");
+
+        if (!deletedRows || deletedRows.length === 0) {
+            showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
+            return;
+        }
+
+        setReports(prev => prev.filter(report => report.cycleId !== cycleId && report.id !== cycleId));
+        showToast('Ciclo excluido com sucesso.', 'success');
 
         // If it was the active cycle, try to fetch another one or just clear state
         if (activeCycle?.id === cycleId) {
@@ -8027,7 +8037,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
-            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,

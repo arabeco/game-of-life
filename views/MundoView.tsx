@@ -3,7 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GlassCard } from '../components/GlassCard';
 import { CreateClanModal } from '../components/CreateClanModal';
-import { Clan, UserProfile } from '../types';
+import { Clan, RelationshipLink, RelationshipLinkInvite, UserProfile } from '../types';
 import { ClanDetailModal } from '../components/ClanDetailModal';
 import { SocialCard } from '../components/SocialCard';
 import { PlusIcon, CheckIcon, XIcon, TrophyIcon, ShoppingBagIcon, CalendarIcon, UsersIcon, ArchiveBoxIcon } from '../components/Icons';
@@ -17,7 +17,137 @@ import { UserAvatar } from '../components/UserAvatar';
 import { ProfileView } from './ProfileView';
 import './mundo-ui.css';
 
+const RELATION_LABELS: Record<'mentoria' | 'parceria' | 'competicao', string> = {
+    mentoria: 'Mentoria',
+    parceria: 'Parceria',
+    competicao: 'Competicao',
+};
+
+const relationBadgeClass = (type: 'mentoria' | 'parceria' | 'competicao') =>
+    type === 'mentoria'
+        ? 'border-[var(--skin-accent-color)]/26 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]'
+        : type === 'parceria'
+            ? 'border-cyan-400/24 bg-cyan-400/12 text-cyan-200'
+            : 'border-rose-400/24 bg-rose-400/12 text-rose-200';
+
 const JoinClanBox: React.FC<{ onCreate: () => void }> = ({ onCreate }) => {
+    /*
+
+
+    const relationshipSubtitleForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
+        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
+    };
+
+    const relationshipIncoming = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.senderId));
+    const relationshipOutgoing = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.recipientId));
+
+    const refreshRelationshipState = async () => {
+        const hub = await fetchRelationshipHubData();
+        setRelationshipInvites(hub.invites || []);
+        setRelationshipLinks(hub.links || []);
+    };
+
+    
+    const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
+
+    const activeRelationshipsForProfile = (profileId: string) =>
+        relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
+
+    const relationshipBadgesForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria' | 'competicao'>;
+
+        return activeTypes.map(type => (
+            <span
+                key={`${profileId}-${type}`}
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(type)}`}
+            >
+                {RELATION_LABELS[type]}
+            </span>
+        ));
+    };
+
+    const relationshipSubtitleForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
+        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
+    };
+
+    const relationshipIncoming = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.senderId));
+    const relationshipOutgoing = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.recipientId));
+
+    const refreshRelationshipState = async () => {
+        const hub = await fetchRelationshipHubData();
+        setRelationshipInvites(hub.invites || []);
+        setRelationshipLinks(hub.links || []);
+    };
+
+    
+    const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
+
+    const activeRelationshipsForProfile = (profileId: string) =>
+        relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
+
+    const relationshipBadgesForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria' | 'competicao'>;
+
+        return activeTypes.map(type => (
+            <span
+                key={`${profileId}-${type}`}
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(type)}`}
+            >
+                {RELATION_LABELS[type]}
+            </span>
+        ));
+    };
+
+    const relationshipSubtitleForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
+        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
+    };
+
+    const relationshipIncoming = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.senderId));
+    const relationshipOutgoing = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.recipientId));
+
+    const refreshRelationshipState = async () => {
+        const hub = await fetchRelationshipHubData();
+        setRelationshipInvites(hub.invites || []);
+        setRelationshipLinks(hub.links || []);
+    };
+
+    */
+    /*
+    const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
+
+    const activeRelationshipsForProfile = (profileId: string) =>
+        relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
+
+    const relationshipBadgesForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria' | 'competicao'>;
+
+        return activeTypes.map(type => (
+            <span
+                key={`${profileId}-${type}`}
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(type)}`}
+            >
+                {RELATION_LABELS[type]}
+            </span>
+        ));
+    };
+
+    const relationshipSubtitleForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
+        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
+    };
+
+    const resolveRelationshipProfile = (profileId: string) =>
+        friends.find(friend => friend.id === profileId) ||
+        relationshipProfiles[profileId] ||
+        buildFallbackProfile(profileId);
+
+    const relationshipIncoming = relationshipInvites.filter(invite => invite.recipientId !== invite.senderId);
+    const relationshipOutgoing = relationshipInvites.filter(invite => invite.senderId !== invite.recipientId);
+
+    */
     return (
         <GlassCard variant="neutral" className="text-center p-6 space-y-4" id="clans-section">
             <h2 className="text-xl font-bold">Você não está em um clã</h2>
@@ -143,20 +273,296 @@ const SocialSearch: React.FC<{
     );
 };
 
+const RequestSection: React.FC<{
+    title: string;
+    count: number;
+    tone?: 'neutral' | 'gold' | 'violet' | 'emerald';
+    children: React.ReactNode;
+}> = ({ title, count, tone = 'neutral', children }) => {
+    const toneClass =
+        tone === 'gold'
+            ? 'border-[var(--skin-accent-color)]/18 bg-[linear-gradient(180deg,rgba(255,208,0,0.08)_0%,rgba(0,0,0,0.18)_100%)]'
+            : tone === 'violet'
+                ? 'border-fuchsia-400/16 bg-[linear-gradient(180deg,rgba(168,85,247,0.10)_0%,rgba(0,0,0,0.18)_100%)]'
+                : tone === 'emerald'
+                    ? 'border-emerald-400/16 bg-[linear-gradient(180deg,rgba(16,185,129,0.09)_0%,rgba(0,0,0,0.18)_100%)]'
+                    : 'border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0.18)_100%)]';
+
+    return (
+        <div className={`rounded-[26px] border p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${toneClass}`}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/55">{title}</div>
+                <div className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/85">
+                    {count}
+                </div>
+            </div>
+            <div className="space-y-2">{children}</div>
+        </div>
+    );
+};
+
 // --- Tabs ---
 
 const SocialTab: React.FC = () => {
-    const { clan, friends, friendRequestsIncoming, friendRequestsOutgoing, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, joinClan } = useGame();
+    const {
+        clan,
+        friends,
+        userProfile,
+        friendRequestsIncoming,
+        friendRequestsOutgoing,
+        sendFriendRequest,
+        acceptFriendRequest,
+        declineFriendRequest,
+        cancelFriendRequest,
+        joinClan,
+        fetchRelationshipHubData,
+        getUserPublicData,
+        respondToRelationshipInvite,
+    } = useGame();
     const [modal, setModal] = useState<'create' | 'sanctuary' | null>(null);
     const [activeTab, setActiveTab] = useState<'aliados' | 'solicitacoes'>('aliados');
     const [searchResults, setSearchResults] = useState<{ players: UserProfile[], clans: Clan[] }>({ players: [], clans: [] });
     const [searchQuery, setSearchQuery] = useState('');
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
+    const [relationshipInvites, setRelationshipInvites] = useState<RelationshipLinkInvite[]>([]);
+    const [relationshipLinks, setRelationshipLinks] = useState<RelationshipLink[]>([]);
+    const [relationshipProfiles, setRelationshipProfiles] = useState<Record<string, UserProfile>>({});
+
+    const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
+
+    const activeRelationshipsForProfile = (profileId: string) =>
+        relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
+
+    const relationshipBadgesForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria' | 'competicao'>;
+
+        return activeTypes.map(type => (
+            <span
+                key={`${profileId}-${type}`}
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(type)}`}
+            >
+                {RELATION_LABELS[type]}
+            </span>
+        ));
+    };
+
+    const relationshipSubtitleForProfile = (profileId: string) => {
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
+        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
+    };
+
+    const resolveRelationshipProfile = (profileId: string) =>
+        friends.find(friend => friend.id === profileId) ||
+        relationshipProfiles[profileId] ||
+        buildFallbackProfile(profileId);
+
+    const relationshipIncoming = relationshipInvites.filter(invite => invite.recipientId === userProfile.id);
+    const relationshipOutgoing = relationshipInvites.filter(invite => invite.senderId === userProfile.id);
+    const incomingRequestCount = friendRequestsIncoming.length + relationshipIncoming.length;
+    const outgoingRequestCount = friendRequestsOutgoing.length + relationshipOutgoing.length;
+
+    const renderRequestsPanel = () => {
+        if (relationshipCount === 0) {
+            return (
+                <div className="rounded-[26px] border border-dashed border-white/10 bg-black/20 px-4 py-8 text-center">
+                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/35">Solicitacoes</div>
+                    <div className="mt-2 text-sm font-semibold text-white/80">Nenhuma solicitacao pendente.</div>
+                    <div className="mt-1 text-xs text-gray-500">Amizades e vinculos novos vao aparecer aqui.</div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-[22px] border border-[var(--skin-accent-color)]/16 bg-[linear-gradient(180deg,rgba(255,208,0,0.08)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
+                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55">Para voce</div>
+                        <div className="mt-1 text-2xl font-black text-white">{incomingRequestCount}</div>
+                        <div className="text-[11px] text-white/60">amizades e vinculos</div>
+                    </div>
+                    <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
+                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55">Em aberto</div>
+                        <div className="mt-1 text-2xl font-black text-white">{outgoingRequestCount}</div>
+                        <div className="text-[11px] text-white/60">aguardando resposta</div>
+                    </div>
+                </div>
+
+                {incomingRequestCount > 0 && (
+                    <RequestSection title="Para voce" count={incomingRequestCount} tone="gold">
+                        {friendRequestsIncoming.map(request => {
+                            const senderProfile = request.senderProfile || buildFallbackProfile(request.senderId);
+                            return (
+                                <SocialCard
+                                    key={request.id}
+                                    profile={senderProfile}
+                                    subtitle="Amizade recebida"
+                                    badges={relationshipBadgesForProfile(senderProfile.id)}
+                                    onClick={() => setSelectedProfile(senderProfile)}
+                                    actions={
+                                        <div className="flex gap-2">
+                                            <button onClick={() => acceptFriendRequest(request.id)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
+                                            <button onClick={() => declineFriendRequest(request.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
+                                        </div>
+                                    }
+                                />
+                            );
+                        })}
+
+                        {relationshipIncoming.map(invite => {
+                            const senderProfile = resolveRelationshipProfile(invite.senderId);
+                            return (
+                                <SocialCard
+                                    key={invite.id}
+                                    profile={senderProfile}
+                                    subtitle={`Convite de ${RELATION_LABELS[invite.linkType].toLowerCase()}`}
+                                    badges={
+                                        <>
+                                            <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(invite.linkType)}`}>
+                                                {RELATION_LABELS[invite.linkType]}
+                                            </span>
+                                            {relationshipBadgesForProfile(senderProfile.id)}
+                                        </>
+                                    }
+                                    onClick={() => setSelectedProfile(senderProfile)}
+                                    actions={
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    await respondToRelationshipInvite(invite.id, 'accept');
+                                                    await refreshRelationshipState();
+                                                }}
+                                                className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                                            >
+                                                <CheckIcon className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    await respondToRelationshipInvite(invite.id, 'decline');
+                                                    await refreshRelationshipState();
+                                                }}
+                                                className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                            >
+                                                <XIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    }
+                                />
+                            );
+                        })}
+                    </RequestSection>
+                )}
+
+                {outgoingRequestCount > 0 && (
+                    <RequestSection title="Em aberto" count={outgoingRequestCount} tone="violet">
+                        {friendRequestsOutgoing.map(request => {
+                            const recipientProfile = request.recipientProfile || buildFallbackProfile(request.recipientId);
+                            return (
+                                <SocialCard
+                                    key={request.id}
+                                    profile={recipientProfile}
+                                    subtitle="Convite de amizade"
+                                    badges={relationshipBadgesForProfile(recipientProfile.id)}
+                                    onClick={() => setSelectedProfile(recipientProfile)}
+                                    actions={
+                                        <button onClick={() => cancelFriendRequest(request.id)} className="px-3 py-2 text-[10px] font-bold rounded-xl bg-black/30 border border-white/10 text-gray-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/30 transition-colors">Cancelar</button>
+                                    }
+                                />
+                            );
+                        })}
+
+                        {relationshipOutgoing.map(invite => {
+                            const recipientProfile = resolveRelationshipProfile(invite.recipientId);
+                            return (
+                                <SocialCard
+                                    key={invite.id}
+                                    profile={recipientProfile}
+                                    subtitle={`${RELATION_LABELS[invite.linkType]} aguardando aceite`}
+                                    badges={
+                                        <>
+                                            <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(invite.linkType)}`}>
+                                                {RELATION_LABELS[invite.linkType]}
+                                            </span>
+                                            {relationshipBadgesForProfile(recipientProfile.id)}
+                                        </>
+                                    }
+                                    onClick={() => setSelectedProfile(recipientProfile)}
+                                    actions={
+                                        <button
+                                            onClick={async () => {
+                                                await respondToRelationshipInvite(invite.id, 'revoke');
+                                                await refreshRelationshipState();
+                                            }}
+                                            className="px-3 py-2 text-[10px] font-bold rounded-xl bg-black/30 border border-white/10 text-gray-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/30 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    }
+                                />
+                            );
+                        })}
+                    </RequestSection>
+                )}
+            </div>
+        );
+    };
 
     useEffect(() => {
         setShowSearchResults(searchQuery.trim().length > 0);
     }, [searchQuery]);
+
+    const refreshRelationshipState = async () => {
+        try {
+            const hub = await fetchRelationshipHubData();
+            const invites = hub.invites || [];
+            const links = hub.links || [];
+
+            setRelationshipInvites(invites);
+            setRelationshipLinks(links);
+
+            const knownProfiles = new Set(friends.map(friend => friend.id));
+            const relatedUserIds = new Set<string>();
+
+            invites.forEach(invite => {
+                relatedUserIds.add(invite.senderId);
+                relatedUserIds.add(invite.recipientId);
+            });
+
+            links.forEach(link => {
+                relatedUserIds.add(link.mentorId);
+                relatedUserIds.add(link.pupilId);
+            });
+
+            const missingIds = [...relatedUserIds].filter(id => id && !knownProfiles.has(id));
+            if (missingIds.length === 0) return;
+
+            const profilePairs = await Promise.all(
+                missingIds.map(async id => {
+                    try {
+                        const data = await getUserPublicData(id);
+                        return data.profile ? [id, data.profile] as const : null;
+                    } catch (error) {
+                        console.warn('Failed to load social relationship profile', id, error);
+                        return null;
+                    }
+                })
+            );
+
+            setRelationshipProfiles(prev => {
+                const next = { ...prev };
+                profilePairs.forEach(pair => {
+                    if (pair) next[pair[0]] = pair[1];
+                });
+                return next;
+            });
+        } catch (error) {
+            console.error('Failed to load relationship state for social tab', error);
+        }
+    };
+
+    useEffect(() => {
+        void refreshRelationshipState();
+    }, [friends]);
 
     // Simple profile builder for fallback
     const buildFallbackProfile = (id: string): UserProfile => ({
@@ -189,7 +595,7 @@ const SocialTab: React.FC = () => {
                         onClick={() => setActiveTab('solicitacoes')}
                         className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'solicitacoes' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                     >
-                        Solicitações {friendRequestsIncoming.length > 0 ? `(${friendRequestsIncoming.length})` : ''}
+                        Solicitações {relationshipCount > 0 ? `(${relationshipCount})` : ''}
                     </button>
                 </div>
 
@@ -217,6 +623,8 @@ const SocialTab: React.FC = () => {
                                         <SocialCard
                                             key={player.id}
                                             profile={player}
+                                            subtitle={relationshipSubtitleForProfile(player.id)}
+                                            badges={relationshipBadgesForProfile(player.id)}
                                             onClick={() => setSelectedProfile(player)}
                                             actions={
                                                 <button
@@ -245,11 +653,18 @@ const SocialTab: React.FC = () => {
                 ) : (
                     <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                         {activeTab === 'aliados' && friends.map(friend => (
-                            <SocialCard key={friend.id} profile={friend} onClick={() => setSelectedProfile(friend)} />
+                            <SocialCard
+                                key={friend.id}
+                                profile={friend}
+                                subtitle={relationshipSubtitleForProfile(friend.id)}
+                                badges={relationshipBadgesForProfile(friend.id)}
+                                onClick={() => setSelectedProfile(friend)}
+                            />
                         ))}
-                        {activeTab === 'solicitacoes' && (
+                        {activeTab === 'solicitacoes' && renderRequestsPanel()}
+                        {false && (
                             <div className="space-y-4">
-                                {friendRequestsIncoming.length === 0 && friendRequestsOutgoing.length === 0 && (
+                                {friendRequestsIncoming.length === 0 && friendRequestsOutgoing.length === 0 && relationshipIncoming.length === 0 && relationshipOutgoing.length === 0 && (
                                     <div className="text-center text-xs text-gray-500 py-4">Nenhuma solicitação pendente.</div>
                                 )}
                                 {friendRequestsIncoming.length > 0 && (
@@ -262,11 +677,51 @@ const SocialTab: React.FC = () => {
                                                     key={request.id}
                                                     profile={senderProfile}
                                                     subtitle="Convite de amizade"
+                                                    badges={relationshipBadgesForProfile(senderProfile.id)}
                                                     onClick={() => setSelectedProfile(senderProfile)}
                                                     actions={
                                                         <div className="flex gap-2">
                                                             <button onClick={() => acceptFriendRequest(request.id)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
                                                             <button onClick={() => declineFriendRequest(request.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
+                                                        </div>
+                                                    }
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {relationshipIncoming.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="text-[10px] font-bold text-gray-500">VINCULOS RECEBIDOS</div>
+                                        {relationshipIncoming.map(invite => {
+                                            const senderProfile = resolveRelationshipProfile(invite.senderId);
+                                            return (
+                                                <SocialCard
+                                                    key={invite.id}
+                                                    profile={senderProfile}
+                                                    subtitle={`Convite de ${RELATION_LABELS[invite.linkType].toLowerCase()}`}
+                                                    badges={relationshipBadgesForProfile(senderProfile.id)}
+                                                    onClick={() => setSelectedProfile(senderProfile)}
+                                                    actions={
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={async () => {
+                                                                    await respondToRelationshipInvite(invite.id, 'accept');
+                                                                    await refreshRelationshipState();
+                                                                }}
+                                                                className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                                                            >
+                                                                <CheckIcon className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    await respondToRelationshipInvite(invite.id, 'decline');
+                                                                    await refreshRelationshipState();
+                                                                }}
+                                                                className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                                            >
+                                                                <XIcon className="w-4 h-4" />
+                                                            </button>
                                                         </div>
                                                     }
                                                 />
@@ -284,9 +739,38 @@ const SocialTab: React.FC = () => {
                                                     key={request.id}
                                                     profile={recipientProfile}
                                                     subtitle="Aguardando resposta"
+                                                    badges={relationshipBadgesForProfile(recipientProfile.id)}
                                                     onClick={() => setSelectedProfile(recipientProfile)}
                                                     actions={
                                                         <button onClick={() => cancelFriendRequest(request.id)} className="px-3 py-2 text-[10px] font-bold rounded-xl bg-black/30 border border-white/10 text-gray-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/30 transition-colors">Cancelar</button>
+                                                    }
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {relationshipOutgoing.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="text-[10px] font-bold text-gray-500">VINCULOS ENVIADOS</div>
+                                        {relationshipOutgoing.map(invite => {
+                                            const recipientProfile = resolveRelationshipProfile(invite.recipientId);
+                                            return (
+                                                <SocialCard
+                                                    key={invite.id}
+                                                    profile={recipientProfile}
+                                                    subtitle={`Aguardando ${RELATION_LABELS[invite.linkType].toLowerCase()}`}
+                                                    badges={relationshipBadgesForProfile(recipientProfile.id)}
+                                                    onClick={() => setSelectedProfile(recipientProfile)}
+                                                    actions={
+                                                        <button
+                                                            onClick={async () => {
+                                                                await respondToRelationshipInvite(invite.id, 'revoke');
+                                                                await refreshRelationshipState();
+                                                            }}
+                                                            className="px-3 py-2 text-[10px] font-bold rounded-xl bg-black/30 border border-white/10 text-gray-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/30 transition-colors"
+                                                        >
+                                                            Cancelar
+                                                        </button>
                                                     }
                                                 />
                                             );

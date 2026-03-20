@@ -756,6 +756,7 @@ export interface DailyCommitment {
   score: number | null;
   expDeposited?: number | null;
   sitrepBonus?: number | null;
+  operationalScratch?: string | null;
 }
 
 // --- Sovereign Control Panel Types ---

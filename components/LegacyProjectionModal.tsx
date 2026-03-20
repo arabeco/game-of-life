@@ -231,7 +231,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                     enteringProjection={isProjectionTransitioning}
                                     fallbackIdentity={fallbackIdentity}
                                     backdropSkinId={selectedBackdropSkinId}
-                                    showLayoutLab
                                     onActivatePlaque={onOpenPlaque}
                                     onOpenCycle={onOpenCycle}
                                     onOpenEra={onOpenEra}

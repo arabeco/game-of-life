@@ -524,7 +524,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 disabled={!isEditing}
                                 className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center cursor-pointer disabled:cursor-default"
                             >
-                                <EmojiGlyph symbol={editableArena.icon} size="arena" className="arena-icon text-white" />
+                                <EmojiGlyph
+                                    symbol={editableArena.icon}
+                                    size="picker"
+                                    className="arena-icon scale-[2.55] text-white drop-shadow-[0_0_18px_rgba(255,255,255,0.18)]"
+                                />
                             </button>
 
                             {isEditing ?(

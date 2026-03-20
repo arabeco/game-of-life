@@ -5,11 +5,12 @@ export interface LegacyLayoutConfig {
   plaqueWidth: number;
   cyclesOffsetY: number;
   cyclesZoom: number;
+  playerOffsetX: number;
   playerOffsetY: number;
   playerZoom: number;
 }
 
-export const LEGACY_LAYOUT_STORAGE_KEY = 'glyph:legacy-layout-lab-v2';
+export const LEGACY_LAYOUT_STORAGE_KEY = 'glyph:legacy-layout-lab-v3';
 export const LEGACY_LAYOUT_UPDATED_EVENT = 'glyph:legacy-layout-updated';
 export const LEGACY_PREVIEW_PLAQUE_BASE_WIDTH = 96;
 export const LEGACY_SCENE_PLAQUE_BASE_WIDTH = 96;
@@ -17,13 +18,14 @@ export const LEGACY_PREVIEW_PLAQUE_SCALE = 1.65;
 export const LEGACY_SCENE_PLAQUE_SCALE = 1;
 
 export const DEFAULT_LEGACY_LAYOUT: LegacyLayoutConfig = {
-  plaqueOffsetX: 0,
-  plaqueOffsetY: 15,
-  plaqueZoom: 0.97,
+  plaqueOffsetX: -4,
+  plaqueOffsetY: 9,
+  plaqueZoom: 1.06,
   plaqueWidth: 0.81,
-  cyclesOffsetY: -168,
-  cyclesZoom: 1.56,
-  playerOffsetY: -38,
+  cyclesOffsetY: -169,
+  cyclesZoom: 1.43,
+  playerOffsetX: 1,
+  playerOffsetY: -9,
   playerZoom: 1.14,
 };
 
@@ -42,6 +44,7 @@ export const sanitizeLegacyLayoutConfig = (value: Partial<LegacyLayoutConfig> | 
   plaqueWidth: sanitizeNumber(value?.plaqueWidth, DEFAULT_LEGACY_LAYOUT.plaqueWidth, 0.72, 1.28),
   cyclesOffsetY: sanitizeNumber(value?.cyclesOffsetY, DEFAULT_LEGACY_LAYOUT.cyclesOffsetY, -240, 140),
   cyclesZoom: sanitizeNumber(value?.cyclesZoom, DEFAULT_LEGACY_LAYOUT.cyclesZoom, 0.55, 1.8),
+  playerOffsetX: sanitizeNumber(value?.playerOffsetX, DEFAULT_LEGACY_LAYOUT.playerOffsetX, -220, 220),
   playerOffsetY: sanitizeNumber(value?.playerOffsetY, DEFAULT_LEGACY_LAYOUT.playerOffsetY, -140, 140),
   playerZoom: sanitizeNumber(value?.playerZoom, DEFAULT_LEGACY_LAYOUT.playerZoom, 0.55, 1.35),
 });

@@ -111,10 +111,10 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
 
-    const handleDelete = (e: React.MouseEvent) => {
+    const handleDelete = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirm("Tem certeza que deseja excluir este ciclo? Isso n\u00E3o pode ser desfeito.")) {
-            deleteCycle(cycle.id);
+            await deleteCycle(cycle.id);
         }
     };
     const totalDays = Math.max(1, daysBetween(parseDate(startDate), parseDate(endDate)) + 1);
@@ -1802,13 +1802,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onCompare={() => { setReportForComparison(selectedReport); setView('hub'); }}
                         onShare={() => handleShareReport(selectedReport)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
-                        onDelete={() => {
+                        onDelete={async () => {
                             if (confirm("Tem certeza que deseja excluir este relat\u00F3rio?")) {
-                                // We need a way to delete historical reports.
-                                // For now, maybe just hide it or we need a proper deleteReport function
-                                // But the user asked to delete "cycles". A past report IS a cycle.
-                                // Since deleteCycle takes an ID, and report.id matches cycle.id (usually), we can try that.
-                                deleteCycle(selectedReport.id);
+                                await deleteCycle(selectedReport.cycleId || selectedReport.id);
                                 setView('hub');
                                 setSelectedReport(null);
                             }
@@ -1936,7 +1932,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
 
 
 

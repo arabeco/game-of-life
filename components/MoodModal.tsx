@@ -7,7 +7,7 @@ import { XIcon } from './Icons';
 import { Portal } from './Portal';
 
 export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userProfile, updateMood } = useGame();
+    const { userProfile, dailyCommitment, updateMood, updateOperationalScratch } = useGame();
     const [localMood, setLocalMood] = useState(userProfile.mood);
     const sliderRef = useRef<HTMLInputElement>(null);
 
@@ -69,6 +69,22 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <div className="flex justify-between text-[10px] text-gray-400 font-bold px-1">
                         {moodLabels.map(label => <span key={label}>{label}</span>)}
                     </div>
+                </div>
+
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/56">
+                            Rascunho operacional
+                        </p>
+                        <p className="text-[10px] text-white/35">zera no proximo dia operacional</p>
+                    </div>
+                    <textarea
+                        value={dailyCommitment.operationalScratch || ''}
+                        onChange={(event) => updateOperationalScratch(event.target.value)}
+                        rows={4}
+                        placeholder="Anotacoes rapidas, pendencias, lembretes do dia..."
+                        className="w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white/82 placeholder:text-white/28 focus:outline-none focus:border-[var(--skin-accent-color)]"
+                    />
                 </div>
             </GlassCard>
         </div>

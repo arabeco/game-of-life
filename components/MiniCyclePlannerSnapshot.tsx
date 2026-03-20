@@ -66,6 +66,22 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
         );
     }
 
+    const compactTimelineGridStyle = compact
+        ? {
+            display: 'grid',
+            gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
+            alignItems: 'end',
+            gap: '2px',
+            width: '100%',
+        } satisfies React.CSSProperties
+        : undefined;
+
+    const expandedTimelineStyle = !compact
+        ? {
+            minWidth: `${(dayWidth + 2) * days.length}px`,
+        } satisfies React.CSSProperties
+        : undefined;
+
     return (
         <div className={`${compact ? 'px-0 py-0' : 'rounded-[22px] border border-white/10 bg-black/35 p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]'} ${className}`} style={style}>
             {!compact && (
@@ -75,11 +91,14 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
                 </div>
             )}
             <div className={`${compact ? 'overflow-hidden rounded-[6px] border border-white/6 bg-transparent px-[2px] py-[2px]' : 'overflow-hidden rounded-[18px] border border-white/5 bg-[#060606] px-2 py-2'}`}>
-                <div className="flex items-end gap-[2px]" style={{ minWidth: `${(dayWidth + 2) * days.length}px` }}>
+                <div
+                    className={compact ? '' : 'flex items-end gap-[2px]'}
+                    style={compact ? compactTimelineGridStyle : expandedTimelineStyle}
+                >
                     {days.map((day) => {
                         const completionRatio = day.plannedCount > 0 ? day.completedCount / day.plannedCount : 0;
                         return (
-                            <div key={day.date} className="flex flex-col items-center gap-1" style={{ width: `${dayWidth}px` }}>
+                            <div key={day.date} className="flex min-w-0 flex-col items-center gap-1" style={compact ? undefined : { width: `${dayWidth}px` }}>
                                 <div className={`${compact ? 'text-[6px]' : 'text-[7px]'} font-black leading-none text-gray-600`}>{day.date.slice(-2)}</div>
                                 <div
                                     className={`relative ${compact ? 'h-[26px] rounded-[4px]' : 'h-[88px] rounded-[10px]'} w-full overflow-hidden border border-white/6 bg-white/[0.01]`}

@@ -1150,13 +1150,41 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return unified;
     }, [availableTaskPool, bayAreaTasks]);
 
-    const visibleBayAreaEntries = useMemo(
-        () =>
-            (Object.entries(unifiedBayAreaItems) as [string, { count: number; isUnlimited: boolean; taskIds?: string[] }][]).filter(
-                ([_, payload]) => payload.count > 0 || (payload.taskIds && payload.taskIds.length > 0)
-            ),
-        [unifiedBayAreaItems]
-    );
+    const visibleBayAreaEntries = useMemo(() => {
+        const arenaAssetIdByArenaId = new Map<string, string>();
+        const arenaNameByArenaId = new Map<string, string>();
+        assets.forEach(asset => {
+            asset.arenas.forEach(arena => {
+                arenaAssetIdByArenaId.set(arena.id, asset.id);
+                arenaNameByArenaId.set(arena.id, arena.name || '');
+            });
+        });
+
+        const reversedAssetOrder = [...assets].reverse().map(asset => asset.id);
+        const assetPriority = new Map(reversedAssetOrder.map((assetId, index) => [assetId, index]));
+
+        return (Object.entries(unifiedBayAreaItems) as [string, { count: number; isUnlimited: boolean; taskIds?: string[] }][] )
+            .filter(([_, payload]) => payload.count > 0 || (payload.taskIds && payload.taskIds.length > 0))
+            .sort(([leftActionId], [rightActionId]) => {
+                const leftAction = getActionById(leftActionId);
+                const rightAction = getActionById(rightActionId);
+
+                const leftAssetId = leftAction ? arenaAssetIdByArenaId.get(leftAction.arenaId) : undefined;
+                const rightAssetId = rightAction ? arenaAssetIdByArenaId.get(rightAction.arenaId) : undefined;
+
+                const leftPriority = leftAssetId ? assetPriority.get(leftAssetId) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+                const rightPriority = rightAssetId ? assetPriority.get(rightAssetId) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+
+                if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+
+                const leftArenaName = leftAction ? arenaNameByArenaId.get(leftAction.arenaId) || '' : '';
+                const rightArenaName = rightAction ? arenaNameByArenaId.get(rightAction.arenaId) || '' : '';
+                const arenaCompare = leftArenaName.localeCompare(rightArenaName, 'pt-BR');
+                if (arenaCompare !== 0) return arenaCompare;
+
+                return (leftAction?.name || '').localeCompare(rightAction?.name || '', 'pt-BR');
+            });
+    }, [assets, unifiedBayAreaItems, actions]);
 
     // Keep bay height in sync with what is actually rendered, not with every hidden pool key.
     const poolItemCount = visibleBayAreaEntries.length;

@@ -1,8 +1,17 @@
 ﻿# PROGRESSO HISTORICO: GLYPH
-Data de consolidacao: 18/03/2026
+Data de consolidacao: 19/03/2026
 Fonte: itens [v] removidos do relatorio operacional
 
 ## Entregas consolidadas
+[v] Reconstruir a `Central de Vinculos` em formato compacto por tipo, empurrando arenas e campanhas para dentro da mentoria e levando convites de vinculo para `Solicitacoes` no Social.
+[v] Lapidar a projecao final do `Legado` para vitrine mobile: navegacao manual, cena final, HUD mais discreto, PWA fullscreen e preset aprovado travado na composicao.
+[v] Publicar e validar em `app.glyph.life` o pacote atual de Login/Codex/Mentoria/Planner/Vinculos e fechar o smoke real consolidado no celular.
+[v] Fortalecer o `marco1_beta_tracking`/GM Panel em uso real e transformar o painel em vitrine: snapshot editorial, legado premium preenchido e preview de relatorio de ciclo nota `S` pronto para print.
+[v] Empurrar Termos/Privacidade do cadastro manual para o ritual pos-login, alinhando o fluxo manual ao retorno autenticado do Google.
+[v] Blindar o compartilhamento e os atritos mais visiveis do mobile/planner: cancelamento de imagem sem erro falso, hold sem selecao, bay area recuando de altura e edicao de acao mais segura.
+[v] Entregar a primeira passagem da `Central de Vinculos` no padrao luxe, separando vinculo de arena vinculada e conectando custos, slots e Loja para Parceria, Competicao e Mentoria.
+[v] Estruturar o backend do novo pacote social: `relationship_link_arenas`, RPCs monetizadas com refund, limite de `2` Codex de mentoria e migration compatibilizada com banco legado.
+[v] Blindar o retorno do OAuth Google para nao cair de volta na LoginView: memoria curta de auth pendente, retry de sessao e boot mais estavel no primeiro retorno do provedor.
 [v] Criar funcao "Comecar Agora" e estabilizar o comportamento da tela bloqueada no fluxo.
 [v] Fechar o furo do custo de envio de Codex.
 [v] Fechar Loja: validar compra de Slots e claim por link; revisar items e Codex no catalogo.

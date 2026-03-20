@@ -1355,14 +1355,10 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                 {/* Modals Overlay */}
                 {isMoodOpen && (
-                    <div className="fixed inset-0 z-[10001]">
-                        <MoodModal onClose={() => setIsMoodOpen(false)} />
-                    </div>
+                    <MoodModal onClose={() => setIsMoodOpen(false)} />
                 )}
                 {isChecklistOpen && (
-                    <div className="fixed inset-0 z-[10001]">
-                        <ChecklistModal onClose={() => setIsChecklistOpen(false)} />
-                    </div>
+                    <ChecklistModal onClose={() => setIsChecklistOpen(false)} />
                 )}
                 {isOracleOpen && (
                     <div className="fixed inset-0 z-[10001]">
@@ -1370,9 +1366,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     </div>
                 )}
                 {isClanOpen && clan && (
-                    <div className="fixed inset-0 z-[10001]">
-                        <ClanDetailModal clanName={clan.name} onClose={() => setIsClanOpen(false)} />
-                    </div>
+                    <ClanDetailModal clanName={clan.name} onClose={() => setIsClanOpen(false)} />
                 )}
 
                 {/* Quick Action Input Overlay */}

@@ -26,6 +26,8 @@ import { formatLocalDateString, getOperationalDateString as getOperationalDateSt
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
+import { showLocalNotification } from '../utils/localNotification';
+import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, isBadgeNotification } from '../constants/oracleNotificationPolicy';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -604,6 +606,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [campaigns, setCampaigns] = useState<Campaign[]>(() => []);
     const oracleBootKeyRef = useRef<string | null>(null);
     const triggerOracleRef = useRef<GameContextType['triggerOracle'] | null>(null);
+    const seenNotificationIdsRef = useRef<Set<string>>(new Set());
+    const notificationsHydratedRef = useRef(false);
+    const seenOracleMessageIdsRef = useRef<Set<string>>(new Set());
+    const oracleMessagesHydratedRef = useRef(false);
 
     // Fetch campaigns from Supabase on load
     useEffect(() => {
@@ -1351,6 +1357,99 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             oracleMessagesChannel.unsubscribe();
         };
     }, [session?.user.id, fetchNotifications, refreshOracleMessages]);
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId)) {
+            seenNotificationIdsRef.current = new Set();
+            notificationsHydratedRef.current = false;
+            return;
+        }
+
+        const currentIds = notifications.map((notification) => notification.id);
+
+        if (!notificationsHydratedRef.current) {
+            seenNotificationIdsRef.current = new Set(currentIds);
+            notificationsHydratedRef.current = true;
+            return;
+        }
+
+        const unseenNotifications = notifications.filter((notification) => !seenNotificationIdsRef.current.has(notification.id));
+        seenNotificationIdsRef.current = new Set(currentIds);
+
+        if (
+            unseenNotifications.length === 0 ||
+            !oraclePreferences?.pushEnabled ||
+            document.visibilityState === 'visible'
+        ) {
+            return;
+        }
+
+        const activeOracleMode = oraclePreferences.activeMode || 'neutro';
+        const visibleNotifications = getVisibleNotificationsForProfile(unseenNotifications, appMode, activeOracleMode)
+            .filter((notification) => !notification.read && isBadgeNotification(notification));
+
+        if (visibleNotifications.length === 0) {
+            return;
+        }
+
+        void (async () => {
+            for (const notification of visibleNotifications) {
+                await showLocalNotification({
+                    title: getNotificationTitle(notification),
+                    body: getNotificationBody(notification, activeOracleMode),
+                    tag: `glyph-notification-${notification.id}`,
+                    url: '/?oracle=notifications',
+                });
+            }
+        })();
+    }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.pushEnabled, session?.user.id]);
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId)) {
+            seenOracleMessageIdsRef.current = new Set();
+            oracleMessagesHydratedRef.current = false;
+            return;
+        }
+
+        const feedMessages = oracleMessages.filter((message) => message.deliveryType === 'feed');
+        const currentIds = feedMessages.map((message) => message.id);
+
+        if (!oracleMessagesHydratedRef.current) {
+            seenOracleMessageIdsRef.current = new Set(currentIds);
+            oracleMessagesHydratedRef.current = true;
+            return;
+        }
+
+        const unseenMessages = feedMessages.filter((message) => !seenOracleMessageIdsRef.current.has(message.id));
+        seenOracleMessageIdsRef.current = new Set(currentIds);
+
+        if (
+            unseenMessages.length === 0 ||
+            !oraclePreferences?.pushEnabled ||
+            !oraclePreferences?.notificationsEnabled ||
+            document.visibilityState === 'visible'
+        ) {
+            return;
+        }
+
+        const latestMessage = unseenMessages
+            .slice()
+            .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
+
+        if (!latestMessage) {
+            return;
+        }
+
+        const modeConfig = ORACLE_MODES[latestMessage.mode] || ORACLE_MODES.neutro;
+        void showLocalNotification({
+            title: `Oraculo - ${modeConfig.name}`,
+            body: latestMessage.content,
+            tag: `glyph-oracle-${latestMessage.id}`,
+            url: '/?oracle=chat',
+        });
+    }, [oracleMessages, oraclePreferences?.notificationsEnabled, oraclePreferences?.pushEnabled, session?.user.id]);
 
     // --- FORGE SYSTEM ---
     const [inventory, setInventory] = useState<InventoryItem[]>([]);

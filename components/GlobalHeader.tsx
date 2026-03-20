@@ -81,8 +81,9 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('oracle') === 'notifications') {
-            setOracleInitialTab('notifications');
+        const oracleTarget = params.get('oracle');
+        if (oracleTarget === 'notifications' || oracleTarget === 'chat') {
+            setOracleInitialTab(oracleTarget === 'notifications' ? 'notifications' : 'chat');
             setOracleOpen(true);
             params.delete('oracle');
             const nextSearch = params.toString();

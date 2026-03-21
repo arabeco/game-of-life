@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "A imaginação`né a faculdade`nda descoberta."
-$supportCore = "A mente que imaginou programação antes de existir computador."
-$analysis1Title = "O que Ada Lovelace fez?"
-$analysis1 = "Ada Lovelace escreveu, no século XIX, a visão de uma máquina capaz de manipular símbolos e seguir instruções gerais.`nAntes do computador existir fisicamente, ela já enxergava a lógica da programação."
-$analysis1Close = "Ela enxergou uma máquina antes da máquina."
+$quoteText = "A simplicidade é`no último grau`nda sofisticação."
+$supportCore = "O homem que atravessou arte, ciência e engenharia como se fossem a mesma língua."
+$analysis1Title = "O que Leonardo da Vinci fez?"
+$analysis1 = "Leonardo da Vinci produziu estudos e obras que atravessaram pintura, anatomia, engenharia, observação científica e desenho técnico.`nEle não trabalhou em uma disciplina. Operou como se conhecimento inteiro fosse um só campo."
+$analysis1Close = "Ele pensava sem aceitar fronteiras entre áreas."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque imaginar a estrutura de algo antes de sua existência material exige visão rara.`nAda não previu só uma máquina: previu uma linguagem."
-$analysis2Close = "Ela viu futuro onde os outros viam mecanismo."
+$analysis2Body = "Porque a maioria escolhe uma arena e passa a vida inteira dentro dela. Leonardo atravessou várias como se a curiosidade não pudesse ser confinada.`nIsso não é versatilidade comum. É mente de escala rara."
+$analysis2Close = "Ele fez da curiosidade uma arquitetura de grandeza."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 
@@ -501,8 +501,8 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 48 -Width 912 -Height 110
-Draw-Pill -Graphics $graphics -Text "Legado 10  |  Ada Lovelace" -Font $bodyBoldFont -X 318 -Y 188 -Width 444 -Height 54
-Draw-CenterText -Graphics $graphics -Text "A Visão Além da �?poca" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
+Draw-Pill -Graphics $graphics -Text "Legado 10  |  Leonardo da Vinci" -Font $bodyBoldFont -X 282 -Y 188 -Width 516 -Height 54
+Draw-CenterText -Graphics $graphics -Text "A Anatomia`ndo Gênio" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
 Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 94 -Y 468 -Width 584 -Height 272
 Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 90 -Y 790 -Width 596 -Height 176
 Draw-FeatureFrame -Graphics $graphics -X 720 -Y 492 -Width 208 -Height 378 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
@@ -516,7 +516,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Sobreviveu" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
+Draw-CenterText -Graphics $graphics -Text "Feito" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 768
 Draw-CenterText -Graphics $graphics -Text $analysis1Title -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 232 -Width 828 -Height 132
 Draw-CenterText -Graphics $graphics -Text $analysis1 -Font $bodyFont -Brush $offWhiteBrush -X 118 -Y 386 -Width 844 -Height 412

@@ -191,21 +191,18 @@ const RelationshipArenaBoardCard: React.FC<{
     };
 
     return (
-        <button
-            onClick={onClick}
-            className="w-[8.8rem] shrink-0 rounded-[18px] border border-white/12 bg-black/18 p-2 text-left shadow-[0_10px_20px_rgba(0,0,0,0.18)] transition-all hover:border-[var(--skin-accent-color)]/24 hover:bg-black/24"
-        >
-            <div className="pointer-events-none">
+        <div className="w-[9.15rem] shrink-0 rounded-[18px] border border-white/12 bg-black/18 p-2 shadow-[0_10px_20px_rgba(0,0,0,0.18)] transition-all hover:border-[var(--skin-accent-color)]/24 hover:bg-black/24">
+            <button onClick={onClick} className="block w-full text-left">
                 <ArenaCard
                     arena={previewArena}
                     actions={arena.actions || []}
                     tasks={arena.tasks || []}
                     onClick={() => undefined}
-                    variant="compact"
+                    variant="overview"
                     assetName={assetName}
                 />
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-2">
+            </button>
+            <div className="mt-2 flex items-center justify-between gap-2 px-1">
                 <span className="truncate rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/44">
                     {assetName || 'Ativo'}
                 </span>
@@ -213,7 +210,7 @@ const RelationshipArenaBoardCard: React.FC<{
                     Abrir
                 </span>
             </div>
-        </button>
+        </div>
     );
 };
 
@@ -471,6 +468,7 @@ export const RelationshipHubModal: React.FC<{
         fetchRelationshipHubData,
         friends,
         getRelationshipCapacitySummary,
+        installCodex,
         respondToRelationshipInvite,
         showToast,
         userCodexes,
@@ -629,6 +627,27 @@ export const RelationshipHubModal: React.FC<{
         }
         return grouped;
     }, [linkedArenas]);
+    const receivedCodexesByLinkId = useMemo(() => {
+        const grouped = new Map<string, any[]>();
+        for (const codex of userCodexes) {
+            if (!codex.mentor_relationship_link_id) continue;
+            const current = grouped.get(codex.mentor_relationship_link_id) || [];
+            current.push(codex);
+            grouped.set(codex.mentor_relationship_link_id, current);
+        }
+        return grouped;
+    }, [userCodexes]);
+    const installedOriginCodexIds = useMemo(() => {
+        const ids = new Set<string>();
+        assets.forEach((asset) => {
+            asset.arenas.forEach((arena) => {
+                if (arena.originCodexId) {
+                    ids.add(arena.originCodexId);
+                }
+            });
+        });
+        return ids;
+    }, [assets]);
 
     const filteredInvites = useMemo(() => {
         const linkType = activeTab as RelationshipLinkType;
@@ -910,6 +929,7 @@ export const RelationshipHubModal: React.FC<{
         const pupilProfile = profileFor(link.pupilId) || (link.pupilId === sessionUid ? toProfileLite(userProfile) : null);
 
         if (link.linkType === 'mentoria') {
+            const receivedCodexes = receivedCodexesByLinkId.get(link.id) || [];
             return (
                 <div className="space-y-4">
                     <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
@@ -1010,31 +1030,75 @@ export const RelationshipHubModal: React.FC<{
                                     onClick={() => setSelectedPupilLink(link)}
                                     className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-200 transition-all hover:bg-cyan-400/16"
                                 >
-                                    Gerir
+                                    Abrir
                                 </button>
                             ) : (
                                 <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
-                                    Aguardando mentor
+                                    {receivedCodexes.length} recebida{receivedCodexes.length === 1 ? '' : 's'}
                                 </span>
                             )}
                         </div>
 
-                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                            <div className="rounded-[18px] border border-white/12 bg-black/20 px-3 py-2.5">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Prontas</div>
-                                <div className="mt-1 text-[12px] text-white/58">Entregue algo autoral que ja esteja finalizado.</div>
-                            </div>
-
-                            <div className="rounded-[18px] border border-white/12 bg-black/20 px-3 py-2.5">
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Exclusiva</div>
-                                    <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
-                                        {COIN_GLYPH} 100
-                                    </span>
+                        {isMentorSide ? (
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                <div className="rounded-[18px] border border-white/12 bg-black/20 px-3 py-2.5">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Prontas</div>
+                                    <div className="mt-1 text-[12px] text-white/58">Entregue algo autoral que ja esteja finalizado.</div>
                                 </div>
-                                <div className="mt-1 text-[12px] text-white/58">Forja uma campanha nova so para essa mentoria.</div>
+
+                                <div className="rounded-[18px] border border-white/12 bg-black/20 px-3 py-2.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Exclusiva</div>
+                                        <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
+                                            {COIN_GLYPH} 100
+                                        </span>
+                                    </div>
+                                    <div className="mt-1 text-[12px] text-white/58">Forja uma campanha nova so para essa mentoria.</div>
+                                </div>
                             </div>
-                        </div>
+                        ) : receivedCodexes.length === 0 ? (
+                            <div className="mt-3">
+                                <EmptyState title="Sem campanhas" text="Seu mentor ainda nao enviou campanha para esta mentoria." />
+                            </div>
+                        ) : (
+                            <div className="mt-3 space-y-2">
+                                {receivedCodexes.map((codex: any) => {
+                                    const installed = installedOriginCodexIds.has(codex.id);
+                                    return (
+                                        <div key={codex.id} className="rounded-[18px] border border-white/10 bg-black/22 px-3 py-2.5">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-sm font-black text-white">{codex.name}</div>
+                                                    <div className="mt-1 text-[11px] text-white/50">
+                                                        {Array.isArray(codex.template?.levels) ? codex.template.levels.length : 0} fase(s)
+                                                    </div>
+                                                </div>
+                                                {installed ? (
+                                                    <span className="shrink-0 rounded-full border border-emerald-300/18 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-200">
+                                                        Instalada
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={async () => {
+                                                            setBusyKey(`install:${codex.id}`);
+                                                            try {
+                                                                await installCodex(codex.id);
+                                                            } finally {
+                                                                setBusyKey(null);
+                                                            }
+                                                        }}
+                                                        disabled={busyKey === `install:${codex.id}`}
+                                                        className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
+                                                    >
+                                                        {busyKey === `install:${codex.id}` ? 'Instalando' : 'Instalar'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </GlassCard>
                     </div>
                 </div>

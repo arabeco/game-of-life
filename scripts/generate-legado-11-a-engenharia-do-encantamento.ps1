@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "A maneira de começar`né parar de falar`ne começar a fazer."
-$supportCore = "O homem que transformou imaginação em linguagem industrial de encantamento."
-$analysis1Title = "O que Walt Disney fez?"
-$analysis1 = "Walt Disney ajudou a redesenhar o entretenimento moderno ao unir narrativa, animação, personagem e parque temático dentro de um sistema coerente.`nEle não criou só obras; criou um ecossistema de imaginação escalável."
-$analysis1Close = "Ele industrializou encantamento sem matar a magia."
+$quoteText = "O presente é deles.`nO futuro, pelo qual realmente`ntrabalhei, é meu."
+$supportCore = "O inventor que pensou energia, transmissão e futuro em escala quase impossível."
+$analysis1Title = "O que Nikola Tesla fez?"
+$analysis1 = "Nikola Tesla ajudou a moldar a infraestrutura elétrica moderna com avanços em corrente alternada, motores, bobinas e sistemas de transmissão.`nSua visão empurrava tecnologia para além do que seu tempo conseguia organizar comercialmente."
+$analysis1Close = "Ele não inventava só máquinas. Inventava horizonte."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque sonhar é comum. O raro é converter sonho em operação, padrão e legado comercial duradouro.`nDisney mostrou que imaginação de alto nível também exige execução brutal."
-$analysis2Close = "Ele provou que fantasia séria também é engenharia."
+$analysis2Body = "Porque existe uma diferença brutal entre melhorar o presente e enxergar sistemas inteiros antes de eles caberem no mercado.`nTesla operava nesse segundo nível: visão técnica adiantada demais para o próprio século."
+$analysis2Close = "Ele pensava onde o mundo ainda não alcançava."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 
@@ -501,8 +501,8 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 48 -Width 912 -Height 110
-Draw-Pill -Graphics $graphics -Text "Legado 11  |  Walt Disney" -Font $bodyBoldFont -X 318 -Y 188 -Width 444 -Height 54
-Draw-CenterText -Graphics $graphics -Text "A Engenharia do`nEncantamento" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
+Draw-Pill -Graphics $graphics -Text "Legado 11  |  Nikola Tesla" -Font $bodyBoldFont -X 300 -Y 188 -Width 480 -Height 54
+Draw-CenterText -Graphics $graphics -Text "A Eletricidade`nda Visão" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
 Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 94 -Y 468 -Width 584 -Height 272
 Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 90 -Y 790 -Width 596 -Height 176
 Draw-FeatureFrame -Graphics $graphics -X 720 -Y 492 -Width 208 -Height 378 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
@@ -516,7 +516,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Sobreviveu" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
+Draw-CenterText -Graphics $graphics -Text "Feito" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 768
 Draw-CenterText -Graphics $graphics -Text $analysis1Title -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 232 -Width 828 -Height 132
 Draw-CenterText -Graphics $graphics -Text $analysis1 -Font $bodyFont -Brush $offWhiteBrush -X 118 -Y 386 -Width 844 -Height 412

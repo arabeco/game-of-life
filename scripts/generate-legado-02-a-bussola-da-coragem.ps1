@@ -516,7 +516,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Sobreviveu" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
+Draw-CenterText -Graphics $graphics -Text "Feito" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 768
 Draw-CenterText -Graphics $graphics -Text $analysis1Title -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 232 -Width 828 -Height 132
 Draw-CenterText -Graphics $graphics -Text $analysis1 -Font $bodyFont -Brush $offWhiteBrush -X 118 -Y 386 -Width 844 -Height 412

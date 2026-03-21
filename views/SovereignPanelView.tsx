@@ -1647,10 +1647,16 @@ const NotificationTestButton: React.FC = () => {
     );
 };
 export const SovereignPanelView: React.FC = () => {
+  const { userProfile, isProfileLoaded } = useGame();
+  const isStaff = isProfileLoaded && (userProfile.role === 'admin' || userProfile.role === 'gm');
   const [rows, setRows] = useState<Marco1BetaScoreboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<Marco1BetaScoreboardRow | null>(null);
+
+  if (!isStaff) {
+    return null;
+  }
 
   useEffect(() => {
     let isMounted = true;

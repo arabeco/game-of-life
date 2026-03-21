@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
-import { Arena, ActionType, ArenaFolder, Campaign } from '../types';
+import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, ScheduledTask } from '../types';
 import { PlusIcon, EyeIcon, XIcon, LayersIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
@@ -38,9 +38,15 @@ type ArenaAttentionState = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress } = useGame();
+    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, fetchRelationshipHubData } = useGame();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
+    const [sharedLinkedArenas, setSharedLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
+    const [selectedSharedArenaDetail, setSelectedSharedArenaDetail] = useState<{
+        arena: Arena;
+        actions: Action[];
+        tasks: ScheduledTask[];
+    } | null>(null);
 
     useEffect(() => {
         const handleTutorialOpenArena = (e: any) => {
@@ -170,8 +176,22 @@ export const ArenasView: React.FC = () => {
     
     // Filter out arenas that are in campaigns
     const allCampaignArenaIds = campaigns.reduce((acc, campaign) => [...acc, ...campaign.arenaIds], [] as string[]);
+    const ownedArenaIds = useMemo(() => {
+        const ids = new Set<string>();
+        assets.forEach(asset => asset.arenas.forEach(arena => ids.add(arena.id)));
+        return ids;
+    }, [assets]);
+    const relationshipOwnedArenaIds = useMemo(() => {
+        const ids = new Set<string>();
+        sharedLinkedArenas.forEach((linkedArena) => {
+            if (linkedArena.arenaId && ownedArenaIds.has(linkedArena.arenaId)) {
+                ids.add(linkedArena.arenaId);
+            }
+        });
+        return ids;
+    }, [ownedArenaIds, sharedLinkedArenas]);
     
-    const allArenas = getArenas().filter(a => showArchived || !a.isArchived);
+    const allArenas = getArenas().filter(a => (showArchived || !a.isArchived) && !relationshipOwnedArenaIds.has(a.id));
     const rootArenas = allArenas
         .filter(a => !a.folderId && !allCampaignArenaIds.includes(a.id))
         .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -200,6 +220,44 @@ export const ArenasView: React.FC = () => {
         ...asset,
         arenas: allArenas.filter(a => a.assetId === asset.id) // Use allArenas instead of rootArenas
     })).filter(group => group.arenas.length > 0);
+    const receivedSharedArenas = useMemo(
+        () => sharedLinkedArenas.filter(linkedArena => linkedArena.arena && !ownedArenaIds.has(linkedArena.arena.id)),
+        [ownedArenaIds, sharedLinkedArenas]
+    );
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadSharedLinkedArenas = async () => {
+            if (!userProfile?.id) {
+                setSharedLinkedArenas([]);
+                return;
+            }
+
+            try {
+                const hub = await fetchRelationshipHubData();
+                if (!cancelled) {
+                    setSharedLinkedArenas(hub.linkedArenas || []);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('Failed to load shared relationship arenas for ArenasView:', error);
+                }
+            }
+        };
+
+        void loadSharedLinkedArenas();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [userProfile?.id]);
+
+    const getAssetNameForSharedArena = (linkedArena: LinkedRelationshipArena) => {
+        const assetId = linkedArena.arena?.assetId;
+        if (!assetId) return 'Arena compartilhada';
+        return assets.find(asset => asset.id === assetId)?.name || 'Arena compartilhada';
+    };
 
     const handlePriorityDrop = async (e: React.DragEvent, priority: 'alta' | 'media' | 'baixa', targetId?: string) => {
         e.preventDefault();
@@ -933,6 +991,40 @@ export const ArenasView: React.FC = () => {
         <>
             {renderDragPreview()}
             <div className="px-4 pb-4 pt-4 relative min-h-full">
+                {receivedSharedArenas.length > 0 && (
+                    <div className="mb-6 space-y-2">
+                        <div className="flex items-center gap-2 px-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                Arenas compartilhadas
+                            </span>
+                            <div className="flex-1 h-[1px] bg-white/5" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--skin-accent-color)]">
+                                {receivedSharedArenas.length}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3">
+                            {receivedSharedArenas.map((linkedArena) => (
+                                <div key={linkedArena.id}>
+                                    <ArenaCard
+                                        arena={linkedArena.arena!}
+                                        assetName={getAssetNameForSharedArena(linkedArena)}
+                                        actions={linkedArena.actions || []}
+                                        tasks={linkedArena.tasks || []}
+                                        onClick={() => {
+                                            if (!linkedArena.arena) return;
+                                            setSelectedSharedArenaDetail({
+                                                arena: linkedArena.arena,
+                                                actions: linkedArena.actions || [],
+                                                tasks: linkedArena.tasks || [],
+                                            });
+                                        }}
+                                        variant="overview"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 <div className="flex items-center justify-end gap-2 mb-4 z-[60]" id="campaigns-section">
                     <button
                         onClick={handleCreateCampaignClick}
@@ -1135,6 +1227,15 @@ export const ArenasView: React.FC = () => {
                 <ArenaDetailModal
                     arena={selectedArena}
                     onClose={() => setSelectedArenaId(null)}
+                />
+            )}
+            {selectedSharedArenaDetail && (
+                <ArenaDetailModal
+                    arena={selectedSharedArenaDetail.arena}
+                    actionsOverride={selectedSharedArenaDetail.actions}
+                    tasksOverride={selectedSharedArenaDetail.tasks}
+                    readOnly
+                    onClose={() => setSelectedSharedArenaDetail(null)}
                 />
             )}
             {selectedCampaign && (

@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Quando a mente`nestá decidida,`no medo diminui."
-$supportCore = "A mulher cujo não deslocou a história de um país inteiro."
-$analysis1Title = "O que Rosa Parks fez?"
-$analysis1 = "Rosa Parks recusou-se a ceder seu lugar em um ônibus segregado no Alabama.`nA partir daquele gesto, o boicote aos ônibus de Montgomery ganhou força e a luta pelos direitos civis entrou em outra escala."
-$analysis1Close = "Foi um gesto mínimo com efeito sísmico."
+$quoteText = "É preciso ter caos dentro de si`npara dar à luz`numa estrela dançante."
+$supportCore = "O filósofo que atacou certezas antigas para obrigar o homem a criar valor."
+$analysis1Title = "O que Friedrich Nietzsche fez?"
+$analysis1 = "Nietzsche desmontou pilares morais, religiosos e culturais do Ocidente para forçar uma pergunta incômoda: o que sobra quando os velhos ídolos caem?`nSua obra virou uma ruptura filosófica com efeitos que atravessaram psicologia, literatura, arte e crítica cultural."
+$analysis1Close = "Ele transformou pensamento em dinamite."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque sistemas injustos costumam parecer grandes demais para um gesto isolado.`nParks mostrou que um ato limpo, no ponto certo, pode deslocar a moral inteira de um sistema."
-$analysis2Close = "Ela mostrou o poder histórico de um não firme."
+$analysis2Body = "Porque quase todo mundo pensa dentro das molduras recebidas. Nietzsche fez o contrário: atacou a moldura inteira.`nNão queria conforto intelectual. Queria arrancar o pensamento do automático."
+$analysis2Close = "Ele fez da lucidez uma forma de confronto."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 
@@ -501,8 +501,8 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 48 -Width 912 -Height 110
-Draw-Pill -Graphics $graphics -Text "Legado 08  |  Rosa Parks" -Font $bodyBoldFont -X 318 -Y 188 -Width 444 -Height 54
-Draw-CenterText -Graphics $graphics -Text "A Alavanca do Não" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
+Draw-Pill -Graphics $graphics -Text "Legado 08  |  Friedrich Nietzsche" -Font $bodyBoldFont -X 274 -Y 188 -Width 532 -Height 54
+Draw-CenterText -Graphics $graphics -Text "O Martelo da`nLucidez" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
 Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 94 -Y 468 -Width 584 -Height 272
 Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 90 -Y 790 -Width 596 -Height 176
 Draw-FeatureFrame -Graphics $graphics -X 720 -Y 492 -Width 208 -Height 378 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
@@ -516,7 +516,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Sobreviveu" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
+Draw-CenterText -Graphics $graphics -Text "Feito" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 768
 Draw-CenterText -Graphics $graphics -Text $analysis1Title -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 232 -Width 828 -Height 132
 Draw-CenterText -Graphics $graphics -Text $analysis1 -Font $bodyFont -Brush $offWhiteBrush -X 118 -Y 386 -Width 844 -Height 412

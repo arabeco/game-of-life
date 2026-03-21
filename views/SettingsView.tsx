@@ -1691,13 +1691,14 @@ const PreferenciasTab: React.FC = () => {
 };
 
 const PremiumTab: React.FC = () => {
-    const { userProfile, oraclePreferences } = useGame();
+    const { userProfile, oraclePreferences, isProfileLoaded } = useGame();
     const [isLinksOpen, setLinksOpen] = useState(false);
     const [isOracleSettingsOpen, setOracleSettingsOpen] = useState(false);
     const [showCampaignsCodex, setShowCampaignsCodex] = useState(false);
     const [isOracleChatOpen, setOracleChatOpen] = useState(false);
     const [isCodexOpen, setCodexOpen] = useState(false);
     const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
+    const isStaff = isProfileLoaded && (userProfile.role === 'admin' || userProfile.role === 'gm');
     const isIAEnabled = oraclePreferences?.iaEnabled ?? true;
 
     // Debug logs
@@ -1765,7 +1766,7 @@ const PremiumTab: React.FC = () => {
                 </GlassCard>
             </section>
 
-            {(userProfile.role === 'admin' || userProfile.role === 'gm') && (
+            {isStaff && (
                 <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
                     <Suspense fallback={<div className="h-24 rounded-2xl bg-black/20 animate-pulse" />}>
                         <SovereignPanelView />

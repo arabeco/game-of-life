@@ -57,13 +57,11 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     const { userProfile, showToast, updateUserProfile } = useGame();
     const profileEmail = String(userProfile.email || '').trim();
     const initialCheckoutEmail = isValidCheckoutEmail(profileEmail) ? profileEmail : '';
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(Boolean(initialCheckoutEmail));
     const [paymentResult, setPaymentResult] = useState<any>(null);
     const [creditDetected, setCreditDetected] = useState(false);
     const [emailInput, setEmailInput] = useState(initialCheckoutEmail);
     const [checkoutEmail, setCheckoutEmail] = useState(initialCheckoutEmail);
-    const brickControllerRef = useRef<any>(null);
-    const initializedKeyRef = useRef<string | null>(null);
     const latestRefs = useRef({ onClose, showToast });
     const baselineGoldRef = useRef<number>(Number(userProfile.wallet?.gold || 0));
     const creditToastShownRef = useRef(false);
@@ -90,203 +88,62 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
         baselineGoldRef.current = Number(userProfile.wallet?.gold || 0);
     }, []);
 
-    useEffect(() => {
-        let isActive = true;
-        const initKey = `${userProfile.id}:${amount}:${goldAmount}:${checkoutEmail}`;
-
-        const fetchPreferenceId = async () => {
-            try {
-                const response = await fetch(`${EDGE_FUNCTION_URL}/checkout`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-                        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                    },
-                    body: JSON.stringify({
-                        userId: userProfile.id,
-                        goldAmount,
-                        amount,
-                    }),
-                });
-                const data = await response.json();
-                return data.preferenceId;
-            } catch (err) {
-                console.error('Fetch Preference Error:', err);
-                return null;
-            }
-        };
-
-        const destroyBrick = async () => {
-            const controller = brickControllerRef.current;
-            brickControllerRef.current = null;
-
-            if (controller?.unmount) {
-                try {
-                    await controller.unmount();
-                } catch (error) {
-                    console.warn('Erro ao desmontar Brick do Mercado Pago:', error);
-                }
-            }
-
-            const container = document.getElementById('paymentBrick_container');
-            if (container) container.innerHTML = '';
-        };
-
-        const initMP = async () => {
-            try {
-                if (!isActive || initializedKeyRef.current === initKey) return;
-
-                initializedKeyRef.current = initKey;
-                setLoading(true);
-                await destroyBrick();
-
-                const mp = new window.MercadoPago(import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY, {
-                    locale: 'pt-BR',
-                });
-                const bricksBuilder = mp.bricks();
-                const preferenceId = await fetchPreferenceId();
-
-                if (!preferenceId) {
-                    initializedKeyRef.current = null;
-                    latestRefs.current.showToast('Erro ao gerar preferencia de pagamento.');
-                    latestRefs.current.onClose();
-                    return;
-                }
-
-                if (!isActive) return;
-
-                const settings = {
-                    initialization: {
-                        amount,
-                        preferenceId,
-                        payer: {
-                            email: checkoutEmail,
-                        },
-                    },
-                    customization: {
-                        visual: {
-                            theme: 'dark',
-                            style: {
-                                customVariables: {
-                                    formPadding: '12px',
-                                    baseColor: 'var(--skin-accent-color)',
-                                },
-                            },
-                        },
-                        paymentMethods: {
-                            ticket: 'all',
-                            bankTransfer: ['pix'],
-                            creditCard: 'all',
-                            mercadoPago: 'all',
-                            maxInstallments: 1,
-                        },
-                    },
-                    callbacks: {
-                        onReady: () => setLoading(false),
-                        onSubmit: async ({ formData }: any) => {
-                            try {
-                                const configuredTestEmail = String(import.meta.env.VITE_MERCADO_PAGO_TEST_EMAIL || '').trim();
-                                const fallbackEmail = configuredTestEmail || FALLBACK_TEST_EMAIL;
-                                const payerEmail = String(checkoutEmail || formData?.payer?.email || fallbackEmail).trim();
-                                if (!isValidCheckoutEmail(payerEmail)) {
-                                    const error = new Error('Digite um e-mail valido para continuar.');
-                                    latestRefs.current.showToast(error.message, 'warning');
-                                    throw error;
-                                }
-                                const nextFormData = {
-                                    ...(formData || {}),
-                                    payer: {
-                                        ...(formData?.payer || {}),
-                                        email: payerEmail || fallbackEmail,
-                                    },
-                                };
-
-                                const response = await fetch(`${EDGE_FUNCTION_URL}/process_payment`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-                                        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                                    },
-                                    body: JSON.stringify({
-                                        formData: nextFormData,
-                                        userId: userProfile.id,
-                                        goldAmount,
-                                        amount,
-                                    }),
-                                });
-
-                                const result = await response.json();
-
-                                if (result.id) {
-                                    setPaymentResult(result);
-                                    return result;
-                                }
-
-                                throw new Error(result.error || 'Erro no processamento');
-                            } catch (error: any) {
-                                console.error('Erro no processamento:', error);
-                                latestRefs.current.showToast(error.message || 'Falha na comunicacao');
-                                throw error;
-                            }
-                        },
-                        onError: (error: any) => {
-                            console.error('MP Error:', error);
-                            latestRefs.current.showToast('Erro no checkout do Mercado Pago.');
-                        },
-                    },
-                };
-
-                const controller = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
-                brickControllerRef.current = controller;
-            } catch (err) {
-                console.error('MP Init Error:', err);
-                initializedKeyRef.current = null;
-                latestRefs.current.showToast('Falha ao carregar o sistema de pagamentos.');
-            }
-        };
-
-        if (!isValidCheckoutEmail(checkoutEmail)) {
-            setLoading(false);
-            initializedKeyRef.current = null;
-            void destroyBrick();
-            return () => {
-                isActive = false;
-                initializedKeyRef.current = null;
-                void destroyBrick();
-            };
+    const createPixCharge = async (payerEmail: string) => {
+        const nextEmail = String(payerEmail || '').trim();
+        if (!isValidCheckoutEmail(nextEmail)) {
+            latestRefs.current.showToast('Digite um e-mail valido para continuar.', 'warning');
+            return;
         }
 
-        const ensureScript = () => {
-            const existingScript = document.querySelector<HTMLScriptElement>('script[data-mp-sdk="true"]');
-            if (existingScript) {
-                if (window.MercadoPago) {
-                    void initMP();
-                } else {
-                    existingScript.addEventListener('load', () => void initMP(), { once: true });
-                }
-                return;
+        try {
+            setLoading(true);
+            setCheckoutEmail(nextEmail);
+            setPaymentResult(null);
+
+            const response = await fetch(`${EDGE_FUNCTION_URL}/process_payment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({
+                    formData: {
+                        payer: {
+                            email: nextEmail,
+                        },
+                    },
+                    userId: userProfile.id,
+                    goldAmount,
+                    amount,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result?.id) {
+                throw new Error(result?.error || 'Erro ao gerar o Pix.');
             }
 
-            const script = document.createElement('script');
-            script.src = 'https://sdk.mercadopago.com/js/v2';
-            script.async = true;
-            script.dataset.mpSdk = 'true';
-            script.onload = () => {
-                void initMP();
-            };
-            document.body.appendChild(script);
-        };
+            setPaymentResult(result);
+        } catch (error: any) {
+            console.error('Erro ao criar Pix:', error);
+            latestRefs.current.showToast(error.message || 'Falha ao gerar o Pix.');
+            setCheckoutEmail('');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        ensureScript();
+    useEffect(() => {
+        if (!isValidCheckoutEmail(initialCheckoutEmail)) {
+            setLoading(false);
+            return;
+        }
 
-        return () => {
-            isActive = false;
-            initializedKeyRef.current = null;
-            void destroyBrick();
-        };
-    }, [amount, checkoutEmail, goldAmount, userProfile.id]);
+        void createPixCharge(initialCheckoutEmail);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (!paymentResult?.id || creditDetected) return;
@@ -387,8 +244,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
             showToast('Digite um e-mail valido para continuar.', 'warning');
             return;
         }
-        setCheckoutEmail(nextEmail);
-        setLoading(true);
+        void createPixCharge(nextEmail);
     };
 
     return (
@@ -410,16 +266,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     </div>
 
                     <div className="custom-scrollbar flex min-h-[320px] flex-1 flex-col overflow-y-auto bg-black/60 p-2 scroll-smooth">
-                        {loading && !paymentResult && (
-                            <div className="flex flex-col items-center justify-center space-y-4 py-16">
-                                <div className="h-10 w-10 rounded-full border-4 border-[var(--skin-accent-color)] border-t-transparent animate-spin" />
-                                <p className="animate-pulse text-[9px] font-bold uppercase tracking-[0.3em] text-gray-500">
-                                    Conectando ao Mercado Pago...
-                                </p>
-                            </div>
-                        )}
-
-                        {!paymentResult && needsEmailStep ? (
+                        {!paymentResult && needsEmailStep && !loading ? (
                             <div className="flex flex-1 flex-col justify-center gap-5 px-4 py-8">
                                 <div className="space-y-2 text-center">
                                     <h3 className="text-xl font-bold text-white">Digite o e-mail do pagador</h3>
@@ -439,14 +286,16 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                         placeholder="voce@exemplo.com"
                                         value={emailInput}
                                         onChange={(event) => setEmailInput(event.target.value)}
+                                        disabled={loading}
                                         className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
                                     />
                                     <button
                                         type="button"
                                         onClick={handleStartPayment}
-                                        className="luxe-skin-button w-full rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-all"
+                                        disabled={loading}
+                                        className="luxe-skin-button w-full rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-all disabled:cursor-not-allowed disabled:opacity-40"
                                     >
-                                        Pagar
+                                        {loading ? 'Gerando Pix...' : 'Pagar'}
                                     </button>
                                 </div>
                             </div>
@@ -539,14 +388,17 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 </button>
                             </div>
                         ) : (
-                            <div className="space-y-3">
-                                <div className="mx-2 mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+                                <div className="h-10 w-10 rounded-full border-4 border-[var(--skin-accent-color)] border-t-transparent animate-spin" />
+                                <div className="space-y-2">
                                     <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
                                         E-mail do pagador
                                     </div>
-                                    <div className="mt-1 text-sm font-semibold text-white">{checkoutEmail}</div>
+                                    <div className="text-sm font-semibold text-white">{checkoutEmail}</div>
                                 </div>
-                                <div id="paymentBrick_container" className="transition-opacity duration-500" />
+                                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500">
+                                    Gerando cobranca Pix...
+                                </p>
                             </div>
                         )}
                     </div>
@@ -558,23 +410,6 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     </div>
                 </GlassCard>
             </div>
-
-            <style>{`
-                #paymentBrick_container {
-                    --mp-theme-color-primary: var(--skin-accent-color);
-                    --mp-theme-color-secondary: #111;
-                    --mp-theme-color-text: #fff;
-                    --mp-theme-color-background: transparent;
-                }
-                .svelte-payment-brick {
-                    background: transparent !important;
-                }
-                .mp-brick-payment-form input {
-                    background-color: rgba(255, 255, 255, 0.05) !important;
-                    border-color: rgba(255, 255, 255, 0.1) !important;
-                    color: white !important;
-                }
-            `}</style>
         </Portal>
     );
 };

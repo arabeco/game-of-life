@@ -7788,6 +7788,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const addClanMember = async (memberId: string) => {
+        console.warn('Direct clan member insertion blocked. Member must request to join.', memberId);
+        showToast('Entrada no clã só acontece por solicitação aprovada.', 'warning');
+        return;
         if (!clan) return;
         if (!isUuid(memberId)) {
             console.error("Invalid member ID for clan addition");

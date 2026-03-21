@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-08-a-alavanca-do-nao\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-11-a-eletricidade-da-visao\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -449,7 +449,7 @@ $height = 1350
 
 $logoPath = "C:\Users\Afonso\Downloads\GOL1.006\public\logo-diamond.png"
 $bgLegacy = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\purpleback.jpg"
-$assetRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-08-a-alavanca-do-nao\assets"
+$assetRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-11-a-eletricidade-da-visao\assets"
 if (-not (Test-Path $assetRoot)) { New-Item -ItemType Directory -Path $assetRoot -Force | Out-Null }
 $coverImagePath = Get-OptionalImagePath -Root $assetRoot
 
@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "É preciso ter caos dentro de si`npara dar à luz`numa estrela dançante."
-$supportCore = "O filósofo que atacou certezas antigas para obrigar o homem a criar valor."
-$analysis1Title = "O que Friedrich Nietzsche fez?"
-$analysis1 = "Nietzsche desmontou pilares morais, religiosos e culturais do Ocidente para forçar uma pergunta incômoda: o que sobra quando os velhos ídolos caem?`nSua obra virou uma ruptura filosófica com efeitos que atravessaram psicologia, literatura, arte e crítica cultural."
-$analysis1Close = "Ele transformou pensamento em dinamite."
+$quoteText = "O presente é deles.`nO futuro, pelo qual realmente`ntrabalhei, é meu."
+$supportCore = "O inventor que pensou energia, transmissão e futuro em escala quase impossível."
+$analysis1Title = "O que Nikola Tesla fez?"
+$analysis1 = "Nikola Tesla ajudou a moldar a infraestrutura elétrica moderna com avanços em corrente alternada, motores, bobinas e sistemas de transmissão.`nSua visão empurrava tecnologia para além do que seu tempo conseguia organizar comercialmente."
+$analysis1Close = "Ele não inventava só máquinas. Inventava horizonte."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque quase todo mundo pensa dentro das molduras recebidas. Nietzsche fez o contrário: atacou a moldura inteira.`nNão queria conforto intelectual. Queria arrancar o pensamento do automático."
-$analysis2Close = "Ele fez da lucidez uma forma de confronto."
+$analysis2Body = "Porque existe uma diferença brutal entre melhorar o presente e enxergar sistemas inteiros antes de eles caberem no mercado.`nTesla operava nesse segundo nível: visão técnica adiantada demais para o próprio século."
+$analysis2Close = "Ele pensava onde o mundo ainda não alcançava."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 
@@ -501,8 +501,8 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 48 -Width 912 -Height 110
-Draw-Pill -Graphics $graphics -Text "Legado 08  |  Friedrich Nietzsche" -Font $bodyBoldFont -X 274 -Y 188 -Width 532 -Height 54
-Draw-CenterText -Graphics $graphics -Text "O Martelo da`nLucidez" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
+Draw-Pill -Graphics $graphics -Text "Legado 11  |  Nikola Tesla" -Font $bodyBoldFont -X 300 -Y 188 -Width 480 -Height 54
+Draw-CenterText -Graphics $graphics -Text "A Eletricidade`nda Visão" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
 Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 94 -Y 468 -Width 584 -Height 272
 Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 90 -Y 790 -Width 596 -Height 176
 Draw-FeatureFrame -Graphics $graphics -X 720 -Y 492 -Width 208 -Height 378 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
@@ -563,7 +563,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text $brandLine -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Legado 08  |  Rosa Parks" -Font $eyebrowFont -Brush $eyebrowBrush -X 178 -Y 1060 -Width 724 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Legado 11  |  Nikola Tesla" -Font $eyebrowFont -Brush $eyebrowBrush -X 188 -Y 1060 -Width 704 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -575,7 +575,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "LEGADO 08  |  A ALAVANCA DO NÃO" -Font ([System.Drawing.Font]::new($headlineFamily, 28, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "LEGADO 11  |  A ELETRICIDADE DA VISÃO" -Font ([System.Drawing.Font]::new($headlineFamily, 28, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text $sheetLine -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

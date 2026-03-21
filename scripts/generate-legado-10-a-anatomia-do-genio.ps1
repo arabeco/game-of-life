@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\fundamentos-06-alinhamento-de-postura-e-respiraa-a-o\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-10-a-anatomia-do-genio\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -176,8 +176,8 @@ function Draw-BackgroundBase {
     $overlayBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
         [System.Drawing.Point]::new(0, 0),
         [System.Drawing.Point]::new($Width, $Height),
-        (New-Color 214 2 4 7),
-        (New-Color 208 6 10 16)
+        (New-Color 216 2 2 6),
+        (New-Color 208 5 5 9)
     )
     $Graphics.FillRectangle($overlayBrush, 0, 0, $Width, $Height)
     $overlayBrush.Dispose()
@@ -187,7 +187,7 @@ function Draw-BackgroundBase {
     $panelWidth = $Width - 164
     $panelHeight = $Height - 164
 
-    $panelBrush = [System.Drawing.SolidBrush]::new((New-Color 198 5 8 12))
+    $panelBrush = [System.Drawing.SolidBrush]::new((New-Color 198 8 8 14))
     $Graphics.FillRectangle($panelBrush, $panelX, $panelY, $panelWidth, $panelHeight)
     $panelBrush.Dispose()
 
@@ -260,6 +260,153 @@ function Draw-EditorialPanel {
     }
 }
 
+function Get-OptionalImagePath {
+    param([string]$Root)
+
+    if (-not (Test-Path $Root)) { return $null }
+    $candidate = Get-ChildItem -Path $Root -File | Where-Object {
+        $_.Extension -match '^\.(png|jpg|jpeg|webp)$'
+    } | Sort-Object Name | Select-Object -First 1
+
+    if ($null -eq $candidate) { return $null }
+    return $candidate.FullName
+}
+
+function Get-VisibleImageBounds {
+    param(
+        [System.Drawing.Image]$Image,
+        [int]$AlphaThreshold = 8
+    )
+
+    $ownsBitmap = $false
+    if ($Image -is [System.Drawing.Bitmap]) {
+        $bitmap = $Image
+    } else {
+        $bitmap = [System.Drawing.Bitmap]::new($Image)
+        $ownsBitmap = $true
+    }
+
+    try {
+        $minX = $bitmap.Width
+        $minY = $bitmap.Height
+        $maxX = -1
+        $maxY = -1
+
+        for ($y = 0; $y -lt $bitmap.Height; $y++) {
+            for ($x = 0; $x -lt $bitmap.Width; $x++) {
+                if ($bitmap.GetPixel($x, $y).A -gt $AlphaThreshold) {
+                    if ($x -lt $minX) { $minX = $x }
+                    if ($y -lt $minY) { $minY = $y }
+                    if ($x -gt $maxX) { $maxX = $x }
+                    if ($y -gt $maxY) { $maxY = $y }
+                }
+            }
+        }
+
+        if ($maxX -lt 0 -or $maxY -lt 0) {
+            return [System.Drawing.Rectangle]::new(0, 0, $bitmap.Width, $bitmap.Height)
+        }
+
+        return [System.Drawing.Rectangle]::new($minX, $minY, ($maxX - $minX + 1), ($maxY - $minY + 1))
+    } finally {
+        if ($ownsBitmap) { $bitmap.Dispose() }
+    }
+}
+
+function Draw-ImageInBox {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [string]$ImagePath,
+        [float]$X,
+        [float]$Y,
+        [float]$Width,
+        [float]$Height
+    )
+
+    $image = [System.Drawing.Image]::FromFile($ImagePath)
+    $sourceRect = Get-VisibleImageBounds -Image $image
+    try {
+        $scale = [Math]::Min($Width / $sourceRect.Width, $Height / $sourceRect.Height)
+        $drawWidth = [float]($sourceRect.Width * $scale)
+        $drawHeight = [float]($sourceRect.Height * $scale)
+        $drawX = [float]($X + (($Width - $drawWidth) / 2))
+        $drawY = [float]($Y + $Height - $drawHeight)
+        $destRect = [System.Drawing.Rectangle]::new(
+            [int][Math]::Round($drawX),
+            [int][Math]::Round($drawY),
+            [int][Math]::Round($drawWidth),
+            [int][Math]::Round($drawHeight)
+        )
+        $Graphics.DrawImage(
+            $image,
+            $destRect,
+            $sourceRect.X,
+            $sourceRect.Y,
+            $sourceRect.Width,
+            $sourceRect.Height,
+            [System.Drawing.GraphicsUnit]::Pixel
+        )
+    } finally {
+        $image.Dispose()
+    }
+}
+
+function Draw-FeatureFrame {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [float]$X,
+        [float]$Y,
+        [float]$Width,
+        [float]$Height,
+        [string]$ImagePath,
+        [System.Drawing.Font]$PlaceholderFont,
+        [System.Drawing.Brush]$PlaceholderBrush
+    )
+
+    $outerBrush = [System.Drawing.SolidBrush]::new((New-Color 62 5 6 10))
+    $innerBrush = [System.Drawing.SolidBrush]::new((New-Color 108 9 11 16))
+    $outerPen = [System.Drawing.Pen]::new((New-Color 185 212 175 55), 2.0)
+    $innerPen = [System.Drawing.Pen]::new((New-Color 120 255 236 196), 1.0)
+    $accentBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+        [System.Drawing.Point]::new([int]$X, [int]$Y),
+        [System.Drawing.Point]::new([int]$X, [int]($Y + $Height)),
+        (New-Color 84 244 216 118),
+        (New-Color 6 244 216 118)
+    )
+
+    try {
+        $Graphics.FillRectangle($outerBrush, $X, $Y, $Width, $Height)
+        $Graphics.FillRectangle($innerBrush, $X + 10, $Y + 10, $Width - 20, $Height - 20)
+        $Graphics.FillRectangle($accentBrush, $X + 10, $Y + 10, 10, $Height - 20)
+        $Graphics.DrawRectangle($outerPen, $X, $Y, $Width, $Height)
+        $Graphics.DrawRectangle($innerPen, $X + 10, $Y + 10, $Width - 20, $Height - 20)
+
+        if (-not [string]::IsNullOrWhiteSpace($ImagePath) -and (Test-Path $ImagePath)) {
+            $clipRect = [System.Drawing.Rectangle]::new(
+                [int][Math]::Round($X + 10),
+                [int][Math]::Round($Y + 10),
+                [int][Math]::Round($Width - 20),
+                [int][Math]::Round($Height - 20)
+            )
+            $state = $Graphics.Save()
+            try {
+                $Graphics.SetClip($clipRect)
+                Draw-ImageInBox -Graphics $Graphics -ImagePath $ImagePath -X ($X + 20) -Y ($Y + 18) -Width ($Width - 40) -Height ($Height - 36)
+            } finally {
+                $Graphics.Restore($state)
+            }
+        } else {
+            Draw-CenterText -Graphics $Graphics -Text "Imagem`nde capa" -Font $PlaceholderFont -Brush $PlaceholderBrush -X ($X + 26) -Y ($Y + 90) -Width ($Width - 52) -Height ($Height - 180)
+        }
+    } finally {
+        $outerBrush.Dispose()
+        $innerBrush.Dispose()
+        $outerPen.Dispose()
+        $innerPen.Dispose()
+        $accentBrush.Dispose()
+    }
+}
+
 function Draw-SmallBrand {
     param(
         [System.Drawing.Graphics]$Graphics,
@@ -301,19 +448,22 @@ $width = 1080
 $height = 1350
 
 $logoPath = "C:\Users\Afonso\Downloads\GOL1.006\public\logo-diamond.png"
-$bgFoundations = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\blueback.jpg"
+$bgLegacy = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\purpleback.jpg"
+$assetRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-10-a-anatomia-do-genio\assets"
+if (-not (Test-Path $assetRoot)) { New-Item -ItemType Directory -Path $assetRoot -Force | Out-Null }
+$coverImagePath = Get-OptionalImagePath -Root $assetRoot
 
 $headlineFamily = Get-FontFamily -Candidates @("Cormorant Garamond", "Garamond", "Book Antiqua", "Palatino Linotype", "Georgia", "Times New Roman")
 $bodyFamily = Get-FontFamily -Candidates @("Book Antiqua", "Palatino Linotype", "Georgia", "Cambria", "Times New Roman")
 
 $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 96, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 66, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 54, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 78, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 68, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 56, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyFont = [System.Drawing.Font]::new($bodyFamily, 48, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$watermarkFont = [System.Drawing.Font]::new($headlineFamily, 108, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$watermarkFont = [System.Drawing.Font]::new($headlineFamily, 116, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 
 $whiteBrush = [System.Drawing.SolidBrush]::new((New-Color 240 245 242 237))
 $offWhiteBrush = [System.Drawing.SolidBrush]::new((New-Color 220 236 233 227))
@@ -326,21 +476,22 @@ $goldBrushSlide = Get-GoldBrush -Width $width -Height $height
 $created = New-Object System.Collections.Generic.List[string]
 
 $aacute = [char]0x00E1
+$ccedilla = [char]0x00E7
 $eacute = [char]0x00E9
+$ecirc = [char]0x00EA
 $iacute = [char]0x00ED
 $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
-$ecirc = [char]0x00EA
-$ccedilla = [char]0x00E7
 
-$coverSupport = "Ã€s vezes a mente nÃ£o estÃ¡ ruim.`nO corpo Ã© que estÃ¡ comprimido."
-$logic1Title = "Postura ruim`ncobra caro."
-$logic1Body = "Ombros fechados, pescoÃ§o tenso e respiraÃ§Ã£o curta mantÃªm o corpo em alerta baixo o dia inteiro.`nIsso reduz foco, aumenta fadiga e faz ansiedade parecer problema sÃ³ mental."
-$logic1Close = "TensÃ£o fÃ­sica vaza para a mente."
-$logic2Title = "Ajuste pequeno,`nefeito real."
-$logic2Body = "Abrir peito, soltar cervical e respirar fundo por alguns ciclos devolve oxigÃªnio, presenÃ§a e margem de decisÃ£o.`nÃ€s vezes o reset comeÃ§a por centÃ­metros."
-$logic2Close = "Corpo melhor posicionado pensa melhor."
+$quoteText = "A simplicidade é`no último grau`nda sofisticação."
+$supportCore = "O homem que atravessou arte, ciência e engenharia como se fossem a mesma língua."
+$analysis1Title = "O que Leonardo da Vinci fez?"
+$analysis1 = "Leonardo da Vinci produziu estudos e obras que atravessaram pintura, anatomia, engenharia, observação científica e desenho técnico.`nEle não trabalhou em uma disciplina. Operou como se conhecimento inteiro fosse um só campo."
+$analysis1Close = "Ele pensava sem aceitar fronteiras entre áreas."
+$analysis2Title = "Por que isso foi raro?"
+$analysis2Body = "Porque a maioria escolhe uma arena e passa a vida inteira dentro dela. Leonardo atravessou várias como se a curiosidade não pudesse ser confinada.`nIsso não é versatilidade comum. É mente de escala rara."
+$analysis2Close = "Ele fez da curiosidade uma arquitetura de grandeza."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 
@@ -348,11 +499,13 @@ $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgFoundations -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Fundamentos" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 76 -Width 912 -Height 120
-Draw-CenterText -Graphics $graphics -Text "Alinhamento de`nPostura e RespiraÃ§Ã£o" -Font $heroTitleFont -Brush $goldBrushSlide -X 126 -Y 314 -Width 828 -Height 252
-Draw-CenterText -Graphics $graphics -Text $coverSupport -Font $bodyFont -Brush $offWhiteBrush -X 152 -Y 566 -Width 776 -Height 144
-Draw-Pill -Graphics $graphics -Text "Fundamentos 06" -Font $bodyBoldFont -X 386 -Y 790 -Width 308 -Height 54
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
+Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 48 -Width 912 -Height 110
+Draw-Pill -Graphics $graphics -Text "Legado 10  |  Leonardo da Vinci" -Font $bodyBoldFont -X 282 -Y 188 -Width 516 -Height 54
+Draw-CenterText -Graphics $graphics -Text "A Anatomia`ndo Gênio" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
+Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 94 -Y 468 -Width 584 -Height 272
+Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 90 -Y 790 -Width 596 -Height 176
+Draw-FeatureFrame -Graphics $graphics -X 720 -Y 492 -Width 208 -Height 378 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -362,14 +515,14 @@ $created.Add($slide1)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgFoundations -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Pausa" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 500 -Width 912 -Height 128
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
+Draw-CenterText -Graphics $graphics -Text "Feito" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 768
-Draw-CenterText -Graphics $graphics -Text $logic1Title -Font $titleLargeFont -Brush $goldBrushSlide -X 122 -Y 234 -Width 836 -Height 194
-Draw-CenterText -Graphics $graphics -Text $logic1Body -Font $bodyFont -Brush $offWhiteBrush -X 122 -Y 466 -Width 836 -Height 304
-Draw-CenterText -Graphics $graphics -Text $logic1Close -Font $titleMediumFont -Brush $whiteBrush -X 138 -Y 846 -Width 804 -Height 128
+Draw-CenterText -Graphics $graphics -Text $analysis1Title -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 232 -Width 828 -Height 132
+Draw-CenterText -Graphics $graphics -Text $analysis1 -Font $bodyFont -Brush $offWhiteBrush -X 118 -Y 386 -Width 844 -Height 412
+Draw-CenterText -Graphics $graphics -Text $analysis1Close -Font $titleMediumFont -Brush $whiteBrush -X 136 -Y 834 -Width 808 -Height 128
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide2 = Join-Path $OutputDir "slide-02-logica-01.png"
+$slide2 = Join-Path $OutputDir "slide-02-analise-01.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
 $created.Add($slide2)
 
@@ -377,14 +530,14 @@ $created.Add($slide2)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgFoundations -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Recarga" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 500 -Width 912 -Height 128
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
+Draw-CenterText -Graphics $graphics -Text "Raridade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 776
-Draw-CenterText -Graphics $graphics -Text $logic2Title -Font $titleLargeFont -Brush $goldBrushSlide -X 122 -Y 240 -Width 836 -Height 186
-Draw-CenterText -Graphics $graphics -Text $logic2Body -Font $bodyFont -Brush $offWhiteBrush -X 122 -Y 470 -Width 836 -Height 320
-Draw-CenterText -Graphics $graphics -Text $logic2Close -Font $titleMediumFont -Brush $whiteBrush -X 138 -Y 854 -Width 804 -Height 124
+Draw-CenterText -Graphics $graphics -Text $analysis2Title -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 236 -Width 840 -Height 136
+Draw-CenterText -Graphics $graphics -Text $analysis2Body -Font $bodyFont -Brush $offWhiteBrush -X 116 -Y 394 -Width 848 -Height 408
+Draw-CenterText -Graphics $graphics -Text $analysis2Close -Font $titleMediumFont -Brush $whiteBrush -X 136 -Y 840 -Width 808 -Height 126
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
-$slide3 = Join-Path $OutputDir "slide-03-logica-02.png"
+$slide3 = Join-Path $OutputDir "slide-03-analise-02.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
 $created.Add($slide3)
 
@@ -392,10 +545,10 @@ $created.Add($slide3)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgFoundations -Width $width -Height $height
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
 $watermarkBrush2 = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
 try {
-    Draw-CenterText -Graphics $graphics -Text "Fundamentos" -Font $watermarkFont -Brush $watermarkBrush2 -X 84 -Y 456 -Width 912 -Height 150
+    Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $watermarkBrush2 -X 84 -Y 456 -Width 912 -Height 150
 } finally {
     $watermarkBrush2.Dispose()
 }
@@ -410,7 +563,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text $brandLine -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Fundamentos 06  |  Descanso falso vs. descanso real" -Font $eyebrowFont -Brush $eyebrowBrush -X 98 -Y 1060 -Width 884 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Legado 10  |  Leonardo da Vinci" -Font $eyebrowFont -Brush $eyebrowBrush -X 168 -Y 1060 -Width 744 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -422,7 +575,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "FUNDAMENTOS 06  |  ALINHAMENTO DE POSTURA E RESPIRAÃ§Ã£O" -Font ([System.Drawing.Font]::new($headlineFamily, 26, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "LEGADO 10  |  A ANATOMIA DO GÊNIO" -Font ([System.Drawing.Font]::new($headlineFamily, 28, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text $sheetLine -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

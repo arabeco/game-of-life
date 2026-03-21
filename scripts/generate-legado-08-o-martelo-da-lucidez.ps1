@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-02-a-ba-ssola-da-coragem\slides"
+    [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-08-o-martelo-da-lucidez\slides"
 )
 
 Set-StrictMode -Version Latest
@@ -449,7 +449,7 @@ $height = 1350
 
 $logoPath = "C:\Users\Afonso\Downloads\GOL1.006\public\logo-diamond.png"
 $bgLegacy = "C:\Users\Afonso\Downloads\GOL1.006\marketing\background\purpleback.jpg"
-$assetRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-02-a-ba-ssola-da-coragem\assets"
+$assetRoot = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-08-o-martelo-da-lucidez\assets"
 if (-not (Test-Path $assetRoot)) { New-Item -ItemType Directory -Path $assetRoot -Force | Out-Null }
 $coverImagePath = Get-OptionalImagePath -Root $assetRoot
 
@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Todo grande sonho`ncomeÃ§a com um sonhador.`nVocÃª jÃ¡ carrega a forÃ§a,`na paciÃªncia e a paixÃ£o."
-$supportCore = "A mulher que fugiu da escravidÃ£o e voltou ao inferno para tirar outros de lÃ¡."
-$analysis1Title = "O que Viktor Frankl fez?"
-$analysis1 = "Nascida escravizada nos Estados Unidos, Harriet Tubman fugiu para o Norte e depois voltou ao Sul pelo menos treze vezes.`nGuiou dezenas de pessoas Ã  liberdade pela Underground Railroad, operando em silÃªncio, estratÃ©gia e risco extremo."
-$analysis1Close = "Ela nÃ£o correu sÃ³ para se salvar. Correu para voltar."
+$quoteText = "É preciso ter caos dentro de si`npara dar à luz`numa estrela dançante."
+$supportCore = "O filósofo que atacou certezas antigas para obrigar o homem a criar valor."
+$analysis1Title = "O que Friedrich Nietzsche fez?"
+$analysis1 = "Nietzsche desmontou pilares morais, religiosos e culturais do Ocidente para forçar uma pergunta incômoda: o que sobra quando os velhos ídolos caem?`nSua obra virou uma ruptura filosófica com efeitos que atravessaram psicologia, literatura, arte e crítica cultural."
+$analysis1Close = "Ele transformou pensamento em dinamite."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque escapar jÃ¡ era improvÃ¡vel. Voltar repetidas vezes, sabendo o custo de ser capturada, Ã© outro nÃ­vel de coragem.`nTubman transformou sobrevivÃªncia em responsabilidade."
-$analysis2Close = "Ela fez da prÃ³pria liberdade uma rota."
+$analysis2Body = "Porque quase todo mundo pensa dentro das molduras recebidas. Nietzsche fez o contrário: atacou a moldura inteira.`nNão queria conforto intelectual. Queria arrancar o pensamento do automático."
+$analysis2Close = "Ele fez da lucidez uma forma de confronto."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 
@@ -501,8 +501,8 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 48 -Width 912 -Height 110
-Draw-Pill -Graphics $graphics -Text "Legado 02  |  Harriet Tubman" -Font $bodyBoldFont -X 318 -Y 188 -Width 444 -Height 54
-Draw-CenterText -Graphics $graphics -Text "A BÃºssola`nda Coragem" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
+Draw-Pill -Graphics $graphics -Text "Legado 08  |  Friedrich Nietzsche" -Font $bodyBoldFont -X 274 -Y 188 -Width 532 -Height 54
+Draw-CenterText -Graphics $graphics -Text "O Martelo da`nLucidez" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
 Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 94 -Y 468 -Width 584 -Height 272
 Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 90 -Y 790 -Width 596 -Height 176
 Draw-FeatureFrame -Graphics $graphics -X 720 -Y 492 -Width 208 -Height 378 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
@@ -563,7 +563,7 @@ try {
 Draw-CenterText -Graphics $graphics -Text "GLYPH" -Font ([System.Drawing.Font]::new($headlineFamily, 86, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $goldBrushSlide -X 170 -Y 770 -Width 740 -Height 94
 Draw-CenterText -Graphics $graphics -Text $brandLine -Font $titleMediumFont -Brush $whiteBrush -X 180 -Y 868 -Width 720 -Height 68
 Draw-Pill -Graphics $graphics -Text "glyph.life" -Font $bodyBoldFont -X 386 -Y 972 -Width 308 -Height 54
-Draw-CenterText -Graphics $graphics -Text "Legado 02  |  Harriet Tubman" -Font $eyebrowFont -Brush $eyebrowBrush -X 178 -Y 1060 -Width 724 -Height 28
+Draw-CenterText -Graphics $graphics -Text "Legado 08  |  Friedrich Nietzsche" -Font $eyebrowFont -Brush $eyebrowBrush -X 158 -Y 1060 -Width 764 -Height 28
 $slide4 = Join-Path $OutputDir "slide-04-fecho.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
 $created.Add($slide4)
@@ -575,7 +575,7 @@ $contactGraphics = $contact.Graphics
 $contactGraphics.Clear((New-Color 255 8 8 10))
 $sheetBrush = [System.Drawing.SolidBrush]::new((New-Color 255 240 236 226))
 $sheetGold = Get-GoldBrush -Width 1600 -Height 2200
-Draw-CenterText -Graphics $contactGraphics -Text "LEGADO 02  |  A BÃºSSOLA DA CORAGEM" -Font ([System.Drawing.Font]::new($headlineFamily, 28, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
+Draw-CenterText -Graphics $contactGraphics -Text "LEGADO 08  |  O MARTELO DA LUCIDEZ" -Font ([System.Drawing.Font]::new($headlineFamily, 28, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetGold -X 180 -Y 42 -Width 1240 -Height 60
 Draw-CenterText -Graphics $contactGraphics -Text $sheetLine -Font ([System.Drawing.Font]::new($bodyFamily, 24, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)) -Brush $sheetBrush -X 300 -Y 108 -Width 1000 -Height 32
 
 $thumbWidth = 560

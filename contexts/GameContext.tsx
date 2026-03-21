@@ -3691,22 +3691,54 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         endedAt: row.ended_at ?? null,
     });
 
+    const buildLinkedRelationshipArenaPreview = (
+        row: any,
+        link: RelationshipLink | undefined,
+        sourceArena: Arena | null | undefined
+    ): Arena => {
+        const metadata = row?.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+        const isPrimaryArena = Boolean(link?.arenaId && link.arenaId === row?.arena_id);
+        const snapshotName = isPrimaryArena ? link?.arenaSnapshot?.name : null;
+        const snapshotIcon = isPrimaryArena ? link?.arenaSnapshot?.icon : null;
+        const name = String(sourceArena?.name || metadata?.name || snapshotName || 'Arena vinculada');
+        const description = String(sourceArena?.description || metadata?.description || '');
+        const icon = String(sourceArena?.icon || metadata?.icon || snapshotIcon || '🏛️');
+        const assetId = String(sourceArena?.assetId || metadata?.asset_id || 'geral');
+
+        return {
+            id: String(sourceArena?.id || row?.arena_id || crypto.randomUUID()),
+            assetId,
+            name,
+            description,
+            icon,
+            actionIds: Array.isArray(sourceArena?.actionIds) ? sourceArena!.actionIds : [],
+            isArchived: sourceArena?.isArchived ?? false,
+        };
+    };
+
     const mapLinkedRelationshipArenaRow = (
         row: any,
+        linksById: Map<string, RelationshipLink>,
         arenasById: Map<string, Arena>,
         actionsByArenaId: Map<string, Action[]>,
         tasksByArenaId: Map<string, ScheduledTask[]>,
-    ): LinkedRelationshipArena => ({
-        id: row.id,
-        relationshipLinkId: row.relationship_link_id,
-        arenaId: row.arena_id,
-        createdByUserId: row.created_by_user_id ?? null,
-        createdAt: row.created_at,
-        metadata: row.metadata ?? null,
-        arena: arenasById.get(row.arena_id) ?? null,
-        actions: actionsByArenaId.get(row.arena_id) || [],
-        tasks: tasksByArenaId.get(row.arena_id) || [],
-    });
+    ): LinkedRelationshipArena => {
+        const sourceArena = arenasById.get(row.arena_id) ?? null;
+        const link = linksById.get(row.relationship_link_id);
+        const previewArena = buildLinkedRelationshipArenaPreview(row, link, sourceArena);
+
+        return {
+            id: row.id,
+            relationshipLinkId: row.relationship_link_id,
+            arenaId: row.arena_id,
+            createdByUserId: row.created_by_user_id ?? null,
+            createdAt: row.created_at,
+            metadata: row.metadata ?? null,
+            arena: previewArena,
+            actions: actionsByArenaId.get(row.arena_id) || [],
+            tasks: tasksByArenaId.get(row.arena_id) || [],
+        };
+    };
 
     const mapRelationshipErrorMessage = (message?: string, fallback = 'Nao foi possivel concluir o vinculo.') => {
         const raw = String(message || '').trim();
@@ -3772,6 +3804,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const links = (linksResult.data || []).map(mapRelationshipLinkRow);
+        const linksById = new Map(links.map((link) => [link.id, link] as const));
         const linkIds = links.map(link => link.id);
         let linkedArenaRows: any[] = [];
         const arenasById = new Map<string, Arena>();
@@ -3856,7 +3889,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return {
             invites: (invitesResult.data || []).map(mapRelationshipInviteRow),
             links,
-            linkedArenas: linkedArenaRows.map(row => mapLinkedRelationshipArenaRow(row, arenasById, actionsByArenaId, tasksByArenaId)),
+            linkedArenas: linkedArenaRows.map(row => mapLinkedRelationshipArenaRow(row, linksById, arenasById, actionsByArenaId, tasksByArenaId)),
             summary,
         };
     };

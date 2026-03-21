@@ -17,6 +17,8 @@ import { Portal } from './Portal';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { ArenaCard } from './ArenaCard';
 import { EmojiGlyph } from './EmojiGlyph';
+import { CampaignArenaStack } from './CampaignArenaStack';
+import { CampaignsCodex } from './CampaignsCodex';
 import {
     CrownIcon,
     UsersIcon,
@@ -28,6 +30,7 @@ import {
 } from './Icons';
 import { supabase } from '../supabaseClient';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
+import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 
 const CodexModal = lazy(() =>
     import('./CodexModal').then((module) => ({ default: module.CodexModal }))
@@ -182,35 +185,25 @@ const RelationshipArenaBoardCard: React.FC<{
 }> = ({ arena, assetName, onClick }) => {
     const previewArena = arena.arena || {
         id: arena.arenaId,
-        assetId: 'geral',
-        name: 'Arena compartilhada',
+        assetId: String(arena.metadata?.asset_id || 'geral'),
+        name: String(arena.metadata?.name || 'Arena vinculada'),
         icon: arena.metadata?.icon || '🏛️',
-        description: '',
+        description: String(arena.metadata?.description || ''),
         actionIds: [],
         isArchived: false,
     };
 
     return (
-        <div className="w-[9.15rem] shrink-0 rounded-[18px] border border-white/12 bg-black/18 p-2 shadow-[0_10px_20px_rgba(0,0,0,0.18)] transition-all hover:border-[var(--skin-accent-color)]/24 hover:bg-black/24">
-            <button onClick={onClick} className="block w-full text-left">
-                <ArenaCard
-                    arena={previewArena}
-                    actions={arena.actions || []}
-                    tasks={arena.tasks || []}
-                    onClick={() => undefined}
-                    variant="overview"
-                    assetName={assetName}
-                />
-            </button>
-            <div className="mt-2 flex items-center justify-between gap-2 px-1">
-                <span className="truncate rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/44">
-                    {assetName || 'Ativo'}
-                </span>
-                <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/34">
-                    Abrir
-                </span>
-            </div>
-        </div>
+        <button onClick={onClick} className="block w-[9.15rem] shrink-0 text-left transition-transform hover:-translate-y-0.5">
+            <ArenaCard
+                arena={previewArena}
+                actions={arena.actions || []}
+                tasks={arena.tasks || []}
+                onClick={() => undefined}
+                variant="overview"
+                assetName={assetName}
+            />
+        </button>
     );
 };
 
@@ -491,6 +484,7 @@ export const RelationshipHubModal: React.FC<{
     const [isMentorCreatorOpen, setIsMentorCreatorOpen] = useState(false);
     const [selectedMentorLinkForArena, setSelectedMentorLinkForArena] = useState<RelationshipLink | null>(null);
     const [selectedArenaDetail, setSelectedArenaDetail] = useState<RelationshipArenaDetailState | null>(null);
+    const [selectedCampaignPreview, setSelectedCampaignPreview] = useState<CodexCampaignPreview | null>(null);
     const [linkedArenaDraft, setLinkedArenaDraft] = useState({
         assetId: assets[0]?.id || 'geral',
         name: '',
@@ -636,6 +630,27 @@ export const RelationshipHubModal: React.FC<{
             grouped.set(codex.mentor_relationship_link_id, current);
         }
         return grouped;
+    }, [userCodexes]);
+    const receivedCodexPreviewById = useMemo(() => {
+        const previews = new Map<string, CodexCampaignPreview>();
+        for (const codex of userCodexes) {
+            if (!codex?.mentor_relationship_link_id) continue;
+            if (!Array.isArray(codex.template?.levels) || codex.template.levels.length === 0) continue;
+
+            previews.set(
+                codex.id,
+                buildCodexCampaignPreview(
+                    codex.id,
+                    {
+                        ...codex.template,
+                        title: codex.template?.title || codex.name || 'Campanha recebida',
+                        description: codex.template?.description || codex.description || '',
+                    },
+                    `__relationship_codex_preview_${codex.id}__`
+                )
+            );
+        }
+        return previews;
     }, [userCodexes]);
     const installedOriginCodexIds = useMemo(() => {
         const ids = new Set<string>();
@@ -803,7 +818,7 @@ export const RelationshipHubModal: React.FC<{
     }, [assets]);
 
     const assetNameForArena = (linkedArena?: LinkedRelationshipArena | null) => {
-        const assetId = linkedArena?.arena?.assetId;
+        const assetId = linkedArena?.arena?.assetId || String(linkedArena?.metadata?.asset_id || '');
         if (assetId) {
             const byId = assets.find((asset) => asset.id === assetId);
             if (byId) return byId.name;
@@ -816,8 +831,19 @@ export const RelationshipHubModal: React.FC<{
                 return asset.name;
             }
         }
-        return null;
+        return 'Ativo vinculado';
     };
+    const getArenaPreviewForLink = (linkedArena: LinkedRelationshipArena): Arena => (
+        linkedArena.arena || {
+            id: linkedArena.arenaId || `linked-preview-${linkedArena.id}`,
+            assetId: String(linkedArena.metadata?.asset_id || 'geral'),
+            name: String(linkedArena.metadata?.name || 'Arena vinculada'),
+            description: String(linkedArena.metadata?.description || ''),
+            icon: String(linkedArena.metadata?.icon || '\u{1F3DB}\uFE0F'),
+            actionIds: [],
+            isArchived: false,
+        }
+    );
 
     const renderTabBoard = () => {
         const tabLabel = activeTab === 'mentoria' ? 'Mentoria' : activeTab === 'parceria' ? 'Parceria' : 'Competicao';
@@ -1006,11 +1032,11 @@ export const RelationshipHubModal: React.FC<{
                                             key={linkedArena.id}
                                             arena={linkedArena}
                                             assetName={assetNameForArena(linkedArena)}
-                                            onClick={() => linkedArena.arena && setSelectedArenaDetail({
-                                                arena: linkedArena.arena,
+                                            onClick={() => setSelectedArenaDetail({
+                                                arena: getArenaPreviewForLink(linkedArena),
                                                 actions: linkedArena.actions || [],
                                                 tasks: linkedArena.tasks || [],
-                                                readOnly: !ownedArenaIds.has(linkedArena.arena.id),
+                                                readOnly: !ownedArenaIds.has(getArenaPreviewForLink(linkedArena).id),
                                             })}
                                         />
                                     ))}
@@ -1064,15 +1090,31 @@ export const RelationshipHubModal: React.FC<{
                             <div className="mt-3 space-y-2">
                                 {receivedCodexes.map((codex: any) => {
                                     const installed = installedOriginCodexIds.has(codex.id);
+                                    const preview = receivedCodexPreviewById.get(codex.id) || null;
                                     return (
                                         <div key={codex.id} className="rounded-[18px] border border-white/10 bg-black/22 px-3 py-2.5">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="min-w-0">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
                                                     <div className="truncate text-sm font-black text-white">{codex.name}</div>
                                                     <div className="mt-1 text-[11px] text-white/50">
                                                         {Array.isArray(codex.template?.levels) ? codex.template.levels.length : 0} fase(s)
                                                     </div>
+                                                    {preview && (
+                                                        <div className="mt-3 overflow-hidden rounded-[16px] border border-white/8 bg-black/18 px-2 py-2">
+                                                            <CampaignArenaStack arenas={preview.arenas} size="sm" />
+                                                        </div>
+                                                    )}
                                                 </div>
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                {preview && (
+                                                    <button
+                                                        onClick={() => setSelectedCampaignPreview(preview)}
+                                                        className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-200 transition-all hover:bg-cyan-400/16"
+                                                    >
+                                                        Ver campanha
+                                                    </button>
+                                                )}
                                                 {installed ? (
                                                     <span className="shrink-0 rounded-full border border-emerald-300/18 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-200">
                                                         Instalada
@@ -1149,11 +1191,11 @@ export const RelationshipHubModal: React.FC<{
                                         key={linkedArena.id}
                                         arena={linkedArena}
                                         assetName={assetNameForArena(linkedArena)}
-                                        onClick={() => linkedArena.arena && setSelectedArenaDetail({
-                                            arena: linkedArena.arena,
+                                        onClick={() => setSelectedArenaDetail({
+                                            arena: getArenaPreviewForLink(linkedArena),
                                             actions: linkedArena.actions || [],
                                             tasks: linkedArena.tasks || [],
-                                            readOnly: !ownedArenaIds.has(linkedArena.arena.id),
+                                            readOnly: !ownedArenaIds.has(getArenaPreviewForLink(linkedArena).id),
                                         })}
                                     />
                                 ))}
@@ -1518,6 +1560,15 @@ export const RelationshipHubModal: React.FC<{
                     tasksOverride={selectedArenaDetail.tasks}
                     readOnly={selectedArenaDetail.readOnly}
                     onClose={() => setSelectedArenaDetail(null)}
+                />
+            )}
+            {selectedCampaignPreview && (
+                <CampaignsCodex
+                    onClose={() => setSelectedCampaignPreview(null)}
+                    initialCampaignId={selectedCampaignPreview.campaign.id}
+                    previewCampaign={selectedCampaignPreview.campaign}
+                    previewArenas={selectedCampaignPreview.arenas}
+                    previewActions={selectedCampaignPreview.actions}
                 />
             )}
         </>

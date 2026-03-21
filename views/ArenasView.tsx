@@ -17,6 +17,7 @@ import { CampaignArenaStack } from '../components/CampaignArenaStack';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 import { calculateCampaignProgress } from '../utils/progressUtils';
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
+import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 
 type PendingAction = {
     id: string;
@@ -38,7 +39,7 @@ type ArenaAttentionState = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, fetchRelationshipHubData } = useGame();
+    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, fetchRelationshipHubData, userCodexes, installCodex } = useGame();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [sharedLinkedArenas, setSharedLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
@@ -47,6 +48,7 @@ export const ArenasView: React.FC = () => {
         actions: Action[];
         tasks: ScheduledTask[];
     } | null>(null);
+    const [selectedReceivedCampaignPreview, setSelectedReceivedCampaignPreview] = useState<CodexCampaignPreview | null>(null);
 
     useEffect(() => {
         const handleTutorialOpenArena = (e: any) => {
@@ -221,8 +223,39 @@ export const ArenasView: React.FC = () => {
         arenas: allArenas.filter(a => a.assetId === asset.id) // Use allArenas instead of rootArenas
     })).filter(group => group.arenas.length > 0);
     const receivedSharedArenas = useMemo(
-        () => sharedLinkedArenas.filter(linkedArena => linkedArena.arena && !ownedArenaIds.has(linkedArena.arena.id)),
+        () => sharedLinkedArenas.filter(linkedArena => linkedArena.arenaId && !ownedArenaIds.has(linkedArena.arenaId)),
         [ownedArenaIds, sharedLinkedArenas]
+    );
+    const installedOriginCodexIds = useMemo(() => {
+        const ids = new Set<string>();
+        assets.forEach((asset) => {
+            asset.arenas.forEach((arena) => {
+                if (arena.originCodexId) {
+                    ids.add(arena.originCodexId);
+                }
+            });
+        });
+        return ids;
+    }, [assets]);
+    const receivedMentorCampaigns = useMemo(
+        () => userCodexes.flatMap((codex: any) => {
+            if (!codex?.mentor_relationship_link_id) return [];
+            if (!Array.isArray(codex.template?.levels) || codex.template.levels.length === 0) return [];
+            if (installedOriginCodexIds.has(codex.id)) return [];
+
+            const preview = buildCodexCampaignPreview(
+                codex.id,
+                {
+                    ...codex.template,
+                    title: codex.template?.title || codex.name || 'Campanha recebida',
+                    description: codex.template?.description || codex.description || '',
+                },
+                `__mentor_campaign_preview_${codex.id}__`
+            );
+
+            return [{ codex, preview }];
+        }),
+        [installedOriginCodexIds, userCodexes]
     );
 
     useEffect(() => {
@@ -254,10 +287,21 @@ export const ArenasView: React.FC = () => {
     }, [userProfile?.id]);
 
     const getAssetNameForSharedArena = (linkedArena: LinkedRelationshipArena) => {
-        const assetId = linkedArena.arena?.assetId;
-        if (!assetId) return 'Arena compartilhada';
-        return assets.find(asset => asset.id === assetId)?.name || 'Arena compartilhada';
+        const assetId = linkedArena.arena?.assetId || String(linkedArena.metadata?.asset_id || '');
+        if (!assetId) return 'Ativo vinculado';
+        return assets.find(asset => asset.id === assetId)?.name || 'Ativo vinculado';
     };
+    const getPreviewArenaForSharedArena = (linkedArena: LinkedRelationshipArena): Arena => (
+        linkedArena.arena || {
+            id: linkedArena.arenaId || `shared-preview-${linkedArena.id}`,
+            assetId: String(linkedArena.metadata?.asset_id || 'geral'),
+            name: String(linkedArena.metadata?.name || 'Arena compartilhada'),
+            description: String(linkedArena.metadata?.description || ''),
+            icon: String(linkedArena.metadata?.icon || '\u{1F3DB}\uFE0F'),
+            actionIds: [],
+            isArchived: false,
+        }
+    );
 
     const handlePriorityDrop = async (e: React.DragEvent, priority: 'alta' | 'media' | 'baixa', targetId?: string) => {
         e.preventDefault();
@@ -991,6 +1035,68 @@ export const ArenasView: React.FC = () => {
         <>
             {renderDragPreview()}
             <div className="px-4 pb-4 pt-4 relative min-h-full">
+                {receivedMentorCampaigns.length > 0 && (
+                    <div className="mb-6 space-y-2">
+                        <div className="flex items-center gap-2 px-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                Campanhas do mentor
+                            </span>
+                            <div className="flex-1 h-[1px] bg-white/5" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--skin-accent-color)]">
+                                {receivedMentorCampaigns.length}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3">
+                            {receivedMentorCampaigns.map(({ codex, preview }) => (
+                                <div
+                                    key={codex.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => setSelectedReceivedCampaignPreview(preview)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                            event.preventDefault();
+                                            setSelectedReceivedCampaignPreview(preview);
+                                        }
+                                    }}
+                                    className="relative col-span-2 aspect-[4/3] overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a1a] text-left transition-all hover:border-[var(--skin-accent-color)]/35 cursor-pointer"
+                                >
+                                    <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
+                                                Campanha recebida
+                                            </div>
+                                            <div className="truncate text-[11px] font-black text-white">{preview.campaign.title}</div>
+                                        </div>
+                                        <div className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/60">
+                                            {preview.arenas.length} arenas
+                                        </div>
+                                    </div>
+                                    <div className="p-2.5 space-y-3">
+                                        <div className="flex min-h-[5.15rem] items-start justify-center overflow-hidden rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
+                                            <CampaignArenaStack arenas={preview.arenas} size="md" />
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/42">
+                                                {preview.actions.length} ações
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={async (event) => {
+                                                    event.stopPropagation();
+                                                    await installCodex(codex.id);
+                                                }}
+                                                className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12"
+                                            >
+                                                Instalar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 {receivedSharedArenas.length > 0 && (
                     <div className="mb-6 space-y-2">
                         <div className="flex items-center gap-2 px-2">
@@ -1006,14 +1112,13 @@ export const ArenasView: React.FC = () => {
                             {receivedSharedArenas.map((linkedArena) => (
                                 <div key={linkedArena.id}>
                                     <ArenaCard
-                                        arena={linkedArena.arena!}
+                                        arena={getPreviewArenaForSharedArena(linkedArena)}
                                         assetName={getAssetNameForSharedArena(linkedArena)}
                                         actions={linkedArena.actions || []}
                                         tasks={linkedArena.tasks || []}
                                         onClick={() => {
-                                            if (!linkedArena.arena) return;
                                             setSelectedSharedArenaDetail({
-                                                arena: linkedArena.arena,
+                                                arena: getPreviewArenaForSharedArena(linkedArena),
                                                 actions: linkedArena.actions || [],
                                                 tasks: linkedArena.tasks || [],
                                             });
@@ -1236,6 +1341,15 @@ export const ArenasView: React.FC = () => {
                     tasksOverride={selectedSharedArenaDetail.tasks}
                     readOnly
                     onClose={() => setSelectedSharedArenaDetail(null)}
+                />
+            )}
+            {selectedReceivedCampaignPreview && (
+                <CampaignsCodex
+                    initialCampaignId={selectedReceivedCampaignPreview.campaign.id}
+                    previewCampaign={selectedReceivedCampaignPreview.campaign}
+                    previewArenas={selectedReceivedCampaignPreview.arenas}
+                    previewActions={selectedReceivedCampaignPreview.actions}
+                    onClose={() => setSelectedReceivedCampaignPreview(null)}
                 />
             )}
             {selectedCampaign && (

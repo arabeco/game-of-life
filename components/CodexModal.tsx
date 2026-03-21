@@ -585,7 +585,7 @@ export const CodexModal: React.FC<{
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center animate-fade-in" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[220] flex items-center justify-center animate-fade-in" onClick={onClose}>
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-center">
             <div className="text-xs font-bold uppercase tracking-wider accent-text">CODEXES</div>
@@ -684,7 +684,7 @@ export const CodexModal: React.FC<{
       </div>
 
       {isCreatingArena && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={() => setIsCreatingArena(false)}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[230] flex items-center justify-center animate-fade-in" onClick={() => setIsCreatingArena(false)}>
           <GlassCard variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
             <div className="text-center">
               <h2 className="text-lg font-bold uppercase tracking-wider">Nova Arena</h2>
@@ -709,7 +709,7 @@ export const CodexModal: React.FC<{
       )}
 
       {selectedArena && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in" onClick={() => setSelectedArenaId(null)}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[231] flex items-center justify-center animate-fade-in" onClick={() => setSelectedArenaId(null)}>
           <div className="dossier-bg border border-[color:var(--accent-silver-soft)] w-full max-w-sm m-4 space-y-3 rounded-2xl p-4 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center">
               <div className="text-xs font-bold uppercase tracking-wider text-gray-400">{selectedArena.name}</div>
@@ -743,7 +743,7 @@ export const CodexModal: React.FC<{
       )}
 
       {isActionModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setIsActionModalOpen(false)}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[232] flex items-center justify-center animate-fade-in" onClick={() => setIsActionModalOpen(false)}>
           <GlassCard variant="accent" className="w-full max-w-sm m-4 rounded-2xl flex flex-col max-h-[90vh] p-0 overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center p-3 border-b border-white/10 bg-black/20">
               <div className="flex space-x-4">
@@ -957,7 +957,7 @@ export const CodexModal: React.FC<{
         />
       )}
       {isArenaPickerOpen && activeCodex && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setIsArenaPickerOpen(false)}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[233] flex items-center justify-center animate-fade-in" onClick={() => setIsArenaPickerOpen(false)}>
           <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Arena</h2>
             <div className="space-y-2 max-h-80 overflow-y-auto">

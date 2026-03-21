@@ -54,6 +54,49 @@ const splitFullName = (value: string) => {
   };
 };
 
+const maskEmail = (value: string) => {
+  const email = String(value || "").trim().toLowerCase();
+  const [localPart, domain] = email.split("@");
+  if (!localPart || !domain) return "";
+  if (localPart.length <= 2) return `${localPart[0] || "*"}***@${domain}`;
+  return `${localPart.slice(0, 2)}***@${domain}`;
+};
+
+const buildSafePaymentMetadata = (paymentData: any) => {
+  const payer = paymentData?.payer || {};
+  const identification = payer?.identification || {};
+  const rawDocument = String(identification?.number || "");
+  const sanitizedDocument = sanitizeCpf(rawDocument);
+  const lastName = String(payer?.last_name || "").trim();
+
+  return {
+    mercado_pago: {
+      id: paymentData?.id ?? null,
+      status: paymentData?.status ?? null,
+      status_detail: paymentData?.status_detail ?? null,
+      payment_method_id: paymentData?.payment_method_id ?? null,
+      payment_type_id: paymentData?.payment_type_id ?? null,
+      transaction_amount: paymentData?.transaction_amount ?? null,
+      currency_id: paymentData?.currency_id ?? null,
+      date_created: paymentData?.date_created ?? null,
+      date_approved: paymentData?.date_approved ?? null,
+      date_last_updated: paymentData?.date_last_updated ?? null,
+    },
+    glyph_purchase: {
+      user_id: paymentData?.metadata?.user_id ?? null,
+      gold_amount: paymentData?.metadata?.gold_amount ?? null,
+      amount_paid: paymentData?.metadata?.amount_paid ?? null,
+    },
+    payer: {
+      first_name: String(payer?.first_name || "").trim() || null,
+      last_name_initial: lastName ? `${lastName[0]}.` : null,
+      email_masked: maskEmail(payer?.email || ""),
+      identification_type: identification?.type || null,
+      cpf_last4: sanitizedDocument ? sanitizedDocument.slice(-4) : null,
+    },
+  };
+};
+
 const buildCorsHeaders = (origin: string | null) => ({
   "Access-Control-Allow-Origin": origin || ALLOWED_ORIGINS[0] || "",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -182,7 +225,12 @@ serve(async (req) => {
       const data = await response.json();
       
       if (!response.ok) {
-        console.error("[Glyph Pay] Erro MP Detalhado:", JSON.stringify(data));
+        console.error("[Glyph Pay] Erro MP Detalhado:", JSON.stringify({
+          message: data?.message || null,
+          error: data?.error || null,
+          cause: data?.cause || null,
+          status: data?.status || null,
+        }));
         return new Response(JSON.stringify({ 
           error: data.message || "Erro MP", 
           status: "error",
@@ -235,13 +283,14 @@ serve(async (req) => {
       // Se o pagamento foi aprovado, creditar o ouro via RPC
       if (paymentData.status === "approved") {
         const { user_id, gold_amount, amount_paid } = paymentData.metadata;
+        const safeMetadata = buildSafePaymentMetadata(paymentData);
 
         const { error } = await supabase.rpc("process_approved_payment", {
           p_user_id: user_id,
           p_payment_id: paymentId.toString(),
           p_gold_amount: parseInt(gold_amount),
           p_amount_paid: parseFloat(amount_paid),
-          p_metadata: paymentData
+          p_metadata: safeMetadata
         });
 
         if (error) {

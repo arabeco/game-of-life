@@ -32,46 +32,17 @@ const isProbablyImageUrl = (value?: string | null) => {
     return normalized.startsWith('http://') || normalized.startsWith('https://') || normalized.startsWith('/') || normalized.startsWith('data:image/');
 };
 
-const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ arena, actions }) => {
-    const visibleActions = actions.slice(0, 3);
-    const hiddenActions = Math.max(0, actions.length - visibleActions.length);
-
-    return (
-        <div className="w-[10rem] flex-shrink-0 rounded-[0.95rem] border border-white/10 bg-[linear-gradient(180deg,rgba(91,65,167,0.18),rgba(17,17,20,0.96))] p-2 shadow-[0_12px_20px_rgba(0,0,0,0.22)]">
-            <div className="flex items-start gap-2">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.8rem] border border-white/10 bg-black/35 text-white">
-                    <EmojiGlyph symbol={arena.icon || '🏛️'} size="action" className="text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <div className="line-clamp-2 text-[11px] font-black uppercase leading-tight text-white">
-                        {arena.name}
-                    </div>
-                </div>
-            </div>
-
-            <div className="mt-2 flex flex-wrap gap-1">
-                {visibleActions.length > 0 ? visibleActions.map((action) => (
-                    <span
-                        key={action.id}
-                        className="inline-flex max-w-full items-center gap-1 rounded-full border border-white/8 bg-white/[0.05] px-1.5 py-1 text-[9px] font-semibold text-white/72"
-                    >
-                        <span className="shrink-0 leading-none">{action.icon || '📝'}</span>
-                        <span className="truncate">{action.name}</span>
-                    </span>
-                )) : (
-                    <span className="inline-flex rounded-full border border-white/8 bg-white/[0.05] px-2 py-1 text-[10px] font-semibold text-white/45">
-                        Sem acoes
-                    </span>
-                )}
-                {hiddenActions > 0 && (
-                    <span className="inline-flex rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">
-                        +{hiddenActions}
-                    </span>
-                )}
-            </div>
-        </div>
-    );
-};
+const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ arena, actions }) => (
+    <div className="h-[6.9rem] w-[10.75rem] flex-shrink-0">
+        <ArenaCard
+            arena={arena}
+            actions={actions}
+            tasks={[]}
+            onClick={() => {}}
+            variant="overview"
+        />
+    </div>
+);
 
 export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId, previewCampaign, previewArenas = [], previewActions = [], previewMeta }) => {
     const { campaigns, getArenas, actions, tasks, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes } = useGame();
@@ -535,10 +506,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
                                             <div className="flex-1 p-4 flex flex-col justify-between gap-3">
                                                 <div className="flex items-center justify-center rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.16),rgba(12,12,12,0.18))] px-2 py-2">
-                                                    <CampaignArenaStack
-                                                        arenas={campaignArenasSource.filter(arena => campaign.arenaIds.includes(arena.id))}
-                                                        size="sm"
-                                                    />
+                                    <CampaignArenaStack
+                                        arenas={campaignArenasSource.filter(arena => campaign.arenaIds.includes(arena.id))}
+                                        actions={campaignActionsSource}
+                                        size="sm"
+                                    />
                                                 </div>
                                                 <h3 className="text-lg font-bold text-white leading-tight line-clamp-2 mb-1 group-hover:text-[var(--skin-accent-color)] transition-colors">
                                                     {campaign.title}
@@ -762,7 +734,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 Fase {phase + 1}
                                             </div>
                                         )}
-                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[5.8rem]' : 'min-h-[7rem]'} gap-2 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
+                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[7.4rem]' : 'min-h-[7.6rem]'} gap-2 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
                                         {arenas.map((arena) => {
                                             const index = sortedArenas.findIndex(item => item.id === arena.id);
                                     const locked = isArenaLocked(arena.id);
@@ -796,7 +768,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     return (
                                         <div 
                                             key={arena.id} 
-                                            className={`relative ${isPreviewCampaign ? 'w-[10rem]' : 'w-[79px]'} flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
+                                            className={`relative w-[10.95rem] flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
                                             onClick={() => handleArenaClick(arena.id)}
                                             draggable={isEditing && !isReadOnlyCodexCampaign && !isPreviewCampaign}
                                             onDragStart={() => handleArenaDragStart(arena.id)}
@@ -864,11 +836,12 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                     {isPreviewCampaign ? (
                                                         <PreviewArenaMiniCard arena={arena} actions={arenaActions} />
                                                     ) : (
-                                                        <div className="h-[6.15rem] w-full rounded-[0.95rem] bg-[linear-gradient(180deg,rgba(91,65,167,0.24),rgba(20,20,20,0.45))]">
+                                                        <div className="h-[6.9rem] w-full rounded-[0.95rem]">
                                                             <ArenaCard 
                                                                 arena={arena}
                                                                 actions={arenaActions}
-                                                                variant="compact" 
+                                                                tasks={tasks}
+                                                                variant="overview" 
                                                                 onClick={() => {}}
                                                             />
                                                         </div>

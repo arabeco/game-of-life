@@ -11,6 +11,49 @@ const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || `${SITE_URL},http://
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const normalizeFullName = (value: string) => String(value || "").replace(/\s+/g, " ").trim();
+const sanitizeCpf = (value: string) => String(value || "").replace(/\D/g, "").slice(0, 11);
+
+const isValidEmail = (value: string) => EMAIL_REGEX.test(String(value || "").trim());
+const isValidFullName = (value: string) => {
+  const normalized = normalizeFullName(value);
+  const parts = normalized.split(" ").filter(Boolean);
+  return normalized.length >= 5 && parts.length >= 2 && parts.every((part) => part.length >= 2);
+};
+
+const isValidCpf = (value: string) => {
+  const digits = sanitizeCpf(value);
+  if (!/^\d{11}$/.test(digits)) return false;
+  if (/^(\d)\1{10}$/.test(digits)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i += 1) {
+    sum += Number(digits[i]) * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10) remainder = 0;
+  if (remainder !== Number(digits[9])) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i += 1) {
+    sum += Number(digits[i]) * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  if (remainder === 10) remainder = 0;
+  return remainder === Number(digits[10]);
+};
+
+const splitFullName = (value: string) => {
+  const normalized = normalizeFullName(value);
+  const parts = normalized.split(" ").filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+};
+
 const buildCorsHeaders = (origin: string | null) => ({
   "Access-Control-Allow-Origin": origin || ALLOWED_ORIGINS[0] || "",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -81,6 +124,32 @@ serve(async (req) => {
     // --- 2. ENDPOINT DE PROCESSAMENTO (CRIAR PAGAMENTO REAL) ---
     if (url.pathname.endsWith("/process_payment")) {
       const { formData, userId, goldAmount, amount } = await req.json();
+      const payerEmail = String(formData?.payer?.email || "").trim();
+      const payerFullName = normalizeFullName(formData?.payer?.fullName || "");
+      const payerCpf = sanitizeCpf(formData?.payer?.cpf || "");
+
+      if (!isValidEmail(payerEmail)) {
+        return new Response(JSON.stringify({ error: "E-mail do pagador invalido." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      if (!isValidFullName(payerFullName)) {
+        return new Response(JSON.stringify({ error: "Nome completo do pagador invalido." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      if (!isValidCpf(payerCpf)) {
+        return new Response(JSON.stringify({ error: "CPF do pagador invalido." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      const { firstName, lastName } = splitFullName(payerFullName);
 
       const response = await fetch("https://api.mercadopago.com/v1/payments", {
         method: "POST",
@@ -93,10 +162,12 @@ serve(async (req) => {
           transaction_amount: amount,
           payment_method_id: "pix",
           payer: {
-            email: formData.payer?.email || "comprador_teste_glyph@test.com",
+            email: payerEmail,
+            first_name: firstName,
+            last_name: lastName,
             identification: {
               type: "CPF",
-              number: "19119119100"
+              number: payerCpf
             }
           },
           metadata: {

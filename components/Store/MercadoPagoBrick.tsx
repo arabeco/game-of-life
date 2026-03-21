@@ -21,6 +21,7 @@ const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.s
 const EDGE_FUNCTION_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/mercadopago`;
 const FALLBACK_TEST_EMAIL = 'comprador_teste_glyph@test.com';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CPF_DIGITS_REGEX = /^\d{11}$/;
 
 const MERCADO_PAGO_STATUS_LABELS: Record<string, string> = {
     pending: 'aguardando pagamento',
@@ -53,19 +54,78 @@ const getMercadoPagoStatusLabel = (paymentResult: any, creditDetected: boolean) 
 
 const isValidCheckoutEmail = (value: string) => EMAIL_REGEX.test(String(value || '').trim());
 
+const normalizeFullName = (value: string) => String(value || '').replace(/\s+/g, ' ').trim();
+
+const isValidFullName = (value: string) => {
+    const normalized = normalizeFullName(value);
+    const parts = normalized.split(' ').filter(Boolean);
+    return normalized.length >= 5 && parts.length >= 2 && parts.every((part) => part.length >= 2);
+};
+
+const sanitizeCpf = (value: string) => String(value || '').replace(/\D/g, '').slice(0, 11);
+
+const formatCpf = (value: string) => {
+    const digits = sanitizeCpf(value);
+    if (!digits) return '';
+    return digits
+        .replace(/^(\d{3})(\d)/, '$1.$2')
+        .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+        .replace(/\.(\d{3})(\d)/, '.$1-$2');
+};
+
+const isValidCpf = (value: string) => {
+    const digits = sanitizeCpf(value);
+    if (!CPF_DIGITS_REGEX.test(digits)) return false;
+    if (/^(\d)\1{10}$/.test(digits)) return false;
+
+    let sum = 0;
+    for (let i = 0; i < 9; i += 1) {
+        sum += Number(digits[i]) * (10 - i);
+    }
+    let remainder = (sum * 10) % 11;
+    if (remainder === 10) remainder = 0;
+    if (remainder !== Number(digits[9])) return false;
+
+    sum = 0;
+    for (let i = 0; i < 10; i += 1) {
+        sum += Number(digits[i]) * (11 - i);
+    }
+    remainder = (sum * 10) % 11;
+    if (remainder === 10) remainder = 0;
+    return remainder === Number(digits[10]);
+};
+
+const splitFullName = (value: string) => {
+    const normalized = normalizeFullName(value);
+    const parts = normalized.split(' ').filter(Boolean);
+    return {
+        firstName: parts[0] || '',
+        lastName: parts.slice(1).join(' '),
+    };
+};
+
+type CheckoutMode = 'account' | 'custom';
+type CheckoutStep = 'mode' | 'payer';
+
 export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, goldAmount, onClose }) => {
     const { userProfile, showToast, updateUserProfile } = useGame();
     const profileEmail = String(userProfile.email || '').trim();
-    const initialCheckoutEmail = isValidCheckoutEmail(profileEmail) ? profileEmail : '';
-    const [loading, setLoading] = useState(Boolean(initialCheckoutEmail));
+    const hasValidProfileEmail = isValidCheckoutEmail(profileEmail);
+    const initialCheckoutEmail = hasValidProfileEmail ? profileEmail : '';
+    const [loading, setLoading] = useState(false);
     const [paymentResult, setPaymentResult] = useState<any>(null);
     const [creditDetected, setCreditDetected] = useState(false);
     const [emailInput, setEmailInput] = useState(initialCheckoutEmail);
-    const [checkoutEmail, setCheckoutEmail] = useState(initialCheckoutEmail);
+    const [fullNameInput, setFullNameInput] = useState('');
+    const [cpfInput, setCpfInput] = useState('');
+    const [checkoutEmail, setCheckoutEmail] = useState('');
+    const [checkoutFullName, setCheckoutFullName] = useState('');
+    const [checkoutCpf, setCheckoutCpf] = useState('');
+    const [checkoutMode, setCheckoutMode] = useState<CheckoutMode | null>(hasValidProfileEmail ? null : 'custom');
+    const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>(hasValidProfileEmail ? 'mode' : 'payer');
     const latestRefs = useRef({ onClose, showToast });
     const baselineGoldRef = useRef<number>(Number(userProfile.wallet?.gold || 0));
     const creditToastShownRef = useRef(false);
-    const needsEmailStep = !isValidCheckoutEmail(checkoutEmail);
 
     const pixTransactionData = paymentResult?.point_of_interaction?.transaction_data ?? null;
     const pixQrCode = typeof pixTransactionData?.qr_code === 'string' ? pixTransactionData.qr_code : '';
@@ -78,26 +138,37 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     }, [onClose, showToast]);
 
     useEffect(() => {
-        if (checkoutEmail) return;
-        if (!isValidCheckoutEmail(profileEmail)) return;
+        if (!hasValidProfileEmail) return;
+        if (checkoutMode !== 'account') return;
         setEmailInput(profileEmail);
-        setCheckoutEmail(profileEmail);
-    }, [checkoutEmail, profileEmail]);
+    }, [checkoutMode, hasValidProfileEmail, profileEmail]);
 
     useEffect(() => {
         baselineGoldRef.current = Number(userProfile.wallet?.gold || 0);
     }, []);
 
-    const createPixCharge = async (payerEmail: string) => {
-        const nextEmail = String(payerEmail || '').trim();
+    const createPixCharge = async ({ email, fullName, cpf }: { email: string; fullName: string; cpf: string; }) => {
+        const nextEmail = String(email || '').trim();
+        const nextFullName = normalizeFullName(fullName);
+        const nextCpf = sanitizeCpf(cpf);
         if (!isValidCheckoutEmail(nextEmail)) {
             latestRefs.current.showToast('Digite um e-mail valido para continuar.', 'warning');
+            return;
+        }
+        if (!isValidFullName(nextFullName)) {
+            latestRefs.current.showToast('Digite o nome completo do pagador.', 'warning');
+            return;
+        }
+        if (!isValidCpf(nextCpf)) {
+            latestRefs.current.showToast('Digite um CPF valido para continuar.', 'warning');
             return;
         }
 
         try {
             setLoading(true);
             setCheckoutEmail(nextEmail);
+            setCheckoutFullName(nextFullName);
+            setCheckoutCpf(nextCpf);
             setPaymentResult(null);
 
             const response = await fetch(`${EDGE_FUNCTION_URL}/process_payment`, {
@@ -111,6 +182,8 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     formData: {
                         payer: {
                             email: nextEmail,
+                            fullName: nextFullName,
+                            cpf: nextCpf,
                         },
                     },
                     userId: userProfile.id,
@@ -129,21 +202,11 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
         } catch (error: any) {
             console.error('Erro ao criar Pix:', error);
             latestRefs.current.showToast(error.message || 'Falha ao gerar o Pix.');
-            setCheckoutEmail('');
+            setCheckoutStep('payer');
         } finally {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        if (!isValidCheckoutEmail(initialCheckoutEmail)) {
-            setLoading(false);
-            return;
-        }
-
-        void createPixCharge(initialCheckoutEmail);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     useEffect(() => {
         if (!paymentResult?.id || creditDetected) return;
@@ -240,11 +303,48 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
 
     const handleStartPayment = () => {
         const nextEmail = String(emailInput || '').trim();
+        const nextFullName = normalizeFullName(fullNameInput);
+        const nextCpf = sanitizeCpf(cpfInput);
         if (!isValidCheckoutEmail(nextEmail)) {
             showToast('Digite um e-mail valido para continuar.', 'warning');
             return;
         }
-        void createPixCharge(nextEmail);
+        if (!isValidFullName(nextFullName)) {
+            showToast('Digite o nome completo do pagador.', 'warning');
+            return;
+        }
+        if (!isValidCpf(nextCpf)) {
+            showToast('Digite um CPF valido para continuar.', 'warning');
+            return;
+        }
+        void createPixCharge({
+            email: nextEmail,
+            fullName: nextFullName,
+            cpf: nextCpf,
+        });
+    };
+
+    const handleSelectMode = (mode: CheckoutMode) => {
+        setCheckoutMode(mode);
+        setCheckoutStep('payer');
+        setPaymentResult(null);
+        setCreditDetected(false);
+        setCheckoutEmail('');
+        setCheckoutFullName('');
+        setCheckoutCpf('');
+        setEmailInput(mode === 'account' ? profileEmail : '');
+    };
+
+    const handleBackToMode = () => {
+        if (!hasValidProfileEmail) return;
+        setCheckoutStep('mode');
+        setCheckoutMode(null);
+        setPaymentResult(null);
+        setCreditDetected(false);
+        setCheckoutEmail('');
+        setCheckoutFullName('');
+        setCheckoutCpf('');
+        setEmailInput(profileEmail);
     };
 
     return (
@@ -266,16 +366,99 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     </div>
 
                     <div className="custom-scrollbar flex min-h-[320px] flex-1 flex-col overflow-y-auto bg-black/60 p-2 scroll-smooth">
-                        {!paymentResult && needsEmailStep && !loading ? (
+                        {!paymentResult && !loading && checkoutStep === 'mode' ? (
                             <div className="flex flex-1 flex-col justify-center gap-5 px-4 py-8">
                                 <div className="space-y-2 text-center">
-                                    <h3 className="text-xl font-bold text-white">Digite o e-mail do pagador</h3>
+                                    <h3 className="text-xl font-bold text-white">Como deseja pagar?</h3>
                                     <p className="text-sm text-gray-400">
-                                        O Mercado Pago precisa de um e-mail valido para gerar o Pix.
+                                        Escolha como quer preencher o e-mail do pagador antes de gerar o QR Code.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSelectMode('account')}
+                                        className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]"
+                                    >
+                                        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
+                                            Usar e-mail da conta
+                                        </div>
+                                        <div className="mt-2 text-base font-bold text-white">{profileEmail}</div>
+                                        <div className="mt-1 text-sm text-gray-400">
+                                            Prefill com o e-mail atual da sua conta. Voce ainda pode revisar antes de pagar.
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSelectMode('custom')}
+                                        className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]"
+                                    >
+                                        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
+                                            Digitar outro e-mail
+                                        </div>
+                                        <div className="mt-2 text-base font-bold text-white">Outro pagador</div>
+                                        <div className="mt-1 text-sm text-gray-400">
+                                            Informe manualmente o e-mail e gere o Pix depois de validar.
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        ) : !paymentResult && !loading && checkoutStep === 'payer' ? (
+                            <div className="flex flex-1 flex-col justify-center gap-5 px-4 py-8">
+                                <div className="space-y-2 text-center">
+                                    <h3 className="text-xl font-bold text-white">Dados do pagador</h3>
+                                    <p className="text-sm text-gray-400">
+                                        Informe nome completo, CPF e e-mail. O QR Code so sera gerado depois da validacao.
                                     </p>
                                 </div>
 
                                 <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                    {hasValidProfileEmail && (
+                                        <div className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
+                                            <div className="min-w-0">
+                                                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
+                                                    Modo
+                                                </div>
+                                                <div className="mt-1 truncate text-sm font-semibold text-white">
+                                                    {checkoutMode === 'account' ? 'Usando e-mail da conta' : 'E-mail manual'}
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleBackToMode}
+                                                className="rounded-full border border-white/10 bg-white/8 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/80 transition-all hover:bg-white/12"
+                                            >
+                                                Trocar
+                                            </button>
+                                        </div>
+                                    )}
+                                    <label className="block text-left text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
+                                        Nome completo
+                                    </label>
+                                    <input
+                                        type="text"
+                                        autoComplete="name"
+                                        placeholder="Nome e sobrenome"
+                                        value={fullNameInput}
+                                        onChange={(event) => setFullNameInput(event.target.value)}
+                                        disabled={loading}
+                                        className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
+                                    />
+                                    <label className="block text-left text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
+                                        CPF
+                                    </label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        autoComplete="off"
+                                        placeholder="000.000.000-00"
+                                        value={cpfInput}
+                                        onChange={(event) => setCpfInput(formatCpf(event.target.value))}
+                                        disabled={loading}
+                                        className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
+                                    />
                                     <label className="block text-left text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
                                         E-mail
                                     </label>
@@ -289,6 +472,9 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                         disabled={loading}
                                         className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
                                     />
+                                    <div className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-relaxed text-gray-400">
+                                        O CPF e o nome completo sao enviados ao Mercado Pago para gerar a cobranca Pix. Nao estamos liberando QR com CPF fixo.
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={handleStartPayment}
@@ -392,9 +578,10 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 <div className="h-10 w-10 rounded-full border-4 border-[var(--skin-accent-color)] border-t-transparent animate-spin" />
                                 <div className="space-y-2">
                                     <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
-                                        E-mail do pagador
+                                        Pagador
                                     </div>
-                                    <div className="text-sm font-semibold text-white">{checkoutEmail}</div>
+                                    <div className="text-sm font-semibold text-white">{checkoutFullName || 'Pagador'}</div>
+                                    <div className="text-xs text-gray-400">{formatCpf(checkoutCpf)} - {checkoutEmail}</div>
                                 </div>
                                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500">
                                     Gerando cobranca Pix...

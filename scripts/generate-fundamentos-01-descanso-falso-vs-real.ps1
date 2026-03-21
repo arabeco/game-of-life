@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\fundamentos-01-descanso-falso-vs-real\slides"
 )
 
@@ -62,11 +62,11 @@ function Draw-CenterText {
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $format.Trimming = [System.Drawing.StringTrimming]::Word
-        $format.FormatFlags = [System.Drawing.StringFormatFlags]::LineLimit
+        $format.Trimming = [System.Drawing.StringTrimming]::None
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
 
-        $paddingX = [float][Math]::Max(8, [Math]::Ceiling($Font.Size * 0.10))
-        $paddingY = [float][Math]::Max(8, [Math]::Ceiling($Font.Size * 0.16))
+        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
+        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
         $safeRect = [System.Drawing.RectangleF]::new(
             [float]($X + $paddingX),
             [float]($Y + $paddingY),
@@ -75,9 +75,10 @@ function Draw-CenterText {
         )
 
         $drawFont = $Font
-        $minSize = [float][Math]::Max(24, [Math]::Floor($Font.Size * 0.80))
+        $fontFound = $false
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.62))
 
-        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.5) {
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
             if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
                 $candidate = $Font
             } else {
@@ -85,30 +86,40 @@ function Draw-CenterText {
             }
 
             $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
-            if ($measured.Width -le ($safeRect.Width + 2) -and $measured.Height -le ($safeRect.Height + 2)) {
+            if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
                 if ($candidate -ne $Font) { $createdFont = $candidate }
                 $drawFont = $candidate
+                $fontFound = $true
                 break
             }
 
             if ($candidate -ne $Font) { $candidate.Dispose() }
         }
 
-        if ($drawFont -eq $Font -and $Font.Size -gt $minSize) {
-            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, $minSize, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+        if (-not $fontFound) {
+            for ($size = [float]($minSize - 1); $size -ge 16; $size -= 0.5) {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+                $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+                if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
+                    $createdFont = $candidate
+                    $drawFont = $candidate
+                    $fontFound = $true
+                    break
+                }
+                $candidate.Dispose()
+            }
+        }
+
+        if (-not $fontFound -and $drawFont -eq $Font -and $Font.Size -gt 16) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, 16, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
             $drawFont = $createdFont
         }
 
-        $drawRect = [System.Drawing.RectangleF]::new(
-            $safeRect.X,
-            [float]($safeRect.Y + 2),
-            $safeRect.Width,
-            [float][Math]::Max(12, $safeRect.Height - 4)
-        )
-
-        $Graphics.DrawString($Text, $drawFont, $Brush, $drawRect, $format)
+        $Graphics.DrawString($Text, $drawFont, $Brush, $safeRect, $format)
     } finally {
-        if ($null -ne $createdFont) { $createdFont.Dispose() }
+        if ($null -ne $createdFont) {
+            $createdFont.Dispose()
+        }
         $format.Dispose()
     }
 }
@@ -296,7 +307,7 @@ $headlineFamily = Get-FontFamily -Candidates @("Cormorant Garamond", "Garamond",
 $bodyFamily = Get-FontFamily -Candidates @("Book Antiqua", "Palatino Linotype", "Georgia", "Cambria", "Times New Roman")
 
 $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 82, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 96, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 66, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 54, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyFont = [System.Drawing.Font]::new($bodyFamily, 48, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
@@ -338,10 +349,10 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgFoundations -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Fundamentos" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 76 -Width 912 -Height 130
-Draw-CenterText -Graphics $graphics -Text "Descanso falso`nvs.`nDescanso real." -Font $heroTitleFont -Brush $goldBrushSlide -X 116 -Y 246 -Width 848 -Height 352
-Draw-CenterText -Graphics $graphics -Text $coverSupport -Font $bodyFont -Brush $offWhiteBrush -X 138 -Y 690 -Width 804 -Height 158
-Draw-Pill -Graphics $graphics -Text "Fundamentos 01" -Font $bodyBoldFont -X 386 -Y 842 -Width 308 -Height 54
+Draw-CenterText -Graphics $graphics -Text "Fundamentos" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 76 -Width 912 -Height 120
+Draw-CenterText -Graphics $graphics -Text "Descanso falso`nvs.`nDescanso real." -Font $heroTitleFont -Brush $goldBrushSlide -X 126 -Y 314 -Width 828 -Height 252
+Draw-CenterText -Graphics $graphics -Text $coverSupport -Font $bodyFont -Brush $offWhiteBrush -X 152 -Y 566 -Width 776 -Height 144
+Draw-Pill -Graphics $graphics -Text "Fundamentos 01" -Font $bodyBoldFont -X 386 -Y 790 -Width 308 -Height 54
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -462,3 +473,5 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+

@@ -669,7 +669,7 @@ export const CodexModal: React.FC<{
                 <button onClick={() => activeCodex && setCampaignPreview(buildDraftPreview(activeCodex))} className="w-full py-2 rounded-xl luxe-button-secondary col-span-2 font-bold tracking-wider">VER CAMPANHA</button>
                 {recipientId ? (
                   <button onClick={handleDeliverCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">
-                    FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · 300 OURO
+                    FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · 100 OURO
                   </button>
                 ) : (
                   <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">IMPORTAR PARA O JOGO</button>

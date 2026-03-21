@@ -509,11 +509,11 @@ function Draw-CenterText {
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $format.Trimming = [System.Drawing.StringTrimming]::Word
-        $format.FormatFlags = [System.Drawing.StringFormatFlags]::LineLimit
+        $format.Trimming = [System.Drawing.StringTrimming]::None
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
 
-        $paddingX = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.16))
-        $paddingY = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.24))
+        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
+        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
         $safeRect = [System.Drawing.RectangleF]::new(
             [float]($X + $paddingX),
             [float]($Y + $paddingY),
@@ -522,9 +522,10 @@ function Draw-CenterText {
         )
 
         $drawFont = $Font
-        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.72))
+        $fontFound = $false
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.62))
 
-        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.5) {
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
             if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
                 $candidate = $Font
             } else {
@@ -532,28 +533,36 @@ function Draw-CenterText {
             }
 
             $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
-            if ($measured.Width -le ($safeRect.Width + 2) -and $measured.Height -le ($safeRect.Height + 2)) {
+            if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
                 if ($candidate -ne $Font) { $createdFont = $candidate }
                 $drawFont = $candidate
+                $fontFound = $true
                 break
             }
 
             if ($candidate -ne $Font) { $candidate.Dispose() }
         }
 
-        if ($drawFont -eq $Font -and $Font.Size -gt $minSize) {
-            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, $minSize, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+        if (-not $fontFound) {
+            for ($size = [float]($minSize - 1); $size -ge 16; $size -= 0.5) {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+                $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+                if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
+                    $createdFont = $candidate
+                    $drawFont = $candidate
+                    $fontFound = $true
+                    break
+                }
+                $candidate.Dispose()
+            }
+        }
+
+        if (-not $fontFound -and $drawFont -eq $Font -and $Font.Size -gt 16) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, 16, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
             $drawFont = $createdFont
         }
 
-        $drawRect = [System.Drawing.RectangleF]::new(
-            $safeRect.X,
-            [float]($safeRect.Y + 2),
-            $safeRect.Width,
-            [float][Math]::Max(12, $safeRect.Height - 4)
-        )
-
-        $Graphics.DrawString($Text, $drawFont, $Brush, $drawRect, $format)
+        $Graphics.DrawString($Text, $drawFont, $Brush, $safeRect, $format)
     } finally {
         if ($null -ne $createdFont) {
             $createdFont.Dispose()
@@ -607,8 +616,8 @@ function Draw-StatCard {
     try {
         $Graphics.FillRectangle($cardBrush, $X, $Y, $Width, $Height)
         $Graphics.DrawRectangle($cardPen, $X, $Y, $Width, $Height)
-        Draw-CenterText -Graphics $Graphics -Text $Title -Font $TitleFont -Brush $GoldBrush -X ($X + 12) -Y ($Y + 28) -Width ($Width - 24) -Height 92
-        Draw-CenterText -Graphics $Graphics -Text $Body -Font $BodyFont -Brush $BodyBrush -X ($X + 18) -Y ($Y + 122) -Width ($Width - 36) -Height ($Height - 138)
+        Draw-CenterText -Graphics $Graphics -Text $Title -Font $TitleFont -Brush $GoldBrush -X ($X + 10) -Y ($Y + 18) -Width ($Width - 20) -Height 112
+        Draw-CenterText -Graphics $Graphics -Text $Body -Font $BodyFont -Brush $BodyBrush -X ($X + 14) -Y ($Y + 126) -Width ($Width - 28) -Height ($Height - 142)
     } finally {
         $cardBrush.Dispose()
         $cardPen.Dispose()
@@ -759,17 +768,17 @@ $headlineFamily = Get-FontFamily -Candidates @("Cormorant Garamond", "Garamond",
 $bodyFamily = Get-FontFamily -Candidates @("Book Antiqua", "Palatino Linotype", "Georgia", "Cambria", "Times New Roman")
 
 $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleHugeFont = [System.Drawing.Font]::new($headlineFamily, 68, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 58, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titlePanelFont = [System.Drawing.Font]::new($headlineFamily, 50, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 44, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$titleHugeFont = [System.Drawing.Font]::new($headlineFamily, 78, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 66, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$titlePanelFont = [System.Drawing.Font]::new($headlineFamily, 58, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 52, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $titleCardFont = [System.Drawing.Font]::new($headlineFamily, 34, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyFont = [System.Drawing.Font]::new($bodyFamily, 31, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 26, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 25, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $monoTitleFont = [System.Drawing.Font]::new($headlineFamily, 150, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$curadoriaWatermarkFont = [System.Drawing.Font]::new($headlineFamily, 68, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$curadoriaWatermarkFont = [System.Drawing.Font]::new($headlineFamily, 60, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $radarLabelFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $radarValueFont = [System.Drawing.Font]::new($bodyFamily, 16, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 
@@ -838,15 +847,15 @@ Draw-CenterText -Graphics $graphics -Text "Kobe Bryant" -Font $curadoriaWatermar
 $slide2PanelX = 118
 $slide2PanelY = 334
 $slide2PanelWidth = 532
-$slide2PanelHeight = 496
+$slide2PanelHeight = 534
 $slide2FrameY = 284
 $slide2FrameHeight = 660
 $slide2FrameWidth = Get-FeatureFrameWidth -ImagePath $cr7PanelPath -FrameHeight $slide2FrameHeight -InnerHorizontalPadding 38 -InnerVerticalPadding 18 -MinWidth 226 -MaxWidth 258
 $slide2FrameX = [float](950 - $slide2FrameWidth)
 Draw-EditorialTextPanel -Graphics $graphics -X $slide2PanelX -Y $slide2PanelY -Width $slide2PanelWidth -Height $slide2PanelHeight
-Draw-CenterText -Graphics $graphics -Text "Kobe n${Atilde}o virou lenda`npor talento solto." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 24) -Y ($slide2PanelY + 32) -Width ($slide2PanelWidth - 48) -Height 120
-Draw-CenterText -Graphics $graphics -Text "Virou porque transformou treino, dor,`nrepeti${ccedilla}${atilde}o e press${atilde}o`nem padr${atilde}o di${aacute}rio." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 34) -Y ($slide2PanelY + 182) -Width ($slide2PanelWidth - 68) -Height 154
-Draw-CenterText -Graphics $graphics -Text "Mamba n${Atilde}o ${eacute} pose.`n${Eacute} execu${ccedilla}${atilde}o." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 36) -Y ($slide2PanelY + 360) -Width ($slide2PanelWidth - 72) -Height 92
+Draw-CenterText -Graphics $graphics -Text "Kobe n${Atilde}o virou lenda`npor talento solto." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 18) -Y ($slide2PanelY + 24) -Width ($slide2PanelWidth - 36) -Height 150
+Draw-CenterText -Graphics $graphics -Text "Virou porque transformou treino, dor,`nrepeti${ccedilla}${atilde}o e press${atilde}o`nem padr${atilde}o di${aacute}rio." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 20) -Y ($slide2PanelY + 188) -Width ($slide2PanelWidth - 40) -Height 210
+Draw-CenterText -Graphics $graphics -Text "Mamba n${Atilde}o ${eacute} pose.`n${Eacute} execu${ccedilla}${atilde}o." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 20) -Y ($slide2PanelY + 420) -Width ($slide2PanelWidth - 40) -Height 98
 Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98 -ContentPaddingX 12 -ContentPaddingTop 12 -ContentPaddingBottom 10
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-quem-e.png"
@@ -1000,6 +1009,8 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+
 
 
 

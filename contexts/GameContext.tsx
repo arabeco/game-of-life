@@ -3694,7 +3694,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Arena extra da mentoria e paga por unidade: 50 de ouro cada.';
         if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
         if (raw.includes('ARENA_ASSET_REQUIRED')) return 'Escolha o ativo da arena vinculada.';
-        if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'Voce ja tem 2 Codex personalizados de mentoria ativos.';
+        if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'A forja de Codex da mentoria agora e paga por uso. Se isso apareceu, o banco ainda esta com regra antiga.';
+        if (raw.includes('RELATIONSHIP_CAPACITY_DISABLED')) return 'A compra de capacidade social saiu do modelo atual. Agora o fluxo usa ouro direto nas acoes.';
         return raw;
     };
 
@@ -4127,12 +4128,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         if (error) {
             console.error('Error creating mentor codex for recipient:', error);
-            const friendlyMessage = String(error.message || '');
-            if (friendlyMessage.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) {
-                showToast('Voce ja tem 2 Codex personalizados de mentoria ativos.', 'error');
-            } else {
-                showToast(error.message || 'Erro ao criar Codex para o pupilo.', 'error');
-            }
+            showToast(mapRelationshipErrorMessage(error.message, 'Erro ao criar Codex para o pupilo.'), 'error');
             return false;
         }
 
@@ -4140,7 +4136,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({
             wallet: { ...userProfile.wallet, gold: nextGold },
         });
-        showToast('Novo Codex enviado ao pupilo por 300 de ouro.', 'success');
+        showToast('Novo Codex enviado ao pupilo por 100 de ouro.', 'success');
         return true;
     };
 

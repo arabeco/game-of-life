@@ -63,11 +63,11 @@ function Draw-CenterText {
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $format.Trimming = [System.Drawing.StringTrimming]::Word
-        $format.FormatFlags = [System.Drawing.StringFormatFlags]::LineLimit
+        $format.Trimming = [System.Drawing.StringTrimming]::None
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
 
-        $paddingX = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.16))
-        $paddingY = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.24))
+        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
+        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
         $safeRect = [System.Drawing.RectangleF]::new(
             [float]($X + $paddingX),
             [float]($Y + $paddingY),
@@ -76,9 +76,10 @@ function Draw-CenterText {
         )
 
         $drawFont = $Font
-        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.72))
+        $fontFound = $false
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.62))
 
-        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.5) {
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
             if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
                 $candidate = $Font
             } else {
@@ -86,28 +87,36 @@ function Draw-CenterText {
             }
 
             $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
-            if ($measured.Width -le ($safeRect.Width + 2) -and $measured.Height -le ($safeRect.Height + 2)) {
+            if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
                 if ($candidate -ne $Font) { $createdFont = $candidate }
                 $drawFont = $candidate
+                $fontFound = $true
                 break
             }
 
             if ($candidate -ne $Font) { $candidate.Dispose() }
         }
 
-        if ($drawFont -eq $Font -and $Font.Size -gt $minSize) {
-            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, $minSize, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+        if (-not $fontFound) {
+            for ($size = [float]($minSize - 1); $size -ge 16; $size -= 0.5) {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+                $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+                if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
+                    $createdFont = $candidate
+                    $drawFont = $candidate
+                    $fontFound = $true
+                    break
+                }
+                $candidate.Dispose()
+            }
+        }
+
+        if (-not $fontFound -and $drawFont -eq $Font -and $Font.Size -gt 16) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, 16, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
             $drawFont = $createdFont
         }
 
-        $drawRect = [System.Drawing.RectangleF]::new(
-            $safeRect.X,
-            [float]($safeRect.Y + 2),
-            $safeRect.Width,
-            [float][Math]::Max(12, $safeRect.Height - 4)
-        )
-
-        $Graphics.DrawString($Text, $drawFont, $Brush, $drawRect, $format)
+        $Graphics.DrawString($Text, $drawFont, $Brush, $safeRect, $format)
     } finally {
         if ($null -ne $createdFont) {
             $createdFont.Dispose()
@@ -326,10 +335,10 @@ $bodyFamily = Get-FontFamily -Candidates @("Book Antiqua", "Palatino Linotype", 
 
 $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 64, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 50, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 38, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$bodyFont = [System.Drawing.Font]::new($bodyFamily, 27, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 22, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 66, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 52, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$bodyFont = [System.Drawing.Font]::new($bodyFamily, 42, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 34, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 23, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $watermarkFont = [System.Drawing.Font]::new($headlineFamily, 118, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -385,7 +394,7 @@ Draw-CenterText -Graphics $graphics -Text "Reagir" -Font $watermarkFont -Brush $
 Draw-EditorialPanel -Graphics $graphics -X 180 -Y 308 -Width 720 -Height 564 -Tone "marfim"
 Draw-CenterText -Graphics $graphics -Text "Reagir ${eacute} entrar`nno dia sem mapa." -Font $titleLargeFont -Brush $marfimTitleBrush -X 242 -Y 372 -Width 596 -Height 144
 Draw-CenterText -Graphics $graphics -Text "Acordar, abrir o feed, apagar inc${ecirc}ndios`ne terminar a noite exausto,`ncom ru${iacute}do demais e`nprogresso de menos." -Font $bodyFont -Brush $offWhiteBrush -X 266 -Y 552 -Width 548 -Height 182
-Draw-CenterText -Graphics $graphics -Text "Voc${ecirc} n${atilde}o dominou o dia.`nVoc${ecirc} s${oacute} sobreviveu a ele." -Font $titleMediumFont -Brush $whiteBrush -X 258 -Y 748 -Width 564 -Height 84
+Draw-CenterText -Graphics $graphics -Text "Voc${ecirc} n${atilde}o dominou o dia.`nVoc${ecirc} s${oacute} sobreviveu a ele." -Font $titleMediumFont -Brush $whiteBrush -X 232 -Y 742 -Width 616 -Height 104
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-reagir.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -400,7 +409,7 @@ Draw-CenterText -Graphics $graphics -Text "Construir" -Font $watermarkFont -Brus
 Draw-EditorialPanel -Graphics $graphics -X 170 -Y 298 -Width 740 -Height 594 -Tone "marfim"
 Draw-CenterText -Graphics $graphics -Text "Construir ${eacute} entrar`nno campo com dire${ccedilla}${atilde}o." -Font $titleLargeFont -Brush $marfimTitleBrush -X 228 -Y 364 -Width 624 -Height 152
 Draw-CenterText -Graphics $graphics -Text "Escolher o alvo antes do caos.`nAgir com inten${ccedilla}${atilde}o.`nDominar o SITREP e mover o seu`nImp${eacute}rio pe${ccedilla}a por pe${ccedilla}a." -Font $bodyFont -Brush $offWhiteBrush -X 258 -Y 548 -Width 564 -Height 196
-Draw-CenterText -Graphics $graphics -Text "Soberania n${atilde}o ${eacute} impulso.`n${Eacute} sistema." -Font $titleMediumFont -Brush $whiteBrush -X 266 -Y 770 -Width 548 -Height 82
+Draw-CenterText -Graphics $graphics -Text "Soberania n${atilde}o ${eacute} impulso.`n${Eacute} sistema." -Font $titleMediumFont -Brush $whiteBrush -X 232 -Y 764 -Width 616 -Height 102
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-construir.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -493,5 +502,7 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+
 
 

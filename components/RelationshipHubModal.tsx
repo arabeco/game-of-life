@@ -1005,7 +1005,7 @@ export const RelationshipHubModal: React.FC<{
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Exclusiva</div>
                                     <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
-                                        {COIN_GLYPH} 300
+                                        {COIN_GLYPH} 100
                                     </span>
                                 </div>
                                 <div className="mt-1 text-[12px] text-white/58">Forja uma campanha nova so para essa mentoria.</div>
@@ -1266,7 +1266,7 @@ export const RelationshipHubModal: React.FC<{
                                         onClick={() => setIsMentorCreatorOpen(true)}
                                         className="shrink-0 luxe-skin-button rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
                                     >
-                                        Nova · {COIN_GLYPH} 300
+                                        Nova · {COIN_GLYPH} 100
                                     </button>
                                 </div>
                             </div>

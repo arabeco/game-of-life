@@ -62,11 +62,11 @@ function Draw-CenterText {
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $format.Trimming = [System.Drawing.StringTrimming]::Word
-        $format.FormatFlags = [System.Drawing.StringFormatFlags]::LineLimit
+        $format.Trimming = [System.Drawing.StringTrimming]::None
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
 
-        $paddingX = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.16))
-        $paddingY = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.24))
+        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
+        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
         $safeRect = [System.Drawing.RectangleF]::new(
             [float]($X + $paddingX),
             [float]($Y + $paddingY),
@@ -75,9 +75,10 @@ function Draw-CenterText {
         )
 
         $drawFont = $Font
-        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.72))
+        $fontFound = $false
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.62))
 
-        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.5) {
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
             if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
                 $candidate = $Font
             } else {
@@ -85,28 +86,36 @@ function Draw-CenterText {
             }
 
             $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
-            if ($measured.Width -le ($safeRect.Width + 2) -and $measured.Height -le ($safeRect.Height + 2)) {
+            if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
                 if ($candidate -ne $Font) { $createdFont = $candidate }
                 $drawFont = $candidate
+                $fontFound = $true
                 break
             }
 
             if ($candidate -ne $Font) { $candidate.Dispose() }
         }
 
-        if ($drawFont -eq $Font -and $Font.Size -gt $minSize) {
-            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, $minSize, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+        if (-not $fontFound) {
+            for ($size = [float]($minSize - 1); $size -ge 16; $size -= 0.5) {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+                $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+                if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
+                    $createdFont = $candidate
+                    $drawFont = $candidate
+                    $fontFound = $true
+                    break
+                }
+                $candidate.Dispose()
+            }
+        }
+
+        if (-not $fontFound -and $drawFont -eq $Font -and $Font.Size -gt 16) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, 16, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
             $drawFont = $createdFont
         }
 
-        $drawRect = [System.Drawing.RectangleF]::new(
-            $safeRect.X,
-            [float]($safeRect.Y + 2),
-            $safeRect.Width,
-            [float][Math]::Max(12, $safeRect.Height - 4)
-        )
-
-        $Graphics.DrawString($Text, $drawFont, $Brush, $drawRect, $format)
+        $Graphics.DrawString($Text, $drawFont, $Brush, $safeRect, $format)
     } finally {
         if ($null -ne $createdFont) {
             $createdFont.Dispose()
@@ -299,10 +308,10 @@ $bodyFamily = Get-FontFamily -Candidates @("Book Antiqua", "Palatino Linotype", 
 
 $eyebrowFont = [System.Drawing.Font]::new($bodyFamily, 18, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $heroTitleFont = [System.Drawing.Font]::new($headlineFamily, 62, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 48, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 34, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$bodyFont = [System.Drawing.Font]::new($bodyFamily, 27, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 23, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$titleLargeFont = [System.Drawing.Font]::new($headlineFamily, 64, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$titleMediumFont = [System.Drawing.Font]::new($headlineFamily, 50, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$bodyFont = [System.Drawing.Font]::new($bodyFamily, 42, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$bodySmallFont = [System.Drawing.Font]::new($bodyFamily, 34, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $bodyBoldFont = [System.Drawing.Font]::new($bodyFamily, 22, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $ctaFont = [System.Drawing.Font]::new($headlineFamily, 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $watermarkFont = [System.Drawing.Font]::new($headlineFamily, 116, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
@@ -355,11 +364,11 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Ru${iacute}do" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
-Draw-EditorialPanel -Graphics $graphics -X 180 -Y 286 -Width 720 -Height 596
-Draw-CenterText -Graphics $graphics -Text "Quem entrega a mente`nao ru${iacute}do barato`nacorda sem centro." -Font $titleLargeFont -Brush $goldBrushSlide -X 236 -Y 360 -Width 608 -Height 138
-Draw-CenterText -Graphics $graphics -Text "Feed, dopamina curta e excesso`nde est${iacute}mulo cobram juros mentais`nno dia seguinte." -Font $bodyFont -Brush $offWhiteBrush -X 256 -Y 548 -Width 568 -Height 118
-Draw-CenterText -Graphics $graphics -Text "Distra${ccedilla}${atilde}o noturna cobra foco pela manh${atilde}." -Font $bodySmallFont -Brush $mutedBrush -X 240 -Y 694 -Width 600 -Height 62
-Draw-CenterText -Graphics $graphics -Text "Barulho de hoje vira neblina amanh${atilde}." -Font $titleMediumFont -Brush $whiteBrush -X 226 -Y 774 -Width 628 -Height 74
+Draw-EditorialPanel -Graphics $graphics -X 160 -Y 276 -Width 760 -Height 640
+Draw-CenterText -Graphics $graphics -Text "Quem entrega a mente`nao ru${iacute}do barato`nacorda sem centro." -Font $titleLargeFont -Brush $goldBrushSlide -X 184 -Y 336 -Width 712 -Height 178
+Draw-CenterText -Graphics $graphics -Text "Feed, dopamina curta e excesso`nde est${iacute}mulo cobram juros mentais`nno dia seguinte." -Font $bodyFont -Brush $offWhiteBrush -X 182 -Y 520 -Width 716 -Height 152
+Draw-CenterText -Graphics $graphics -Text "Distra${ccedilla}${atilde}o noturna cobra clareza pela manh${atilde}." -Font $bodySmallFont -Brush $mutedBrush -X 154 -Y 694 -Width 772 -Height 78
+Draw-CenterText -Graphics $graphics -Text "Barulho de hoje vira neblina amanh${atilde}." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 798 -Width 728 -Height 92
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-logica-01.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -371,10 +380,10 @@ $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
 Draw-CenterText -Graphics $graphics -Text "Clareza" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
-Draw-EditorialPanel -Graphics $graphics -X 168 -Y 286 -Width 744 -Height 610
-Draw-CenterText -Graphics $graphics -Text "Alta performance`ncome${ccedilla}a na defesa`ndo espa${ccedilla}o mental." -Font $titleLargeFont -Brush $goldBrushSlide -X 228 -Y 356 -Width 624 -Height 138
-Draw-CenterText -Graphics $graphics -Text "Gente s${eacute}ria corta excesso antes`nde pedir mais disciplina.`nProtege sono, aten${ccedilla}${atilde}o e presen${ccedilla}a." -Font $bodyFont -Brush $offWhiteBrush -X 248 -Y 534 -Width 584 -Height 182
-Draw-CenterText -Graphics $graphics -Text "O melhor da mente nasce do que voc${ecirc} recusa." -Font $titleMediumFont -Brush $whiteBrush -X 220 -Y 786 -Width 640 -Height 70
+Draw-EditorialPanel -Graphics $graphics -X 156 -Y 276 -Width 768 -Height 640
+Draw-CenterText -Graphics $graphics -Text "Alta performance`ncome${ccedilla}a na defesa`ndo espa${ccedilla}o mental." -Font $titleLargeFont -Brush $goldBrushSlide -X 182 -Y 334 -Width 716 -Height 176
+Draw-CenterText -Graphics $graphics -Text "Gente s${eacute}ria corta excesso antes`nde pedir mais disciplina.`nProtege sono, aten${ccedilla}${atilde}o e presen${ccedilla}a." -Font $bodyFont -Brush $offWhiteBrush -X 182 -Y 528 -Width 716 -Height 220
+Draw-CenterText -Graphics $graphics -Text "O melhor da mente nasce do que voc${ecirc} recusa." -Font $titleMediumFont -Brush $whiteBrush -X 176 -Y 798 -Width 728 -Height 92
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-logica-02.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -466,5 +475,7 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+
 
 

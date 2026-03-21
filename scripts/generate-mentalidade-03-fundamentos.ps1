@@ -62,11 +62,11 @@ function Draw-CenterText {
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $format.Trimming = [System.Drawing.StringTrimming]::Word
-        $format.FormatFlags = [System.Drawing.StringFormatFlags]::LineLimit
+        $format.Trimming = [System.Drawing.StringTrimming]::None
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
 
-        $paddingX = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.16))
-        $paddingY = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.24))
+        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
+        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
         $safeRect = [System.Drawing.RectangleF]::new(
             [float]($X + $paddingX),
             [float]($Y + $paddingY),
@@ -75,9 +75,10 @@ function Draw-CenterText {
         )
 
         $drawFont = $Font
-        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.72))
+        $fontFound = $false
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.62))
 
-        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.5) {
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
             if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
                 $candidate = $Font
             } else {
@@ -85,28 +86,36 @@ function Draw-CenterText {
             }
 
             $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
-            if ($measured.Width -le ($safeRect.Width + 2) -and $measured.Height -le ($safeRect.Height + 2)) {
+            if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
                 if ($candidate -ne $Font) { $createdFont = $candidate }
                 $drawFont = $candidate
+                $fontFound = $true
                 break
             }
 
             if ($candidate -ne $Font) { $candidate.Dispose() }
         }
 
-        if ($drawFont -eq $Font -and $Font.Size -gt $minSize) {
-            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, $minSize, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+        if (-not $fontFound) {
+            for ($size = [float]($minSize - 1); $size -ge 16; $size -= 0.5) {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+                $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+                if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
+                    $createdFont = $candidate
+                    $drawFont = $candidate
+                    $fontFound = $true
+                    break
+                }
+                $candidate.Dispose()
+            }
+        }
+
+        if (-not $fontFound -and $drawFont -eq $Font -and $Font.Size -gt 16) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, 16, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
             $drawFont = $createdFont
         }
 
-        $drawRect = [System.Drawing.RectangleF]::new(
-            $safeRect.X,
-            [float]($safeRect.Y + 2),
-            $safeRect.Width,
-            [float][Math]::Max(12, $safeRect.Height - 4)
-        )
-
-        $Graphics.DrawString($Text, $drawFont, $Brush, $drawRect, $format)
+        $Graphics.DrawString($Text, $drawFont, $Brush, $safeRect, $format)
     } finally {
         if ($null -ne $createdFont) {
             $createdFont.Dispose()
@@ -357,9 +366,9 @@ Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $widt
 Draw-CenterText -Graphics $graphics -Text "Base" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
 Draw-EditorialPanel -Graphics $graphics -X 136 -Y 252 -Width 808 -Height 682
 Draw-CenterText -Graphics $graphics -Text "Amadores trocam o`nsimples cedo demais." -Font $titleLargeFont -Brush $goldBrushSlide -X 184 -Y 308 -Width 712 -Height 178
-Draw-CenterText -Graphics $graphics -Text "Abandonam o que funciona porque o b${aacute}sico parece sem glamour`nantes de gerar resultado composto." -Font $bodyFont -Brush $offWhiteBrush -X 190 -Y 552 -Width 700 -Height 160
-Draw-CenterText -Graphics $graphics -Text "Quem muda demais nunca`nacumula for${ccedilla}a." -Font $bodySmallFont -Brush $mutedBrush -X 188 -Y 746 -Width 704 -Height 92
-Draw-CenterText -Graphics $graphics -Text "Novidade n${atilde}o substitui`nfundamento." -Font $titleMediumFont -Brush $whiteBrush -X 188 -Y 826 -Width 704 -Height 112
+Draw-CenterText -Graphics $graphics -Text "Abandonam o que funciona porque o b${aacute}sico parece sem glamour`nantes de gerar resultado composto." -Font $bodyFont -Brush $offWhiteBrush -X 190 -Y 520 -Width 700 -Height 156
+Draw-CenterText -Graphics $graphics -Text "Quem troca de base demais nunca acumula for${ccedilla}a." -Font $bodySmallFont -Brush $mutedBrush -X 154 -Y 694 -Width 772 -Height 78
+Draw-CenterText -Graphics $graphics -Text "Novidade n${atilde}o substitui`nfundamento." -Font $titleMediumFont -Brush $whiteBrush -X 188 -Y 798 -Width 704 -Height 92
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-logica-01.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -374,7 +383,7 @@ Draw-CenterText -Graphics $graphics -Text "Repeti${ccedilla}${atilde}o" -Font $w
 Draw-EditorialPanel -Graphics $graphics -X 132 -Y 252 -Width 816 -Height 694
 Draw-CenterText -Graphics $graphics -Text "Elite domina o que`nparece ${oacute}bvio." -Font $titleLargeFont -Brush $goldBrushSlide -X 180 -Y 302 -Width 720 -Height 178
 Draw-CenterText -Graphics $graphics -Text "Repete fundamentos sob t${eacute}dio, refina detalhe e sustenta padr${atilde}o`nat${eacute} o simples virar raro." -Font $bodyFont -Brush $offWhiteBrush -X 188 -Y 546 -Width 704 -Height 172
-Draw-CenterText -Graphics $graphics -Text "Maestria ${eacute} fundamento`nsustentado." -Font $titleMediumFont -Brush $whiteBrush -X 182 -Y 830 -Width 716 -Height 116
+Draw-CenterText -Graphics $graphics -Text "Maestria ${eacute} fundamento`nsustentado." -Font $titleMediumFont -Brush $whiteBrush -X 182 -Y 798 -Width 716 -Height 92
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-logica-02.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -466,4 +475,6 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+
 

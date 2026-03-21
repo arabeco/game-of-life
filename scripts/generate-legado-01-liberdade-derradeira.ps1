@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$OutputDir = "C:\Users\Afonso\Downloads\GOL1.006\marketing\legado-01-liberdade-derradeira\slides"
 )
 
@@ -62,11 +62,11 @@ function Draw-CenterText {
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $format.Trimming = [System.Drawing.StringTrimming]::Word
-        $format.FormatFlags = [System.Drawing.StringFormatFlags]::LineLimit
+        $format.Trimming = [System.Drawing.StringTrimming]::None
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
 
-        $paddingX = [float][Math]::Max(8, [Math]::Ceiling($Font.Size * 0.10))
-        $paddingY = [float][Math]::Max(8, [Math]::Ceiling($Font.Size * 0.16))
+        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
+        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
         $safeRect = [System.Drawing.RectangleF]::new(
             [float]($X + $paddingX),
             [float]($Y + $paddingY),
@@ -75,9 +75,10 @@ function Draw-CenterText {
         )
 
         $drawFont = $Font
-        $minSize = [float][Math]::Max(24, [Math]::Floor($Font.Size * 0.80))
+        $fontFound = $false
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.62))
 
-        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.5) {
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
             if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
                 $candidate = $Font
             } else {
@@ -85,30 +86,40 @@ function Draw-CenterText {
             }
 
             $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
-            if ($measured.Width -le ($safeRect.Width + 2) -and $measured.Height -le ($safeRect.Height + 2)) {
+            if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
                 if ($candidate -ne $Font) { $createdFont = $candidate }
                 $drawFont = $candidate
+                $fontFound = $true
                 break
             }
 
             if ($candidate -ne $Font) { $candidate.Dispose() }
         }
 
-        if ($drawFont -eq $Font -and $Font.Size -gt $minSize) {
-            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, $minSize, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+        if (-not $fontFound) {
+            for ($size = [float]($minSize - 1); $size -ge 16; $size -= 0.5) {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+                $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+                if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
+                    $createdFont = $candidate
+                    $drawFont = $candidate
+                    $fontFound = $true
+                    break
+                }
+                $candidate.Dispose()
+            }
+        }
+
+        if (-not $fontFound -and $drawFont -eq $Font -and $Font.Size -gt 16) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, 16, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
             $drawFont = $createdFont
         }
 
-        $drawRect = [System.Drawing.RectangleF]::new(
-            $safeRect.X,
-            [float]($safeRect.Y + 2),
-            $safeRect.Width,
-            [float][Math]::Max(12, $safeRect.Height - 4)
-        )
-
-        $Graphics.DrawString($Text, $drawFont, $Brush, $drawRect, $format)
+        $Graphics.DrawString($Text, $drawFont, $Brush, $safeRect, $format)
     } finally {
-        if ($null -ne $createdFont) { $createdFont.Dispose() }
+        if ($null -ne $createdFont) {
+            $createdFont.Dispose()
+        }
         $format.Dispose()
     }
 }
@@ -473,12 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Entre o est${iacute}mulo e a resposta`nh${aacute} um espa${ccedilla}o. Nesse espa${ccedilla}o`nest${aacute} o nosso poder de escolher."
-$supportCore = "Quando tudo foi arrancado, sobrou o n${uacute}cleo."
-$analysis1 = "Casa, fam${iacute}lia, corpo, liberdade e nome.`nFrankl observou o limite da destrui${ccedilla}${atilde}o humana e encontrou um ponto que o horror n${atilde}o alcan${ccedilla}ava."
-$analysis2Title = "O feito n${atilde}o foi s${oacute} sobreviver."
-$analysis2Body = "O feito foi preservar sentido num ambiente criado para dissolver dignidade, dire${ccedilla}${atilde}o e vontade.`nIsso ${eacute} soberania sobre si."
-$analysis2Close = "Quem guarda sentido n${atilde}o vira ru${iacute}na."
+$quoteText = "Entre o est${iacute}mulo e a resposta`nh${aacute} um espa${ccedilla}o.`nNesse espa${ccedilla}o est${aacute}`no poder de escolher."
+$supportCore = "A hist${oacute}ria fascinante de um homem que saiu do horror com uma teoria sobre sentido."
+$analysis1Title = "O que Viktor Frankl fez?"
+$analysis1 = "Psiquiatra judeu austr${iacute}aco, foi preso em campos de concentra${ccedilla}${atilde}o nazistas, perdeu pai, m${atilde}e, irm${atilde}o e esposa.`nAo sobreviver, transformou essa experi${ecirc}ncia na Logoterapia: uma psicologia centrada na busca de sentido."
+$analysis1Close = "Ele n${atilde}o voltou s${oacute} vivo. Voltou com um mapa."
+$analysis2Title = "Por que isso foi raro?"
+$analysis2Body = "Porque o projeto daqueles campos era quebrar identidade, vontade e dignidade.`nFrankl n${atilde}o apenas suportou o horror: ele observou o que ainda restava livre dentro do ser humano e construiu uma linguagem para isso."
+$analysis2Close = "Ele preservou sentido onde quase nada restava."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 
@@ -487,12 +500,12 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 62 -Width 912 -Height 126
-Draw-Pill -Graphics $graphics -Text "Legado 01  |  Viktor Frankl" -Font $bodyBoldFont -X 124 -Y 214 -Width 430 -Height 54
-Draw-CenterText -Graphics $graphics -Text "A Liberdade`nDerradeira" -Font $heroTitleFont -Brush $goldBrushSlide -X 82 -Y 286 -Width 568 -Height 214
-Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 78 -Y 510 -Width 578 -Height 356
-Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 86 -Y 914 -Width 566 -Height 122
-Draw-FeatureFrame -Graphics $graphics -X 688 -Y 206 -Width 258 -Height 804 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
+Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 48 -Width 912 -Height 110
+Draw-Pill -Graphics $graphics -Text "Legado 01  |  Viktor Frankl" -Font $bodyBoldFont -X 318 -Y 188 -Width 444 -Height 54
+Draw-CenterText -Graphics $graphics -Text "A Liberdade`nDerradeira" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
+Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 94 -Y 468 -Width 584 -Height 272
+Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 90 -Y 790 -Width 596 -Height 176
+Draw-FeatureFrame -Graphics $graphics -X 720 -Y 492 -Width 208 -Height 378 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -503,11 +516,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Escolha" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
+Draw-CenterText -Graphics $graphics -Text "Sobreviveu" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 768
-Draw-CenterText -Graphics $graphics -Text "Tudo podia ser tirado." -Font $titleLargeFont -Brush $goldBrushSlide -X 132 -Y 248 -Width 816 -Height 132
-Draw-CenterText -Graphics $graphics -Text $analysis1 -Font $bodyFont -Brush $offWhiteBrush -X 122 -Y 430 -Width 836 -Height 326
-Draw-CenterText -Graphics $graphics -Text "A resposta interior ainda pertencia a ele." -Font $titleMediumFont -Brush $whiteBrush -X 138 -Y 832 -Width 804 -Height 130
+Draw-CenterText -Graphics $graphics -Text $analysis1Title -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 232 -Width 828 -Height 132
+Draw-CenterText -Graphics $graphics -Text $analysis1 -Font $bodyFont -Brush $offWhiteBrush -X 118 -Y 386 -Width 844 -Height 412
+Draw-CenterText -Graphics $graphics -Text $analysis1Close -Font $titleMediumFont -Brush $whiteBrush -X 136 -Y 834 -Width 808 -Height 128
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-analise-01.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide2
@@ -518,11 +531,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
-Draw-CenterText -Graphics $graphics -Text "Sentido" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
+Draw-CenterText -Graphics $graphics -Text "Raridade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 776
-Draw-CenterText -Graphics $graphics -Text $analysis2Title -Font $titleLargeFont -Brush $goldBrushSlide -X 124 -Y 246 -Width 832 -Height 152
-Draw-CenterText -Graphics $graphics -Text $analysis2Body -Font $bodyFont -Brush $offWhiteBrush -X 122 -Y 448 -Width 836 -Height 306
-Draw-CenterText -Graphics $graphics -Text $analysis2Close -Font $titleMediumFont -Brush $whiteBrush -X 140 -Y 846 -Width 800 -Height 126
+Draw-CenterText -Graphics $graphics -Text $analysis2Title -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 236 -Width 840 -Height 136
+Draw-CenterText -Graphics $graphics -Text $analysis2Body -Font $bodyFont -Brush $offWhiteBrush -X 116 -Y 394 -Width 848 -Height 408
+Draw-CenterText -Graphics $graphics -Text $analysis2Close -Font $titleMediumFont -Brush $whiteBrush -X 136 -Y 840 -Width 808 -Height 126
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-analise-02.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide3
@@ -613,3 +626,5 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+

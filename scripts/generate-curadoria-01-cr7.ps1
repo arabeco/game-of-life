@@ -61,6 +61,84 @@ function New-Canvas {
     }
 }
 
+function Draw-CenterText {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [string]$Text,
+        [System.Drawing.Font]$Font,
+        [System.Drawing.Brush]$Brush,
+        [float]$X,
+        [float]$Y,
+        [float]$Width,
+        [float]$Height
+    )
+
+    $format = [System.Drawing.StringFormat]::new()
+    $createdFont = $null
+    try {
+        $format.Alignment = [System.Drawing.StringAlignment]::Center
+        $format.LineAlignment = [System.Drawing.StringAlignment]::Center
+        $format.Trimming = [System.Drawing.StringTrimming]::None
+        $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
+
+        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
+        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
+        $safeRect = [System.Drawing.RectangleF]::new(
+            [float]($X + $paddingX),
+            [float]($Y + $paddingY),
+            [float][Math]::Max(12, $Width - ($paddingX * 2)),
+            [float][Math]::Max(12, $Height - ($paddingY * 2))
+        )
+
+        $drawFont = $Font
+        $fontFound = $false
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.62))
+
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
+            if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
+                $candidate = $Font
+            } else {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+            }
+
+            $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+            if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
+                if ($candidate -ne $Font) { $createdFont = $candidate }
+                $drawFont = $candidate
+                $fontFound = $true
+                break
+            }
+
+            if ($candidate -ne $Font) { $candidate.Dispose() }
+        }
+
+        if (-not $fontFound) {
+            for ($size = [float]($minSize - 1); $size -ge 16; $size -= 0.5) {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+                $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
+                if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
+                    $createdFont = $candidate
+                    $drawFont = $candidate
+                    $fontFound = $true
+                    break
+                }
+                $candidate.Dispose()
+            }
+        }
+
+        if (-not $fontFound -and $drawFont -eq $Font -and $Font.Size -gt 16) {
+            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, 16, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+            $drawFont = $createdFont
+        }
+
+        $Graphics.DrawString($Text, $drawFont, $Brush, $safeRect, $format)
+    } finally {
+        if ($null -ne $createdFont) {
+            $createdFont.Dispose()
+        }
+        $format.Dispose()
+    }
+}
 function Draw-FittedImage {
     param(
         [System.Drawing.Graphics]$Graphics,
@@ -389,130 +467,126 @@ function Draw-BackgroundBase {
     $borderPen.Dispose()
 }
 
-function Get-GoldBrush {
-    param(
-        [int]$Width,
-        [int]$Height
-    )
-
-    return [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-        [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
-        (New-Color 255 253 242 191),
-        (New-Color 255 140 106 47),
-        15
-    )
-}
-
-function Draw-SmallBrand {
+function Draw-SubtleGoldShimmer {
     param(
         [System.Drawing.Graphics]$Graphics,
-        [string]$LogoPath,
-        [System.Drawing.Font]$Font,
-        [System.Drawing.Brush]$Brush
+        [float]$CenterX,
+        [float]$CenterY,
+        [float]$BandWidth,
+        [float]$BandHeight,
+        [float]$Angle,
+        [int]$PeakAlpha = 16
     )
 
-    $logo = [System.Drawing.Image]::FromFile($LogoPath)
+    $state = $Graphics.Save()
+    $baseBrush = $null
+    $coreBrush = $null
     try {
-        $Graphics.DrawImage($logo, 848, 1142, 98, 98)
-    } finally {
-        $logo.Dispose()
-    }
+        $Graphics.TranslateTransform($CenterX, $CenterY)
+        $Graphics.RotateTransform($Angle)
 
-    $Graphics.DrawString("GLYPH.LIFE", $Font, $Brush, [System.Drawing.PointF]::new(110, 1198))
-}
-
-function Draw-Label {
-    param(
-        [System.Drawing.Graphics]$Graphics,
-        [string]$Text,
-        [System.Drawing.Font]$Font,
-        [System.Drawing.Brush]$Brush,
-        [int]$X,
-        [int]$Y,
-        [int]$Width,
-        [int]$Height
-    )
-
-    $Graphics.DrawString($Text, $Font, $Brush, [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height))
-}
-
-function Draw-CenterText {
-    param(
-        [System.Drawing.Graphics]$Graphics,
-        [string]$Text,
-        [System.Drawing.Font]$Font,
-        [System.Drawing.Brush]$Brush,
-        [float]$X,
-        [float]$Y,
-        [float]$Width,
-        [float]$Height
-    )
-
-    $format = [System.Drawing.StringFormat]::new()
-    $createdFont = $null
-    try {
-        $format.Alignment = [System.Drawing.StringAlignment]::Center
-        $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $format.Trimming = [System.Drawing.StringTrimming]::None
-        $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoClip
-
-        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
-        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
-        $safeRect = [System.Drawing.RectangleF]::new(
-            [float]($X + $paddingX),
-            [float]($Y + $paddingY),
-            [float][Math]::Max(12, $Width - ($paddingX * 2)),
-            [float][Math]::Max(12, $Height - ($paddingY * 2))
+        $baseRect = [System.Drawing.RectangleF]::new(
+            [float](-$BandWidth / 2),
+            [float](-$BandHeight / 2),
+            $BandWidth,
+            $BandHeight
         )
 
-        $drawFont = $Font
-        $fontFound = $false
-        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.62))
+        $baseBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            [System.Drawing.PointF]::new($baseRect.Left, 0),
+            [System.Drawing.PointF]::new($baseRect.Right, 0),
+            (New-Color 0 255 238 196),
+            (New-Color 0 255 238 196)
+        )
 
-        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
-            if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
-                $candidate = $Font
-            } else {
-                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
-            }
+        $baseBlend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $baseBlend.Colors = [System.Drawing.Color[]]@(
+            (New-Color 0 255 238 196),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.35)) 221 187 116),
+            (New-Color $PeakAlpha 247 236 206),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.35)) 221 187 116),
+            (New-Color 0 255 238 196)
+        )
+        $baseBlend.Positions = [single[]](0.0, 0.34, 0.5, 0.66, 1.0)
+        $baseBrush.InterpolationColors = $baseBlend
+        $Graphics.FillRectangle($baseBrush, $baseRect)
 
-            $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
-            if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
-                if ($candidate -ne $Font) { $createdFont = $candidate }
-                $drawFont = $candidate
-                $fontFound = $true
-                break
-            }
+        $coreRect = [System.Drawing.RectangleF]::new(
+            [float](-($BandWidth * 0.16)),
+            [float](-$BandHeight / 2),
+            [float]($BandWidth * 0.32),
+            $BandHeight
+        )
 
-            if ($candidate -ne $Font) { $candidate.Dispose() }
-        }
+        $coreBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            [System.Drawing.PointF]::new($coreRect.Left, 0),
+            [System.Drawing.PointF]::new($coreRect.Right, 0),
+            (New-Color 0 255 244 210),
+            (New-Color 0 255 244 210)
+        )
 
-        if (-not $fontFound) {
-            for ($size = [float]($minSize - 1); $size -ge 16; $size -= 0.5) {
-                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
-                $measured = $Graphics.MeasureString($Text, $candidate, [System.Drawing.SizeF]::new($safeRect.Width, 5000), $format)
-                if ($measured.Width -le ($safeRect.Width + 1) -and $measured.Height -le ($safeRect.Height + 1)) {
-                    $createdFont = $candidate
-                    $drawFont = $candidate
-                    $fontFound = $true
-                    break
-                }
-                $candidate.Dispose()
-            }
-        }
-
-        if (-not $fontFound -and $drawFont -eq $Font -and $Font.Size -gt 16) {
-            $createdFont = [System.Drawing.Font]::new($Font.FontFamily, 16, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
-            $drawFont = $createdFont
-        }
-
-        $Graphics.DrawString($Text, $drawFont, $Brush, $safeRect, $format)
+        $coreBlend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $coreBlend.Colors = [System.Drawing.Color[]]@(
+            (New-Color 0 255 244 210),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.55)) 233 208 150),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.8)) 250 244 224),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.55)) 233 208 150),
+            (New-Color 0 255 244 210)
+        )
+        $coreBlend.Positions = [single[]](0.0, 0.28, 0.5, 0.72, 1.0)
+        $coreBrush.InterpolationColors = $coreBlend
+        $Graphics.FillRectangle($coreBrush, $coreRect)
     } finally {
-        if ($null -ne $createdFont) {
-            $createdFont.Dispose()
-        }
-        $format.Dispose()
+        if ($null -ne $baseBrush) { $baseBrush.Dispose() }
+        if ($null -ne $coreBrush) { $coreBrush.Dispose() }
+        $Graphics.Restore($state)
     }
+}
+
+function Get-GoldBrush {
+    param([int]$Width, [int]$Height)
+
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+        [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
+        (New-Color 255 247 235 204),
+        (New-Color 255 174 137 78),
+        18
+    )
+
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+    $blend.Colors = [System.Drawing.Color[]]@(
+        (New-Color 255 157 122 70),
+        (New-Color 255 231 204 144),
+        (New-Color 255 250 242 214),
+        (New-Color 255 214 183 122),
+        (New-Color 255 146 113 66)
+    )
+    $blend.Positions = [single[]](0.0, 0.26, 0.5, 0.74, 1.0)
+    $brush.InterpolationColors = $blend
+    return $brush
+}
+
+function Get-SilverBrush {
+    param([int]$Width, [int]$Height)
+
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+        [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
+        (New-Color 255 212 219 228),
+        (New-Color 255 131 141 156),
+        102
+    )
+
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+    $blend.Colors = [System.Drawing.Color[]]@(
+        (New-Color 255 122 132 147),
+        (New-Color 255 198 207 218),
+        (New-Color 255 241 245 250),
+        (New-Color 255 184 193 205),
+        (New-Color 255 116 125 139)
+    )
+    $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
+    $brush.InterpolationColors = $blend
+    return $brush
 }
 
 function Draw-Pill {
@@ -640,6 +714,24 @@ function Draw-RadarChart {
     }
 }
 
+function Draw-SmallBrand {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [string]$LogoPath,
+        [System.Drawing.Font]$Font,
+        [System.Drawing.Brush]$Brush
+    )
+
+    $logo = [System.Drawing.Image]::FromFile($LogoPath)
+    try {
+        $Graphics.DrawImage($logo, 848, 1142, 98, 98)
+    } finally {
+        $logo.Dispose()
+    }
+
+    $Graphics.DrawString("GLYPH.LIFE", $Font, $Brush, [System.Drawing.PointF]::new(110, 1198))
+}
+
 function Save-Slide {
     param(
         [System.Drawing.Bitmap]$Bitmap,
@@ -736,7 +828,7 @@ $ghostBrush = [System.Drawing.SolidBrush]::new((New-Color 28 255 255 255))
 $curadoriaWatermarkBrush = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
 
 $goldBrushSlide = Get-GoldBrush -Width $width -Height $height
-
+$silverBrushSlide = Get-SilverBrush -Width $width -Height $height
 $created = New-Object System.Collections.Generic.List[string]
 
 $Aacute = [char]0x00C1
@@ -766,7 +858,9 @@ $curadoriaEditorialPanelHeight = 404
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 758 -CenterY 440 -BandWidth 236 -BandHeight 1520 -Angle 15 -PeakAlpha 15
+
 $slide1FrameWidth = 214
 $slide1FrameHeight = Get-FeatureFrameHeight -ImagePath $cr7CoverPath -FrameWidth $slide1FrameWidth -MinHeight 480 -MaxHeight 620
 $slide1FrameBottom = 956
@@ -775,7 +869,7 @@ Draw-CenterText -Graphics $graphics -Text "Cristiano Ronaldo" -Font $curadoriaWa
 Draw-FeatureFrame -Graphics $graphics -X 648 -Y $slide1FrameY -Width $slide1FrameWidth -Height $slide1FrameHeight -ImagePath $cr7CoverPath -Opacity 1.0
 Draw-CenterText -Graphics $graphics -Text "Como o Glyph`nleria o`nCristiano`nRonaldo?" -Font $titleHugeFont -Brush $goldBrushSlide -X 104 -Y 402 -Width 560 -Height 430
 Draw-Pill -Graphics $graphics -Text "N${Iacute}vel de maestria 89" -Font $bodyBoldFont -X 186 -Y 860 -Width 392 -Height 56
-Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} fan page.`n${Eacute} leitura de sistema." -Font $titleMediumFont -Brush $offWhiteBrush -X 100 -Y 980 -Width 620 -Height 142
+Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} fan page.`n${Eacute} leitura de sistema." -Font $titleMediumFont -Brush $silverBrushSlide -X 100 -Y 980 -Width 620 -Height 142
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide1
@@ -785,7 +879,9 @@ $created.Add($slide1)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 874 -CenterY 610 -BandWidth 194 -BandHeight 1560 -Angle -18 -PeakAlpha 13
+
 Draw-CenterText -Graphics $graphics -Text "Cristiano Ronaldo" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 90 -Y 128 -Width 900 -Height 120
 $slide2PanelX = 150
 $slide2PanelY = 362
@@ -797,7 +893,7 @@ $slide2FrameWidth = 174
 $slide2FrameHeight = 642
 Draw-EditorialTextPanel -Graphics $graphics -X $slide2PanelX -Y $slide2PanelY -Width $slide2PanelWidth -Height $slide2PanelHeight
 Draw-CenterText -Graphics $graphics -Text "CR7 n${Atilde}o virou`n${iacute}cone por impulso." -Font $titleMediumFont -Brush $goldBrushSlide -X ($slide2PanelX + 18) -Y ($slide2PanelY + 24) -Width ($slide2PanelWidth - 36) -Height 152
-Draw-CenterText -Graphics $graphics -Text "Virou porque transformou treino,`nimagem, carreira e ambi${ccedilla}${atilde}o`nem padr${atilde}o di${aacute}rio." -Font $bodyFont -Brush $offWhiteBrush -X ($slide2PanelX + 20) -Y ($slide2PanelY + 188) -Width ($slide2PanelWidth - 40) -Height 188
+Draw-CenterText -Graphics $graphics -Text "Virou porque transformou treino,`nimagem, carreira e ambi${ccedilla}${atilde}o`nem padr${atilde}o di${aacute}rio." -Font $bodyFont -Brush $silverBrushSlide -X ($slide2PanelX + 20) -Y ($slide2PanelY + 188) -Width ($slide2PanelWidth - 40) -Height 188
 Draw-CenterText -Graphics $graphics -Text "N${Atilde}o ${eacute} hype.`n${Eacute} sistema." -Font $titleMediumFont -Brush $whiteBrush -X ($slide2PanelX + 20) -Y ($slide2PanelY + 390) -Width ($slide2PanelWidth - 40) -Height 96
 Draw-FeatureFrame -Graphics $graphics -X $slide2FrameX -Y $slide2FrameY -Width $slide2FrameWidth -Height $slide2FrameHeight -ImagePath $cr7PanelPath -Opacity 0.98
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
@@ -809,13 +905,15 @@ $created.Add($slide2)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 358 -CenterY 650 -BandWidth 222 -BandHeight 1560 -Angle 19 -PeakAlpha 12
+
 Draw-CenterText -Graphics $graphics -Text "Cristiano Ronaldo" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 128 -Width 896 -Height 120
 Draw-CenterText -Graphics $graphics -Text "O topo n${Atilde}o`nnasceu do acaso." -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 242 -Width 610 -Height 160
 Draw-ImageInBox -Graphics $graphics -ImagePath $cr7Slide3Path -X 692 -Y 224 -Width 280 -Height 210 -Opacity 0.98 -AlignBottom -AlignRight -TrimTransparency
-Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "O corpo virou`nm${aacute}quina de`nexecu${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "A rotina virou`nvantagem`ncompetitiva." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
-Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "A carreira ganhou`ndire${ccedilla}${atilde}o total`ne ambi${ccedilla}${atilde}o longa." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $offWhiteBrush
+Draw-StatCard -Graphics $graphics -X 118 -Y 468 -Width 260 -Height 420 -Title "F${iacute}sico`n10" -Body "O corpo virou`nm${aacute}quina de`nexecu${ccedilla}${atilde}o." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $silverBrushSlide
+Draw-StatCard -Graphics $graphics -X 410 -Y 468 -Width 260 -Height 420 -Title "Trabalho`n10" -Body "A rotina virou`nvantagem`ncompetitiva." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $silverBrushSlide
+Draw-StatCard -Graphics $graphics -X 702 -Y 468 -Width 260 -Height 420 -Title "Prop${oacute}sito`n10" -Body "A carreira ganhou`ndire${ccedilla}${atilde}o total`ne ambi${ccedilla}${atilde}o longa." -TitleFont $titleCardFont -BodyFont $bodyFont -GoldBrush $goldBrushSlide -BodyBrush $silverBrushSlide
 Draw-CenterText -Graphics $graphics -Text "F${iacute}sico, Trabalho e Prop${oacute}sito.`nA execu${ccedilla}${atilde}o virou identidade." -Font $bodyFont -Brush $mutedBrush -X 168 -Y 968 -Width 744 -Height 96
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-ativos.png"
@@ -826,7 +924,9 @@ $created.Add($slide3)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 824 -CenterY 604 -BandWidth 188 -BandHeight 1540 -Angle -16 -PeakAlpha 11
+
 New-BodyPanel -Graphics $graphics -X 126 -Y 326 -Width 828 -Height 792
 Draw-InnerContour -Graphics $graphics -X 146 -Y 346 -Width 788 -Height 752
 Draw-CenterText -Graphics $graphics -Text "N${Iacute}vel de maestria" -Font $titleMediumFont -Brush $goldBrushSlide -X 200 -Y 128 -Width 680 -Height 60
@@ -846,7 +946,7 @@ $labels = @(
 $values = @(8,10,7,10,9,8,10,10,7,10)
 Draw-RadarChart -Graphics $graphics -CenterX 540 -CenterY 678 -Radius 250 -Values $values -Labels $labels -LabelFont $radarLabelFont -ValueFont $radarValueFont
 Draw-CenterText -Graphics $graphics -Text "Mestria" -Font $curadoriaWatermarkFont -Brush $curadoriaWatermarkBrush -X 92 -Y 920 -Width 896 -Height 92
-Draw-CenterText -Graphics $graphics -Text "O n${iacute}vel do CR7 n${atilde}o ${eacute} motiva${ccedilla}${atilde}o.`n${Eacute} sistema de execu${ccedilla}${atilde}o sustentado por anos." -Font $bodySmallFont -Brush $offWhiteBrush -X 170 -Y 1012 -Width 740 -Height 96
+Draw-CenterText -Graphics $graphics -Text "O n${iacute}vel do CR7 n${atilde}o ${eacute} motiva${ccedilla}${atilde}o.`n${Eacute} sistema de execu${ccedilla}${atilde}o sustentado por anos." -Font $bodySmallFont -Brush $silverBrushSlide -X 170 -Y 1012 -Width 740 -Height 96
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide4 = Join-Path $OutputDir "slide-04-radar.png"
 Save-Slide -Bitmap $bitmap -Graphics $graphics -Path $slide4
@@ -856,7 +956,9 @@ $created.Add($slide4)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgRubi -Width $width -Height $height -Tone "rubi"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 676 -CenterY 584 -BandWidth 206 -BandHeight 1520 -Angle -13 -PeakAlpha 11
+
 $watermarkFont = [System.Drawing.Font]::new($headlineFamily, 118, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $watermarkBrush = [System.Drawing.SolidBrush]::new((New-Color 16 244 216 118))
 $strongBorderPen = [System.Drawing.Pen]::new((New-Color 255 242 210 110), 3.6)
@@ -945,6 +1047,7 @@ $goldTextBrush.Dispose()
 $goldSoftBrush.Dispose()
 $ghostBrush.Dispose()
 $curadoriaWatermarkBrush.Dispose()
+$silverBrushSlide.Dispose()
 $goldBrushSlide.Dispose()
 $sheetBrush.Dispose()
 $sheetGold.Dispose()
@@ -952,6 +1055,15 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+
+
+
+
+
+
+
+
 
 
 

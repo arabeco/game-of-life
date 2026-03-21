@@ -633,6 +633,10 @@ export const ArenasView: React.FC = () => {
 
     const getAssetById = (id: string) => assets.find(a => a.id === id);
     const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
+    const cycleScopedTasks = useMemo(() => {
+        if (!activeCycle) return tasks;
+        return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
+    }, [activeCycle, tasks]);
     const getCampaignProgress = (campaign: Campaign) => {
         const arenasById = Object.fromEntries(getArenas().map(arena => [arena.id, arena]));
         const actionsByArena = Object.fromEntries(getArenas().map(arena => [arena.id, getActionsForArena(arena.id)]));
@@ -641,7 +645,7 @@ export const ArenasView: React.FC = () => {
             campaign,
             arenasById,
             actionsByArena,
-            tasks,
+            tasks: cycleScopedTasks,
             getClanQuestsForArena,
             getClanQuestProgress,
             getSharedActionPoolProgress,

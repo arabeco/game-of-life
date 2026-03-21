@@ -13,6 +13,7 @@ import { ClanMemberCard } from './ClanMemberCard';
 import { AddClanMemberModal } from './AddClanMemberModal';
 import { ClanSlotModal } from './ClanSlotModal';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
+import { normalizeDomainLabel } from '../utils/taskDomain.js';
 
 const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; emoji: string; x: number; y: number }[] = [
     { id: 'fogueira', label: 'Fogueira', emoji: '🔥', x: 42, y: 51 },
@@ -839,6 +840,19 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const getQuestGoal = (quest: SeasonQuest) => (
         quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1
     );
+    const findQuestArenaAndAction = (quest: SeasonQuest) => {
+        const normalizedArenaName = normalizeDomainLabel(quest.title || '');
+        const normalizedActionName = normalizeDomainLabel(quest.actionTemplate?.name || '');
+        const arena = getArenas().find(candidate => normalizeDomainLabel(candidate.name || '') === normalizedArenaName);
+        const action = arena
+            ? allClanActions.find(candidate =>
+                candidate.arenaId === arena.id &&
+                normalizeDomainLabel(candidate.name || '') === normalizedActionName
+            )
+            : undefined;
+
+        return { arena, action };
+    };
 
     const isQuestActivatedForClan = (quest: SeasonQuest) => {
         return clanActiveQuestIds.includes(quest.id) || getClanQuestProgress(quest.id) > 0;
@@ -847,7 +861,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const isQuestJoinedByUser = (quest: SeasonQuest) => {
         return myParticipations.includes(quest.id)
             || !!userMissionParticipations?.[quest.id]
-            || allClanActions.some(action => action.name === quest.title || action.name === quest.actionTemplate?.name);
+            || !!findQuestArenaAndAction(quest).action;
     };
 
     const isQuestActive = (quest: SeasonQuest) => {

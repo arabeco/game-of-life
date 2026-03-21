@@ -341,6 +341,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         addAction,
         assets,
         addArena,
+        activeCycle,
         userProfile,
         getActionBackgroundStyle
     } = useGame();
@@ -1104,8 +1105,15 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         }
     }, [viewMode, currentDate, zoomLevel, currentTime]);
 
-    // Define milestoneActions before usage
-    const milestoneActions = actions.filter(a => a.actionType === 'Marco' && !tasks.some(task => task.actionId === a.id));
+    const cycleScopedTasks = useMemo(() => {
+        if (!activeCycle) return tasks;
+        return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
+    }, [activeCycle, tasks]);
+
+    // Marco availability is cycle-scoped. Old completions must not block a new cycle.
+    const milestoneActions = actions.filter(
+        action => action.actionType === 'Marco' && !cycleScopedTasks.some(task => task.actionId === action.id)
+    );
 
     // Planner bay is global stock: changing day cannot create a second count for the same action.
     const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, null), [actions, taskPool, tasks]);

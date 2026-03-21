@@ -217,15 +217,126 @@ function Draw-BackgroundBase {
     $innerPen.Dispose()
 }
 
+function Draw-SubtleGoldShimmer {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [float]$CenterX,
+        [float]$CenterY,
+        [float]$BandWidth,
+        [float]$BandHeight,
+        [float]$Angle,
+        [int]$PeakAlpha = 16
+    )
+
+    $state = $Graphics.Save()
+    $baseBrush = $null
+    $coreBrush = $null
+    try {
+        $Graphics.TranslateTransform($CenterX, $CenterY)
+        $Graphics.RotateTransform($Angle)
+
+        $baseRect = [System.Drawing.RectangleF]::new(
+            [float](-$BandWidth / 2),
+            [float](-$BandHeight / 2),
+            $BandWidth,
+            $BandHeight
+        )
+
+        $baseBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            [System.Drawing.PointF]::new($baseRect.Left, 0),
+            [System.Drawing.PointF]::new($baseRect.Right, 0),
+            (New-Color 0 255 238 196),
+            (New-Color 0 255 238 196)
+        )
+
+        $baseBlend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $baseBlend.Colors = [System.Drawing.Color[]]@(
+            (New-Color 0 255 238 196),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.35)) 221 187 116),
+            (New-Color $PeakAlpha 247 236 206),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.35)) 221 187 116),
+            (New-Color 0 255 238 196)
+        )
+        $baseBlend.Positions = [single[]](0.0, 0.34, 0.5, 0.66, 1.0)
+        $baseBrush.InterpolationColors = $baseBlend
+        $Graphics.FillRectangle($baseBrush, $baseRect)
+
+        $coreRect = [System.Drawing.RectangleF]::new(
+            [float](-($BandWidth * 0.16)),
+            [float](-$BandHeight / 2),
+            [float]($BandWidth * 0.32),
+            $BandHeight
+        )
+
+        $coreBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            [System.Drawing.PointF]::new($coreRect.Left, 0),
+            [System.Drawing.PointF]::new($coreRect.Right, 0),
+            (New-Color 0 255 244 210),
+            (New-Color 0 255 244 210)
+        )
+
+        $coreBlend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $coreBlend.Colors = [System.Drawing.Color[]]@(
+            (New-Color 0 255 244 210),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.55)) 233 208 150),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.8)) 250 244 224),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.55)) 233 208 150),
+            (New-Color 0 255 244 210)
+        )
+        $coreBlend.Positions = [single[]](0.0, 0.28, 0.5, 0.72, 1.0)
+        $coreBrush.InterpolationColors = $coreBlend
+        $Graphics.FillRectangle($coreBrush, $coreRect)
+    } finally {
+        if ($null -ne $baseBrush) { $baseBrush.Dispose() }
+        if ($null -ne $coreBrush) { $coreBrush.Dispose() }
+        $Graphics.Restore($state)
+    }
+}
+
 function Get-GoldBrush {
     param([int]$Width, [int]$Height)
 
-    [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
         [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
-        (New-Color 255 253 242 191),
-        (New-Color 255 140 106 47),
-        15
+        (New-Color 255 247 235 204),
+        (New-Color 255 174 137 78),
+        18
     )
+
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+    $blend.Colors = [System.Drawing.Color[]]@(
+        (New-Color 255 157 122 70),
+        (New-Color 255 231 204 144),
+        (New-Color 255 250 242 214),
+        (New-Color 255 214 183 122),
+        (New-Color 255 146 113 66)
+    )
+    $blend.Positions = [single[]](0.0, 0.26, 0.5, 0.74, 1.0)
+    $brush.InterpolationColors = $blend
+    return $brush
+}
+
+function Get-SilverBrush {
+    param([int]$Width, [int]$Height)
+
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+        [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
+        (New-Color 255 212 219 228),
+        (New-Color 255 131 141 156),
+        102
+    )
+
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+    $blend.Colors = [System.Drawing.Color[]]@(
+        (New-Color 255 122 132 147),
+        (New-Color 255 198 207 218),
+        (New-Color 255 241 245 250),
+        (New-Color 255 184 193 205),
+        (New-Color 255 116 125 139)
+    )
+    $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
+    $brush.InterpolationColors = $blend
+    return $brush
 }
 
 function Draw-Pill {
@@ -377,7 +488,9 @@ $created = New-Object System.Collections.Generic.List[string]
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 738 -CenterY 432 -BandWidth 228 -BandHeight 1500 -Angle 14 -PeakAlpha 9
+
 Draw-CenterText -Graphics $graphics -Text "Filosofia" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 120 -Width 912 -Height 170
 Draw-CenterText -Graphics $graphics -Text "Quando o tempo pesa,`nmétodo vence`nmotivação." -Font $heroTitleFont -Brush $marfimTitleBrush -X 140 -Y 302 -Width 800 -Height 314
 Draw-CenterText -Graphics $graphics -Text "Vontade sobe e desce.`nSistema bem desenhado continua andando." -Font $bodyFont -Brush $offWhiteBrush -X 158 -Y 670 -Width 764 -Height 132
@@ -391,7 +504,9 @@ $created.Add($slide1)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 852 -CenterY 596 -BandWidth 190 -BandHeight 1540 -Angle -17 -PeakAlpha 8
+
 Draw-CenterText -Graphics $graphics -Text "Fôlego" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
 Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 700 -Tone "marfim"
 Draw-CenterText -Graphics $graphics -Text "Motivação acelera.`nMétodo sustenta." -Font $titleLargeFont -Brush $marfimTitleBrush -X 184 -Y 300 -Width 712 -Height 196
@@ -406,7 +521,9 @@ $created.Add($slide2)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 344 -CenterY 646 -BandWidth 214 -BandHeight 1540 -Angle 18 -PeakAlpha 8
+
 Draw-CenterText -Graphics $graphics -Text "Peso" -Font $watermarkFont -Brush $goldWashBrush -X 80 -Y 118 -Width 920 -Height 176
 Draw-EditorialPanel -Graphics $graphics -X 128 -Y 246 -Width 824 -Height 708 -Tone "marfim"
 Draw-CenterText -Graphics $graphics -Text "Quando a rotina endurece,`no ritual decide." -Font $titleLargeFont -Brush $marfimTitleBrush -X 176 -Y 294 -Width 728 -Height 198
@@ -421,7 +538,9 @@ $created.Add($slide3)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgMarfim -Width $width -Height $height -Tone "marfim"
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 662 -CenterY 578 -BandWidth 198 -BandHeight 1500 -Angle -12 -PeakAlpha 7
+
 $watermarkBrush2 = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
 try {
     Draw-CenterText -Graphics $graphics -Text "Filosofia" -Font $watermarkFont -Brush $watermarkBrush2 -X 84 -Y 458 -Width 912 -Height 150
@@ -504,6 +623,15 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+
+
+
+
+
+
+
+
 
 
 

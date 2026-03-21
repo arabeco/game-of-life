@@ -222,7 +222,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     highlightPhase = null,
     tasks: propTasks
 }) => {
-    const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, reorderAction } = useGame();
+    const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const tasksForCounts = useMemo(() => {
         if (propTasks || !activeCycle) return tasks;
@@ -237,6 +237,23 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     }, [activeCycle, propTasks, tasks]);
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
     const [linkType, setLinkType] = useState<string | null>(null);
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+        updatePreference();
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', updatePreference);
+            return () => mediaQuery.removeEventListener('change', updatePreference);
+        }
+
+        mediaQuery.addListener(updatePreference);
+        return () => mediaQuery.removeListener(updatePreference);
+    }, []);
 
     useEffect(() => {
         // Fetch link type for icon
@@ -336,6 +353,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
     const isOverview = variant === 'overview';
     const isCompactThumbnail = variant === 'overview' || variant === 'compact';
+    const plasmaEnabled = (oraclePreferences?.animationsEnabled ?? true) && !prefersReducedMotion;
     const visibleMilestones = isCompactThumbnail ? milestoneActions.slice(0, 1) : milestoneActions;
     const visibleBronzeActions = isCompactThumbnail ? bronzeActions.slice(0, 3) : bronzeActions;
     const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
@@ -380,8 +398,16 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     {isCompactThumbnail ? 'ARQ' : 'Arquivada'}
                 </div>
             )}
-            <div className="arena-plasma pointer-events-none">
-                <PlasmaCanvas color={accentColor} opacity={0.35} className="arena-plasma-canvas" width={320} height={220} />
+            <div className={`arena-plasma pointer-events-none ${isCompactThumbnail ? 'arena-plasma--compact' : ''}`}>
+                {plasmaEnabled && (
+                    <PlasmaCanvas
+                        color={accentColor}
+                        opacity={0.35}
+                        className="arena-plasma-canvas"
+                        width={isCompactThumbnail ? 380 : 320}
+                        height={isCompactThumbnail ? 260 : 220}
+                    />
+                )}
             </div>
             <div
                 className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'arena-thumb-layout flex-shrink-0' : ''}`}

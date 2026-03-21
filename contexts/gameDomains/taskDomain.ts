@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { Action, Arena, Clan, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, ScheduledTask, SeasonQuest } from '../../types';
+import type { Action, Arena, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, ScheduledTask, SeasonQuest } from '../../types';
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
 import { getOperationalDateString, getTaskOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
@@ -29,6 +29,7 @@ export interface TaskDomainApi {
 
 interface CreateTaskDomainParams {
     tasks: ScheduledTask[];
+    activeCycle: Cycle | null;
     dailyCommitment: DailyCommitment;
     clan: Clan | null;
     supabase: SupabaseLike;
@@ -54,6 +55,7 @@ interface CreateTaskDomainParams {
 
 export const createTaskDomain = ({
     tasks,
+    activeCycle,
     dailyCommitment,
     clan,
     supabase,
@@ -88,6 +90,15 @@ export const createTaskDomain = ({
 
     const showClosedDayMutationBlockedToast = () => {
         showToast('Este dia ja foi julgado e nao pode mais ser alterado.', 'error');
+    };
+
+    const isCommitmentDayClosedForTask = (task: Pick<ScheduledTask, 'actionId' | 'date'>) =>
+        dailyCommitment.stage === 'judgment' &&
+        taskMatchesOperationalDate(task, dailyCommitment.date);
+
+    const isTaskInsideActiveCycle = (task: Pick<ScheduledTask, 'date'>) => {
+        if (!activeCycle) return true;
+        return task.date >= activeCycle.startDate && task.date <= activeCycle.endDate;
     };
 
     const rollbackOptimisticTaskCreation = (taskIdsToRollback: string[]) => {
@@ -186,12 +197,18 @@ export const createTaskDomain = ({
 
         if (newTasks.length === 0) return;
 
-        const newTaskIds = newTasks.map(task => task.id);
-        setTasks(prevTasks => [...prevTasks, ...newTasks]);
+        const allowedTasks = newTasks.filter(task => !isCommitmentDayClosedForTask(task));
+        if (allowedTasks.length !== newTasks.length) {
+            showClosedDayMutationBlockedToast();
+        }
+        if (allowedTasks.length === 0) return;
+
+        const newTaskIds = allowedTasks.map(task => task.id);
+        setTasks(prevTasks => [...prevTasks, ...allowedTasks]);
 
         if (!isClanQuestActionId(actionId)) {
             const todayStr = getOperationalDateString();
-            const todayTasks = newTasks.filter(task => taskMatchesOperationalDate(task, todayStr));
+            const todayTasks = allowedTasks.filter(task => taskMatchesOperationalDate(task, todayStr));
             if (todayTasks.length > 0) {
                 setDailyCommitmentState(prev => ({
                     ...prev,
@@ -204,7 +221,7 @@ export const createTaskDomain = ({
         if (!userId) return;
 
         try {
-            const payload = newTasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
+            const payload = allowedTasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
             const { error } = await supabase.from('scheduled_tasks').insert(payload);
             if (error) throw error;
         } catch (error: any) {
@@ -228,6 +245,11 @@ export const createTaskDomain = ({
             duration: action.duration,
             completed: false,
         };
+
+        if (isCommitmentDayClosedForTask(newTask)) {
+            showClosedDayMutationBlockedToast();
+            return undefined;
+        }
 
         setTasks(prevTasks => [...prevTasks, newTask]);
 
@@ -433,6 +455,11 @@ export const createTaskDomain = ({
             !task.completed
         );
 
+        if (!existingTaskForToday && isCommitmentDayClosedForTask({ actionId, date })) {
+            showClosedDayMutationBlockedToast();
+            return;
+        }
+
         if (existingTaskForToday) {
             await toggleTaskCompletion(existingTaskForToday.id);
             return;
@@ -455,7 +482,7 @@ export const createTaskDomain = ({
         if (taskMatchesOperationalDate(newTask, dailyCommitment.date) && !isClanQuestActionId(actionId)) {
             setDailyCommitmentState(prev => ({
                 ...prev,
-                taskIds: [...prev.taskIds, newTask.id]
+                taskIds: mergeTasksIntoCommitment(prev.taskIds, [newTask], prev.date, isClanQuestActionId)
             }));
         }
 
@@ -496,7 +523,7 @@ export const createTaskDomain = ({
         const action = getActionById(actionId);
         if (!action || action.actionType !== 'Marco') return;
 
-        const existingTask = tasks.find(task => task.actionId === actionId);
+        const existingTask = tasks.find(task => task.actionId === actionId && isTaskInsideActiveCycle(task));
         if (existingTask) {
             if (!existingTask.completed) {
                 await toggleTaskCompletion(existingTask.id);
@@ -518,11 +545,16 @@ export const createTaskDomain = ({
             completed: true,
         };
 
+        if (isCommitmentDayClosedForTask(newTask)) {
+            showClosedDayMutationBlockedToast();
+            return;
+        }
+
         setTasks(prevTasks => [...prevTasks, newTask]);
         if (taskMatchesOperationalDate(newTask, dailyCommitment.date)) {
             setDailyCommitmentState(prev => ({
                 ...prev,
-                taskIds: [...prev.taskIds, newTask.id]
+                taskIds: mergeTasksIntoCommitment(prev.taskIds, [newTask], prev.date, isClanQuestActionId)
             }));
         }
 

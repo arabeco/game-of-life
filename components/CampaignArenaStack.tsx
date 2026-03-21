@@ -11,17 +11,17 @@ interface CampaignArenaStackProps {
 
 const STACK_SIZE = {
     sm: {
-        scale: 0.8,
-        step: 70,
-        width: 238,
-        height: 110,
+        scale: 0.9,
+        step: 82,
+        width: 292,
+        height: 122,
         badgeClass: 'text-[9px] px-1.5 py-0.5',
     },
     md: {
-        scale: 0.92,
-        step: 92,
-        width: 326,
-        height: 122,
+        scale: 1,
+        step: 102,
+        width: 348,
+        height: 132,
         badgeClass: 'text-[10px] px-2 py-0.5',
     },
 };

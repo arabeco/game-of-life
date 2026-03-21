@@ -11,6 +11,11 @@
   display: block;
 }
 
+.arena-plasma--compact .arena-plasma-canvas {
+  transform: scale(1.18) translateY(-4%);
+  transform-origin: center center;
+}
+
 .arena-icon-slot {
   min-height: 0;
   display: flex;

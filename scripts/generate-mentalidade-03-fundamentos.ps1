@@ -201,15 +201,126 @@ function Draw-BackgroundBase {
     $innerPen.Dispose()
 }
 
+function Draw-SubtleGoldShimmer {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [float]$CenterX,
+        [float]$CenterY,
+        [float]$BandWidth,
+        [float]$BandHeight,
+        [float]$Angle,
+        [int]$PeakAlpha = 16
+    )
+
+    $state = $Graphics.Save()
+    $baseBrush = $null
+    $coreBrush = $null
+    try {
+        $Graphics.TranslateTransform($CenterX, $CenterY)
+        $Graphics.RotateTransform($Angle)
+
+        $baseRect = [System.Drawing.RectangleF]::new(
+            [float](-$BandWidth / 2),
+            [float](-$BandHeight / 2),
+            $BandWidth,
+            $BandHeight
+        )
+
+        $baseBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            [System.Drawing.PointF]::new($baseRect.Left, 0),
+            [System.Drawing.PointF]::new($baseRect.Right, 0),
+            (New-Color 0 255 238 196),
+            (New-Color 0 255 238 196)
+        )
+
+        $baseBlend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $baseBlend.Colors = [System.Drawing.Color[]]@(
+            (New-Color 0 255 238 196),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.35)) 221 187 116),
+            (New-Color $PeakAlpha 247 236 206),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.35)) 221 187 116),
+            (New-Color 0 255 238 196)
+        )
+        $baseBlend.Positions = [single[]](0.0, 0.34, 0.5, 0.66, 1.0)
+        $baseBrush.InterpolationColors = $baseBlend
+        $Graphics.FillRectangle($baseBrush, $baseRect)
+
+        $coreRect = [System.Drawing.RectangleF]::new(
+            [float](-($BandWidth * 0.16)),
+            [float](-$BandHeight / 2),
+            [float]($BandWidth * 0.32),
+            $BandHeight
+        )
+
+        $coreBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            [System.Drawing.PointF]::new($coreRect.Left, 0),
+            [System.Drawing.PointF]::new($coreRect.Right, 0),
+            (New-Color 0 255 244 210),
+            (New-Color 0 255 244 210)
+        )
+
+        $coreBlend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $coreBlend.Colors = [System.Drawing.Color[]]@(
+            (New-Color 0 255 244 210),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.55)) 233 208 150),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.8)) 250 244 224),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.55)) 233 208 150),
+            (New-Color 0 255 244 210)
+        )
+        $coreBlend.Positions = [single[]](0.0, 0.28, 0.5, 0.72, 1.0)
+        $coreBrush.InterpolationColors = $coreBlend
+        $Graphics.FillRectangle($coreBrush, $coreRect)
+    } finally {
+        if ($null -ne $baseBrush) { $baseBrush.Dispose() }
+        if ($null -ne $coreBrush) { $coreBrush.Dispose() }
+        $Graphics.Restore($state)
+    }
+}
+
 function Get-GoldBrush {
     param([int]$Width, [int]$Height)
 
-    [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
         [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
-        (New-Color 255 253 242 191),
-        (New-Color 255 140 106 47),
-        15
+        (New-Color 255 247 235 204),
+        (New-Color 255 174 137 78),
+        18
     )
+
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+    $blend.Colors = [System.Drawing.Color[]]@(
+        (New-Color 255 157 122 70),
+        (New-Color 255 231 204 144),
+        (New-Color 255 250 242 214),
+        (New-Color 255 214 183 122),
+        (New-Color 255 146 113 66)
+    )
+    $blend.Positions = [single[]](0.0, 0.26, 0.5, 0.74, 1.0)
+    $brush.InterpolationColors = $blend
+    return $brush
+}
+
+function Get-SilverBrush {
+    param([int]$Width, [int]$Height)
+
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+        [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
+        (New-Color 255 212 219 228),
+        (New-Color 255 131 141 156),
+        102
+    )
+
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+    $blend.Colors = [System.Drawing.Color[]]@(
+        (New-Color 255 122 132 147),
+        (New-Color 255 198 207 218),
+        (New-Color 255 241 245 250),
+        (New-Color 255 184 193 205),
+        (New-Color 255 116 125 139)
+    )
+    $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
+    $brush.InterpolationColors = $blend
+    return $brush
 }
 
 function Draw-Pill {
@@ -323,7 +434,7 @@ $eyebrowBrush = [System.Drawing.SolidBrush]::new((New-Color 165 255 236 196))
 $goldSoftBrush = [System.Drawing.SolidBrush]::new((New-Color 220 234 206 110))
 $goldWashBrush = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
 $goldBrushSlide = Get-GoldBrush -Width $width -Height $height
-
+$silverBrushSlide = Get-SilverBrush -Width $width -Height $height
 $Aacute = [char]0x00C1
 $Atilde = [char]0x00C3
 $Ccedilla = [char]0x00C7
@@ -348,10 +459,12 @@ $created = New-Object System.Collections.Generic.List[string]
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 748 -CenterY 438 -BandWidth 236 -BandHeight 1520 -Angle 15 -PeakAlpha 14
+
 Draw-CenterText -Graphics $graphics -Text "Mentalidade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 122 -Width 912 -Height 168
 Draw-CenterText -Graphics $graphics -Text "Os melhores`nrepetem o b${aacute}sico`npor mais tempo." -Font $heroTitleFont -Brush $goldBrushSlide -X 156 -Y 300 -Width 768 -Height 350
-Draw-CenterText -Graphics $graphics -Text "O raro nasce de fundamentos comuns`nexecutados sem vaidade." -Font $bodyFont -Brush $offWhiteBrush -X 192 -Y 700 -Width 696 -Height 108
+Draw-CenterText -Graphics $graphics -Text "O raro nasce de fundamentos comuns`nexecutados sem vaidade." -Font $bodyFont -Brush $silverBrushSlide -X 192 -Y 700 -Width 696 -Height 108
 Draw-Pill -Graphics $graphics -Text "Mentalidade 03" -Font $bodyBoldFont -X 392 -Y 822 -Width 296 -Height 54
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
@@ -362,11 +475,13 @@ $created.Add($slide1)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 868 -CenterY 604 -BandWidth 194 -BandHeight 1560 -Angle -18 -PeakAlpha 12
+
 Draw-CenterText -Graphics $graphics -Text "Base" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
 Draw-EditorialPanel -Graphics $graphics -X 136 -Y 252 -Width 808 -Height 682
 Draw-CenterText -Graphics $graphics -Text "Amadores trocam o`nsimples cedo demais." -Font $titleLargeFont -Brush $goldBrushSlide -X 184 -Y 308 -Width 712 -Height 178
-Draw-CenterText -Graphics $graphics -Text "Abandonam o que funciona porque o b${aacute}sico parece sem glamour`nantes de gerar resultado composto." -Font $bodyFont -Brush $offWhiteBrush -X 190 -Y 520 -Width 700 -Height 156
+Draw-CenterText -Graphics $graphics -Text "Abandonam o que funciona porque o b${aacute}sico parece sem glamour`nantes de gerar resultado composto." -Font $bodyFont -Brush $silverBrushSlide -X 190 -Y 520 -Width 700 -Height 156
 Draw-CenterText -Graphics $graphics -Text "Quem troca de base demais nunca acumula for${ccedilla}a." -Font $bodySmallFont -Brush $mutedBrush -X 154 -Y 694 -Width 772 -Height 78
 Draw-CenterText -Graphics $graphics -Text "Novidade n${atilde}o substitui`nfundamento." -Font $titleMediumFont -Brush $whiteBrush -X 188 -Y 798 -Width 704 -Height 92
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
@@ -378,11 +493,13 @@ $created.Add($slide2)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 348 -CenterY 652 -BandWidth 220 -BandHeight 1560 -Angle 19 -PeakAlpha 12
+
 Draw-CenterText -Graphics $graphics -Text "Repeti${ccedilla}${atilde}o" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 458 -Width 912 -Height 150
 Draw-EditorialPanel -Graphics $graphics -X 132 -Y 252 -Width 816 -Height 694
 Draw-CenterText -Graphics $graphics -Text "Elite domina o que`nparece ${oacute}bvio." -Font $titleLargeFont -Brush $goldBrushSlide -X 180 -Y 302 -Width 720 -Height 178
-Draw-CenterText -Graphics $graphics -Text "Repete fundamentos sob t${eacute}dio, refina detalhe e sustenta padr${atilde}o`nat${eacute} o simples virar raro." -Font $bodyFont -Brush $offWhiteBrush -X 188 -Y 546 -Width 704 -Height 172
+Draw-CenterText -Graphics $graphics -Text "Repete fundamentos sob t${eacute}dio, refina detalhe e sustenta padr${atilde}o`nat${eacute} o simples virar raro." -Font $bodyFont -Brush $silverBrushSlide -X 188 -Y 546 -Width 704 -Height 172
 Draw-CenterText -Graphics $graphics -Text "Maestria ${eacute} fundamento`nsustentado." -Font $titleMediumFont -Brush $whiteBrush -X 182 -Y 798 -Width 716 -Height 92
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-logica-02.png"
@@ -393,7 +510,9 @@ $created.Add($slide3)
 $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
-Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgObsidian -Width $width -Height $height
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 674 -CenterY 582 -BandWidth 206 -BandHeight 1520 -Angle -13 -PeakAlpha 10
+
 $watermarkBrush2 = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
 try {
     Draw-CenterText -Graphics $graphics -Text "Mentalidade" -Font $watermarkFont -Brush $watermarkBrush2 -X 84 -Y 456 -Width 912 -Height 150
@@ -468,6 +587,7 @@ $mutedBrush.Dispose()
 $eyebrowBrush.Dispose()
 $goldSoftBrush.Dispose()
 $goldWashBrush.Dispose()
+$silverBrushSlide.Dispose()
 $goldBrushSlide.Dispose()
 $sheetBrush.Dispose()
 $sheetGold.Dispose()
@@ -475,6 +595,15 @@ $sheetGold.Dispose()
 foreach ($file in $created) {
     Write-Output "CREATED=$file"
 }
+
+
+
+
+
+
+
+
+
 
 
 

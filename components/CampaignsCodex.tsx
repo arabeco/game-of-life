@@ -45,7 +45,7 @@ const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ a
 );
 
 export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId, previewCampaign, previewArenas = [], previewActions = [], previewMeta }) => {
-    const { campaigns, getArenas, actions, tasks, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes } = useGame();
+    const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -77,6 +77,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     const isPreviewCampaign = selectedCampaignId === effectivePreviewCampaign?.id;
     const campaignArenasSource = isPreviewCampaign ? previewArenas : allArenas;
     const campaignActionsSource = isPreviewCampaign ? previewActions : actions;
+    const cycleScopedTasks = useMemo(() => {
+        if (isPreviewCampaign) return [] as typeof tasks;
+        if (!activeCycle) return tasks;
+        return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
+    }, [activeCycle, isPreviewCampaign, tasks]);
     
     // Reset selection if campaign is deleted
     useEffect(() => {
@@ -179,12 +184,12 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
             campaign: selectedCampaign,
             arenasById,
             actionsByArena,
-            tasks,
+            tasks: cycleScopedTasks,
             getClanQuestsForArena,
             getClanQuestProgress,
             getSharedActionPoolProgress,
         });
-    }, [selectedCampaign, campaignArenasSource, campaignActionsSource, tasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress]);
+    }, [selectedCampaign, campaignArenasSource, campaignActionsSource, cycleScopedTasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress]);
     const selectedCampaignProgress = useMemo(() => {
         if (!selectedCampaign) return 0;
         const arenasById = Object.fromEntries(campaignArenasSource.map(arena => [arena.id, arena]));
@@ -194,12 +199,12 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
             campaign: selectedCampaign,
             arenasById,
             actionsByArena,
-            tasks,
+            tasks: cycleScopedTasks,
             getClanQuestsForArena,
             getClanQuestProgress,
             getSharedActionPoolProgress,
         });
-    }, [selectedCampaign, campaignArenasSource, campaignActionsSource, tasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress]);
+    }, [selectedCampaign, campaignArenasSource, campaignActionsSource, cycleScopedTasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress]);
     const arenaPhaseRows = useMemo(() => {
         if (!selectedCampaign || sortedArenas.length === 0) return [];
 
@@ -398,7 +403,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     if (!selectedCampaign) {
         return (
             <Portal>
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+                <div className="fixed inset-0 z-[230] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
                     <GlassCard variant="neutral" className="relative flex max-h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.7rem]" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-white/10 flex items-center justify-between">
                             <h2 className="text-lg font-bold uppercase tracking-[0.22em] text-white">Campanhas</h2>
@@ -542,7 +547,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     // RENDER: DETAIL VIEW
     return (
         <Portal>
-             <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+                <div className="fixed inset-0 z-[230] flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm" onClick={onClose}>
                  <GlassCard variant="neutral" className="relative flex max-h-[92vh] w-full max-w-[40rem] flex-col overflow-hidden rounded-[1.45rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.24),rgba(255,255,255,0.10)_22%,transparent_48%),radial-gradient(circle_at_38%_18%,rgba(255,255,255,0.12),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(109,40,217,0.18),transparent_34%),linear-gradient(145deg,rgba(102,109,120,0.98)_0%,rgba(132,139,151,0.95)_26%,rgba(82,88,101,0.94)_48%,rgba(38,33,53,0.96)_78%,rgba(16,11,28,0.99)_100%)]" onClick={e => e.stopPropagation()}>
                      <div
                         className="modal-aura-overlay"

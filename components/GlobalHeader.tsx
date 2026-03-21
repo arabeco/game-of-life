@@ -237,7 +237,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         />
                                         )}
                                     </div>
-                                    <div className="shell-level-badge absolute top-[3.3rem] z-10 group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
+                                    <div className="shell-level-badge absolute top-[3.3rem] z-[60] group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
                                         <span className="text-[11px] font-black text-white">{userProfile.level}</span>
                                     </div>
                                 </button>

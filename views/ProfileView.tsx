@@ -302,7 +302,7 @@ export const ShareableProfileCard: React.FC<{
                         </div>
 
                         {/* Level Badge */}
-                        <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-10" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
+                        <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-50" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
                             <span className="text-lg font-black text-white">{userProfile.level}</span>
                         </div>
                     </div>
@@ -666,7 +666,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         />
                                     )}
 
-                                    <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-10" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
+                                    <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-50" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
                                         <span className="text-lg font-black text-white">{displayProfile.level}</span>
                                     </div>
                                 </div>

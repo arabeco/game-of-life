@@ -481,6 +481,7 @@ export interface GameContextType {
     fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; summary: RelationshipCapacitySummary | null }>;
     createRelationshipInvite: (recipientId: string, linkType: RelationshipLinkType) => Promise<boolean>;
     respondToRelationshipInvite: (inviteId: string, action: RelationshipInviteAction) => Promise<boolean>;
+    endRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
     buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
     createLinkedRelationshipArena: (relationshipLinkId: string, arenaInput: { assetId: string; name: string; description?: string; icon?: string }) => Promise<Arena | null>;
     createCodexShareLink: (codexId: string) => Promise<{ url: string; token: string; shareId: string } | null>;
@@ -753,16 +754,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const deleteCampaign = async (id: string) => {
+        const userId = getSupabaseUserId();
         const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) return;
         setCampaigns(prev => prev.filter(c => c.id !== id));
 
         // Delete arenas inside the campaign (Cascading delete)
         if (campaign?.arenaIds?.length) {
-            await Promise.all(campaign.arenaIds.map(arenaId => deleteArena(arenaId)));
+            for (const arenaId of campaign.arenaIds) {
+                await deleteArena(arenaId);
+            }
         }
 
-        const { error } = await supabase.from('campaigns').delete().eq('id', id);
-        if (error) console.error("Error deleting campaign:", error);
+        const query = supabase.from('campaigns').delete().eq('id', id);
+        const { error } = userId ? await query.eq('user_id', userId) : await query;
+        if (error) {
+            console.error("Error deleting campaign:", error);
+            showToast("Nao foi possivel excluir a campanha por completo.", 'error');
+        }
     };
 
     // App Mode & Theme Implementation
@@ -3811,6 +3820,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('PUPIL_MENTOR_SLOT_LIMIT_REACHED')) return 'Esse pupilo ja esta em outra mentoria ativa.';
         if (raw.includes('RELATIONSHIP_INVITE_ALREADY_PENDING')) return 'Ja existe um convite pendente com esse aliado.';
         if (raw.includes('RELATIONSHIP_LINK_ALREADY_ACTIVE')) return 'Esse vinculo ja esta ativo.';
+        if (raw.includes('RELATIONSHIP_LINK_NOT_FOUND')) return 'Esse vinculo nao foi encontrado.';
+        if (raw.includes('RELATIONSHIP_LINK_ALREADY_ENDED')) return 'Esse vinculo ja foi encerrado.';
+        if (raw.includes('RELATIONSHIP_LINK_PERMISSION_DENIED')) return 'Voce nao pode encerrar esse vinculo.';
         if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Cada arena extra da mentoria custa 50 de ouro. Se isso apareceu, o SQL novo ainda nao foi aplicado.';
         if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Arena extra da mentoria e paga por unidade: 50 de ouro cada.';
         if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
@@ -3997,6 +4009,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             showToast('Convite aceito.', 'success');
         }
 
+        return true;
+    };
+
+    const endRelationshipLink = async (relationshipLinkId: string): Promise<boolean> => {
+        const { data, error } = await supabase.rpc('end_relationship_link', {
+            p_relationship_link_id: relationshipLinkId,
+        });
+
+        if (error) {
+            console.error('Error ending relationship link:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel encerrar este vinculo.'), 'error');
+            return false;
+        }
+
+        const summary = parseRelationshipCapacitySummary((data as any)?.summary);
+        if (summary) {
+            updateUserProfile({
+                partnershipSlotsPurchased: summary.partnership.purchased ?? userProfile.partnershipSlotsPurchased ?? 0,
+                competitionSlotsPurchased: summary.competition.purchased ?? userProfile.competitionSlotsPurchased ?? 0,
+                mentorSlotsPurchased: summary.mentor.purchased ?? userProfile.mentorSlotsPurchased ?? 0,
+                linkedArenaSlotsPurchased: summary.linked_arena.purchased ?? userProfile.linkedArenaSlotsPurchased ?? 0,
+            });
+        }
+
+        showToast('Vinculo encerrado.', 'success');
         return true;
     };
 
@@ -4789,6 +4826,29 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         return () => window.clearInterval(intervalId);
     }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
+
+    useEffect(() => {
+        if (dailyCommitment.taskIds.length === 0) return;
+
+        const reconciledTaskIds = Array.from(new Set(dailyCommitment.taskIds)).filter(taskId => {
+            const task = tasks.find(item => item.id === taskId);
+            return !!task &&
+                taskMatchesOperationalDate(task, dailyCommitment.date) &&
+                !isClanQuestActionId(task.actionId);
+        });
+
+        const isSame =
+            reconciledTaskIds.length === dailyCommitment.taskIds.length &&
+            reconciledTaskIds.every((taskId, index) => taskId === dailyCommitment.taskIds[index]);
+
+        if (isSame) return;
+
+        setDailyCommitmentState(prev => (
+            prev.date === dailyCommitment.date
+                ? { ...prev, taskIds: reconciledTaskIds }
+                : prev
+        ));
+    }, [dailyCommitment.date, dailyCommitment.taskIds, isClanQuestActionId, tasks]);
 
     const endDailyBattle = () => {
         // Anti-exploit: do not close battles from the future
@@ -5861,21 +5921,52 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         const mostRepeatedAction = currentActions.find(a => a.id === mostRepeatedActionId)?.name || 'Nenhuma';
 
-        // Calculate Exp Gained
-        const expFromActions = completedTasks.reduce((sum, task) => {
-            const duration = Number.isFinite(task.duration) ?task.duration : 0;
-            if (duration > 0) return sum + duration;
+        const currentDayCommittedTasks =
+            dailyCommitment.stage === 'judgment'
+                ? []
+                : tasks.filter(task =>
+                    dailyCommitment.taskIds.includes(task.id) &&
+                    taskMatchesOperationalDate(task, dailyCommitment.date) &&
+                    (() => {
+                        if (!cycle?.arenaIds?.length) return true;
+                        const action = currentActions.find(item => item.id === task.actionId);
+                        return !!action && cycle.arenaIds.includes(action.arenaId);
+                    })()
+                );
+        const currentDayScoredTasks = currentDayCommittedTasks.filter(task => !freeActionIds.has(task.actionId));
+        const currentDayCompletedCount = currentDayScoredTasks.filter(task => task.completed).length;
+        const currentDayTotalCount = currentDayScoredTasks.length;
+        const currentDayScore =
+            currentDayTotalCount > 0
+                ? Math.round((currentDayCompletedCount / currentDayTotalCount) * 100)
+                : 100;
+        const currentDayBaseExp = currentDayCommittedTasks.reduce((sum, task) => {
+            if (!task.completed) return sum;
             const action = currentActions.find(a => a.id === task.actionId);
-            return sum + (action?.duration || 0);
-        }, 0);
-        const missionBonusExp = completedTasks.reduce((sum, task) => {
-            const action = currentActions.find(a => a.id === task.actionId);
-            if (action?.actionType !== 'Marco') return sum;
-            const duration = Number.isFinite(task.duration) ?task.duration : (action?.duration || 0);
+            const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
             return sum + duration;
         }, 0);
+        const currentDaySitrepBonus =
+            dailyCommitment.stage === 'judgment'
+                ? 0
+                : currentDayScore >= 95
+                    ? SITREP_BONUS_S
+                    : currentDayScore >= 85
+                        ? SITREP_BONUS_A
+                        : 0;
+        const cycleMainSlots = aldeiaSlots.filter(slot => slot.slotId !== 'trono');
+        const cycleVillageOrder =
+            cycleMainSlots.length > 0
+                ? cycleMainSlots.reduce((sum, slot) => sum + slot.health, 0) / cycleMainSlots.length
+                : 0;
+        const cycleVillageBonusFactor = (cycleVillageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
+        const currentDayVillageBonus =
+            dailyCommitment.stage === 'judgment'
+                ? 0
+                : Math.round((currentDayBaseExp + currentDaySitrepBonus) * cycleVillageBonusFactor);
+        const unbankedOpenDayExp = currentDayBaseExp + currentDaySitrepBonus + currentDayVillageBonus;
         const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
-        const rawExp = expFromActions + missionBonusExp + cycleExpBonus;
+        const rawExp = cycleExpBonus + unbankedOpenDayExp;
         const premiumBonusExp = isPremiumUser ?Math.round(rawExp * 0.1) : 0;
         const expGained = rawExp + premiumBonusExp;
 
@@ -7015,6 +7106,29 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const arena = getArenas().find(a => a.id === arenaId);
         if (!arena) return;
         const folderId = arena.folderId;
+        const campaignUpdates = campaigns
+            .filter(campaign => campaign.arenaIds.includes(arenaId))
+            .map(campaign => {
+                const nextArenaIds = campaign.arenaIds.filter(id => id !== arenaId);
+                const currentConfig = (campaign.arenaConfig || {}) as NonNullable<Campaign['arenaConfig']>;
+                const nextConfig = Object.fromEntries(
+                    Object.entries(currentConfig)
+                        .filter(([id]) => id !== arenaId)
+                        .map(([id, config]) => [
+                            id,
+                            {
+                                ...config,
+                                prerequisiteArenaIds: (config.prerequisiteArenaIds || []).filter(prereqId => prereqId !== arenaId),
+                            },
+                        ])
+                );
+                return { id: campaign.id, nextArenaIds, nextConfig };
+            });
+        const emptiedCampaignIds = campaignUpdates
+            .filter(campaign => campaign.nextArenaIds.length === 0)
+            .map(campaign => campaign.id);
+        const nextCycleArenaIds = activeCycle?.arenaIds.filter(id => id !== arenaId) || null;
+        const shouldDetachArenaFromCycle = Boolean(activeCycle?.arenaIds.includes(arenaId));
         const arenaFlags = getArenaDomainFlags(arena);
         const isQuestArenaType = arenaFlags.isQuest;
 
@@ -7125,6 +7239,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             arenas: asset.arenas.filter(existingArena => existingArena.id !== arenaId)
         })));
         setActions(prevActions => prevActions.filter(action => action.arenaId !== arenaId));
+        if (campaignUpdates.length > 0) {
+            setCampaigns(prevCampaigns => prevCampaigns
+                .filter(campaign => !emptiedCampaignIds.includes(campaign.id))
+                .map(campaign => {
+                    const update = campaignUpdates.find(item => item.id === campaign.id);
+                    return update
+                        ? { ...campaign, arenaIds: update.nextArenaIds, arenaConfig: update.nextConfig }
+                        : campaign;
+                }));
+        }
+        if (shouldDetachArenaFromCycle && nextCycleArenaIds) {
+            setActiveCycle(prev => prev ? { ...prev, arenaIds: nextCycleArenaIds } : prev);
+        }
 
         if (folderId) {
             const arenasInFolder = getArenas().filter(existingArena => existingArena.folderId === folderId && existingArena.id !== arenaId);
@@ -7138,6 +7265,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 await supabase.from('scheduled_tasks').delete().in('action_id', arenaActionIds);
             }
             await supabase.from('actions').delete().eq('arena_id', arenaId);
+            await supabase.from('relationship_link_arenas').delete().eq('arena_id', arenaId);
+            await supabase.from('relationship_links').update({ arena_id: null, arena_snapshot: null }).eq('arena_id', arenaId);
+            if (campaignUpdates.length > 0) {
+                const nonEmptyCampaignUpdates = campaignUpdates.filter(({ id }) => !emptiedCampaignIds.includes(id));
+                if (nonEmptyCampaignUpdates.length > 0) {
+                    await Promise.allSettled(
+                        nonEmptyCampaignUpdates.map(({ id, nextArenaIds, nextConfig }) =>
+                            supabase.from('campaigns').update({
+                                arena_ids: nextArenaIds,
+                                arena_config: nextConfig,
+                            }).eq('id', id)
+                        )
+                    );
+                }
+                if (emptiedCampaignIds.length > 0) {
+                    await supabase.from('campaigns').delete().in('id', emptiedCampaignIds);
+                }
+            }
+            if (activeCycle?.id && nextCycleArenaIds && shouldDetachArenaFromCycle) {
+                await supabase.from('cycles').update({ arena_ids: nextCycleArenaIds }).eq('id', activeCycle.id);
+            }
             supabase.from('arenas').delete().eq('id', arenaId).then(({ error }) => {
                 if (error) console.error("Supabase delete arena error:", error.message);
             });
@@ -7271,6 +7419,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const updateAction = (actionId: string, actionData: Partial<Action>) => {
+        const previousAction = actions.find(a => a.id === actionId);
+        const previousArenaId = previousAction?.arenaId;
         setActions(prev => prev.map(a => {
             if (a.id !== actionId) return a;
 
@@ -7280,6 +7430,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             return { ...a, ...actionData, arenaId: nextArenaId };
         }));
+        const nextArenaId = typeof actionData.arenaId === 'string' && actionData.arenaId.trim()
+            ? actionData.arenaId
+            : previousArenaId;
+        if (previousArenaId && nextArenaId && previousArenaId !== nextArenaId) {
+            setAssets(prevAssets => prevAssets.map(asset => ({
+                ...asset,
+                arenas: asset.arenas.map(arena => {
+                    if (arena.id === previousArenaId) {
+                        const actionIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+                        return { ...arena, actionIds: actionIds.filter(id => id !== actionId) };
+                    }
+                    if (arena.id === nextArenaId) {
+                        const actionIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+                        return actionIds.includes(actionId)
+                            ? arena
+                            : { ...arena, actionIds: [...actionIds, actionId] };
+                    }
+                    return arena;
+                })
+            })));
+        }
         const userId = getSupabaseUserId();
         if (userId) {
             // Explicit payload construction for updates
@@ -7312,6 +7483,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Check if we need to remove the arena (if it becomes empty and is a special quest arena)
         const action = actions.find(a => a.id === actionId);
         const arenaId = action?.arenaId;
+        const actionTaskIds = tasks.filter(task => task.actionId === actionId).map(task => task.id);
 
         // Remove clan mission participation if applicable
         if (action && clan) {
@@ -7345,6 +7517,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         setActions(prev => prev.filter(a => a.id !== actionId));
         setTasks(prev => prev.filter(t => t.actionId !== actionId));
+        if (actionTaskIds.length > 0) {
+            setDailyCommitmentState(prev => ({
+                ...prev,
+                taskIds: prev.taskIds.filter(taskId => !actionTaskIds.includes(taskId))
+            }));
+        }
 
         setAssets(prevAssets => {
             return prevAssets.map(asset => {
@@ -7374,6 +7552,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (arena) {
                 const remainingActions = actions.filter(a => a.arenaId === arenaId && a.id !== actionId);
                 if (remainingActions.length === 0) {
+                    const shouldDeleteEmptyArena = isQuestArena(arena) || isOfficeArena(arena);
                     if (isQuestArena(arena)) {
                         updateArena(arenaId, { isArchived: true });
                     }
@@ -7382,13 +7561,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         updateArena(arenaId, { isArchived: true });
                         showToast('Arena Office arquivada (sem ações).', 'info');
                     }
-                    setTimeout(() => deleteArena(arenaId), 0);
+                    if (shouldDeleteEmptyArena) {
+                        setTimeout(() => deleteArena(arenaId), 0);
+                    }
                 }
             }
         }
 
         const userId = getSupabaseUserId();
         if (userId) {
+            await supabase.from('scheduled_tasks').delete().eq('action_id', actionId);
             supabase.from('actions').delete().eq('id', actionId).then(({ error }) => {
                 if (error) console.error("Supabase delete action error:", error.message);
             });
@@ -7418,6 +7600,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
+    const findSeasonQuestArenaAndAction = useCallback((quest: SeasonQuest) => {
+        const normalizedArenaName = normalizeDomainLabel(quest.title || '');
+        const normalizedActionName = normalizeDomainLabel(quest.actionTemplate?.name || '');
+        const arena = getArenas().find(candidate => normalizeDomainLabel(candidate.name || '') === normalizedArenaName);
+        const action = arena
+            ? actions.find(candidate =>
+                candidate.arenaId === arena.id &&
+                normalizeDomainLabel(candidate.name || '') === normalizedActionName
+            )
+            : undefined;
+
+        return { arena, action };
+    }, [actions, getArenas]);
+
     const acceptSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
@@ -7439,11 +7635,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 1. Verificar se a ação já existe
-        const arenas = getArenas();
-        const existingAction = actions.find(a => a.name === quest.actionTemplate.name);
-        const isActionValid = existingAction && arenas.some(ar => ar.id === existingAction.arenaId);
+        const isClanQuest = quest.type === 'clan';
+        // NOME DA ARENA = TÍTULO DA MISSÒO
+        // O usuário solicitou explicitamente: "quero que cada quest de cla e de missao crie uma arena nova com o nome daquela missao"
+        const seasonArenaName = quest.title; // Ex: "Correr 15km", "Ler Livro X"
 
-        if (isActionValid) {
+        // 2. Buscar ou Criar Arena (Específica para esta missão)
+        let { arena, action: existingAction } = findSeasonQuestArenaAndAction(quest);
+
+        if (existingAction) {
             if (quest.type === 'clan' && clan) {
                 const isParticipating = userMissionParticipations[quest.id];
                 if (!isParticipating) {
@@ -7455,18 +7655,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        const isClanQuest = quest.type === 'clan';
-        // NOME DA ARENA = TÍTULO DA MISSÒO
-        // O usuário solicitou explicitamente: "quero que cada quest de cla e de missao crie uma arena nova com o nome daquela missao"
-        const seasonArenaName = quest.title; // Ex: "Correr 15km", "Ler Livro X"
-
-        // 2. Buscar ou Criar Arena (Específica para esta missão)
-        const normalize = (s: string) => normalizeDomainLabel(s);
-        const targetName = normalize(seasonArenaName);
-
-        // Busca exata pelo nome da missão para evitar agrupar em "Quests - Clã"
-        let arena = getArenas().find(a => normalize(a.name) === targetName);
-
         if (!arena) {
             // Se não existe, cria uma nova arena dedicada
             const assetId = assets[0]?.id || 'geral';
@@ -7475,17 +7663,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 description: quest.description || (isClanQuest ? 'Miss\u00E3o de Cl\u00E3' : 'Miss\u00E3o de Temporada'),
                 icon: quest.actionTemplate.icon || (isClanQuest ? '\u2694\uFE0F' : '\u{1F4DD}'),
                 priority: 'alta' // Destaque para missões ativas
-            }, true);
+            });
 
             // Persistência Manual
-            const userId = getSupabaseUserId();
-            if (userId) {
-                try {
-                    const snakeCaseData = { ...mapToSnakeCase(arena), user_id: userId };
-                    delete snakeCaseData.action_ids;
-                    await supabase.from('arenas').insert(snakeCaseData);
-                } catch (e) { console.error("Error persisting arena:", e); }
-            }
         }
 
         // Garantir que não está arquivada
@@ -7520,26 +7700,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
 
-        // 1. If it's a clan quest, remove participation
-        if (quest.type === 'clan') {
-            await leaveClanMission(quest.id);
-        }
-
-        // 2. Find and delete associated action
-        const existingAction = actions.find(a => a.name === quest.actionTemplate.name);
+        const { action: existingAction } = findSeasonQuestArenaAndAction(quest);
         if (existingAction) {
-            // Delete action locally
-            setActions(prev => prev.filter(a => a.id !== existingAction.id));
-
-            // Delete action from Supabase
-            const { error } = await supabase
-                .from('actions')
-                .delete()
-                .eq('id', existingAction.id);
-
-            if (error) {
-                console.error("Error deleting season quest action:", error);
-            }
+            await deleteAction(existingAction.id);
+        } else if (quest.type === 'clan') {
+            await leaveClanMission(quest.id);
         }
 
         showToast(`Missão "${quest.title}" abandonada.`);
@@ -7762,6 +7927,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const taskDomain = createTaskDomain({
         tasks,
+        activeCycle,
         dailyCommitment,
         clan,
         supabase,
@@ -7835,6 +8001,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const leaveClan = async () => {
         const userId = getSupabaseUserId();
         if (!userId) { console.error("User not authenticated"); return; }
+        const currentClanId = clan?.id || null;
+        if (currentClanId) {
+            const { error: missionError } = await supabase
+                .from('clan_mission_participants')
+                .delete()
+                .eq('clan_id', currentClanId)
+                .eq('user_id', userId);
+            if (missionError) {
+                console.error("Error clearing clan mission participations:", missionError.message);
+            }
+        }
+
         const { error } = await supabase.from('clan_members').delete().eq('user_id', userId);
         if (error) { console.error("Error leaving clan:", error.message); return; }
 
@@ -7846,6 +8024,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setClan(null);
         setEnrichedClanMembers([]);
         setClanJoinRequestsIncoming([]);
+        setClanQuestProgress({});
+        setClanQuestParticipants({});
+        setUserMissionParticipations({});
     };
 
     const transferLeadershipAndLeave = async (newLeaderId: string) => {
@@ -7872,9 +8053,42 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             console.error("Invalid member ID for kicking");
             return;
         }
+
+        const { data: participantRows, error: participantSelectError } = await supabase
+            .from('clan_mission_participants')
+            .select('mission_id')
+            .eq('clan_id', clan.id)
+            .eq('user_id', memberId);
+        if (participantSelectError) {
+            console.error("Error loading member clan mission participations:", participantSelectError.message);
+        }
+
+        const { error: participantDeleteError } = await supabase
+            .from('clan_mission_participants')
+            .delete()
+            .eq('clan_id', clan.id)
+            .eq('user_id', memberId);
+        if (participantDeleteError) {
+            console.error("Error clearing member clan mission participations:", participantDeleteError.message);
+        }
+
         const { error } = await supabase.from('clan_members').delete().eq('user_id', memberId).eq('clan_id', clan.id);
         if (error) { console.error("Error kicking member:", error.message); return; }
         setEnrichedClanMembers(prev => prev.filter(m => m.id !== memberId));
+        if (participantRows?.length) {
+            const affectedMissionIds = participantRows
+                .map((row: any) => String(row.mission_id || ''))
+                .filter(Boolean);
+            if (affectedMissionIds.length > 0) {
+                setClanQuestParticipants(prev => {
+                    const next = { ...prev };
+                    affectedMissionIds.forEach((missionId) => {
+                        next[missionId] = Math.max(0, (next[missionId] || 0) - 1);
+                    });
+                    return next;
+                });
+            }
+        }
 
         // Update cache
         if (clanCacheRef.current && clanCacheRef.current.clanId === clan.id) {
@@ -7975,6 +8189,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const { error } = await supabase.from('clan_members').insert({ user_id: userId, clan_id: clanToJoin.id, role: 'member' });
         if (error) { console.error("Error joining clan:", error.message); return; }
+        await supabase
+            .from('clan_join_requests')
+            .delete()
+            .eq('clan_id', clanToJoin.id)
+            .eq('user_id', userId)
+            .eq('status', 'pending');
+        setClanJoinRequestsOutgoing(prev => prev.filter(request => request.clanId !== clanToJoin.id));
         await loadClanAndMembers(clanToJoin.id);
     };
 
@@ -8278,6 +8499,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         */
     }, [isProfileLoaded, hasHydratedFromSupabase, assets.length]); // Check assets length to ensure they are loaded
 
+    const cycleScopedTasks = useMemo(() => {
+        if (!activeCycle) return tasks;
+        return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
+    }, [activeCycle, tasks]);
+
     const taskPool = useMemo(() => {
         const activeArenas = allArenas.filter(arena => !arena.isArchived);
         const lockedArenaIds = new Set<string>();
@@ -8291,7 +8517,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 campaign,
                 arenasById,
                 actionsByArena,
-                tasks,
+                tasks: cycleScopedTasks,
                 getClanQuestsForArena,
                 getClanQuestProgress,
             });
@@ -8309,7 +8535,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const activeArenaIds: Set<string> = new Set(availableArenas.map(arena => arena.id).filter(id => !lockedArenaIds.has(id)));
 
         return buildTaskPoolEntries(actions, activeArenaIds, isClanQuestActionId);
-    }, [actions, allArenas, activeCycle?.arenaIds, campaigns, getClanQuestProgress, getClanQuestsForArena, isClanQuestActionId, tasks]);
+    }, [actions, allArenas, activeCycle?.arenaIds, campaigns, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena, isClanQuestActionId]);
 
     return (
         <GameContext.Provider value={{
@@ -8320,7 +8546,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

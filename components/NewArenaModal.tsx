@@ -26,7 +26,7 @@ const AssetSelectionModal: React.FC<{ currentAssetId: string; onSelect: (assetId
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[220] flex items-center justify-center animate-fade-in" onClick={onClose}>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[245] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Ativo</h2>
                     <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -94,7 +94,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     return (
         <>
             <Portal>
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center animate-fade-in" onClick={onClose}>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={onClose}>
                     <GlassCard ref={modalCardRef} variant="silver" className="w-full max-w-sm m-4 space-y-4 rounded-3xl relative" onClick={e => e.stopPropagation()}>
                         <div className="text-center">
                             <CrownIcon className="w-8 h-8 mx-auto text-[var(--skin-accent-color)]" />

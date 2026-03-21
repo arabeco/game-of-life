@@ -145,6 +145,129 @@ function Draw-FittedImage {
     }
 }
 
+function Get-RichTextSegments {
+    param([string]$Line)
+
+    $segments = New-Object System.Collections.Generic.List[object]
+    if ([string]::IsNullOrEmpty($Line)) {
+        $segments.Add([pscustomobject]@{ Text = ""; Highlight = $false })
+        return $segments
+    }
+
+    $matches = [regex]::Matches($Line, '\[\[gold:(.*?)\]\]')
+    if ($matches.Count -eq 0) {
+        $segments.Add([pscustomobject]@{ Text = $Line; Highlight = $false })
+        return $segments
+    }
+
+    $cursor = 0
+    foreach ($match in $matches) {
+        if ($match.Index -gt $cursor) {
+            $segments.Add([pscustomobject]@{
+                Text = $Line.Substring($cursor, $match.Index - $cursor)
+                Highlight = $false
+            })
+        }
+        $segments.Add([pscustomobject]@{
+            Text = $match.Groups[1].Value
+            Highlight = $true
+        })
+        $cursor = $match.Index + $match.Length
+    }
+
+    if ($cursor -lt $Line.Length) {
+        $segments.Add([pscustomobject]@{
+            Text = $Line.Substring($cursor)
+            Highlight = $false
+        })
+    }
+
+    return $segments
+}
+
+function Draw-RichCenteredLines {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [string[]]$Lines,
+        [System.Drawing.Font]$Font,
+        [System.Drawing.Brush]$DefaultBrush,
+        [System.Drawing.Brush]$HighlightBrush,
+        [float]$X,
+        [float]$Y,
+        [float]$Width,
+        [float]$Height
+    )
+
+    $createdFont = $null
+    try {
+        $paddingX = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.12))
+        $paddingY = [float][Math]::Max(10, [Math]::Ceiling($Font.Size * 0.18))
+        $safeX = [float]($X + $paddingX)
+        $safeY = [float]($Y + $paddingY)
+        $safeWidth = [float][Math]::Max(12, $Width - ($paddingX * 2))
+        $safeHeight = [float][Math]::Max(12, $Height - ($paddingY * 2))
+
+        $drawFont = $Font
+        $lineGap = [float][Math]::Ceiling($Font.Size * 0.18)
+        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * 0.58))
+
+        for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
+            if ([Math]::Abs($size - $Font.Size) -lt 0.05) {
+                $candidate = $Font
+            } else {
+                $candidate = [System.Drawing.Font]::new($Font.FontFamily, $size, $Font.Style, [System.Drawing.GraphicsUnit]::Pixel)
+            }
+
+            $candidateGap = [float][Math]::Ceiling($size * 0.18)
+            $maxWidth = 0.0
+            $totalHeight = 0.0
+            foreach ($line in $Lines) {
+                $segments = Get-RichTextSegments -Line $line
+                $lineWidth = 0.0
+                foreach ($segment in $segments) {
+                    $lineWidth += $Graphics.MeasureString($segment.Text, $candidate).Width
+                }
+                if ($lineWidth -gt $maxWidth) { $maxWidth = $lineWidth }
+                $totalHeight += $Graphics.MeasureString("Ag", $candidate).Height
+            }
+            if ($Lines.Count -gt 1) { $totalHeight += $candidateGap * ($Lines.Count - 1) }
+
+            if ($maxWidth -le ($safeWidth + 1) -and $totalHeight -le ($safeHeight + 1)) {
+                if ($candidate -ne $Font) { $createdFont = $candidate }
+                $drawFont = $candidate
+                $lineGap = $candidateGap
+                break
+            }
+
+            if ($candidate -ne $Font) { $candidate.Dispose() }
+        }
+
+        $lineHeight = $Graphics.MeasureString("Ag", $drawFont).Height
+        $blockHeight = ($lineHeight * $Lines.Count) + ($lineGap * [Math]::Max(0, $Lines.Count - 1))
+        $cursorY = [float]($safeY + (($safeHeight - $blockHeight) / 2))
+
+        foreach ($line in $Lines) {
+            $segments = Get-RichTextSegments -Line $line
+            $lineWidth = 0.0
+            foreach ($segment in $segments) {
+                $lineWidth += $Graphics.MeasureString($segment.Text, $drawFont).Width
+            }
+
+            $cursorX = [float]($safeX + (($safeWidth - $lineWidth) / 2))
+            foreach ($segment in $segments) {
+                $brush = if ($segment.Highlight) { $HighlightBrush } else { $DefaultBrush }
+                $segmentWidth = $Graphics.MeasureString($segment.Text, $drawFont).Width
+                $Graphics.DrawString($segment.Text, $drawFont, $brush, [System.Drawing.PointF]::new($cursorX, $cursorY))
+                $cursorX += $segmentWidth
+            }
+
+            $cursorY += $lineHeight + $lineGap
+        }
+    } finally {
+        if ($null -ne $createdFont) { $createdFont.Dispose() }
+    }
+}
+
 function Draw-GlowRectangle {
     param(
         [System.Drawing.Graphics]$Graphics,
@@ -201,15 +324,126 @@ function Draw-BackgroundBase {
     $innerPen.Dispose()
 }
 
+function Draw-SubtleGoldShimmer {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [float]$CenterX,
+        [float]$CenterY,
+        [float]$BandWidth,
+        [float]$BandHeight,
+        [float]$Angle,
+        [int]$PeakAlpha = 16
+    )
+
+    $state = $Graphics.Save()
+    $baseBrush = $null
+    $coreBrush = $null
+    try {
+        $Graphics.TranslateTransform($CenterX, $CenterY)
+        $Graphics.RotateTransform($Angle)
+
+        $baseRect = [System.Drawing.RectangleF]::new(
+            [float](-$BandWidth / 2),
+            [float](-$BandHeight / 2),
+            $BandWidth,
+            $BandHeight
+        )
+
+        $baseBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            [System.Drawing.PointF]::new($baseRect.Left, 0),
+            [System.Drawing.PointF]::new($baseRect.Right, 0),
+            (New-Color 0 255 238 196),
+            (New-Color 0 255 238 196)
+        )
+
+        $baseBlend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $baseBlend.Colors = [System.Drawing.Color[]]@(
+            (New-Color 0 255 238 196),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.35)) 236 198 102),
+            (New-Color $PeakAlpha 255 243 196),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.35)) 236 198 102),
+            (New-Color 0 255 238 196)
+        )
+        $baseBlend.Positions = [single[]](0.0, 0.34, 0.5, 0.66, 1.0)
+        $baseBrush.InterpolationColors = $baseBlend
+        $Graphics.FillRectangle($baseBrush, $baseRect)
+
+        $coreRect = [System.Drawing.RectangleF]::new(
+            [float](-($BandWidth * 0.16)),
+            [float](-$BandHeight / 2),
+            [float]($BandWidth * 0.32),
+            $BandHeight
+        )
+
+        $coreBrush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+            [System.Drawing.PointF]::new($coreRect.Left, 0),
+            [System.Drawing.PointF]::new($coreRect.Right, 0),
+            (New-Color 0 255 244 210),
+            (New-Color 0 255 244 210)
+        )
+
+        $coreBlend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $coreBlend.Colors = [System.Drawing.Color[]]@(
+            (New-Color 0 255 244 210),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.55)) 248 222 142),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.8)) 255 248 218),
+            (New-Color ([int][Math]::Round($PeakAlpha * 0.55)) 248 222 142),
+            (New-Color 0 255 244 210)
+        )
+        $coreBlend.Positions = [single[]](0.0, 0.28, 0.5, 0.72, 1.0)
+        $coreBrush.InterpolationColors = $coreBlend
+        $Graphics.FillRectangle($coreBrush, $coreRect)
+    } finally {
+        if ($null -ne $baseBrush) { $baseBrush.Dispose() }
+        if ($null -ne $coreBrush) { $coreBrush.Dispose() }
+        $Graphics.Restore($state)
+    }
+}
+
 function Get-GoldBrush {
     param([int]$Width, [int]$Height)
 
-    [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
         [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
-        (New-Color 255 253 242 191),
-        (New-Color 255 140 106 47),
-        15
+        (New-Color 255 247 235 204),
+        (New-Color 255 174 137 78),
+        18
     )
+
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+    $blend.Colors = [System.Drawing.Color[]]@(
+        (New-Color 255 157 122 70),
+        (New-Color 255 231 204 144),
+        (New-Color 255 250 242 214),
+        (New-Color 255 214 183 122),
+        (New-Color 255 146 113 66)
+    )
+    $blend.Positions = [single[]](0.0, 0.26, 0.5, 0.74, 1.0)
+    $brush.InterpolationColors = $blend
+    return $brush
+}
+
+function Get-SilverBrush {
+    param([int]$Width, [int]$Height)
+
+    $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+        [System.Drawing.RectangleF]::new(0, 0, $Width, $Height),
+        (New-Color 255 212 219 228),
+        (New-Color 255 131 141 156),
+        102
+    )
+
+    $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+    $blend.Colors = [System.Drawing.Color[]]@(
+        (New-Color 255 122 132 147),
+        (New-Color 255 198 207 218),
+        (New-Color 255 241 245 250),
+        (New-Color 255 184 193 205),
+        (New-Color 255 116 125 139)
+    )
+    $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
+    $brush.InterpolationColors = $blend
+    return $brush
 }
 
 function Draw-Pill {
@@ -472,6 +706,8 @@ $eyebrowBrush = [System.Drawing.SolidBrush]::new((New-Color 165 255 236 196))
 $goldSoftBrush = [System.Drawing.SolidBrush]::new((New-Color 220 234 206 110))
 $goldWashBrush = [System.Drawing.SolidBrush]::new((New-Color 10 244 216 118))
 $goldBrushSlide = Get-GoldBrush -Width $width -Height $height
+$silverBrushSlide = Get-SilverBrush -Width $width -Height $height
+$goldHighlightBrush = Get-GoldBrush -Width $width -Height $height
 
 $created = New-Object System.Collections.Generic.List[string]
 
@@ -484,13 +720,38 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Entre o est${iacute}mulo e a resposta`nh${aacute} um espa${ccedilla}o.`nNesse espa${ccedilla}o est${aacute}`no poder de escolher."
+$quoteLines = @(
+    "Entre o est${iacute}mulo e a resposta",
+    "h${aacute} um [[gold:espa${ccedilla}o]].",
+    "Nesse espa${ccedilla}o est${aacute} o",
+    "poder de [[gold:escolher]]."
+)
 $supportCore = "A hist${oacute}ria fascinante de um homem que saiu do horror com uma teoria sobre sentido."
+$supportLines = @(
+    "A hist${oacute}ria fascinante de um",
+    "homem que saiu do horror",
+    "com uma teoria sobre [[gold:sentido]]."
+)
 $analysis1Title = "O que Viktor Frankl fez?"
-$analysis1 = "Psiquiatra judeu austr${iacute}aco, foi preso em campos de concentra${ccedilla}${atilde}o nazistas, perdeu pai, m${atilde}e, irm${atilde}o e esposa.`nAo sobreviver, transformou essa experi${ecirc}ncia na Logoterapia: uma psicologia centrada na busca de sentido."
+$analysis1Lines = @(
+    "Psiquiatra judeu austr${iacute}aco, foi preso em",
+    "[[gold:campos de concentra${ccedilla}${atilde}o]] nazistas,",
+    "perdeu pai, m${atilde}e, irm${atilde}o e esposa.",
+    "Ao sobreviver, transformou essa",
+    "experi${ecirc}ncia na [[gold:Logoterapia]]:",
+    "uma psicologia centrada na busca de sentido."
+)
 $analysis1Close = "Ele n${atilde}o voltou s${oacute} vivo. Voltou com um mapa."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque o projeto daqueles campos era quebrar identidade, vontade e dignidade.`nFrankl n${atilde}o apenas suportou o horror: ele observou o que ainda restava livre dentro do ser humano e construiu uma linguagem para isso."
+$analysis2Lines = @(
+    "Porque o projeto daqueles campos era",
+    "quebrar [[gold:identidade]], vontade e",
+    "dignidade.",
+    "Frankl n${atilde}o apenas suportou o horror:",
+    "ele observou o que ainda restava livre",
+    "dentro do ser humano e construiu uma",
+    "linguagem para isso."
+)
 $analysis2Close = "Ele preservou sentido onde quase nada restava."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
@@ -500,11 +761,12 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 758 -CenterY 444 -BandWidth 238 -BandHeight 1520 -Angle 16 -PeakAlpha 15
 Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 48 -Width 912 -Height 110
 Draw-Pill -Graphics $graphics -Text "Legado 01  |  Viktor Frankl" -Font $bodyBoldFont -X 318 -Y 188 -Width 444 -Height 54
 Draw-CenterText -Graphics $graphics -Text "A Liberdade`nDerradeira" -Font $heroTitleFont -Brush $goldBrushSlide -X 180 -Y 262 -Width 720 -Height 174
-Draw-CenterText -Graphics $graphics -Text $quoteText -Font $bodyFont -Brush $offWhiteBrush -X 94 -Y 468 -Width 584 -Height 272
-Draw-CenterText -Graphics $graphics -Text $supportCore -Font $titleMediumFont -Brush $whiteBrush -X 90 -Y 790 -Width 596 -Height 176
+Draw-RichCenteredLines -Graphics $graphics -Lines $quoteLines -Font $bodyFont -DefaultBrush $silverBrushSlide -HighlightBrush $goldHighlightBrush -X 94 -Y 468 -Width 584 -Height 272
+Draw-RichCenteredLines -Graphics $graphics -Lines $supportLines -Font $titleMediumFont -DefaultBrush $whiteBrush -HighlightBrush $goldHighlightBrush -X 90 -Y 790 -Width 596 -Height 176
 Draw-FeatureFrame -Graphics $graphics -X 720 -Y 492 -Width 208 -Height 378 -ImagePath $coverImagePath -PlaceholderFont $titleMediumFont -PlaceholderBrush $mutedBrush
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide1 = Join-Path $OutputDir "slide-01-capa.png"
@@ -516,10 +778,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 876 -CenterY 618 -BandWidth 194 -BandHeight 1560 -Angle -18 -PeakAlpha 13
 Draw-CenterText -Graphics $graphics -Text "Feito" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 768
 Draw-CenterText -Graphics $graphics -Text $analysis1Title -Font $titleLargeFont -Brush $goldBrushSlide -X 126 -Y 232 -Width 828 -Height 132
-Draw-CenterText -Graphics $graphics -Text $analysis1 -Font $bodyFont -Brush $offWhiteBrush -X 118 -Y 386 -Width 844 -Height 412
+Draw-RichCenteredLines -Graphics $graphics -Lines $analysis1Lines -Font $bodyFont -DefaultBrush $silverBrushSlide -HighlightBrush $goldHighlightBrush -X 118 -Y 386 -Width 844 -Height 412
 Draw-CenterText -Graphics $graphics -Text $analysis1Close -Font $titleMediumFont -Brush $whiteBrush -X 136 -Y 834 -Width 808 -Height 128
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide2 = Join-Path $OutputDir "slide-02-analise-01.png"
@@ -531,10 +794,11 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 364 -CenterY 650 -BandWidth 224 -BandHeight 1560 -Angle 20 -PeakAlpha 12
 Draw-CenterText -Graphics $graphics -Text "Raridade" -Font $watermarkFont -Brush $goldWashBrush -X 84 -Y 498 -Width 912 -Height 130
 Draw-EditorialPanel -Graphics $graphics -X 106 -Y 210 -Width 868 -Height 776
 Draw-CenterText -Graphics $graphics -Text $analysis2Title -Font $titleLargeFont -Brush $goldBrushSlide -X 120 -Y 236 -Width 840 -Height 136
-Draw-CenterText -Graphics $graphics -Text $analysis2Body -Font $bodyFont -Brush $offWhiteBrush -X 116 -Y 394 -Width 848 -Height 408
+Draw-RichCenteredLines -Graphics $graphics -Lines $analysis2Lines -Font $bodyFont -DefaultBrush $silverBrushSlide -HighlightBrush $goldHighlightBrush -X 116 -Y 394 -Width 848 -Height 408
 Draw-CenterText -Graphics $graphics -Text $analysis2Close -Font $titleMediumFont -Brush $whiteBrush -X 136 -Y 840 -Width 808 -Height 126
 Draw-SmallBrand -Graphics $graphics -LogoPath $logoPath -Font $ctaFont -Brush $goldSoftBrush
 $slide3 = Join-Path $OutputDir "slide-03-analise-02.png"
@@ -546,6 +810,7 @@ $canvas = New-Canvas -Width $width -Height $height
 $bitmap = $canvas.Bitmap
 $graphics = $canvas.Graphics
 Draw-BackgroundBase -Graphics $graphics -BackgroundPath $bgLegacy -Width $width -Height $height
+Draw-SubtleGoldShimmer -Graphics $graphics -CenterX 680 -CenterY 584 -BandWidth 206 -BandHeight 1520 -Angle -14 -PeakAlpha 11
 $watermarkBrush2 = [System.Drawing.SolidBrush]::new((New-Color 18 244 216 118))
 try {
     Draw-CenterText -Graphics $graphics -Text "Legado" -Font $watermarkFont -Brush $watermarkBrush2 -X 84 -Y 456 -Width 912 -Height 150

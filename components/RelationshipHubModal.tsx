@@ -11,6 +11,7 @@ import {
     Action,
     ScheduledTask,
     UserProfile,
+    UserCodex,
 } from '../types';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
@@ -112,6 +113,27 @@ const mapDbProfileToLite = (row: any): RelationshipProfileLite => ({
     role: row.role === 'admin' || row.role === 'gm' ? row.role : 'user',
 });
 
+const normalizeRelationshipCodexRow = (row: any): UserCodex => {
+    let template = row?.template;
+    if (typeof template === 'string') {
+        try {
+            template = JSON.parse(template);
+        } catch (error) {
+            console.error('Failed to parse relationship codex template', error);
+        }
+    }
+
+    return {
+        ...row,
+        template,
+        raw_template: template,
+        source_type: row?.source_type ?? 'gift_in_app',
+        origin_codex_id: row?.origin_codex_id ?? null,
+        created_by_user_id: row?.created_by_user_id ?? null,
+        mentor_relationship_link_id: row?.mentor_relationship_link_id ?? null,
+    } as UserCodex;
+};
+
 const formatDate = (value?: string | null) => {
     if (!value) return null;
     const parsed = new Date(value);
@@ -183,7 +205,7 @@ const RelationshipArenaBoardCard: React.FC<{
     assetName?: string;
     onClick: () => void;
     className?: string;
-}> = ({ arena, assetName, onClick, className = 'w-[10.85rem] shrink-0' }) => {
+}> = ({ arena, assetName, onClick, className = 'w-[12.6rem] shrink-0' }) => {
     const previewArena = arena.arena || {
         id: arena.arenaId,
         assetId: String(arena.metadata?.asset_id || 'geral'),
@@ -216,30 +238,35 @@ const MentorshipCampaignBoardCard: React.FC<{
     action?: React.ReactNode;
     onClick: () => void;
     className?: string;
-}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[12.8rem] shrink-0' }) => (
+}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[12.6rem] shrink-0' }) => (
     <button
         onClick={onClick}
-        className={`block rounded-[20px] border border-white/12 bg-black/22 p-3 text-left shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition-all hover:bg-black/28 ${className}`}
+        className={`block text-left transition-transform hover:-translate-y-0.5 ${className}`}
     >
-        <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-black text-white">{title}</div>
-                <div className="mt-1 text-[11px] leading-relaxed text-white/52">{subtitle}</div>
+        <div className="rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(32,36,47,0.94),rgba(10,11,16,0.98))] p-2.5 shadow-[0_12px_26px_rgba(0,0,0,0.24)]">
+            <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                    <div className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)]/82">
+                        Campanha
+                    </div>
+                    <div className="mt-1 truncate text-sm font-black text-white">{title}</div>
+                    <div className="mt-1 text-[11px] leading-relaxed text-white/52">{subtitle}</div>
+                </div>
+                {badge}
             </div>
-            {badge}
+
+            {preview ? (
+                <div className="mt-3 overflow-hidden rounded-[16px] border border-white/8 bg-black/18 px-2 py-2">
+                    <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="md" />
+                </div>
+            ) : (
+                <div className="mt-3 rounded-[16px] border border-dashed border-white/10 bg-black/16 px-3 py-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/36">
+                    Toque para abrir
+                </div>
+            )}
+
+            {action && <div className="mt-3 flex items-center justify-between gap-2">{action}</div>}
         </div>
-
-        {preview ? (
-            <div className="mt-3 overflow-hidden rounded-[16px] border border-white/8 bg-black/18 px-2 py-2">
-                <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
-            </div>
-        ) : (
-            <div className="mt-3 rounded-[16px] border border-dashed border-white/10 bg-black/16 px-3 py-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/36">
-                Toque para abrir
-            </div>
-        )}
-
-        {action && <div className="mt-3 flex items-center justify-between gap-2">{action}</div>}
     </button>
 );
 
@@ -485,6 +512,74 @@ const RelationshipInviteConfirmModal: React.FC<{
     );
 };
 
+const RelationshipEndConfirmModal: React.FC<{
+    link: RelationshipLink;
+    profile?: RelationshipProfileLite | null;
+    busy?: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+}> = ({ link, profile, busy = false, onClose, onConfirm }) => {
+    const label = LINK_LABELS[link.linkType];
+    const otherName = profile?.nickname || 'essa pessoa';
+
+    return (
+        <Portal>
+            <div className="fixed inset-0 z-[192] flex items-center justify-center bg-black/82 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+                <GlassCard
+                    variant="neutral"
+                    className="w-full max-w-md rounded-[28px] border border-red-300/14 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-red-200/64">Confirmacao</div>
+                            <h3 className="mt-1 text-base font-black uppercase tracking-[0.14em] text-white">
+                                Encerrar {label.singular.toLowerCase()}
+                            </h3>
+                        </div>
+                        <button onClick={onClose} className="rounded-full border border-white/12 bg-black/20 p-2 text-white/70 hover:text-white">
+                            <XIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="mt-4 rounded-[22px] border border-red-300/14 bg-red-500/8 p-4">
+                        <div className="flex items-center gap-3">
+                            <AvatarPill profile={profile} fallback="?" />
+                            <div className="min-w-0">
+                                <div className="truncate text-sm font-black text-white">{otherName}</div>
+                                <p className="mt-1 text-[12px] leading-relaxed text-white/62">
+                                    Isso encerra a {label.singular.toLowerCase()} agora e corta o acesso compartilhado ligado a esse vinculo.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 rounded-[18px] border border-amber-300/16 bg-amber-400/10 px-4 py-3 text-[12px] leading-relaxed text-amber-100/84">
+                        Nao tem como voltar atras. Se voces quiserem retomar depois, sera preciso criar um novo vinculo.
+                    </div>
+
+                    <div className="mt-4 flex gap-2">
+                        <button
+                            onClick={onClose}
+                            disabled={busy}
+                            className="luxe-button-secondary w-full rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={onConfirm}
+                            disabled={busy}
+                            className="w-full rounded-xl border border-red-300/18 bg-red-500/14 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-red-100 transition-all hover:bg-red-500/18 disabled:opacity-50"
+                        >
+                            {busy ? 'Encerrando...' : 'Encerrar vinculo'}
+                        </button>
+                    </div>
+                </GlassCard>
+            </div>
+        </Portal>
+    );
+};
+
 export const RelationshipHubModal: React.FC<{
     onClose: () => void;
     initialTab?: RelationshipHubTab;
@@ -494,6 +589,7 @@ export const RelationshipHubModal: React.FC<{
         createLinkedRelationshipArena,
         createRelationshipInvite,
         duplicateUserCodexToRecipient,
+        endRelationshipLink,
         fetchRelationshipHubData,
         friends,
         getRelationshipCapacitySummary,
@@ -514,6 +610,7 @@ export const RelationshipHubModal: React.FC<{
     const [profilesById, setProfilesById] = useState<Record<string, RelationshipProfileLite>>({});
     const [invitePickerType, setInvitePickerType] = useState<RelationshipLinkType | null>(null);
     const [inviteConfirmState, setInviteConfirmState] = useState<InviteConfirmState | null>(null);
+    const [endLinkConfirmState, setEndLinkConfirmState] = useState<RelationshipLink | null>(null);
     const [busyKey, setBusyKey] = useState<string | null>(null);
     const [selectedDetailLink, setSelectedDetailLink] = useState<RelationshipLink | null>(null);
     const [selectedPupilLink, setSelectedPupilLink] = useState<RelationshipLink | null>(null);
@@ -521,6 +618,7 @@ export const RelationshipHubModal: React.FC<{
     const [selectedMentorLinkForArena, setSelectedMentorLinkForArena] = useState<RelationshipLink | null>(null);
     const [selectedArenaDetail, setSelectedArenaDetail] = useState<RelationshipArenaDetailState | null>(null);
     const [selectedCampaignPreview, setSelectedCampaignPreview] = useState<CodexCampaignPreview | null>(null);
+    const [mentorSentCodexesByLinkId, setMentorSentCodexesByLinkId] = useState<Record<string, UserCodex[]>>({});
     const [linkedArenaDraft, setLinkedArenaDraft] = useState({
         assetId: assets[0]?.id || 'geral',
         name: '',
@@ -604,10 +702,41 @@ export const RelationshipHubModal: React.FC<{
         setError(null);
         try {
             const hub = await fetchRelationshipHubData();
+            const mentorLinkIds = (hub.links || [])
+                .filter((link) => link.linkType === 'mentoria' && link.mentorId === sessionUid)
+                .map((link) => link.id);
+
+            let nextMentorSentCodexesByLinkId: Record<string, UserCodex[]> = {};
+            if (mentorLinkIds.length > 0) {
+                const { data: mentorCodexRows, error: mentorCodexError } = await supabase
+                    .from('codex')
+                    .select('id,owner_id,name,description,template,schema_version,is_public,created_at,updated_at,catalog_id,source_type,origin_codex_id,created_by_user_id,mentor_relationship_link_id,author,price')
+                    .in('mentor_relationship_link_id', mentorLinkIds)
+                    .eq('created_by_user_id', sessionUid)
+                    .eq('source_type', 'gift_in_app')
+                    .order('created_at', { ascending: false });
+
+                if (mentorCodexError) {
+                    console.error('Relationship mentor codex load failed:', mentorCodexError);
+                } else {
+                    nextMentorSentCodexesByLinkId = (mentorCodexRows || [])
+                        .map(normalizeRelationshipCodexRow)
+                        .reduce((acc, codex) => {
+                            const linkId = codex.mentor_relationship_link_id;
+                            if (!linkId) return acc;
+                            const current = acc[linkId] || [];
+                            current.push(codex);
+                            acc[linkId] = current;
+                            return acc;
+                        }, {} as Record<string, UserCodex[]>);
+                }
+            }
+
             setInvites(hub.invites || []);
             setLinks(hub.links || []);
             setLinkedArenas(hub.linkedArenas || []);
             setSummary(hub.summary || (await getRelationshipCapacitySummary()));
+            setMentorSentCodexesByLinkId(nextMentorSentCodexesByLinkId);
             await hydrateProfiles(hub.invites || [], hub.links || []);
         } catch (hubError: any) {
             console.error('Relationship hub load failed:', hubError);
@@ -669,17 +798,23 @@ export const RelationshipHubModal: React.FC<{
     }, [userCodexes]);
     const receivedCodexPreviewById = useMemo(() => {
         const previews = new Map<string, CodexCampaignPreview>();
-        for (const codex of userCodexes) {
+        const codexPools = [
+            ...userCodexes,
+            ...Object.values(mentorSentCodexesByLinkId).flat(),
+        ];
+        for (const codex of codexPools) {
             if (!codex?.mentor_relationship_link_id) continue;
             if (!Array.isArray(codex.template?.levels) || codex.template.levels.length === 0) continue;
+            if (previews.has(codex.id)) continue;
 
+            const baseTitle = codex.template?.title || codex.name || 'Campanha recebida';
             previews.set(
                 codex.id,
                 buildCodexCampaignPreview(
                     codex.id,
                     {
                         ...codex.template,
-                        title: codex.template?.title || codex.name || 'Campanha recebida',
+                        title: baseTitle,
                         description: codex.template?.description || codex.description || '',
                     },
                     `__relationship_codex_preview_${codex.id}__`
@@ -687,7 +822,7 @@ export const RelationshipHubModal: React.FC<{
             );
         }
         return previews;
-    }, [userCodexes]);
+    }, [mentorSentCodexesByLinkId, userCodexes]);
     const installedOriginCodexIds = useMemo(() => {
         const ids = new Set<string>();
         assets.forEach((asset) => {
@@ -746,6 +881,23 @@ export const RelationshipHubModal: React.FC<{
             if (success) {
                 setInviteConfirmState(null);
                 setInvitePickerType(null);
+                await refreshHub();
+            }
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
+    const handleConfirmEndLink = async () => {
+        if (!endLinkConfirmState) return;
+        setBusyKey(`end-link:${endLinkConfirmState.id}`);
+        try {
+            const success = await endRelationshipLink(endLinkConfirmState.id);
+            if (success) {
+                setEndLinkConfirmState(null);
+                setSelectedDetailLink(null);
+                setSelectedPupilLink(null);
+                setSelectedMentorLinkForArena(null);
                 await refreshHub();
             }
         } finally {
@@ -1000,7 +1152,9 @@ export const RelationshipHubModal: React.FC<{
         const pupilProfile = profileFor(link.pupilId) || (link.pupilId === sessionUid ? toProfileLite(userProfile) : null);
 
         if (link.linkType === 'mentoria') {
-            const receivedCodexes = receivedCodexesByLinkId.get(link.id) || [];
+            const relationshipCodexes = isMentorSide
+                ? mentorSentCodexesByLinkId[link.id] || []
+                : receivedCodexesByLinkId.get(link.id) || [];
             const mentorBoardItems = isMentorSide
                 ? [
                     {
@@ -1073,6 +1227,17 @@ export const RelationshipHubModal: React.FC<{
                                 <CompactPill label="papel" value={isMentorSide ? 'mentor' : 'pupilo'} tone="text-white" />
                                 <CompactPill label="desde" value={formatDate(link.createdAt) || 'agora'} tone="text-white" />
                             </div>
+
+                            <button
+                                onClick={() => setEndLinkConfirmState(link)}
+                                disabled={busyKey === `end-link:${link.id}`}
+                                className="w-full rounded-[18px] border border-red-300/14 bg-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/14 disabled:opacity-50"
+                            >
+                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/82">Encerrar vinculo</div>
+                                <div className="mt-1 text-[12px] leading-relaxed text-white/56">
+                                    Encerra essa mentoria e corta o acesso compartilhado. Nao tem como voltar atras.
+                                </div>
+                            </button>
                         </div>
                     </GlassCard>
 
@@ -1087,7 +1252,7 @@ export const RelationshipHubModal: React.FC<{
                             <div className="flex items-center gap-2">
                                 {!isMentorSide && (
                                     <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
-                                        {receivedCodexes.length} campanha{receivedCodexes.length === 1 ? '' : 's'}
+                                        {relationshipCodexes.length} campanha{relationshipCodexes.length === 1 ? '' : 's'}
                                     </span>
                                 )}
                                 {isMentorSide && (
@@ -1101,8 +1266,8 @@ export const RelationshipHubModal: React.FC<{
                             </div>
                         </div>
 
-                        <div className="mt-4">
-                            {arenasForLink.length === 0 && !isMentorSide && receivedCodexes.length === 0 ? (
+                            <div className="mt-4">
+                            {arenasForLink.length === 0 && mentorBoardItems.length === 0 && relationshipCodexes.length === 0 ? (
                                 <EmptyState title="Sem conteudo" text="Seu mentor ainda nao abriu arena nem enviou campanha para esta mentoria." />
                             ) : (
                                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -1116,19 +1281,8 @@ export const RelationshipHubModal: React.FC<{
                                         />
                                     ))}
 
-                                    {isMentorSide
-                                        ? mentorBoardItems.map((item) => (
-                                            <MentorshipCampaignBoardCard
-                                                key={item.id}
-                                                title={item.title}
-                                                subtitle={item.subtitle}
-                                                onClick={item.onClick}
-                                                action={item.action}
-                                                className="w-full min-w-0"
-                                            />
-                                        ))
-                                        : receivedCodexes.map((codex: any) => {
-                                            const installed = installedOriginCodexIds.has(codex.id);
+                                    {relationshipCodexes.map((codex: UserCodex) => {
+                                            const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
                                             const preview = receivedCodexPreviewById.get(codex.id) || null;
                                             return (
                                                 <MentorshipCampaignBoardCard
@@ -1145,10 +1299,14 @@ export const RelationshipHubModal: React.FC<{
                                                             <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
                                                                 Instalada
                                                             </span>
+                                                        ) : isMentorSide ? (
+                                                            <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
+                                                                Enviada
+                                                            </span>
                                                         ) : null
                                                     }
                                                     action={
-                                                        installed ? null : (
+                                                        installed || isMentorSide ? null : (
                                                             <button
                                                                 onClick={async (event) => {
                                                                     event.stopPropagation();
@@ -1169,6 +1327,16 @@ export const RelationshipHubModal: React.FC<{
                                                 />
                                             );
                                         })}
+                                    {isMentorSide && mentorBoardItems.map((item) => (
+                                        <MentorshipCampaignBoardCard
+                                            key={item.id}
+                                            title={item.title}
+                                            subtitle={item.subtitle}
+                                            onClick={item.onClick}
+                                            action={item.action}
+                                            className="w-full min-w-0"
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -1204,6 +1372,17 @@ export const RelationshipHubModal: React.FC<{
                                 </div>
                             </div>
                         </div>
+
+                        <button
+                            onClick={() => setEndLinkConfirmState(link)}
+                            disabled={busyKey === `end-link:${link.id}`}
+                            className="w-full rounded-[18px] border border-red-300/14 bg-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/14 disabled:opacity-50"
+                        >
+                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/82">Encerrar vinculo</div>
+                            <div className="mt-1 text-[12px] leading-relaxed text-white/56">
+                                Encerra essa {LINK_LABELS[link.linkType].singular.toLowerCase()} agora. Se quiser retomar depois, vai ter que criar outra.
+                            </div>
+                        </button>
                     </div>
                 </GlassCard>
 
@@ -1387,6 +1566,16 @@ export const RelationshipHubModal: React.FC<{
                     busy={busyKey === `confirm:${inviteConfirmState.linkType}:${inviteConfirmState.friendId}`}
                     onClose={() => setInviteConfirmState(null)}
                     onConfirm={handleConfirmInviteSend}
+                />
+            )}
+
+            {endLinkConfirmState && (
+                <RelationshipEndConfirmModal
+                    link={endLinkConfirmState}
+                    profile={otherParticipant(endLinkConfirmState)}
+                    busy={busyKey === `end-link:${endLinkConfirmState.id}`}
+                    onClose={() => setEndLinkConfirmState(null)}
+                    onConfirm={handleConfirmEndLink}
                 />
             )}
 

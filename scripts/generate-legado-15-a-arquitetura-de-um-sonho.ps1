@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Entre o est${iacute}mulo e a resposta`nh${aacute} um espa${ccedilla}o.`nNesse espa${ccedilla}o est${aacute}`no poder de escolher."
-$supportCore = "A hist${oacute}ria fascinante de um homem que saiu do horror com uma teoria sobre sentido."
+$quoteText = "Dê o primeiro passo na fé.`nVocê não precisa ver a escada inteira."
+$supportCore = "O líder que mobilizou milhões com visão moral, não com violência."
 $analysis1Title = "O que Martin Luther King Jr. fez?"
-$analysis1 = "Psiquiatra judeu austr${iacute}aco, foi preso em campos de concentra${ccedilla}${atilde}o nazistas, perdeu pai, m${atilde}e, irm${atilde}o e esposa.`nAo sobreviver, transformou essa experi${ecirc}ncia na Logoterapia: uma psicologia centrada na busca de sentido."
-$analysis1Close = "Ele n${atilde}o voltou s${oacute} vivo. Voltou com um mapa."
+$analysis1 = "Martin Luther King Jr. liderou a luta pelos direitos civis nos Estados Unidos articulando oratória, coragem pública e não-violência em escala histórica.`nSeu papel não foi só discursar. Foi organizar direção moral para um movimento inteiro."
+$analysis1Close = "Ele deu linguagem a uma exigência histórica."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque o projeto daqueles campos era quebrar identidade, vontade e dignidade.`nFrankl n${atilde}o apenas suportou o horror: ele observou o que ainda restava livre dentro do ser humano e construiu uma linguagem para isso."
-$analysis2Close = "Ele preservou sentido onde quase nada restava."
+$analysis2Body = "Porque mover massas sem ódio, sem armas e sem perder firmeza exige força incomum.`nKing fez da palavra uma arquitetura de mobilização real."
+$analysis2Close = "Ele mostrou que discurso, quando tem coluna, move história."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

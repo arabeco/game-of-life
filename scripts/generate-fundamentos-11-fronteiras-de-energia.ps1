@@ -334,13 +334,13 @@ $atilde = [char]0x00E3
 $ecirc = [char]0x00EA
 $ccedilla = [char]0x00E7
 
-$coverSupport = "Nem toda pausa recarrega.`nAlgumas s${oacute} anestesiam."
-$logic1Title = "Se a mente continua`nsendo bombardeada,"
-$logic1Body = "o corpo at${eacute} para, mas o sistema nervoso n${atilde}o desliga.`nScroll infinito, v${iacute}deo curto e ru${iacute}do constante n${atilde}o restauram nada."
-$logic1Close = "Anestesia parece al${iacute}vio. N${atilde}o ${eacute}."
-$logic2Title = "Descanso real`nreduz ru${iacute}do."
-$logic2Body = "Ele desacelera a mente, devolve energia utiliz${aacute}vel e prepara o corpo para o pr${oacute}ximo ciclo.`nSil${ecirc}ncio, luz baixa e interrup${ccedilla}${atilde}o do excesso fazem mais do que distra${ccedilla}${atilde}o."
-$logic2Close = "Descansar ${eacute} sair do desgaste."
+$coverSupport = "Dizer sim para tudo também é uma forma de exaustão."
+$logic1Title = "Quem absorve tudo`nse perde de si."
+$logic1Body = "Aceitar demandas demais, responder rápido a tudo e carregar o clima emocional dos outros esgota sem fazer barulho.`nA pessoa parece disponível. Por dentro, vira território invadido."
+$logic1Close = "Energia sem fronteira vira vazamento."
+$logic2Title = "Limite bom`nprotege presença."
+$logic2Body = "Dizer não com clareza, reduzir disponibilidade automática e parar de tratar urgência alheia como dever próprio muda o corpo inteiro.`nFronteira não é frieza. É manutenção de integridade."
+$logic2Close = "Sem limite, até generosidade adoece."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

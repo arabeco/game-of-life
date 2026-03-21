@@ -334,13 +334,13 @@ $atilde = [char]0x00E3
 $ecirc = [char]0x00EA
 $ccedilla = [char]0x00E7
 
-$coverSupport = "Nem toda pausa recarrega.`nAlgumas s${oacute} anestesiam."
-$logic1Title = "Se a mente continua`nsendo bombardeada,"
-$logic1Body = "o corpo at${eacute} para, mas o sistema nervoso n${atilde}o desliga.`nScroll infinito, v${iacute}deo curto e ru${iacute}do constante n${atilde}o restauram nada."
-$logic1Close = "Anestesia parece al${iacute}vio. N${atilde}o ${eacute}."
-$logic2Title = "Descanso real`nreduz ru${iacute}do."
-$logic2Body = "Ele desacelera a mente, devolve energia utiliz${aacute}vel e prepara o corpo para o pr${oacute}ximo ciclo.`nSil${ecirc}ncio, luz baixa e interrup${ccedilla}${atilde}o do excesso fazem mais do que distra${ccedilla}${atilde}o."
-$logic2Close = "Descansar ${eacute} sair do desgaste."
+$coverSupport = "Nem toda cobrança interna é disciplina. Às vezes é negação."
+$logic1Title = "Forçar sempre`nnão é maturidade."
+$logic1Body = "Quando cansaço, dor ou saturação aparecem, muita gente responde com culpa vestida de superação.`nO discurso parece forte, mas muitas vezes só mascara desconexão do próprio corpo."
+$logic1Close = "Produtividade sem escuta pode ser autossabotagem elegante."
+$logic2Title = "Respeitar o corpo`nnão enfraquece."
+$logic2Body = "A pausa certa, o ajuste certo e o ritmo certo preservam capacidade de longo prazo.`nIgnorar sinal não é bravura. É cobrança burra com estética de virtude."
+$logic2Close = "Escuta madura sustenta mais que heroísmo cego."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

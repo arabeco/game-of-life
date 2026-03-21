@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Entre o est${iacute}mulo e a resposta`nh${aacute} um espa${ccedilla}o.`nNesse espa${ccedilla}o est${aacute}`no poder de escolher."
-$supportCore = "A hist${oacute}ria fascinante de um homem que saiu do horror com uma teoria sobre sentido."
+$quoteText = "Eu não fujo de um desafio.`nCorro em direção a ele."
+$supportCore = "A ginasta que transformou perfeição em fato histórico aos 14 anos."
 $analysis1Title = "O que Nadia Comăneci fez?"
-$analysis1 = "Psiquiatra judeu austr${iacute}aco, foi preso em campos de concentra${ccedilla}${atilde}o nazistas, perdeu pai, m${atilde}e, irm${atilde}o e esposa.`nAo sobreviver, transformou essa experi${ecirc}ncia na Logoterapia: uma psicologia centrada na busca de sentido."
-$analysis1Close = "Ele n${atilde}o voltou s${oacute} vivo. Voltou com um mapa."
+$analysis1 = "Nadia Comăneci chocou o mundo ao conquistar a primeira nota 10 da história da ginástica olímpica.`nAquela nota não foi só uma vitória. Foi um deslocamento de régua em um esporte inteiro."
+$analysis1Close = "Ela não venceu dentro do padrão. Mudou o padrão."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque o projeto daqueles campos era quebrar identidade, vontade e dignidade.`nFrankl n${atilde}o apenas suportou o horror: ele observou o que ainda restava livre dentro do ser humano e construiu uma linguagem para isso."
-$analysis2Close = "Ele preservou sentido onde quase nada restava."
+$analysis2Body = "Porque perfeição costuma ser palavra simbólica. Comăneci a transformou em placar real, diante do mundo, com disciplina e precisão incompatíveis com a idade."
+$analysis2Close = "Ela fez o impossível caber em números."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

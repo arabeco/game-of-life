@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Entre o est${iacute}mulo e a resposta`nh${aacute} um espa${ccedilla}o.`nNesse espa${ccedilla}o est${aacute}`no poder de escolher."
-$supportCore = "A hist${oacute}ria fascinante de um homem que saiu do horror com uma teoria sobre sentido."
+$quoteText = "Não importa o quão devagar`nvocê vá, desde que`nvocê não pare."
+$supportCore = "O filósofo que moldou ética, liderança e educação por milênios."
 $analysis1Title = "O que Confúcio fez?"
-$analysis1 = "Psiquiatra judeu austr${iacute}aco, foi preso em campos de concentra${ccedilla}${atilde}o nazistas, perdeu pai, m${atilde}e, irm${atilde}o e esposa.`nAo sobreviver, transformou essa experi${ecirc}ncia na Logoterapia: uma psicologia centrada na busca de sentido."
-$analysis1Close = "Ele n${atilde}o voltou s${oacute} vivo. Voltou com um mapa."
+$analysis1 = "Confúcio organizou um corpo de ensinamentos sobre moralidade, disciplina, conduta e governo que atravessou séculos e moldou civilizações inteiras na Ásia.`nSua influência não foi episódica. Foi estrutural."
+$analysis1Close = "Ele não venceu por estrondo. Venceu por permanência."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque o projeto daqueles campos era quebrar identidade, vontade e dignidade.`nFrankl n${atilde}o apenas suportou o horror: ele observou o que ainda restava livre dentro do ser humano e construiu uma linguagem para isso."
-$analysis2Close = "Ele preservou sentido onde quase nada restava."
+$analysis2Body = "Porque existem ideias que brilham e somem. As dele entraram no comportamento, na política, na educação e no ideal de liderança.`nIsso é impacto de profundidade rara."
+$analysis2Close = "Ele transformou consistência em civilização."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

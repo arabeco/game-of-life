@@ -346,7 +346,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         : highlightPhase === 'celebrate'
             ? 'arena-card-highlight arena-card-highlight--celebrate'
             : '';
-    const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none pointer-events-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.14rem]' : 'justify-between px-1 py-[0.34rem]'} ${highlightClass}`;
+    const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.14rem]' : 'justify-between px-1 py-[0.34rem]'} ${highlightClass}`;
     const styleClasses = isOverview 
         ? 'h-[6.7rem]' 
         : variant === 'dossier' ? 'h-full w-full' : 'h-[5.5rem]';

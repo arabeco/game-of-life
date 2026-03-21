@@ -334,13 +334,13 @@ $atilde = [char]0x00E3
 $ecirc = [char]0x00EA
 $ccedilla = [char]0x00E7
 
-$coverSupport = "Nem toda pausa recarrega.`nAlgumas s${oacute} anestesiam."
-$logic1Title = "Se a mente continua`nsendo bombardeada,"
-$logic1Body = "o corpo at${eacute} para, mas o sistema nervoso n${atilde}o desliga.`nScroll infinito, v${iacute}deo curto e ru${iacute}do constante n${atilde}o restauram nada."
-$logic1Close = "Anestesia parece al${iacute}vio. N${atilde}o ${eacute}."
-$logic2Title = "Descanso real`nreduz ru${iacute}do."
-$logic2Body = "Ele desacelera a mente, devolve energia utiliz${aacute}vel e prepara o corpo para o pr${oacute}ximo ciclo.`nSil${ecirc}ncio, luz baixa e interrup${ccedilla}${atilde}o do excesso fazem mais do que distra${ccedilla}${atilde}o."
-$logic2Close = "Descansar ${eacute} sair do desgaste."
+$coverSupport = "Luz certa cedo regula muito mais do que humor."
+$logic1Title = "Corpo precisa de manhã`npara entender o dia."
+$logic1Body = "Alguns minutos de luz natural nos olhos ajudam a calibrar ritmo circadiano, energia e hora de dormir.`nSem isso, o corpo perde referência e a mente paga em névoa, irritação e sono ruim."
+$logic1Close = "Biologia sem referência vira ruído."
+$logic2Title = "Exposição breve,`nefeito acumulado."
+$logic2Body = "Caminhar um pouco ao ar livre pela manhã parece simples demais para ser relevante. Mas fundamento costuma funcionar assim.`nPoucos minutos consistentes regulam melhor do que muita compensação tardia."
+$logic2Close = "Luz cedo organiza o resto do relógio."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

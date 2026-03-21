@@ -608,6 +608,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const triggerOracleRef = useRef<GameContextType['triggerOracle'] | null>(null);
     const seenNotificationIdsRef = useRef<Set<string>>(new Set());
     const notificationsHydratedRef = useRef(false);
+    const seenCodexGiftNotificationIdsRef = useRef<Set<string>>(new Set());
     const seenOracleMessageIdsRef = useRef<Set<string>>(new Set());
     const oracleMessagesHydratedRef = useRef(false);
 
@@ -3549,6 +3550,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await fetchCodexData();
     }, [fetchCodexData]);
 
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId)) {
+            seenCodexGiftNotificationIdsRef.current = new Set();
+            return;
+        }
+
+        const codexGiftNotifications = notifications.filter((notification) => notification.type === 'codex_gift');
+        const nextIds = new Set(codexGiftNotifications.map((notification) => notification.id));
+        const hasNewCodexGift = codexGiftNotifications.some(
+            (notification) => !seenCodexGiftNotificationIdsRef.current.has(notification.id)
+        );
+
+        seenCodexGiftNotificationIdsRef.current = nextIds;
+
+        if (!hasNewCodexGift) return;
+        void refreshCodexes();
+    }, [notifications, refreshCodexes, session?.user.id]);
+
     const buyCodex = async (catalogId: string) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
@@ -3671,7 +3691,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         endedAt: row.ended_at ?? null,
     });
 
-    const mapLinkedRelationshipArenaRow = (row: any, arenasById: Map<string, Arena>): LinkedRelationshipArena => ({
+    const mapLinkedRelationshipArenaRow = (
+        row: any,
+        arenasById: Map<string, Arena>,
+        actionsByArenaId: Map<string, Action[]>,
+        tasksByArenaId: Map<string, ScheduledTask[]>,
+    ): LinkedRelationshipArena => ({
         id: row.id,
         relationshipLinkId: row.relationship_link_id,
         arenaId: row.arena_id,
@@ -3679,6 +3704,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         createdAt: row.created_at,
         metadata: row.metadata ?? null,
         arena: arenasById.get(row.arena_id) ?? null,
+        actions: actionsByArenaId.get(row.arena_id) || [],
+        tasks: tasksByArenaId.get(row.arena_id) || [],
     });
 
     const mapRelationshipErrorMessage = (message?: string, fallback = 'Nao foi possivel concluir o vinculo.') => {
@@ -3748,6 +3775,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const linkIds = links.map(link => link.id);
         let linkedArenaRows: any[] = [];
         const arenasById = new Map<string, Arena>();
+        const actionsByArenaId = new Map<string, Action[]>();
+        const tasksByArenaId = new Map<string, ScheduledTask[]>();
 
         if (linkIds.length > 0) {
             const linkedArenasResult = await supabase
@@ -3773,6 +3802,52 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         arenasById.set(mapped.id, { ...mapped, actionIds: mapped.actionIds || [], isArchived: mapped.isArchived ?? false });
                     }
                 }
+
+                const actionsResult = await supabase
+                    .from('actions')
+                    .select('*')
+                    .in('arena_id', arenaIds);
+
+                if (actionsResult.error) {
+                    console.error('Error fetching linked arena actions:', actionsResult.error);
+                } else {
+                    for (const row of actionsResult.data || []) {
+                        const mapped = mapToCamelCase(row) as Action;
+                        const arenaId = String((mapped as any).arenaId || row.arena_id || '');
+                        if (!arenaId) continue;
+                        const nextActions = actionsByArenaId.get(arenaId) || [];
+                        nextActions.push(mapped);
+                        actionsByArenaId.set(arenaId, nextActions);
+                    }
+
+                    const actionIds = [...new Set((actionsResult.data || []).map((row: any) => row.id).filter(Boolean))];
+                    if (actionIds.length > 0) {
+                        const tasksResult = await supabase
+                            .from('scheduled_tasks')
+                            .select('*')
+                            .in('action_id', actionIds);
+
+                        if (tasksResult.error) {
+                            console.error('Error fetching linked arena tasks:', tasksResult.error);
+                        } else {
+                            const arenaIdByActionId = new Map<string, string>();
+                            actionsByArenaId.forEach((arenaActions, arenaId) => {
+                                arenaActions.forEach((action) => {
+                                    arenaIdByActionId.set(action.id, arenaId);
+                                });
+                            });
+
+                            for (const row of tasksResult.data || []) {
+                                const mapped = mapToCamelCase(row) as ScheduledTask;
+                                const arenaId = arenaIdByActionId.get(String((mapped as any).actionId || row.action_id || ''));
+                                if (!arenaId) continue;
+                                const nextTasks = tasksByArenaId.get(arenaId) || [];
+                                nextTasks.push(mapped);
+                                tasksByArenaId.set(arenaId, nextTasks);
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -3781,7 +3856,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return {
             invites: (invitesResult.data || []).map(mapRelationshipInviteRow),
             links,
-            linkedArenas: linkedArenaRows.map(row => mapLinkedRelationshipArenaRow(row, arenasById)),
+            linkedArenas: linkedArenaRows.map(row => mapLinkedRelationshipArenaRow(row, arenasById, actionsByArenaId, tasksByArenaId)),
             summary,
         };
     };

@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Entre o est${iacute}mulo e a resposta`nh${aacute} um espa${ccedilla}o.`nNesse espa${ccedilla}o est${aacute}`no poder de escolher."
-$supportCore = "A hist${oacute}ria fascinante de um homem que saiu do horror com uma teoria sobre sentido."
+$quoteText = "A maneira de começar`né parar de falar`ne começar a fazer."
+$supportCore = "O homem que transformou imaginação em linguagem industrial de encantamento."
 $analysis1Title = "O que Walt Disney fez?"
-$analysis1 = "Psiquiatra judeu austr${iacute}aco, foi preso em campos de concentra${ccedilla}${atilde}o nazistas, perdeu pai, m${atilde}e, irm${atilde}o e esposa.`nAo sobreviver, transformou essa experi${ecirc}ncia na Logoterapia: uma psicologia centrada na busca de sentido."
-$analysis1Close = "Ele n${atilde}o voltou s${oacute} vivo. Voltou com um mapa."
+$analysis1 = "Walt Disney ajudou a redesenhar o entretenimento moderno ao unir narrativa, animação, personagem e parque temático dentro de um sistema coerente.`nEle não criou só obras; criou um ecossistema de imaginação escalável."
+$analysis1Close = "Ele industrializou encantamento sem matar a magia."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque o projeto daqueles campos era quebrar identidade, vontade e dignidade.`nFrankl n${atilde}o apenas suportou o horror: ele observou o que ainda restava livre dentro do ser humano e construiu uma linguagem para isso."
-$analysis2Close = "Ele preservou sentido onde quase nada restava."
+$analysis2Body = "Porque sonhar é comum. O raro é converter sonho em operação, padrão e legado comercial duradouro.`nDisney mostrou que imaginação de alto nível também exige execução brutal."
+$analysis2Close = "Ele provou que fantasia séria também é engenharia."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

@@ -484,14 +484,14 @@ $oacute = [char]0x00F3
 $uacute = [char]0x00FA
 $atilde = [char]0x00E3
 
-$quoteText = "Entre o est${iacute}mulo e a resposta`nh${aacute} um espa${ccedilla}o.`nNesse espa${ccedilla}o est${aacute}`no poder de escolher."
-$supportCore = "A hist${oacute}ria fascinante de um homem que saiu do horror com uma teoria sobre sentido."
+$quoteText = "Reserve seu direito de pensar.`nAté pensar errado é melhor`ndo que não pensar."
+$supportCore = "A pensadora que defendeu conhecimento e lucidez em um tempo hostil à razão."
 $analysis1Title = "O que Hipácia de Alexandria fez?"
-$analysis1 = "Psiquiatra judeu austr${iacute}aco, foi preso em campos de concentra${ccedilla}${atilde}o nazistas, perdeu pai, m${atilde}e, irm${atilde}o e esposa.`nAo sobreviver, transformou essa experi${ecirc}ncia na Logoterapia: uma psicologia centrada na busca de sentido."
-$analysis1Close = "Ele n${atilde}o voltou s${oacute} vivo. Voltou com um mapa."
+$analysis1 = "Hipácia foi matemática, astrônoma e filósofa em Alexandria, liderando ensino e produção intelectual em uma era de conflito político e religioso.`nSua presença pública como mulher de pensamento já era, por si, um ato raro."
+$analysis1Close = "Ela ocupou o centro da inteligência onde quase não havia espaço para isso."
 $analysis2Title = "Por que isso foi raro?"
-$analysis2Body = "Porque o projeto daqueles campos era quebrar identidade, vontade e dignidade.`nFrankl n${atilde}o apenas suportou o horror: ele observou o que ainda restava livre dentro do ser humano e construiu uma linguagem para isso."
-$analysis2Close = "Ele preservou sentido onde quase nada restava."
+$analysis2Body = "Porque defender razão em tempos inflamados custa caro.`nHipácia virou símbolo de lucidez ameaçada justamente porque se recusou a abandonar pensamento rigoroso diante da pressão do tempo."
+$analysis2Close = "Ela lembrou que pensar com firmeza também é coragem."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

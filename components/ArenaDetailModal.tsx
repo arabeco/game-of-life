@@ -122,7 +122,13 @@ const ActionSquare: React.FC<{
     );
 };
 
-export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> = ({ arena, onClose }) => {
+export const ArenaDetailModal: React.FC<{
+    arena: Arena;
+    onClose: () => void;
+    actionsOverride?: Action[];
+    tasksOverride?: ScheduledTask[];
+    readOnly?: boolean;
+}> = ({ arena, onClose, actionsOverride, tasksOverride, readOnly = false }) => {
     const { getActionsForArena, assets, updateArena, deleteArena, tasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -168,15 +174,21 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
         fetchLinkType();
     }, [arena.id]);
 
+    const localArenaExists = useMemo(
+        () => assets.some((asset) => asset.arenas.some((candidate) => candidate.id === arena.id)),
+        [arena.id, assets]
+    );
+    const isReadOnlyArena = readOnly || !localArenaExists;
     const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
     const parentAsset = assets.find(a => a.id === activeAssetId);
     const formatAssetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
     const normalizedArena = arena.name ?arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
 
     const allActions = useMemo(() => {
+        if (Array.isArray(actionsOverride)) return actionsOverride;
         if (typeof getActionsForArena !== 'function') return [];
         return getActionsForArena(arena.id) || [];
-    }, [arena.id, getActionsForArena]);
+    }, [actionsOverride, arena.id, getActionsForArena]);
 
     const clanQuests = useMemo(() => {
         if (!arena || typeof getClanQuestsForArena !== 'function') return [];
@@ -245,6 +257,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     const isLeader = clan?.leaderId === userProfile?.id;
     const forceSharedPool = currentLinkType ? true : (isOfficeMode ? true : undefined);
     const tasksForCounts = useMemo(() => {
+        if (Array.isArray(tasksOverride)) return tasksOverride;
         if (!activeCycle) return tasks;
 
         const today = getLocalDateString();
@@ -254,7 +267,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
             task.date >= activeCycle.startDate &&
             task.date <= cycleEnd
         );
-    }, [activeCycle, tasks]);
+    }, [activeCycle, tasks, tasksOverride]);
     const arenaProgressState = useMemo(() => calculateArenaProgress({
         arena,
         actions: allActions,
@@ -293,6 +306,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                     ? 'Voce esta removendo a arena ligada a esta mentoria. A relacao continua ativa, mas esta arena sera apagada de vez. Tem certeza?'
                     : 'Tem certeza que deseja excluir esta arena? Esta acao nao pode ser desfeita.';
     const handleEditToggle = () => {
+        if (isReadOnlyArena) {
+            showToast('Essa arena compartilhada abre aqui apenas para leitura.', 'warning');
+            return;
+        }
         if (isArenaEditLocked) {
             showToast(arenaEditLockMessage || 'Essa arena nao pode ser editada.', 'warning');
             return;
@@ -324,6 +341,10 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
     };
 
     const openNewAction = () => {
+        if (isReadOnlyArena) {
+            showToast('Essa arena compartilhada abre aqui apenas para leitura.', 'warning');
+            return;
+        }
         if (isArenaEditLocked) {
             showToast(
                 isReceivedCodexArena
@@ -429,13 +450,13 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                         <div className="arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1">
                                 {/* Allow editing for flexible arenas or if user is the Mentor */}
-                                {(!isArenaEditLocked || isEditing || currentLinkType === 'mentoria') && (
+                                {!isReadOnlyArena && (!isArenaEditLocked || isEditing || currentLinkType === 'mentoria') && (
                                     <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
                                         <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>
                                 )}
 
-                                {(isSpecialArena || isRelationshipArena || arena.isArchived) && !isEditing && (
+                                {!isReadOnlyArena && (isSpecialArena || isRelationshipArena || arena.isArchived) && !isEditing && (
                                     <button
                                         onClick={() => setShowDeleteConfirmation(true)}
                                         className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
@@ -444,7 +465,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                         <Trash2Icon className="w-5 h-5 text-red-500" />
                                     </button>
                                 )}
-                                {isEditing && (
+                                {!isReadOnlyArena && isEditing && (
                                     <button
                                         onClick={() => {
                                             if (currentLinkType === 'competicao' || currentLinkType === 'parceria' || currentLinkType === 'mentoria') {
@@ -460,7 +481,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     </button>
                                 )}
                                 {/* Shared Arena Toggle for Leaders */}
-                                {isEditing && isLeader && !isSpecialArena && (
+                                {!isReadOnlyArena && isEditing && isLeader && !isSpecialArena && (
                                     <button
                                         onClick={() => typeof setArenaAsShared === 'function' && setArenaAsShared(arena.id, !arena.description?.includes('[SHARED]'))}
                                         className={`p-2 rounded-full transition-colors border ${arena.description?.includes('[SHARED]')
@@ -490,6 +511,11 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                         <span>ðŸ‘ï¸</span> MENTORIA
                                     </div>
                                 )}
+                                {isReadOnlyArena && (
+                                    <div className="bg-white/8 border border-white/14 text-white/72 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mt-1">
+                                        Somente leitura
+                                    </div>
+                                )}
                                 {isClanQuestArena && (
                                     <div className="flex flex-col items-center gap-1 mt-1">
                                         <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full text-[10px] accent-text border border-white/10">
@@ -515,7 +541,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                 )}
                             </div>
                             {/* Right side actions - redundant delete button removed if we moved it to left for special arenas, but kept for consistency in edit mode */}
-                            {isEditing && (
+                            {!isReadOnlyArena && isEditing && (
                                 <button
                                     onClick={() => setShowDeleteConfirmation(true)}
                                     className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
@@ -607,7 +633,7 @@ export const ArenaDetailModal: React.FC<{ arena: Arena, onClose: () => void }> =
                                     <div className="flex flex-col items-center space-y-2 py-2">
                                         {milestoneActions.map(action => {
                                             const backgroundStyle = getActionBackgroundStyle(action.id);
-                                            const task = tasks.find(t => t.actionId === action.id);
+                                            const task = tasksForCounts.find(t => t.actionId === action.id);
                                             const isCompleted = task?.completed;
 
                                             return (

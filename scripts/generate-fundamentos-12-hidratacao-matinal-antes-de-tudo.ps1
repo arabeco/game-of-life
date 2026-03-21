@@ -334,13 +334,13 @@ $atilde = [char]0x00E3
 $ecirc = [char]0x00EA
 $ccedilla = [char]0x00E7
 
-$coverSupport = "Nem toda pausa recarrega.`nAlgumas s${oacute} anestesiam."
-$logic1Title = "Se a mente continua`nsendo bombardeada,"
-$logic1Body = "o corpo at${eacute} para, mas o sistema nervoso n${atilde}o desliga.`nScroll infinito, v${iacute}deo curto e ru${iacute}do constante n${atilde}o restauram nada."
-$logic1Close = "Anestesia parece al${iacute}vio. N${atilde}o ${eacute}."
-$logic2Title = "Descanso real`nreduz ru${iacute}do."
-$logic2Body = "Ele desacelera a mente, devolve energia utiliz${aacute}vel e prepara o corpo para o pr${oacute}ximo ciclo.`nSil${ecirc}ncio, luz baixa e interrup${ccedilla}${atilde}o do excesso fazem mais do que distra${ccedilla}${atilde}o."
-$logic2Close = "Descansar ${eacute} sair do desgaste."
+$coverSupport = "Antes de pedir desempenho, religue o sistema."
+$logic1Title = "A manhã começa`npelo básico."
+$logic1Body = "Depois de horas dormindo, o corpo acorda pedindo água, não estímulo complexo.`nComeçar direto com café, tela e correria empurra o organismo para demanda antes de devolver base."
+$logic1Close = "Sistema seco responde pior."
+$logic2Title = "Água primeiro`né sinal de ordem."
+$logic2Body = "Um copo grande ao acordar ajuda a religar digestão, circulação e sensação de presença física.`nNão parece épico. Mas é o tipo de fundamento que melhora o resto do dia sem alarde."
+$logic2Close = "Base boa quase sempre parece simples."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

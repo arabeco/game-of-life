@@ -914,6 +914,8 @@ export interface LinkedRelationshipArena {
   createdAt: string;
   metadata?: Record<string, any> | null;
   arena?: Arena | null;
+  actions?: Action[];
+  tasks?: ScheduledTask[];
 }
 
 export type LinkNotificationType = 'praise' | 'support' | 'scold';

@@ -334,13 +334,13 @@ $atilde = [char]0x00E3
 $ecirc = [char]0x00EA
 $ccedilla = [char]0x00E7
 
-$coverSupport = "Nem toda pausa recarrega.`nAlgumas s${oacute} anestesiam."
-$logic1Title = "Se a mente continua`nsendo bombardeada,"
-$logic1Body = "o corpo at${eacute} para, mas o sistema nervoso n${atilde}o desliga.`nScroll infinito, v${iacute}deo curto e ru${iacute}do constante n${atilde}o restauram nada."
-$logic1Close = "Anestesia parece al${iacute}vio. N${atilde}o ${eacute}."
-$logic2Title = "Descanso real`nreduz ru${iacute}do."
-$logic2Body = "Ele desacelera a mente, devolve energia utiliz${aacute}vel e prepara o corpo para o pr${oacute}ximo ciclo.`nSil${ecirc}ncio, luz baixa e interrup${ccedilla}${atilde}o do excesso fazem mais do que distra${ccedilla}${atilde}o."
-$logic2Close = "Descansar ${eacute} sair do desgaste."
+$coverSupport = "Ambiente não é detalhe. Ele empurra estado mental."
+$logic1Title = "Foco também`nse constrói fora da cabeça."
+$logic1Body = "Luz ruim, excesso visual, ar pesado e ruído aleatório cobram atenção o tempo inteiro.`nMuita gente tenta compensar isso com força de vontade, quando o espaço inteiro está sabotando a permanência."
+$logic1Close = "Contexto ruim encarece concentração."
+$logic2Title = "Ajuste fino`nreduz atrito."
+$logic2Body = "Luz natural, menos bagunça, algum verde, cheiro limpo e uma mesa minimamente respirável mudam o tom do trabalho.`nFoco suave não é fraqueza. É concentração sem tensão desnecessária."
+$logic2Close = "Ambiente bom economiza força mental."
 $brandLine = "Organize seu imp${eacute}rio."
 $sheetLine = "Prancha de revis${atilde}o - 4 slides prontos"
 

@@ -769,7 +769,7 @@ export const ArenasView: React.FC = () => {
 
                 {/* Content / Thumbnails */}
                 <div className="flex-1 px-2.5 pt-1 pb-2 overflow-hidden">
-                    <div className="flex h-full min-h-[5.15rem] items-start justify-center rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
+                    <div className="flex h-full min-h-[7.25rem] items-start justify-center rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
                         <CampaignArenaStack arenas={campaignArenas} size="md" />
                     </div>
                 </div>
@@ -1073,7 +1073,7 @@ export const ArenasView: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="p-2.5 space-y-3">
-                                        <div className="flex min-h-[5.15rem] items-start justify-center overflow-hidden rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
+                                        <div className="flex min-h-[7.25rem] items-start justify-center overflow-hidden rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
                                             <CampaignArenaStack arenas={preview.arenas} size="md" />
                                         </div>
                                         <div className="flex items-center justify-between gap-2">

@@ -33,7 +33,7 @@ const isProbablyImageUrl = (value?: string | null) => {
 };
 
 const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ arena, actions }) => (
-    <div className="h-[6.9rem] w-[10.75rem] flex-shrink-0">
+    <div className="h-[6.95rem] w-[12.6rem] flex-shrink-0">
         <ArenaCard
             arena={arena}
             actions={actions}
@@ -734,7 +734,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 Fase {phase + 1}
                                             </div>
                                         )}
-                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[7.4rem]' : 'min-h-[7.6rem]'} gap-2 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
+                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[7.5rem]' : 'min-h-[7.7rem]'} gap-3 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
                                         {arenas.map((arena) => {
                                             const index = sortedArenas.findIndex(item => item.id === arena.id);
                                     const locked = isArenaLocked(arena.id);
@@ -768,7 +768,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     return (
                                         <div 
                                             key={arena.id} 
-                                            className={`relative w-[10.95rem] flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
+                                            className={`relative w-[12.6rem] flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
                                             onClick={() => handleArenaClick(arena.id)}
                                             draggable={isEditing && !isReadOnlyCodexCampaign && !isPreviewCampaign}
                                             onDragStart={() => handleArenaDragStart(arena.id)}
@@ -836,7 +836,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                     {isPreviewCampaign ? (
                                                         <PreviewArenaMiniCard arena={arena} actions={arenaActions} />
                                                     ) : (
-                                                        <div className="h-[6.9rem] w-full rounded-[0.95rem]">
+                                                        <div className="h-[6.95rem] w-full rounded-[0.95rem]">
                                                             <ArenaCard 
                                                                 arena={arena}
                                                                 actions={arenaActions}

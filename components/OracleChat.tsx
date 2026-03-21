@@ -2,7 +2,7 @@
 import { useGame } from '../contexts/GameContext';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
-import { OracleContext, OracleMode } from '../types';
+import { OracleCategory, OracleContext, OracleMode } from '../types';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
@@ -16,6 +16,10 @@ interface Message {
   timestamp: Date;
   mode?: OracleMode;
   feedId?: string;
+  feedCategory?: OracleCategory;
+  feedPresentation?: 'ambient_pulse' | 'info_card';
+  feedSummary?: string;
+  feedTrigger?: 'app_open' | 'cron' | 'manual';
 }
 const readResponseBody = async (response: Response): Promise<unknown> => {
   try {
@@ -102,6 +106,90 @@ const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>,
     }
 };
 
+const ORACLE_INFO_CATEGORIES = new Set<OracleCategory>([
+    'dicas_produtividade',
+    'provocacoes',
+    'analise_padroes',
+]);
+
+const ORACLE_CATEGORY_VISUALS: Record<OracleCategory, {
+    label: string;
+    accentClass: string;
+    badgeClass: string;
+    borderClass: string;
+    bgClass: string;
+}> = {
+    frases_inspiradoras: {
+        label: 'Pulso inspirador',
+        accentClass: 'text-emerald-200',
+        badgeClass: 'border-emerald-400/20 bg-emerald-400/12 text-emerald-200',
+        borderClass: 'border-emerald-400/16',
+        bgClass: 'bg-emerald-500/8',
+    },
+    reflexoes_filosoficas: {
+        label: 'Pulso reflexivo',
+        accentClass: 'text-sky-200',
+        badgeClass: 'border-sky-400/20 bg-sky-400/12 text-sky-200',
+        borderClass: 'border-sky-400/16',
+        bgClass: 'bg-sky-500/8',
+    },
+    fragmentos_sabedoria: {
+        label: 'Pulso de sabedoria',
+        accentClass: 'text-violet-200',
+        badgeClass: 'border-violet-400/20 bg-violet-400/12 text-violet-200',
+        borderClass: 'border-violet-400/16',
+        bgClass: 'bg-violet-500/8',
+    },
+    dicas_produtividade: {
+        label: 'Card de foco',
+        accentClass: 'text-amber-100',
+        badgeClass: 'border-amber-300/20 bg-amber-400/12 text-amber-100',
+        borderClass: 'border-amber-300/18',
+        bgClass: 'bg-[linear-gradient(180deg,rgba(191,148,56,0.16),rgba(15,15,15,0.92))]',
+    },
+    rituais_lifestyle: {
+        label: 'Pulso de ritual',
+        accentClass: 'text-lime-100',
+        badgeClass: 'border-lime-300/20 bg-lime-400/12 text-lime-100',
+        borderClass: 'border-lime-300/16',
+        bgClass: 'bg-lime-500/8',
+    },
+    provocacoes: {
+        label: 'Card de choque',
+        accentClass: 'text-rose-100',
+        badgeClass: 'border-rose-300/20 bg-rose-400/12 text-rose-100',
+        borderClass: 'border-rose-300/18',
+        bgClass: 'bg-[linear-gradient(180deg,rgba(190,65,91,0.16),rgba(15,15,15,0.92))]',
+    },
+    sussurros_maestria: {
+        label: 'Pulso de maestria',
+        accentClass: 'text-fuchsia-100',
+        badgeClass: 'border-fuchsia-300/20 bg-fuchsia-400/12 text-fuchsia-100',
+        borderClass: 'border-fuchsia-300/16',
+        bgClass: 'bg-fuchsia-500/8',
+    },
+    analise_padroes: {
+        label: 'Card de analise',
+        accentClass: 'text-cyan-100',
+        badgeClass: 'border-cyan-300/20 bg-cyan-400/12 text-cyan-100',
+        borderClass: 'border-cyan-300/18',
+        bgClass: 'bg-[linear-gradient(180deg,rgba(55,138,181,0.16),rgba(15,15,15,0.92))]',
+    },
+};
+
+const resolveFeedPresentation = (
+    category?: OracleCategory,
+    snapshot?: { presentation?: 'ambient_pulse' | 'info_card' | null } | null,
+): 'ambient_pulse' | 'info_card' => {
+    if (snapshot?.presentation === 'ambient_pulse' || snapshot?.presentation === 'info_card') {
+        return snapshot.presentation;
+    }
+    if (category && ORACLE_INFO_CATEGORIES.has(category)) {
+        return 'info_card';
+    }
+    return 'ambient_pulse';
+};
+
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
   const { userProfile, assets, actions, tasks, taskPool, reports, activeCycle, cycleProgress, oraclePreferences, oracleMessages, addArena, addAction, triggerOracle } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -156,6 +244,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         timestamp: new Date(message.createdAt),
         mode: message.mode,
         feedId: message.id,
+        feedCategory: message.category,
+        feedPresentation: resolveFeedPresentation(message.category, message.contextSnapshot),
+        feedSummary: message.contextSnapshot?.summary || message.contextSnapshot?.categoryLabel || undefined,
+        feedTrigger: message.contextSnapshot?.triggerType,
       }));
 
     if (history.length === 0) {
@@ -478,6 +570,23 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
   };
 
+  const buildManualCardStatusMessage = (status: string, cooldownMs?: number | null): string | null => {
+    switch (status) {
+      case 'premium_required':
+        return 'Gerar card manual fica liberado apenas no Premium.';
+      case 'disabled':
+        return 'Ative a IA do Oráculo para gerar cards informativos no chat.';
+      case 'daily_limit':
+        return `Limite diario atingido. Hoje o Oraculo ja fechou ${oracleFeedStatus.sentToday}/${oracleFeedStatus.dailyTarget} cards.`;
+      case 'cooldown':
+        return `Novo card manual em ${formatCooldownLabel(cooldownMs || 0)}.`;
+      case 'error':
+        return 'Nao consegui gerar o card agora. Tente novamente em instantes.';
+      default:
+        return null;
+    }
+  };
+
   const handleGenerateCard = async () => {
     if (isGeneratingCard || isLoading) return;
 
@@ -498,6 +607,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
               timestamp: new Date(result.message.createdAt),
               mode: result.message.mode,
               feedId: result.message.id,
+              feedCategory: result.message.category,
+              feedPresentation: resolveFeedPresentation(result.message.category, result.message.contextSnapshot),
+              feedSummary: result.message.contextSnapshot?.summary || result.message.contextSnapshot?.categoryLabel || 'Card manual do chat',
+              feedTrigger: result.message.contextSnapshot?.triggerType,
             },
           ];
         });
@@ -505,20 +618,26 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         if (result.message.mode) {
           setCurrentMode(result.message.mode);
         }
+      } else {
+        const statusMessage = buildManualCardStatusMessage(result?.status || 'error', result?.cooldownMs);
+        if (statusMessage) {
+          setMessages((previous) => [
+            ...previous,
+            {
+              role: 'assistant',
+              content: statusMessage,
+              timestamp: new Date(),
+              mode: currentMode,
+            },
+          ]);
+        }
       }
     } finally {
       setIsGeneratingCard(false);
     }
   };
 
-  const manualGenerateDisabled = (
-    !isPremiumUser ||
-    !oraclePreferences?.iaEnabled ||
-    oracleFeedStatus.remainingToday <= 0 ||
-    oracleFeedStatus.manualCooldownRemainingMs > 0 ||
-    isGeneratingCard ||
-    isLoading
-  );
+  const manualGenerateDisabled = isGeneratingCard || isLoading;
 
   const manualGenerateLabel = !isPremiumUser
     ? 'Premium'
@@ -612,6 +731,11 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
              const msgMode = msg.role === 'assistant' ? (msg.mode || 'neutro') : 'neutro';
              const visuals = MODE_VISUALS[msgMode];
              const ModeIcon = visuals.icon;
+             const isFeedCard = msg.role === 'assistant' && Boolean(msg.feedId);
+             const feedCategory = msg.feedCategory || 'frases_inspiradoras';
+             const feedPresentation = msg.feedPresentation || 'ambient_pulse';
+             const feedVisual = ORACLE_CATEGORY_VISUALS[feedCategory];
+             const feedTriggerLabel = msg.feedTrigger === 'manual' ? 'manual' : 'auto';
 
              return (
             <div 
@@ -628,16 +752,45 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                     </span>
                  </div>
               )}
-              <div 
-                className={`
-                  max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed
-                  ${msg.role === 'user' 
-                    ? 'bg-white/10 text-white rounded-tr-sm border border-white/5' 
-                    : `${visuals.bg} ${visuals.color.replace('text-', 'text-white/90 ')} rounded-tl-sm border ${visuals.border} shadow-inner`}
-                `}
-              >
-                {msg.content}
-              </div>
+              {msg.role === 'user' ? (
+                <div className="max-w-[85%] rounded-2xl rounded-tr-sm border border-white/5 bg-white/10 p-3 text-sm leading-relaxed text-white">
+                  {msg.content}
+                </div>
+              ) : isFeedCard ? (
+                <div
+                  className={`max-w-[92%] rounded-[22px] border p-4 text-sm leading-relaxed shadow-[0_14px_34px_rgba(0,0,0,0.24)] ${
+                    feedPresentation === 'info_card'
+                      ? `${feedVisual.borderClass} ${feedVisual.bgClass}`
+                      : `${feedVisual.borderClass} ${feedVisual.bgClass}`
+                  }`}
+                >
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${feedVisual.badgeClass}`}>
+                      {feedVisual.label}
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/45">
+                      {feedTriggerLabel}
+                    </span>
+                    {msg.feedSummary && (
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/36">
+                        {msg.feedSummary}
+                      </span>
+                    )}
+                  </div>
+                  <div className={`whitespace-pre-line ${feedVisual.accentClass} ${feedPresentation === 'info_card' ? 'font-medium text-[14px]' : 'text-white/88'}`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  className={`
+                    max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed
+                    ${visuals.bg} ${visuals.color.replace('text-', 'text-white/90 ')} rounded-tl-sm border ${visuals.border} shadow-inner
+                  `}
+                >
+                  {msg.content}
+                </div>
+              )}
             </div>
           )})}
           
@@ -662,12 +815,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         <div className="p-4 border-t border-white/10 bg-black/40 flex-shrink-0">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">Coach feed</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">Cards do Oráculo</div>
               <div className="text-[11px] text-gray-400">
                 {oracleQuotaLabel}
                 {oracleFeedStatus.manualCooldownRemainingMs > 0 && (
                   <span className="ml-2 text-gray-500">manual em {formatCooldownLabel(oracleFeedStatus.manualCooldownRemainingMs)}</span>
                 )}
+              </div>
+              <div className="mt-1 text-[10px] text-gray-500">
+                O botão gera um card informativo aqui no chat. Os pulsos automáticos continuam chegando ao longo do dia.
               </div>
             </div>
             <button

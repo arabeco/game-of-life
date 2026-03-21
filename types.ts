@@ -969,7 +969,14 @@ export interface OracleMessage {
   content: string;
   mode: OracleMode;
   deliveryType: 'feed' | 'push' | 'chat';
-  contextSnapshot?: any;
+  contextSnapshot?: {
+    triggerType?: 'app_open' | 'cron' | 'manual';
+    presentation?: 'ambient_pulse' | 'info_card';
+    categoryLabel?: string;
+    generatedFor?: 'feed' | 'chat';
+    summary?: string;
+    [key: string]: any;
+  } | null;
   read: boolean;
   createdAt: string;
 }

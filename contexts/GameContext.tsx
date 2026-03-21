@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
 
@@ -263,6 +263,37 @@ type OracleTriggerResult = {
     sentToday?: number;
     remainingToday?: number;
     cooldownMs?: number;
+};
+
+const ORACLE_INTEL_CATEGORIES = new Set<OracleCategory>([
+    'dicas_produtividade',
+    'provocacoes',
+    'analise_padroes',
+]);
+
+const ORACLE_CATEGORY_LABELS: Record<OracleCategory, string> = {
+    frases_inspiradoras: 'Pulso inspirador',
+    reflexoes_filosoficas: 'Pulso reflexivo',
+    fragmentos_sabedoria: 'Pulso de sabedoria',
+    dicas_produtividade: 'Card de foco',
+    rituais_lifestyle: 'Pulso de ritual',
+    provocacoes: 'Card de choque',
+    sussurros_maestria: 'Pulso de maestria',
+    analise_padroes: 'Card de analise',
+};
+
+const resolveOraclePresentation = (
+    category: OracleCategory,
+    triggerType: 'app_open' | 'cron' | 'manual',
+): 'ambient_pulse' | 'info_card' => (
+    triggerType === 'manual' || ORACLE_INTEL_CATEGORIES.has(category) ? 'info_card' : 'ambient_pulse'
+);
+
+const resolveManualOracleCategory = (enabledCategories: OracleCategory[] = []): OracleCategory => {
+    const preferredOrder: OracleCategory[] = ['analise_padroes', 'dicas_produtividade', 'provocacoes'];
+    return preferredOrder.find((category) => enabledCategories.includes(category))
+        || enabledCategories[0]
+        || 'dicas_produtividade';
 };
 
 export interface GameContextType {
@@ -1080,18 +1111,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 4. Select Category (Greeting Logic)
-        let category: string = 'frases_inspiradoras';
+        let category: OracleCategory = triggerType === 'manual'
+            ? resolveManualOracleCategory(oraclePreferences.enabledCategories || [])
+            : 'frases_inspiradoras';
         const hour = now.getHours();
 
         const totalChests = userProfile.chests?.reduce((acc: any, c: any) => acc + c.count, 0) || 0;
 
-        if (totalChests > 0) {
+        if (triggerType !== 'manual' && totalChests > 0) {
             category = 'dicas_produtividade'; // Context will show chests, AI should pick it up
-        } else if (!activeCycle) {
+        } else if (triggerType !== 'manual' && !activeCycle) {
             category = 'dicas_produtividade'; // Suggest cycle
-        } else if (assets.every(a => a.arenas.length === 0)) {
+        } else if (triggerType !== 'manual' && assets.every(a => a.arenas.length === 0)) {
             category = 'dicas_produtividade'; // Suggest arena
-        } else {
+        } else if (triggerType !== 'manual') {
             if (hour >= 6 && hour < 12) category = 'frases_inspiradoras';
             else if (hour >= 12 && hour < 18) category = 'dicas_produtividade';
             else if (hour >= 18 && hour < 22) category = 'reflexoes_filosoficas'; // Reflexão
@@ -1102,7 +1135,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const enabled = oraclePreferences.enabledCategories || [];
 
         // 30% chance to pick a random enabled category for variety (if not empty)
-        if (enabled.length > 0 && Math.random() < 0.3) {
+        if (triggerType !== 'manual' && enabled.length > 0 && Math.random() < 0.3) {
             category = enabled[Math.floor(Math.random() * enabled.length)];
         } else if (enabled.length > 0 && !enabled.includes(category as any)) {
             // Fallback if the time-based category is disabled
@@ -1176,8 +1209,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
         const systemPrompt = modeConfig.systemPromptTemplate(contextData);
+        const presentation = resolveOraclePresentation(category, triggerType);
 
-        const userPrompt = `Gere uma mensagem curta (máximo 3 frases) para o feed do usuário.
+        const userPrompt = triggerType === 'manual'
+            ? `Gere um card informativo curto para o chat do usuario.
+      Categoria solicitada: ${category}
+      Entregue uma leitura objetiva do estado atual, um foco principal e um proximo passo concreto.
+      Nao use saudacao nem texto decorativo. Escreva em blocos curtos que leiam como um card.
+      Contexto atual: ${JSON.stringify(contextData)}`
+            : presentation === 'info_card'
+                ? `Gere um card informativo curto para o feed do usuario.
+      Categoria solicitada: ${category}
+      Traga uma leitura pratica do momento e uma recomendacao acionavel.
+      Evite saudacao generica e mantenha o texto objetivo.
+      Contexto atual: ${JSON.stringify(contextData)}`
+                : `Gere uma mensagem curta (máximo 3 frases) para o feed do usuário.
       Categoria solicitada: ${category}
       Contexto atual: ${JSON.stringify(contextData)}
       `;
@@ -1188,7 +1234,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const accessToken = sessionData.session?.access_token;
             if (sessionError || !accessToken) {
                 console.error('Oracle Edge Function skipped: authenticated session missing.');
-                return;
+                if (triggerType === 'manual') {
+                    showToast('Sessao indisponivel para gerar card.', 'error');
+                }
+                return { status: 'error', ...quota };
             }
 
             const { data: oracleData, error: oracleError } = await supabase.functions.invoke('oracle', {
@@ -1203,13 +1252,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (oracleError) {
                 console.error('Oracle Edge Function failed:', oracleError);
-                return;
+                if (triggerType === 'manual') {
+                    showToast('Falha do Oraculo ao gerar card.', 'error');
+                }
+                return { status: 'error', ...quota };
             }
 
             const text = String(oracleData?.text || '').trim();
             if (!text) {
                 console.error('Oracle Edge Function returned empty content.');
-                return;
+                if (triggerType === 'manual') {
+                    showToast('O Oraculo voltou vazio para este card.', 'error');
+                }
+                return { status: 'error', ...quota };
             }
 
             // 8. Save and Update
@@ -1220,6 +1275,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 content: text,
                 mode: selectedMode,
                 deliveryType: 'feed',
+                contextSnapshot: {
+                    triggerType,
+                    presentation,
+                    categoryLabel: ORACLE_CATEGORY_LABELS[category],
+                    generatedFor: triggerType === 'manual' ? 'chat' : 'feed',
+                    summary: triggerType === 'manual' ? 'Card manual do chat' : 'Pulso automatico do Oraculo',
+                },
                 read: false,
                 createdAt: new Date().toISOString()
             };

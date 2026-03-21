@@ -133,6 +133,8 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     const pixQrCodeBase64 = typeof pixTransactionData?.qr_code_base64 === 'string' ? pixTransactionData.qr_code_base64 : '';
     const pixTicketUrl = typeof pixTransactionData?.ticket_url === 'string' ? pixTransactionData.ticket_url : '';
     const paymentStatusLabel = getMercadoPagoStatusLabel(paymentResult, creditDetected);
+    const brlAmountLabel = amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const hasPixPayload = Boolean(pixQrCodeBase64 || pixQrCode || pixTicketUrl);
 
     useEffect(() => {
         latestRefs.current = { onClose, showToast };
@@ -166,6 +168,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
         }
 
         try {
+            const startedAt = Date.now();
             setLoading(true);
             setPaymentError(null);
             setCheckoutEmail(nextEmail);
@@ -195,12 +198,19 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
             });
 
             const result = await response.json();
+            const elapsed = Date.now() - startedAt;
+            if (elapsed < 450) {
+                await new Promise((resolve) => window.setTimeout(resolve, 450 - elapsed));
+            }
 
             if (!response.ok || !result?.id) {
                 throw new Error(result?.error || 'Erro ao gerar o Pix.');
             }
 
             setPaymentResult(result);
+            if (!(result?.point_of_interaction?.transaction_data?.qr_code || result?.point_of_interaction?.transaction_data?.qr_code_base64 || result?.point_of_interaction?.transaction_data?.ticket_url)) {
+                latestRefs.current.showToast('Cobranca criada. O QR ainda nao voltou nesta resposta.', 'info');
+            }
         } catch (error: any) {
             console.error('Erro ao criar Pix:', error);
             const nextError = error.message || 'Falha ao gerar o Pix.';
@@ -345,16 +355,15 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     };
 
     const handleBackToMode = () => {
-        if (!hasValidProfileEmail) return;
         setCheckoutStep('mode');
-        setCheckoutMode(null);
+        setCheckoutMode(hasValidProfileEmail ? 'account' : 'custom');
         setPaymentResult(null);
         setCreditDetected(false);
         setPaymentError(null);
         setCheckoutEmail('');
         setCheckoutFullName('');
         setCheckoutCpf('');
-        setEmailInput(profileEmail);
+        setEmailInput(hasValidProfileEmail ? profileEmail : '');
     };
 
     return (
@@ -367,7 +376,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 {paymentResult ? (creditDetected ? 'Pagamento Confirmado' : 'Aguardando Pagamento') : 'Pagamento Seguro'}
                             </h2>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--skin-accent-color)]">
-                                {goldAmount} ouro - R$ {amount.toFixed(2)}
+                                {brlAmountLabel} - {goldAmount} ouro
                             </p>
                         </div>
                         <button onClick={onClose} className="rounded-full p-2 text-gray-400 transition-all hover:scale-110 hover:bg-white/10 hover:text-white">
@@ -417,6 +426,19 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
 
                                 {checkoutStep === 'payer' && (
                                     <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                        <div className="rounded-2xl border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/8 px-4 py-3">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Valor</div>
+                                                    <div className="mt-1 text-base font-black text-white">{brlAmountLabel}</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Recebe</div>
+                                                    <div className="mt-1 text-base font-black text-[var(--skin-accent-color)]">{goldAmount} ouro</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="flex items-center justify-between gap-3">
                                             <div>
                                                 <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
@@ -431,7 +453,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                                 onClick={handleBackToMode}
                                                 className="rounded-full border border-white/10 bg-white/8 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/80 transition-all hover:bg-white/12"
                                             >
-                                                Fechar
+                                                Voltar
                                             </button>
                                         </div>
 
@@ -542,18 +564,6 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                     </div>
                                 )}
 
-                                {loading && (
-                                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-[24px] bg-black/78 px-6 py-12 text-center backdrop-blur-md">
-                                        <div className="h-10 w-10 rounded-full border-4 border-[var(--skin-accent-color)] border-t-transparent animate-spin" />
-                                        <div className="space-y-2">
-                                            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
-                                                Gerando cobranca Pix
-                                            </div>
-                                            <div className="text-sm font-semibold text-white">{checkoutFullName || 'Pagador'}</div>
-                                            <div className="text-xs text-gray-400">{formatCpf(checkoutCpf)} - {checkoutEmail}</div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             <div className="flex flex-1 flex-col items-center justify-center space-y-6 px-6 py-10 text-center animate-fade-in">
@@ -586,6 +596,17 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                     </p>
                                 </div>
 
+                                <div className="grid w-full grid-cols-2 gap-3">
+                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">Valor</div>
+                                        <div className="mt-1 text-lg font-black text-white">{brlAmountLabel}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">Ouro</div>
+                                        <div className="mt-1 text-lg font-black text-[var(--skin-accent-color)]">{goldAmount}</div>
+                                    </div>
+                                </div>
+
                                 <div className="w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                                     <div className="text-left">
                                         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
@@ -595,6 +616,12 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                             {pixQrCode || 'O Mercado Pago ainda nao retornou o codigo copia e cola nesta resposta.'}
                                         </div>
                                     </div>
+
+                                    {!hasPixPayload && (
+                                        <div className="rounded-xl border border-amber-300/18 bg-amber-400/10 px-3 py-2 text-left text-[11px] leading-relaxed text-amber-100">
+                                            A cobranca foi criada, mas o Mercado Pago ainda nao devolveu o QR nesta resposta. Se o link da cobranca aparecer abaixo, use ele.
+                                        </div>
+                                    )}
 
                                     <div className="flex flex-col gap-2 sm:flex-row">
                                         <button
@@ -645,6 +672,23 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                             </div>
                         )}
                     </div>
+
+                    {loading && (
+                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5 bg-black/82 px-6 py-12 text-center backdrop-blur-md">
+                            <div className="h-12 w-12 rounded-full border-4 border-[var(--skin-accent-color)] border-t-transparent animate-spin" />
+                            <div className="space-y-2">
+                                <div className="text-[10px] font-black uppercase tracking-[0.26em] text-[var(--skin-accent-color)]">
+                                    Processando Pix
+                                </div>
+                                <div className="text-2xl font-black text-white">{brlAmountLabel}</div>
+                                <div className="text-sm font-semibold text-white">{checkoutFullName || 'Pagador'}</div>
+                                <div className="text-xs text-gray-400">{formatCpf(checkoutCpf)} - {checkoutEmail}</div>
+                                <div className="text-[11px] leading-relaxed text-white/56">
+                                    Validando dados do pagador e gerando QR Code no Mercado Pago.
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="border-t border-white/5 bg-black/40 p-2 text-center backdrop-blur-md">
                         <p className="text-[8px] font-bold uppercase tracking-[0.4em] text-gray-500 opacity-40">

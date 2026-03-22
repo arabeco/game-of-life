@@ -31,11 +31,34 @@ type FogConfig = {
 const ASSETS_VIEW_VERTICAL_BLEED_PX = 18;
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
-    const normalized = hex.replace('#', '').trim();
-    if (normalized.length !== 6) return null;
-    const value = Number.parseInt(normalized, 16);
+    const normalized = String(hex || '').trim();
+    if (!normalized) return null;
+
+    if (normalized.startsWith('rgb')) {
+        const values = normalized
+            .replace(/rgba?\(|\)/g, '')
+            .split(',')
+            .map((value) => Number.parseFloat(value.trim()));
+        if (values.length >= 3 && values.every((value) => Number.isFinite(value))) {
+            return [values[0], values[1], values[2]];
+        }
+        return null;
+    }
+
+    const hexOnly = normalized.replace('#', '');
+    if (hexOnly.length !== 6) return null;
+    const value = Number.parseInt(hexOnly, 16);
     if (Number.isNaN(value)) return null;
     return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+};
+
+const relativeLuminance = (rgb: [number, number, number] | null) => {
+    if (!rgb) return 0;
+    const [r, g, b] = rgb.map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
 const rgbaString = (rgb: [number, number, number] | null, alpha: number): string =>
@@ -130,10 +153,19 @@ export const AssetsView: React.FC = () => {
     useLayoutEffect(() => {
         const target = containerRef.current ?? document.documentElement;
         const styles = getComputedStyle(target);
-        const fogColor = styles.getPropertyValue('--fog-color').trim() || styles.getPropertyValue('--skin-accent-color').trim() || '#ffffff';
-        const tintStrength = readCssNumber(styles.getPropertyValue('--fog-tint-strength'), 0.22);
+        const skinAccentColor = styles.getPropertyValue('--skin-accent-color').trim() || '#ffffff';
+        const isLightTheme = document.body.classList.contains('theme-light');
+        let fogColor = styles.getPropertyValue('--fog-color').trim() || skinAccentColor || '#ffffff';
+        let tintStrength = readCssNumber(styles.getPropertyValue('--fog-tint-strength'), 0.22);
         const alphaMax = readCssNumber(styles.getPropertyValue('--fog-alpha-max'), 0.15);
         const sephirotBackground = styles.getPropertyValue('--sephirot-bg-image').trim();
+
+        if (isLightTheme) {
+            const accentRgb = hexToRgb(skinAccentColor);
+            fogColor = relativeLuminance(accentRgb) > 0.82 ? '#9aa3b2' : skinAccentColor;
+            tintStrength = 1;
+        }
+
         setFogConfig({ color: fogColor, tintStrength, alphaMax });
         setHasSephirotRasterArt(hasRasterSephirotBackground(sephirotBackground));
     }, [userProfile.skin, appMode]);

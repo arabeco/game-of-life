@@ -232,9 +232,9 @@ body {
 }
 
 .mode-game.theme-light #planner-container .planner-day-header {
-  background: rgba(244, 236, 223, 0.92) !important;
-  color: var(--game-muted-text) !important;
-  border-bottom-color: rgba(128, 98, 49, 0.12) !important;
+  background: color-mix(in srgb, var(--skin-accent-color) 10%, rgba(247, 250, 253, 0.95)) !important;
+  color: color-mix(in srgb, var(--skin-accent-color) 58%, #475569) !important;
+  border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 24%, transparent) !important;
 }
 
 .mode-game.theme-light #planner-container .planner-scroll-surface {
@@ -276,27 +276,28 @@ body {
 
 .mode-game.theme-light #planner-container .daily-hour-label,
 .mode-game.theme-light #planner-container .weekly-hour-label {
-  color: var(--game-muted-text) !important;
+  color: color-mix(in srgb, var(--skin-accent-color) 52%, #526274) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-grid-column,
 .mode-game.theme-light #planner-container .weekly-col {
-  border-left-color: rgba(128, 98, 49, 0.12) !important;
+  border-left-color: color-mix(in srgb, var(--skin-accent-color) 24%, transparent) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-hour-slice,
 .mode-game.theme-light #planner-container .weekly-hour-slice {
-  border-top-color: rgba(128, 98, 49, 0.12) !important;
+  border-top-color: color-mix(in srgb, var(--skin-accent-color) 24%, transparent) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-quarter-line,
 .mode-game.theme-light #planner-container .weekly-quarter-line {
-  border-top-color: rgba(128, 98, 49, 0.07) !important;
+  border-top-color: color-mix(in srgb, var(--skin-accent-color) 12%, transparent) !important;
 }
 
 .mode-game.theme-light #planner-container .weekly-day-header {
-  background: rgba(244, 236, 223, 0.92) !important;
-  color: var(--game-muted-text) !important;
+  background: color-mix(in srgb, var(--skin-accent-color) 10%, rgba(247, 250, 253, 0.95)) !important;
+  color: color-mix(in srgb, var(--skin-accent-color) 58%, #475569) !important;
+  border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 24%, transparent) !important;
 }
 
 .mode-game.theme-light #planner-container .planner-oracle-input {
@@ -435,8 +436,8 @@ body {
 }
 
 .mode-game.theme-light .assets-view-root {
-  --fog-color: #8d98aa;
-  --fog-tint-strength: 0.92;
+  --fog-color: var(--skin-accent-color);
+  --fog-tint-strength: 1;
   --fog-alpha-max: 0.19;
   background:
     radial-gradient(circle at 18% 16%, rgba(244, 248, 252, 0.12), rgba(244, 248, 252, 0) 18%),

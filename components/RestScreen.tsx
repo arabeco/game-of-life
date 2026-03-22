@@ -1301,7 +1301,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                         </button>
                     </div>
 
-                        <div className="flex flex-col items-center gap-2 min-h-[4.5rem] justify-end">
+                    <div className="relative flex h-[7rem] flex-col items-center">
                         <button
                             onMouseDown={handleStartHold}
                             onMouseUp={handleEndHold}
@@ -1339,7 +1339,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             </div>
                         </button>
                         {shouldShowUnlockHint && (
-                            <div className="flex flex-col items-center gap-0.5 text-center animate-fade-in">
+                            <div className="absolute left-1/2 top-[4.95rem] flex w-[13rem] -translate-x-1/2 flex-col items-center gap-0.5 text-center animate-fade-in">
                                 <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
                                     {unlockHint}
                                 </span>

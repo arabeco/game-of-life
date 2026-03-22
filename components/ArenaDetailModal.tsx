@@ -425,9 +425,9 @@ export const ArenaDetailModal: React.FC<{
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
+            <div className="arena-detail-modal arena-detail-modal-overlay fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
                 <div
-                    className="dossier-bg arena-plate border w-full max-w-[21rem] m-4 rounded-2xl px-4 py-5 flex flex-col h-auto max-h-[92vh] relative overflow-hidden"
+                    className="arena-detail-modal-root dossier-bg arena-plate border w-full max-w-[21rem] m-4 rounded-2xl px-4 py-5 flex flex-col h-auto max-h-[92vh] relative overflow-hidden"
                     style={{
                         borderColor: 'var(--skin-accent-color)',
                         backgroundImage: [
@@ -447,7 +447,7 @@ export const ArenaDetailModal: React.FC<{
                         style={{ '--modal-sheen-color': 'rgba(219, 229, 244, 0.52)' } as React.CSSProperties}
                     />
                     <div className="relative z-10 flex flex-col space-y-3">
-                        <div className="arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
+                        <div className="arena-detail-modal-header arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1">
                                 {/* Allow editing for flexible arenas or if user is the Mentor */}
                                 {!isReadOnlyArena && (!isArenaEditLocked || isEditing || currentLinkType === 'mentoria') && (
@@ -601,7 +601,7 @@ export const ArenaDetailModal: React.FC<{
                                         rows={2}
                                         className="w-full text-center bg-transparent text-sm text-gray-500 pt-1 focus:outline-none"
                                     />
-                                    <div className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-2 text-left">
+                                    <div className="arena-detail-field-card w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-2 text-left">
                                         <label className="block text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400 mb-2">
                                             Ativo pai
                                         </label>
@@ -628,7 +628,7 @@ export const ArenaDetailModal: React.FC<{
                                 <div className="flex-shrink-0">
                                     <div className='relative text-center mb-2'>
                                         <hr className="border-t border-gray-800" />
-                                        <h3 className="text-xs font-semibold text-[var(--skin-accent-color)] uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Marcos</h3>
+                                        <h3 className="arena-detail-section-label text-xs font-semibold text-[var(--skin-accent-color)] uppercase tracking-wider absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-2">Marcos</h3>
                                     </div>
                                     <div className="flex flex-col items-center space-y-2 py-2">
                                         {milestoneActions.map(action => {
@@ -708,8 +708,8 @@ export const ArenaDetailModal: React.FC<{
                 />
             )}
             {isLinkingObserver && (
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={() => setIsLinkingObserver(false)}>
-                    <div className="bg-black/70 border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
+            <div className="arena-detail-modal fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={() => setIsLinkingObserver(false)}>
+                    <div className="arena-link-panel bg-black/70 border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center">
                             <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">VINCULAR ALIADO</div>
                             <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">?</span></button>

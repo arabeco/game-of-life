@@ -21,11 +21,11 @@ export const TransferLeadershipModal: React.FC<TransferLeadershipModalProps> = (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold uppercase tracking-wider">Transferir LideranÃ§a</h2>
+                        <h2 className="text-lg font-bold uppercase tracking-wider">Transferir Liderança</h2>
                         <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
                     </div>
 
-                    <p className="text-sm text-center text-gray-300">VocÃª deve nomear um novo lÃ­der antes de poder sair do clÃ£.</p>
+                    <p className="text-sm text-center text-gray-300">Você precisa nomear uma nova pessoa líder antes de sair do grupo.</p>
                     
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                         {otherMembers.map(member => (
@@ -37,7 +37,7 @@ export const TransferLeadershipModal: React.FC<TransferLeadershipModalProps> = (
                                 <img src={member.avatarUrl} alt={member.nickname} className="w-10 h-10 rounded-full"/>
                                 <div>
                                     <h4 className="font-bold text-white text-sm">{member.nickname}</h4>
-                                    <p className="text-xs text-gray-400">NÃ­vel {member.level}</p>
+                                    <p className="text-xs text-gray-400">Nível {member.level}</p>
                                 </div>
                             </button>
                         ))}

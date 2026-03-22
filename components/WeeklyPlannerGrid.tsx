@@ -196,11 +196,11 @@ export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDat
     const todayForCheck = getOperationalDateString();
 
     return (
-        <div className="flex dark-card-bg rounded-3xl p-1 depth-grid" ref={gridRef} data-testid="weekly-grid">
+        <div className="weekly-planner-grid flex dark-card-bg rounded-3xl p-1 depth-grid" ref={gridRef} data-testid="weekly-grid">
             <div className="w-12 flex-shrink-0 pt-8">
                 {hours.map(hour => (
                     <div key={hour} style={{ height: `${60 * scaleFactor}px` }} className="text-right pr-2">
-                        <span className="text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span>
+                        <span className="weekly-hour-label text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span>
                     </div>
                 ))}
             </div>
@@ -217,19 +217,19 @@ export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDat
                     return (
                         <div 
                             key={dayIndex} 
-                            className="relative border-l border-white/10"
+                            className="weekly-col relative border-l border-white/10"
                             data-day-index={dayIndex}
                         >
-                            <div className="h-8 text-center text-xs font-bold text-gray-400 sticky bg-black/50 z-10 flex flex-col justify-center" style={{ top: stickyHeaderOffset }}>
+                            <div className="weekly-day-header h-8 text-center text-xs font-bold text-gray-400 sticky bg-black/50 z-10 flex flex-col justify-center" style={{ top: stickyHeaderOffset }}>
                                 <div>{day.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.','')}</div>
                                 <div className="font-normal">{day.getDate()}</div>
                             </div>
                             <div className="relative">
                                 {hours.map((hour, i) => (
-                                    <div key={hour} className={`relative ${i > 0 ? 'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}>
-                                        <div className="absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div>
-                                        <div className="absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div>
-                                        <div className="absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div>
+                                    <div key={hour} className={`weekly-hour-slice relative ${i > 0 ? 'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}>
+                                        <div className="weekly-quarter-line absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div>
+                                        <div className="weekly-quarter-line absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div>
+                                        <div className="weekly-quarter-line absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div>
                                     </div>
                                 ))}
                                 {getTasksForDay(day).map(task => {

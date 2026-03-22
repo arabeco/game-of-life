@@ -15,6 +15,7 @@ interface ClanSlotModalProps {
     slotId: AldeiaSlotId;
     slotLabel: string;
     slotEmoji?: string;
+    slotNote?: string;
     occupant?: EnrichedClanMember;
     clanQuests?: ClanCustomQuest[];
     onClose: () => void;
@@ -23,7 +24,7 @@ interface ClanSlotModalProps {
     onUpdate?: () => void;
     myParticipations?: string[];
     onOptIn?: (quest: ClanCustomQuest) => void;
-    allSlots?: { id: AldeiaSlotId; label: string; emoji: string }[];
+    allSlots?: { id: AldeiaSlotId; label: string; emoji: string; note?: string }[];
 }
 
 export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({ 
@@ -31,6 +32,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     slotId, 
     slotLabel, 
     slotEmoji = '📌', 
+    slotNote = '',
     occupant, 
     clanQuests = [],
     onClose, 
@@ -82,12 +84,14 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     // Edit Slot State
     const [customName, setCustomName] = useState(slotLabel);
     const [customEmoji, setCustomEmoji] = useState(slotEmoji);
+    const [customNote, setCustomNote] = useState(slotNote);
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
     useEffect(() => {
         setCustomName(slotLabel);
         setCustomEmoji(slotEmoji);
-    }, [slotLabel, slotEmoji]);
+        setCustomNote(slotNote);
+    }, [slotLabel, slotEmoji, slotNote]);
 
     useEffect(() => {
         // Reset view when slotId changes
@@ -128,12 +132,12 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
             if (error) throw error;
 
-            showToast(isBasicMode ? "Ação criada com sucesso!" : "Missão criada com sucesso!", "success");
+            showToast("Tarefa criada com sucesso!", "success");
             if (onUpdate) onUpdate();
             onClose();
         } catch (error) {
             console.error(error);
-            showToast(isBasicMode ? "Erro ao criar ação" : "Erro ao criar missão", "error");
+            showToast("Erro ao criar tarefa", "error");
         }
     };
 
@@ -149,9 +153,15 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
             if (fetchError) throw fetchError;
             
             const currentConfig = clanData.slot_config || {};
+            const existingSlotConfig = currentConfig[slotId] || {};
             const newConfig = {
                 ...currentConfig,
-                [slotId]: { label: customName, emoji: customEmoji }
+                [slotId]: {
+                    ...existingSlotConfig,
+                    label: customName,
+                    emoji: customEmoji,
+                    note: customNote.trim()
+                }
             };
             
             const { error: updateError } = await supabase
@@ -161,7 +171,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                 
             if (updateError) throw updateError;
 
-            showToast(isOfficeClan ? "Mesa atualizada!" : "Slot atualizado!", "success");
+            showToast(isOfficeClan ? "Mesa atualizada!" : "Espaco atualizado!", "success");
             if (onUpdate) onUpdate();
             setView('details');
         } catch (error) {
@@ -181,13 +191,13 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                 
             if (error) throw error;
             
-            showToast(isBasicMode ? "Ação movida com sucesso!" : "Missão movida com sucesso!", "success");
+            showToast("Tarefa movida com sucesso!", "success");
             if (onUpdate) onUpdate();
             setView('details');
             setSelectedQuestToMove(null);
         } catch (error) {
             console.error(error);
-            showToast(isBasicMode ? "Erro ao mover ação" : "Erro ao mover missão", "error");
+            showToast("Erro ao mover tarefa", "error");
         }
     };
 
@@ -220,7 +230,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                         <div className="absolute -bottom-2 -right-2 bg-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full text-black">Online</div>
                                     </div>
                                     <h3 className="font-bold text-lg">{occupant.nickname}</h3>
-                                    <p className="text-xs text-gray-400">{occupant.title || 'Membro do Clã'}</p>
+                                    <p className="text-xs text-gray-400">{occupant.title || 'Pessoa do Grupo'}</p>
                                     
                                     {/* Planner Progress Bar */}
                                     <div className="w-full max-w-[150px] mt-3 space-y-1">
@@ -242,6 +252,15 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                 </div>
                             )}
                         </div>
+
+                        {customNote.trim() && (
+                            <div className="space-y-2 bg-black/20 p-4 rounded-2xl border border-white/5">
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                    Recado desta {isOfficeClan ? 'mesa' : 'area'}
+                                </div>
+                                <p className="text-sm text-gray-200 leading-relaxed">{customNote}</p>
+                            </div>
+                        )}
 
                         {/* Leader Editable Health Bar (Office Mode) */}
                         {isOfficeClan && userRole === 'leader' && slotId !== 'trono' && (
@@ -269,13 +288,13 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                             </div>
                         )}
 
-                        {/* Active Quests on this Slot */}
+                        {/* Active Group Tasks on this Slot */}
                         {(clanQuests.filter(q => q.slot_id === slotId && q.status !== 'completed').length > 0 || userRole === 'leader') && (
                             <div className="space-y-4">
                                 <div className='relative text-center flex-shrink-0'>
                                     <hr className="border-t border-gray-800" />
                                     <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest absolute -top-2 left-1/2 -translate-x-1/2 bg-[#101010] px-3">
-                                        {isBasicMode ? 'Ações de Bronze' : 'Missões de Bronze'}
+                                        Blocos de Bronze
                                     </h3>
                                 </div>
                                 
@@ -382,7 +401,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                                             await supabase.from('clan_mission_participants').delete().eq('mission_id', quest.id);
                                                                         }
                                                                         
-                                                                        showToast(isBasicMode ? "Ação devolvida" : "Missão devolvida", "success");
+                                                                        showToast("Tarefa devolvida", "success");
                                                                         if (onUpdate) onUpdate();
                                                                     } catch (e) {
                                                                         console.error(e);
@@ -462,7 +481,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                 className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
                             >
                                 <span className="text-lg">🖌️</span>
-                                Personalizar {isOfficeClan ? 'Mesa' : 'Slot'}
+                                Personalizar {isOfficeClan ? 'Mesa' : 'Area'}
                             </button>
                         )}
                     </div>
@@ -471,12 +490,12 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
                 {view === 'create-quest' && (
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--skin-accent-color)]">{isBasicMode ? 'Nova Ação' : 'Nova Missão'}</h3>
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--skin-accent-color)]">Nova Tarefa</h3>
                         
                         <div className="space-y-3">
                             <input 
                                 type="text" 
-                                placeholder={isBasicMode ? "Título da Ação" : "Título da Missão"} 
+                                placeholder="Titulo da Tarefa"
                                 className="w-full p-3 bg-black/30 border border-white/10 rounded-xl focus:border-[var(--skin-accent-color)] outline-none text-sm text-white"
                                 value={questTitle}
                                 onChange={e => setQuestTitle(e.target.value)}
@@ -514,7 +533,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                             />
 
                             <textarea 
-                                placeholder={isBasicMode ? "Descreva a ação..." : "Descreva a missão..."} 
+                                placeholder="Descreva a tarefa..."
                                 rows={3}
                                 className="w-full p-3 bg-black/30 border border-white/10 rounded-xl focus:border-[var(--skin-accent-color)] outline-none text-sm"
                                 value={questDescription}
@@ -527,16 +546,16 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                     className={`p-3 rounded-xl border text-xs font-bold uppercase transition-all ${questType === 'individual' ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] text-[var(--skin-accent-color)]' : 'bg-black/30 border-white/5 text-gray-400 hover:bg-white/5'}`}
                                 >
                                     <div className="text-lg mb-1">👤</div>
-                                    Singular
-                                    <div className="text-[9px] opacity-60 normal-case mt-1">Vai para a mesa de quem aceitar</div>
+                                    Individual
+                                    <div className="text-[9px] opacity-60 normal-case mt-1">Fica atribuida a uma pessoa</div>
                                 </button>
                                 <button 
                                     onClick={() => setQuestType('clan')}
                                     className={`p-3 rounded-xl border text-xs font-bold uppercase transition-all ${questType === 'clan' ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)] text-[var(--skin-accent-color)]' : 'bg-black/30 border-white/5 text-gray-400 hover:bg-white/5'}`}
                                 >
                                     <div className="text-lg mb-1">👥</div>
-                                    Compartilhada
-                                    <div className="text-[9px] opacity-60 normal-case mt-1">Fica no mural principal</div>
+                                    Do grupo
+                                    <div className="text-[9px] opacity-60 normal-case mt-1">Fica aberta para contribuicao coletiva</div>
                                 </button>
                             </div>
 
@@ -550,7 +569,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                     </div>
                                     <div>
                                         <div className="text-xs font-bold text-gray-200">Atribuir para {occupant.nickname}</div>
-                                        <div className="text-[10px] text-gray-500">A missão aparecerá travada para ele</div>
+                                        <div className="text-[10px] text-gray-500">A tarefa ficara reservada para essa pessoa</div>
                                     </div>
                                 </div>
                             )}
@@ -601,14 +620,14 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
                         <div className="flex gap-2 pt-2">
                             <button onClick={() => setView('details')} className="flex-1 py-2 rounded-lg bg-white/5 text-gray-400 text-xs font-bold hover:bg-white/10">Voltar</button>
-                            <button onClick={handleCreateQuest} className="flex-[2] py-2 rounded-lg bg-[var(--skin-accent-color)] text-black text-xs font-bold hover:brightness-110">{isBasicMode ? 'Criar Ação' : 'Criar Missão'}</button>
+                            <button onClick={handleCreateQuest} className="flex-[2] py-2 rounded-lg bg-[var(--skin-accent-color)] text-black text-xs font-bold hover:brightness-110">Criar Tarefa</button>
                         </div>
                     </div>
                 )}
 
                 {view === 'edit-slot' && (
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--skin-accent-color)]">Personalizar {isOfficeClan ? 'Mesa' : 'Slot'}</h3>
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--skin-accent-color)]">Personalizar {isOfficeClan ? 'Mesa' : 'Area'}</h3>
                         
                         <div className="space-y-4">
                             <div className="flex flex-col items-center gap-2">
@@ -623,10 +642,18 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
                             <input 
                                 type="text" 
-                                placeholder={isOfficeClan ? "Nome da Mesa" : "Nome do Slot"}
+                                placeholder={isOfficeClan ? "Nome da Mesa" : "Nome da Area"}
                                 className="w-full p-3 bg-black/30 border border-white/10 rounded-xl focus:border-[var(--skin-accent-color)] outline-none text-sm text-white"
                                 value={customName}
                                 onChange={e => setCustomName(e.target.value)}
+                            />
+
+                            <textarea
+                                rows={3}
+                                placeholder={isOfficeClan ? "Recado desta mesa..." : "Recado desta area..."}
+                                className="w-full p-3 bg-black/30 border border-white/10 rounded-xl focus:border-[var(--skin-accent-color)] outline-none text-sm text-white resize-none"
+                                value={customNote}
+                                onChange={e => setCustomNote(e.target.value)}
                             />
 
                             <div className="flex gap-2 pt-2">
@@ -649,7 +676,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
                 {view === 'move-quest' && selectedQuestToMove && (
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-blue-400">{isBasicMode ? 'Mover Ação' : 'Mover Missão'}</h3>
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-blue-400">Mover Tarefa</h3>
                         <p className="text-xs text-gray-400">Selecione a nova mesa para: <span className="text-white font-bold">{selectedQuestToMove.title}</span></p>
                         
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">

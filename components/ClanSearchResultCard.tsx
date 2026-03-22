@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Clan } from '../types';
 import { useGame } from '../contexts/GameContext';
@@ -25,7 +24,7 @@ export const ClanSearchResultCard: React.FC<ClanSearchResultCardProps> = ({ clan
         buttonText = 'Membro';
         isDisabled = true;
     } else if (isMemberOfAnyClan) {
-        buttonText = 'Em um cl√£';
+        buttonText = 'Em um grupo';
         isDisabled = true;
     } else if (hasPendingRequest) {
         buttonText = 'Solicitado';
@@ -40,10 +39,10 @@ export const ClanSearchResultCard: React.FC<ClanSearchResultCardProps> = ({ clan
                 <span className="text-4xl">{clan.icon}</span>
                 <div className="flex-grow">
                     <h4 className="font-bold text-white">{clan.name}</h4>
-                    <p className="text-xs text-gray-400">{rank?.name || 'N/A'} ‚Ä¢ {clan.clanType} ‚Ä¢ {clan.recruitmentStatus}</p>
+                    <p className="text-xs text-gray-400">{rank?.name || 'N/A'} ∑ {clan.clanType} ∑ Entrada {clan.recruitmentStatus}</p>
                 </div>
-                <button 
-                    onClick={onJoin} 
+                <button
+                    onClick={onJoin}
                     disabled={isDisabled}
                     className="px-4 py-2 bg-white/10 text-sm font-bold rounded-lg hover:bg-white/20 disabled:bg-black/20 disabled:text-gray-500 disabled:cursor-not-allowed"
                 >

@@ -7492,6 +7492,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     if (error) console.error("Error deleting clan mission participation:", error.message);
                 }
             }
+
+            if (action.originCodexId?.startsWith('clan_quest:')) {
+                const customQuestId = action.originCodexId.split(':')[1];
+                const userId = getSupabaseUserId();
+                if (userId) {
+                    const { error: customPartError } = await supabase.from('clan_mission_participants')
+                        .delete()
+                        .eq('clan_id', clan.id)
+                        .eq('mission_id', customQuestId)
+                        .eq('user_id', userId);
+
+                    if (customPartError) {
+                        console.error("Error deleting custom group task participation:", customPartError.message);
+                    }
+
+                    const { error: unlockCustomError } = await supabase.from('clan_custom_quests')
+                        .update({ status: 'active', assigned_user_id: null })
+                        .eq('id', customQuestId)
+                        .eq('assigned_user_id', userId);
+
+                    if (unlockCustomError) {
+                        console.error("Error unlocking custom group task:", unlockCustomError.message);
+                    }
+                }
+            }
         }
 
         setActions(prev => prev.filter(a => a.id !== actionId));
@@ -7571,9 +7596,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error activating clan quest:", error);
-            showToast("Erro ao ativar missão do clã.");
+            showToast("Erro ao ativar tarefa do grupo.");
         } else {
-            showToast("Missão ativada para o clã!");
+            showToast("Tarefa ativada para o grupo!");
             // Refresh clan progress/state if needed
             fetchClanQuestProgress(clan.id);
         }
@@ -7605,7 +7630,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const isActiveForClan = clanProgress && clanProgress[quest.id] !== undefined;
 
                 if (!isActiveForClan) {
-                    showToast("Esta missao precisa ser ativada pelo lider do cla primeiro.");
+                    showToast("Esta tarefa precisa ser ativada pelo lider do grupo primeiro.");
                     return;
                 }
             }
@@ -7630,7 +7655,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     return;
                 }
             }
-            showToast(`Missao "${quest.title}" ja esta ativa.`, 'info');
+            showToast(`Tarefa "${quest.title}" ja esta ativa.`, 'info');
             return;
         }
 
@@ -7639,7 +7664,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const assetId = assets[0]?.id || 'geral';
             arena = await addArena(assetId, {
                 name: seasonArenaName,
-                description: quest.description || (isClanQuest ? 'Miss\u00E3o de Cl\u00E3' : 'Miss\u00E3o de Temporada'),
+                description: quest.description || (isClanQuest ? 'Tarefa do grupo' : 'Missao de temporada'),
                 icon: quest.actionTemplate.icon || (isClanQuest ? '\u2694\uFE0F' : '\u{1F4DD}'),
                 priority: 'alta' // Destaque para missões ativas
             });
@@ -7686,7 +7711,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await leaveClanMission(quest.id);
         }
 
-        showToast(`Missão "${quest.title}" abandonada.`);
+        showToast(`Tarefa "${quest.title}" abandonada.`);
     };
 
     const claimSeasonQuest = async (questId: string) => {
@@ -8077,7 +8102,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const addClanMember = async (memberId: string) => {
         console.warn('Direct clan member insertion blocked. Member must request to join.', memberId);
-        showToast('Entrada no clã só acontece por solicitação aprovada.', 'warning');
+        showToast('A entrada no grupo so acontece por solicitacao aprovada.', 'warning');
         return;
         if (!clan) return;
         if (!isUuid(memberId)) {
@@ -8093,7 +8118,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (countError) { console.error("Error checking clan size:", countError.message); return; }
 
         if (count !== null && count >= MAX_CLAN_MEMBERS) {
-            alert(`O clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+            alert(`O grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
             return;
         }
 
@@ -8162,7 +8187,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (countError) { console.error("Error checking clan size:", countError.message); return; }
 
         if (count !== null && count >= MAX_CLAN_MEMBERS) {
-            alert(`Este clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+            alert(`Este grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
             return;
         }
 
@@ -8188,7 +8213,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (countError) { console.error("Error checking clan size:", countError.message); return; }
         if (count !== null && count >= MAX_CLAN_MEMBERS) {
-            alert(`O clã atingiu o limite máximo de ${MAX_CLAN_MEMBERS} membros.`);
+            alert(`O grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
             return;
         }
 
@@ -8204,7 +8229,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await SupabaseService.createNotification(
             request.userId,
             'clan_response',
-            `${clan.name} aprovou sua entrada no cl\u00E3.`,
+            `${clan.name} aprovou sua entrada no grupo.`,
         );
 
         // Invalidate cache before reloading to ensure new member is fetched
@@ -8225,7 +8250,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await SupabaseService.createNotification(
             request.userId,
             'clan_response',
-            `${clan.name} recusou sua entrada no cl\u00E3.`,
+            `${clan.name} recusou sua entrada no grupo.`,
         );
 
         setClanJoinRequestsIncoming(prev => prev.filter(r => r.id !== request.id));

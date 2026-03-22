@@ -96,7 +96,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'c
                             className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'clan' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
                             <UsersIcon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">CLÃ</span>
+                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">GRUPO</span>
                         </button>
 
                         <button 

@@ -5,9 +5,9 @@
   min-height: 100dvh;
   flex-direction: column;
   overflow: hidden;
-  background: #000;
+  background: var(--bg-primary);
   font-family: var(--font-body);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .auth-app-root {
@@ -15,7 +15,7 @@
   height: 100dvh;
   min-height: 0;
   overflow: hidden;
-  color: #e5e7eb;
+  color: var(--text-primary);
 }
 
 .auth-app-root--builder {
@@ -68,8 +68,8 @@
 }
 
 .auth-footer--game {
-  background: rgba(0, 0, 0, 0.8);
-  border-top: 1px solid var(--glass-border);
+  background: var(--nav-bg);
+  border-top: 1px solid var(--nav-border);
   backdrop-filter: blur(12px);
 }
 

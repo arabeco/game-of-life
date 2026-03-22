@@ -137,7 +137,7 @@ export const ClanChat: React.FC = () => {
         }
     };
 
-    if (!clan) return <div className="p-4 text-center text-gray-500 text-xs">Você precisa estar em um Clã para acessar o chat.</div>;
+    if (!clan) return <div className="p-4 text-center text-gray-500 text-xs">Voc� precisa estar em um grupo para acessar o chat.</div>;
 
     return (
         <div className="flex flex-col h-full bg-black/20 rounded-lg overflow-hidden border border-white/5">
@@ -151,7 +151,7 @@ export const ClanChat: React.FC = () => {
             >
                 {messages.length === 0 && (
                     <div className="text-center text-gray-600 text-xs italic mt-4">
-                        Nenhuma mensagem ainda. Diga olá para seu clã!
+                        Nenhuma mensagem ainda. Diga oi no grupo!
                     </div>
                 )}
                 
@@ -191,7 +191,7 @@ export const ClanChat: React.FC = () => {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Mensagem para o clã..."
+                    placeholder="Mensagem para o grupo..."
                     className="flex-1 bg-black/30 border border-white/10 rounded-full px-4 py-2 text-xs text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 transition-colors placeholder-gray-600"
                 />
                 <button 

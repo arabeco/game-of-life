@@ -31,128 +31,11 @@ const relationBadgeClass = (type: 'mentoria' | 'parceria' | 'competicao') =>
             : 'border-rose-400/24 bg-rose-400/12 text-rose-200';
 
 const JoinClanBox: React.FC<{ onCreate: () => void }> = ({ onCreate }) => {
-    /*
-
-
-    const relationshipSubtitleForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
-        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
-    };
-
-    const relationshipIncoming = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.senderId));
-    const relationshipOutgoing = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.recipientId));
-
-    const refreshRelationshipState = async () => {
-        const hub = await fetchRelationshipHubData();
-        setRelationshipInvites(hub.invites || []);
-        setRelationshipLinks(hub.links || []);
-    };
-
-    
-    const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
-
-    const activeRelationshipsForProfile = (profileId: string) =>
-        relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
-
-    const relationshipBadgesForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria' | 'competicao'>;
-
-        return activeTypes.map(type => (
-            <span
-                key={`${profileId}-${type}`}
-                className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(type)}`}
-            >
-                {RELATION_LABELS[type]}
-            </span>
-        ));
-    };
-
-    const relationshipSubtitleForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
-        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
-    };
-
-    const relationshipIncoming = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.senderId));
-    const relationshipOutgoing = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.recipientId));
-
-    const refreshRelationshipState = async () => {
-        const hub = await fetchRelationshipHubData();
-        setRelationshipInvites(hub.invites || []);
-        setRelationshipLinks(hub.links || []);
-    };
-
-    
-    const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
-
-    const activeRelationshipsForProfile = (profileId: string) =>
-        relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
-
-    const relationshipBadgesForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria' | 'competicao'>;
-
-        return activeTypes.map(type => (
-            <span
-                key={`${profileId}-${type}`}
-                className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(type)}`}
-            >
-                {RELATION_LABELS[type]}
-            </span>
-        ));
-    };
-
-    const relationshipSubtitleForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
-        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
-    };
-
-    const relationshipIncoming = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.senderId));
-    const relationshipOutgoing = relationshipInvites.filter(invite => friends.some(friend => friend.id === invite.recipientId));
-
-    const refreshRelationshipState = async () => {
-        const hub = await fetchRelationshipHubData();
-        setRelationshipInvites(hub.invites || []);
-        setRelationshipLinks(hub.links || []);
-    };
-
-    */
-    /*
-    const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
-
-    const activeRelationshipsForProfile = (profileId: string) =>
-        relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
-
-    const relationshipBadgesForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria' | 'competicao'>;
-
-        return activeTypes.map(type => (
-            <span
-                key={`${profileId}-${type}`}
-                className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(type)}`}
-            >
-                {RELATION_LABELS[type]}
-            </span>
-        ));
-    };
-
-    const relationshipSubtitleForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
-        return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
-    };
-
-    const resolveRelationshipProfile = (profileId: string) =>
-        friends.find(friend => friend.id === profileId) ||
-        relationshipProfiles[profileId] ||
-        buildFallbackProfile(profileId);
-
-    const relationshipIncoming = relationshipInvites.filter(invite => invite.recipientId !== invite.senderId);
-    const relationshipOutgoing = relationshipInvites.filter(invite => invite.senderId !== invite.recipientId);
-
-    */
     return (
         <GlassCard variant="neutral" className="text-center p-6 space-y-4" id="clans-section">
-            <h2 className="text-xl font-bold">Você não está em um clã</h2>
-            <p className="text-sm text-gray-400">Junte-se a um clã para participar de missões ou funde o seu próprio para começar uma nova dinastia.</p>
-            <button onClick={onCreate} className="w-full py-2 rounded-xl luxe-skin-button">Fundar Clã</button>
+            <h2 className="text-xl font-bold">Você não está em um grupo</h2>
+            <p className="text-sm text-gray-400">Entre em um grupo para coordenar tarefas em conjunto ou crie o seu para operar em equipe.</p>
+            <button onClick={onCreate} className="w-full py-2 rounded-xl luxe-skin-button">Criar Grupo</button>
         </GlassCard>
     );
 };
@@ -257,7 +140,7 @@ const SocialSearch: React.FC<{
                     type="text"
                     value={query}
                     onChange={handleSearch}
-                    placeholder="Buscar Soberano ou Clã..."
+                    placeholder="Buscar Soberano ou Grupo..."
                     className="w-full p-3 pl-10 bg-black/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors"
                 />
                 <PlusIcon className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -581,7 +464,7 @@ const SocialTab: React.FC = () => {
             )}
 
             <div className="space-y-4">
-                <h3 className="text-center font-bold uppercase tracking-wider text-sm text-gray-400">Aliados e Clãs</h3>
+                <h3 className="text-center font-bold uppercase tracking-wider text-sm text-gray-400">Aliados e Grupos</h3>
                 <SocialSearch friends={friends} onSearchResults={setSearchResults} onQueryChange={setSearchQuery} />
 
                 <div className="flex gap-2">
@@ -603,7 +486,7 @@ const SocialTab: React.FC = () => {
                     <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                         {searchResults.clans.length > 0 && (
                             <div className="space-y-2">
-                                <h4 className="text-xs font-bold text-gray-500">CLÃS ENCONTRADOS</h4>
+                                <h4 className="text-xs font-bold text-gray-500">GRUPOS ENCONTRADOS</h4>
                                 {searchResults.clans.map(c => <ClanSearchResultCard key={c.id} clan={c} onJoin={() => joinClan(c)} />)}
                             </div>
                         )}
@@ -646,7 +529,7 @@ const SocialTab: React.FC = () => {
                         )}
                         {searchResults.players.length === 0 && searchResults.clans.length === 0 && (
                             <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-xs text-gray-500">
-                                Nenhum aliado ou clã encontrado para esse filtro.
+                                Nenhum aliado ou grupo encontrado para esse filtro.
                             </div>
                         )}
                     </div>

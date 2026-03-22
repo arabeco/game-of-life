@@ -16,11 +16,11 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10002] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold uppercase tracking-wider">Entrada no Cl√£</h2>
+                        <h2 className="text-lg font-bold uppercase tracking-wider">Entrada no Grupo</h2>
                         <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-gray-300">
-                        Cada pessoa precisa solicitar a pr√≥pria entrada. O l√≠der s√≥ aprova ou recusa na fila de solicita√ß√µes.
+                        Cada pessoa precisa solicitar a prÛpria entrada. O lÌder sÛ aprova ou recusa na fila de solicitaÁıes.
                     </div>
                     <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                         {availableFriends.length > 0 ? (
@@ -29,18 +29,18 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                                     <img src={friend.avatarUrl} alt={friend.nickname} className="w-10 h-10 rounded-full" />
                                     <div className="flex-grow">
                                         <h4 className="font-bold text-white text-sm">{friend.nickname}</h4>
-                                        <p className="text-xs text-gray-400">N√≠vel {friend.level}</p>
+                                        <p className="text-xs text-gray-400">NÌvel {friend.level}</p>
                                     </div>
                                     <button
-                                        onClick={() => showToast('Essa pessoa precisa abrir o cl√£ e solicitar entrada primeiro.', 'warning')}
+                                        onClick={() => showToast('Essa pessoa precisa abrir o grupo e solicitar entrada primeiro.', 'warning')}
                                         className="px-3 py-1 bg-white/10 text-sm rounded-lg hover:bg-white/20"
                                     >
-                                        S√≥ por solicita√ß√£o
+                                        SÛ por solicitaÁ„o
                                     </button>
                                 </div>
                             ))
                         ) : (
-                            <p className="text-center text-sm text-gray-500 py-4">Nenhum amigo dispon√≠vel fora do cl√£.</p>
+                            <p className="text-center text-sm text-gray-500 py-4">Nenhum amigo disponÌvel fora do grupo.</p>
                         )}
                     </div>
                 </GlassCard>

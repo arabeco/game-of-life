@@ -22,7 +22,7 @@ import { EmojiGlyph } from '../components/EmojiGlyph';
 const DayHeader: React.FC<{ currentDate: Date }> = ({ currentDate }) => {
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' });
     return (
-        <div className="text-center text-[12px] font-semibold text-gray-400 py-2 bg-[#0f0f10] tracking-[0.04em] capitalize border-b border-white/6">
+        <div className="planner-day-header text-center text-[12px] font-semibold text-gray-400 py-2 bg-[#0f0f10] tracking-[0.04em] capitalize border-b border-white/6">
             {day}
         </div>
     );
@@ -251,13 +251,13 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
     };
 
     return (
-        <div className="flex-grow relative bg-[#111] border border-white/10 rounded-3xl p-2 h-full depth-grid" data-testid="daily-timeline">
+        <div className="daily-planner-surface flex-grow relative bg-[#111] border border-white/10 rounded-3xl p-2 h-full depth-grid" data-testid="daily-timeline">
             <div className="flex h-full">
                 <div className="w-12 flex-shrink-0">
-                    {hours.map(hour => (<div key={hour} className="text-right pr-2" style={{ height: `${60 * scaleFactor}px` }}><span className="text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span></div>))}
+                    {hours.map(hour => (<div key={hour} className="text-right pr-2" style={{ height: `${60 * scaleFactor}px` }}><span className="daily-hour-label text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span></div>))}
                 </div>
-                <div className="flex-grow relative border-l border-white/10 h-full">
-                    {hours.slice(0).map((hour, i) => (<div key={hour} className={`relative ${i > 0 ?'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}><div className="absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
+                <div className="daily-grid-column flex-grow relative border-l border-white/10 h-full">
+                    {hours.slice(0).map((hour, i) => (<div key={hour} className={`daily-hour-slice relative ${i > 0 ?'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
                     {tasks.map((task) => <TaskSlot key={task.id} task={task} action={getActionById(task.actionId)} scaleFactor={scaleFactor} operationalDate={operationalDate} onCustomDragStart={onCustomDragStart} onTaskClick={handleTaskClick} />)}
                     {dropIndicator && <DropIndicator top={dropIndicator.top} height={dropIndicator.height} className="w-[calc(100%-0.5rem)] right-2" />}
                     {isToday && timeIndicatorTop >= 0 && <CurrentTimeIndicator ref={timeIndicatorRef} top={timeIndicatorTop} />}
@@ -1202,35 +1202,35 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const bayGridRows = isSingleRow ?'grid-rows-1' : 'grid-rows-2';
 
     return (
-        <div id="planner-container" className="relative flex flex-col h-full min-h-0 bg-[#0d0d0e] overflow-visible">
+        <div id="planner-container" className="planner-root relative flex flex-col h-full min-h-0 bg-[#0d0d0e] overflow-visible">
             {dragState.isDragging && (
                 <div style={{ position: 'fixed', top: dragState.currentPosition.y, left: dragState.currentPosition.x, transform: `translate(-${dragState.pointerOffset.x}px, -${dragState.pointerOffset.y}px)`, pointerEvents: 'none', zIndex: 1000 }}>
                     {dragState.ghostElement}
                 </div>
             )}
 
-            <div className="sticky top-0 z-30 flex-shrink-0 bg-[#0f0f10]/95 backdrop-blur-md border-b border-white/6 transition-all duration-300 relative pt-2 shadow-[0_10px_24px_rgba(0,0,0,0.28)]">
+            <div className="planner-top-shell sticky top-0 z-30 flex-shrink-0 bg-[#0f0f10]/95 backdrop-blur-md border-b border-white/6 transition-all duration-300 relative pt-2 shadow-[0_10px_24px_rgba(0,0,0,0.28)]">
                 <div className="bg-transparent">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 text-lg font-bold h-11 mt-1">
                         <div className="flex items-center space-x-1 min-w-0" id="planner-tools">
-                            <button onClick={() => setChecklistVisible(true)} className="p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors">
+                            <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors">
                                 {allTasksCompleted ?<FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}
                             </button>
-                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
+                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
                                 <LightbulbIcon className="w-4 h-4" />
                             </button>
-                            <button id="report-button" onClick={onReportsClick} className="p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
+                            <button id="report-button" onClick={onReportsClick} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
                                 <ClockIcon className="w-4 h-4" />
                             </button>
                         </div>
                         <div className="flex min-w-0 items-center justify-center space-x-0.5" id="cycle-hud">
-                            <button onClick={() => changeDate(-1)} className="p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
-                            <span className="tracking-[0.06em] text-[12px] font-semibold w-[5.75rem] text-center text-gray-200 capitalize truncate">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
-                            <button onClick={() => changeDate(1)} className="p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
+                            <button onClick={() => changeDate(-1)} className="planner-soft-control p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
+                            <span className="planner-date-label tracking-[0.06em] text-[12px] font-semibold w-[5.75rem] text-center text-gray-200 capitalize truncate">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
+                            <button onClick={() => changeDate(1)} className="planner-soft-control p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
                         </div>
-                        <div className="flex items-center justify-self-end bg-white/[0.03] rounded-full p-0.5 text-[10px] border border-white/6" id="view-mode-selector">
-                            <button onClick={() => setViewMode('day')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'day' ?'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Dia</button>
-                            <button id="eras-button" onClick={() => setViewMode('week')} className={`px-2.5 py-1 rounded-full transition-colors ${viewMode === 'week' ?'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Semana</button>
+                        <div className="planner-pill-switch flex items-center justify-self-end bg-white/[0.03] rounded-full p-0.5 text-[10px] border border-white/6" id="view-mode-selector">
+                            <button data-active={viewMode === 'day'} onClick={() => setViewMode('day')} className={`planner-view-btn px-2.5 py-1 rounded-full transition-colors ${viewMode === 'day' ?'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Dia</button>
+                            <button data-active={viewMode === 'week'} id="eras-button" onClick={() => setViewMode('week')} className={`planner-view-btn px-2.5 py-1 rounded-full transition-colors ${viewMode === 'week' ?'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Semana</button>
                         </div>
                     </div>
 
@@ -1263,7 +1263,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
             <div
                 ref={scrollContainerRef}
-                className="flex-grow min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
+                className="planner-scroll-surface flex-grow min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
                 style={{ scrollBehavior: 'smooth' }}
             >
                 <div className={dragState.isDragging ?'pointer-events-auto' : ''}>
@@ -1304,7 +1304,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                         onChange={(e) => setOracleInput(e.target.value)}
                                         onKeyDown={handleKeyDown}
                                         placeholder={'A\u00E7\u00E3o @ Arena...'}
-                                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 placeholder-gray-500"
+                                        className="planner-oracle-input flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 placeholder-gray-500"
                                     />
                                     <button
                                         onClick={handleOracleSubmit}
@@ -1313,7 +1313,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                         <PlusIcon className="w-4 h-4" />
                                     </button>
                                 </div>
-                                <div className="text-[10px] text-gray-400 px-1">
+                                <div className="planner-oracle-helper text-[10px] text-gray-400 px-1">
                                     Ex: "Ler Livro @ Estudos" ou apenas "Ler Livro"
                                 </div>
                             </div>
@@ -1321,19 +1321,19 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     </div>
                 )}
 
-                <div className="flex flex-col items-center bg-black/50 backdrop-blur-lg border border-white/8 rounded-full p-1 space-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
+                <div className="planner-floating-stack flex flex-col items-center bg-black/50 backdrop-blur-lg border border-white/8 rounded-full p-1 space-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
                     <button
                         id="focus-mode-button"
                         onClick={() => setShowOracleInput(!showOracleInput)}
-                        className={`p-2 rounded-full transition-all ${showOracleInput ?'bg-[var(--skin-accent-color)] text-black' : 'text-white hover:bg-white/10'}`}
+                        className={`planner-soft-control p-2 rounded-full transition-all ${showOracleInput ?'bg-[var(--skin-accent-color)] text-black' : 'text-white hover:bg-white/10'}`}
                         title="Adicionar por texto"
                     >
                         <span className="text-lg">{'\u{1F4DD}'}</span>
                     </button>
                     <div className="w-full h-px bg-white/10 my-1"></div>
-                    <button onClick={() => setZoomLevel(prev => Math.min(3, prev + 1) as 1 | 2 | 3)} disabled={zoomLevel === 3} className="p-2 disabled:opacity-50"><PlusIcon className="w-5 h-5" /></button>
-                    <span className="font-bold text-xs text-white">{zoomLevel}x</span>
-                    <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="p-2 disabled:opacity-50"><MinusIcon className="w-5 h-5" /></button>
+                    <button onClick={() => setZoomLevel(prev => Math.min(3, prev + 1) as 1 | 2 | 3)} disabled={zoomLevel === 3} className="planner-soft-control p-2 disabled:opacity-50"><PlusIcon className="w-5 h-5" /></button>
+                    <span className="planner-date-label font-bold text-xs text-white">{zoomLevel}x</span>
+                    <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="planner-soft-control p-2 disabled:opacity-50"><MinusIcon className="w-5 h-5" /></button>
                 </div>
                 <button onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
             </div>

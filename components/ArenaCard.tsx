@@ -434,8 +434,11 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         </div>
                         <div className="relative h-[1.64rem] w-full">
                             <span
-                                className="absolute -left-[0.34rem] top-[0.1rem] z-[3] inline-flex h-[1.26rem] w-[1.26rem] items-center justify-center rounded-full border bg-black/34 shadow-[0_6px_14px_rgba(0,0,0,0.24)]"
-                                style={{ borderColor: skinColor }}
+                                className="absolute -left-[0.34rem] top-[0.1rem] z-[3] inline-flex h-[1.26rem] w-[1.26rem] items-center justify-center rounded-full border shadow-[0_6px_14px_rgba(0,0,0,0.24)]"
+                                style={{
+                                    borderColor: skinColor,
+                                    background: `linear-gradient(160deg, ${rgbaString(accentColor, 0.52)} 0%, ${rgbaString(accentColor, 0.24)} 100%)`,
+                                }}
                             >
                                 <span className="arena-icon arena-thumb-header-icon" style={{ lineHeight: 0 }}>
                                     {getIcon()}

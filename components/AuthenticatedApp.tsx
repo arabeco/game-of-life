@@ -394,7 +394,9 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
     const mainPaddingBottom = currentView === 'assets'
         ?'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
-    const themeClass = activeUIMode === 'BASIC' ?`mode-office theme-${(activeTheme || 'DARK').toLowerCase()}` : '';
+    const themeClass = activeUIMode === 'BASIC'
+        ? `mode-office theme-${(activeTheme || 'DARK').toLowerCase()}`
+        : `mode-game theme-${(activeTheme || 'DARK').toLowerCase()}`;
 
     useLayoutEffect(() => {
         const skin = activeUIMode === 'BASIC' ?'default' : userProfile.skin;

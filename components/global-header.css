@@ -50,3 +50,42 @@
   border: 1px solid var(--skin-accent-color);
   transition: transform 0.2s ease;
 }
+
+.mode-game.theme-light .shell-header {
+  background: linear-gradient(to bottom, rgba(251, 245, 236, 0.94), rgba(247, 239, 226, 0.72), transparent);
+  backdrop-filter: blur(8px);
+}
+
+.mode-game.theme-light .shell-header > div {
+  color: var(--game-muted-text);
+}
+
+.mode-game.theme-light .shell-chip {
+  border-color: rgba(128, 98, 49, 0.16);
+  background: rgba(255, 249, 240, 0.82);
+  box-shadow: 0 10px 22px rgba(122, 91, 34, 0.1);
+}
+
+.mode-game.theme-light .shell-float-button {
+  background: rgba(250, 244, 235, 0.9);
+  border-color: rgba(128, 98, 49, 0.16);
+  box-shadow: 0 10px 24px rgba(122, 91, 34, 0.12);
+}
+
+.mode-game.theme-light .shell-float-button:hover {
+  background: rgba(255, 250, 244, 0.98);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+.mode-game.theme-light .shell-level-badge {
+  background: rgba(248, 241, 229, 0.96);
+  box-shadow: 0 4px 14px rgba(122, 91, 34, 0.12);
+}
+
+.mode-game.theme-light .shell-level-badge > span {
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .shell-header [class*="bg-black/40"] {
+  background: rgba(122, 91, 34, 0.16) !important;
+}

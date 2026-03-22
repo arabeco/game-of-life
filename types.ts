@@ -665,7 +665,7 @@ export interface Clan {
   created_at?: string;
   privacy: 'open' | 'invite-only' | 'closed';
   recruitmentStatus?: RecruitmentStatus;
-  slotConfig?: Record<string, { label: string; emoji: string }>;
+  slotConfig?: Record<string, { label: string; emoji: string; note?: string }>;
 }
 
 export interface ClanMember {

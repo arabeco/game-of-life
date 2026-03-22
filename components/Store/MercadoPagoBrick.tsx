@@ -368,9 +368,9 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/80 p-4 animate-fade-in backdrop-blur-md">
-                <GlassCard className="relative flex max-h-[86vh] w-full max-w-md flex-col overflow-hidden rounded-[30px] border-[var(--skin-accent-color)]/20 shadow-2xl">
-                    <div className="flex items-center justify-between border-b border-white/10 bg-black/40 p-3 backdrop-blur-md">
+            <div className="mercado-pago-modal fixed inset-0 z-[11000] flex items-center justify-center bg-black/80 p-4 animate-fade-in backdrop-blur-md">
+                <GlassCard className="mercado-pago-sheet relative flex max-h-[86vh] w-full max-w-md flex-col overflow-hidden rounded-[30px] border-[var(--skin-accent-color)]/20 shadow-2xl">
+                    <div className="mercado-pago-header flex items-center justify-between border-b border-white/10 bg-black/40 p-3 backdrop-blur-md">
                         <div>
                             <h2 className="text-lg font-black uppercase tracking-tight text-white">
                                 {paymentResult ? (creditDetected ? 'Pagamento Confirmado' : 'Aguardando Pagamento') : 'Pagamento Seguro'}
@@ -384,7 +384,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                         </button>
                     </div>
 
-                    <div className="custom-scrollbar flex min-h-[320px] flex-1 flex-col overflow-y-auto bg-black/60 p-2 scroll-smooth">
+                    <div className="mercado-pago-body custom-scrollbar flex min-h-[320px] flex-1 flex-col overflow-y-auto bg-black/60 p-2 scroll-smooth">
                         {!paymentResult ? (
                             <div className="relative flex flex-1 flex-col gap-5 px-4 py-8">
                                 <div className="space-y-2 text-center">
@@ -425,7 +425,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 </div>
 
                                 {checkoutStep === 'payer' && (
-                                    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                    <div className="mercado-pago-panel space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                                         <div className="rounded-2xl border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/8 px-4 py-3">
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
@@ -496,7 +496,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                                     value={firstNameInput}
                                                     onChange={(event) => setFirstNameInput(event.target.value)}
                                                     disabled={loading}
-                                                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
+                                                    className="mercado-pago-input w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -510,7 +510,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                                     value={lastNameInput}
                                                     onChange={(event) => setLastNameInput(event.target.value)}
                                                     disabled={loading}
-                                                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
+                                                    className="mercado-pago-input w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
                                                 />
                                             </div>
                                         </div>
@@ -527,7 +527,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                                 value={cpfInput}
                                                 onChange={(event) => setCpfInput(formatCpf(event.target.value))}
                                                 disabled={loading}
-                                                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
+                                                className="mercado-pago-input w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
                                             />
                                         </div>
 
@@ -543,7 +543,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                                 value={emailInput}
                                                 onChange={(event) => setEmailInput(event.target.value)}
                                                 disabled={loading}
-                                                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
+                                                className="mercado-pago-input w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-gray-600 focus:border-[var(--skin-accent-color)]"
                                             />
                                         </div>
 
@@ -607,12 +607,12 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                     </div>
                                 </div>
 
-                                <div className="w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                <div className="mercado-pago-panel w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                                     <div className="text-left">
                                         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
                                             Codigo Pix copia e cola
                                         </div>
-                                        <div className="mt-2 break-all rounded-xl border border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-white">
+                                        <div className="mercado-pago-copybox mt-2 break-all rounded-xl border border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-white">
                                             {pixQrCode || 'O Mercado Pago ainda nao retornou o codigo copia e cola nesta resposta.'}
                                         </div>
                                     </div>
@@ -645,7 +645,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                     </div>
                                 </div>
 
-                                <div className="w-full space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                                <div className="mercado-pago-panel w-full space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
                                     <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
                                         <span className="text-gray-500">Status</span>
                                         <span className={creditDetected ? 'text-emerald-400' : 'animate-pulse text-yellow-500'}>
@@ -674,7 +674,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     </div>
 
                     {loading && (
-                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5 bg-black/82 px-6 py-12 text-center backdrop-blur-md">
+                        <div className="mercado-pago-processing absolute inset-0 z-30 flex flex-col items-center justify-center gap-5 bg-black/82 px-6 py-12 text-center backdrop-blur-md">
                             <div className="h-12 w-12 rounded-full border-4 border-[var(--skin-accent-color)] border-t-transparent animate-spin" />
                             <div className="space-y-2">
                                 <div className="text-[10px] font-black uppercase tracking-[0.26em] text-[var(--skin-accent-color)]">
@@ -690,7 +690,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                         </div>
                     )}
 
-                    <div className="border-t border-white/5 bg-black/40 p-2 text-center backdrop-blur-md">
+                    <div className="mercado-pago-footer border-t border-white/5 bg-black/40 p-2 text-center backdrop-blur-md">
                         <p className="text-[8px] font-bold uppercase tracking-[0.4em] text-gray-500 opacity-40">
                             Tecnologia Mercado Pago - Pix Instantaneo
                         </p>

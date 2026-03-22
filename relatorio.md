@@ -1,5 +1,5 @@
 ============================================================
-           GLYPH: MASTER SYSTEM STATE (19/03/26)
+           GLYPH: MASTER SYSTEM STATE (22/03/26)
 ============================================================
 STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
 FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
@@ -12,21 +12,25 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 - Trilha oficial do Marco 1: `T1 Fundacao -> T2 O Cerco -> T3 A Ascensao`.
 
 ## 2. SCORECARD DE AUDITORIA
-- **EXECUCAO REAL: 9.6** (Build/Type-check ok. PIX real validado com credito de ouro, laboratorio de notificacoes funcional e RestScreen mais util no uso diario).
-- **ID VISUAL: 9.5** (Login, GM Board, Perfil, Central de Vinculos e vitrine de Legado mais coerentes no padrao luxe).
-- **FLUXO USUARIO: 9.5** (Conta real Google/Bilhete, onboarding e exclusao validados. PIX, Social/Solicitacoes e mentoria basica ficaram mais claros. Pendente: e-mail/Convite e D2).
+- **EXECUCAO REAL: 9.7** (Build/Type-check ok. Economia social sem slots aplicada, board de Grupo mais operacional e `ArenasView` blindada no mobile).
+- **ID VISUAL: 9.6** (Miniaturas/lista de arenas, Grupo e Legado mais coerentes no padrao luxe).
+- **FLUXO USUARIO: 9.6** (ArenasView mais util, Grupo menos hibrido e camada social mais simples. Pendente: `e-mail/Convite`, QA em `2 contas` e D2).
 - **RETENCAO: --** (Aguardando Beta)
 - **AQUISICAO: --** (Aguardando Videos)
 
 ## 3. STATUS DE ENTREGA (CONCLUIDO NESTE CICLO)
-[x] Fechar o laboratorio de notificacoes do GM com 3 botoes previsiveis (`Sistema Agora`, `Card do Oraculo`, `Sistema + Push 15s`) e destaque correto em `Avisos`/Oraculo. - Responsavel: PROTOCOLO
-[x] Validar o PIX real do Mercado Pago ate o credito de ouro na conta, com QR funcional, status em pt-BR, toast de sucesso e fechamento automatico apos a aprovacao. - Responsavel: PROTOCOLO
-[x] Adicionar atalho por `hold` da `Checklist` na `RestScreen`, abrindo a lista por cima da tela de descanso e zerando no reset operacional das `04:00`. - Responsavel: PROTOCOLO
-[x] Subir `Humor` + `Rascunho operacional` na `RestScreen`, com salvamento por dia operacional em `daily_commitments.operational_scratch`. - Responsavel: PROTOCOLO
+[v] Fechar o laboratorio de notificacoes do GM com 3 botoes previsiveis (`Sistema Agora`, `Card do Oraculo`, `Sistema + Push 15s`) e destaque correto em `Avisos`/Oraculo. - Responsavel: PROTOCOLO
+[v] Validar o PIX real do Mercado Pago ate o credito de ouro na conta, com QR funcional, status em pt-BR, toast de sucesso e fechamento automatico apos a aprovacao. - Responsavel: PROTOCOLO
+[v] Adicionar atalho por `hold` da `Checklist` na `RestScreen`, abrindo a lista por cima da tela de descanso e zerando no reset operacional das `04:00`. - Responsavel: PROTOCOLO
+[v] Subir `Humor` + `Rascunho operacional` na `RestScreen`, com salvamento por dia operacional em `daily_commitments.operational_scratch`. - Responsavel: PROTOCOLO
+[x] Desligar a economia de `slots` e consolidar a camada social em Ouro direto (`Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50`), com SQL aplicado e copy publica puxada para `Campanha`/`Grupo`. - Responsavel: PROTOCOLO
+[x] Integrar `Tarefas do grupo` ao board oficial de arenas: quest/tarefa aceita vira arena real, abre `ArenaDetailModal` e limpa participacao/arena vazia no retorno. - Responsavel: PROTOCOLO
+[x] Entregar o `modo lista` da `ArenasView`, restaurar o scroll vertical mobile e preservar reorder em `Livre/Prioridades`, com expandir de todas as acoes por arena. - Responsavel: PROTOCOLO
+[x] Lapidar a visualizacao compacta das arenas no mobile: card achatado, tipografia/icone ajustados, badge do ativo nos circulos e limpeza do modulo `Grupo`/copy publica residual. - Responsavel: PROTOCOLO
 
 ## 4. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
 ### COMANDO (METAS IMEDIATAS & DONO)
-[ ] Rodar o QA final da `Mentoria basica` em `2 contas`: convite, aceite, recusa, revogacao, refund, abertura da relacao, arena extra por `50 ouro` e campanha exclusiva por `300 ouro`. - Responsavel: SENTINELA
+[ ] Rodar o QA final da `Mentoria basica` em `2 contas`: convite, aceite, recusa, revogacao, refund, abertura da relacao, arena extra por `50 ouro` e campanha exclusiva por `100 ouro`, sem slots. - Responsavel: SENTINELA
 [ ] Validar `Solicitacoes` no Social com amizade + vinculo no mesmo lugar, badge de relacao no card do amigo e notificacao/push coerentes no fluxo. - Responsavel: SENTINELA
 [ ] Fechar a conta nova real restante: ramo `e-mail/Convite` e primeiro retorno `D2` sem ruido. - Responsavel: TRONO
 [ ] Rodar a passada final de QA mobile em `Season`, `Genesis/Aurora` e hierarquia visual das vitrines para congelar o padrao. - Responsavel: SENTINELA
@@ -44,8 +48,8 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Fazer uma vistoria do site/landing para alinhar copy, fluxo e apresentacao publica antes de empurrar mais trafego.
 
 ### TESOURO (Produto & Economia)
-[ ] Fechar a regra economica da camada social: `Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50` e decidir depois se existe `mentoria vitalicia/master`. - Responsavel: TESOURO
-[ ] Validar em uso real se essa leitura de Ouro + arenas + campanhas sustenta bem o produto sem voltar a baguncar a loja. - Responsavel: TESOURO
+[ ] Validar em uso real a leitura de Ouro direto da camada social (`Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50`) e garantir que nenhuma copy/regra de slot reapareca. - Responsavel: TESOURO
+[ ] Decidir so os complementos da economia leve (`campanha para outro`, `cosmetico`, `aceleracao`) sem reintroduzir slots ou micro-regras. - Responsavel: TESOURO
 
 ## 5. MARCO 1: PROVA (DEZ/2026)
 - Tese: se o T1 falhar, o restante do Marco 1 perde base.
@@ -75,9 +79,9 @@ Monitor complementar:
 [ ] Friccao mobile critica (P0/P1): 0/0
 
 ## 7. RESUMO ATUALIZADO
-- Data: 19/03/2026
+- Data: 22/03/2026
 - Atualizado por: GPT-5 Codex
-- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e o fechamento de 19/03 foi enxugado para destacar so as 4 vitorias mais relevantes do dia: laboratorio de notificacoes funcional, PIX real com QR e credito de ouro, atalho por hold da Checklist na `RestScreen` e `Humor` com `Rascunho operacional` salvo por dia operacional. O foco de amanha ficou claro: QA final da mentoria basica em duas contas, validacao de `Solicitacoes` no Social, teste real de e-mail no GM Panel, conta nova com `D2` sem ruido e martelo final na economia social.
+- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e o fechamento de 22/03 consolidou a frente estrutural do produto: camada social convertida para Ouro direto sem slots, `Clã -> Grupo` puxado para o board oficial de arenas, `Tarefas do grupo` virando arenas reais e `ArenasView` ficando mais operacional com scroll mobile restaurado, modo lista e miniaturas compactas melhores. O foco seguinte ficou claro: QA real da mentoria em `2 contas`, validacao de `Solicitacoes`, prova real do ramo `e-mail/Convite`, GM Panel/e-mail e a ultima passada de polimento mobile/Season.
 - Texto do relatorio: atualizado a cada fechamento.
 
 ## 8. MODO DE USO DO RELATORIO
@@ -102,11 +106,11 @@ Monitor complementar:
 12. So converter `[x]` em `[v]` e mover `[v]` para `progresso.md` quando eu pedir claramente para `fechar o dia`, `fechar ciclo` ou equivalente.
 
 ## 9. BLOQUEIOS ATUAIS (ABERTOS)
-[ ] Mentoria basica ainda pede a rodada final em `2 contas`, com refund, arena extra, campanha e leitura da relacao no Social.
+[ ] Mentoria basica ainda pede a rodada final em `2 contas`, com refund, arena extra `50 ouro`, campanha `100 ouro` e leitura da relacao no Social.
 [ ] Conta nova real ainda pede fechamento do ramo `e-mail/Convite` e prova do primeiro retorno `D2`.
 [ ] GM Panel ainda pede prova real de entrega de e-mail.
 [ ] Acabamento final mobile ainda pede ultima passada em `Season`, `Genesis/Aurora`, pt-BR residual e hierarquia visual.
-[ ] Economia social ainda precisa de decisao final para nao voltar a fragmentar o produto.
+[ ] Economia social agora pede validacao em uso real para garantir que o modelo de Ouro direto segure sem reintroduzir slot ou micro-regra.
 
 Legenda rapida:
 - `[ ]` = pendente

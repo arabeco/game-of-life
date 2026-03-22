@@ -5,6 +5,7 @@
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
+  --app-background: linear-gradient(to bottom, #111111, #000000);
   --tier-1-comum:     #9CA3AF;
   --tier-2-incomum:   #22C55E;
   --tier-3-raro:      #3B82F6;
@@ -27,7 +28,7 @@
   --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
   --card-border: 1px solid rgba(255, 255, 255, 0.1);
   --nav-bg: rgba(0, 0, 0, 0.8);
-  --nav-border: 1px solid rgba(255, 255, 255, 0.1);
+  --nav-border: rgba(255, 255, 255, 0.1);
 }
 
 /* Office Mode Variables - Light Theme */
@@ -44,7 +45,7 @@
   --font-body: "Inter", sans-serif;
   --card-border: 1px solid #e5e7eb;
   --nav-bg: #ffffff;
-  --nav-border: 1px solid #e5e7eb;
+  --nav-border: #e5e7eb;
 }
 
 /* Office Mode Variables - Dark Theme */
@@ -61,7 +62,52 @@
   --font-body: "Inter", sans-serif;
   --card-border: 1px solid #334155;
   --nav-bg: #0f172a;
-  --nav-border: 1px solid #334155;
+  --nav-border: #334155;
+}
+
+/* Game Mode Variables - Light Theme */
+.mode-game.theme-light {
+  --bg-primary: #f8f4ec;
+  --bg-secondary: rgba(255, 250, 244, 0.84);
+  --text-primary: #23190c;
+  --text-secondary: #665741;
+  --glass-bg: rgba(255, 251, 246, 0.78);
+  --glass-border: rgba(122, 91, 34, 0.18);
+  --glass-border-light: rgba(163, 126, 58, 0.28);
+  --nav-bg: linear-gradient(180deg, rgba(249, 243, 232, 0.97), rgba(240, 230, 214, 0.93));
+  --nav-border: rgba(122, 91, 34, 0.14);
+  --sephirot-glow-color: rgba(212, 175, 55, 0.14);
+  --app-background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 32%),
+    linear-gradient(180deg, #fcfaf5 0%, #f1e8da 52%, #e7dbc7 100%);
+  --game-surface: rgba(255, 251, 244, 0.8);
+  --game-surface-strong: rgba(246, 239, 229, 0.94);
+  --game-panel: rgba(251, 245, 237, 0.95);
+  --game-border: rgba(128, 98, 49, 0.16);
+  --game-border-strong: rgba(128, 98, 49, 0.26);
+  --game-shadow: rgba(104, 80, 38, 0.12);
+  --game-grid-line: rgba(122, 91, 34, 0.1);
+  --game-muted-text: #77654a;
+  --game-soft-text: #97815f;
+  --planner-top-bg: rgba(249, 243, 232, 0.95);
+  --planner-scroll-bg: linear-gradient(180deg, rgba(252, 249, 243, 0.96), rgba(238, 229, 214, 0.96));
+  --planner-surface-bg: linear-gradient(180deg, rgba(255, 252, 248, 0.96), rgba(242, 235, 225, 0.92));
+  --planner-surface-inner: linear-gradient(135deg, rgba(255, 255, 255, 0.52), rgba(194, 178, 153, 0.08));
+  --modal-overlay: rgba(82, 61, 30, 0.24);
+}
+
+/* Game Mode Variables - Dark Theme */
+.mode-game.theme-dark {
+  --bg-primary: #000000;
+  --bg-secondary: rgba(255, 255, 255, 0.05);
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --glass-bg: rgba(26, 26, 26, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-light: rgba(255, 255, 255, 0.2);
+  --nav-bg: rgba(0, 0, 0, 0.8);
+  --nav-border: rgba(255, 255, 255, 0.1);
+  --app-background: linear-gradient(to bottom, #111111, #000000);
 }
 
 html, body, #root {
@@ -76,11 +122,12 @@ body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   background-color: var(--bg-primary);
+  background: var(--app-background) !important;
   color: var(--text-primary);
   font-family: var(--font-body);
   text-rendering: optimizeLegibility;
   font-synthesis-weight: none;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, background 0.3s ease;
 }
 
 /* Global Font Overrides for Office Mode */
@@ -105,6 +152,250 @@ body {
   background: var(--bg-secondary) !important;
   border: var(--card-border) !important;
   backdrop-filter: none !important;
+}
+
+.mode-game.theme-light .glass-card,
+.mode-game.theme-light .glass-panel {
+  background: var(--glass-bg) !important;
+  border-color: var(--glass-border) !important;
+}
+
+.mode-game.theme-light .dossier-bg {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.2) 38%, transparent 66%),
+    linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(240, 231, 216, 0.96));
+}
+
+.mode-game.theme-light .depth-grid {
+  background: var(--planner-surface-bg) !important;
+  box-shadow:
+    0 18px 40px var(--game-shadow),
+    0 6px 16px rgba(255, 255, 255, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42) !important;
+}
+
+.mode-game.theme-light .depth-grid::before {
+  border-color: rgba(128, 98, 49, 0.12) !important;
+  background: var(--planner-surface-inner) !important;
+}
+
+.mode-game.theme-light .depth-grid::after {
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.72), transparent 55%) !important;
+  opacity: 0.46 !important;
+}
+
+.mode-game.theme-light .arena-plate-header {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgba(122, 91, 34, 0.1);
+}
+
+.mode-game.theme-light .arena-plate-progress {
+  background: rgba(122, 91, 34, 0.18);
+}
+
+.mode-game.theme-light .luxe-button-secondary:hover {
+  background-color: rgba(122, 91, 34, 0.08);
+  border-color: var(--glass-border-light);
+}
+
+.mode-game.theme-light #planner-container {
+  color: var(--text-primary);
+}
+
+.mode-game.theme-light #planner-container .planner-top-shell {
+  background: var(--planner-top-bg) !important;
+  border-bottom-color: rgba(128, 98, 49, 0.12) !important;
+  box-shadow: 0 10px 24px rgba(125, 96, 49, 0.08) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-day-header {
+  background: rgba(244, 236, 223, 0.92) !important;
+  color: var(--game-muted-text) !important;
+  border-bottom-color: rgba(128, 98, 49, 0.12) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-scroll-surface {
+  background: var(--planner-scroll-bg) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-soft-control {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-soft-control:hover {
+  color: var(--text-primary) !important;
+  background: rgba(122, 91, 34, 0.08) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-date-label {
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-pill-switch {
+  background: rgba(255, 248, 239, 0.8) !important;
+  border-color: rgba(128, 98, 49, 0.14) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-pill-switch .planner-view-btn {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-pill-switch .planner-view-btn[data-active="true"] {
+  background: rgba(122, 91, 34, 0.14) !important;
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light #planner-container .daily-planner-surface,
+.mode-game.theme-light #planner-container .weekly-planner-grid {
+  background: var(--planner-surface-bg) !important;
+  border-color: rgba(128, 98, 49, 0.14) !important;
+}
+
+.mode-game.theme-light #planner-container .daily-hour-label,
+.mode-game.theme-light #planner-container .weekly-hour-label {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light #planner-container .daily-grid-column,
+.mode-game.theme-light #planner-container .weekly-col {
+  border-left-color: rgba(128, 98, 49, 0.12) !important;
+}
+
+.mode-game.theme-light #planner-container .daily-hour-slice,
+.mode-game.theme-light #planner-container .weekly-hour-slice {
+  border-top-color: rgba(128, 98, 49, 0.12) !important;
+}
+
+.mode-game.theme-light #planner-container .daily-quarter-line,
+.mode-game.theme-light #planner-container .weekly-quarter-line {
+  border-top-color: rgba(128, 98, 49, 0.07) !important;
+}
+
+.mode-game.theme-light #planner-container .weekly-day-header {
+  background: rgba(244, 236, 223, 0.92) !important;
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-oracle-input {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(128, 98, 49, 0.18) !important;
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-oracle-input::placeholder {
+  color: rgba(103, 86, 62, 0.6) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-oracle-helper {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light #planner-container .planner-floating-stack {
+  background: rgba(247, 240, 229, 0.94) !important;
+  border-color: rgba(128, 98, 49, 0.14) !important;
+  box-shadow: 0 12px 26px rgba(122, 91, 34, 0.12) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal {
+  color: var(--text-primary);
+}
+
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-sheet {
+  border-color: rgba(128, 98, 49, 0.18) !important;
+  box-shadow: 0 20px 40px rgba(122, 91, 34, 0.14) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-header,
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-footer {
+  background: rgba(247, 240, 229, 0.94) !important;
+  border-color: rgba(128, 98, 49, 0.12) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-body,
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-panel {
+  background: rgba(249, 243, 235, 0.94) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-copybox {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(128, 98, 49, 0.16) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-input {
+  background: rgba(255, 255, 255, 0.84) !important;
+  border-color: rgba(128, 98, 49, 0.16) !important;
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-input::placeholder {
+  color: rgba(103, 86, 62, 0.58) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-processing {
+  background: rgba(249, 243, 232, 0.9) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal .text-white {
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .mercado-pago-modal .text-gray-300,
+.mode-game.theme-light .mercado-pago-modal .text-gray-400,
+.mode-game.theme-light .mercado-pago-modal .text-gray-500,
+.mode-game.theme-light .mercado-pago-modal .text-white\/40,
+.mode-game.theme-light .mercado-pago-modal .text-white\/56,
+.mode-game.theme-light .mercado-pago-modal .text-white\/80 {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light .arena-detail-modal-overlay {
+  background: rgba(82, 61, 30, 0.24) !important;
+}
+
+.mode-game.theme-light .arena-detail-modal-root {
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,0.78), rgba(255,255,255,0.18) 24%, transparent 46%),
+    radial-gradient(circle at 18% 14%, rgba(255,255,255,0.34), transparent 26%),
+    radial-gradient(circle at 100% 100%, rgba(212,175,55,0.12), transparent 42%),
+    linear-gradient(160deg, rgba(255,255,255,0.94) 0%, rgba(244,238,229,0.96) 24%, rgba(229,220,205,0.98) 76%, rgba(214,202,182,0.98) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.64),
+    inset 0 -1px 0 rgba(122,91,34,0.12),
+    0 16px 34px rgba(122,91,34,0.14),
+    0 3px 8px rgba(122,91,34,0.16) !important;
+}
+
+.mode-game.theme-light .arena-detail-modal .arena-detail-modal-header,
+.mode-game.theme-light .arena-detail-modal .arena-link-panel,
+.mode-game.theme-light .arena-detail-modal .arena-detail-field-card {
+  background: rgba(248, 242, 233, 0.86) !important;
+  border-color: rgba(128, 98, 49, 0.14) !important;
+}
+
+.mode-game.theme-light .arena-detail-modal .arena-detail-section-label {
+  background: rgba(241, 233, 220, 0.96) !important;
+}
+
+.mode-game.theme-light .arena-detail-modal .text-white {
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .arena-detail-modal .text-gray-300,
+.mode-game.theme-light .arena-detail-modal .text-gray-400,
+.mode-game.theme-light .arena-detail-modal .text-gray-500,
+.mode-game.theme-light .arena-detail-modal .text-white\/72 {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light .arena-detail-modal [class*="bg-black/20"],
+.mode-game.theme-light .arena-detail-modal [class*="bg-black/25"],
+.mode-game.theme-light .arena-detail-modal [class*="bg-black/30"],
+.mode-game.theme-light .arena-detail-modal [class*="bg-black/35"],
+.mode-game.theme-light .arena-detail-modal [class*="bg-black/40"],
+.mode-game.theme-light .arena-detail-modal [class*="bg-black/50"],
+.mode-game.theme-light .arena-detail-modal [class*="bg-black/70"] {
+  background-color: rgba(246, 239, 228, 0.82) !important;
 }
 
 /* Custom Scrollbar */

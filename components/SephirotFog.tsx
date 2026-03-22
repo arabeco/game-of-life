@@ -198,7 +198,6 @@ const fragmentShaderSource = `
                  float electric = pow(noiseVal, electricExp);
                  
                  // B. Smoke Body
-                 // Increased exponent to 5.0 to make the smoke much more transparent/less dense.
                  float smokeExp = 5.0;
                  float smoke = pow(noiseVal, smokeExp) * (0.05 + (level / 10.0) * 0.75);
 
@@ -215,7 +214,6 @@ const fragmentShaderSource = `
                  // Radial Fade
                  float fade = 1.0 - smoothstep(0.0, radiusBase * reach, dist);
                  fade = pow(fade, 1.2); // Softer fade, stays visible longer
-
                  // Intensity: Muito mais foda (Level 10: 5.5, Level 1: 2.5)
                  float intensityMult = 2.5 + (level / 10.0) * 3.0;
 
@@ -306,7 +304,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
 
     startTimeRef.current = null;
 
-    const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+    const gl = canvas.getContext('webgl', { alpha: true });
     if (!gl) {
       console.error('WebGL not supported');
       return;
@@ -345,6 +343,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
 
     programRef.current = program;
     gl.useProgram(program);
+    gl.clearColor(0, 0, 0, 0);
 
     // Buffer setup
     const buffer = gl.createBuffer();
@@ -395,6 +394,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
       }
 
       // Draw
+      gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       animationRef.current = requestAnimationFrame(render);
     };
@@ -461,13 +461,16 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
         gl.uniform3fv(uColorLoc.current, new Float32Array(rgb));
     }
 
+    const sephirotMode = mode === 'sephirot';
     const arenaMode = mode === 'arena';
     const officeMode = mode === 'office';
     const windStrength = arenaMode ? 0.35 : 0.0;
     const pointDrift = arenaMode ? 0.03 : 0.0;
     const fieldDrift = arenaMode ? 1.0 : 0.0;
-    const alphaMax = alphaMaxOverride ?? (officeMode ? 0.0 : (arenaMode ? 0.28 : 0.15));
+    const baseAlphaMax = alphaMaxOverride ?? (officeMode ? 0.0 : (arenaMode ? 0.28 : 0.15));
+    const alphaMax = sephirotMode ? baseAlphaMax * 0.72 : baseAlphaMax;
     const coreBoost = arenaMode ? 1.0 : 0.0;
+    const effectiveTintStrength = sephirotMode ? tintStrength * 0.84 : tintStrength;
 
     if (uWindStrengthLoc.current) {
         gl.uniform1f(uWindStrengthLoc.current, windStrength);
@@ -485,7 +488,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
         gl.uniform1f(uCoreBoostLoc.current, coreBoost);
     }
     if (uTintStrengthLoc.current) {
-        gl.uniform1f(uTintStrengthLoc.current, tintStrength);
+        gl.uniform1f(uTintStrengthLoc.current, effectiveTintStrength);
     }
 
     if (uModeLoc.current) {

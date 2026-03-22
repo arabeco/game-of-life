@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, ScheduledTask } from '../types';
-import { PlusIcon, EyeIcon, XIcon, LayersIcon } from '../components/Icons';
+import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';
@@ -15,9 +15,44 @@ import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { CampaignArenaStack } from '../components/CampaignArenaStack';
 import { EmojiGlyph } from '../components/EmojiGlyph';
-import { calculateCampaignProgress } from '../utils/progressUtils';
+import { calculateArenaProgress, calculateCampaignProgress } from '../utils/progressUtils';
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+
+const hexToRgb = (hex: string) => {
+    const trimmed = hex.trim();
+    if (trimmed.startsWith('rgb')) {
+        const matches = trimmed.match(/\d+/g);
+        if (matches && matches.length >= 3) {
+            return {
+                r: parseInt(matches[0], 10),
+                g: parseInt(matches[1], 10),
+                b: parseInt(matches[2], 10),
+            };
+        }
+    }
+
+    const normalized = trimmed.replace('#', '');
+    if (normalized.length === 3 || normalized.length === 6) {
+        const value = normalized.length === 3
+            ? normalized.split('').map(ch => ch + ch).join('')
+            : normalized;
+        const intValue = parseInt(value, 16);
+        return {
+            r: (intValue >> 16) & 255,
+            g: (intValue >> 8) & 255,
+            b: intValue & 255,
+        };
+    }
+
+    return { r: 240, g: 200, b: 67 };
+};
+
+const rgbaString = (hex: string, alpha: number) => {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 type PendingAction = {
     id: string;
@@ -73,6 +108,8 @@ export const ArenasView: React.FC = () => {
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
+    const [arenaPresentationMode, setArenaPresentationMode] = useState<'cards' | 'list'>('cards');
+    const [expandedArenaRows, setExpandedArenaRows] = useState<Record<string, boolean>>({});
     // Remove local viewMode state
     const fabRef = useRef<HTMLButtonElement>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -354,24 +391,53 @@ export const ArenasView: React.FC = () => {
         type: 'arena' | 'campaign', 
         startX: number, 
         startY: number, 
-        element: HTMLElement
+        element: HTMLElement,
+        input: 'mouse' | 'touch',
+        touchDragReady: boolean,
+        touchDragBlocked: boolean
     } | null>(null);
+    const touchHoldTimeoutRef = useRef<number | null>(null);
     
     const [dragPosition, setDragPosition] = useState<{x: number, y: number} | null>(null);
 
     const handleInteractionStart = (e: React.MouseEvent | React.TouchEvent, id: string, type: 'arena' | 'campaign') => {
         if (isSelectionMode && type === 'arena' && allCampaignArenaIds.includes(id)) return;
         
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const isTouch = 'touches' in e;
+        const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+        const clientY = isTouch ? e.touches[0].clientY : e.clientY;
         
         interactionRef.current = {
             id: id,
             type: type,
             startX: clientX,
             startY: clientY,
-            element: e.currentTarget as HTMLElement
+            element: e.currentTarget as HTMLElement,
+            input: isTouch ? 'touch' : 'mouse',
+            touchDragReady: false,
+            touchDragBlocked: false,
         };
+
+        if (touchHoldTimeoutRef.current) {
+            window.clearTimeout(touchHoldTimeoutRef.current);
+            touchHoldTimeoutRef.current = null;
+        }
+
+        if (isTouch) {
+            touchHoldTimeoutRef.current = window.setTimeout(() => {
+                const current = interactionRef.current;
+                if (!current || current.id !== id || current.type !== type || current.touchDragBlocked) {
+                    return;
+                }
+
+                interactionRef.current = {
+                    ...current,
+                    touchDragReady: true,
+                };
+                setDraggedId(id);
+                setDragPosition({ x: current.startX, y: current.startY });
+            }, 260);
+        }
     };
 
     const handleInteractionMove = (e: MouseEvent | TouchEvent) => {
@@ -383,12 +449,28 @@ export const ArenasView: React.FC = () => {
         const deltaX = Math.abs(clientX - interactionRef.current.startX);
         const deltaY = Math.abs(clientY - interactionRef.current.startY);
         
-        // If moved more than threshold, start dragging
-        if (!draggedId && (deltaX > 10 || deltaY > 10)) {
-            setDraggedId(interactionRef.current.id);
+        if (interactionRef.current.input === 'touch' && !interactionRef.current.touchDragReady) {
+            if (deltaX > 8 || deltaY > 8) {
+                if (touchHoldTimeoutRef.current) {
+                    window.clearTimeout(touchHoldTimeoutRef.current);
+                    touchHoldTimeoutRef.current = null;
+                }
+                interactionRef.current = {
+                    ...interactionRef.current,
+                    touchDragBlocked: true,
+                };
+            }
+            return;
         }
 
-        if (draggedId) {
+        let currentDraggedId = draggedId;
+
+        if (!currentDraggedId && interactionRef.current.input === 'mouse' && (deltaX > 10 || deltaY > 10)) {
+            currentDraggedId = interactionRef.current.id;
+            setDraggedId(currentDraggedId);
+        }
+
+        if (currentDraggedId) {
             if (e.cancelable && e.type !== 'mousemove') e.preventDefault(); // Prevent scroll on touch, allow mouse move
             
             setDragPosition({ x: clientX, y: clientY });
@@ -400,9 +482,14 @@ export const ArenasView: React.FC = () => {
             if (dropZone) {
                 const dropId = dropZone.getAttribute('data-drop-id');
                 // Ensure we are not dropping on self
-                if (dropId && dropId !== draggedId) {
+                if (dropId && dropId !== currentDraggedId) {
                     const rect = dropZone.getBoundingClientRect();
-                    const side = (clientX - rect.left) > rect.width / 2 ? 'right' : 'left';
+                    const isVerticalListTarget =
+                        shouldEnableListReorder &&
+                        (dropZone as HTMLElement).dataset.listRow === 'true';
+                    const side = isVerticalListTarget
+                        ? ((clientY - rect.top) > rect.height / 2 ? 'right' : 'left')
+                        : ((clientX - rect.left) > rect.width / 2 ? 'right' : 'left');
                     setDragOverId(dropId);
                     setDragOverSide(side);
                 }
@@ -413,7 +500,14 @@ export const ArenasView: React.FC = () => {
     };
 
     const handleInteractionEnd = async (e: MouseEvent | TouchEvent) => {
-        if (!draggedId || !interactionRef.current) {
+        if (touchHoldTimeoutRef.current) {
+            window.clearTimeout(touchHoldTimeoutRef.current);
+            touchHoldTimeoutRef.current = null;
+        }
+
+        const activeDraggedId = draggedId || (interactionRef.current?.touchDragReady ? interactionRef.current.id : null);
+
+        if (!activeDraggedId || !interactionRef.current) {
             interactionRef.current = null;
             setDragPosition(null);
             return;
@@ -435,7 +529,7 @@ export const ArenasView: React.FC = () => {
                          preventDefault: () => {},
                          stopPropagation: () => {},
                          dataTransfer: { getData: (key: string) => key === 'type' ? draggedType : '' } // Mock with type
-                     } as any, dragOverId as any, draggedId);
+                     } as any, dragOverId as any, activeDraggedId);
                  } else {
                      // Dropped on an item (Arena or Campaign) within a priority list
                      // Find the priority of the target to know where we are dropping
@@ -475,12 +569,17 @@ export const ArenasView: React.FC = () => {
         window.addEventListener('mouseup', onEnd);
         window.addEventListener('touchmove', onMove, { passive: false });
         window.addEventListener('touchend', onEnd);
+        window.addEventListener('touchcancel', onEnd);
 
         return () => {
             window.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onEnd);
             window.removeEventListener('touchmove', onMove);
             window.removeEventListener('touchend', onEnd);
+            window.removeEventListener('touchcancel', onEnd);
+            if (touchHoldTimeoutRef.current) {
+                window.clearTimeout(touchHoldTimeoutRef.current);
+            }
         };
     }, [draggedId, arenasViewMode, isSelectionMode, dragOverId]); // Add necessary dependencies
 
@@ -637,6 +736,66 @@ export const ArenasView: React.FC = () => {
         if (!activeCycle) return tasks;
         return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
     }, [activeCycle, tasks]);
+    const tasksByActionId = useMemo(() => {
+        const map = new Map<string, ScheduledTask[]>();
+        cycleScopedTasks.forEach((task) => {
+            const existing = map.get(task.actionId);
+            if (existing) {
+                existing.push(task);
+                return;
+            }
+            map.set(task.actionId, [task]);
+        });
+        return map;
+    }, [cycleScopedTasks]);
+    const toggleArenaRow = (rowId: string) => {
+        setExpandedArenaRows((prev) => ({ ...prev, [rowId]: !prev[rowId] }));
+    };
+    const formatDurationShort = (duration: number) => `${Math.max(0, Math.round(duration || 0))}m`;
+    const shouldEnableListReorder = arenaPresentationMode === 'list' && (arenasViewMode === 'free' || arenasViewMode === 'priorities');
+    const getOrderedActionsForArena = (arena: Arena, sourceActions?: Action[]) => {
+        const arenaActions = sourceActions ?? getActionsForArena(arena.id);
+        const orderedIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+        if (orderedIds.length === 0) {
+            return arenaActions;
+        }
+
+        const byId = new Map(arenaActions.map((action) => [action.id, action]));
+        const ordered = orderedIds
+            .map((actionId) => byId.get(actionId))
+            .filter((action): action is Action => Boolean(action));
+        const remaining = arenaActions.filter((action) => !orderedIds.includes(action.id));
+        return [...ordered, ...remaining];
+    };
+    const getActionListMetrics = (action: Action, actionTasks?: ScheduledTask[]) => {
+        const scopedTasks = actionTasks ?? tasksByActionId.get(action.id) ?? [];
+        const total = scopedTasks.length > 0 ? scopedTasks.length : Math.max(1, action.repetitions || 1);
+        const completed = scopedTasks.filter((task) => task.completed).length;
+        const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        return {
+            durationLabel: formatDurationShort(action.duration),
+            completed,
+            total,
+            progress,
+        };
+    };
+    const getArenaListMetrics = (arena: Arena, arenaActions: Action[], arenaTasks?: ScheduledTask[]) => {
+        const progress = calculateArenaProgress({
+            arena,
+            actions: arenaActions,
+            tasks: arenaTasks ?? cycleScopedTasks,
+            clanQuests: getClanQuestsForArena(arena, arenaActions),
+            getClanQuestProgress,
+            getSharedActionPoolProgress,
+        });
+
+        return {
+            completed: progress.totalCompleted,
+            total: progress.totalPlanned,
+            percent: Math.round(progress.progressPercent),
+        };
+    };
     const getCampaignProgress = (campaign: Campaign) => {
         const arenasById = Object.fromEntries(getArenas().map(arena => [arena.id, arena]));
         const actionsByArena = Object.fromEntries(getArenas().map(arena => [arena.id, getActionsForArena(arena.id)]));
@@ -650,6 +809,230 @@ export const ArenasView: React.FC = () => {
             getClanQuestProgress,
             getSharedActionPoolProgress,
         });
+    };
+    const renderListValue = (value: string, muted = false) => (
+        <span className={`min-w-[2.75rem] text-right text-[10px] font-bold uppercase tracking-[0.08em] tabular-nums ${muted ? 'text-white/42' : 'text-white/78'}`}>
+            {value}
+        </span>
+    );
+    const renderActionListRow = (action: Action, actionTasks?: ScheduledTask[]) => {
+        const metrics = getActionListMetrics(action, actionTasks);
+
+        return (
+            <div key={action.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded-xl border border-white/6 bg-black/18 px-2 py-1.5">
+                <div className="min-w-0 text-[11px] font-semibold text-white/88 truncate">
+                    {action.name}
+                </div>
+                {renderListValue(metrics.durationLabel, true)}
+                {renderListValue(`${metrics.completed}/${metrics.total}`)}
+                {renderListValue(`${metrics.progress}%`)}
+            </div>
+        );
+    };
+    const renderArenaListRow = (
+        arena: Arena,
+        options: {
+            rowId?: string;
+            assetName?: string;
+            actionsOverride?: Action[];
+            tasksOverride?: ScheduledTask[];
+            onOpen?: () => void;
+            sortableType?: 'arena' | 'campaign';
+            registerNode?: (node: HTMLDivElement | null) => void;
+        } = {}
+    ) => {
+        const rowId = options.rowId ?? arena.id;
+        const rowActions = getOrderedActionsForArena(arena, options.actionsOverride);
+        const metrics = getArenaListMetrics(arena, rowActions, options.tasksOverride);
+        const assetLabel = options.assetName ? ` (${options.assetName})` : '';
+        const isExpanded = !!expandedArenaRows[rowId];
+        const isDragOver = dragOverId === rowId;
+        const isDragged = draggedId === rowId;
+        const isSortable = shouldEnableListReorder && !!options.sortableType;
+        const arenaAccentColor = ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843';
+
+        return (
+            <div
+                key={rowId}
+                ref={options.registerNode}
+                data-drop-id={isSortable ? rowId : undefined}
+                data-list-row={isSortable ? 'true' : undefined}
+                onMouseDown={isSortable ? (e) => handleInteractionStart(e, rowId, options.sortableType!) : undefined}
+                onTouchStart={isSortable ? (e) => handleInteractionStart(e, rowId, options.sortableType!) : undefined}
+                className={`relative rounded-2xl border border-white/8 bg-black/22 overflow-hidden transition-all duration-200 ${isSortable ? 'select-none cursor-grab active:cursor-grabbing' : ''} ${isDragOver ? 'ring-2 ring-[var(--skin-accent-color)] z-10' : ''} ${isDragged ? 'opacity-30 brightness-75' : ''}`}
+                style={isSortable ? { touchAction: 'pan-y' } : undefined}
+            >
+                {isSortable && isDragOver && (
+                    <div
+                        className={`absolute left-2 right-2 h-1 rounded-full bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--skin-accent-color)] pointer-events-none z-20 ${dragOverSide === 'left' ? 'top-0.5' : 'bottom-0.5'}`}
+                    />
+                )}
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-2.5 py-2">
+                    <button
+                        type="button"
+                        onClick={() => (options.onOpen ? options.onOpen() : setSelectedArenaId(arena.id))}
+                        className="min-w-0 flex items-center gap-2 text-left"
+                    >
+                        <span
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/35 text-[14px]"
+                            style={{ background: `linear-gradient(160deg, ${rgbaString(arenaAccentColor, 0.52)} 0%, ${rgbaString(arenaAccentColor, 0.24)} 100%)` }}
+                        >
+                            <EmojiGlyph symbol={arena.icon || '🏛️'} size="action" className="text-white" />
+                        </span>
+                        <span className="min-w-0 truncate text-[12px] font-bold text-white/92">
+                            {arena.name}
+                            <span className="text-white/45 font-medium">{assetLabel}</span>
+                        </span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                        {renderListValue(`${metrics.completed}/${metrics.total}`)}
+                        {renderListValue(`${metrics.percent}%`)}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => toggleArenaRow(rowId)}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition-colors hover:bg-white/10"
+                        title={isExpanded ? 'Recolher ações' : 'Expandir ações'}
+                    >
+                        {isExpanded ? <ChevronDownIcon className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
+                    </button>
+                </div>
+                {isExpanded && (
+                    <div className="space-y-1 border-t border-white/6 bg-black/14 px-2 py-2">
+                        {rowActions.length > 0 ? rowActions.map((action) => {
+                            const actionTasks = options.tasksOverride
+                                ? options.tasksOverride.filter((task) => task.actionId === action.id)
+                                : (tasksByActionId.get(action.id) ?? []);
+                            return renderActionListRow(action, actionTasks);
+                        }) : (
+                            <div className="px-2 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/38">
+                                Sem ações
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+    const renderCampaignListRow = (
+        campaign: Campaign,
+        progress: number,
+        options: {
+            onOpen?: () => void;
+            actionCount?: number;
+            installAction?: (() => Promise<void>) | null;
+            sortable?: boolean;
+            registerNode?: (node: HTMLDivElement | null) => void;
+        } = {}
+    ) => {
+        const arenaCount = campaign.arenaIds.length;
+        const actionCount = options.actionCount ?? campaign.arenaIds.reduce((count, arenaId) => count + getActionsForArena(arenaId).length, 0);
+        const isDragOver = dragOverId === campaign.id;
+        const isDragged = draggedId === campaign.id;
+        const isSortable = shouldEnableListReorder && !!options.sortable;
+
+        return (
+            <div
+                key={campaign.id}
+                ref={options.registerNode}
+                data-drop-id={isSortable ? campaign.id : undefined}
+                data-list-row={isSortable ? 'true' : undefined}
+                onMouseDown={isSortable ? (e) => handleInteractionStart(e, campaign.id, 'campaign') : undefined}
+                onTouchStart={isSortable ? (e) => handleInteractionStart(e, campaign.id, 'campaign') : undefined}
+                className={`relative rounded-2xl border border-white/8 bg-black/22 overflow-hidden transition-all duration-200 ${isSortable ? 'select-none cursor-grab active:cursor-grabbing' : ''} ${isDragOver ? 'ring-2 ring-[var(--skin-accent-color)] z-10' : ''} ${isDragged ? 'opacity-30 brightness-75' : ''}`}
+                style={isSortable ? { touchAction: 'pan-y' } : undefined}
+            >
+                {isSortable && isDragOver && (
+                    <div
+                        className={`absolute left-2 right-2 h-1 rounded-full bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--skin-accent-color)] pointer-events-none z-20 ${dragOverSide === 'left' ? 'top-0.5' : 'bottom-0.5'}`}
+                    />
+                )}
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-2.5 py-2">
+                    <button
+                        type="button"
+                        onClick={() => (options.onOpen ? options.onOpen() : setSelectedCampaignId(campaign.id))}
+                        className="min-w-0 flex items-center gap-2 text-left"
+                    >
+                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/35 bg-black/28 text-[13px]">
+                            📁
+                        </span>
+                        <span className="min-w-0 truncate text-[12px] font-bold text-white/92">
+                            {campaign.title}
+                            <span className="text-white/45 font-medium"> (Campanha)</span>
+                        </span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                        {renderListValue(`${arenaCount} ar`)}
+                        {renderListValue(`${actionCount} ac`, true)}
+                        {renderListValue(`${Math.round(progress)}%`)}
+                    </div>
+                    {options.installAction ? (
+                        <button
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                void options.installAction?.();
+                            }}
+                            className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12"
+                        >
+                            Instalar
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => (options.onOpen ? options.onOpen() : setSelectedCampaignId(campaign.id))}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition-colors hover:bg-white/10"
+                            title="Abrir campanha"
+                        >
+                            <ChevronRightIcon className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    };
+    const renderFolderListRow = (folder: ArenaFolder, arenaCount: number) => {
+        return (
+            <div
+                key={folder.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedFolderId(folder.id)}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedFolderId(folder.id);
+                    }
+                }}
+                className="rounded-2xl border border-white/8 bg-black/22 overflow-hidden cursor-pointer transition-colors hover:border-white/14"
+            >
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-2.5 py-2">
+                    <div className="min-w-0 flex items-center gap-2 text-left">
+                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/35 bg-black/28 text-[15px]">
+                            {folder.icon}
+                        </span>
+                        <span className="min-w-0 truncate text-[12px] font-bold text-white/92">
+                            {folder.name}
+                            <span className="text-white/45 font-medium"> (Pasta)</span>
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {renderListValue(`${arenaCount} ar`)}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedFolderId(folder.id);
+                        }}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition-colors hover:bg-white/10"
+                        title="Abrir pasta"
+                    >
+                        <ChevronRightIcon className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        );
     };
     const assetOptions = assets;
 
@@ -752,7 +1135,7 @@ export const ArenasView: React.FC = () => {
                 onTouchStart={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
                 onClick={() => setSelectedCampaignId(campaign.id)}
                 className={`relative col-span-2 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
-                style={{ borderColor: userProfile.skinColor || 'var(--skin-accent-color)' }}
+                style={{ borderColor: userProfile.skinColor || 'var(--skin-accent-color)', touchAction: 'pan-y' }}
             >
                 {/* Folder Stack Effect */}
                 <div className="absolute top-0 right-0 w-full h-full bg-white/5 rounded-2xl -z-10 transform translate-x-1 -translate-y-1 border border-white/5" />
@@ -824,7 +1207,7 @@ export const ArenasView: React.FC = () => {
         return (
             <>
                 {/* Drag Preview in Builder Mode too if needed, though mostly unused there */}
-                <div className="p-4 space-y-4 min-h-full">
+                <div className="h-full overflow-y-auto overflow-x-hidden p-4 space-y-4 min-h-0 custom-scrollbar">
                     <div className="bg-black/30 border border-[var(--skin-accent-color)]/30 rounded-2xl p-3 space-y-1">
                         <div className="text-xs font-bold uppercase tracking-wider accent-text">Modo Arquiteto</div>
                         <div className="text-[11px] text-gray-400">Sandbox isolado. Nada do jogo atual é alterado.</div>
@@ -926,8 +1309,8 @@ export const ArenasView: React.FC = () => {
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Arenas da campanha</div>
-                            <button onClick={() => setShowArchived(s => !s)} className={`p-2 rounded-full transition-colors ${showArchived ? 'bg-white/20 text-white' : 'text-gray-500'}`}>
-                                <EyeIcon className="w-4 h-4" />
+                            <button onClick={() => setShowArchived(s => !s)} className={`p-2 rounded-full transition-colors ${showArchived ? 'bg-white/20 text-white' : 'text-gray-500'}`} title={showArchived ? 'Ocultar arquivadas' : 'Mostrar arquivadas'}>
+                                <ArchiveBoxIcon className="w-4 h-4" />
                             </button>
                         </div>
                         {allArenas.length === 0 ? (
@@ -1003,14 +1386,13 @@ export const ArenasView: React.FC = () => {
                 onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
                 onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
                 className={`relative transition-all duration-200 select-none cursor-grab active:cursor-grabbing ${isDragOver ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : 'z-10'} ${isDragged ? 'opacity-30 brightness-50' : ''} ${isBlocked ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
-                style={{ touchAction: 'none' }}
+                style={{ touchAction: 'pan-y' }}
                 onClick={() => {
                     if (!isSelectionMode && !isBlocked) {
                         setSelectedArenaId(arena.id);
                     }
                 }}
             >
-                <div className="absolute inset-0 z-50 pointer-events-auto" />
                 {options.showInsertionIndicator && isDragOver && (
                     <div
                         className={`absolute top-0 bottom-0 w-1 bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--skin-accent-color)] z-30 pointer-events-none rounded-full ${dragOverSide === 'left' ? '-left-1.5' : '-right-1.5'}`}
@@ -1038,7 +1420,7 @@ export const ArenasView: React.FC = () => {
     return (
         <>
             {renderDragPreview()}
-            <div className="px-4 pb-4 pt-4 relative min-h-full">
+            <div className="h-full overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 relative min-h-0 custom-scrollbar">
                 {receivedMentorCampaigns.length > 0 && (
                     <div className="mb-6 space-y-2">
                         <div className="flex items-center gap-2 px-2">
@@ -1050,6 +1432,37 @@ export const ArenasView: React.FC = () => {
                                 {receivedMentorCampaigns.length}
                             </span>
                         </div>
+                        {arenaPresentationMode === 'list' ? (
+                            <div className="space-y-2">
+                                {receivedMentorCampaigns.map(({ codex, preview }) => (
+                                    renderCampaignListRow(
+                                        preview.campaign,
+                                        calculateCampaignProgress({
+                                            campaign: preview.campaign,
+                                            arenasById: Object.fromEntries(preview.arenas.map((arena) => [arena.id, arena])),
+                                            actionsByArena: Object.fromEntries(
+                                                preview.arenas.map((arena) => [
+                                                    arena.id,
+                                                    preview.actions.filter((action) => action.arenaId === arena.id),
+                                                ])
+                                            ),
+                                            tasks: [],
+                                            getClanQuestsForArena,
+                                            getClanQuestProgress,
+                                            getSharedActionPoolProgress,
+                                        }),
+                                        {
+                                            onOpen: () => setSelectedReceivedCampaignPreview(preview),
+                                            actionCount: preview.actions.length,
+                                            installAction: async () => {
+                                                await installCodex(codex.id);
+                                            },
+                                            registerNode: (node) => registerCampaignCardRef(preview.campaign.id, node),
+                                        }
+                                    )
+                                ))}
+                            </div>
+                        ) : (
                         <div className="overflow-x-auto hide-scrollbar pb-1">
                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
                             {receivedMentorCampaigns.map(({ codex, preview }) => (
@@ -1101,6 +1514,7 @@ export const ArenasView: React.FC = () => {
                             ))}
                             </div>
                         </div>
+                        )}
                     </div>
                 )}
                 {receivedSharedArenas.length > 0 && (
@@ -1114,6 +1528,25 @@ export const ArenasView: React.FC = () => {
                                 {receivedSharedArenas.length}
                             </span>
                         </div>
+                        {arenaPresentationMode === 'list' ? (
+                            <div className="space-y-2">
+                                {receivedSharedArenas.map((linkedArena) => (
+                                    renderArenaListRow(getPreviewArenaForSharedArena(linkedArena), {
+                                        rowId: linkedArena.id,
+                                        assetName: getAssetNameForSharedArena(linkedArena),
+                                        actionsOverride: linkedArena.actions || [],
+                                        tasksOverride: linkedArena.tasks || [],
+                                        onOpen: () => {
+                                            setSelectedSharedArenaDetail({
+                                                arena: getPreviewArenaForSharedArena(linkedArena),
+                                                actions: linkedArena.actions || [],
+                                                tasks: linkedArena.tasks || [],
+                                            });
+                                        },
+                                    })
+                                ))}
+                            </div>
+                        ) : (
                         <div className="overflow-x-auto hide-scrollbar pb-1">
                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
                             {receivedSharedArenas.map((linkedArena) => (
@@ -1136,6 +1569,7 @@ export const ArenasView: React.FC = () => {
                             ))}
                             </div>
                         </div>
+                        )}
                     </div>
                 )}
                 <div className="flex items-center justify-end gap-2 mb-4 z-[60]" id="campaigns-section">
@@ -1161,8 +1595,16 @@ export const ArenasView: React.FC = () => {
                             </span>
                         </button>
                         <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
-                        <button onClick={() => setShowArchived(s => !s)} className={`p-1.5 rounded-full transition-colors ${showArchived ? 'text-white' : 'text-gray-500'}`}>
-                            <EyeIcon className="w-4 h-4" />
+                        <button
+                            onClick={() => setArenaPresentationMode((current) => current === 'cards' ? 'list' : 'cards')}
+                            className={`p-1.5 rounded-full transition-colors ${arenaPresentationMode === 'list' ? 'text-white' : 'text-gray-500'}`}
+                            title={arenaPresentationMode === 'list' ? 'Voltar para miniaturas' : 'Modo lista'}
+                        >
+                            <ListRowsIcon className="w-4 h-4" />
+                        </button>
+                        <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+                        <button onClick={() => setShowArchived(s => !s)} className={`p-1.5 rounded-full transition-colors ${showArchived ? 'text-white' : 'text-gray-500'}`} title={showArchived ? 'Ocultar arquivadas' : 'Mostrar arquivadas'}>
+                            <ArchiveBoxIcon className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -1173,53 +1615,84 @@ export const ArenasView: React.FC = () => {
                     </div>
                 )}
 
-                <div id="arenas-container" className="space-y-8">
+                <div id="arenas-container" className={arenaPresentationMode === 'list' ? 'space-y-4' : 'space-y-8'}>
                     {arenasViewMode === 'free' && (
-                        <div className="grid grid-cols-4 gap-3">
-                            {arenaFolders.map(folder => {
-                                const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id));
-                                const isFolderDragOver = dragOverId === folder.id;
-
-                                return (
-                                    <div
-                                        key={folder.id}
-                                        data-drop-id={folder.id}
-                                        onClick={() => setSelectedFolderId(folder.id)}
-                                        className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isFolderDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
-                                    >
-                                        <div className="absolute top-1 right-1 w-full h-full bg-gray-700/50 rounded-2xl -z-10 transform translate-x-1 -translate-y-1" />
-                                        <div className="absolute top-2 right-2 w-full h-full bg-gray-600/30 rounded-2xl -z-20 transform translate-x-2 -translate-y-2" />
-                                        <div className="flex flex-col items-center p-2 text-center">
-                                            <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{folder.icon}</span>
-                                            <span className="text-sm font-bold text-gray-200 line-clamp-2">{folder.name}</span>
-                                            <span className="text-xs text-gray-500 mt-1">{arenasInFolder.length} arenas</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-
-                            {[
-                                ...campaigns.map(campaign => ({ itemType: 'campaign' as const, value: campaign, sortOrder: campaign.order || 0 })),
-                                ...rootArenas.map(arena => ({ itemType: 'arena' as const, value: arena, sortOrder: arena.order || 0 })),
-                            ]
-                                .sort((a, b) => a.sortOrder - b.sortOrder)
-                                .map(item => {
-                                    if (item.itemType === 'campaign') {
-                                        const campaign = item.value as Campaign;
-                                        return renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign));
-                                    }
-
-                                    const arena = item.value as Arena;
-                                    return renderArenaBoardCard(arena, {
-                                        assetName: getAssetById(arena.assetId)?.name || '',
-                                        showInsertionIndicator: true,
-                                    });
+                        arenaPresentationMode === 'list' ? (
+                            <div className="space-y-1">
+                                {arenaFolders.map(folder => {
+                                    const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id));
+                                    return renderFolderListRow(folder, arenasInFolder.length);
                                 })}
-                        </div>
+
+                                {[
+                                    ...campaigns.map(campaign => ({ itemType: 'campaign' as const, value: campaign, sortOrder: campaign.order || 0 })),
+                                    ...rootArenas.map(arena => ({ itemType: 'arena' as const, value: arena, sortOrder: arena.order || 0 })),
+                                ]
+                                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                                    .map(item => {
+                                        if (item.itemType === 'campaign') {
+                                            const campaign = item.value as Campaign;
+                                            return renderCampaignListRow(campaign, getCampaignProgress(campaign), {
+                                                sortable: true,
+                                                registerNode: (node) => registerCampaignCardRef(campaign.id, node),
+                                            });
+                                        }
+
+                                        const arena = item.value as Arena;
+                                        return renderArenaListRow(arena, {
+                                            assetName: getAssetById(arena.assetId)?.name || '',
+                                            sortableType: 'arena',
+                                            registerNode: (node) => registerArenaCardRef(arena.id, node),
+                                        });
+                                    })}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-4 gap-3">
+                                {arenaFolders.map(folder => {
+                                    const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id));
+                                    const isFolderDragOver = dragOverId === folder.id;
+
+                                    return (
+                                        <div
+                                            key={folder.id}
+                                            data-drop-id={folder.id}
+                                            onClick={() => setSelectedFolderId(folder.id)}
+                                            className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isFolderDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
+                                        >
+                                            <div className="absolute top-1 right-1 w-full h-full bg-gray-700/50 rounded-2xl -z-10 transform translate-x-1 -translate-y-1" />
+                                            <div className="absolute top-2 right-2 w-full h-full bg-gray-600/30 rounded-2xl -z-20 transform translate-x-2 -translate-y-2" />
+                                            <div className="flex flex-col items-center p-2 text-center">
+                                                <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{folder.icon}</span>
+                                                <span className="text-sm font-bold text-gray-200 line-clamp-2">{folder.name}</span>
+                                                <span className="text-xs text-gray-500 mt-1">{arenasInFolder.length} arenas</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {[
+                                    ...campaigns.map(campaign => ({ itemType: 'campaign' as const, value: campaign, sortOrder: campaign.order || 0 })),
+                                    ...rootArenas.map(arena => ({ itemType: 'arena' as const, value: arena, sortOrder: arena.order || 0 })),
+                                ]
+                                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                                    .map(item => {
+                                        if (item.itemType === 'campaign') {
+                                            const campaign = item.value as Campaign;
+                                            return renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign));
+                                        }
+
+                                        const arena = item.value as Arena;
+                                        return renderArenaBoardCard(arena, {
+                                            assetName: getAssetById(arena.assetId)?.name || '',
+                                            showInsertionIndicator: true,
+                                        });
+                                    })}
+                            </div>
+                        )
                     )}
 
                     {arenasViewMode === 'priorities' && (
-                        <div className="space-y-6">
+                        <div className={arenaPresentationMode === 'list' ? 'space-y-4' : 'space-y-6'}>
                             {(['alta', 'media', 'baixa'] as const).map(priority => {
                                 const sectionId = `priority-${priority}`;
                                 const isCollapsed = collapsedSections[sectionId];
@@ -1252,9 +1725,28 @@ export const ArenasView: React.FC = () => {
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
-                                            <div className={`animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'grid min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : 'overflow-x-auto hide-scrollbar pb-1'}`}>
+                                            <div className={`animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'grid min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : arenaPresentationMode === 'list' ? 'space-y-2' : 'overflow-x-auto hide-scrollbar pb-1'}`}>
                                                 {isEmpty ? (
                                                     <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Arraste aqui</span>
+                                                ) : arenaPresentationMode === 'list' ? (
+                                                    <>
+                                                        {items.map(item => {
+                                                            if (item.itemType === 'campaign') {
+                                                                const campaign = item.value as Campaign;
+                                                                return renderCampaignListRow(campaign, getCampaignProgress(campaign), {
+                                                                    sortable: true,
+                                                                    registerNode: (node) => registerCampaignCardRef(campaign.id, node),
+                                                                });
+                                                            }
+
+                                                            const arena = item.value as Arena;
+                                                            return renderArenaListRow(arena, {
+                                                                assetName: getAssetById(arena.assetId)?.name,
+                                                                sortableType: 'arena',
+                                                                registerNode: (node) => registerArenaCardRef(arena.id, node),
+                                                            });
+                                                        })}
+                                                    </>
                                                 ) : (
                                                     <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
                                                         {items.map(item => {
@@ -1279,9 +1771,9 @@ export const ArenasView: React.FC = () => {
                     )}
 
                     {arenasViewMode === 'assets' && (
-                        <div className="space-y-6">
+                        <div className={arenaPresentationMode === 'list' ? 'space-y-4' : 'space-y-6'}>
                             {campaigns.length > 0 && (
-                                <div className="space-y-2">
+                                <div className={arenaPresentationMode === 'list' ? 'space-y-1' : 'space-y-2'}>
                                     <div
                                         className="flex items-center gap-2 px-2 cursor-pointer group"
                                         onClick={() => toggleSection('campaigns')}
@@ -1293,11 +1785,19 @@ export const ArenasView: React.FC = () => {
                                         <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${collapsedSections['campaigns'] ? '-rotate-90' : ''}`}>▼</span>
                                     </div>
                                     {!collapsedSections['campaigns'] && (
+                                        arenaPresentationMode === 'list' ? (
+                                            <div className="space-y-2">
+                                                {campaigns.map(campaign => renderCampaignListRow(campaign, getCampaignProgress(campaign), {
+                                                    registerNode: (node) => registerCampaignCardRef(campaign.id, node),
+                                                }))}
+                                            </div>
+                                        ) : (
                                         <div className="overflow-x-auto hide-scrollbar pb-1">
                                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
                                                 {campaigns.map(campaign => renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign)))}
                                             </div>
                                         </div>
+                                        )
                                     )}
                                 </div>
                             )}
@@ -1307,7 +1807,7 @@ export const ArenasView: React.FC = () => {
                                 const isCollapsed = collapsedSections[sectionId];
 
                                 return (
-                                    <div key={group.id} className="space-y-2">
+                                    <div key={group.id} className={arenaPresentationMode === 'list' ? 'space-y-1' : 'space-y-2'}>
                                         <div
                                             className="flex items-center gap-2 px-2 cursor-pointer group"
                                             onClick={() => toggleSection(sectionId)}
@@ -1319,11 +1819,19 @@ export const ArenasView: React.FC = () => {
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
+                                            arenaPresentationMode === 'list' ? (
+                                                <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                    {group.arenas.map(arena => renderArenaListRow(arena, {
+                                                        registerNode: (node) => registerArenaCardRef(arena.id, node),
+                                                    }))}
+                                                </div>
+                                            ) : (
                                             <div className="overflow-x-auto hide-scrollbar pb-1 animate-in fade-in slide-in-from-top-1 duration-200">
                                                 <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
                                                     {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                                 </div>
                                             </div>
+                                            )
                                         )}
                                     </div>
                                 );

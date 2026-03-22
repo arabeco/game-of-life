@@ -38,14 +38,14 @@ export const CodexStore: React.FC = () => {
             const isOwned = userCodexes.some((userCodex) => userCodex.catalog_id === catalogItem?.id || userCodex.name === catalogItem?.title);
 
             if (isOwned) {
-                showToast('Voce ja possui este Codex.');
+                showToast('Voce ja possui esta campanha.');
                 return;
             }
 
             await buyCodex(catalogId);
         } catch (error) {
-            console.error('Failed to purchase Codex', error);
-            showToast('Erro ao adquirir Codex.');
+            console.error('Failed to purchase campaign', error);
+            showToast('Erro ao adquirir campanha.');
         } finally {
             setPurchasing(null);
         }
@@ -177,7 +177,7 @@ export const CodexStore: React.FC = () => {
                         })
                     ) : (
                         <div className="py-20 text-center text-gray-500">
-                            <p>Nenhum codex disponivel no catalogo no momento.</p>
+                            <p>Nenhuma campanha disponivel no catalogo no momento.</p>
                         </div>
                     )}
                 </div>
@@ -192,7 +192,7 @@ export const CodexStore: React.FC = () => {
                     previewActions={campaignPreview.actions}
                     previewMeta={{
                         coverImage: activePreviewEntry?.coverVisual,
-                        badgeLabel: 'Codex da loja',
+                        badgeLabel: 'Campanha da loja',
                         author: activePreviewEntry?.authorLabel,
                         hideArenaDetails: true,
                     }}

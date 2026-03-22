@@ -317,6 +317,18 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
     const milestoneActions = actions.filter(a => a.actionType === 'Marco');
     const bronzeActions = actions.filter(a => a.actionType !== 'Marco');
+    const orderedCompactActions = useMemo(() => {
+        const orderedIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
+        if (orderedIds.length === 0) return actions;
+
+        const actionById = new Map(actions.map(action => [action.id, action]));
+        const ordered = orderedIds
+            .map((actionId) => actionById.get(actionId))
+            .filter((action): action is Action => Boolean(action));
+
+        const remaining = actions.filter(action => !orderedIds.includes(action.id));
+        return [...ordered, ...remaining];
+    }, [actions, arena.actionIds]);
 
     // Check if it's a clan arena
     const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -364,12 +376,12 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         : highlightPhase === 'celebrate'
             ? 'arena-card-highlight arena-card-highlight--celebrate'
             : '';
-    const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none ${isCompactThumbnail ? 'justify-start px-[0.34rem] pt-[0.12rem] pb-[0.14rem]' : 'justify-between px-1 py-[0.34rem]'} ${highlightClass}`;
+    const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none ${isCompactThumbnail ? 'justify-start px-[0.28rem] pt-[0.08rem] pb-[0.1rem]' : 'justify-between px-1 py-[0.34rem]'} ${highlightClass}`;
     const styleClasses = isOverview 
-        ? 'h-[6.7rem]' 
+        ? 'h-[5rem]' 
         : variant === 'dossier' ? 'h-full w-full' : 'h-[5.5rem]';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
-    const compactHeight = isOverview ? '6.85rem' : variant === 'compact' ? '5.7rem' : undefined;
+    const compactHeight = isOverview ? '5rem' : variant === 'compact' ? '5rem' : undefined;
     const cardStyle: React.CSSProperties = {
         borderColor: skinColor,
         backgroundImage: [
@@ -410,26 +422,37 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 )}
             </div>
             <div
-                className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'arena-thumb-layout flex-shrink-0' : ''}`}
+                className={`text-center relative z-10 pointer-events-none select-none ${isCompactThumbnail ? 'arena-thumb-layout flex-1 min-h-0' : ''}`}
             >
                 {isCompactThumbnail ? (
                     <>
-                    <div className="arena-thumb-header">
-                        <div className="arena-thumb-link-space">
+                    <div className="arena-thumb-header flex-1 justify-start gap-[0.02rem] pt-0">
+                        <div className="arena-thumb-link-space left-auto right-[0.04rem] top-[0.02rem] z-[3]">
                             {linkType === 'competicao' && <EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="arena-thumb-link-badge text-red-400" />}
                             {linkType === 'mentoria' && <EmojiGlyph symbol={'\u{1F441}\uFE0F'} size="badge" className="arena-thumb-link-badge text-blue-400" />}
                             {linkType === 'parceria' && <EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="arena-thumb-link-badge text-purple-400" />}
                         </div>
-                        <span className="arena-thumb-header-icon-wrap">
-                            <span className="arena-icon arena-thumb-header-icon" style={{ lineHeight: 0 }}>
-                                {getIcon()}
+                        <div className="relative h-[1.64rem] w-full">
+                            <span
+                                className="absolute -left-[0.34rem] top-[0.1rem] z-[3] inline-flex h-[1.26rem] w-[1.26rem] items-center justify-center rounded-full border bg-black/34 shadow-[0_6px_14px_rgba(0,0,0,0.24)]"
+                                style={{ borderColor: skinColor }}
+                            >
+                                <span className="arena-icon arena-thumb-header-icon" style={{ lineHeight: 0 }}>
+                                    {getIcon()}
+                                </span>
                             </span>
-                        </span>
-                        <div className="arena-thumb-header-copy">
-                            <h3 className={`arena-thumb-heading arena-title arena-title-text text-white luxe-title-shadow ${arena.name.length > 18 ? 'arena-thumb-heading--sm' : 'arena-thumb-heading--lg'}`}>{arena.name}</h3>
+                            <div className="ml-[0.4rem] flex h-[1.62rem] w-[calc(100%-0.4rem)] items-center justify-center overflow-hidden rounded-[0.54rem] bg-black/30 px-[0.12rem] py-[0.04rem]">
+                                <div className="flex h-full w-full items-center justify-center overflow-hidden py-[0.08rem]">
+                                    <h3 className={`arena-title arena-title-text w-full break-normal [overflow-wrap:normal] text-white luxe-title-shadow text-center leading-[0.84] tracking-[0.03em] line-clamp-2 ${arena.name.length > 18 ? 'text-[4.85px]' : arena.name.length > 14 ? 'text-[5.1px]' : arena.name.length > 10 ? 'text-[5.4px]' : arena.name.length > 8 ? 'text-[5.7px]' : 'text-[5.95px]'}`}>{arena.name}</h3>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    {isOverview && assetName && <span className="arena-subtitle arena-thumb-asset">{assetName}</span>}
+                    {isOverview && (
+                        <div className="mt-[0.06rem] mb-[0.08rem] flex h-[0.42rem] w-full items-center justify-center overflow-hidden px-[0.08rem]">
+                            {assetName ? <span className="arena-subtitle arena-thumb-asset mt-0 w-full truncate">{assetName}</span> : null}
+                        </div>
+                    )}
                     </>
                 ) : (
                     <>
@@ -465,57 +488,114 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 )}
             </div>
             
-            <div className={`flex flex-col items-center flex-shrink-0 relative z-10 pointer-events-auto ${isCompactThumbnail ? 'arena-mini-stack w-full' : 'space-y-2'}`}>
-                <div className={`w-full flex items-center justify-center ${isCompactThumbnail ? 'arena-mini-milestones gap-1' : 'h-8 gap-2'}`}>
-                    {visibleMilestones.map(action => {
-                        const backgroundStyle = getActionBackgroundStyle(action.id);
-                        const task = tasksForCounts.find(t => t.actionId === action.id);
-                        const isCompleted = !!task?.completed;
-                        const isDragOver = dragOverActionId === action.id;
+            <div className={`flex flex-col items-center flex-shrink-0 relative z-10 pointer-events-auto ${isCompactThumbnail ? 'w-full gap-[0.08rem] mt-auto' : 'space-y-2'}`}>
+                {isCompactThumbnail ? (
+                    <div className="w-full overflow-x-auto hide-scrollbar rounded-[0.48rem] bg-black/18 px-[0.08rem] py-[0.08rem]">
+                        <div className="flex min-w-max items-center gap-[0.18rem]">
+                            {orderedCompactActions.map(action => {
+                                const backgroundStyle = getActionBackgroundStyle(action.id);
+                                const task = tasksForCounts.find(t => t.actionId === action.id);
+                                const isCompleted = !!task?.completed;
+                                const isDragOver = dragOverActionId === action.id;
+                                const isMilestone = action.actionType === 'Marco';
 
-                        return (
-                            <div 
-                                key={action.id} 
-                                className={`relative ${isCompactThumbnail ? 'w-5 h-5' : 'w-7 h-7'} flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
-                                title={action.name}
-                                draggable
-                                onDragStart={(e) => handleActionDragStart(e, action.id)}
-                                onDragOver={(e) => handleActionDragOver(e, action.id)}
-                                onDrop={(e) => handleActionDrop(e, action.id)}
-                            >
-                                <div className={`w-full h-full transform rotate-45 ${isDragOver ? 'brightness-125' : ''}`}>
-                                    <div 
-                                        style={backgroundStyle}
-                                        className={`w-full h-full ${isCompactThumbnail ? 'border-[0.75px]' : 'border'} ${isDragOver ? 'border-white' : 'border-[var(--accent-bronze)]'} rounded-sm relative`}
-                                    >
-                                        <div className="transform flex items-center justify-center h-full w-full">
-                                            <EmojiGlyph symbol={action.icon || '\u{1F3DB}\uFE0F'} size="milestone" className="transform -rotate-45 text-white" />
-                                        </div>
-                                        {isCompleted && (
-                                            <div className="absolute inset-0 bg-black/60 rounded-sm flex items-center justify-center">
-                                                <CheckIcon className={`${isCompactThumbnail ? 'w-3 h-3' : 'w-4 h-4'} text-white transform -rotate-45`}/>
+                                if (isMilestone) {
+                                    return (
+                                        <div
+                                            key={action.id}
+                                            className={`relative h-[0.98rem] w-[0.98rem] flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
+                                            title={action.name}
+                                            draggable
+                                            onDragStart={(e) => handleActionDragStart(e, action.id)}
+                                            onDragOver={(e) => handleActionDragOver(e, action.id)}
+                                            onDrop={(e) => handleActionDrop(e, action.id)}
+                                        >
+                                            <div className={`h-full w-full rotate-45 ${isDragOver ? 'brightness-125' : ''}`}>
+                                                <div
+                                                    style={backgroundStyle}
+                                                    className={`relative h-full w-full rounded-[3px] border-[0.75px] ${isDragOver ? 'border-white' : 'border-[var(--accent-bronze)]'}`}
+                                                >
+                                                    <div className="flex h-full w-full items-center justify-center">
+                                                        <EmojiGlyph symbol={action.icon || '\u{1F3DB}\uFE0F'} size="milestone" className="text-white -rotate-45" />
+                                                    </div>
+                                                    {isCompleted && (
+                                                        <div className="absolute inset-0 flex items-center justify-center rounded-[3px] bg-black/60">
+                                                            <CheckIcon className="h-3 w-3 text-white -rotate-45" />
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <ActionIcon
+                                        key={action.id}
+                                        action={action}
+                                        onDragStart={(e) => handleActionDragStart(e, action.id)}
+                                        onDragOver={(e) => handleActionDragOver(e, action.id)}
+                                        onDrop={(e) => handleActionDrop(e, action.id)}
+                                        isDragOver={isDragOver}
+                                        compact
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <div className="w-full flex items-center justify-center h-8 gap-2">
+                            {visibleMilestones.map(action => {
+                                const backgroundStyle = getActionBackgroundStyle(action.id);
+                                const task = tasksForCounts.find(t => t.actionId === action.id);
+                                const isCompleted = !!task?.completed;
+                                const isDragOver = dragOverActionId === action.id;
+
+                                return (
+                                    <div 
+                                        key={action.id} 
+                                        className={`relative w-7 h-7 flex-shrink-0 transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'scale-125' : ''}`}
+                                        title={action.name}
+                                        draggable
+                                        onDragStart={(e) => handleActionDragStart(e, action.id)}
+                                        onDragOver={(e) => handleActionDragOver(e, action.id)}
+                                        onDrop={(e) => handleActionDrop(e, action.id)}
+                                    >
+                                        <div className={`w-full h-full transform rotate-45 ${isDragOver ? 'brightness-125' : ''}`}>
+                                            <div 
+                                                style={backgroundStyle}
+                                                className={`w-full h-full border ${isDragOver ? 'border-white' : 'border-[var(--accent-bronze)]'} rounded-sm relative`}
+                                            >
+                                                <div className="transform flex items-center justify-center h-full w-full">
+                                                    <EmojiGlyph symbol={action.icon || '\u{1F3DB}\uFE0F'} size="milestone" className="transform -rotate-45 text-white" />
+                                                </div>
+                                                {isCompleted && (
+                                                    <div className="absolute inset-0 bg-black/60 rounded-sm flex items-center justify-center">
+                                                        <CheckIcon className="w-4 h-4 text-white transform -rotate-45"/>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-                
-                <div className={`w-full flex items-center justify-center overflow-x-auto hide-scrollbar ${isCompactThumbnail ? 'arena-mini-actions gap-1' : 'h-6 gap-1.5'}`}>
-                    {visibleBronzeActions.map(action => (
-                        <ActionIcon 
-                            key={action.id} 
-                            action={action} 
-                            onDragStart={(e) => handleActionDragStart(e, action.id)}
-                            onDragOver={(e) => handleActionDragOver(e, action.id)}
-                            onDrop={(e) => handleActionDrop(e, action.id)}
-                            isDragOver={dragOverActionId === action.id}
-                            compact={isCompactThumbnail}
-                        />
-                    ))}
-                </div>
+                                );
+                            })}
+                        </div>
+                        
+                        <div className="w-full flex items-center justify-center overflow-x-auto hide-scrollbar h-6 gap-1.5">
+                            {visibleBronzeActions.map(action => (
+                                <ActionIcon 
+                                    key={action.id} 
+                                    action={action} 
+                                    onDragStart={(e) => handleActionDragStart(e, action.id)}
+                                    onDragOver={(e) => handleActionDragOver(e, action.id)}
+                                    onDrop={(e) => handleActionDrop(e, action.id)}
+                                    isDragOver={dragOverActionId === action.id}
+                                />
+                            ))}
+                        </div>
+                    </>
+                )}
                 <div className={`arena-plate-progress w-full ${isCompactThumbnail ? 'arena-mini-progress' : 'mt-0.5'}`}>
                     <div
                         className={`arena-plate-progress-fill ${highlightPhase === 'celebrate' && progress >= 100 ? 'arena-plate-progress-fill--celebrate' : ''}`}

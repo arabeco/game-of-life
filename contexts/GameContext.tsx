@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleContext, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
 
@@ -28,6 +28,7 @@ import { emitArenaAttention } from '../utils/arenaAttention';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, isBadgeNotification } from '../constants/oracleNotificationPolicy';
+import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -1119,69 +1120,58 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return { status: 'cooldown', cooldownMs: quota.nextAutoInMs, ...quota };
         }
 
-        // 4. Select Category (Greeting Logic)
-        let category: OracleCategory = triggerType === 'manual'
-            ? resolveManualOracleCategory(oraclePreferences.enabledCategories || [])
-            : 'frases_inspiradoras';
-        const hour = now.getHours();
-
         const totalChests = userProfile.chests?.reduce((acc: any, c: any) => acc + c.count, 0) || 0;
-
-        if (triggerType !== 'manual' && totalChests > 0) {
-            category = 'dicas_produtividade'; // Context will show chests, AI should pick it up
-        } else if (triggerType !== 'manual' && !activeCycle) {
-            category = 'dicas_produtividade'; // Suggest cycle
-        } else if (triggerType !== 'manual' && assets.every(a => a.arenas.length === 0)) {
-            category = 'dicas_produtividade'; // Suggest arena
-        } else if (triggerType !== 'manual') {
-            if (hour >= 6 && hour < 12) category = 'frases_inspiradoras';
-            else if (hour >= 12 && hour < 18) category = 'dicas_produtividade';
-            else if (hour >= 18 && hour < 22) category = 'reflexoes_filosoficas'; // Reflexão
-            else category = 'fragmentos_sabedoria'; // Madrugada
-        }
-
-        // Ensure category is enabled and add variety
-        const enabled = oraclePreferences.enabledCategories || [];
-
-        // 30% chance to pick a random enabled category for variety (if not empty)
-        if (triggerType !== 'manual' && enabled.length > 0 && Math.random() < 0.3) {
-            category = enabled[Math.floor(Math.random() * enabled.length)];
-        } else if (enabled.length > 0 && !enabled.includes(category as any)) {
-            // Fallback if the time-based category is disabled
-            category = enabled[Math.floor(Math.random() * enabled.length)];
-        }
-
-        // 5. Build Context
-        let timeOfDay: "madrugada" | "manha" | "tarde" | "noite" = "manha";
-        if (hour >= 0 && hour < 6) timeOfDay = "madrugada";
-        else if (hour >= 6 && hour < 12) timeOfDay = "manha";
-        else if (hour >= 12 && hour < 18) timeOfDay = "tarde";
-        else timeOfDay = "noite";
-
-        const contextData: OracleContext = {
-            currentTime: now.toISOString(),
-            timeOfDay,
-            hasCycle: !!activeCycle,
-            cycleDayNumber: activeCycle ?Math.floor((now.getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
-            cycleTotalDays: activeCycle ?Math.floor((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24)) : null,
-            cycleCompletionPercent: null,
-            hasArenas: assets.some(a => a.arenas.length > 0),
-            totalArenas: assets.reduce((acc, a) => acc + a.arenas.length, 0),
-            arenaNames: assets.flatMap(a => a.arenas.map(ar => ar.name)),
-            staleArenas: [],
-            completedActionsInCycle: 0,
-            pendingActionsToday: tasks.filter(t => t.date === getLocalDateString() && !t.completed).length,
-            overdueActions: 0,
+        const hour = now.getHours();
+        const contextData = buildOracleOperationalContext({
+            now,
+            assets,
+            actions,
+            tasks,
+            activeCycle,
+            cycleProgress,
             activeMode: oraclePreferences.activeMode,
             customModeInstructions: oraclePreferences.customModeInstructions || null,
             enabledCategories: oraclePreferences.enabledCategories || [],
-            username: userProfile.nickname,
-            level: userProfile.level,
-            sephirotLevels: assets.reduce((acc, a) => ({ ...acc, [a.name]: a.level }), {}),
+            username: userProfile.nickname || 'Soberano',
+            level: userProfile.level || 1,
             clanName: clan?.name || null,
             seasonName: null,
-            pendingChests: totalChests
-        };
+            pendingChests: totalChests,
+            dailyCommitment,
+        });
+        let category: OracleCategory = triggerType === 'manual'
+            ? resolveManualOracleCategory(oraclePreferences.enabledCategories || [])
+            : 'dicas_produtividade';
+        const enabled = oraclePreferences.enabledCategories || [];
+
+        if (triggerType !== 'manual') {
+            const enabledOperational = enabled.filter((entry) =>
+                entry === 'dicas_produtividade'
+                || entry === 'analise_padroes'
+                || entry === 'provocacoes'
+                || entry === 'rituais_lifestyle',
+            );
+
+            if (!activeCycle || contextData.needsFirstArena || contextData.needsFirstAction || contextData.needsFirstTask || contextData.needsSitrepClosure) {
+                category = 'dicas_produtividade';
+            } else if (contextData.cycleRisk === 'alto') {
+                category = contextData.overdueActions > 0 ? 'provocacoes' : 'dicas_produtividade';
+            } else if (contextData.cycleRisk === 'medio') {
+                category = 'analise_padroes';
+            } else if (hour >= 19 && enabledOperational.includes('rituais_lifestyle') && Math.random() < 0.15) {
+                category = 'rituais_lifestyle';
+            } else {
+                category = 'dicas_produtividade';
+            }
+
+            if (enabledOperational.length > 0 && !enabledOperational.includes(category)) {
+                category = enabledOperational[0];
+            } else if (enabled.length > 0 && !enabled.includes(category as any)) {
+                category = enabled[0];
+            }
+        } else if (enabled.length > 0 && !enabled.includes(category as any)) {
+            category = enabled[0];
+        }
 
         // 6. Generate Prompt
         // Dynamic Mode Selection based on Category (The "Speak for All" Logic)
@@ -1219,23 +1209,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
         const systemPrompt = modeConfig.systemPromptTemplate(contextData);
         const presentation = resolveOraclePresentation(category, triggerType);
-
         const userPrompt = triggerType === 'manual'
-            ? `Gere um card informativo curto para o chat do usuario.
+            ? `Gere um card operacional curto para o chat do usuario.
       Categoria solicitada: ${category}
-      Entregue uma leitura objetiva do estado atual, um foco principal e um proximo passo concreto.
-      Nao use saudacao nem texto decorativo. Escreva em blocos curtos que leiam como um card.
+      Formato obrigatorio:
+      PRIORIDADE: uma frase curta
+      RISCO: uma frase curta
+      AJA: um comando concreto e imediato
+      Regras:
+      - sem saudacao
+      - sem texto decorativo
+      - se faltar ciclo, arena, acao, tarefa ou fechamento do SITREP, isso vira o AJA
+      - se existir nextMove, use isso como centro
       Contexto atual: ${JSON.stringify(contextData)}`
             : presentation === 'info_card'
-                ? `Gere um card informativo curto para o feed do usuario.
+                ? `Gere um card curto para o feed do usuario.
       Categoria solicitada: ${category}
-      Traga uma leitura pratica do momento e uma recomendacao acionavel.
-      Evite saudacao generica e mantenha o texto objetivo.
+      Formato obrigatorio:
+      PRIORIDADE: uma frase curta
+      RISCO: uma frase curta
+      AJA: um comando concreto e imediato
+      Regras:
+      - foco operacional
+      - sem saudacao generica
+      - sem misticismo
+      - nao descreva o contexto inteiro; decida o que importa
       Contexto atual: ${JSON.stringify(contextData)}`
-                : `Gere uma mensagem curta (máximo 3 frases) para o feed do usuário.
+                : `Gere um pulso curto para o feed do usuario.
       Categoria solicitada: ${category}
-      Contexto atual: ${JSON.stringify(contextData)}
-      `;
+      Regras:
+      - no maximo 2 frases
+      - a primeira frase define o foco
+      - a segunda frase define o proximo movimento
+      - sem saudacao e sem floreio
+      Contexto atual: ${JSON.stringify(contextData)}`;
 
         // 7. Call AI via Edge Function (server-side secret)
         try {
@@ -1289,7 +1296,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     presentation,
                     categoryLabel: ORACLE_CATEGORY_LABELS[category],
                     generatedFor: triggerType === 'manual' ? 'chat' : 'feed',
-                    summary: triggerType === 'manual' ? 'Card manual do chat' : 'Pulso automatico do Oraculo',
+                    summary: triggerType === 'manual'
+                        ? 'Card operacional do chat'
+                        : presentation === 'info_card'
+                            ? 'Card operacional do Oraculo'
+                            : 'Pulso curto do Oraculo',
                 },
                 read: false,
                 createdAt: new Date().toISOString()
@@ -3653,12 +3664,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error buying codex:', error);
-            showToast(error.message || 'Erro ao adquirir Codex.');
+            showToast(error.message || 'Erro ao adquirir campanha.');
             return;
         }
 
         if ((data as any)?.success === false) {
-            showToast(String((data as any)?.error || 'Erro ao adquirir Codex.'), 'error');
+            showToast(String((data as any)?.error || 'Erro ao adquirir campanha.'), 'error');
             return;
         }
 
@@ -3672,25 +3683,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({
             wallet: { ...userProfile.wallet, gold: nextGold },
         });
-        showToast(`Codex "${catalogItem.title}" adquirido!`);
+        showToast(`Campanha "${catalogItem.title}" adquirida!`);
     };
 
     const buyCodexCreationSlot = async (): Promise<boolean> => {
-        const { data, error } = await supabase.rpc('buy_codex_creation_slot');
-        if (error) {
-            console.error('Error buying codex creation slot:', error);
-            showToast(error.message || 'Saldo insuficiente para forjar um novo slot.', 'error');
-            return false;
-        }
-
-        const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - 50));
-        const nextSlots = Number((data as any)?.slots_purchased ?? ((userProfile.codexCreationSlotsPurchased || 0) + 1));
-        updateUserProfile({
-            wallet: { ...userProfile.wallet, gold: nextGold },
-            codexCreationSlotsPurchased: nextSlots,
-        });
-        showToast('Novo slot de criacao forjado.', 'success');
-        return true;
+        showToast('A forja de campanhas nao usa mais limite de criacao.', 'info');
+        return false;
     };
 
     const parseRelationshipCapacitySummary = (raw: any): RelationshipCapacitySummary | null => {
@@ -3827,8 +3825,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Arena extra da mentoria e paga por unidade: 50 de ouro cada.';
         if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
         if (raw.includes('ARENA_ASSET_REQUIRED')) return 'Escolha o ativo da arena vinculada.';
-        if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'A forja de Codex da mentoria agora e paga por uso. Se isso apareceu, o banco ainda esta com regra antiga.';
-        if (raw.includes('RELATIONSHIP_CAPACITY_DISABLED')) return 'A compra de capacidade social saiu do modelo atual. Agora o fluxo usa ouro direto nas acoes.';
+        if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'A forja de campanhas da mentoria agora e paga por uso. Se isso apareceu, o banco ainda esta com regra antiga.';
+        if (raw.includes('RELATIONSHIP_CAPACITY_DISABLED')) return 'A camada social agora funciona so por ouro.';
         return raw;
     };
 
@@ -4038,27 +4036,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const buyRelationshipCapacitySlot = async (slotType: RelationshipCapacitySlotType): Promise<boolean> => {
-        const { data, error } = await supabase.rpc('buy_relationship_capacity_slot', {
-            p_slot_type: slotType,
-        });
-
-        if (error) {
-            console.error('Error buying relationship slot:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel comprar este slot.'), 'error');
-            return false;
-        }
-
-        const summary = parseRelationshipCapacitySummary((data as any)?.summary);
-        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
-        updateUserProfile({
-            wallet: { ...userProfile.wallet, gold: nextGold },
-            partnershipSlotsPurchased: summary?.partnership.purchased ?? userProfile.partnershipSlotsPurchased ?? 0,
-            competitionSlotsPurchased: summary?.competition.purchased ?? userProfile.competitionSlotsPurchased ?? 0,
-            mentorSlotsPurchased: summary?.mentor.purchased ?? userProfile.mentorSlotsPurchased ?? 0,
-            linkedArenaSlotsPurchased: summary?.linked_arena.purchased ?? userProfile.linkedArenaSlotsPurchased ?? 0,
-        });
-        showToast('Novo slot social comprado na loja.', 'success');
-        return true;
+        showToast('A camada social agora funciona so por ouro.', 'info');
+        return false;
     };
 
     const createLinkedRelationshipArena = async (
@@ -4108,12 +4087,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const createCodexShareLink = async (codexId: string): Promise<{ url: string; token: string; shareId: string } | null> => {
         const sourceCodex = userCodexes.find(c => c.id === codexId);
         if (!sourceCodex) {
-            showToast('Codex n\u00E3o encontrado.', 'error');
+            showToast('Campanha nao encontrada.', 'error');
             return null;
         }
 
         if (sourceCodex.source_type !== 'created') {
-            showToast('Apenas Codex autoral pode ser compartilhado.', 'warning');
+            showToast('Apenas campanhas autorais podem ser compartilhadas.', 'warning');
             return null;
         }
 
@@ -4128,7 +4107,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error creating codex share link:', error);
-            showToast(error.message || 'Nao foi possivel forjar o link do Codex.', 'error');
+            showToast(error.message || 'Nao foi possivel forjar o link da campanha.', 'error');
             return null;
         }
 
@@ -4139,7 +4118,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const claimUrl = new URL(window.location.href);
         claimUrl.searchParams.set('claim_codex', shareToken);
-        showToast('Link do Codex forjado.', 'success');
+        showToast('Link da campanha forjado.', 'success');
         return {
             url: claimUrl.toString(),
             token: shareToken,
@@ -4150,12 +4129,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const sendCodexToNickname = async (codexId: string, nickname: string) => {
         const sourceCodex = userCodexes.find(c => c.id === codexId);
         if (!sourceCodex) {
-            showToast('Codex n\u00E3o encontrado.', 'error');
+            showToast('Campanha nao encontrada.', 'error');
             return;
         }
 
         if (sourceCodex.source_type !== 'created') {
-            showToast('Apenas Codex autoral pode ser compartilhado.', 'warning');
+            showToast('Apenas campanhas autorais podem ser compartilhadas.', 'warning');
             return;
         }
 
@@ -4177,14 +4156,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error sending codex to nickname:', error);
-            showToast(error.message || 'Nao foi possivel enviar o Codex.', 'error');
+            showToast(error.message || 'Nao foi possivel enviar a campanha.', 'error');
             return;
         }
 
         const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - 50));
         const recipientNickname = String((data as any)?.recipient_nickname || normalizedNickname);
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
-        showToast(`Codex enviado para @${recipientNickname}.`, 'success');
+        showToast(`Campanha enviada para @${recipientNickname}.`, 'success');
     };
 
     const getCodexSharePreview = async ({ token, shareId }: { token?: string; shareId?: string }): Promise<CodexSharePreview | null> => {
@@ -4214,7 +4193,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             status: (data as any)?.status || 'pending',
             deliveryMethod: (data as any)?.delivery_method || 'external_link',
             codexId: String((data as any)?.codex_id || ''),
-            codexName: String((data as any)?.codex_name || 'Codex sem nome'),
+            codexName: String((data as any)?.codex_name || 'Campanha sem nome'),
             codexDescription: String((data as any)?.codex_description || ''),
             codexAuthor: String((data as any)?.codex_author || 'Autor desconhecido'),
             codexTemplate: template,
@@ -4233,18 +4212,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error claiming codex share:', error);
-            showToast(error.message || 'Nao foi possivel reivindicar este Codex.', 'error');
+            showToast(error.message || 'Nao foi possivel reivindicar esta campanha.', 'error');
             return false;
         }
 
         if ((data as any)?.success === false) {
-            showToast(String((data as any)?.error || 'Nao foi possivel reivindicar este Codex.'), 'error');
+            showToast(String((data as any)?.error || 'Nao foi possivel reivindicar esta campanha.'), 'error');
             return false;
         }
 
         await fetchCodexData();
         await fetchNotifications();
-        showToast(`Codex "${String((data as any)?.codex_name || 'Recebido')}" reivindicado.`, 'success');
+        showToast(`Campanha "${String((data as any)?.codex_name || 'Recebida')}" reivindicada.`, 'success');
         return true;
     };
     const deleteUserCodex = async (codexId: string) => {
@@ -4256,7 +4235,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { error } = await supabase.from('codex').delete().eq('id', codexId);
         if (error) {
             console.error("Error deleting codex:", error);
-            showToast("Erro ao deletar Codex.");
+            showToast("Erro ao deletar campanha.");
         }
     };
 
@@ -4269,7 +4248,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { error } = await supabase.from('codex').update({ owner_id: recipientId }).eq('id', codexId);
         if (error) {
             console.error("Error transferring codex:", error);
-            showToast("Erro ao transferir Codex.");
+            showToast("Erro ao transferir campanha.");
         }
     };
 
@@ -4279,12 +4258,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const sourceCodex = userCodexes.find(c => c.id === codexId && c.owner_id === userId);
         if (!sourceCodex) {
-            showToast('Codex n\u00E3o encontrado.');
+            showToast('Campanha nao encontrada.');
             return false;
         }
 
         if (sourceCodex.catalog_id) {
-            showToast('Codex comprado n\u00E3o pode ser copiado para pupilos.');
+            showToast('Campanha comprada nao pode ser copiada para pupilos.');
             return false;
         }
 
@@ -4300,16 +4279,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         if (error) {
             console.error('Error duplicating mentor codex:', error);
-            showToast(error.message || 'Erro ao entregar Codex ao pupilo.');
+            showToast(error.message || 'Erro ao entregar campanha ao pupilo.');
             return false;
         }
 
         if ((data as any)?.success === false) {
-            showToast(String((data as any)?.error || 'Erro ao entregar Codex ao pupilo.'), 'error');
+            showToast(String((data as any)?.error || 'Erro ao entregar campanha ao pupilo.'), 'error');
             return false;
         }
 
-        showToast('Codex autoral entregue ao pupilo.', 'success');
+        showToast('Campanha autoral entregue ao pupilo.', 'success');
         return true;
     };
 
@@ -4322,20 +4301,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return false;
 
         if (!codex?.template || !Array.isArray(codex.template.levels) || codex.template.levels.length === 0) {
-            showToast('Esse Codex ainda n\u00E3o tem fases para enviar.');
+            showToast('Essa campanha ainda nao tem fases para enviar.');
             return false;
         }
 
         const { data, error } = await supabase.rpc('forge_mentor_codex_for_pupil', {
             p_recipient_id: recipientId,
-            p_name: codex.name?.trim() || 'Novo Codex',
+            p_name: codex.name?.trim() || 'Nova Campanha',
             p_description: codex.description?.trim() || '',
             p_template: codex.template,
             p_relationship_link_id: relationshipLinkId,
         });
         if (error) {
             console.error('Error creating mentor codex for recipient:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Erro ao criar Codex para o pupilo.'), 'error');
+            showToast(mapRelationshipErrorMessage(error.message, 'Erro ao criar campanha para o pupilo.'), 'error');
             return false;
         }
 
@@ -4343,7 +4322,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({
             wallet: { ...userProfile.wallet, gold: nextGold },
         });
-        showToast('Novo Codex enviado ao pupilo por 100 de ouro.', 'success');
+        showToast('Nova campanha enviada ao pupilo por 100 de ouro.', 'success');
         return true;
     };
 
@@ -4508,11 +4487,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 navigateToArenas: true,
             });
 
-            showToast(`Codex "${codex.name}" instalado com sucesso!`);
+            showToast(`Campanha "${codex.name}" instalada com sucesso!`);
         } catch (error: any) {
             await rollbackInstalledCodex();
             console.error("Error creating campaign from codex:", error);
-            showToast("Erro ao instalar codex: " + (error?.message || 'falha desconhecida'), 'error');
+            showToast("Erro ao instalar campanha: " + (error?.message || 'falha desconhecida'), 'error');
         }
     };
 

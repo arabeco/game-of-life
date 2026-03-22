@@ -136,7 +136,7 @@ export const buildCodexCampaignPreview = (
     campaign: {
       id: campaignId,
       userId: 'codex-preview',
-      title: template?.title || 'Preview de Codex',
+      title: template?.title || 'Preview de Campanha',
       description: template?.description || '',
       status: 'active',
       createdAt: new Date().toISOString(),
@@ -162,7 +162,7 @@ export const buildCodexTemplateFromDraft = (draft: {
   const actions = Array.isArray(draft.actions) ? draft.actions : [];
 
   return {
-    title: draft.name?.trim() || 'Novo Codex',
+    title: draft.name?.trim() || 'Nova Campanha',
     description: draft.description?.trim() || '',
     coverImage: suggestEmojiForLabel(draft.name, 'codex', {
       fallback: arenas[0]?.icon || '\u{1F4DC}',

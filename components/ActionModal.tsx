@@ -184,7 +184,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const lockedEditMessage = arenaFlags.isSeasonQuest
         ? 'Missoes de temporada sao fixas e nao podem ser editadas.'
         : isReceivedInstalledCodexAction
-            ? 'Codex recebido fica protegido. So Codex comprado ou autoral pode ser adaptado.'
+            ? 'Campanha recebida fica protegida. So campanha comprada ou autoral pode ser adaptada.'
             : null;
 
     // Office Mode specific
@@ -1278,7 +1278,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             {showInstalledCodexEditConfirmation && (
                 <ConfirmationModal
                     title="Editar acao instalada"
-                    message="Esse Codex instalado continua intacto. Voce quer mesmo editar esta acao na sua execucao?"
+                    message="Essa campanha instalada continua intacta. Voce quer mesmo editar esta acao na sua execucao?"
                     onConfirm={() => {
                         setHasConfirmedInstalledCodexEdit(true);
                         setShowInstalledCodexEditConfirmation(false);

@@ -16,7 +16,6 @@ import { SupabaseService } from '../services/SupabaseService';
 import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
-import { hasPremiumAccess } from '../utils/premiumAccess';
 import './settings-ui.css';
 
 const OracleChat = lazy(() =>
@@ -160,7 +159,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
         { id: 1, name: 'Alicerce', subtitle: 'Visao geral do core loop', flag: 'tutorial_level_1_completed', badge: 'BRONZE', accent: 'from-[#c98a62] via-[#c98a62]/24 via-70% to-transparent', glow: 'rgba(197,138,99,0.12)' },
         { id: 2, name: 'Identidade', subtitle: 'Patentes, Maestria e Perfil', flag: 'tutorial_level_2_completed', badge: 'PRATA', accent: 'from-[#f4f7fd] via-[#edf1f8]/22 via-70% to-transparent', glow: 'rgba(214,217,223,0.12)' },
         { id: 3, name: 'O Mundo', subtitle: 'Vinculos, aliados e Oraculo', flag: 'tutorial_level_3_completed', badge: 'OURO', accent: 'from-[#e4bc57] via-[#e4bc57]/24 via-70% to-transparent', glow: 'rgba(240,215,135,0.12)' },
-        { id: 4, name: 'O Arquiteto', subtitle: 'Codex, campanhas e premium', flag: 'tutorial_level_4_completed', badge: 'PREMIUM', accent: 'from-[#9b7af2] via-[#9b7af2]/24 via-70% to-transparent', glow: 'rgba(179,140,255,0.12)' },
+        { id: 4, name: 'O Arquiteto', subtitle: 'Campanhas, mentoria e premium', flag: 'tutorial_level_4_completed', badge: 'PREMIUM', accent: 'from-[#9b7af2] via-[#9b7af2]/24 via-70% to-transparent', glow: 'rgba(179,140,255,0.12)' },
     ];
 
     return (
@@ -297,7 +296,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [selectedFriendForMentorship, setSelectedFriendForMentorship] = useState<UserProfile | null>(null);
     const [showPartnershipModal, setShowPartnershipModal] = useState(false);
     const [selectedFriendForPartnership, setSelectedFriendForPartnership] = useState<UserProfile | null>(null);
-    const canActAsMentor = hasPremiumAccess(userProfile);
+    const canActAsMentor = true;
 
     const sessionReady = useMemo(() => !!sessionUid && isUuid(sessionUid), [sessionUid]);
 
@@ -430,14 +429,6 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData.session?.user.id;
         if (!uid || !isUuid(uid)) return;
-
-        // Em um convite de mentoria, o remetente (sender) é o Mentor e o destinatário (recipient/uid) é o Pupilo.
-        // O Pupilo não precisa ser Premium para aceitar a mentoria.
-        if (invite.linkType === 'mentoria' && invite.senderId === uid && !canActAsMentor) {
-            setError('Mentoria ativa como mentor e exclusiva para Premium.');
-            showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
-            return;
-        }
 
         const { error: updateError } = await supabase
             .from('relationship_link_invites')
@@ -622,7 +613,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     </button>
                                                 </div>
                                                     <div className="text-[11px] leading-relaxed text-gray-400">
-                                                        Mentoria ativa como mentor e envio de Codex para pupilos sao recursos Premium.
+                                                        Mentoria ativa como mentor e envio de campanhas para pupilos aparecem aqui.
                                                     </div>
                                                 {myPupils.length === 0 ? (
                                                     <div className="text-center text-sm text-gray-500 py-4">Nenhum vínculo ativo.</div>
@@ -653,16 +644,11 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                     <button
                                                                         onClick={(event) => {
                                                                             event.stopPropagation();
-                                                                            if (!canActAsMentor) {
-                                                                                showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
-                                                                                return;
-                                                                            }
                                                                             setSelectedPupilLink(link);
                                                                         }}
-                                                                        disabled={!canActAsMentor}
-                                                                        className="px-3 py-2 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[10px] font-bold tracking-wider text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                        className="px-3 py-2 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[10px] font-bold tracking-wider text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/20 transition-all"
                                                                     >
-                                                                        ADICIONAR CODEX
+                                                                        NOVA CAMPANHA
                                                                     </button>
                                                                 </div>
                                                                 <div className="text-[10px] text-center text-gray-500 uppercase tracking-wider font-bold pt-1">
@@ -946,10 +932,6 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             setMentorCreatorOpen(false);
                         }}
                         onCreateNew={() => {
-                            if (!canActAsMentor) {
-                                showToast('Mentoria ativa como mentor e exclusiva para Premium.', 'warning');
-                                return;
-                            }
                             setMentorCreatorOpen(true);
                         }}
                         onGiveCodex={async (codexId) => {
@@ -1039,7 +1021,7 @@ const feedbackQuestions: FeedbackQuestion[] = [
     { id: 5, label: 'Identidade Visual (UI & Avatar)', category: 'Dopamina' },
     { id: 6, label: 'Mecânica do Santuário (Manutenção)', category: 'Dopamina' },
     { id: 7, label: 'Pressão Social (Clãs & Vínculos)', category: 'Valor' },
-    { id: 8, label: 'Utilidade do Codex (Templates)', category: 'Valor' },
+    { id: 8, label: 'Utilidade das campanhas (templates)', category: 'Valor' },
     { id: 9, label: 'Impacto na Realidade', category: 'Valor' },
     { id: 10, label: 'Nível de Recomendação (NPS)', category: 'Valor' },
 ];
@@ -1732,7 +1714,7 @@ const PremiumTab: React.FC = () => {
                             className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">📜</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Codex</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Biblioteca</span>
                         </button>
                         <button
                             id="assistant-button"
@@ -1847,32 +1829,25 @@ const MentorCodexModal: React.FC<{
                     <div className="flex justify-between items-center">
                         <div>
                             <div className="text-[10px] font-black tracking-widest text-gray-400">MENTORIA</div>
-                            <div className="text-base font-bold text-white">Codex para {pupil?.nickname || 'Pupilo'}</div>
+                            <div className="text-base font-bold text-white">Campanha para {pupil?.nickname || 'Pupilo'}</div>
                         </div>
                         <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50">
                             <XIcon className="w-5 h-5" />
                         </button>
                     </div>
 
-                    {!canMentor && (
-                        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-3 py-3 text-[11px] leading-relaxed text-amber-200">
-                            So mentores Premium podem operar esta forja.
-                        </div>
-                    )}
-
                     <button
                         onClick={onCreateNew}
-                        disabled={!canMentor}
-                        className="w-full py-3 rounded-2xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold tracking-wider hover:bg-[var(--skin-accent-color)]/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full py-3 rounded-2xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold tracking-wider hover:bg-[var(--skin-accent-color)]/20 transition-all"
                     >
-                        CRIAR NOVO CODEX PARA ESTE PUPILO · 300 OURO
+                        CRIAR NOVA CAMPANHA PARA ESTE PUPILO · 100 OURO
                     </button>
 
                     <div className="space-y-2">
-                        <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS CODEXES AUTORAIS</div>
+                        <div className="text-[10px] font-black tracking-widest text-gray-400">MINHAS CAMPANHAS AUTORAIS</div>
                         {codexes.length === 0 ? (
                             <div className="text-center text-xs text-gray-500 py-6 bg-black/20 rounded-2xl border border-white/10">
-                                Nenhum Codex autoral pronto para enviar.
+                                Nenhuma campanha autoral pronta para enviar.
                             </div>
                         ) : (
                             <div className="max-h-[280px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
@@ -1905,7 +1880,7 @@ const MentorCodexModal: React.FC<{
                             disabled={!canMentor || !selectedCodexId || isSending}
                             className="flex-1 py-2 rounded-xl luxe-skin-button text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSending ? 'ENVIANDO...' : 'ENVIAR CODEX'}
+                            {isSending ? 'ENVIANDO...' : 'ENVIAR CAMPANHA'}
                         </button>
                     </div>
                 </GlassCard>
@@ -1942,7 +1917,7 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-white">{codex.name}</h2>
-                            <p className="text-sm text-gray-400 mt-1">Codex de Conhecimento</p>
+                            <p className="text-sm text-gray-400 mt-1">Campanha de conhecimento</p>
                         </div>
                     </div>
 

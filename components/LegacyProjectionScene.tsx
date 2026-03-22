@@ -380,6 +380,12 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
 
     const activePatent = activeIdentity.nobilityRankName || activeIdentity.title || 'Vagante';
     const activeClan = activeIdentity.clanName || 'Sem cla';
+    const displayNickname = activeIdentity.nickname || sovereignName;
+    const nicknameClass = displayNickname.length > 24
+        ? 'text-[0.82rem] tracking-[0.01em]'
+        : displayNickname.length > 18
+            ? 'text-[0.92rem] tracking-[0.015em]'
+            : 'text-[1.02rem] tracking-[0.02em]';
     const timelineVisible = !interactive || projectionActive;
     const sceneCyclesTranslateX = layout.cyclesOffsetX;
     const sceneCyclesTranslateY = layout.cyclesOffsetY + 22;
@@ -655,7 +661,12 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                                 />
                                 <div className="min-w-0 flex-1 overflow-hidden">
                                     <p className="text-[8px] font-black uppercase tracking-[0.22em] text-amber-100/58">Perfil soberano</p>
-                                    <h3 className={`truncate text-[1.02rem] font-black tracking-[0.02em] text-white transition-all duration-500 ${identityPulse ? 'text-[var(--skin-accent-color)]' : ''}`}>{activeIdentity.nickname || sovereignName}</h3>
+                                    <h3
+                                        className={`truncate font-black text-white transition-all duration-500 ${nicknameClass} ${identityPulse ? 'text-[var(--skin-accent-color)]' : ''}`}
+                                        title={displayNickname}
+                                    >
+                                        {displayNickname}
+                                    </h3>
                                     <div className="mt-1 flex flex-nowrap gap-1.5 overflow-hidden">
                                         <span className="truncate rounded-full border border-white/10 bg-white/6 px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.16em] text-white/82">
                                             {activePatent}

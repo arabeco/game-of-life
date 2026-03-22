@@ -11,17 +11,21 @@ interface CampaignArenaStackProps {
 
 const STACK_SIZE = {
     sm: {
-        scale: 0.9,
-        step: 82,
-        width: 292,
-        height: 122,
+        scale: 0.98,
+        step: 94,
+        width: 332,
+        height: 114,
+        cardWidth: 224,
+        cardHeight: 102,
         badgeClass: 'text-[9px] px-1.5 py-0.5',
     },
     md: {
-        scale: 1,
-        step: 102,
-        width: 348,
-        height: 132,
+        scale: 1.03,
+        step: 112,
+        width: 390,
+        height: 122,
+        cardWidth: 236,
+        cardHeight: 108,
         badgeClass: 'text-[10px] px-2 py-0.5',
     },
 };
@@ -49,7 +53,10 @@ export const CampaignArenaStack: React.FC<CampaignArenaStackProps> = ({ arenas, 
                         transformOrigin: 'top left',
                     }}
                 >
-                    <div className="h-[6.95rem] w-[12.6rem] drop-shadow-[0_12px_20px_rgba(0,0,0,0.38)]">
+                    <div
+                        className="drop-shadow-[0_12px_20px_rgba(0,0,0,0.38)]"
+                        style={{ width: `${settings.cardWidth}px`, height: `${settings.cardHeight}px` }}
+                    >
                         <ArenaCard
                             arena={arena}
                             actions={actionSource.filter(action => action.arenaId === arena.id)}

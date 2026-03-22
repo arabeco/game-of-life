@@ -925,7 +925,7 @@ export const ArenasView: React.FC = () => {
 
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Arenas do Codex</div>
+                            <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Arenas da campanha</div>
                             <button onClick={() => setShowArchived(s => !s)} className={`p-2 rounded-full transition-colors ${showArchived ? 'bg-white/20 text-white' : 'text-gray-500'}`}>
                                 <EyeIcon className="w-4 h-4" />
                             </button>
@@ -1050,7 +1050,8 @@ export const ArenasView: React.FC = () => {
                                 {receivedMentorCampaigns.length}
                             </span>
                         </div>
-                        <div className="grid grid-cols-4 gap-3">
+                        <div className="overflow-x-auto hide-scrollbar pb-1">
+                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
                             {receivedMentorCampaigns.map(({ codex, preview }) => (
                                 <div
                                     key={codex.id}
@@ -1098,6 +1099,7 @@ export const ArenasView: React.FC = () => {
                                     </div>
                                 </div>
                             ))}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1112,7 +1114,8 @@ export const ArenasView: React.FC = () => {
                                 {receivedSharedArenas.length}
                             </span>
                         </div>
-                        <div className="grid grid-cols-4 gap-3">
+                        <div className="overflow-x-auto hide-scrollbar pb-1">
+                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
                             {receivedSharedArenas.map((linkedArena) => (
                                 <div key={linkedArena.id}>
                                     <ArenaCard
@@ -1131,6 +1134,7 @@ export const ArenasView: React.FC = () => {
                                     />
                                 </div>
                             ))}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1248,21 +1252,23 @@ export const ArenasView: React.FC = () => {
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
-                                            <div className={`grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : ''}`}>
+                                            <div className={`animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'grid min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : 'overflow-x-auto hide-scrollbar pb-1'}`}>
                                                 {isEmpty ? (
                                                     <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Arraste aqui</span>
                                                 ) : (
-                                                    items.map(item => {
-                                                        if (item.itemType === 'campaign') {
-                                                            const campaign = item.value as Campaign;
-                                                            return renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign));
-                                                        }
+                                                    <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
+                                                        {items.map(item => {
+                                                            if (item.itemType === 'campaign') {
+                                                                const campaign = item.value as Campaign;
+                                                                return renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign));
+                                                            }
 
-                                                        const arena = item.value as Arena;
-                                                        return renderArenaBoardCard(arena, {
-                                                            assetName: getAssetById(arena.assetId)?.name,
-                                                        });
-                                                    })
+                                                            const arena = item.value as Arena;
+                                                            return renderArenaBoardCard(arena, {
+                                                                assetName: getAssetById(arena.assetId)?.name,
+                                                            });
+                                                        })}
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
@@ -1287,8 +1293,10 @@ export const ArenasView: React.FC = () => {
                                         <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${collapsedSections['campaigns'] ? '-rotate-90' : ''}`}>▼</span>
                                     </div>
                                     {!collapsedSections['campaigns'] && (
-                                        <div className="grid grid-cols-4 gap-3">
-                                            {campaigns.map(campaign => renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign)))}
+                                        <div className="overflow-x-auto hide-scrollbar pb-1">
+                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
+                                                {campaigns.map(campaign => renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign)))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -1311,8 +1319,10 @@ export const ArenasView: React.FC = () => {
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
-                                            <div className="grid grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
+                                            <div className="overflow-x-auto hide-scrollbar pb-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
+                                                    {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
+                                                </div>
                                             </div>
                                         )}
                                     </div>

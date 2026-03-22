@@ -9,6 +9,7 @@ import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import { isTaskInPool } from '../utils/taskDomain.js';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
+import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -191,7 +192,7 @@ const resolveFeedPresentation = (
 };
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, taskPool, reports, activeCycle, cycleProgress, oraclePreferences, oracleMessages, addArena, addAction, triggerOracle } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, addArena, addAction, triggerOracle } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -295,47 +296,26 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const systemPrompt = useMemo(() => {
     const config = ORACLE_MODES[currentMode];
     const now = new Date();
-    const hour = now.getHours();
-    let timeOfDay: "madrugada" | "manha" | "tarde" | "noite" = "manha";
-    if (hour >= 0 && hour < 6) timeOfDay = "madrugada";
-    else if (hour >= 6 && hour < 12) timeOfDay = "manha";
-    else if (hour >= 12 && hour < 18) timeOfDay = "tarde";
-    else timeOfDay = "noite";
-
-    const contextData: OracleContext = {
-        currentTime: now.toISOString(),
-        timeOfDay,
-        hasCycle: !!activeCycle,
-        cycleDayNumber: activeCycle ? Math.max(0, Math.floor((now.getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24))) : 0,
-        cycleTotalDays: activeCycle ? Math.max(1, Math.floor((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / (1000 * 60 * 60 * 24))) : 0,
-        cycleCompletionPercent: activeCycle ? cycleProgress : null,
-        hasArenas: assets.some(a => a.arenas.length > 0),
-        totalArenas: assets.reduce((acc, a) => acc + a.arenas.length, 0),
-        arenaNames: assets.flatMap(a => a.arenas.map(ar => ar.name)),
-        staleArenas: [], // Logic to find stale arenas
-        completedActionsInCycle: 0, // Logic needed
-        // Fix: pendingActionsToday should count ALL scheduled tasks for today that are not completed
-        pendingActionsToday: tasks.filter(t => {
-            if (!t.date) return false;
-            // Normalize dates to YYYY-MM-DD for comparison
-            const taskDate = t.date.split('T')[0];
-            const todayStr = now.toISOString().split('T')[0];
-            return taskDate === todayStr && !t.completed;
-        }).length,
-        overdueActions: 0, // Logic needed
-        activeMode: currentMode,
-        customModeInstructions: oraclePreferences?.customModeInstructions || null,
-        enabledCategories: oraclePreferences?.enabledCategories || [],
-        username: userProfile.nickname || 'Viajante',
-        level: userProfile.level || 1,
-        sephirotLevels: assets.reduce((acc, a) => ({ ...acc, [a.name]: a.level }), {}),
-        clanName: null, // Get from clan state if available
-        seasonName: null,
-        pendingChests: userProfile.chests?.reduce((acc, c) => acc + (c.count || 0), 0) || 0
-    };
+    const contextData: OracleContext = buildOracleOperationalContext({
+      now,
+      assets,
+      actions,
+      tasks,
+      activeCycle,
+      dailyCommitment,
+      cycleProgress,
+      activeMode: currentMode,
+      customModeInstructions: oraclePreferences?.customModeInstructions || null,
+      enabledCategories: oraclePreferences?.enabledCategories || [],
+      username: userProfile.nickname || 'Viajante',
+      level: userProfile.level || 1,
+      clanName: null,
+      seasonName: null,
+      pendingChests: userProfile.chests?.reduce((acc, c) => acc + (c.count || 0), 0) || 0,
+    });
 
     return config.systemPromptTemplate(contextData);
-  }, [currentMode, userProfile, assets, actions, tasks, reports, activeCycle, cycleProgress, oraclePreferences]);
+  }, [currentMode, userProfile, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences]);
 
   const buildRecoveryFastPath = useCallback((rawInput: string): string | null => {
     const normalized = rawInput

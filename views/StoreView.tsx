@@ -42,7 +42,7 @@ export const StoreView: React.FC = () => {
                 FORJA
             </button>
             <button onClick={() => setActiveTab('codexes')} className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === 'codexes' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
-                CODEX
+                CAMPANHAS
             </button>
             <button onClick={() => setActiveTab('items')} className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === 'items' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
                 ITEMS

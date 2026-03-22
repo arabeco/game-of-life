@@ -81,8 +81,8 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
           <div className="border-b border-white/10 bg-black/20 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/42">Codex recebido</div>
-                <h2 className="mt-1 text-lg font-bold text-white">Reivindicar manuscrito</h2>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/42">Campanha recebida</div>
+                <h2 className="mt-1 text-lg font-bold text-white">Reivindicar campanha</h2>
               </div>
               <button onClick={onClose} className="rounded-full bg-black/20 p-1 text-gray-300 hover:bg-black/40">
                 <XIcon className="h-5 w-5" />
@@ -100,7 +100,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
             ) : !preview ? (
               <GlassCard variant="neutral" className="rounded-3xl border border-red-500/20 bg-red-950/20 p-6 text-center">
                 <h3 className="text-base font-bold text-white">Convite indisponivel</h3>
-                <p className="mt-2 text-sm text-gray-400">Esse codex pode ter expirado ou ja ter sido reivindicado.</p>
+                <p className="mt-2 text-sm text-gray-400">Essa campanha pode ter expirado ou ja ter sido reivindicada.</p>
               </GlassCard>
             ) : (
               <>
@@ -136,7 +136,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent" />
                         <div className="absolute inset-x-0 bottom-0 p-4">
                           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)]">
-                            Codex recebido
+                            Campanha recebida
                           </div>
                           <div className="mt-2 text-xl font-black uppercase leading-tight text-white">
                             {preview.codexName}
@@ -153,7 +153,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                             {preview.codexName}
                           </h3>
                           <p className="mt-3 text-sm leading-relaxed text-white/68">
-                            {preview.codexDescription || 'Sem descricao registrada para este codex.'}
+                            {preview.codexDescription || 'Sem descricao registrada para esta campanha.'}
                           </p>
                         </div>
 
@@ -170,7 +170,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                         </div>
 
                         <div className="rounded-[1.1rem] border border-white/10 bg-black/20 px-3 py-3 text-xs leading-relaxed text-white/74">
-                          Esse manuscrito vai para a aba <span className="font-bold text-white">Dos outros</span> e nao consome slot de criacao.
+                          Essa campanha vai para a aba <span className="font-bold text-white">Dos outros</span> e entra direto na sua biblioteca.
                         </div>
                       </div>
                     </div>
@@ -226,7 +226,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                         </button>
                       )) : (
                         <div className="rounded-2xl border border-dashed border-white/10 px-3 py-4 text-sm text-gray-500">
-                          Esse codex nao trouxe fases suficientes para exibir um resumo.
+                          Essa campanha nao trouxe fases suficientes para exibir um resumo.
                         </div>
                       )}
                     </div>
@@ -242,7 +242,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                   )}
                   <button onClick={handleClaim} disabled={!preview.canClaim || isClaiming} className="inline-flex items-center justify-center gap-2 rounded-xl luxe-skin-button px-4 py-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50">
                     {preview.deliveryMethod === 'external_link' ? <LinkIcon className="h-4 w-4" /> : <CheckIcon className="h-4 w-4" />}
-                    {isClaiming ? 'Reivindicando...' : preview.canClaim ? 'Reivindicar codex' : 'Indisponivel'}
+                    {isClaiming ? 'Reivindicando...' : preview.canClaim ? 'Reivindicar campanha' : 'Indisponivel'}
                   </button>
                 </div>
               </>
@@ -260,7 +260,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
           previewActions={campaignPreview.actions}
           previewMeta={{
             coverImage: preview?.codexTemplate?.coverImage,
-            badgeLabel: 'Codex recebido',
+            badgeLabel: 'Campanha recebida',
             author: preview?.codexAuthor,
             note: 'Voce pode inspecionar a estrutura completa antes de reivindicar este manuscrito.',
           }}

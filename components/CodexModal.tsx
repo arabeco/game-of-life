@@ -69,12 +69,11 @@ const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[
 
 export const CodexModal: React.FC<{
   onClose: () => void;
-  maxCodexCount?: number;
   recipientId?: string;
   recipientName?: string;
   relationshipLinkId?: string | null;
   onDelivered?: () => void;
-}> = ({ onClose, maxCodexCount, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
+}> = ({ onClose, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
   const { assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient } = useGame();
   const isMentorDraftMode = Boolean(recipientId);
   const draftStorageKey = isMentorDraftMode
@@ -169,7 +168,7 @@ export const CodexModal: React.FC<{
 
           return [{
             id: row.id,
-            name: row.name || 'Novo Codex',
+            name: row.name || 'Nova Campanha',
             description: row.description || '',
             arenas: Array.isArray(template.arenas) ? template.arenas : [],
             actions: Array.isArray(template.actions) ? template.actions : [],
@@ -221,7 +220,7 @@ export const CodexModal: React.FC<{
       const payload = codexes.map((draft) => ({
         id: draft.id,
         owner_id: userId,
-        name: draft.name || 'Novo Codex',
+        name: draft.name || 'Nova Campanha',
         description: draft.description || '',
         author: null,
         price: null,
@@ -242,7 +241,7 @@ export const CodexModal: React.FC<{
       if (error) {
         console.error('Failed to sync codex drafts', error);
         if (error.message?.includes('SLOT_LIMIT_REACHED')) {
-          setStatus('Seus slots de criacao chegaram ao limite. Compre outro slot para manter novos manuscritos.');
+          setStatus('Se isso apareceu, o banco ainda esta com a regra antiga da forja.');
         }
       }
     };
@@ -276,7 +275,7 @@ export const CodexModal: React.FC<{
       campaign: {
         id: `__codex_draft_preview_${draft.id}__`,
         userId: 'codex-draft',
-        title: draft.name || 'Novo Codex',
+            title: draft.name || 'Nova Campanha',
         description: draft.description || '',
         status: 'active',
         createdAt: draft.updatedAt || new Date().toISOString(),
@@ -297,14 +296,9 @@ export const CodexModal: React.FC<{
   };
 
   const createCodex = () => {
-    if (typeof maxCodexCount === 'number' && codexes.length >= maxCodexCount) {
-      setStatus('Limite de slots de criacao atingido.');
-      return;
-    }
-
     const newCodex: CodexDraft = {
       id: crypto.randomUUID(),
-      name: 'Novo Codex',
+      name: 'Nova Campanha',
       description: '',
       arenas: [],
       actions: [],
@@ -367,7 +361,7 @@ export const CodexModal: React.FC<{
       }));
     return JSON.stringify({
       schemaVersion: 1,
-      metadata: { name: draft.name.trim() || 'Codex', description: draft.description || undefined },
+      metadata: { name: draft.name.trim() || 'Campanha', description: draft.description || undefined },
       arenas,
       actions,
       milestones,
@@ -477,7 +471,7 @@ export const CodexModal: React.FC<{
 
   const handleDeleteCodex = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir este Codex?')) {
+    if (confirm('Tem certeza que deseja excluir esta campanha?')) {
         setCodexes(prev => prev.filter(c => c.id !== id));
         if (!isMentorDraftMode) {
           supabase
@@ -494,7 +488,7 @@ export const CodexModal: React.FC<{
 
   const handleApplyCodex = async () => {
     if (!activeCodex) return;
-    if (!confirm('Deseja importar todas as arenas e ações deste Codex para o seu jogo?')) return;
+    if (!confirm('Deseja instalar todas as arenas e ações desta campanha no seu jogo?')) return;
 
     const arenaIdMap: Record<string, string> = {};
 
@@ -541,12 +535,12 @@ export const CodexModal: React.FC<{
         });
 
         await Promise.all(actionPromises);
-        setStatus('Codex aplicado com sucesso!');
+        setStatus('Campanha instalada com sucesso!');
         setTimeout(() => setStatus(null), 2000);
         onClose();
     } catch (error) {
-        console.error("Error applying codex:", error);
-        setStatus('Erro ao aplicar Codex.');
+        console.error("Error applying campaign:", error);
+        setStatus('Erro ao instalar campanha.');
     }
   };
 
@@ -573,7 +567,7 @@ export const CodexModal: React.FC<{
 
     localStorage.removeItem(draftStorageKey);
     setCodexes([]);
-    setStatus(`Codex enviado para ${recipientName || 'o pupilo'}.`);
+    setStatus(`Campanha enviada para ${recipientName || 'o pupilo'}.`);
     window.setTimeout(() => setStatus(null), 1800);
     onDelivered?.();
     onClose();
@@ -588,7 +582,7 @@ export const CodexModal: React.FC<{
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[220] flex items-center justify-center animate-fade-in" onClick={onClose}>
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-center">
-            <div className="text-xs font-bold uppercase tracking-wider accent-text">CODEXES</div>
+            <div className="text-xs font-bold uppercase tracking-wider accent-text">CAMPANHAS</div>
             <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
           </div>
 
@@ -609,14 +603,14 @@ export const CodexModal: React.FC<{
                   <div className="w-10 h-10 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-2">
                     <PlusIcon className="w-5 h-5 accent-text" />
                   </div>
-                  <div className="text-xs font-bold tracking-widest accent-text">NOVO CODEX</div>
+                  <div className="text-xs font-bold tracking-widest accent-text">NOVA CAMPANHA</div>
                 </button>
               </div>
             </>
           ) : (
             <div className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Codex</div>
+                <div className="text-xs font-bold uppercase tracking-wider text-gray-400">Campanha</div>
                 <button onClick={closeCodex} className="text-[10px] font-bold text-gray-400 hover:text-white">Voltar</button>
               </div>
               <div>
@@ -649,7 +643,7 @@ export const CodexModal: React.FC<{
                 </div>
 
                 {visibleArenas.length === 0 ? (
-                  <div className="text-center text-xs text-gray-500 py-4">Nenhuma arena no codex.</div>
+                  <div className="text-center text-xs text-gray-500 py-4">Nenhuma arena nesta campanha.</div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     {visibleArenas.map(arena => (
@@ -672,9 +666,9 @@ export const CodexModal: React.FC<{
                     FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · 100 OURO
                   </button>
                 ) : (
-                  <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">IMPORTAR PARA O JOGO</button>
+                  <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">INSTALAR NO JOGO</button>
                 )}
-                <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR CÓDIGO</button>
+                <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR MODELO</button>
                 <button onClick={handleCopyLink} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR LINK</button>
               </div>
               {status && <div className="text-center text-[10px] text-gray-500">{status}</div>}

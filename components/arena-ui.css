@@ -187,18 +187,22 @@
 }
 
 .arena-thumb-header-icon {
+  display: inline-flex;
   align-self: center;
+  align-items: center;
+  justify-content: center;
   justify-self: center;
   width: 18px;
   height: 18px;
   margin-top: 0;
+  overflow: visible;
 }
 
 .arena-thumb-header-icon .emoji-glyph--arena {
-  width: 1.05rem;
-  height: 1.05rem;
-  font-size: 0.98rem;
-  transform: translateY(-0.02em);
+  width: 1.12rem;
+  height: 1.12rem;
+  font-size: 1.02rem;
+  transform: translate(-0.02rem, -0.03rem);
 }
 
 .arena-thumb-header-copy {

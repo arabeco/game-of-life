@@ -90,7 +90,7 @@ const ShareCodexModal: React.FC<{ codex: UserCodex; onClose: () => void }> = ({ 
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 rounded-3xl overflow-hidden" onClick={(event) => event.stopPropagation()}>
           <div className="p-4 flex items-center justify-between border-b border-white/10">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Compartilhar Codex</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Compartilhar campanha</div>
               <h3 className="mt-1 text-lg font-bold text-white">{codex.name}</h3>
             </div>
             <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/40 text-gray-300">
@@ -152,7 +152,7 @@ const ShareCodexModal: React.FC<{ codex: UserCodex; onClose: () => void }> = ({ 
                   className="w-full h-12 px-4 bg-black/30 border border-white/10 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-white"
                 />
                 <button onClick={handleSend} disabled={isSubmitting || !nickname.trim()} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold">
-                  {isSubmitting ? 'Enviando...' : 'Entregar codex'}
+                  {isSubmitting ? 'Enviando...' : 'Entregar campanha'}
                 </button>
               </div>
             )}
@@ -178,10 +178,10 @@ const CodexCard: React.FC<{
   const sourceLabel = kind === 'created' ? 'Criado' : codex.source_type === 'catalog' ? 'Loja' : 'Recebido';
   const actionCount = levels.reduce((total, level) => total + (Array.isArray(level.actions) ? level.actions.length : 0), 0);
   const sourceDescription = kind === 'created'
-    ? 'Manuscrito autoral da sua forja.'
+    ? 'Campanha autoral da sua forja.'
     : codex.source_type === 'catalog'
-      ? 'Comprado na Loja. Pode ser adaptado na sua execucao.'
-      : 'Recebido de outro soberano. Mantido em modo protegido.';
+      ? 'Comprada na loja. Pode ser adaptada na sua execucao.'
+      : 'Recebida de outro soberano. Mantida em modo protegido.';
 
   return (
     <GlassCard variant="neutral" className="p-4 rounded-3xl h-full flex flex-col gap-4">
@@ -229,7 +229,7 @@ const CodexCard: React.FC<{
           </div>
         )) : (
           <div className="rounded-2xl border border-dashed border-white/10 px-3 py-4 text-sm text-gray-500">
-            Esse codex ainda nao esta pronto para instalar ou compartilhar.
+            Essa campanha ainda nao esta pronta para instalar ou compartilhar.
           </div>
         )}
       </div>
@@ -264,7 +264,6 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
     showToast,
     userProfile,
     refreshCodexes,
-    buyCodexCreationSlot,
   } = useGame();
 
   const [activeTab, setActiveTab] = useState<'created' | 'imported'>('created');
@@ -275,14 +274,11 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
 
   const createdCodexes = useMemo(() => userCodexes.filter(isCreatedCodex), [userCodexes]);
   const importedCodexes = useMemo(() => userCodexes.filter((codex) => !isCreatedCodex(codex)), [userCodexes]);
-  const purchasedSlots = userProfile.codexCreationSlotsPurchased || 0;
-  const totalSlots = 5 + purchasedSlots;
-  const usedSlots = createdCodexes.length;
-  const remainingSlots = Math.max(0, totalSlots - usedSlots);
+  const totalCampaigns = createdCodexes.length + importedCodexes.length;
 
   const openPreview = (codex: UserCodex) => {
     if (!isShareableCodex(codex)) {
-      showToast('Esse manuscrito ainda nao tem campanha pronta para visualizar.', 'warning');
+      showToast('Essa campanha ainda nao tem trilha pronta para visualizar.', 'warning');
       return;
     }
 
@@ -292,7 +288,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
 
   const handleInstall = async (codex: UserCodex) => {
     if (!isShareableCodex(codex)) {
-      showToast('Finalize o manuscrito antes de instalar.', 'warning');
+      showToast('Finalize a campanha antes de instalar.', 'warning');
       return;
     }
 
@@ -300,14 +296,8 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
   };
 
   const handleDelete = async (codex: UserCodex) => {
-    if (!confirm(`Excluir ${codex.name}? Essa acao remove o Codex da sua biblioteca.`)) return;
+    if (!confirm(`Excluir ${codex.name}? Essa acao remove a campanha da sua biblioteca.`)) return;
     await deleteUserCodex(codex.id);
-  };
-
-  const handleBuySlot = async () => {
-    const result = await buyCodexCreationSlot();
-    if (!result) return;
-    await refreshCodexes();
   };
 
   const handleCreatorClose = async () => {
@@ -319,10 +309,10 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
 
   const listContent = currentItems.length === 0 ? (
     <EmptyShelf
-      title={activeTab === 'created' ? 'Nenhum codex criado ainda' : 'Nenhum codex recebido ainda'}
+      title={activeTab === 'created' ? 'Nenhuma campanha criada ainda' : 'Nenhuma campanha recebida ainda'}
       description={activeTab === 'created'
-        ? 'Seus slots base de criacao ja estao livres. Use a forja para montar seus manuscritos.'
-        : 'Presentes de amigos e compras da loja vao aparecer aqui sem gastar slots.'}
+        ? 'Use a forja para montar suas campanhas autorais.'
+        : 'Presentes de amigos e compras da loja vao aparecer aqui automaticamente.'}
     />
   ) : (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -347,26 +337,19 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">A Forja e a Biblioteca</div>
-              <h2 className="mt-1 text-xl font-bold text-white">Meus Codexes</h2>
-              <p className="mt-1 text-sm text-gray-400">Codexes criados por voce ficam separados dos presentes e compras.</p>
+              <h2 className="mt-1 text-xl font-bold text-white">Minhas campanhas</h2>
+              <p className="mt-1 text-sm text-gray-400">Campanhas autorais ficam separadas das recebidas e das compradas.</p>
             </div>
             <div className="text-right">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Slots de criacao</div>
-              <div className="mt-1 text-2xl font-black text-white">{usedSlots}<span className="text-gray-500">/{totalSlots}</span></div>
-              <div className="text-xs text-gray-500 mt-1">{remainingSlots} slot(s) livres</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Biblioteca</div>
+              <div className="mt-1 text-2xl font-black text-white">{totalCampaigns}</div>
+              <div className="text-xs text-gray-500 mt-1">{createdCodexes.length} autorais · {importedCodexes.length} recebidas</div>
             </div>
-          </div>
-
-          <div className="mt-4 h-2 rounded-full bg-black/40 overflow-hidden">
-            <div className="h-full bg-[var(--skin-accent-color)]" style={{ width: `${Math.min(100, (usedSlots / Math.max(totalSlots, 1)) * 100)}%` }} />
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <button onClick={() => setCreatorOpen(true)} disabled={remainingSlots <= 0} className="px-4 py-2.5 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold inline-flex items-center gap-2">
+            <button onClick={() => setCreatorOpen(true)} className="px-4 py-2.5 rounded-xl luxe-skin-button text-xs font-bold inline-flex items-center gap-2">
               <PlusIcon className="w-4 h-4" /> Criar novo
-            </button>
-            <button onClick={handleBuySlot} className="px-4 py-2.5 rounded-xl luxe-button-secondary text-xs font-bold inline-flex items-center gap-2">
-              <DollarSignIcon className="w-4 h-4" /> Comprar slot
             </button>
           </div>
         </GlassCard>
@@ -407,8 +390,8 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
         </p>
         <p className="mt-2 text-sm text-gray-300">
           {activeTab === 'created'
-            ? 'So manuscritos autorais podem ser compartilhados. Codex comprado ou recebido nao entra na forja como produto revendavel.'
-            : 'Codex comprado pode ser adaptado na sua execucao. Codex recebido entra como biblioteca protegida e nao abre edicao.'}
+            ? 'So campanhas autorais podem ser compartilhadas. Campanha comprada ou recebida nao entra na forja como produto revendavel.'
+            : 'Campanha comprada pode ser adaptada na sua execucao. Campanha recebida entra como biblioteca protegida e nao abre edicao.'}
         </p>
       </GlassCard>
 
@@ -425,7 +408,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
               <div className="p-4 border-b border-white/10 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Biblioteca</div>
-                  <h2 className="mt-1 text-lg font-bold text-white">Codex</h2>
+                  <h2 className="mt-1 text-lg font-bold text-white">Campanhas</h2>
                 </div>
                 <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/40 text-gray-300">
                   <XIcon className="w-5 h-5" />
@@ -456,8 +439,8 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
             badgeLabel: activeTab === 'created' ? 'Forja autoral' : 'Biblioteca',
             author: previewCodex?.author || 'Autor desconhecido',
             note: activeTab === 'created'
-              ? 'Seu manuscrito esta pronto para ser instalado ou refinado.'
-              : 'Voce ja possui este Codex na biblioteca e pode explorar a campanha completa.',
+              ? 'Sua campanha esta pronta para ser instalada ou refinada.'
+              : 'Voce ja possui esta campanha na biblioteca e pode explorar a trilha completa.',
           }}
         />
       )}
@@ -465,10 +448,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
       {shareTarget && <ShareCodexModal codex={shareTarget} onClose={() => setShareTarget(null)} />}
 
       {isCreatorOpen && (
-        <CodexModal
-          maxCodexCount={totalSlots}
-          onClose={handleCreatorClose}
-        />
+        <CodexModal onClose={handleCreatorClose} />
       )}
     </>
   );

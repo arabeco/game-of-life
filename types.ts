@@ -1004,6 +1004,14 @@ export interface OracleContext {
   clanName: string | null;
   seasonName: string | null;
   pendingChests: number;
+  priorityArenaName: string | null;
+  priorityActionName: string | null;
+  nextMove: string | null;
+  cycleRisk: 'baixo' | 'medio' | 'alto';
+  needsFirstArena: boolean;
+  needsFirstAction: boolean;
+  needsFirstTask: boolean;
+  needsSitrepClosure: boolean;
 }
 
 export type NotificationType =

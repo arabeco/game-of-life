@@ -33,7 +33,7 @@ const isProbablyImageUrl = (value?: string | null) => {
 };
 
 const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ arena, actions }) => (
-    <div className="h-[6.95rem] w-[12.6rem] flex-shrink-0">
+    <div className="h-[6.3rem] w-[14.2rem] flex-shrink-0">
         <ArenaCard
             arena={arena}
             actions={actions}
@@ -114,7 +114,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         setVisiblePhaseCount(Math.min(5, Math.max(1, highestPhase + 1)));
     }, [selectedCampaign]);
 
-    // Identify Codex-based campaigns
+    // Identify source-based campaigns
     const isCodexCampaign = selectedCampaign?.arenaIds.some(id => {
         const arena = campaignArenasSource.find(a => a.id === id);
         return !!arena?.originCodexId;
@@ -250,7 +250,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         if (!selectedCampaign || isPreviewCampaign) return;
         
         if (isReadOnlyCodexCampaign) {
-            alert("Codex recebido fica protegido e nao pode ter a campanha remodelada.");
+                            alert("Campanha recebida fica protegida e nao pode ser remodelada.");
             return;
         }
 
@@ -440,7 +440,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
 
                                 {/* Campaign Cards */}
                                 {visibleCampaigns.map(campaign => {
-                                    // Determine if it's a Codex campaign for visual cue
+                                    // Determine if it's a source campaign for visual cue
                                     const isCodex = campaign.arenaIds.some(id => campaignArenasSource.find(a => a.id === id)?.originCodexId);
                                     
                                     // Check if it's the "Máquina Biológica" campaign
@@ -457,9 +457,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/40 via-black to-black z-0" />
                                                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1518531933037-9a82bf558667?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80')] opacity-20 mix-blend-overlay bg-cover bg-center z-0 transition-transform duration-700 group-hover:scale-110" />
                                                 
-                                                {/* Codex Badge */}
+                                                {/* Campaign Badge */}
                                                 <div className="absolute top-3 right-3 px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/50 rounded text-[9px] font-black text-emerald-400 uppercase tracking-widest backdrop-blur-sm z-10 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                                                    SYSTEM CODEX
+                                                    CAMPANHA
                                                 </div>
 
                                                 <div className="absolute top-3 left-3 z-10">
@@ -500,7 +500,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             
                                             {isCodex && (
                                                 <div className="absolute top-2 right-2 px-2 py-0.5 bg-[var(--skin-accent-color)]/20 border border-[var(--skin-accent-color)]/50 rounded text-[9px] font-bold text-[var(--skin-accent-color)] uppercase tracking-wider">
-                                                    Codex
+                                                    Campanha
                                                 </div>
                                             )}
                                             {campaign.id === effectivePreviewCampaign?.id && (
@@ -739,7 +739,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 Fase {phase + 1}
                                             </div>
                                         )}
-                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[7.5rem]' : 'min-h-[7.7rem]'} gap-3 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
+                                        <div className={`flex ${isPreviewCampaign ? 'min-h-[6.9rem]' : 'min-h-[7.1rem]'} gap-3 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
                                         {arenas.map((arena) => {
                                             const index = sortedArenas.findIndex(item => item.id === arena.id);
                                     const locked = isArenaLocked(arena.id);
@@ -773,7 +773,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                     return (
                                         <div 
                                             key={arena.id} 
-                                            className={`relative w-[12.6rem] flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
+                                            className={`relative w-[14.2rem] flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
                                             onClick={() => handleArenaClick(arena.id)}
                                             draggable={isEditing && !isReadOnlyCodexCampaign && !isPreviewCampaign}
                                             onDragStart={() => handleArenaDragStart(arena.id)}
@@ -841,7 +841,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                     {isPreviewCampaign ? (
                                                         <PreviewArenaMiniCard arena={arena} actions={arenaActions} />
                                                     ) : (
-                                                        <div className="h-[6.95rem] w-full rounded-[0.95rem]">
+                                                        <div className="h-[6.3rem] w-full rounded-[0.95rem]">
                                                             <ArenaCard 
                                                                 arena={arena}
                                                                 actions={arenaActions}

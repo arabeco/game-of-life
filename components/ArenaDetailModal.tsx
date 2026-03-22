@@ -212,7 +212,7 @@ export const ArenaDetailModal: React.FC<{
         : isSpecialArena
             ? 'Essa arena especial nao pode ser editada por aqui.'
             : isReceivedCodexArena
-                ? 'Codex recebido fica protegido. So Codex comprado ou autoral pode ser adaptado.'
+                ? 'Campanha recebida fica protegida. So campanha comprada ou autoral pode ser adaptada.'
                 : null;
     const resolvedAssetAccent =
         ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]
@@ -348,7 +348,7 @@ export const ArenaDetailModal: React.FC<{
         if (isArenaEditLocked) {
             showToast(
                 isReceivedCodexArena
-                    ? 'Codex recebido fica protegido. So Codex comprado ou autoral pode ser adaptado.'
+                    ? 'Campanha recebida fica protegida. So campanha comprada ou autoral pode ser adaptada.'
                     : 'Essa arena especial recebe missoes pelo menu de Missoes.',
                 'warning'
             );

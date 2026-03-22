@@ -1,4 +1,5 @@
 import { ItemRarity } from '../types';
+import { ACTIVE_GOLD_ITEM_PRICE_BY_ID, GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG } from './goldCatalog';
 
 export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias';
 
@@ -115,18 +116,18 @@ export const ITEMS_DB: ItemDef[] = [
     // T1 (Comum)
     { id: 'item_skin_1_001', name: 'Náufrago', category: 'skin', tier: 1, rarity: 'common', icon: '🏝️', imageUrl: avatarPngAsset('SKIN_T1_NAUFRAGO'), description: "Trajes desgastados pelo tempo e pelo mar. Ideal para quem está começando sua jornada do zero.", isRankExclusive: true },
     { id: 'item_skin_1_002', name: 'Casual', category: 'skin', tier: 1, rarity: 'common', icon: '👕', imageUrl: avatarPngAsset('SKIN_T1_CASUAL'), description: "Roupas confortáveis para o dia a dia. Nada de especial, mas cumpre o papel.", isRankExclusive: true },
-    { id: 'item_skin_1_003', name: 'Gym Rat', category: 'skin', tier: 1, rarity: 'common', icon: '💪', imageUrl: avatarPngAsset('SKIN_T1_GYM_RAT'), description: "Focado no treino e na disciplina física. O suor é o seu melhor acessório.", costGold: 5 },
+    { id: 'item_skin_1_003', name: 'Gym Rat', category: 'skin', tier: 1, rarity: 'common', icon: '💪', imageUrl: avatarPngAsset('SKIN_T1_GYM_RAT'), description: "Focado no treino e na disciplina física. O suor é o seu melhor acessório.", costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_1_003 },
     { id: 'item_skin_1_004', name: 'Street', category: 'skin', tier: 1, rarity: 'common', icon: '🛹', imageUrl: avatarPngAsset('SKIN_T1_STREET'), description: "Estilo urbano para quem domina as ruas e o asfalto.", isRankExclusive: true },
     // T2 (Incomum)
     { id: 'item_skin_2_001', name: 'Executivo', category: 'skin', tier: 2, rarity: 'uncommon', icon: '💼', imageUrl: avatarPngAsset('SKIN_T2_EXECUTIVO'), isRankExclusive: true },
     { id: 'item_skin_2_002', name: 'Tático', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🕶️', imageUrl: avatarPngAsset('SKIN_T2_TATICO'), isRankExclusive: true },
-    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: avatarPngAsset('SKIN_T2_ACADEMICO'), costGold: 9 },
+    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: avatarPngAsset('SKIN_T2_ACADEMICO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_003 },
     // T3 (Raro)
-    { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🐪', imageUrl: avatarPngAsset('SKIN_T3_NOMADE'), costGold: 15 },
-    { id: 'item_skin_3_002', name: 'Alquimista', category: 'skin', tier: 3, rarity: 'rare', icon: '⚗️', imageUrl: avatarPngAsset('SKIN_T3_ALQUIMISTA'), costGold: 22 },
-    { id: 'item_skin_3_003', name: 'Híbrido', category: 'skin', tier: 3, rarity: 'rare', icon: '🤖', imageUrl: avatarPngAsset('SKIN_T3_HIBRIDO'), costGold: 26 },
+    { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🐪', imageUrl: avatarPngAsset('SKIN_T3_NOMADE'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_001 },
+    { id: 'item_skin_3_002', name: 'Alquimista', category: 'skin', tier: 3, rarity: 'rare', icon: '⚗️', imageUrl: avatarPngAsset('SKIN_T3_ALQUIMISTA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_002 },
+    { id: 'item_skin_3_003', name: 'Híbrido', category: 'skin', tier: 3, rarity: 'rare', icon: '🤖', imageUrl: avatarPngAsset('SKIN_T3_HIBRIDO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_003 },
     // T4 (Épico)
-    { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: avatarPngAsset('SKIN_T4_ARMADURA_PLACA'), costGold: 50 },
+    { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: avatarPngAsset('SKIN_T4_ARMADURA_PLACA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_4_001 },
     { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙‍♂️', imageUrl: avatarPngAsset('SKIN_T4_MAGO_CIRCULO'), isRankExclusive: true },
     // T5 (Lendário)
     avatarItem('skin', { id: 'item_skin_5_001', name: 'Entidade de Luz', tier: 5, rarity: 'legendary', icon: '✨', asset: 'SKIN_T5_ENTIDADE_LUZ.png', isRankExclusive: true }),
@@ -228,15 +229,15 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_veterano.png` },
 
     // T3
-    { id: 'item_banner_imparavel', name: 'Imparável', category: 'banner', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_imparavel.png`, costGold: 18 },
-    { id: 'item_banner_t3_mistico', name: 'Místico', category: 'banner', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/banner_t3_mistico.png`, costGold: 32 },
+    { id: 'item_banner_imparavel', name: 'Imparável', category: 'banner', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/banner_imparavel.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_imparavel },
+    { id: 'item_banner_t3_mistico', name: 'Místico', category: 'banner', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/banner_t3_mistico.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t3_mistico },
     { id: 'item_banner_vanguarda_01', name: 'Banner Vanguarda', category: 'banner', tier: 3, rarity: 'rare', icon: '🚩', imageUrl: `${INTERFACE_BASE_URL}/banner_vanguarda.png`, isRankExclusive: true },
 
     // T4
-    { id: 'item_banner_lendaviva', name: 'Lenda Viva', category: 'banner', tier: 4, rarity: 'epic', icon: '🦁', imageUrl: `${INTERFACE_BASE_URL}/banner_lendaviva.png`, costGold: 40 },
+    { id: 'item_banner_lendaviva', name: 'Lenda Viva', category: 'banner', tier: 4, rarity: 'epic', icon: '🦁', imageUrl: `${INTERFACE_BASE_URL}/banner_lendaviva.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_lendaviva },
     { id: 'item_banner_t4_celestial', name: 'Celestial', category: 'banner', tier: 4, rarity: 'epic', icon: '👼', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_celestial.png` },
     { id: 'item_banner_t4_guardia', name: 'Guardiã', category: 'banner', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_guardia.png` },
-    { id: 'item_banner_t4_oraculo', name: 'Oráculo', category: 'banner', tier: 4, rarity: 'epic', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_oraculo.png`, costGold: 48 },
+    { id: 'item_banner_t4_oraculo', name: 'Oráculo', category: 'banner', tier: 4, rarity: 'epic', icon: '👁️', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_oraculo.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_oraculo },
     { id: 'item_banner_t4_transcendente', name: 'Transcendente', category: 'banner', tier: 4, rarity: 'epic', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_transcendente.png` },
 
     // T5
@@ -279,9 +280,9 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_orb_1_002', name: 'Orbe de Cobre', category: 'orb', tier: 1, rarity: 'common', icon: '🟤', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T1_COBRE.png` },
     // T2
     { id: 'item_orb_2_002', name: 'Orbe Sombrio', category: 'orb', tier: 2, rarity: 'uncommon', icon: '🌑', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T2_SOMBRIO.png`, isRankExclusive: true },
-    { id: 'item_orb_2_003', name: 'Orbe Tempestade', category: 'orb', tier: 2, rarity: 'uncommon', icon: '🌩️', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T2_TEMPESTADE.png`, costGold: 12 },
+    { id: 'item_orb_2_003', name: 'Orbe Tempestade', category: 'orb', tier: 2, rarity: 'uncommon', icon: '🌩️', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T2_TEMPESTADE.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_orb_2_003 },
     // T3
-    { id: 'item_orb_3_001', name: 'Orbe de Ouro', category: 'orb', tier: 3, rarity: 'rare', icon: '🪙', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T3_OURO.png`, costGold: 29 },
+    { id: 'item_orb_3_001', name: 'Orbe de Ouro', category: 'orb', tier: 3, rarity: 'rare', icon: '🪙', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T3_OURO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_orb_3_001 },
     { id: 'item_orb_4_001', name: 'Orbe de Diamante', category: 'orb', tier: 4, rarity: 'epic', icon: '💎', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T4_DIAMANTE.png`, isRankExclusive: true },
     // T5
     { id: 'item_orb_5_001', name: 'Orbe Gênese', category: 'orb', tier: 5, rarity: 'legendary', icon: '⚛️', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T5_GENESE.png`, isRankExclusive: true },
@@ -310,10 +311,10 @@ export const ITEMS_DB: ItemDef[] = [
     themeCatalogItem({ id: 'GENESIS', name: 'Tema: Genesis', tier: 5, rarity: 'legendary', icon: '\u2726', asset: 'genesis.png' }),
 
     // --- EXCLUSIVOS (Store) ---
-    // Itens abaixo entram automaticamente como pendencia de arte ate receberem `asset`.
-    catalogItem('skin', { id: 'item_skin_exclusive_001', name: 'Empreendedor', tier: 4, rarity: 'epic', icon: '💼', costGold: 500, isGoldExclusive: true }),
-    catalogItem('aura', { id: 'item_aura_exclusive_001', name: 'Fênix Dourada', tier: 5, rarity: 'legendary', icon: '🐦', costGold: 800, isGoldExclusive: true }),
-    catalogItem('border', { id: 'item_border_exclusive_001', name: 'Fundador', tier: 4, rarity: 'epic', icon: '🏛️', costGold: 400, isGoldExclusive: true }),
+    // Itens legacy preservados para inventarios antigos, fora do catalogo ativo de ouro.
+    catalogItem('skin', { id: 'item_skin_exclusive_001', name: 'Empreendedor', tier: 4, rarity: 'epic', icon: '💼', isGoldExclusive: true }),
+    catalogItem('aura', { id: 'item_aura_exclusive_001', name: 'Fênix Dourada', tier: 5, rarity: 'legendary', icon: '🐦', isGoldExclusive: true }),
+    catalogItem('border', { id: 'item_border_exclusive_001', name: 'Fundador', tier: 4, rarity: 'epic', icon: '🏛️', isGoldExclusive: true }),
 
     // --- INSÍGNIAS ---
     // NOBREZA (Ouro)
@@ -362,13 +363,15 @@ export const resolveItemDef = (itemId: string): ItemDef | undefined => {
     });
 };
 
-export const GOLD_PACKS = [
-    { id: 'pack_gold_1', name: "Pepita", price: 5.00, gold: 50, bonus: 0, total: 50, icon: '🪙' },
-    { id: 'pack_gold_2', name: "Barra Pequena", price: 10.00, gold: 100, bonus: 10, total: 110, icon: '🧈' },
-    { id: 'pack_gold_3', name: "Barra Grande", price: 20.00, gold: 200, bonus: 30, total: 230, icon: '🧱' },
-    { id: 'pack_gold_4', name: "Cofre", price: 50.00, gold: 500, bonus: 100, total: 600, icon: '🏦' },
-    { id: 'pack_gold_5', name: "Tesouro", price: 100.00, gold: 1000, bonus: 300, total: 1300, icon: '💎' }
-];
+export const GOLD_PACKS = GOLD_PACK_CATALOG.map((pack) => ({
+    id: pack.id,
+    name: pack.name,
+    price: pack.priceBrl,
+    gold: pack.goldBase,
+    bonus: pack.bonusGold,
+    total: pack.totalGold,
+    icon: pack.icon,
+}));
 
 export const CODEXES = [
     { id: 'd290f1ee-6c54-4b01-90e6-d701748f0851', name: "Máquina Biológica", cost: 200, icon: '🧬' },
@@ -378,10 +381,13 @@ export const CODEXES = [
     { id: "codex_mindset", name: "Codex: Mindset de Sucesso", cost: 150, icon: '🧠' }
 ];
 
-export const XP_BOOSTS = [
-    { id: "boost_xp_24h", name: "Boost XP 2x (24h)", cost: 50, durationHours: 24, icon: '🚀' },
-    { id: "boost_xp_7d", name: "Boost XP 2x (7 dias)", cost: 200, durationHours: 168, icon: '📅' }
-];
+export const XP_BOOSTS = GOLD_BOOST_PRODUCTS.map((boost) => ({
+    id: boost.id,
+    name: boost.name,
+    cost: boost.priceGold,
+    durationHours: boost.durationHours,
+    icon: boost.icon,
+}));
 
 // === Premium Genesis Pack ===
 const GENESIS_BORDER: ItemDef = interfaceCatalogItem('border', {

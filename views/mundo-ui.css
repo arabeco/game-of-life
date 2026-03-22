@@ -9,3 +9,47 @@
   display: flex;
   gap: 0.5rem;
 }
+
+.mode-game.theme-light .mundo-view-root {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(247, 250, 253, 0.22), rgba(247, 250, 253, 0) 18%),
+    radial-gradient(circle at 82% 22%, rgba(231, 237, 244, 0.16), rgba(231, 237, 244, 0) 20%),
+    linear-gradient(180deg, rgba(241, 246, 251, 0.94) 0%, rgba(226, 234, 243, 0.95) 100%);
+}
+
+.mode-game.theme-light .mundo-tab-strip {
+  background: linear-gradient(180deg, rgba(243, 246, 250, 0.94), rgba(231, 237, 244, 0.88));
+  border-bottom: 1px solid rgba(100, 116, 139, 0.12);
+  box-shadow: 0 10px 22px rgba(88, 104, 129, 0.06);
+}
+
+.mode-game.theme-light .mundo-inline-search input {
+  background: rgba(248, 250, 252, 0.84) !important;
+  border-color: rgba(100, 116, 139, 0.16) !important;
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .mundo-inline-search input::placeholder {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light .mundo-view-root [class*="bg-black/20"],
+.mode-game.theme-light .mundo-view-root [class*="bg-black/30"],
+.mode-game.theme-light .mundo-view-root [class*="bg-black/40"] {
+  background-color: rgba(244, 247, 251, 0.74) !important;
+}
+
+.mode-game.theme-light .mundo-view-root .text-white,
+.mode-game.theme-light .mundo-view-root .text-white\/80,
+.mode-game.theme-light .mundo-view-root .text-white\/85 {
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .mundo-view-root .text-gray-300,
+.mode-game.theme-light .mundo-view-root .text-gray-400,
+.mode-game.theme-light .mundo-view-root .text-gray-500,
+.mode-game.theme-light .mundo-view-root .text-white\/35,
+.mode-game.theme-light .mundo-view-root .text-white\/55,
+.mode-game.theme-light .mundo-view-root .text-white\/60 {
+  color: var(--game-muted-text) !important;
+}

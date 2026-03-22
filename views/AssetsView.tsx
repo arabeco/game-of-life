@@ -189,7 +189,7 @@ export const AssetsView: React.FC = () => {
 
     if (selectedAsset) {
         return (
-            <div className="h-full overflow-y-auto px-4 pb-4">
+            <div className="assets-detail-root h-full overflow-y-auto px-4 pb-4">
                 <div className="mx-auto max-w-[520px]">
                     <div
                         className="dossier-bg relative flex flex-col overflow-hidden rounded-[28px] border border-[color:var(--skin-accent-color)] px-4 pb-4 pt-4 shadow-2xl shadow-black/50"
@@ -290,15 +290,15 @@ export const AssetsView: React.FC = () => {
     }
 
     return (
-        <div className="relative h-full overflow-hidden bg-black">
+        <div className="assets-view-root relative h-full overflow-hidden bg-black">
             <div
-                className="relative flex items-center justify-center overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_30%),linear-gradient(180deg,#070707_0%,#020202_100%)]"
+                className="assets-view-shell relative flex items-center justify-center overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_30%),linear-gradient(180deg,#070707_0%,#020202_100%)]"
                 style={assetsShellStyle}
             >
                 <div ref={containerRef} className="relative h-full w-full">
                     {!isBasicMode && (
                         <div className="absolute inset-0 z-0">
-                            <div className="absolute inset-0 bg-black" />
+                            <div className="assets-sephirot-backdrop absolute inset-0 bg-black" />
                             <SephirotFog
                                 points={fogPoints}
                                 color={fogConfig.color}

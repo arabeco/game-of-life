@@ -729,9 +729,9 @@ const MundoView: React.FC = () => {
     }, [tabs]);
 
     return (
-        <div id="social-container" className="flex flex-col h-full">
+        <div id="social-container" className="mundo-view-root flex flex-col h-full">
             {/* Tab Navigation */}
-            <div className="flex justify-between px-4 py-2 z-40">
+            <div className="mundo-tab-strip flex justify-between px-4 py-2 z-40">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
@@ -748,7 +748,7 @@ const MundoView: React.FC = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div className="mundo-content-shell flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {activeTab === 'social' && <SocialTab />}
                 {activeTab === 'hall' && <HallOfFameView />}
                 {activeTab === 'loja' && <StoreView />}

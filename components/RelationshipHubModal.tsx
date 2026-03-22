@@ -32,6 +32,7 @@ import {
 import { supabase } from '../supabaseClient';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
+import { getGoldMechanicPrice } from '../constants/goldCatalog';
 
 const CodexModal = lazy(() =>
     import('./CodexModal').then((module) => ({ default: module.CodexModal }))
@@ -72,24 +73,29 @@ const HUB_TABS: Array<{
     { id: 'competicao', label: 'Competicao', icon: <TrophyIcon className="w-4 h-4" /> },
 ];
 const COIN_GLYPH = '\u{1FA99}';
+const MENTORIA_INVITE_GOLD_COST = getGoldMechanicPrice('relationship_invite_mentoria', 100);
+const PARCERIA_INVITE_GOLD_COST = getGoldMechanicPrice('relationship_invite_parceria', 50);
+const COMPETICAO_INVITE_GOLD_COST = getGoldMechanicPrice('relationship_invite_competicao', 50);
+const MENTOR_LINKED_ARENA_GOLD_COST = getGoldMechanicPrice('mentor_linked_arena', 50);
+const MENTOR_CAMPAIGN_FORGE_GOLD_COST = getGoldMechanicPrice('mentor_codex_forge', 100);
 
 const LINK_LABELS: Record<RelationshipLinkType, { singular: string; action: string; cost: number; accent: string }> = {
     mentoria: {
         singular: 'Mentoria',
         action: 'Criar mentoria',
-        cost: 100,
+        cost: MENTORIA_INVITE_GOLD_COST,
         accent: 'text-[var(--skin-accent-color)]',
     },
     parceria: {
         singular: 'Parceria',
         action: 'Nova parceria',
-        cost: 50,
+        cost: PARCERIA_INVITE_GOLD_COST,
         accent: 'text-cyan-300',
     },
     competicao: {
         singular: 'Competicao',
         action: 'Nova competicao',
-        cost: 50,
+        cost: COMPETICAO_INVITE_GOLD_COST,
         accent: 'text-rose-300',
     },
 };
@@ -1057,8 +1063,8 @@ export const RelationshipHubModal: React.FC<{
                     </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                    <CompactPill label="entrada" value={activeTab === 'mentoria' ? `${COIN_GLYPH} 100` : `${COIN_GLYPH} 50`} tone="text-white" />
-                    {activeTab === 'mentoria' && <CompactPill label="nova arena" value={`${COIN_GLYPH} 50`} tone="text-[var(--skin-accent-color)]" />}
+                    <CompactPill label="entrada" value={`${COIN_GLYPH} ${LINK_LABELS[activeTab].cost}`} tone="text-white" />
+                    {activeTab === 'mentoria' && <CompactPill label="nova arena" value={`${COIN_GLYPH} ${MENTOR_LINKED_ARENA_GOLD_COST}`} tone="text-[var(--skin-accent-color)]" />}
                     <CompactPill label="ativas" value={activeCount} tone="text-white" />
                 </div>
             </GlassCard>
@@ -1175,7 +1181,7 @@ export const RelationshipHubModal: React.FC<{
                         onClick: () => setSelectedPupilLink(link),
                         action: (
                             <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-200">
-                                {COIN_GLYPH} 100
+                                {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
                             </span>
                         ),
                     },
@@ -1221,8 +1227,8 @@ export const RelationshipHubModal: React.FC<{
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                <CompactPill label="entrada" value={`${COIN_GLYPH} 100`} tone="text-emerald-200" />
-                                <CompactPill label="nova arena" value={`${COIN_GLYPH} 50`} tone="text-[var(--skin-accent-color)]" />
+                                <CompactPill label="entrada" value={`${COIN_GLYPH} ${MENTORIA_INVITE_GOLD_COST}`} tone="text-emerald-200" />
+                                <CompactPill label="nova arena" value={`${COIN_GLYPH} ${MENTOR_LINKED_ARENA_GOLD_COST}`} tone="text-[var(--skin-accent-color)]" />
                                 <CompactPill label="arenas" value={String(arenasForLink.length)} tone="text-white" />
                                 <CompactPill label="papel" value={isMentorSide ? 'mentor' : 'pupilo'} tone="text-white" />
                                 <CompactPill label="desde" value={formatDate(link.createdAt) || 'agora'} tone="text-white" />
@@ -1620,7 +1626,7 @@ export const RelationshipHubModal: React.FC<{
                                         onClick={() => setIsMentorCreatorOpen(true)}
                                         className="shrink-0 luxe-skin-button rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
                                     >
-                                        Nova · {COIN_GLYPH} 100
+                                        Nova · {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
                                     </button>
                                 </div>
                             </div>
@@ -1754,7 +1760,7 @@ export const RelationshipHubModal: React.FC<{
                                     </button>
                                     <div className="flex w-full items-center justify-end gap-2">
                                         <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">
-                                            {COIN_GLYPH} 50
+                                            {COIN_GLYPH} {MENTOR_LINKED_ARENA_GOLD_COST}
                                         </span>
                                         <button
                                             id="relationship-linked-arena-submit-button"

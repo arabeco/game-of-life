@@ -1,7 +1,8 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
-import { ITEMS_DB, GOLD_PACKS, CODEXES, XP_BOOSTS, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
+import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
+import { getGoldBoostProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 
 import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
 import { NOBILITY_RANKS, RANK_REWARDS } from '../constants/nobility';
@@ -407,7 +408,7 @@ export interface GameContextType {
     endDailyBattle: () => void;
     resetDailyCommitment: () => void;
     openChest: (chestType: ChestType) => Promise<ChestOpenResult | null>;
-    createClan: (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => Promise<void>;
+    createClan: (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => Promise<boolean>;
     updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => Promise<void>;
     leaveClan: () => Promise<void>;
     transferLeadershipAndLeave: (newLeaderId: string) => Promise<void>;
@@ -1714,13 +1715,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             cost = item.costGold;
             name = item.name;
         } else if (type === 'boost') {
-            const item = XP_BOOSTS.find(b => b.id === itemId);
+            const item = getGoldBoostProduct(itemId);
             if (!item) return;
-            cost = item.cost;
+            cost = item.priceGold;
             name = item.name;
         } else if (type === 'premium') {
-            cost = 200;
-            name = 'Premium Mensal';
+            cost = GOLD_PREMIUM_PRODUCT.priceGold;
+            name = GOLD_PREMIUM_PRODUCT.name;
         }
 
         if ((userProfile.wallet?.gold || 0) < cost) {
@@ -3980,7 +3981,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const inviteCost = linkType === 'mentoria' ? 100 : 50;
         const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - inviteCost));
+        const inviteId = String((data as any)?.invite?.id || '');
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+
+        if (linkType === 'mentoria' || linkType === 'parceria') {
+            const notificationType = linkType === 'mentoria' ? 'mentor_invite' : 'partnership_invite';
+            const senderNickname = userProfile.nickname || (linkType === 'mentoria' ? 'Mentor' : 'Aliado');
+            const notificationContent = linkType === 'mentoria'
+                ? `@${senderNickname} enviou um convite de Mentoria.`
+                : `@${senderNickname} enviou um convite de Parceria.`;
+
+            void SupabaseService.sendNotificationEmail(
+                recipientId,
+                notificationType,
+                notificationContent,
+                {
+                    sendEmail: true,
+                    inviteId,
+                    senderNickname,
+                    linkType,
+                    dispatchKey: inviteId ? `invite:${notificationType}:${inviteId}` : undefined,
+                },
+            );
+        }
+
         showToast(linkType === 'mentoria' ? 'Convite de mentoria enviado.' : linkType === 'parceria' ? 'Convite de parceria enviado.' : 'Convite de competicao enviado.', 'success');
         return true;
     };
@@ -7969,29 +7993,70 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         completeTutorialMission,
     } = taskDomain;
 
+    const mapClanCreateErrorMessage = (message?: string) => {
+        switch (message) {
+            case 'AUTH_REQUIRED':
+                return 'Voce precisa estar autenticado para criar um cla.';
+            case 'CLAN_NAME_REQUIRED':
+                return 'O nome do cla nao pode ficar vazio.';
+            case 'CLAN_ALREADY_JOINED':
+                return 'Voce ja participa de um cla.';
+            case 'CLAN_NAME_ALREADY_EXISTS':
+                return 'Ja existe um cla com esse nome.';
+            case 'Saldo insuficiente de Ouro.':
+                return `Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um cla.`;
+            default:
+                return 'Nao foi possivel criar o cla.';
+        }
+    };
+
     // --- Clan Functions ---
-    const createClan = async (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => {
+    const createClan = async (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>): Promise<boolean> => {
         const userId = getSupabaseUserId();
-        if (!userId) { console.error("User not authenticated"); return; }
+        if (!userId) {
+            console.error("User not authenticated");
+            showToast('Voce precisa estar autenticado para criar um cla.', 'error');
+            return false;
+        }
 
-        const snakeCaseDetails = { ...mapToSnakeCase(clanDetails), exp: 0, rank_id: 'feudo' };
-        delete (snakeCaseDetails as Record<string, unknown>).background_url;
+        if ((userProfile.wallet?.gold || 0) < GOLD_CLAN_CREATION_COST) {
+            showToast(`Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um cla.`, 'error');
+            return false;
+        }
 
-        const { data: clanData, error: clanError } = await supabase
-            .from('clans')
-            .insert(snakeCaseDetails)
-            .select()
-            .single();
+        const { data, error } = await supabase.rpc('create_clan_with_gold', {
+            p_name: clanDetails.name,
+            p_icon: clanDetails.icon ?? null,
+            p_description: clanDetails.description ?? '',
+            p_clan_type: clanDetails.clanType,
+            p_recruitment_status: clanDetails.recruitmentStatus ?? 'Aberto',
+        });
 
-        if (clanError || !clanData) { console.error('Error creating clan:', clanError?.message); return; }
+        if (error) {
+            console.error('Error creating clan:', error.message);
+            showToast(mapClanCreateErrorMessage(error.message), 'error');
+            return false;
+        }
 
-        const { error: memberError } = await supabase
-            .from('clan_members')
-            .insert({ user_id: userId, clan_id: clanData.id, role: 'leader' });
+        const createdClan = (data as any)?.clan;
+        const newGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        const clanId = createdClan?.id;
 
-        if (memberError) { console.error('Error adding leader to clan:', memberError?.message); return; }
+        if (!clanId) {
+            showToast('Nao foi possivel confirmar a criacao do cla.', 'error');
+            return false;
+        }
 
-        await loadClanAndMembers(clanData.id);
+        updateUserProfile({
+            wallet: {
+                ...userProfile.wallet,
+                gold: newGold,
+            },
+        });
+
+        await loadClanAndMembers(clanId, true);
+        showToast(`Cla criado com sucesso. ${GOLD_CLAN_CREATION_COST} ouro debitados.`, 'success');
+        return true;
     };
 
     const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => {

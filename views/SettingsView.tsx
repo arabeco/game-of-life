@@ -2039,8 +2039,8 @@ export const SettingsView: React.FC = () => {
 
     return (
         <>
-            <div id="settings-container" className="p-4 space-y-6 h-full flex flex-col">
-                <div className="flex-shrink-0 flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
+            <div id="settings-container" className="settings-view-root p-4 space-y-6 h-full flex flex-col">
+                <div className="settings-tab-strip flex-shrink-0 flex items-center justify-center space-x-1 bg-black/20 p-1 rounded-2xl">
                     {tabs.map(tab => (
                         <button
                             key={tab}
@@ -2054,7 +2054,7 @@ export const SettingsView: React.FC = () => {
                     ))}
                 </div>
 
-                <div className="flex-grow min-h-0 overflow-y-auto pb-32 pt-2">
+                <div className="settings-content-shell flex-grow min-h-0 overflow-y-auto pb-32 pt-2">
                     {renderContent()}
                 </div>
             </div>

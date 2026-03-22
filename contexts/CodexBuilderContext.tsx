@@ -107,7 +107,7 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const enterBuilderMode = (initialName?: string) => {
     setDraftArenas([]);
     setDraftActions([]);
-    setDraftName(initialName?.trim() ? initialName.trim() : 'Novo Codex');
+    setDraftName(initialName?.trim() ? initialName.trim() : 'Nova Campanha');
     setBuilderMode(true);
   };
 
@@ -155,7 +155,7 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const template: CodexTemplate = {
       schemaVersion: 1,
       metadata: {
-        name: draftName.trim() || 'Codex',
+        name: draftName.trim() || 'Campanha',
       },
       arenas,
       actions,

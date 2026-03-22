@@ -2,6 +2,8 @@
 
 Este documento centraliza todos os cosméticos e artefatos disponíveis no sistema (`ITEMS_DB`) para facilitar o planejamento de Recompensas das Patentes (Nobility Ranks) da Fase 9.
 
+Para precos e curadoria do catalogo de ouro ativo, consulte `CATALOGO_OURO.md` e `constants/goldCatalog.ts`.
+
 ---
 
 ## 🎨 Temas de Interface (UI Skins)
@@ -20,7 +22,7 @@ Decorações ao redor da foto de perfil.
 - **[T1] Comum:** Pupilo (Beta) 🔰 | Disciplinado 📏 | Vanguardista 🚩 | Rústico 🪵 | Aprendiz 🎓
 - **[T2] Incomum:** Popular 🌟 | Protetor 🛡️ | Veterano 🎖️
 - **[T3] Raro:** Imparável 🚀 | Arquétipo 🎭 | Místico 🔮 | Transcendente ✨
-- **[T4] Épico:** Lenda Viva 🦁 | Soberano 👑 | Celestial 👼 | Guardiã 🛡️ | Oráculo 👁️ | Fundador 🏛️ *(Store)*
+- **[T4] Épico:** Lenda Viva 🦁 | Soberano 👑 | Celestial 👼 | Guardiã 🛡️ | Oráculo 👁️
 - **[T5] Lendário:** GM (Grande Mestre) 🐲 | Gênesis 🌋
 
 ---
@@ -64,7 +66,7 @@ Rastros visuais ou brilhos das skins/perfis.
 - **[T1] Comum:** Bruma 🌫️ | Safira 🔹 | Rubi 🔻
 - **[T2] Incomum:** Esmeralda ❇️ | Prata ⚪
 - **[T3] Raro:** Ouro 🟡
-- **[T5] Lendário:** Pedra da Lua 🌙 | Multiverso 🌌 | Fênix Dourada 🐦 *(Store)*
+- **[T5] Lendário:** Pedra da Lua 🌙 | Multiverso 🌌
 
 ---
 
@@ -85,7 +87,7 @@ Classes e looks do personagem principal.
 - **[T1] Comum:** Náufrago 🏝️ | Casual 👕 | Gym Rat 💪 | Street 🛹
 - **[T2] Incomum:** Executivo 💼 | Tático 🕶️ | Acadêmico 🎓
 - **[T3] Raro:** Nômade 🐪 | Alquimista ⚗️ | Híbrido 🤖
-- **[T4] Épico:** Armadura Placa 🛡️ | Mago Círculo 🧙‍♂️ | O Criador 🎨 *(Season)* | Empreendedor 💼 *(Store)*
+- **[T4] Épico:** Armadura Placa 🛡️ | Mago Círculo 🧙‍♂️ | O Criador 🎨 *(Season)*
 - **[T5] Lendário:** Entidade de Luz ✨
 
 ---

@@ -2,23 +2,9 @@
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { getCatalogItems, ItemDef } from '../../constants/items';
+import { ACTIVE_GOLD_STORE_ITEM_IDS } from '../../constants/goldCatalog';
 import { ItemArt } from '../ItemArt';
 import { ItemDetailModal } from '../ItemDetailModal';
-
-const LOW_TICKET_ITEM_IDS = [
-    'item_skin_1_003',
-    'item_skin_2_003',
-    'item_orb_2_003',
-    'item_skin_3_001',
-    'item_banner_imparavel',
-    'item_skin_3_002',
-    'item_skin_3_003',
-    'item_orb_3_001',
-    'item_banner_t3_mistico',
-    'item_banner_lendaviva',
-    'item_banner_t4_oraculo',
-    'item_skin_4_001',
-] as const;
 
 const STORE_CATEGORY_LABELS: Record<ItemDef['category'], string> = {
     skin: 'Skin',
@@ -50,9 +36,9 @@ export const ItemsStore: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<ItemDef | null>(null);
 
     const items = useMemo(() => {
-        const lowTicketIds = new Set<string>(LOW_TICKET_ITEM_IDS);
+        const lowTicketIds = new Set<string>(ACTIVE_GOLD_STORE_ITEM_IDS);
         const catalog = getCatalogItems(item => lowTicketIds.has(item.id));
-        const order = new Map<string, number>(LOW_TICKET_ITEM_IDS.map((id, index) => [id, index]));
+        const order = new Map<string, number>(ACTIVE_GOLD_STORE_ITEM_IDS.map((id, index) => [id, index]));
 
         return [...catalog].sort((a, b) => {
             const left = order.get(a.id) ?? 999;

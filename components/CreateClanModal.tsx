@@ -5,13 +5,14 @@ import { IconPickerModal } from './IconPickerModal';
 import { CheckIcon } from './Icons';
 import { ClanType, RecruitmentStatus } from '../types';
 import { DEFAULT_SANCTUARY_BACKGROUND } from '../constants';
+import { GOLD_CLAN_CREATION_COST } from '../constants/goldCatalog';
 import { Portal } from './Portal';
 
 const clanTypes: ClanType[] = ['Casual', 'Office'];
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
 
 export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { createClan, appMode } = useGame();
+    const { createClan, appMode, userProfile } = useGame();
     const isBasicMode = appMode === 'BASIC';
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -20,6 +21,8 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [backgroundUrl, setBackgroundUrl] = useState(DEFAULT_SANCTUARY_BACKGROUND);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const canAffordClanCreation = (userProfile.wallet?.gold || 0) >= GOLD_CLAN_CREATION_COST;
 
     const officeBackgrounds = [
         { id: 'office1', label: 'Escritorio 1', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office1.jpg' },
@@ -38,8 +41,13 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
             finalBackgroundUrl = officeBackgrounds[0].value;
         }
 
-        await createClan({ name, icon, description, clanType, recruitmentStatus, backgroundUrl: finalBackgroundUrl });
-        onClose();
+        setIsSubmitting(true);
+        try {
+            const created = await createClan({ name, icon, description, clanType, recruitmentStatus, backgroundUrl: finalBackgroundUrl });
+            if (created) onClose();
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -49,6 +57,9 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                     <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                         <h2 className="text-lg font-bold uppercase tracking-wider text-center">Criar Grupo</h2>
                         <div className="flex flex-col items-center space-y-4">
+                            <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-yellow-300">
+                                {`Criacao institucional - ${GOLD_CLAN_CREATION_COST} ouro`}
+                            </div>
                             <button onClick={() => setIsIconPickerOpen(true)} className="w-24 h-24 bg-black/20 rounded-2xl flex items-center justify-center text-5xl">
                                 {icon}
                             </button>
@@ -115,11 +126,23 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                         ))}
                                     </div>
                                 </div>
+                                <div className={`rounded-2xl border px-3 py-2 text-center text-xs ${canAffordClanCreation ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-rose-500/20 bg-rose-500/10 text-rose-300'}`}>
+                                    {canAffordClanCreation
+                                        ? `Saldo ok para abrir o cla. Debito: ${GOLD_CLAN_CREATION_COST} ouro.`
+                                        : `Saldo insuficiente. Criar cla custa ${GOLD_CLAN_CREATION_COST} ouro.`}
+                                </div>
                             </div>
                         </div>
                         <div className="flex space-x-2">
                             <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
-                            <button id="create-clan-submit-button" onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">CRIAR</button>
+                            <button
+                                id="create-clan-submit-button"
+                                onClick={handleSave}
+                                disabled={isSubmitting || !canAffordClanCreation}
+                                className="w-full py-2 rounded-xl luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {isSubmitting ? 'CRIANDO...' : `CRIAR - ${GOLD_CLAN_CREATION_COST}`}
+                            </button>
                         </div>
                     </GlassCard>
                 </div>

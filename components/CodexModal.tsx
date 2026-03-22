@@ -12,6 +12,7 @@ import { buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { EmojiGlyph } from './EmojiGlyph';
 import { supabase } from '../supabaseClient';
+import { getGoldMechanicPrice } from '../constants/goldCatalog';
 
 type CodexDraft = {
   id: string;
@@ -23,6 +24,7 @@ type CodexDraft = {
 };
 
 const CODEX_DRAFT_SCHEMA_VERSION = 'draft-v1';
+const MENTOR_CAMPAIGN_FORGE_GOLD_COST = getGoldMechanicPrice('mentor_codex_forge', 100);
 
 const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÍCIL', 'EXTREMO'];
 const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco'];
@@ -663,7 +665,7 @@ export const CodexModal: React.FC<{
                 <button onClick={() => activeCodex && setCampaignPreview(buildDraftPreview(activeCodex))} className="w-full py-2 rounded-xl luxe-button-secondary col-span-2 font-bold tracking-wider">VER CAMPANHA</button>
                 {recipientId ? (
                   <button onClick={handleDeliverCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">
-                    FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · 100 OURO
+                    FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · {MENTOR_CAMPAIGN_FORGE_GOLD_COST} OURO
                   </button>
                 ) : (
                   <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">INSTALAR NO JOGO</button>

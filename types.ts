@@ -1044,6 +1044,7 @@ export interface NotificationMetadata {
   email?: string;
   sendEmail?: boolean;
   emailSubject?: string;
+  dispatchKey?: string;
   welcome?: boolean;
   [key: string]: any;
 }

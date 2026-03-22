@@ -67,7 +67,6 @@ Abaixo estÃ£o todos os itens implementados no sistema (`ITEMS_DB`), organizado
 | `item_skin_3_003` | HÃ­brido | 3 | Raro | ðŸ¤– | |
 | `item_skin_4_001` | Armadura Placa | 4 | Ã‰pico | ðŸ›¡ï¸ | |
 | `item_skin_4_002` | Mago CÃ­rculo | 4 | Ã‰pico | ðŸ§™â€â™‚ï¸ | |
-| `item_skin_exclusive_001`| Empreendedor | 4 | Ã‰pico | ðŸ’¼ | **Loja (500 Ouro)** |
 | `item_skin_season_001` | O Criador | 4 | Ã‰pico | ðŸŽ¨ | **Season** |
 | `item_skin_5_001` | Entidade de Luz | 5 | LendÃ¡rio | âœ¨ | **LendÃ¡ria Ãšnica** |
 
@@ -104,7 +103,6 @@ Abaixo estÃ£o todos os itens implementados no sistema (`ITEMS_DB`), organizado
 | `item_border_t4_celestial`| Celestial | 4 | Ã‰pico | ðŸ‘¼ | Novo |
 | `item_border_t4_guardia` | GuardiÃ£ | 4 | Ã‰pico | ðŸ›¡ï¸ | Novo |
 | `item_border_t4_oraculo` | OrÃ¡culo | 4 | Ã‰pico | ðŸ‘ï¸ | Novo |
-| `item_border_exclusive_001`| Fundador | 4 | Ã‰pico | ðŸ›ï¸ | **Loja (400 Ouro)** |
 | `item_border_5_001` | GM - Grande Mestre| 5 | LendÃ¡rio | ðŸ² | |
 | `item_border_t5_genesis` | GÃªnesis | 5 | LendÃ¡rio | ðŸŒ‹ | Novo |
 
@@ -237,7 +235,7 @@ O sistema utiliza uma economia dual para equilibrar monetizaÃ§Ã£o e mÃ©rit
 1.  **ðŸ’° OURO (Hard Currency)**
     *   **Origem**: Compra com dinheiro real (R$).
     *   **CÃ¢mbio**: 10 Ouro â‰ˆ R$ 1,00.
-    *   **Uso**: Premium, Codexes, Skins Exclusivas, Boosts.
+    *   **Uso**: Premium, Campanhas, Skins Exclusivas, Boosts.
     *   **Nota**: NÃƒO compra poder, apenas cosmÃ©ticos e conveniÃªncia.
 
 2.  **ðŸ’Ž FRAGMENTOS (Soft Currency)**
@@ -270,8 +268,8 @@ O sistema utiliza uma economia dual para equilibrar monetizaÃ§Ã£o e mÃ©rit
 
 ### Produtos Premium
 *   **Premium Mensal (200 Ouro)**: XP +50%, 1 BaÃº Radiante/semana, Emblema, Acesso antecipado.
-*   **Codexes (150 Ouro)**: MÃ³dulos de conhecimento (FinanÃ§as, Produtividade, etc.).
-*   **Itens Exclusivos**: Skins e Auras que nÃ£o dropam em baÃºs (500-800 Ouro).
+*   **Campanhas do catÃ¡logo**: variam por entrada e ficam centralizadas em `constants/goldCatalog.ts` / `CATALOGO_OURO.md`.
+*   **Itens da loja ativa**: seleÃ§Ã£o compacta de skins, orbes e banners (5-50 Ouro).
 
 ---
 
@@ -422,6 +420,10 @@ O sistema de patentes recompensa o jogador por sua evoluÃ§Ã£o constante, lib
 
 
 ## Loja low-ticket ativa (13/03/2026)
+
+Fonte viva do catalogo de ouro:
+- `constants/goldCatalog.ts`
+- `CATALOGO_OURO.md`
 
 Selecao curada para venda por ouro baixo na loja:
 - item_skin_1_003 = 5

@@ -1,7 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { ECONOMY } from '../../constants/economy';
+import { GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG, GOLD_PREMIUM_PRODUCT } from '../../constants/goldCatalog';
 import { CheckIcon, CrownIcon } from '../Icons';
 import { MercadoPagoBrick } from './MercadoPagoBrick';
 
@@ -11,10 +11,10 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number } | null>(null);
 
     const handleBuyPack = async (packId: string) => {
-        const pack = ECONOMY.gold_packs.find(p => p.id === packId);
+        const pack = GOLD_PACK_CATALOG.find(p => p.id === packId);
         if (!pack) return;
 
-        setSelectedPack({ amount: pack.price_brl, goldAmount: pack.total });
+        setSelectedPack({ amount: pack.priceBrl, goldAmount: pack.totalGold });
     };
 
     const handleBuyPremium = async () => {
@@ -39,13 +39,13 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                             <CrownIcon className="w-8 h-8 text-yellow-400" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black text-yellow-100 uppercase tracking-tight">Premium Soberano</h2>
+                            <h2 className="text-2xl font-black text-yellow-100 uppercase tracking-tight">{GOLD_PREMIUM_PRODUCT.name}</h2>
                             <p className="text-yellow-500/80 text-sm font-bold uppercase tracking-wider">Assinatura mensal</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-300">
-                        {ECONOMY.gold_products.premium_monthly.benefits.map((benefit, idx) => (
+                        {GOLD_PREMIUM_PRODUCT.benefits.map((benefit, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                                 <CheckIcon className="w-4 h-4 text-green-400" />
                                 <span>{benefit}</span>
@@ -65,7 +65,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 className="luxe-skin-button inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-3 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <span className="text-[12px] leading-none">🪙</span>
-                                <span>{loading === 'premium' ? '...' : ECONOMY.gold_products.premium_monthly.cost}</span>
+                                <span>{loading === 'premium' ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
                             </button>
                         )}
                         <span className="text-[10px] text-gray-500 uppercase font-bold">30 dias</span>
@@ -76,11 +76,11 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
             <div>
                 <h3 className="text-lg font-bold text-white mb-4">Pacotes de Ouro</h3>
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    {ECONOMY.gold_packs.map((pack) => (
+                    {GOLD_PACK_CATALOG.map((pack) => (
                         <GlassCard key={pack.id} className="p-3 flex flex-col items-center text-center space-y-2 hover:bg-white/5 transition-colors group relative overflow-hidden">
-                            {pack.bonus > 0 && (
+                            {pack.bonusGold > 0 && (
                                 <div className="absolute top-2 right-2 px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded text-[9px] font-bold text-green-400 uppercase tracking-wider">
-                                    +{pack.bonus} bonus
+                                    +{pack.bonusGold} bonus
                                 </div>
                             )}
 
@@ -90,7 +90,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
 
                             <div>
                                 <h4 className="font-bold text-white">{pack.name}</h4>
-                                <div className="text-2xl font-black text-[var(--gold)]">{pack.total}</div>
+                                <div className="text-2xl font-black text-[var(--gold)]">{pack.totalGold}</div>
                             </div>
 
                             <button
@@ -98,7 +98,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 disabled={!!loading}
                                 className="luxe-skin-button w-full rounded-xl py-2 text-sm font-bold disabled:opacity-50"
                             >
-                                {loading === pack.id ? '...' : `R$ ${pack.price_brl.toFixed(2)}`}
+                                {loading === pack.id ? '...' : `R$ ${pack.priceBrl.toFixed(2)}`}
                             </button>
                         </GlassCard>
                     ))}
@@ -114,26 +114,18 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                 </div>
 
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-black/20 rounded-lg border border-white/5 gap-3">
-                        <div>
-                            <div className="font-bold text-purple-300">Boost 24h (2x XP)</div>
-                            <div className="text-xs text-gray-500">Dobra os ganhos por 1 dia.</div>
+                    {GOLD_BOOST_PRODUCTS.map((boost) => (
+                        <div key={boost.id} className="flex items-center justify-between p-3 bg-black/20 rounded-lg border border-white/5 gap-3">
+                            <div>
+                                <div className="font-bold text-purple-300">{boost.name}</div>
+                                <div className="text-xs text-gray-500">{boost.description}</div>
+                            </div>
+                            <button onClick={() => buyStoreItem(boost.id, 'boost')} className="luxe-skin-button inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold">
+                                <span className="text-[11px] leading-none">🪙</span>
+                                <span>{boost.priceGold}</span>
+                            </button>
                         </div>
-                        <button onClick={() => buyStoreItem('boost_xp_24h', 'boost')} className="luxe-skin-button inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold">
-                            <span className="text-[11px] leading-none">🪙</span>
-                            <span>{ECONOMY.gold_products.boost_24h}</span>
-                        </button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-black/20 rounded-lg border border-white/5 gap-3">
-                        <div>
-                            <div className="font-bold text-purple-300">Boost 7 dias (2x XP)</div>
-                            <div className="text-xs text-gray-500">Dobra os ganhos por uma semana.</div>
-                        </div>
-                        <button onClick={() => buyStoreItem('boost_xp_7d', 'boost')} className="luxe-skin-button inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold">
-                            <span className="text-[11px] leading-none">🪙</span>
-                            <span>{ECONOMY.gold_products.boost_7d}</span>
-                        </button>
-                    </div>
+                    ))}
                 </div>
             </GlassCard>
 

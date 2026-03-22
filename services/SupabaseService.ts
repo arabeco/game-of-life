@@ -66,6 +66,66 @@ export class SupabaseService {
     };
   }
 
+  private static getNotificationEmailSubject(
+    type: Notification['type'],
+    metadata: Notification['metadata'] = null,
+  ): string {
+    const customSubject = typeof metadata?.emailSubject === 'string' ? metadata.emailSubject.trim() : '';
+    if (customSubject) return customSubject;
+
+    if (metadata?.welcome === true) {
+      return 'Glyph - Bem-vindo!';
+    }
+
+    switch (type) {
+      case 'mentor_invite':
+        return 'Glyph - Convite de mentoria';
+      case 'partnership_invite':
+        return 'Glyph - Convite de parceria';
+      case 'clan_invite':
+        return 'Glyph - Convite de cla';
+      default:
+        return `Novo sinal no Oraculo: ${type}`;
+    }
+  }
+
+  static async sendNotificationEmail(
+    userId: string,
+    type: Notification['type'],
+    content: string,
+    metadata: Notification['metadata'] = null,
+  ): Promise<boolean> {
+    const nextMetadata = { ...(metadata || {}) } as Notification['metadata'];
+
+    if (!nextMetadata.emailSubject) {
+      nextMetadata.emailSubject = this.getNotificationEmailSubject(type, nextMetadata);
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('resend', {
+        body: {
+          user_id: userId,
+          type,
+          content,
+          metadata: nextMetadata,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(String(data.error));
+      }
+
+      return !data?.skipped;
+    } catch (error) {
+      console.error('Error sending notification email:', error);
+      return false;
+    }
+  }
+
   // --- Notifications System ---
 
   static async getNotifications(userId: string): Promise<Notification[]> {

@@ -14,14 +14,18 @@ Use este arquivo para responder rapido estas perguntas:
 ## Fonte de verdade
 
 - Catalogo vivo: `constants/items.ts`
+- Catalogo vivo de ouro: `constants/goldCatalog.ts`
 - Montagem e consumo: `constants/GMboard.ts`
 - Catalogo amplo e economia: `LOJA.MD`
+- Visao rapida de precos: `CATALOGO_OURO.md`
 - Manual operacional rapido: `GM_HELP.md`
 
 Regra canonica:
 - `items.ts` = fonte de verdade do item
+- `goldCatalog.ts` = fonte de verdade do catalogo ativo de ouro
 - `GMboard.ts` = so consome e organiza
 - `LOJA.MD` = documenta o catalogo visivel e a economia
+- `CATALOGO_OURO.md` = leitura rapida do catalogo ativo de ouro
 - `GM_HELP.md` = procedimento operacional e manutencao
 
 Nao edite item bruto dentro do `GMboard.ts`.
@@ -31,13 +35,16 @@ Nao edite item bruto dentro do `GMboard.ts`.
 Toda vez que um item for criado, removido, renomeado ou mudar de regra:
 
 1. atualizar `constants/items.ts`
-2. atualizar `GM_HELP.md` com a mudanca operacional
-3. atualizar `LOJA.MD` se a mudanca afetar catalogo visivel, economia, bau, craft ou drop
-4. se a mudanca depender de banco, salvar o SQL em `sql/` e anotar aqui
-5. rodar `npm run build`
+2. se envolver ouro, atualizar `constants/goldCatalog.ts`
+3. atualizar `GM_HELP.md` com a mudanca operacional
+4. atualizar `LOJA.MD` se a mudanca afetar catalogo visivel, economia, bau, craft ou drop
+5. atualizar `CATALOGO_OURO.md` se a lista ativa de ouro mudou
+6. se a mudanca depender de banco, salvar o SQL em `sql/` e anotar aqui
+7. rodar `npm run build`
 
 Regra pratica:
 - mudou so arte, nome, tier, rarity, asset, categoria ou id -> atualizar `items.ts` e `GM_HELP.md`
+- mudou preco, curadoria ou produto de ouro -> atualizar `goldCatalog.ts`, `GM_HELP.md` e `CATALOGO_OURO.md`
 - mudou loja, drop, bau, craft, recompensa, economia ou visibilidade -> atualizar tambem `LOJA.MD`
 - mudou entrega via banco, reward pack, GM inventory ou migracao -> criar SQL em `sql/` e referenciar aqui
 
@@ -214,6 +221,17 @@ Itens liberados para venda por ouro baixo na loja:
 - item_skin_4_001 -> 50 ouro
 
 Regras:
-- Fonte da verdade continua em constants/items.ts via costGold.
-- A vitrine da loja le apenas itens explicitamente curados na GoldStore.
+- Fonte da verdade agora fica em constants/goldCatalog.ts.
+- A vitrine da loja le apenas itens explicitamente curados no goldCatalog.
 - Nao ha SQL novo para esses itens; a compra envia item_id + costGold para a RPC buy_store_item.
+
+## 2026-03-22 - Catalogo de ouro unificado
+
+Arquivos:
+- `constants/goldCatalog.ts`
+- `CATALOGO_OURO.md`
+
+Regras:
+- `Empreendedor`, `Fundador` e `Fenix Dourada` ficaram fora do catalogo ativo.
+- Nao listar compra separada de slot de criacao no catalogo ativo.
+- Nao listar compra separada de capacidade social no catalogo ativo.

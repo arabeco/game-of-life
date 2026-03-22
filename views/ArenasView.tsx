@@ -1207,7 +1207,7 @@ export const ArenasView: React.FC = () => {
         return (
             <>
                 {/* Drag Preview in Builder Mode too if needed, though mostly unused there */}
-                <div className="h-full overflow-y-auto overflow-x-hidden p-4 space-y-4 min-h-0 custom-scrollbar">
+                <div className="arenas-view-root arenas-view-root--builder h-full overflow-y-auto overflow-x-hidden p-4 space-y-4 min-h-0 custom-scrollbar">
                     <div className="bg-black/30 border border-[var(--skin-accent-color)]/30 rounded-2xl p-3 space-y-1">
                         <div className="text-xs font-bold uppercase tracking-wider accent-text">Modo Arquiteto</div>
                         <div className="text-[11px] text-gray-400">Sandbox isolado. Nada do jogo atual é alterado.</div>
@@ -1420,7 +1420,7 @@ export const ArenasView: React.FC = () => {
     return (
         <>
             {renderDragPreview()}
-            <div className="h-full overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 relative min-h-0 custom-scrollbar">
+            <div className="arenas-view-root h-full overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 relative min-h-0 custom-scrollbar">
                 {receivedMentorCampaigns.length > 0 && (
                     <div className="mb-6 space-y-2">
                         <div className="flex items-center gap-2 px-2">

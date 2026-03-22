@@ -67,33 +67,33 @@
 
 /* Game Mode Variables - Light Theme */
 .mode-game.theme-light {
-  --bg-primary: #f8f4ec;
-  --bg-secondary: rgba(255, 250, 244, 0.84);
-  --text-primary: #23190c;
-  --text-secondary: #665741;
-  --glass-bg: rgba(255, 251, 246, 0.78);
-  --glass-border: rgba(122, 91, 34, 0.18);
-  --glass-border-light: rgba(163, 126, 58, 0.28);
-  --nav-bg: linear-gradient(180deg, rgba(249, 243, 232, 0.97), rgba(240, 230, 214, 0.93));
-  --nav-border: rgba(122, 91, 34, 0.14);
+  --bg-primary: #eef3f8;
+  --bg-secondary: rgba(248, 250, 252, 0.86);
+  --text-primary: #17212c;
+  --text-secondary: #657487;
+  --glass-bg: rgba(248, 250, 252, 0.8);
+  --glass-border: rgba(100, 116, 139, 0.18);
+  --glass-border-light: rgba(100, 116, 139, 0.28);
+  --nav-bg: linear-gradient(180deg, rgba(243, 246, 250, 0.98), rgba(231, 237, 244, 0.95));
+  --nav-border: rgba(100, 116, 139, 0.16);
   --sephirot-glow-color: rgba(212, 175, 55, 0.14);
   --app-background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 32%),
-    linear-gradient(180deg, #fcfaf5 0%, #f1e8da 52%, #e7dbc7 100%);
-  --game-surface: rgba(255, 251, 244, 0.8);
-  --game-surface-strong: rgba(246, 239, 229, 0.94);
-  --game-panel: rgba(251, 245, 237, 0.95);
-  --game-border: rgba(128, 98, 49, 0.16);
-  --game-border-strong: rgba(128, 98, 49, 0.26);
-  --game-shadow: rgba(104, 80, 38, 0.12);
-  --game-grid-line: rgba(122, 91, 34, 0.1);
-  --game-muted-text: #77654a;
-  --game-soft-text: #97815f;
-  --planner-top-bg: rgba(249, 243, 232, 0.95);
-  --planner-scroll-bg: linear-gradient(180deg, rgba(252, 249, 243, 0.96), rgba(238, 229, 214, 0.96));
-  --planner-surface-bg: linear-gradient(180deg, rgba(255, 252, 248, 0.96), rgba(242, 235, 225, 0.92));
-  --planner-surface-inner: linear-gradient(135deg, rgba(255, 255, 255, 0.52), rgba(194, 178, 153, 0.08));
-  --modal-overlay: rgba(82, 61, 30, 0.24);
+    radial-gradient(circle at top, rgba(248, 250, 252, 0.92), rgba(248, 250, 252, 0) 32%),
+    linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 52%, #d5dee9 100%);
+  --game-surface: rgba(248, 250, 252, 0.82);
+  --game-surface-strong: rgba(235, 241, 247, 0.95);
+  --game-panel: rgba(244, 247, 251, 0.96);
+  --game-border: rgba(100, 116, 139, 0.16);
+  --game-border-strong: rgba(100, 116, 139, 0.24);
+  --game-shadow: rgba(73, 88, 112, 0.12);
+  --game-grid-line: rgba(100, 116, 139, 0.1);
+  --game-muted-text: #5f6f82;
+  --game-soft-text: #8392a5;
+  --planner-top-bg: rgba(243, 246, 250, 0.95);
+  --planner-scroll-bg: linear-gradient(180deg, rgba(245, 248, 252, 0.96), rgba(230, 237, 244, 0.96));
+  --planner-surface-bg: linear-gradient(180deg, rgba(250, 252, 255, 0.96), rgba(236, 242, 248, 0.92));
+  --planner-surface-inner: linear-gradient(135deg, rgba(255, 255, 255, 0.54), rgba(154, 169, 190, 0.08));
+  --modal-overlay: rgba(51, 65, 85, 0.22);
 }
 
 /* Game Mode Variables - Dark Theme */
@@ -116,6 +116,28 @@ html, body, #root {
 
 html, body {
   overscroll-behavior: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  body,
+  #root,
+  #root * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable="true"],
+  [contenteditable="plaintext-only"],
+  [data-allow-text-selection="true"],
+  [data-allow-text-selection="true"] * {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
 }
 
 body {
@@ -396,6 +418,52 @@ body {
 .mode-game.theme-light .arena-detail-modal [class*="bg-black/50"],
 .mode-game.theme-light .arena-detail-modal [class*="bg-black/70"] {
   background-color: rgba(246, 239, 228, 0.82) !important;
+}
+
+.mode-game.theme-light .arenas-view-root {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(247, 250, 253, 0.26), rgba(247, 250, 253, 0) 18%),
+    radial-gradient(circle at 82% 24%, rgba(233, 239, 246, 0.18), rgba(233, 239, 246, 0) 22%),
+    radial-gradient(circle at 52% 78%, rgba(222, 231, 241, 0.16), rgba(222, 231, 241, 0) 20%),
+    linear-gradient(180deg, rgba(241, 246, 251, 0.94) 0%, rgba(226, 234, 243, 0.95) 100%);
+}
+
+.mode-game.theme-light .arenas-view-root--builder {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(246, 249, 252, 0.22), rgba(246, 249, 252, 0) 18%),
+    linear-gradient(180deg, rgba(238, 244, 250, 0.94) 0%, rgba(224, 232, 241, 0.95) 100%);
+}
+
+.mode-game.theme-light .assets-view-root {
+  --fog-color: #8d98aa;
+  --fog-tint-strength: 0.92;
+  --fog-alpha-max: 0.19;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(244, 248, 252, 0.12), rgba(244, 248, 252, 0) 18%),
+    radial-gradient(circle at 84% 28%, rgba(221, 231, 241, 0.1), rgba(221, 231, 241, 0) 20%),
+    linear-gradient(180deg, rgba(231, 239, 247, 0.9) 0%, rgba(213, 223, 235, 0.94) 100%);
+}
+
+.mode-game.theme-light .assets-detail-root {
+  background:
+    radial-gradient(circle at 20% 14%, rgba(242, 247, 252, 0.14), rgba(242, 247, 252, 0) 18%),
+    linear-gradient(180deg, rgba(238, 244, 250, 0.86) 0%, rgba(223, 232, 241, 0.9) 100%);
+}
+
+.mode-game.theme-light .assets-view-shell {
+  background:
+    radial-gradient(circle at top, rgba(241, 246, 251, 0.12), transparent 30%),
+    radial-gradient(circle at 24% 70%, rgba(211, 221, 233, 0.08), transparent 22%),
+    radial-gradient(circle at 74% 42%, rgba(221, 229, 239, 0.06), transparent 18%),
+    linear-gradient(180deg, #13171d 0%, #10141a 32%, #0d1116 100%) !important;
+}
+
+.mode-game.theme-light .assets-sephirot-backdrop {
+  background:
+    radial-gradient(circle at 18% 24%, rgba(242, 247, 252, 0.24), rgba(242, 247, 252, 0) 20%),
+    radial-gradient(circle at 82% 28%, rgba(222, 231, 241, 0.16), rgba(222, 231, 241, 0) 22%),
+    radial-gradient(circle at 50% 72%, rgba(204, 215, 228, 0.14), rgba(204, 215, 228, 0) 24%),
+    linear-gradient(180deg, rgba(226, 235, 245, 0.82) 0%, rgba(206, 217, 231, 0.9) 100%) !important;
 }
 
 /* Custom Scrollbar */

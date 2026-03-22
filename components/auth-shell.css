@@ -73,6 +73,12 @@
   backdrop-filter: blur(12px);
 }
 
+.mode-game.theme-light .auth-footer--game {
+  background: linear-gradient(180deg, rgba(243, 246, 250, 0.98), rgba(231, 237, 244, 0.95));
+  border-top-color: rgba(100, 116, 139, 0.16);
+  box-shadow: 0 -8px 20px rgba(88, 104, 129, 0.08);
+}
+
 .auth-nav-indicator {
   position: absolute;
   bottom: 0.25rem;

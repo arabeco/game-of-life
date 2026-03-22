@@ -1,6 +1,7 @@
 
 
 import React, { useCallback, useRef, useEffect } from 'react';
+import { lockTouchHoldSelection } from '../utils/touchHoldSelection';
 
 interface LongPressOptions {
     onLongPress: (event: React.MouseEvent | React.TouchEvent) => void;
@@ -24,6 +25,7 @@ export const useLongPress = (options: LongPressOptions) => {
     const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const state = useRef<'idle' | 'pending' | 'longpress' | 'drag'>('idle');
     const startPos = useRef({ x: 0, y: 0 });
+    const releaseSelectionLockRef = useRef<(() => void) | null>(null);
 
     const shouldPreventTouchDefault = () => optionsRef.current.preventDefaultOnTouch ?? true;
 
@@ -38,6 +40,10 @@ export const useLongPress = (options: LongPressOptions) => {
         if (timeout.current) {
             clearTimeout(timeout.current);
             timeout.current = null;
+        }
+        if (releaseSelectionLockRef.current) {
+            releaseSelectionLockRef.current();
+            releaseSelectionLockRef.current = null;
         }
         window.removeEventListener('mousemove', handleMove);
         window.removeEventListener('touchmove', handleMove);
@@ -95,6 +101,10 @@ export const useLongPress = (options: LongPressOptions) => {
         }
         if (shouldPreventTouchDefault()) {
             window.getSelection?.()?.removeAllRanges();
+        }
+        if (isTouchEvent(e)) {
+            releaseSelectionLockRef.current?.();
+            releaseSelectionLockRef.current = lockTouchHoldSelection();
         }
         e.persist();
 

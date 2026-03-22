@@ -20,6 +20,7 @@ import { GlassCard } from '../components/GlassCard';
 import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { SvgRadarChart } from '../components/SvgRadarChart';
+import { SupabaseService } from '../services/SupabaseService';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
 import { requestLocalNotificationPermission, showLocalNotification } from '../utils/localNotification';
@@ -1340,10 +1341,26 @@ const CycleReportPreviewButton: React.FC = () => {
 };
 
 type NotificationLabType = 'system' | 'oracle_card';
+type NotificationEmailLabType = 'mentor_invite' | 'friend_request';
 
 const GM_NOTIFICATION_TEST_CONTENT: Record<NotificationLabType, string> = {
     system: 'TESTE GM: Aviso de sistema entregue em Avisos. Este item deve aparecer imediatamente na aba de notificacoes.',
     oracle_card: 'TESTE GM: Card do Oraculo entregue em Avisos. O icone do Oraculo deve destacar ate voce abrir a aba.',
+};
+
+const GM_NOTIFICATION_EMAIL_TEST_CONFIG: Record<NotificationEmailLabType, { label: string; subject: string; content: string; success: string }> = {
+    mentor_invite: {
+        label: 'Email Mentoria',
+        subject: 'Glyph - Teste de convite de mentoria',
+        content: 'TESTE GM: Este e um email de convite de Mentoria disparado pelo painel do GM para validar remetente, assunto e entrega na caixa de entrada.',
+        success: 'Email de teste de mentoria enviado.',
+    },
+    friend_request: {
+        label: 'Email Amizade',
+        subject: 'Glyph - Teste de convite de amizade',
+        content: 'TESTE GM: Este e um email de convite de amizade disparado pelo painel do GM para validar remetente, assunto e entrega na caixa de entrada.',
+        success: 'Email de teste de amizade enviado.',
+    },
 };
 
 const NOTIFICATION_LAB_DEBUG_PREFIX = '[GM Notification Lab]';
@@ -1644,6 +1661,135 @@ const NotificationTestButton: React.FC = () => {
                 </>
             )}
         </button>
+    );
+};
+
+const NotificationEmailLab: React.FC = () => {
+    const { session, showToast } = useGame();
+    const [targetEmail, setTargetEmail] = useState(session?.user.email || '');
+    const [pendingType, setPendingType] = useState<NotificationEmailLabType | null>(null);
+
+    useEffect(() => {
+        if (!session?.user.email) return;
+        setTargetEmail((current) => current || session.user.email || '');
+    }, [session?.user.email]);
+
+    const handleSend = async (type: NotificationEmailLabType) => {
+        const config = GM_NOTIFICATION_EMAIL_TEST_CONFIG[type];
+        const email = targetEmail.trim();
+
+        if (!session?.user.id) {
+            logNotificationLabStep(config.label, 'blocked-no-session');
+            return;
+        }
+
+        if (!email || !email.includes('@')) {
+            logNotificationLabStep(config.label, 'blocked-invalid-email', {
+                email,
+            });
+            showToast('Digite um email valido para o teste.', 'warning');
+            return;
+        }
+
+        if (pendingType) {
+            logNotificationLabStep(config.label, 'blocked-pending', {
+                pendingType,
+            });
+            return;
+        }
+
+        logNotificationLabStep(config.label, 'click', {
+            sessionUserId: session.user.id,
+            email,
+            type,
+        });
+        setPendingType(type);
+
+        try {
+            const sent = await SupabaseService.sendNotificationEmail(
+                session.user.id,
+                type,
+                config.content,
+                {
+                    sendEmail: true,
+                    email,
+                    emailSubject: config.subject,
+                    source: 'gm_panel',
+                    trigger: `email_test_${type}`,
+                    test: true,
+                    dispatchKey: `gm-email:${type}:${session.user.id}:${Date.now()}`,
+                },
+            );
+
+            if (!sent) {
+                throw new Error('EMAIL_DISPATCH_SKIPPED');
+            }
+
+            logNotificationLabStep(config.label, 'success', {
+                sessionUserId: session.user.id,
+                email,
+                type,
+            });
+            showToast(config.success, 'success');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'EMAIL_TEST_FAILED';
+            logNotificationLabError(config.label, 'failed', err, {
+                sessionUserId: session?.user.id || null,
+                email,
+                type,
+            });
+            showToast(`Erro no teste "${config.label}": ${message}`, 'error');
+        } finally {
+            logNotificationLabStep(config.label, 'finish');
+            setPendingType(null);
+        }
+    };
+
+    return (
+        <div className="space-y-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <label className="flex-1">
+                    <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                        Email de destino
+                    </span>
+                    <input
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        value={targetEmail}
+                        onChange={(event) => setTargetEmail(event.target.value)}
+                        placeholder={session?.user.email || 'voce@dominio.com'}
+                        className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm font-medium text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-cyan-500/40 focus:bg-black/45"
+                    />
+                </label>
+                <div className="flex flex-wrap gap-3 pt-0 md:pt-6">
+                    {(Object.keys(GM_NOTIFICATION_EMAIL_TEST_CONFIG) as NotificationEmailLabType[]).map((type) => {
+                        const config = GM_NOTIFICATION_EMAIL_TEST_CONFIG[type];
+                        const isPending = pendingType === type;
+
+                        return (
+                            <button
+                                key={type}
+                                type="button"
+                                onClick={() => handleSend(type)}
+                                disabled={pendingType !== null}
+                                className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.15em] transition-all disabled:opacity-50 ${
+                                    type === 'mentor_invite'
+                                        ? 'border-cyan-500/30 bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/30'
+                                        : 'border-pink-500/30 bg-pink-500/20 text-pink-200 hover:bg-pink-500/30'
+                                }`}
+                            >
+                                {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+                                {config.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+            <p className="text-xs text-zinc-500">
+                Dispara so o email pela edge function `resend`, sem criar notificacao no app.
+            </p>
+        </div>
     );
 };
 export const SovereignPanelView: React.FC = () => {
@@ -1954,6 +2100,19 @@ export const SovereignPanelView: React.FC = () => {
               <NotificationTypeButton type="oracle_card" label="Card do Oraculo" color="purple" />
               <NotificationTestButton />
             </div>
+          </div>
+        </GlassCard>
+      </section>
+
+      <section>
+        <GlassCard variant="neutral" className="p-6">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-500">Laboratorio de Email</p>
+              <h2 className="text-lg font-black text-white">Disparo Direto pelo GM</h2>
+              <p className="text-xs text-zinc-400">Teste isolado dos emails de mentoria e amizade usando a edge function `resend`.</p>
+            </div>
+            <NotificationEmailLab />
           </div>
         </GlassCard>
       </section>

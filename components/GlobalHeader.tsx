@@ -1,11 +1,18 @@
 
-import React, { Suspense, useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { getUnreadBadgeCount, getVisibleNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { SparklesIcon, LockIcon } from './Icons';
 import './global-header.css';
-import { REST_SCREEN_ACTION_SESSION_EVENT, RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
+import {
+    REST_SCREEN_ACTION_SESSION_EVENT,
+    RestScreenActionSessionDetail,
+    clearPersistedRestScreenActionSession,
+    getRestScreenActionSessionStorageKey,
+    loadPersistedRestScreenActionSession,
+    persistRestScreenActionSession,
+} from '../utils/restScreenActionSession';
 
 const MoodModal = React.lazy(() => import('./MoodModal').then(m => ({ default: m.MoodModal })));
 const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default: m.OracleFeed })));
@@ -14,6 +21,7 @@ const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default:
 
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number; defaultRestScreenOpen?: boolean }> = ({ onProfileClick, topOffsetPx = 0, defaultRestScreenOpen = true }) => {
     const { userProfile, oracleMessages, notifications, appMode, clan, oraclePreferences } = useGame();
+    const userId = userProfile?.id || '';
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
     const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'notifications' | 'clan' | 'dms'>('chat');
@@ -41,6 +49,16 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
         const timer = setInterval(() => setCurrentDate(new Date()), 10000); // Update every 10s to be safe
         return () => clearInterval(timer);
     }, []);
+
+    const clearActionSession = useCallback((closeRestScreen = true) => {
+        if (userId) {
+            clearPersistedRestScreenActionSession(userId);
+        }
+        setRestScreenActionSession(null);
+        if (closeRestScreen) {
+            setRestScreenOpen(false);
+        }
+    }, [userId]);
 
     useEffect(() => {
         const handleTutorialRestScreen = (e: any) => {
@@ -80,6 +98,19 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     }, [defaultRestScreenOpen, isRestScreenOpen]);
 
     useEffect(() => {
+        if (!userId) {
+            setRestScreenActionSession(null);
+            return;
+        }
+
+        const restoredSession = loadPersistedRestScreenActionSession(userId);
+        setRestScreenActionSession(restoredSession);
+        if (restoredSession) {
+            setRestScreenOpen(true);
+        }
+    }, [userId]);
+
+    useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const oracleTarget = params.get('oracle');
         if (oracleTarget === 'notifications' || oracleTarget === 'chat') {
@@ -115,13 +146,34 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
         const handleRestScreenActionSession = (event: Event) => {
             const customEvent = event as CustomEvent<RestScreenActionSessionDetail>;
             if (!customEvent.detail) return;
+            if (userId) {
+                persistRestScreenActionSession(userId, customEvent.detail);
+            }
             setRestScreenActionSession(customEvent.detail);
             setRestScreenOpen(true);
         };
 
         window.addEventListener(REST_SCREEN_ACTION_SESSION_EVENT, handleRestScreenActionSession as EventListener);
         return () => window.removeEventListener(REST_SCREEN_ACTION_SESSION_EVENT, handleRestScreenActionSession as EventListener);
-    }, []);
+    }, [userId]);
+
+    useEffect(() => {
+        if (!userId) return;
+
+        const storageKey = getRestScreenActionSessionStorageKey(userId);
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key !== storageKey) return;
+
+            const nextSession = loadPersistedRestScreenActionSession(userId);
+            setRestScreenActionSession(nextSession);
+            if (nextSession) {
+                setRestScreenOpen(true);
+            }
+        };
+
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, [userId]);
 
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '');
     const dateStr = currentDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); // 02/03
@@ -287,8 +339,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                         onOpenDeepWork={() => setDeepWorkOpen(true)}
                         actionSession={restScreenActionSession}
                         onClearActionSession={() => {
-                            setRestScreenActionSession(null);
-                            setRestScreenOpen(false);
+                            clearActionSession();
                         }}
                     />
                 )}
